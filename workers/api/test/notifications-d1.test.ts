@@ -4,6 +4,7 @@ import { beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import { checkedInSqlStatements as splitSqlStatements } from "./schema-statements";
 import { runScheduledNotificationArchive, runScheduledNotificationEvents } from "../src/notifications-scheduled";
+import renderSourceJson from "./fixtures/notification-render-source.json?raw";
 import signupSchema from "../migrations/0007_auth_signup_command.sql?raw";
 import suspensionSchema from "../migrations/0008_auth_user_suspension.sql?raw";
 import { handleRequest } from "../src";
@@ -678,6 +679,99 @@ describe("D1 notification event processor", () => {
       .bind(eventId).first()).toEqual({ count: delivered });
     expect(await businessDatabase.prepare("SELECT payload FROM notifications WHERE id = ?")
       .bind(priorNotificationId).first()).toEqual({ payload: JSON.stringify({ fanmark_id: "fmk-1", title: "Prior synthetic notification" }) });
+  });
+
+  const renderSource = JSON.parse(renderSourceJson) as { cases: Array<{
+    label: string; inputPayloadJson: string; template: string; expected: string;
+  }> };
+
+  it.each(renderSource.cases)("matches source PostgreSQL rendering for $label", async (fixture) => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const eventId = await seedEvent();
+    const payload = { user_id: ownerId, ...JSON.parse(fixture.inputPayloadJson) };
+    await businessDatabase.batch([
+      businessDatabase.prepare("UPDATE notification_events SET payload = ? WHERE id = ?")
+        .bind(JSON.stringify(payload), eventId),
+      businessDatabase.prepare("UPDATE notification_templates SET title = ?, body = ?, summary = ? WHERE template_id = 'synthetic-template'")
+        .bind(fixture.template, fixture.template, fixture.template),
+    ]);
+    await expect(runScheduledNotificationEvents({
+      env: { ...runtimeEnv, NOTIFICATION_PROCESSOR_BACKEND: "d1" },
+      database: businessDatabase, scheduledTime: Date.parse(now),
+    })).resolves.toEqual({ status: "completed", selected: 1, processed: 1, failed: 0 });
+    const row = await businessDatabase.prepare("SELECT payload FROM notifications WHERE event_id = ?")
+      .bind(eventId).first<{ payload: string }>();
+    expect(JSON.parse(row?.payload ?? "null")).toMatchObject({
+      title: fixture.expected, body: fixture.expected, summary: fixture.expected, metadata: payload,
+    });
+  });
+
+  it.each(["in_app", "email", "webpush"])("uses the source template lookup for %s without changing delivery status", async (channel) => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const eventId = await seedEvent();
+    await businessDatabase.prepare("UPDATE notification_rules SET channel = ? WHERE event_type = 'synthetic_event'")
+      .bind(channel).run();
+    await runScheduledNotificationEvents({
+      env: { ...runtimeEnv, NOTIFICATION_PROCESSOR_BACKEND: "d1" },
+      database: businessDatabase, scheduledTime: Date.parse(now),
+    });
+    const row = await businessDatabase.prepare("SELECT payload, channel, status, delivered_at FROM notifications WHERE event_id = ?")
+      .bind(eventId).first<{ payload: string; channel: string; status: string; delivered_at: string | null }>();
+    expect(row).toMatchObject({ channel, status: channel === "in_app" ? "delivered" : "pending",
+      delivered_at: channel === "in_app" ? now : null });
+    expect(JSON.parse(row?.payload ?? "null")).toMatchObject({ title: "香水ラジオ", body: "Hello 香水ラジオ {{created_at}}" });
+  });
+
+  it.each(["ja", "en", "ko", "id"])("renders %s settings language and prioritizes its explicit payload override", async (language) => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const eventId = await seedEvent();
+    const localized = `${language}: {{fanmark_name}}`;
+    await businessDatabase.batch([
+      businessDatabase.prepare("UPDATE user_settings SET preferred_language = ? WHERE user_id = ?").bind(language, ownerId),
+      businessDatabase.prepare("UPDATE notification_templates SET language = ?, body = ? WHERE template_id = 'synthetic-template'")
+        .bind(language, localized),
+    ]);
+    const args = { env: { ...runtimeEnv, NOTIFICATION_PROCESSOR_BACKEND: "d1" }, database: businessDatabase, scheduledTime: Date.parse(now) };
+    await runScheduledNotificationEvents(args);
+    const first = await businessDatabase.prepare("SELECT payload FROM notifications WHERE event_id = ?")
+      .bind(eventId).first<{ payload: string }>();
+    expect(JSON.parse(first?.payload ?? "null").body).toBe(`${language}: 香水ラジオ`);
+    const overrideEventId = crypto.randomUUID();
+    await businessDatabase.batch([
+      businessDatabase.prepare("UPDATE user_settings SET preferred_language = ? WHERE user_id = ?")
+        .bind(language === "ja" ? "en" : "ja", ownerId),
+      businessDatabase.prepare(`INSERT INTO notification_events
+        (id,event_type,source,payload,trigger_at,status,created_at,updated_at)
+        VALUES (?, 'synthetic_event', 'system', ?, ?, 'pending', ?, ?)`)
+        .bind(overrideEventId, JSON.stringify({ user_id: ownerId, fanmark_name: "香水ラジオ", language }), now, now, now),
+    ]);
+    await runScheduledNotificationEvents(args);
+    const second = await businessDatabase.prepare("SELECT payload FROM notifications WHERE event_id = ?")
+      .bind(overrideEventId).first<{ payload: string }>();
+    expect(JSON.parse(second?.payload ?? "null").body).toBe(`${language}: 香水ラジオ`);
+  });
+
+  it.each(["inactive", "version", "language"])("keeps the source fallback when the requested template differs by %s", async (mismatch) => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const eventId = await seedEvent();
+    if (mismatch === "inactive") {
+      await businessDatabase.prepare("UPDATE notification_templates SET is_active = 0").run();
+    } else if (mismatch === "version") {
+      await businessDatabase.prepare("UPDATE notification_rules SET template_version = 2").run();
+    } else {
+      await businessDatabase.prepare("UPDATE user_settings SET preferred_language = 'en' WHERE user_id = ?").bind(ownerId).run();
+    }
+    const original = await businessDatabase.prepare("SELECT payload FROM notification_events WHERE id = ?")
+      .bind(eventId).first<{ payload: string }>();
+    await runScheduledNotificationEvents({
+      env: { ...runtimeEnv, NOTIFICATION_PROCESSOR_BACKEND: "d1" },
+      database: businessDatabase, scheduledTime: Date.parse(now),
+    });
+    const row = await businessDatabase.prepare("SELECT payload FROM notifications WHERE event_id = ?")
+      .bind(eventId).first<{ payload: string }>();
+    expect(JSON.parse(row?.payload ?? "null")).toMatchObject({
+      title: "synthetic_event", body: JSON.stringify(JSON.parse(original?.payload ?? "null")), summary: null,
+    });
   });
 
   it("does not touch the queue while its backend selector is disabled", async () => {

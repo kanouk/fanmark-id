@@ -6109,3 +6109,29 @@ not select by channel. Target channel selection and JSONB text/key ordering/
 numeric precision need further contract reconciliation; this is not full render
 parity acceptance. No source function invocation or real-user data operation,
 remote D1 query/write/deployment, provider activation or DNS change was performed.
+
+## 2026-10-03 source PostgreSQL rendering oracle and runtime correction
+
+Linked-source read-only literal query at2026-10-02T22:35:53.411044+00:00 uses
+seven synthetic payloads and the source renderer's jsonb_object_keys/->>/replace
+operations. No application/Auth relation or application function was accessed.
+Preserved original input JSON order and recorded the source expected text/key
+order. Checked-in notification-render-oracle.sql is hash-bound by the synthetic
+notification-render-source.json fixture, with private collection diagnostics in
+fanmark-source-render-jsonb-3AxUat. Never invoke the source processor for this proof.
+
+The native suite reproduced8 failures: dollar REPLACE tokens, nested JSONB text,
+array/decimal notation, cascaded and UTF-8 key ordering, and source-compatible
+email/webpush rule lookup. Added notification-template-values.ts to match the
+source Edge JSON round trip's JSONB output, replaced through literal callbacks,
+and removed target-only template channel filtering. Non-in-app/delayed results
+remain pending; no provider send was added. Also covered settings/explicit-payload
+locale selection for ja/en/ko/id and inactive/version/language fallback.
+Notifications53/53, wake20/20 and Worker typecheck/lint passed. This is local only.
+Source arbitrary-precision/Unicode import gates and ambiguous multi-channel row
+selection remain open; no public render RPC or source grants were added to target.
+
+Prior ba1e901 CI37073066866 application completed successfully while Worker tests
+remained live during this change. New HEAD requires its own complete CI; no stale
+private deployment pin may be reused. No D1 deploy/query/write, source user data,
+provider activation or domain/DNS operation was performed.

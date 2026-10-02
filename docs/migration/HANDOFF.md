@@ -18,7 +18,7 @@ older sections retain their historical acceptance and failure evidence.
   preflight/smoke/final-readback scripts only after both jobs succeed for the
   exact current HEAD. Do not reuse a stale successful run for a new HEAD.
 - Native notifications now use all25 Business migrations plus staging Auth
-  core/0007/0008 and suspension selector:36/36. Search uses the same Auth
+  core/0007/0008 and suspension selector:53/53. Search uses the same Auth
   selector/full Business schema:13/13. These are local proof only. Archive
   rollback/backlog/resume/source ACL evidence is in notifications-api.md;
   scheduled activation coverage is in TECH.md. Provider selectors remain off.
@@ -35,6 +35,14 @@ older sections retain their historical acceptance and failure evidence.
   the test now derives the INSERT position without dropping writer checks. New
   exact-HEAD CI is required. Render RPC channel/JSONB/order parity remains open;
   see notifications-api.md. No new remote D1 query/seed/deploy was performed.
+- Source PostgreSQL literal-only read-only oracle7 cases reproduces JSONB key
+  order/text/numeric output and literal REPLACE. Target renderer now preserves
+  dollar signs, JSONB formatting/order and source channel-unfiltered lookup.
+  Added four-locale/override and template fallback cases; notifications53/53,
+  wake20/20, types/lint pass locally. Ambiguous multiple-channel rows, source
+  import codecs, providers and remote acceptance remain separate open gates.
+  Oracle SQL and synthetic fixture are checked in; no source app/Auth row/function
+  was accessed by this oracle. Current runtime fix needs new exact-HEAD CI.
 - Source functions/RLS/triggers/external callers, recurring lifecycle/archive,
   retention, D1→DO replay gap, provider-backed Stripe/Resend/4 OAuth, CPU/plan
   fit, least privilege/key custody, and real-device/end-to-end acceptance remain

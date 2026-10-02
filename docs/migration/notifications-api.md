@@ -75,11 +75,30 @@ sourceはtemplate ID/version/language/activeでLIMIT 1を選び、5種類のdate
 残してpayloadの非null値を置換する。targetもdate placeholderを残し、templateが
 取得できなければevent type/raw payloadへfallbackする。
 
-全render互換性はまだ承認しない。sourceのSELECTはchannelで絞らず、同じ
-ID/version/languageで複数channelがある場合の選択順を保証しない。targetはrule channelで
-絞るため、この差の契約は要確認。またnested object/arrayのPostgreSQL JSONB textと
-JavaScript JSON文字列化、置換順と数値精度の完全なparity fixtureは未完了。source RPCを
-実ユーザーpayloadで呼び出したり、sourceの公開権限をtargetにコピーしたりはしていない。
+sourceのSELECTはchannelで絞らず、同じID/version/languageで複数channelがある場合の
+選択順を保証しない。targetもID/version/language/activeのLIMIT 1へ合わせた。唯一の
+in-app templateをemail/webpush ruleから使う場合もsource同様に本文を描画し、その通知は
+pendingのまま保持する。source/targetとも複数の該当行から特定のchannelを選ぶ保証は
+追加しない。異なるengineでの曖昧な複数行選択の実データ契約は引き続き要確認。
+
+2026-10-02T22:35:53.411044+00:00に、linked source PostgreSQLへ7種類の合成literalだけを
+使うBEGIN READ ONLY / 10s timeoutのクエリを実行した。application/Auth行は読まず、
+application functionも呼び出していない。render RPC本文と同じjsonb_object_keys / ->> /
+replaceの結果を`workers/api/test/fixtures/notification-render-source.json`へ保存した。
+元クエリは`scripts/migration/notification-render-oracle.sql`で再現でき、fixtureの
+source.querySha256がこのSQLを固定する。payloadの入力JSON順も保持し、sourceが返す
+canonical順に並べ直したfixtureで差を隠さない。
+
+`notification-template-values.ts`はsource EdgeのJSON round trip後のJSONB textを描画する。
+UTF-8 byte長/値でkeyを順序づけ、nested object/arrayのspaceを含む表記と有限JS数値の
+指数表記をdecimalへ展開する。title/body/summaryの置換はcallbackでliteralを返し、
+`$&`/`$$`/ドル記号のprefix/suffix tokenをJavaScriptの置換指定として解釈しない。
+7 oracleケース（ドル記号、nested JSON、cascade、Unicode key順、指数数値、null/bool/array、
+5 date placeholder）と3 channelケースで8失敗を再現し、修正後は全53ケースが成功した。
+4言語のsettings/明示payload overrideとinactive/version/localeのfallbackもnativeで確認した。
+PostgreSQLで拒否されるUnicodeと、元データの任意精度数値の変換は、既存converter gateで
+別途確認する。これを全source callerの互換性、remote受け入れやprovider送信の完了と扱わない。
+source RPCを実ユーザーpayloadで呼び出したり、公開権限をtargetへコピーしたりはしていない。
 
 CI37072572541のapplication失敗は、archive writer testが固定line365を期待し、
 boolean修正で実位置374へ移ったためだった。testは実INSERT位置から期待lineを求め、
@@ -103,7 +122,7 @@ rollbackと再実行、既存の同内容履歴のtimestamp保持、2,500行上�
 Auth fixtureもstagingで選択するcore/0007 signup marker/0008 suspension migrationを
 適用し、`AUTH_USER_STATUS_BACKEND=d1`を選ぶ。停止・session失効後の古い署名Cookieで
 一覧/未読数/個別既読/全件既読が401となり、通知行が不変、別sessionの利用者は正常、
-停止中の新signinは403かつsession生成0を確認した。最新native suiteは上記のboolean/言語/制限scopeケースを含め36/36。
+停止中の新signinは403かつsession生成0を確認した。最新native suiteは上記のboolean/言語/制限scope/renderケースを含め53/53。
 このケースは停止後のAPI境界を検証し、管理者MFA/audit/停止transaction自体の試験は
 既存admin-user-management suiteが別に担当する。
 

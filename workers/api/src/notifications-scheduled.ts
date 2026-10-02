@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
+import { postgresJsonbKeys, postgresTemplateValue } from "./notification-template-values";
 
 const DEFAULT_LANGUAGE = "ja";
 const EVENT_BATCH_LIMIT = 50;
@@ -82,13 +83,6 @@ function changedRows(result: D1Result<unknown>): number {
     : 0;
 }
 
-function templateValue(value: unknown): string | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "string") return value;
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-}
-
 function renderTemplate(template: NotificationTemplate, payload: JsonRecord): {
   title: string | null;
   body: string;
@@ -97,14 +91,14 @@ function renderTemplate(template: NotificationTemplate, payload: JsonRecord): {
   let title = template.title;
   let body = template.body;
   let summary = template.summary;
-  for (const [key, value] of Object.entries(payload)) {
+  for (const key of postgresJsonbKeys(payload)) {
     if (DATE_PLACEHOLDERS.has(key)) continue;
-    const replacement = templateValue(value);
+    const replacement = postgresTemplateValue(payload[key]);
     if (replacement === null) continue;
     const placeholder = `{{${key}}}`;
-    title = title?.replaceAll(placeholder, replacement) ?? null;
-    body = body.replaceAll(placeholder, replacement);
-    summary = summary?.replaceAll(placeholder, replacement) ?? null;
+    title = title?.replaceAll(placeholder, () => replacement) ?? null;
+    body = body.replaceAll(placeholder, () => replacement);
+    summary = summary?.replaceAll(placeholder, () => replacement) ?? null;
   }
   return { title, body, summary };
 }
@@ -193,9 +187,9 @@ async function renderForRule(
     const language = await resolveLanguage(database, userId, payload.language);
     const template = await database.prepare(`
       SELECT title, body, summary FROM notification_templates
-      WHERE template_id = ? AND version = ? AND channel = ? AND language = ? AND is_active = 1
+      WHERE template_id = ? AND version = ? AND language = ? AND is_active = 1
       LIMIT 1
-    `).bind(rule.template_id, rule.template_version, rule.channel, language).first<NotificationTemplate>();
+    `).bind(rule.template_id, rule.template_version, language).first<NotificationTemplate>();
     if (!template || typeof template.body !== "string") throw new Error("template_unavailable");
     return renderTemplate(template, payload);
   } catch {
