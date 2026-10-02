@@ -4642,3 +4642,32 @@ and four user-scoped columns in notification preferences, archived history,
 and user roles. Three generated `INSERT` statements for `emoji_master`,
 `extension_coupons`, and `email_templates` remain unparsed. Column coverage and
 timestamp-value/transaction-time proof remain incomplete.
+
+## MFA-only post-write recovery slice (2026-10-02 JST)
+
+Added the guarded `test:migration:staging-postwrite-recovery-mfa` command. This
+mode deploys a disposable Worker without Cron and leaves Stripe dispatch
+disabled, so Auth/TOTP, waitlist, avatar Storage, write freeze, D1 Time Travel,
+and encrypted R2 backup/replay can be validated independently. The original
+`test:migration:staging-postwrite-recovery` keeps its full Stripe assertions.
+
+The run passed from `2026-10-02T06:38:35Z` to `2026-10-02T06:44:14Z`. It applied
+20 business and 3 Auth migrations, verified synthetic TOTP/admin access, and
+rejected five consecutive writes during freeze while allowing Auth sign-in.
+Time Travel reconciliation preserved the acknowledged digest in 14,148 ms.
+The encrypted two-object R2 bundle verified and replayed the exact synthetic
+Auth MFA, waitlist, and avatar state in 49,247 ms. The avatar survived Time
+Travel and was restored from the encrypted bundle.
+
+Cleanup marked the temporary Worker, both D1s, temporary config, R2 objects,
+synthetic avatar, and private artifacts deleted. Independent Wrangler readback
+found only the three expected staging D1s and an empty recovery bucket; the
+temporary Worker URL returned 404. Report:
+`/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-postwrite-recovery-d3ccc576579f61d4.json`.
+
+This proves the isolated MFA/Auth + waitlist/Storage recovery slice only. It
+does not close Stripe integration or full #37 acceptance. Issue #35 remains
+blocked by five schema/operation groups / 85 locations (`deployable: false`);
+#38 retains live user/Auth/Storage migration and domain/DNS cutover. No real
+user data, production route, payment, email delivery, or domain/DNS was used or
+changed.

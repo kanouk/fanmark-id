@@ -3806,3 +3806,17 @@ history, and user roles. Three generated `INSERT` statements for `emoji_master`,
 `extension_coupons`, and `email_templates` remain unparsed. Operation/value
 coverage is incomplete; this static scan does not establish timestamp precision
 or transaction-time semantics.
+
+## 2026-10-02 staging checkpoint: isolated MFA recovery passed
+
+The MFA-only guarded recovery command passed without Cron or Stripe dispatch.
+It verified Better Auth TOTP/admin authorization, synthetic waitlist and avatar
+state, write freeze, D1 Time Travel, and encrypted R2 backup/replay. Time
+Travel reconciliation took 14.148 seconds; bundle replay took 49.247 seconds.
+All temporary Worker/D1/config/R2/avatar/private artifacts were deleted, and
+independent readback found only the three expected staging D1s plus an empty
+recovery bucket. This closes only the MFA/Auth + waitlist/Storage recovery
+slice; Stripe integration and the complete #37 acceptance remain open. Issue
+#35 still has five schema/operation blocker groups / 85 locations and the
+catalog remains non-deployable. Keep real user/Auth/Storage migration and
+domain/DNS cutover deferred to #38.

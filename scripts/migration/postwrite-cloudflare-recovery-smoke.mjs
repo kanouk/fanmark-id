@@ -33,6 +33,7 @@ const authMigrationDirectory = path.join(workerRoot, "migrations");
 const recoveryBucketName = "fanmark-migration-backups-staging";
 const avatarBucketName = "fanmark-avatars-staging";
 const webhookApiVersion = "2025-08-27.basil";
+const mfaRecoveryOnly = process.argv.includes("--mfa-recovery-only");
 const startedAt = new Date().toISOString();
 const suffix = randomBytes(8).toString("hex");
 const databaseName = `fanmark-recovery-${Date.now()}-${suffix}`;
@@ -196,7 +197,11 @@ function setCookiePairs(response) {
 }
 
 function sessionCookieFrom(response) {
-  return setCookiePairs(response).find((value) => /(?:__Secure-)?better-auth\.session_token=/iu.test(value)) ?? "";
+  return setCookiePairs(response).find((value) => {
+    const separator = value.indexOf("=");
+    return /(?:__Secure-)?better-auth\.session_token=/iu.test(value) && separator >= 0 &&
+      value.slice(separator + 1).trim().length > 0;
+  }) ?? "";
 }
 
 async function assertSyntheticAdminSession(origin, cookie) {
@@ -223,7 +228,9 @@ function requireExplicitStagingWrite() {
     "--confirm-synthetic-only",
     "--confirm-delete-created-resources",
   ];
-  if (flags.size !== expected.length || expected.some((flag) => !flags.has(flag))) {
+  const expectedSize = expected.length + (mfaRecoveryOnly ? 1 : 0);
+  if (flags.size !== expectedSize || expected.some((flag) => !flags.has(flag)) ||
+      (mfaRecoveryOnly && !flags.has("--mfa-recovery-only"))) {
     fail("refusing_remote_staging_write");
   }
 }
@@ -374,7 +381,7 @@ function createTemporaryConfig() {
     ...(appConfig.compatibility_flags ? { compatibility_flags: appConfig.compatibility_flags } : {}),
     account_id: accountId,
     workers_dev: true,
-    triggers: { crons: ["* * * * *"] },
+    ...(mfaRecoveryOnly ? {} : { triggers: { crons: ["* * * * *"] } }),
     observability: {
       enabled: true,
       head_sampling_rate: 1,
@@ -421,7 +428,8 @@ function createTemporaryConfig() {
     },
   };
   if (temporaryConfig.routes || temporaryConfig.assets ||
-      JSON.stringify(temporaryConfig.triggers?.crons) !== JSON.stringify(["* * * * *"]) ||
+      (mfaRecoveryOnly ? temporaryConfig.triggers !== undefined :
+        JSON.stringify(temporaryConfig.triggers?.crons) !== JSON.stringify(["* * * * *"])) ||
       temporaryConfig.r2_buckets?.length !== 1 ||
       temporaryConfig.r2_buckets[0]?.binding !== "AVATARS_BUCKET" ||
       temporaryConfig.r2_buckets[0]?.bucket_name !== avatarBucketName) {
@@ -686,7 +694,11 @@ async function signInSyntheticUser(origin) {
     if (!syntheticAuthTotpSecret || !Array.isArray(body.twoFactorMethods) || !body.twoFactorMethods.includes("totp")) {
       fail("synthetic_auth_totp_challenge_unexpected");
     }
-    const challengeCookie = setCookiePairs(response).find((value) => /(?:__Secure-)?better-auth\.two_factor=/iu.test(value));
+    const challengeCookie = setCookiePairs(response).find((value) => {
+      const separator = value.indexOf("=");
+      return /(?:__Secure-)?better-auth\.two_factor=/iu.test(value) && separator >= 0 &&
+        value.slice(separator + 1).trim().length > 0;
+    });
     if (!challengeCookie || cookie) fail("synthetic_auth_totp_challenge_cookie_invalid");
     const verification = await fetch(`${origin}/api/auth/two-factor/verify-totp`, {
       method: "POST",
@@ -1065,15 +1077,15 @@ function hash(value) {
 }
 
 const recoveryExportTables = [
-  { name: "fanmarks", database: "business", field: "business_fanmark_sql", expectedRows: 1 },
-  { name: "fanmark_licenses", database: "business", field: "business_license_sql", expectedRows: 1 },
+  { name: "fanmarks", database: "business", field: "business_fanmark_sql", expectedRows: mfaRecoveryOnly ? 0 : 1 },
+  { name: "fanmark_licenses", database: "business", field: "business_license_sql", expectedRows: mfaRecoveryOnly ? 0 : 1 },
   { name: "waitlist", database: "business", field: "business_waitlist_sql", expectedRows: 1 },
-  { name: "stripe_webhook_receipts", database: "business", field: "business_receipt_sql", expectedRows: 2 },
-  { name: "stripe_webhook_dispatches", database: "business", field: "business_dispatch_sql", expectedRows: 2 },
-  { name: "stripe_extension_checkout_intents", database: "business", field: "business_extension_intent_sql", expectedRows: 1 },
-  { name: "stripe_extension_applications", database: "business", field: "business_extension_application_sql", expectedRows: 1 },
-  { name: "stripe_extension_application_effects", database: "business", field: "business_extension_effect_sql", expectedRows: 1 },
-  { name: "audit_logs", database: "business", field: "business_audit_sql", expectedRows: 1 },
+  { name: "stripe_webhook_receipts", database: "business", field: "business_receipt_sql", expectedRows: mfaRecoveryOnly ? 0 : 2 },
+  { name: "stripe_webhook_dispatches", database: "business", field: "business_dispatch_sql", expectedRows: mfaRecoveryOnly ? 0 : 2 },
+  { name: "stripe_extension_checkout_intents", database: "business", field: "business_extension_intent_sql", expectedRows: mfaRecoveryOnly ? 0 : 1 },
+  { name: "stripe_extension_applications", database: "business", field: "business_extension_application_sql", expectedRows: mfaRecoveryOnly ? 0 : 1 },
+  { name: "stripe_extension_application_effects", database: "business", field: "business_extension_effect_sql", expectedRows: mfaRecoveryOnly ? 0 : 1 },
+  { name: "audit_logs", database: "business", field: "business_audit_sql", expectedRows: mfaRecoveryOnly ? 0 : 1 },
   { name: "user", database: "auth", field: "auth_user_sql", expectedRows: 1 },
   { name: "account", database: "auth", field: "auth_account_sql", expectedRows: 1 },
   { name: "session", database: "auth", field: "auth_session_sql", expectedRows: 1 },
@@ -1170,8 +1182,17 @@ async function createEncryptedR2RecoveryBundle(passwordHash, syntheticAvatar) {
     const outputPath = path.join(recoveryArtifactsRoot, `source-${index}.sql`);
     exportedSql[entry.field] = await exportSyntheticTable(entry.database, entry.name, entry.expectedRows, outputPath);
   }
-  for (const [field, marker] of Object.entries({
+  const expectedMarkers = {
     business_waitlist_sql: emailBeforeBookmark,
+    auth_user_sql: syntheticAuthEmail,
+    auth_account_sql: syntheticAuthAccountId,
+    auth_session_sql: syntheticAuthUserId,
+    auth_two_factor_sql: syntheticAuthUserId,
+    auth_admin_role_sql: syntheticAuthUserId,
+    auth_mfa_assurance_sql: syntheticAuthUserId,
+    auth_mfa_generation_sql: "1",
+  };
+  if (!mfaRecoveryOnly) Object.assign(expectedMarkers, {
     business_receipt_sql: [firstEventId, extensionEventId],
     business_dispatch_sql: [firstEventId, extensionEventId],
     business_fanmark_sql: extensionFanmarkId,
@@ -1180,14 +1201,8 @@ async function createEncryptedR2RecoveryBundle(passwordHash, syntheticAvatar) {
     business_extension_application_sql: extensionSessionId,
     business_extension_effect_sql: extensionInitialEnd,
     business_audit_sql: extensionLicenseId,
-    auth_user_sql: syntheticAuthEmail,
-    auth_account_sql: syntheticAuthAccountId,
-    auth_session_sql: syntheticAuthUserId,
-    auth_two_factor_sql: syntheticAuthUserId,
-    auth_admin_role_sql: syntheticAuthUserId,
-    auth_mfa_assurance_sql: syntheticAuthUserId,
-    auth_mfa_generation_sql: "1",
-  })) {
+  });
+  for (const [field, marker] of Object.entries(expectedMarkers)) {
     for (const uniqueMarker of Array.isArray(marker) ? marker : [marker]) {
       assert.ok(exportedSql[field].includes(uniqueMarker), `synthetic ${field} export omitted its unique marker`);
     }
@@ -1444,7 +1459,8 @@ async function runDrill() {
   const passwordHash = await seedSyntheticAuthAccount();
   const initialAuthSession = await signInSyntheticUser(origin);
   const enrolledAuthSession = await enableSyntheticTotp(origin, initialAuthSession);
-  await signOutSyntheticUser(origin, initialAuthSession.cookie);
+  const supersededAuthSession = await readSyntheticSession(origin, initialAuthSession.cookie);
+  if (supersededAuthSession?.session) fail("synthetic_pre_mfa_session_remained_active");
   const enrolledAuthState = syntheticAuthState(passwordHash);
   assert.equal(enrolledAuthState.sessions.length, 1);
   assert.equal(enrolledAuthState.assurances.length, 1);
@@ -1452,32 +1468,38 @@ async function runDrill() {
   await signOutSyntheticUser(origin, enrolledAuthSession.cookie);
   assert.equal(syntheticAuthState(passwordHash).sessions.length, 0);
 
-  report.phase = "seed_synthetic_stripe_extension";
-  seedSyntheticStripeExtension();
-  report.phase = "acknowledge_synthetic_waitlist_and_stripe_extension";
+  report.recovery.scope = mfaRecoveryOnly ? "mfa_waitlist_storage" : "business_auth_storage_stripe";
+  report.phase = "acknowledge_synthetic_waitlist";
   await postWaitlist(origin, emailBeforeBookmark, referralBeforeBookmark);
   assertOneWaitingRow(tableRowsForEmail(emailBeforeBookmark), emailBeforeBookmark, referralBeforeBookmark);
-  await postEvent(origin, signExtensionEvent());
-  await enableSyntheticStripeDispatch(config);
-  report.phase = "wait_for_synthetic_cron_dispatch";
-  const appliedExtension = await waitForAppliedStripeExtension();
-  report.phase = "acknowledge_pending_synthetic_stripe_receipt";
-  const signedFirstEvent = signEvent(firstEventId, firstObjectId);
-  await postEvent(origin, signedFirstEvent);
-  await postEvent(origin, signedFirstEvent);
-  deferPendingStripeEventUntilAfterRecoveryBookmark(firstEventId);
-  const stripeLedger = stripeLedgerRows([firstEventId, extensionEventId]);
-  const pendingLedger = stripeLedger.find((row) => row.stripe_event_id === firstEventId);
-  const appliedLedger = stripeLedger.find((row) => row.stripe_event_id === extensionEventId);
-  assert.equal(stripeLedger.length, 2);
-  assert.equal(pendingLedger?.receipt_status, "received");
-  assert.equal(Number(pendingLedger?.delivery_count), 2);
-  assert.equal(pendingLedger?.dispatch_status, "pending");
-  assert.equal(appliedLedger?.receipt_status, "applied");
-  assert.equal(appliedLedger?.dispatch_status, "completed");
-  for (const ledger of stripeLedger) {
-    assert.ok(/^[0-9a-f]{64}$/u.test(ledger.normalized_payload_sha256));
-    assert.ok(/^[0-9a-f]{64}$/u.test(ledger.raw_payload_sha256));
+  let stripeLedger = [];
+  let appliedExtension = null;
+  if (!mfaRecoveryOnly) {
+    report.phase = "seed_synthetic_stripe_extension";
+    seedSyntheticStripeExtension();
+    report.phase = "acknowledge_synthetic_stripe_extension";
+    await postEvent(origin, signExtensionEvent());
+    await enableSyntheticStripeDispatch(config);
+    report.phase = "wait_for_synthetic_cron_dispatch";
+    appliedExtension = await waitForAppliedStripeExtension();
+    report.phase = "acknowledge_pending_synthetic_stripe_receipt";
+    const signedFirstEvent = signEvent(firstEventId, firstObjectId);
+    await postEvent(origin, signedFirstEvent);
+    await postEvent(origin, signedFirstEvent);
+    deferPendingStripeEventUntilAfterRecoveryBookmark(firstEventId);
+    stripeLedger = stripeLedgerRows([firstEventId, extensionEventId]);
+    const pendingLedger = stripeLedger.find((row) => row.stripe_event_id === firstEventId);
+    const appliedLedger = stripeLedger.find((row) => row.stripe_event_id === extensionEventId);
+    assert.equal(stripeLedger.length, 2);
+    assert.equal(pendingLedger?.receipt_status, "received");
+    assert.equal(Number(pendingLedger?.delivery_count), 2);
+    assert.equal(pendingLedger?.dispatch_status, "pending");
+    assert.equal(appliedLedger?.receipt_status, "applied");
+    assert.equal(appliedLedger?.dispatch_status, "completed");
+    for (const ledger of stripeLedger) {
+      assert.ok(/^[0-9a-f]{64}$/u.test(ledger.normalized_payload_sha256));
+      assert.ok(/^[0-9a-f]{64}$/u.test(ledger.raw_payload_sha256));
+    }
   }
 
   report.phase = "sign_in_synthetic_admin_with_totp_before_recovery_bookmark";
@@ -1485,14 +1507,15 @@ async function runDrill() {
 
   const acknowledgedState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
-    stripeLedger,
-    stripeExtension: appliedExtension,
+    ...(!mfaRecoveryOnly ? { stripeLedger, stripeExtension: appliedExtension } : {}),
     auth: syntheticAuthState(passwordHash),
     avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
   assertOneWaitingRow(acknowledgedState.waitlist, emailBeforeBookmark, referralBeforeBookmark);
-  assert.equal(acknowledgedState.stripeExtension.application[0]?.new_license_end,
-    acknowledgedState.stripeExtension.applicationEffect[0]?.new_license_end);
+  if (!mfaRecoveryOnly) {
+    assert.equal(acknowledgedState.stripeExtension.application[0]?.new_license_end,
+      acknowledgedState.stripeExtension.applicationEffect[0]?.new_license_end);
+  }
   assert.equal(acknowledgedState.auth.sessions.length, 1);
   assert.equal(acknowledgedState.auth.assurances.length, 1);
   report.recovery.acknowledgedDigest = hash(acknowledgedState);
@@ -1507,8 +1530,10 @@ async function runDrill() {
   const secondAuthSession = await signInSyntheticUser(origin);
   assert.notEqual(secondAuthSession.sessionId, firstAuthSession.sessionId);
   assert.equal(syntheticAuthState(passwordHash).sessions.length, 2);
-  const laterLedger = stripeLedgerRows([firstEventId, extensionEventId]);
-  assert.deepEqual(laterLedger, stripeLedger, "Stripe state changed after the recovery bookmark");
+  if (!mfaRecoveryOnly) {
+    const laterLedger = stripeLedgerRows([firstEventId, extensionEventId]);
+    assert.deepEqual(laterLedger, stripeLedger, "Stripe state changed after the recovery bookmark");
+  }
 
   report.phase = "freeze_temporary_worker";
   await changeFreeze(config, true);
@@ -1531,14 +1556,18 @@ async function runDrill() {
   restoreToBookmark(authDatabaseName, authBookmark);
   const restoredState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
-    stripeLedger: stripeLedgerRows([firstEventId, extensionEventId]),
-    stripeExtension: stripeExtensionState(),
+    ...(!mfaRecoveryOnly ? {
+      stripeLedger: stripeLedgerRows([firstEventId, extensionEventId]),
+      stripeExtension: stripeExtensionState(),
+    } : {}),
     auth: syntheticAuthState(passwordHash),
     avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
   report.recovery.reconciliationMs = Math.round(performance.now() - restoreStarted);
-  assert.deepEqual(restoredState, acknowledgedState, "acknowledged business and Stripe rows changed after restore");
-  report.recovery.stripeBusinessEffectSurvivedTimeTravel = true;
+  assert.deepEqual(restoredState, acknowledgedState,
+    mfaRecoveryOnly ? "acknowledged MFA and waitlist rows changed after restore" :
+      "acknowledged business and Stripe rows changed after restore");
+  if (!mfaRecoveryOnly) report.recovery.stripeBusinessEffectSurvivedTimeTravel = true;
   await assertSyntheticAvatarRead(origin, syntheticAvatar);
   report.recovery.storageObjectSurvivedTimeTravel = true;
   const survivingAuthSession = await readSyntheticSession(origin, firstAuthSession.cookie);
@@ -1552,14 +1581,16 @@ async function runDrill() {
   for (const entry of freezeProbeEntries) {
     if (tableRowsForEmail(entry.email).length !== 0) fail("post_bookmark_freeze_probe_survived_restore");
   }
-  assert.equal(stripeLedgerRows([firstEventId, extensionEventId]).length, 2);
-  const orphanDispatches = runD1(`
-    SELECT COUNT(*) AS count FROM stripe_webhook_dispatches AS d
-    LEFT JOIN stripe_webhook_receipts AS r
-      ON r.id = d.receipt_id AND r.livemode = d.livemode AND r.stripe_event_id = d.stripe_event_id
-    WHERE d.stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)}) AND r.id IS NULL
-  `);
-  assert.equal(Number(orphanDispatches[0]?.count), 0);
+  if (!mfaRecoveryOnly) {
+    assert.equal(stripeLedgerRows([firstEventId, extensionEventId]).length, 2);
+    const orphanDispatches = runD1(`
+      SELECT COUNT(*) AS count FROM stripe_webhook_dispatches AS d
+      LEFT JOIN stripe_webhook_receipts AS r
+        ON r.id = d.receipt_id AND r.livemode = d.livemode AND r.stripe_event_id = d.stripe_event_id
+      WHERE d.stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)}) AND r.id IS NULL
+    `);
+    assert.equal(Number(orphanDispatches[0]?.count), 0);
+  }
   report.recovery.reconciledDigest = hash(restoredState);
 
   report.phase = "restore_business_and_auth_rows_from_encrypted_r2_bundle";
@@ -1569,14 +1600,16 @@ async function runDrill() {
   if (await readSyntheticAvatar(origin, syntheticAvatar.key) !== null) {
     fail("synthetic_avatar_delete_before_replay_failed");
   }
-  writeD1(databaseName, `DELETE FROM stripe_extension_application_effects WHERE application_id IN (SELECT id FROM stripe_extension_applications WHERE billing_intent_id = ${sqlLiteral(extensionIntentId)});`, "recovery_bundle_clear_failed");
-  writeD1(databaseName, `DELETE FROM stripe_extension_applications WHERE billing_intent_id = ${sqlLiteral(extensionIntentId)};`, "recovery_bundle_clear_failed");
-  writeD1(databaseName, `DELETE FROM stripe_extension_checkout_intents WHERE id = ${sqlLiteral(extensionIntentId)};`, "recovery_bundle_clear_failed");
-  writeD1(databaseName, `DELETE FROM audit_logs WHERE resource_id = ${sqlLiteral(extensionLicenseId)} AND action = 'LICENSE_EXTENDED';`, "recovery_bundle_clear_failed");
-  writeD1(databaseName, `DELETE FROM fanmark_licenses WHERE id = ${sqlLiteral(extensionLicenseId)};`, "recovery_bundle_clear_failed");
-  writeD1(databaseName, `DELETE FROM fanmarks WHERE id = ${sqlLiteral(extensionFanmarkId)};`, "recovery_bundle_clear_failed");
-  writeD1(databaseName, `DELETE FROM stripe_webhook_dispatches WHERE stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)});`, "recovery_bundle_clear_failed");
-  writeD1(databaseName, `DELETE FROM stripe_webhook_receipts WHERE stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)});`, "recovery_bundle_clear_failed");
+  if (!mfaRecoveryOnly) {
+    writeD1(databaseName, `DELETE FROM stripe_extension_application_effects WHERE application_id IN (SELECT id FROM stripe_extension_applications WHERE billing_intent_id = ${sqlLiteral(extensionIntentId)});`, "recovery_bundle_clear_failed");
+    writeD1(databaseName, `DELETE FROM stripe_extension_applications WHERE billing_intent_id = ${sqlLiteral(extensionIntentId)};`, "recovery_bundle_clear_failed");
+    writeD1(databaseName, `DELETE FROM stripe_extension_checkout_intents WHERE id = ${sqlLiteral(extensionIntentId)};`, "recovery_bundle_clear_failed");
+    writeD1(databaseName, `DELETE FROM audit_logs WHERE resource_id = ${sqlLiteral(extensionLicenseId)} AND action = 'LICENSE_EXTENDED';`, "recovery_bundle_clear_failed");
+    writeD1(databaseName, `DELETE FROM fanmark_licenses WHERE id = ${sqlLiteral(extensionLicenseId)};`, "recovery_bundle_clear_failed");
+    writeD1(databaseName, `DELETE FROM fanmarks WHERE id = ${sqlLiteral(extensionFanmarkId)};`, "recovery_bundle_clear_failed");
+    writeD1(databaseName, `DELETE FROM stripe_webhook_dispatches WHERE stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)});`, "recovery_bundle_clear_failed");
+    writeD1(databaseName, `DELETE FROM stripe_webhook_receipts WHERE stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)});`, "recovery_bundle_clear_failed");
+  }
   writeD1(databaseName, `DELETE FROM waitlist WHERE email = ${sqlLiteral(emailBeforeBookmark)};`, "recovery_bundle_clear_failed");
   writeD1(authDatabaseName, `DELETE FROM session WHERE userId = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
   writeD1(authDatabaseName, `DELETE FROM account WHERE userId = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
@@ -1610,7 +1643,9 @@ async function runDrill() {
   for (const entry of recoveryExportTables) {
     const targetDatabase = entry.database === "business" ? databaseName : authDatabaseName;
     const sql = encryptedRecoverySql[entry.field];
-    if (typeof sql !== "string" || sql.length === 0) fail("recovery_bundle_sql_missing");
+    if (typeof sql !== "string") fail("recovery_bundle_sql_missing");
+    if (entry.expectedRows === 0) continue;
+    if (sql.length === 0) fail("recovery_bundle_sql_missing");
     const sqlPath = path.join(recoveryArtifactsRoot, `replayed-${entry.field}.sql`);
     await writeFile(sqlPath, sql, { mode: 0o600, flag: "wx" });
     await chmod(sqlPath, 0o600);
@@ -1619,22 +1654,26 @@ async function runDrill() {
   await restoreSyntheticAvatarFromBackup(origin, JSON.parse(encryptedRecoverySql.storage_avatar_json));
   const replayedState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
-    stripeLedger: stripeLedgerRows([firstEventId, extensionEventId]),
-    stripeExtension: stripeExtensionState(),
+    ...(!mfaRecoveryOnly ? {
+      stripeLedger: stripeLedgerRows([firstEventId, extensionEventId]),
+      stripeExtension: stripeExtensionState(),
+    } : {}),
     auth: syntheticAuthState(passwordHash),
     avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
   const replayedSession = await readSyntheticSession(origin, firstAuthSession.cookie);
   report.recovery.encryptedBundleReplayMs = Math.round(performance.now() - replayStarted);
   report.recovery.replayedBundleDigest = hash(replayedState);
-  assert.deepEqual(replayedState, acknowledgedState, "encrypted R2 recovery bundle did not restore the exact synthetic Business/Auth state");
+  assert.deepEqual(replayedState, acknowledgedState,
+    mfaRecoveryOnly ? "encrypted R2 recovery bundle did not restore the exact synthetic MFA/Auth state" :
+      "encrypted R2 recovery bundle did not restore the exact synthetic Business/Auth state");
   if (replayedSession?.user?.id !== syntheticAuthUserId ||
       replayedSession?.session?.id !== firstAuthSession.sessionId) {
     fail("encrypted_r2_recovery_auth_session_failed");
   }
   await assertSyntheticAdminSession(origin, firstAuthSession.cookie);
   report.recovery.authMfaAdminStateRestoredFromEncryptedBundle = true;
-  report.recovery.stripeBusinessEffectRestoredFromEncryptedBundle = true;
+  if (!mfaRecoveryOnly) report.recovery.stripeBusinessEffectRestoredFromEncryptedBundle = true;
 
   report.phase = "complete";
   report.status = "passed";
@@ -1828,7 +1867,7 @@ if (primaryError) {
   process.exitCode = 1;
 } else {
   process.stdout.write(
-    `PASS synthetic post-write Cloudflare recovery: business/Auth D1 migrations ` +
+    `PASS synthetic post-write Cloudflare recovery (${report.recovery.scope}): business/Auth D1 migrations ` +
     `${report.database.expectedMigrationCount}/${report.authDatabase.expectedMigrationCount}, ` +
     `Time Travel reconciliation ${report.recovery.reconciliationMs} ms, encrypted R2 bundle replay ` +
     `${report.recovery.encryptedBundleReplayMs} ms. Synthetic avatar survived Time Travel: ` +

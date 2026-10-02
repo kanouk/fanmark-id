@@ -75,6 +75,7 @@
     "test:migration:prewrite-supabase": "node scripts/migration/prewrite-supabase-resume-smoke.mjs",
     "test:migration:staging-prewrite-resume": "node scripts/migration/staging-stripe-receipt-freeze-smoke.mjs --run-live-staging-write --database=fanmark-business-staging --account-id=bfc2890741f0b3fb236e2d755b6c9adc --confirm-no-stripe-api --verify-loopback-supabase-resume",
     "test:migration:staging-postwrite-recovery": "node scripts/migration/postwrite-cloudflare-recovery-smoke.mjs --run-live-staging-write --account-id=bfc2890741f0b3fb236e2d755b6c9adc --confirm-synthetic-only --confirm-delete-created-resources",
+    "test:migration:staging-postwrite-recovery-mfa": "node scripts/migration/postwrite-cloudflare-recovery-smoke.mjs --run-live-staging-write --account-id=bfc2890741f0b3fb236e2d755b6c9adc --confirm-synthetic-only --confirm-delete-created-resources --mfa-recovery-only",
     "test:migration:staging-owner-settings": "node scripts/migration/staging-owner-settings-smoke.mjs",
     "test:migration:staging-protected-access-ui": "node scripts/migration/staging-owner-settings-smoke.mjs --verify-rendered-browser",
     "test:migration:staging-subscription-display": "node scripts/migration/staging-subscription-display-smoke.mjs",

@@ -802,3 +802,34 @@ Worker URL returned 404, and the exact synthetic avatar key was absent from
 R2. No backup object or private export was created. This does not establish
 full recovery acceptance; issues #34 and #37 remain open. Real user/Auth/
 Storage migration and public domain/DNS cutover remain deferred to #38.
+
+## MFA-only post-write recovery slice (2026-10-02 JST)
+
+Added `npm run test:migration:staging-postwrite-recovery-mfa`, which keeps the
+explicit synthetic-only staging guards but deploys no Cron trigger and does not
+enable Stripe dispatch. It isolates Auth/TOTP, waitlist writes, avatar Storage,
+write freeze, D1 Time Travel, and encrypted R2 export/replay from the unrelated
+Stripe Cron path. The default full recovery command still includes Stripe and
+retains its broader assertions.
+
+The guarded run passed with 20 business and 3 Auth migrations. A synthetic
+admin's TOTP challenge and `/api/admin/session` authorization succeeded. Five
+consecutive waitlist writes were rejected during the freeze, Auth sign-in
+remained available, and avatar upload was rejected with
+`503 cutover_write_freeze`. Business/Auth Time Travel reconciliation took
+14.148 seconds and preserved the acknowledged digest. The two-object encrypted
+R2 bundle verified; replay took 49.247 seconds and restored the same Auth MFA,
+waitlist, and Storage state. The avatar survived Time Travel and was restored
+from the encrypted bundle.
+
+The temporary Worker, both D1 databases, config, backup objects, exact
+synthetic avatar, and private artifacts were deleted. Independent readback
+found only the three existing staging D1s, an empty recovery bucket, and HTTP
+404 from the temporary Worker URL. Report:
+`/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-postwrite-recovery-d3ccc576579f61d4.json`.
+
+This closes the isolated MFA/Auth + waitlist/Storage recovery slice. It does
+not exercise Stripe dispatch, provider sandbox credentials, full #37
+integration acceptance, source-user migration, or production/domain cutover.
+Issues #34 and #37 remain open; real user/Auth/Storage data and domain/DNS
+remain deferred to #38.
