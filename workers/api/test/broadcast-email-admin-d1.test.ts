@@ -164,9 +164,10 @@ describe("D1 broadcast email admin API", () => {
     const stored = await database!.prepare("SELECT created_by, status, created_at, updated_at FROM broadcast_emails WHERE id = ?")
       .bind(payload.broadcast.id as string).first<Record<string, unknown>>();
     expect(stored).toEqual({ created_by: adminId, status: "draft", created_at: "2026-09-27T12:34:56.000000Z", updated_at: "2026-09-27T12:34:56.000000Z" });
-    const audit = await database!.prepare("SELECT user_id, resource_id, metadata FROM audit_logs WHERE action = 'BROADCAST_DRAFT_CREATE'")
-      .first<{ user_id: string; resource_id: string; metadata: string }>();
+    const audit = await database!.prepare("SELECT user_id, resource_id, metadata, created_at FROM audit_logs WHERE action = 'BROADCAST_DRAFT_CREATE'")
+      .first<{ user_id: string; resource_id: string; metadata: string; created_at: string }>();
     expect(audit?.user_id).toBe(adminId);
+    expect(audit?.created_at).toBe("2026-09-27T12:34:56.000000Z");
     expect(audit?.resource_id).toBe(payload.broadcast.id);
     expect(audit?.metadata).toBe(JSON.stringify({ email_type: "broadcast_maintenance", recipient_filter_present: true }));
     expect(await database!.prepare("SELECT COUNT(*) AS count FROM broadcast_emails WHERE status != 'draft'").first<{ count: number }>()).toMatchObject({ count: 0 });

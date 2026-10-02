@@ -1,23 +1,27 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v42 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v43 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
 or declare a production migration ready.
 
-v42 reviews creation/update defaults on profiles, Enterprise settings,
-subscriptions, and broadcast emails. Signup, admin, reconciliation, scheduling,
-and delivery operations explicitly bind canonical UTC operation time; updates
-preserve the original creation time. Synthetic D1 tests read new rows, upserts,
-plan changes, and retry completion back. Snapshot imports retain source values.
-The timestamp review is now limited to `audit_logs.created_at`; catalog
-function/RLS/trigger scopes and credential descriptor gates remain blocking.
+v43 completes the known timestamp-default operation review with
+`audit_logs.created_at`. Audit inserts bind canonical operation time or use
+the operation timestamp on a guarded return/coupon command; snapshot imports
+retain source values. Fixed-clock tests read audit times back for lifecycle,
+lottery, admin, broadcast, email-template, and restricted waitlist access.
+All 79 known timestamp defaults have an exact disposition (63 Worker writes,
+seven import-only, eight versioned masters, and one scheduled timestamp).
+Future/default names outside that explicit map remain gated. Function/RLS/
+trigger catalog scopes and credential descriptors still keep the report
+non-deployable; this does not establish full behavioral parity.
 
-v41 additionally corrected three missing license `updated_at` writes in the
-source-profile lifecycle repositories and requires the timestamp in commit
-recovery. Registration, transfer, and lottery creation supply all license
-timestamps; internal claims preserve business timestamps.
+v42 reviews creation/update defaults on profiles, Enterprise settings,
+subscriptions, and broadcast emails, including retention during updates.
+v41 corrected three missing license `updated_at` writes and requires the
+operation timestamp in commit recovery. Internal claims preserve business
+creation/start/update times.
 
 The private catalog also carries `regex_range_probe`. It tests the three exact
 ASCII-format CHECK expressions against every valid Unicode scalar value using

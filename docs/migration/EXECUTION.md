@@ -1,5 +1,25 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v43：監査ログの操作日時レビュー完了
+
+v41/v42と同じread-only catalog（`2026-10-02T14:21:25.605664Z`）を使用した。
+`audit_logs.created_at`のsource-profile runtime writersをレビューした。登録・返却・譲渡・
+抽選・ライセンス処理・管理操作・waitlist参照・Stripe・クーポンtriggerは操作時刻をbind、
+またはguard済みcommandの操作時刻から取得する。監査ログ自体の日時を変更するUPDATEはない。
+旧minimal lifecycle fixtureはsource-profile runtimeではなく、レビューの根拠に含めていない。
+抽選の新規申請・再申請、管理plan変更、一斉メールdraftの監査日時を固定clockでreadbackし、
+既存のsource lifecycle、管理メールtemplate、waitlistのreadback検証も根拠とした。
+
+converter v43は63個のWorker-operation timestamps、7個のsnapshot-import-only timestamps、
+8個のversioned reference-master timestamps、1個のscheduled Worker timestampをreview済み。
+既知timestamp defaultsのoperation gateは0。functions/RLS/triggersの3 catalog scopesと
+credential descriptor gateは未解消のため`deployable: false`。日時レビュー完了はschema全体の
+変換完了やprovider acceptanceを意味しない。
+converter 41/41、migration data 237/237、lottery D1 12/12、admin user management 12/12、
+broadcast admin 11/11、Worker typecheckと変更ファイルのESLintが成功。
+v41 `2c79c29`はCI run `37020954433`、v42 `e73396c`はlocal commit。
+source rows、Worker deployment、Cloudflare resources、domain/DNSは変更していない。
+
 ## 2026-10-02 v42：設定・契約・一斉メールの操作日時
 
 v41と同じread-only schema catalog（`2026-10-02T14:21:25.605664Z`）を使用した。

@@ -6,28 +6,32 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The latest read-only schema catalog completed at
 `2026-10-02T14:21:25.605664Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v42 reviews 62 exact Worker-operation
+source table rows were read. Converter v43 reviews 63 exact Worker-operation
 timestamps, seven snapshot-import-only timestamps, eight versioned reference
 master timestamps, one scheduled Worker timestamp, and all 11 exact Auth
-references. The v42 pass covers creation/update times on user profiles,
-Enterprise settings, subscriptions, and broadcast emails. D1 readback proves
-creation-time retention during updates and operation-time binding on new rows.
-Stripe and Resend are synthetic mocks, not live provider acceptance.
+references. All known timestamp-default operation gates are now reviewed.
+Audit writers bind operation time or derive it from guarded return/coupon
+commands; no audit timestamp UPDATE exists. Fixed-clock D1 readback covers
+lottery creation/reapplication, admin plan changes, and broadcast drafts,
+alongside existing lifecycle, email-template, and waitlist audit checks.
 
-The report remains `deployable: false` with `audit_logs.created_at` and three
-unsupported function/RLS/trigger scopes (four schema/operation blockers); the
-credential descriptor gate remains. Local validation covers converter 40/40,
-migration data 236/236, admin user management 12/12, invitation signup 10/10,
-broadcast admin 11/11, subscription/delivery integration 22/22, Worker
-typecheck and changed-file ESLint. v41 commit `2c79c29` was pushed to PR #41;
-its CI is run `37020954433`. v42 is locally validated and ready to push after
-that run completes.
+The report remains `deployable: false`: function/RLS/trigger catalog scopes
+are still unsupported and the credential descriptor gate remains. Timestamp
+review completion is not schema-conversion completion or provider acceptance.
+Local validation covers converter 41/41, migration data 237/237, lottery D1
+12/12, admin user management 12/12, broadcast admin 11/11, Worker typecheck
+and changed-file ESLint. v41 `2c79c29` was pushed to PR #41 (CI run
+`37020954433`); v42 `e73396c` is a local commit. v43 is locally validated,
+and the local follow-ups wait for v41 CI to finish before the next push.
 
 The v41 license fix writes operation-time `updated_at` in active-to-grace,
 no-entry grace expiry, and lottery expiry of the old license. Commit-recovery
 readback verifies that timestamp; internal claims preserve business times.
 Source lifecycle tests passed 25/25, scheduled runner 8/8, registration 11/11,
-and transfer 9/9. v40 CI run `37019188514` passed both jobs on `8a17bef`.
+and transfer 9/9. v42 additionally covers profile, Enterprise, subscription,
+and broadcast creation/update times, including creation-time retention.
+Its invitation signup 10/10 and subscription/delivery integration 22/22
+passed with synthetic providers. v40 CI run `37019188514` passed both jobs.
 
 Wrangler read-only checks in the managed migration checkout confirm the
 `fanmark.id@gmail.com` account and staging secrets named only
@@ -36,7 +40,7 @@ Wrangler read-only checks in the managed migration checkout confirm the
 remain absent; no fresh login is needed for the current CLI session.
 
 No source rows, production routing, user/Auth migration, Worker deployment,
-Cloudflare resource writes, or domain/DNS settings were changed in v42, v41 or v40. The
+Cloudflare resource writes, or domain/DNS settings were changed in v43, v42, v41 or v40. The
 same boundaries held in v39, v38, and v37.
 No source rows, production routing, user/Auth migration, Worker deployment, or
 domain/DNS settings were changed in v36. The latest recorded

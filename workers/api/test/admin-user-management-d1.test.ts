@@ -213,6 +213,9 @@ describe("D1 administrator user directory", () => {
       AND user_id = ? AND resource_id = ?`).bind("49999999-9999-4999-8999-999999999999", userA)
       .first<{ count: number }>();
     expect(audit?.count).toBe(2);
+    const auditTimes = await business!.prepare("SELECT created_at FROM audit_logs WHERE action = 'ADMIN_UPDATE_PLAN' AND resource_id = ?")
+      .bind(userA).all<{ created_at: string }>();
+    expect(auditTimes.results).toEqual([{ created_at: nowIso }, { created_at: nowIso }]);
     const recreated = await request(`/api/admin/users/${userA}/plan`, {
       method: "POST",
       headers: { "content-type": "application/json" },

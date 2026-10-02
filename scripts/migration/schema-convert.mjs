@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 42;
+export const SCHEMA_CONVERSION_VERSION = 43;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -195,6 +195,36 @@ const SYSTEM_SETTINGS_TIMESTAMP_EVIDENCE = Object.freeze([
   "workers/api/vitest.system-settings.config.mjs",
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["audit_logs.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "All source-profile audit inserts bind canonical operation time or derive it from the guarded return/coupon command. Lifecycle, lottery, admin, and restricted-read tests read the audit time back; snapshot imports retain explicit source timestamps. The legacy minimal lifecycle fixture is not the source-profile runtime. Audit rows have no timestamp-mutating UPDATE writer.",
+    evidence: [
+      "workers/api/migrations-business/0015_extension_coupon_application.sql",
+      "workers/api/src/account-deletion-d1-api.ts",
+      "workers/api/src/admin-email-templates-d1-api.ts",
+      "workers/api/src/admin-user-management-d1-api.ts",
+      "workers/api/src/broadcast-email-admin-d1-api.ts",
+      "workers/api/src/broadcast-email-delivery-d1.ts",
+      "workers/api/src/fanmark-lottery-d1-api.ts",
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-return-d1-api.ts",
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/src/license-expiry-source.mjs",
+      "workers/api/src/license-grace-finalization-source.mjs",
+      "workers/api/src/stripe-subscription-reconciliation-d1.ts",
+      "workers/api/src/stripe-webhook-d1-application.ts",
+      "workers/api/src/system-settings-d1-api.ts",
+      "workers/api/src/waitlist-admin-d1-api.ts",
+      "workers/api/test/license-expiry-source.integration.mjs",
+      "workers/api/test/fanmark-lottery-d1.test.ts",
+      "workers/api/test/admin-user-management-d1.test.ts",
+      "workers/api/test/admin-email-templates-d1.test.ts",
+      "workers/api/test/broadcast-email-admin-d1.test.ts",
+      "workers/api/test/waitlist-admin-d1.test.ts",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
   ["broadcast_emails.created_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "Draft creation binds one canonical operation time, while scheduling and delivery transitions preserve creation time and bind their update time; snapshot imports retain source timestamps.",

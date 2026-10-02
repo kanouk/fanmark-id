@@ -92,8 +92,9 @@ describe("D1 fanmark lottery entry actions", () => {
     expect(event?.source).toBe("edge_function");
     expect(event).toMatchObject({ trigger_at: NOW, created_at: NOW, updated_at: NOW });
     expect(JSON.parse(String(event?.payload))).toMatchObject({ user_id: OWNER, fanmark_id: FANMARK, fanmark_name: "🌹" });
-    const audit = await business!.prepare("SELECT action, resource_type, resource_id, metadata FROM audit_logs").first<Record<string, unknown>>();
+    const audit = await business!.prepare("SELECT action, resource_type, resource_id, metadata, created_at FROM audit_logs").first<Record<string, unknown>>();
     expect(audit?.action).toBe("LOTTERY_ENTRY_CREATED");
+    expect(audit?.created_at).toBe(NOW);
     expect(audit?.resource_type).toBe("fanmark_lottery_entry");
     expect(JSON.parse(String(audit?.metadata))).toMatchObject({ fanmark_id: FANMARK, license_id: LICENSE, lottery_probability: 1 });
   });
@@ -130,9 +131,10 @@ describe("D1 fanmark lottery entry actions", () => {
       entry_status: "pending", applied_at: NEXT, cancelled_at: NOW, cancellation_reason: "user_request",
       created_at: NOW, updated_at: NEXT,
     });
-    const audit = await business!.prepare("SELECT action, metadata FROM audit_logs ORDER BY rowid DESC LIMIT 1")
-      .first<{ action: string; metadata: string }>();
+    const audit = await business!.prepare("SELECT action, metadata, created_at FROM audit_logs ORDER BY rowid DESC LIMIT 1")
+      .first<{ action: string; metadata: string; created_at: string }>();
     expect(audit?.action).toBe("LOTTERY_ENTRY_STATUS_CHANGED");
+    expect(audit?.created_at).toBe(NEXT);
     expect(JSON.parse(audit?.metadata ?? "{}")).toMatchObject({ old_status: "cancelled", new_status: "pending" });
   });
 
