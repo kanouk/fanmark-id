@@ -133,7 +133,13 @@ conversion rule and pass/fail outcome without publishing user records.
   column is exactly `uuid[]`. The row projection uses compact
   `array_to_json(... )::text`, preserving element order. The row importer now
   rejects empty or NULL-containing `normalized_emoji_ids` in discovery, event,
-  favorite, and fanmark rows, which are the source helper's input invariants.
+  favorite, and fanmark rows. This is a target import policy, not a source
+  helper invariant: PostgreSQL omits NULL elements in array_to_string and the
+  empty-array length condition is NULL, so the reviewed helper hashes empty
+  arrays instead of rejecting them. The converter now retains the explicit
+  seq_key_input_contract_requires_review gate for the three candidate indexes.
+  Writer/import disposition and source definition review are required; see
+  [source sequence-key review](source-sequence-key-review.md).
   The source MD5 key still has a theoretical collision boundary that the
   target representation does not share; non-UUID-array expressions remain
   blocking. A fresh private schema-converter-v4 report confirms that the

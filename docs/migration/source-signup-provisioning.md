@@ -70,8 +70,12 @@ this ordinary helper as inactive or add email-derived display-name rewriting.
 Source OAuth provisioning identifies non-email providers and certain raw
 metadata keys, then sets `requires_password_setup=true`. The literal Google
 case demonstrates that source branch; it does not prove a target counterpart.
-Target social providers use `disableSignUp:true`; credentials/account linking,
-new-user provisioning and initial password setup need separate implementation
-and integration acceptance. Credential proof cannot clear this Auth binding
+Target social providers use `disableSignUp:true`. Synthetic Auth tests already
+cover callbacks and linking to an existing UUID; the initial-password API and
+gate are implemented with synthetic coverage in
+[password setup](password-setup-api.md). A new OAuth user's Business profile
+provisioning counterpart is still missing, and the complete provider callback,
+provisioning and initial-setup flow still needs integration acceptance. Provider
+credentials remain absent. Credential proof cannot clear this Auth binding
 for the complete migration. The function/RLS/trigger gate and real provider,
 mobile and remote acceptance remain open.

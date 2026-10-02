@@ -225,7 +225,7 @@
 | `fanmark_basic_configs` | ライセンス所有者 (`fl.user_id = auth.uid()` かつ `status = 'active'`) | アクセスタイプ設定 |
 | `fanmark_redirect_configs` | ライセンス所有者 | リダイレクトURL設定 |
 | `fanmark_messageboard_configs` | ライセンス所有者 | メッセージボード内容 |
-| `fanmark_profiles` | 所有者は全操作可、公開プロフィールは `is_public = true` で参照可 | プロフィール編集・公開表示 |
+| `fanmark_profiles` | 所有者は全操作可、公開プロフィールは `is_public = true` で参照可 | プロフィール編集・公開表示。EmojiProfileFormは下書き復元とlayout effectでの保存監視開始後に入力欄を表示する |
 | `fanmark_access_logs` | ライセンス所有者 | アクセス解析（所有ファンマークのみ） |
 | `fanmark_access_daily_stats` | ライセンス所有者 | 日別統計（所有ファンマークのみ） |
 | `extension_coupons` | 管理者は全件、認証済みユーザーはアクティブなクーポンのみ検証可能 | 延長クーポンマスタ |

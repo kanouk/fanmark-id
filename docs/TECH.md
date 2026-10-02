@@ -223,6 +223,11 @@ Cronのremote配信、決済/メールの受理や復旧を証明しない。pro
 
 ## Source runtime catalogの接続先レビュー
 
+`seq_key(uuid[])`のsource expressionはNULL要素を省き、空配列もhash化する。
+converterのcanonical JSON indexは非空・NULLなしの配列に限る候補であり、3indexに
+`seq_key_input_contract_requires_review`を残す。literal PostgreSQL oracleとSQLite
+同値差の回帰検証は`migration/source-sequence-key-review.md`を参照。
+
 公開プロフィール/所有者helperの照合は`public-profile-runtime-readiness.sql`で
 6関数の定義・profile列・policy式を再取得し、本文を非公開で保持する。
 Workerのowner profile APIは無期限Tier Cもread/saveできるようreadとUPSERTで

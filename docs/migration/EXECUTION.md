@@ -1,5 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：編集フォームの初回入力とsequence keyのsource前提を修正
+
+head2ad6b07 CI37078676014のapplicationはoffline保存失敗caseで下書き待機が
+timeoutした。PATCH送信前で、フォーム表示からpassive保存監視開始までの隙間が
+あった。EmojiProfileFormは下書き復元後にフォームを表示し、layout effectで監視を
+開始する。型/lint/build/offline8と実local Worker/3D1/browserの保存失敗・復元・再試行・
+他人拒否・停止account拒否が成功し、server/port/local DB cleanupも確認した。
+旧runのWorker jobは成功、applicationは失敗で確定。移行ツール全278/278は成功。
+
+seq_keyfbe91b15のliteral-only source PostgreSQL oracle7 casesでNULL要素省略と
+空配列hashを確認した。以前の「source helperは空/NULL要素を拒否」という前提は誤り。
+converter42/42は4つのJSON配列がsourceの2つのkey同値classへ入る差を再現し、
+3つのUUID配列indexへseq_key_input_contract_requires_review gateを維持する。
+現catalogの40table/66candidate indexは引き続きdeployable=false。詳細は
+[source sequence key](source-sequence-key-review.md)。実source行・既存schema/indexは
+変更していない。新head CIが必要でstaging010a4d7aを保持し、D1上限解除後に完全
+preflightから進める。実user/domain/providerの変更はなし。
+
 ## 2026-10-03：新規登録を全migration構成とsource初期値で検証
 
 signup native suiteを一部schemaから全25 Business migrationとAuth core/0007/0008、
@@ -10,7 +28,8 @@ source handle_new_user09d55e8dとgenerate_safe_display_name1f7d9d41の取得済�
 再照合し、literal-only read-only PostgreSQL oracle10 casesを取得した。アプリ/Auth行や
 stored application function/triggerは読取り・呼出しなし。メールprefix helperは
 provisioningから呼ばれておらず、OAuth setup=true分岐はcredentialとは別に残る。
-source OAuth新規登録、linking、初回password setupはtarget実装と受け入れが必要。
+既存UUIDのlinkingと初回password setup APIには合成検証がある。source OAuth新規
+userのBusiness provisioning実装と、callbackから初回setupまでの実provider受け入れは残る。
 詳細は[source signup provisioning](source-signup-provisioning.md)。
 新しい変更はexact-HEAD CIとprivate canary pin更新が必要。stagingは010a4d7aのまま、
 D1上限の解除後に完全preflightをやり直す。実user/domain/providerは変更していない。

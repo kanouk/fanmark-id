@@ -7,15 +7,32 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- Head2ad6b07 CI37078676014 application failed on offline save-failure draft
+  wait (no PATCH was sent); Worker job ultimately completed successfully. Do
+  not re-pin or deploy from that run. The form now waits for draft hydration
+  and installs persistence in a layout effect before showing inputs, closing
+  the first-edit gap. Root types/lint/build/offline8 and actual local composed
+  Worker/3D1/browser pass, including draft recovery and scoped server/state
+  cleanup. Migration-data278/278 passes with no skips. These changes need new
+  exact-HEAD CI and private canary re-pinning.
+- Source seq_keyfbe91b15 literal PostgreSQL oracle7 exposes that NULL elements
+  are omitted and empty arrays are hashed, contradicting the old documentation
+  about source input invariants. Converter42/42 reproduces candidate JSON-index
+  inequality and retains seq_key_input_contract_requires_review for three
+  source indexes; full catalog remains40 tables/66 candidate indexes/not
+  deployable. No deployed schema/index changed and no actual source row read.
+  See source-sequence-key-review.md; historical import disposition stays open.
+
 - Signup now applies all 25 Business migrations and Auth core/0007/0008 with
   the suspension selector. Native15/15 covers existing recovery/capacity paths,
   four languages and refusal to forward forged provisioning metadata. Both
   D1 FK checks pass after every case. A literal-only read-only PostgreSQL
   oracle10 cases records credential defaults, OAuth setup and the separate
   display-name helper. No source application/Auth row/function was accessed.
-  See source-signup-provisioning.md; target OAuth new-user provisioning/account
-  linking/initial setup still needs implementation and acceptance. Provider
-  credentials remain absent. This new test/doc HEAD needs its own CI success
+  See source-signup-provisioning.md; target new OAuth-user Business provisioning
+  still needs implementation, while existing-UUID linking and initial password
+  setup have synthetic coverage. Their combined real-provider acceptance and
+  provider credentials remain open/absent. This new test/doc HEAD needs its own CI success
   and private canary HEAD/CI re-pin before deployment.
 
 - Edit only this managed migration worktree/branch and preserve the unrelated

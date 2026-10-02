@@ -2012,14 +2012,20 @@ function translateIndex(index, constraintNames, tableNames, columnsByTable, gate
     const seqKeyMatch = normalizedExpression.match(/^(?:public\.)?seq_key\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)(?:\s+(ASC|DESC))?$/i);
     if (seqKeyMatch) {
       const sourceColumn = columnsByTable.get(parsed.table)?.get(seqKeyMatch[1]);
-      // Validated non-empty UUID arrays are imported as canonical,
-      // order-preserving JSON text. An index on that representation preserves
-      // sequence equality outside the source MD5 helper's theoretical
-      // collision boundary, without recreating PostgreSQL MD5 in SQLite.
+      // This candidate works for validated non-empty, NULL-free canonical
+      // UUID sequences only. PostgreSQL array_to_string skips NULL elements,
+      // and array_length('{}', 1) is NULL, so the reviewed source helper's
+      // empty-array IF condition does not raise. Keep the broader source
+      // equality/import disposition open instead of declaring JSON parity.
       if (!sourceColumn || sourceColumn.postgres_type.trim().toLowerCase() !== "uuid[]") {
         gates.add("unsupported_index_expression", "seq_key can only be replaced by the canonical JSON key for a UUID-array column.", location);
         return null;
       }
+      gates.add(
+        "seq_key_input_contract_requires_review",
+        "Canonical JSON indexing is a candidate for non-empty NULL-free UUID sequences; source seq_key skips NULL elements and accepts empty arrays. Review every writer/import disposition and source definition before accepting this replacement.",
+        location,
+      );
       columns.push(`${quoteIdentifier(seqKeyMatch[1])}${seqKeyMatch[2] ? ` ${seqKeyMatch[2].toUpperCase()}` : ""}`);
       continue;
     }

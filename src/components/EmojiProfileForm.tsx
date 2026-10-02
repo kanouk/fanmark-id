@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -183,7 +183,9 @@ export const EmojiProfileForm = ({
     setHydratedDraftKey(draftStorageKey);
   }, [draftStorageKey, profile, reset]);
 
-  useEffect(() => {
+  // Attach persistence before the hydrated form becomes interactive. Waiting
+  // for a passive effect leaves the first edit unobserved on a cold mount.
+  useLayoutEffect(() => {
     if (!draftStorageKey || hydratedDraftKey !== draftStorageKey) return;
 
     const subscription = watch((values) => {
@@ -350,6 +352,15 @@ export const EmojiProfileForm = ({
       console.error('Profile save error:', error);
     }
   };
+
+  if (draftStorageKey && hydratedDraftKey !== draftStorageKey) {
+    return (
+      <div role="status" className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        {t('common.loading')}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

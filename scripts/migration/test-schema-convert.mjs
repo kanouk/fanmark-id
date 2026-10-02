@@ -277,6 +277,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
     "unsupported_constraint",
     "unsupported_index_method",
     "unsupported_index_expression",
+    "seq_key_input_contract_requires_review",
   ]) {
     assert.ok(codes.has(expected), `missing gate ${expected}`);
   }
@@ -294,6 +295,31 @@ test("conversion is deterministic and exposes exact target codecs", () => {
   assert.equal(first.report.stageReadiness.rowConversion.ready, false);
   assert.equal(first.report.stageReadiness.schemaAndOperations.ready, false);
   assert.ok(first.report.stageReadiness.schemaAndOperations.gateCodes.includes("unsupported_index_method"));
+});
+
+test("source NULL and empty sequence-key collisions keep canonical JSON index acceptance open", () => {
+  const oracle = JSON.parse(readFileSync(new URL("fixtures/source-sequence-key.json", import.meta.url), "utf8"));
+  const cases = ["ordered", "null_element", "empty", "all_null"].map(label => oracle.cases.find(row => row.label === label));
+  assert.ok(cases.every(Boolean));
+  assert.equal(cases[0].sourceKey, cases[1].sourceKey, "source omits NULL array elements");
+  assert.equal(cases[2].sourceKey, cases[3].sourceKey, "source hashes both arrays as an empty string");
+  assert.equal(cases[2].guardWouldRaiseIfBodyRan, false, "array_length(empty, 1) is NULL, so IF does not raise");
+  assert.equal(oracle.cases.find(row => row.label === "sql_null").strictNullSkipsBody, true);
+
+  const input = {
+    ...fixture(),
+    columns: [column("sequence_contract", "normalized_ids", 1, "uuid[]")],
+    constraints: [],
+    indexes: [index("sequence_contract", "sequence_contract_key", "CREATE UNIQUE INDEX sequence_contract_key ON public.sequence_contract USING btree (seq_key(normalized_ids))")],
+  };
+  const converted = convertSchema(input);
+  const inserts = cases.map(row => `INSERT INTO sequence_contract VALUES ('${JSON.stringify(row.ids)}');`).join("\n");
+  const count = execFileSync("sqlite3", [":memory:"], {
+    input: `${converted.sql}\n${inserts}\nSELECT count(*) FROM sequence_contract;`, encoding: "utf8",
+  });
+  assert.equal(Number(count.trim()), 4, "candidate JSON uniqueness differs from source key equality");
+  assert.ok(gateCodes(converted.report).has("seq_key_input_contract_requires_review"));
+  assert.equal(converted.report.deployable, false);
 });
 
 test("the exact reviewed Auth foreign keys become explicit non-DDL dispositions", () => {
