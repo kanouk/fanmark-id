@@ -529,6 +529,22 @@ The route contracts and synthetic staging evidence are in
 [public-access-contract.md](public-access-contract.md). None of these reads or
 tests imported real account/profile rows.
 
+## Semantic mapping completed slice: Fanmark settings and image storage
+
+This slice maps five owner-settings writes and six avatar/cover Storage calls.
+The staging app routes new operations to D1/R2; existing account settings and
+image objects remain in Supabase until the separately deferred user-data phase.
+
+| Callsite(s) | Operation and owner | Cloudflare replacement and remaining boundary |
+| --- | --- | --- |
+| `src/components/FanmarkSettings.tsx:439,453,465` | Save the active fanmark's basic name/access mode and its selected redirect URL or messageboard text. | `VITE_FANMARK_SETTINGS_BACKEND=worker` sends one owner-bound PATCH to `/api/me/fanmarks/:fanmarkId/settings`; D1 applies related configuration writes together and accepts only mode-specific fields. Synthetic staging GET/PATCH and cleanup passed. |
+| `src/components/FanmarkSettings.tsx:480,490` | Enable/update or disable the owner's four-digit access password. | The same D1 settings route hashes a newly supplied password server-side and records hash-free runtime evidence atomically. The live synthetic wrong/correct-password and protected-read canary passed; existing Supabase password hashes have not been imported. |
+| `src/hooks/useAvatarUpload.tsx:35,45,113`; `src/hooks/useCoverImageUpload.tsx:39,49,123` | Upload, publicly read, and owner-delete profile avatars and fanmark cover images. | `VITE_STORAGE_BACKEND=r2` routes authenticated uploads and owner-checked deletion through the Worker, with public reads from the bound staging R2 buckets. Avatar upload, rendered profile image, profile save/delete, and cover upload/read/delete canaries passed with zero final objects. Existing Supabase Storage objects remain in the deferred data phase. |
+
+See [owner settings API](fanmark-settings-api.md) and
+[R2 application Storage API](storage-r2-app-api.md). This proves the new
+staging write/read paths, not imported-user or imported-object parity.
+
 ## Semantic mapping completed slice: Master and reference data
 
 This slice classifies 19 callsites for non-user catalog, pricing, language,
@@ -573,6 +589,25 @@ The API contracts and staging evidence are in [search APIs](fanmark-search-api.m
 [recent fanmarks](recent-api-contract.md), and
 [registration](fanmark-registration-api.md). The existing owner's historical
 rows and event attribution are still outside this phase.
+
+## Semantic mapping completed slice: Transfer and lottery actions
+
+This slice maps ten user-owned transfer and lottery callsites. Cloudflare
+staging routes operate on disposable synthetic accounts; no existing transfer
+codes, requests, lottery entries, or user rows were imported.
+
+| Callsite(s) | Operation and owner | Cloudflare replacement and remaining boundary |
+| --- | --- | --- |
+| `src/hooks/useTransferCode.ts:61` | List the signed-in issuer's active/applied transfer codes and related public fanmark labels. | `GET /api/me/transfers` derives the issuer from Better Auth, returns only the issuer's codes, and omits secrets from logs. |
+| `src/hooks/useTransferCode.ts:94` | List pending requests addressed to codes issued by the current user. | The same owner-scoped list route includes requests only when their code belongs to the authenticated issuer; the client no longer relies on a global pending-request query in Worker mode. |
+| `src/hooks/useTransferCode.ts:133` | List the signed-in user's outgoing requests. | The route derives requester identity from the session and returns only that user's pending/history projection. |
+| `src/hooks/useTransferCode.ts:193,277,379,405,431` | Issue a code, apply for a transfer, approve or reject a request, or cancel a code. | Five authenticated POST operations use D1 batches for state, license/configuration effects, audit, and notification outbox. Approval uses the active master-tier duration, retires the sender license, creates an inactive recipient config, and applies the 30-day lock. A staging synthetic issue/apply/approve and notification rehearsal passed with cleanup verified. |
+| `src/hooks/useLotteryEntry.tsx:125,172` | Apply to or cancel the signed-in user's lottery entry. | The selected D1 routes verify the session owner, grace/license eligibility, plan limit, and one-entry constraint in the mutation batch; status and audit are atomic while notification enqueue is best effort. A staging synthetic canary passed apply, duplicate rejection, cancellation, and anonymous denial, then confirmed cleanup. Winner selection/finalization and production source-row parity remain separate gates. |
+
+See [transfer API](fanmark-transfer-api.md) and
+[lottery application API](fanmark-lottery-api.md). The transfer path maps an
+existing Supabase cancellation-reason vocabulary mismatch explicitly; the
+source check-constraint correction remains separate.
 
 ## Semantic mapping completed slice: Favorites
 
@@ -619,6 +654,26 @@ The unread-count ACL evidence above is a current live schema readback, not a
 functional PostgREST probe. Endpoint and selector details are in
 [notifications-api.md](notifications-api.md).
 
+## Semantic mapping completed slice: Dashboard and analytics
+
+This slice classifies eight dashboard/analytics callsites. Staging routes new
+owner reads and writes to D1, while historical access statistics remain in
+Supabase. The extension checkout client is mapped to its Cloudflare route but
+remains disabled until Stripe selectors and staging keys are configured.
+
+| Callsite | Operation and owner | Data class | Cloudflare replacement and parity |
+| --- | --- | --- | --- |
+| `src/components/FanmarkDashboard.tsx:233` | Return one fanmark owned by the signed-in user. | Owner license state and return side effects. | `POST /api/me/fanmarks/return` uses Better Auth identity and D1; the synthetic staging return canary passed with cleanup verified. |
+| `src/components/FanmarkDashboard.tsx:332` | Begin a paid extension checkout for the owner’s selected license. | Owner license and payment intent metadata. | The Worker client calls `/api/billing/extension-checkout`, which is gated on staging and returns 404 while Stripe selectors/secrets are absent. The server implementation has synthetic contract tests; no Stripe request or transaction was made, so provider acceptance remains open. |
+| `src/components/FanmarkDashboard.tsx:443,484` | List the owner’s active/history fanmarks and their basic display/access settings. | Owner licenses, fanmark labels, and configuration. | `VITE_OWNED_FANMARKS_BACKEND=worker` calls `GET /api/me/fanmarks`; the Better Auth session scopes the combined license/config projection. The rendered staging UI canary passed with synthetic rows cleaned up. |
+| `src/components/FanmarkDashboard.tsx:630`; `src/pages/Analytics.tsx:222` | Read daily access aggregates for the owner’s active fanmarks or selected date range. | Owner analytics aggregates and historical activity. | The paired `VITE_FANMARK_ANALYTICS_BACKEND=worker` route reads the owner-scoped D1 projection. The staging UI canary rendered access and visitor totals of 1/1 after duplicate suppression; historical Supabase aggregates were not copied. |
+| `src/pages/Analytics.tsx:132,161` | List active fanmarks and basic names for the analytics selector. | Owner licenses and display settings. | `GET /api/me/analytics/fanmarks` derives the owner from Better Auth and returns the D1 projection; the analytics UI canary verified the Worker-backed page. |
+
+See [return API](fanmark-return-api.md), [access analytics API](fanmark-access-analytics-api.md),
+and [extension checkout validation](stripe-extension-application-validation.md).
+Mapping these callsites does not mean historical rows or payment-provider
+behavior have been migrated.
+
 ## Semantic mapping completed slice: Realtime
 
 The following eight rows are the four Realtime subscriptions and their four
@@ -641,6 +696,6 @@ real-user migration or provider acceptance.
 
 The route contracts are documented in [notifications-api.md](notifications-api.md),
 [own-profile-api.md](own-profile-api.md), and the subscription API implementation
-in `workers/api/src/subscription-d1-api.ts`. The remaining 99 callsites still
+in `workers/api/src/subscription-d1-api.ts`. The remaining 70 callsites still
 need equivalent owner, data-class, and replacement/retention classification;
 wrapper and indirect-call review also remains open.

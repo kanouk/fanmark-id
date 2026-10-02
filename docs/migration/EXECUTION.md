@@ -2,7 +2,12 @@
 
 ## 2026-10-02 最新差分: 通知RPC ACL、callsite分類、CI timeout
 
-PR #41 head `63eeacb` のActions run `36985367697` は両job成功。
+PR #41のコードcheckpoint `7f863f3` はActions run `36986104988` の両jobが成功。
+フロントエンド211 callsiteのうち141件をowner、data class、Cloudflare置換先まで
+分類し、残りは70件。今回ダッシュボード/Analyticsの8件を追加した。
+延長CheckoutはWorker routeとclientを台帳へ反映したが、stagingのStripe selectorと
+keysが未設定のため404で閉じている。Stripeへのリクエストは行っていない。
+
 直前のrun `36984142796` では`subscription-application.test.mjs`が3回とも
 120秒timeoutした。診断付きrunでは初回に`construct PGlite`と`create base schema`
 まで出て、テスト用base schemaを一括実行する`db.exec`から120秒戻らなかった。
@@ -12,9 +17,11 @@ hosted runner側の誘因は未特定。Node 22.6.0のローカルでは当該fi
 全体が成功した。CIはdeployを行わない。
 
 211件のフロントエンドSupabase callsiteのうち、Auth/Auth-MFA 40件、
-本人/ファンマークプロフィール20件、マスター/参照データ19件、検索/登録8件、
-お気に入り3件、Realtime 8件、通知操作・管理画面14件をowner、data class、
-Cloudflare置換先まで分類した。残りは99件。
+本人/ファンマークプロフィール20件、設定/Storage 11件、マスター/参照データ19件、
+検索/登録8件、お気に入り3件、譲渡/抽選10件、Realtime 8件、通知操作・管理画面14件、
+ダッシュボード/Analytics 8件をowner、data class、Cloudflare置換先まで分類した。
+残りは70件。延長CheckoutはWorker clientがあるが、staging APIはselector/secrets未設定で
+404のfail-closed状態を保ち、Stripe provider acceptanceは未完了。
 認証の本番/defaultはSupabaseのまま、
 stagingはBetter Authを選択する。実ユーザーのID/credential/MFA移送は#38に
 残している。通知数RPCについてproduction Supabaseをschema-onlyで読み戻し、
