@@ -1,5 +1,42 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 current checkout and live inventory refresh
+
+PR #41 commit `63b6018` passed both GitHub Actions jobs in run
+`36996085760` (Cloudflare application migration boundaries/build and Worker
+API contracts/typecheck/bundle dry-run). CI did not deploy. The offline
+frontend scanner was regenerated from this checkout; its base is `63b6018`
+and it still finds 211 static callsites. The prior 143 plus the mapped 68
+cover each location once; `test:frontend-callsite-mapping.mjs` enforces exact
+coverage. The latest owner-license changes use the session-scoped D1 API for
+home counts and plan-downgrade selection.
+
+A read-only production public-schema dump refreshed `supabase/remote_schema.sql`.
+The private raw dump was 180,288 bytes with SHA-256
+`aac7f38c912b358019a9bb9f282813a10bcd3e20af09e929d1ec41a2705b42cd`; after
+normalizing trailing blank lines, the committed snapshot is 180,281 bytes with
+SHA-256 `6d0a41fd4f687c51d01963c83d565fe5854dfd19878b03d102716488c2ff656c`.
+It contains schema only: 40 tables / 406 columns, 58 functions, one view, one
+sequence, four types, and 77 policies. All object-identity differences from
+the older snapshot match checked-in migrations. A separate Functions metadata
+readback found 35 ACTIVE deployments; all 34 local `verify_jwt` flags match,
+with `manual-expire-grace-licenses` remaining live-only. Details and deployed
+versions are in [live observations](live-observations.md).
+
+The migration-data suite passes 215/215, application typecheck and targeted
+ESLint pass, and CI passes both jobs. This did not read or write user rows,
+apply production schema, deploy a Worker, or change domains/DNS. Issue #30
+still needs the user's capacity margin, maximum downtime, and configuration
+owner targets, plus behavioral review of live SQL and the live-only function.
+Provider acceptance and wrapper/indirect-call review also remain open.
+
+Separate staging evidence covers the scheduled synthetic lifecycle path and
+the guarded post-write recovery rehearsal: one synthetic Stripe extension was
+applied once, D1 Time Travel and encrypted R2 restore preserved admin MFA and
+the avatar, and five writes during freeze were rejected. The D1 notification
+archiver now has an explicit timestamp writer under converter v24, but
+`NOTIFICATION_ARCHIVE_BACKEND` remains unset in staging.
+
 ## 2026-10-02 最新差分: 通知RPC ACL、callsite分類、CI timeout
 
 PR #41のコードcheckpoint `7f863f3` はActions run `36986104988` の両jobが成功。

@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `b34638b41b7cd1604263a58140bf297821e30807`
+Base commit: `63b601869ad549a113d129750ca1cdc0eed9ed41`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -160,11 +160,11 @@ Found 34 local directories with `index.ts` (`_shared` excluded). 34 have an expl
 
 Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of the call and the extracted operation.
 
-All 211 checked-in static callsites now have an owner, data-class, and Cloudflare
+All 211 checked-in static callsites have an owner, data-class, and Cloudflare
 replacement or retention mapping across this document and the
-[remaining-callsite map](frontend-callsite-map.md). This closes the static
-mapping count only; wrapper/indirect calls and live production reconciliation
-remain separate checks.
+[remaining-callsite map](frontend-callsite-map.md). Exact location coverage is
+checked by `test:frontend-callsite-mapping`; wrappers and indirect calls remain
+separate review work.
 
 | Location | Kind | Target | Operation | Dynamic expression |
 | --- | --- | --- | --- | --- |
@@ -342,7 +342,7 @@ remain separate checks.
 | `src/lib/favorites-backend.ts:13` | rpc | `get_favorite_fanmarks` | `rpc` |  |
 | `src/lib/favorites-backend.ts:22` | rpc | `add_fanmark_favorite` | `rpc` |  |
 | `src/lib/favorites-backend.ts:33` | rpc | `remove_fanmark_favorite` | `rpc` |  |
-| `src/lib/plan-utils.ts:58` | table | `fanmark_licenses` | `table.select` |  |
+| `src/lib/plan-utils.ts:56` | table | `fanmark_licenses` | `table.select` |  |
 | `src/lib/profile-utils.ts:27` | auth | `auth` | `auth.getUser` |  |
 | `src/lib/profile-utils.ts:34` | table | `user_settings` | `table.select` |  |
 | `src/lib/profile-utils.ts:59` | rpc | `check_username_availability_secure` | `rpc` |  |
@@ -360,7 +360,7 @@ remain separate checks.
 | `src/pages/FanmarkSettingsPage.tsx:79` | rpc | `get_fanmark_complete_data` | `rpc` |  |
 | `src/pages/FanmarkSettingsPage.tsx:113` | table | `fanmark_profiles` | `table.select` |  |
 | `src/pages/ForgotPassword.tsx:65` | auth | `auth` | `auth.resetPasswordForEmail` |  |
-| `src/pages/Index.tsx:85` | table | `fanmark_licenses` | `table.select` |  |
+| `src/pages/Index.tsx:94` | table | `fanmark_licenses` | `table.select` |  |
 | `src/pages/Notifications.tsx:42` | table | `notifications` | `table.select` |  |
 | `src/pages/Notifications.tsx:66` | realtime | `notifications` | `realtime.channel` |  |
 | `src/pages/Notifications.tsx:83` | realtime | `notifications` | `realtime.removeChannel` |  |
@@ -424,15 +424,15 @@ _none detected in frontend source._
 
 The following references are grouped from current checkout migrations, the two checked-in schema snapshots, and `supabase/config.toml`. Locations are compressed by file and line range. These are evidence references, not a declaration of live state.
 
-Evidence files (31): `supabase/migrations/20251231070109_remote_schema.sql`, `supabase/migrations/20251231072222_restore_rls_policies.sql`, `supabase/migrations/20251231201348_add_display_fanmark.sql`, `supabase/migrations/20251231222000_fix_password_config_license_check.sql`, `supabase/migrations/20260101090000_add_payment_failure_fields_to_user_subscriptions.sql`, `supabase/migrations/20260102102233_e5e3404a-2341-4bbf-80ea-b67d62e3423a.sql`, `supabase/migrations/20260102123300_a3d9ffa4-0b8d-4730-84f4-8a5eb680b3f1.sql`, `supabase/migrations/20260102125523_547b82b2-018b-4be4-adac-6b9d9fe3d491.sql`, `supabase/migrations/20260102125748_7bb11f5c-8252-49e2-a6db-42d9db393b30.sql`, `supabase/migrations/20260102215623_653e4d11-8e5c-4a5c-9abd-1d952afffa3a.sql`, `supabase/migrations/20260102221550_3bcc9909-4952-431c-b45c-7b39dc1d5db8.sql`, `supabase/migrations/20260102235155_0efff4a2-63a7-497b-b2c5-b54425604749.sql`, `supabase/migrations/20260103011437_remote_schema.sql`, `supabase/migrations/20260103120000_fix_oauth_password_setup.sql`, `supabase/migrations/20260103123000_add_maintenance_settings.sql`, `supabase/migrations/20260104025602_remote_schema.sql`, `supabase/migrations/20260104032906_cf240bf8-d8e2-448d-9194-ac6ce70a3096.sql`, `supabase/migrations/20260104091448_remote_schema.sql`, `supabase/migrations/20260104120000_update_public_access_grace.sql`, `supabase/migrations/20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql`, `supabase/migrations/20260725044303_make_notification_cron_on_demand.sql`, `supabase/migrations/20260921090000_add_stripe_receipt_foundation.sql`, `supabase/migrations/20260921100000_add_stripe_dispatch_leases.sql`, `supabase/migrations/20260921110000_add_stripe_invoice_projection.sql`, `supabase/migrations/20260925120000_add_stripe_extension_application.sql`, `supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql`, `supabase/migrations/20260929200000_terminalize_stripe_noop_checkout_receipts.sql`, `supabase/migrations/20260929210000_add_stripe_subscription_projection.sql`, `supabase/remote_schema.sql`, `supabase/remote_schema_before_rls_push.sql`, `supabase/config.toml`
+Evidence files (32): `supabase/migrations/20251231070109_remote_schema.sql`, `supabase/migrations/20251231072222_restore_rls_policies.sql`, `supabase/migrations/20251231201348_add_display_fanmark.sql`, `supabase/migrations/20251231222000_fix_password_config_license_check.sql`, `supabase/migrations/20260101090000_add_payment_failure_fields_to_user_subscriptions.sql`, `supabase/migrations/20260102102233_e5e3404a-2341-4bbf-80ea-b67d62e3423a.sql`, `supabase/migrations/20260102123300_a3d9ffa4-0b8d-4730-84f4-8a5eb680b3f1.sql`, `supabase/migrations/20260102125523_547b82b2-018b-4be4-adac-6b9d9fe3d491.sql`, `supabase/migrations/20260102125748_7bb11f5c-8252-49e2-a6db-42d9db393b30.sql`, `supabase/migrations/20260102215623_653e4d11-8e5c-4a5c-9abd-1d952afffa3a.sql`, `supabase/migrations/20260102221550_3bcc9909-4952-431c-b45c-7b39dc1d5db8.sql`, `supabase/migrations/20260102235155_0efff4a2-63a7-497b-b2c5-b54425604749.sql`, `supabase/migrations/20260103011437_remote_schema.sql`, `supabase/migrations/20260103120000_fix_oauth_password_setup.sql`, `supabase/migrations/20260103123000_add_maintenance_settings.sql`, `supabase/migrations/20260104025602_remote_schema.sql`, `supabase/migrations/20260104032906_cf240bf8-d8e2-448d-9194-ac6ce70a3096.sql`, `supabase/migrations/20260104091448_remote_schema.sql`, `supabase/migrations/20260104120000_update_public_access_grace.sql`, `supabase/migrations/20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql`, `supabase/migrations/20260725044303_make_notification_cron_on_demand.sql`, `supabase/migrations/20260921090000_add_stripe_receipt_foundation.sql`, `supabase/migrations/20260921100000_add_stripe_dispatch_leases.sql`, `supabase/migrations/20260921110000_add_stripe_invoice_projection.sql`, `supabase/migrations/20260925120000_add_stripe_extension_application.sql`, `supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql`, `supabase/migrations/20260929200000_terminalize_stripe_noop_checkout_receipts.sql`, `supabase/migrations/20260929210000_add_stripe_subscription_projection.sql`, `supabase/migrations/20261002082000_bind_unread_notification_count_to_session.sql`, `supabase/remote_schema.sql`, `supabase/remote_schema_before_rls_push.sql`, `supabase/config.toml`
 
 ### Auth references
 
 | Reference | Locations |
 | --- | --- |
-| `auth.role` | supabase/migrations/20260102123300_a3d9ffa4-0b8d-4730-84f4-8a5eb680b3f1.sql:29; supabase/migrations/20260104091448_remote_schema.sql:2130,2200,2258,2266; supabase/migrations/20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql:24,53; supabase/migrations/20260921090000_add_stripe_receipt_foundation.sql:181,186; supabase/migrations/20260921100000_add_stripe_dispatch_leases.sql:94,226,335; supabase/migrations/20260921110000_add_stripe_invoice_projection.sql:183,308,417; supabase/migrations/20260925120000_add_stripe_extension_application.sql:146,268,504; supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql:38; supabase/migrations/20260929200000_terminalize_stripe_noop_checkout_receipts.sql:29; supabase/migrations/20260929210000_add_stripe_subscription_projection.sql:141 |
-| `auth.sessions` | supabase/migrations/20251231070109_remote_schema.sql:1327; supabase/remote_schema_before_rls_push.sql:1327; supabase/remote_schema.sql:1328 |
-| `auth.uid` | supabase/migrations/20251231070109_remote_schema.sql:79,649,759,906,1016,1054,1081,1112,1131,1244,1307,1443,1458,1473,1553,1583,1590,1609,1646,1764,1784,1897,2087,2190; supabase/migrations/20251231201348_add_display_fanmark.sql:36,119,336,474; supabase/migrations/20251231222000_fix_password_config_license_check.sql:19; supabase/migrations/20260103011437_remote_schema.sql:1699,2256,2366,2513,2621,2658,2685,2715,2734,2948,2963,2978,3056,3085,3092,3110,3146,3260,3279,3390,3577,3676,3834,3843,3852,3861,3870,3879; supabase/migrations/20260104025602_remote_schema.sql:21,578,688,835,943,980,1007,1037,1056,1270,1285,1300,1378,1407,1414,1432,1468,1582,1601,1712,1899,1998; supabase/migrations/20260104091448_remote_schema.sql:17,574,684,831,939,976,1003,1033,1052,1266,1281,1296,1374,1403,1410,1428,1464,1578,1597,1708,1895,1994; supabase/remote_schema_before_rls_push.sql:79,649,759,906,1016,1054,1081,1112,1131,1244,1307,1443,1458,1473,1553,1583,1590,1609,1646,1764,1784,1897,2087,2190; supabase/remote_schema.sql:79,650,760,907,1017,1055,1082,1113,1132,1245,1308,1444,1459,1474,1554,1584,1591,1610,1647,1765,1785,1898,2088,2191 |
+| `auth.role` | supabase/migrations/20260102123300_a3d9ffa4-0b8d-4730-84f4-8a5eb680b3f1.sql:29; supabase/migrations/20260104091448_remote_schema.sql:2130,2200,2258,2266; supabase/migrations/20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql:24,53; supabase/migrations/20260921090000_add_stripe_receipt_foundation.sql:181,186; supabase/migrations/20260921100000_add_stripe_dispatch_leases.sql:94,226,335; supabase/migrations/20260921110000_add_stripe_invoice_projection.sql:183,308,417; supabase/migrations/20260925120000_add_stripe_extension_application.sql:146,268,504; supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql:38; supabase/migrations/20260929200000_terminalize_stripe_noop_checkout_receipts.sql:29; supabase/migrations/20260929210000_add_stripe_subscription_projection.sql:141; supabase/remote_schema.sql:1898,1921 |
+| `auth.sessions` | supabase/migrations/20251231070109_remote_schema.sql:1327; supabase/remote_schema_before_rls_push.sql:1327; supabase/remote_schema.sql:1464 |
+| `auth.uid` | supabase/migrations/20251231070109_remote_schema.sql:79,649,759,906,1016,1054,1081,1112,1131,1244,1307,1443,1458,1473,1553,1583,1590,1609,1646,1764,1784,1897,2087,2190; supabase/migrations/20251231201348_add_display_fanmark.sql:36,119,336,474; supabase/migrations/20251231222000_fix_password_config_license_check.sql:19; supabase/migrations/20260103011437_remote_schema.sql:1699,2256,2366,2513,2621,2658,2685,2715,2734,2948,2963,2978,3056,3085,3092,3110,3146,3260,3279,3390,3577,3676,3834,3843,3852,3861,3870,3879; supabase/migrations/20260104025602_remote_schema.sql:21,578,688,835,943,980,1007,1037,1056,1270,1285,1300,1378,1407,1414,1432,1468,1582,1601,1712,1899,1998; supabase/migrations/20260104091448_remote_schema.sql:17,574,684,831,939,976,1003,1033,1052,1266,1281,1296,1374,1403,1410,1428,1464,1578,1597,1708,1895,1994; supabase/migrations/20261002082000_bind_unread_notification_count_to_session.sql:12; supabase/remote_schema_before_rls_push.sql:79,649,759,906,1016,1054,1081,1112,1131,1244,1307,1443,1458,1473,1553,1583,1590,1609,1646,1764,1784,1897,2087,2190; supabase/remote_schema.sql:141,769,880,1029,1140,1178,1205,1236,1255,1381,1444,1580,1595,1610,1690,1720,1727,1746,1783,1950,1970,2083,2274,2377 |
 | `auth.users` | supabase/migrations/20260102221550_3bcc9909-4952-431c-b45c-7b39dc1d5db8.sql:12; supabase/migrations/20260103011437_remote_schema.sql:3808; supabase/migrations/20260103120000_fix_oauth_password_setup.sql:6 |
 
 ### Storage references
@@ -449,8 +449,8 @@ Evidence files (31): `supabase/migrations/20251231070109_remote_schema.sql`, `su
 
 | Reference | Locations |
 | --- | --- |
-| `cron.alter_job` | supabase/config.toml:134; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:32,92 |
-| `cron.job` | supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:23,83 |
+| `cron.alter_job` | supabase/config.toml:134; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:32,92; supabase/remote_schema.sql:92,597 |
+| `cron.job` | supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:23,83; supabase/remote_schema.sql:83,588 |
 | `edge-url:check-expired-licenses` | supabase/config.toml:119 |
 | `edge-url:process-notification-events` | supabase/config.toml:127 |
 | `net.http_post` | supabase/config.toml:118,126 |
@@ -472,15 +472,15 @@ Evidence files (31): `supabase/migrations/20251231070109_remote_schema.sql`, `su
 
 ### Unverified live-only inventory
 
-- No live-only names are knowable from this offline scan. See the coordinator-owned [live observations](live-observations.md) for separately captured read-only observations; those observations are not imported into these local counts.
+- This offline scan does not enumerate live-only names. The coordinator-owned [live observations](live-observations.md) record read-only provider metadata, including the one deployed-only Edge Function, separately from these local counts.
 
 Reconcile the live observations with this checkout report before treating any mapping as complete.
 
 ## Remaining mapping work
 
-- Verify every local Edge entrypoint, configured JWT policy, deployed version, and any live-only function against the production project read-only.
-- Reconcile generated types and checked-in SQL snapshots with a fresh, access-controlled production schema readback; resolve drift before selecting Cloudflare D1/R2/Workers targets.
-- Review the completed static frontend mapping in this document and the [remaining-callsite map](frontend-callsite-map.md). Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.
+- Review the read-only deployed Edge inventory in [live observations](live-observations.md). The live-only `manual-expire-grace-licenses` function still requires purpose and authorization review before any replacement or retirement.
+- Review the refreshed public schema snapshot and live object-identity reconciliation in [live observations](live-observations.md). The generated TypeScript function set covers PostgREST RPCs, not every trigger/internal function; behavior, RLS, trigger, and D1-converter gates remain separate.
+- Review the completed static operation map in this document and the [remaining-callsite map](frontend-callsite-map.md). Realtime cleanup aliases are resolved to their subscribed table; interpolated channel topics remain visible. Arbitrary wrappers and indirect calls still need manual review.
 - Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.
 
 ## Semantic mapping completed slice: Authentication and MFA
@@ -713,8 +713,8 @@ required for perpetual Tier C licenses.
 
 | Callsite | Operation and owner | Data class | Cloudflare replacement and parity |
 | --- | --- | --- | --- |
-| `src/pages/Index.tsx:85` | Count the current user's valid active licenses for the home screen. | Private owner license count. | With `VITE_OWNED_FANMARKS_BACKEND=worker`, read the owner-scoped `GET /api/me/fanmarks` projection and count active, unexpired licenses, including perpetual licenses. The Supabase query now uses the same no-end-or-future-end rule. |
-| `src/lib/plan-utils.ts:58` | Load the current user's eligible fanmarks before plan downgrade selection in `PlanSelection` or `UserProfileForm`. | Private owner license state and fanmark labels/configuration. | With the Worker selector, use the same session-scoped `GET /api/me/fanmarks` route and project its allowlisted DTO into the existing selection shape. No user ID is sent to the Worker. Synthetic tests cover perpetual inclusion and expired/grace exclusion; production/default remains Supabase. |
+| `src/pages/Index.tsx:94` | Count the current user's valid active licenses for the home screen. | Private owner license count. | With `VITE_OWNED_FANMARKS_BACKEND=worker`, read the owner-scoped `GET /api/me/fanmarks` projection and count active, unexpired licenses, including perpetual licenses. The Supabase query now uses the same no-end-or-future-end rule. |
+| `src/lib/plan-utils.ts:56` | Load the current user's eligible fanmarks before plan downgrade selection in `PlanSelection` or `UserProfileForm`. | Private owner license state and fanmark labels/configuration. | With the Worker selector, use the same session-scoped `GET /api/me/fanmarks` route and project its allowlisted DTO into the existing selection shape. No user ID is sent to the Worker. Synthetic tests cover perpetual inclusion and expired/grace exclusion; production/default remains Supabase. |
 
 The Worker uses the same API and session boundary as the dashboard list; see
 [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) and

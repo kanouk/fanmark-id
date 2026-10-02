@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v23 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v24 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,

@@ -1,5 +1,80 @@
 # 本番読み取りの観測記録
 
+## 2026-10-02 public schema / Edge Function readback (10:44 UTC)
+
+Using the linked project `ppqgtbjykitqtiaisyji`, `supabase db dump --linked
+--schema public` produced a schema-only artifact in a private temporary
+directory. No table rows, Auth records, Storage objects, Stripe data, or
+secret values were fetched. The private raw dump was 180,288 bytes, SHA-256
+`aac7f38c912b358019a9bb9f282813a10bcd3e20af09e929d1ec41a2705b42cd`. After
+normalizing trailing blank lines, the checked-in `supabase/remote_schema.sql`
+is 180,281 bytes, SHA-256
+`6d0a41fd4f687c51d01963c83d565fe5854dfd19878b03d102716488c2ff656c`.
+
+The live catalog has 40 tables / 406 columns, 58 functions, one view, one
+sequence, four public types, and 77 RLS policies. The prior checked-in snapshot
+had 37 tables / 367 columns, 53 functions, one view, one sequence, four types,
+and 76 policies. The identity differences match checked-in migrations: the
+three added tables (`broadcast_emails`, `email_templates`, `languages`) are in
+the January 2026 migrations; the five added functions are the three
+notification-worker helpers from `20260725044303_make_notification_cron_on_demand.sql`
+and the two `user_settings` privilege guards from
+`20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql`.
+Five policies for those tables are present; four older public/authenticated
+validation policies were removed by the July 2026 guard migration. No table,
+function, view, sequence, or type identity was otherwise added or removed.
+This reconciles object names and the current DDL snapshot; it is not row-data
+parity or proof that every SQL behavior has a Cloudflare replacement.
+
+`supabase functions list --project-ref ppqgtbjykitqtiaisyji --output json`
+returned 35 deployed Functions, all `ACTIVE`. There are 34 checked-in local
+entrypoints and no local-only names. All 34 shared names have the same
+`verify_jwt` value as `supabase/config.toml`. The sole deployed-only function
+is `manual-expire-grace-licenses` (version 14, `verify_jwt=true`); its code and
+service-role behavior remain a manual authorization review item and were not
+downloaded or invoked.
+
+| Function | State | Version | `verify_jwt` |
+| --- | --- | ---: | --- |
+| `admin-expire-license` | ACTIVE | 20 | false |
+| `admin-get-user-detail` | ACTIVE | 219 | false |
+| `admin-list-users` | ACTIVE | 221 | false |
+| `admin-toggle-user-status` | ACTIVE | 220 | false |
+| `admin-trigger-password-reset` | ACTIVE | 220 | false |
+| `admin-update-user-plan` | ACTIVE | 220 | false |
+| `apply-extension-coupon` | ACTIVE | 75 | true |
+| `apply-fanmark-lottery` | ACTIVE | 192 | true |
+| `apply-transfer-code` | ACTIVE | 106 | true |
+| `approve-transfer-request` | ACTIVE | 104 | true |
+| `bulk-return-fanmarks` | ACTIVE | 231 | false |
+| `cancel-lottery-entry` | ACTIVE | 189 | true |
+| `cancel-transfer-code` | ACTIVE | 100 | true |
+| `change-subscription` | ACTIVE | 131 | false |
+| `check-email-exists` | ACTIVE | 304 | false |
+| `check-expired-licenses` | ACTIVE | 300 | false |
+| `check-subscription` | ACTIVE | 163 | false |
+| `create-checkout` | ACTIVE | 162 | false |
+| `create-extension-checkout` | ACTIVE | 152 | true |
+| `customer-portal` | ACTIVE | 159 | false |
+| `delete-user-account` | ACTIVE | 166 | false |
+| `extend-fanmark-license` | ACTIVE | 227 | false |
+| `fanmark-ogp` | ACTIVE | 107 | false |
+| `generate-ogp-image` | ACTIVE | 100 | false |
+| `generate-transfer-code` | ACTIVE | 104 | true |
+| `handle-stripe-webhook` | ACTIVE | 172 | false |
+| `manual-expire-grace-licenses` | ACTIVE | 14 | true |
+| `process-notification-events` | ACTIVE | 209 | false |
+| `record-fanmark-access` | ACTIVE | 114 | false |
+| `register-fanmark` | ACTIVE | 316 | true |
+| `reject-transfer-request` | ACTIVE | 100 | true |
+| `reset-fanmark-data` | ACTIVE | 235 | false |
+| `return-fanmark` | ACTIVE | 299 | true |
+| `send-auth-email` | ACTIVE | 64 | false |
+| `send-broadcast-email` | ACTIVE | 36 | true |
+
+These were metadata and DDL readbacks only. No Supabase schema, Edge
+deployment, user data, R2 object, production route, or DNS setting changed.
+
 観測日時: 2026-09-20T16:18:46.451758+00:00
 親: #28、棚卸し: #30。これは移行・本番設定変更の実施記録ではない。
 

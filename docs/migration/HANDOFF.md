@@ -1,8 +1,8 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Code checkpoint `4ee72f6` passed both CI jobs in run
-`36993739726`. An earlier run `36991654600` exposed an intermittent 120-second
+open and draft. Code checkpoint `63b6018` passed both CI jobs in run
+`36996085760`; CI did not deploy. An earlier run `36991654600` exposed an intermittent 120-second
 stall in the PGlite-heavy `subscription-application.test.mjs`; running it in a
 standalone Node process resolved the hosted validation failure. CI does not
 deploy.
@@ -40,6 +40,27 @@ Supabase hardening migration and pgTAP regression test now bind that RPC to
 `auth.uid()` and revoke anonymous execution. They passed a disposable PGlite
 behavior check, but have not been applied to Supabase; the repository's local
 Supabase DB container is unavailable in this worktree.
+
+The offline frontend report was regenerated at base `63b6018`. Exact
+211-location coverage is guarded by
+`scripts/migration/test-frontend-callsite-mapping.mjs`; the latest
+`test:migration-data` run passes 215/215. A schema-only Supabase readback
+refreshed `supabase/remote_schema.sql` to 40 tables / 406 columns / 58
+functions / 77 policies. The five added functions, three added tables, and
+policy changes match checked-in migrations. Read-only Functions metadata
+shows 35 ACTIVE deployments; all 34 local `verify_jwt` settings match, with
+one live-only `manual-expire-grace-licenses` function. Its authorization
+behavior remains under review. The readback and snapshot update changed no
+live schema or user data.
+
+Converter v24 now recognizes the D1 notification archiver as the explicit
+writer for `notifications_history.archived_at`; its selector remains disabled
+in staging. External Auth references and untranslated function/RLS/trigger
+behavior remain blocking gates, so the converter is still `deployable: false`.
+A guarded synthetic post-write rehearsal passed on 2026-10-02: the Stripe
+effect ran once, D1 Time Travel and encrypted R2 restore preserved admin MFA
+and the avatar, and five frozen writes were rejected. Provider-backed
+acceptance and production stop/recovery targets remain open.
 
 The earlier date-sensitive Stripe fixture failure is fixed; the full Stripe
 receipt suite, application build, and Worker API validation pass. CI itself
