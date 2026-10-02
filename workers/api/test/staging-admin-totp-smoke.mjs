@@ -3203,21 +3203,9 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        const needsTargetCleanup = [
-          actions.waitlistAdminReadback,
-          actions.broadcastEmailReadback,
-          actions.referenceMasterTierRoundtrip,
-          actions.referenceMasterExtensionPriceRoundtrip,
-          actions.authEmailTemplateEditRoundtrip,
-          actions.adminUserManagementReadback,
-          actions.adminUserPlanReadback,
-          actions.adminUserStatusReadback,
-          actions.lifecycleRunReadback,
-          actions.systemSettingsReadback,
-          actions.lifecycleSettingsReadback,
-          actions.notificationManualEvent,
-        ].some(Boolean);
-        if (needsTargetCleanup) {
+        // Every smoke action provisions this target identity/profile, so every
+        // action must clean it up, including read-only and emoji-only rehearsals.
+        {
           if (actions.adminUserStatusReadback) {
             await executeBusiness(
               `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +

@@ -1,5 +1,35 @@
 # 本番読み取りの観測記録
 
+## 2026-10-03 Master emoji audit rollout (16:15 UTC)
+
+CI `37031840989` on `ff7bcb8` passed both jobs. Additive Master migration
+`0008_emoji_master_change_audits.sql` and its ledger were file-imported; all
+three native triggers exactly match checked-in SQL. Canonical rows remained
+3,944, audit/context rows were zero, and no Master migration was pending.
+Fresh staging build/dry-run deployed Worker `10f62b09-8592-449e-9040-4e396a395175`;
+latest-by-created_on readback confirmed 100%. Public/local JS SHA-256 remains
+`dd779e2f1ef10aaf7c26f7b94100d82353ae6cf91e524af7cfbd498125a6a27d`.
+Root/robots/session/catalog/languages are 200, session=null, anonymous
+admin/transfer 401 and disabled webhook 404; X-Robots-Tag remains noindex.
+
+Pinned synthetic sign-in/TOTP/session rotation/MFA, draft create/update,
+stale/spoofed-actor/delete rejection and a 100-row mixed import passed with
+102 exact per-row audits and one shared import request/time. Context was
+empty. All 3,944 public catalog rows retained digest
+`629d5da3b49720f7aa33d15f157aef65ce2f76b55e000c59919624a8340b8c23`.
+Scoped cleanup restored the Master count/audit/pointer baseline and removed
+synthetic Auth/business profiles; user-owned Auth rows are zero. MFA generation
+remains monotonic through synthetic factor changes.
+
+The first run's functional/Master checks passed but shared smoke cleanup
+omitted the mode from its target list, leaving one target Auth user/profile.
+Private-journal exact recovery removed it; all modes now clean their always
+provisioned target. A fresh full run ended verified-and-cleaned. This is
+mutation/storage acceptance, not proof the admin history UI includes Master
+audits. Source discovery/favorite linking on fanmarks INSERT is the next
+confirmed implementation gap. No real user migration, external provider
+transaction, production Supabase write or domain/DNS operation occurred.
+
 ## 2026-10-03 staging audit rollout (15:36 UTC)
 
 CI run `37026002389` on `f3787d8` passed both jobs. Business staging migration

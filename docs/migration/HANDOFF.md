@@ -3,23 +3,44 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
-Master emoji mutation audits are now implemented and locally verified, but
-not remotely applied/deployed. Additive Master migration
+Master emoji mutation audits are implemented and staging-verified. Additive Master migration
 `0008_emoji_master_change_audits.sql` adds native per-change audits and a
 transaction-scoped server actor/request/time context. Missing/corrupted audits
 roll back the mutation; trusted CLI writes retain NULL actors. JSON import
 mutates up to 100 rows in one SQL statement, preserving stable UUIDs and
 creation times. Auth/Worker/Master D1 tests pass 34/34; migration data 237/237,
-Worker typecheck and changed-file ESLint pass. Master migration selectors,
+emoji/reference release integrations 7/7 and 6/6, Worker typecheck and ESLint pass. Master migration selectors,
 remote release guards and release fixtures include the new migration while
 Auth selectors remain separate. The guarded TOTP staging smoke has a new
 `--emoji-master-audit-roundtrip` flag with pinned account/version/triggers,
 private recovery journal, 100-row import, 102 exact audits, public catalog
 digest and scoped Master/Auth cleanup. See emoji-master-change-audit.md.
-Next: commit/CI, apply Master migration, fresh staging build/deploy and run
-that canary. CI `37029293358` on preceding head `ea9880f` passed both jobs.
+CI `37031840989` on code head `ff7bcb8` passed both jobs. Master migration 0008
+and its ledger were applied through a private file import; all three triggers
+match the checked-in SQL exactly and no Master migration is pending. Fresh
+build/dry-run deployed Worker `10f62b09-8592-449e-9040-4e396a395175` at 100%.
+HTTP root/robots/session/catalog/languages 200, no session, anonymous admin and
+transfer 401, disabled webhook 404, noindex and local/public JS hash match.
+The pinned synthetic canary passed real sign-in/TOTP/session rotation/MFA,
+draft create/update, rejected stale/spoofed-actor/delete requests and mixed
+100-row import, with 102 exact per-row audits and no context leak. All public
+catalog pages kept digest `629d5da3b49720f7aa33d15f157aef65ce2f76b55e000c59919624a8340b8c23`.
+Master canonical/audit/pointer baseline and empty user-owned Auth rows were
+restored; synthetic business profiles were removed. MFA generation remains
+monotonic. Initial function/Master checks passed but the old cleanup flag list
+omitted this mode, leaving one target Auth user/profile. Its private journal
+bounded exact recovery; unconditional target cleanup fixed all modes, and a
+fresh full run ended verified-and-cleaned. No credentials were logged.
 
-The audit fixes are deployed to workers.dev staging as Worker version
+Next concrete source-trigger gap: source fanmarks INSERT links matching
+ordered normalized discoveries and their favorites; the Worker registration
+batch and Business migrations lack that behavior. Add a failing source-shaped
+regression and preserve atomicity. Also inspect the administrator user-detail
+history: it currently combines Business/Auth audit stores and has not yet
+included/readback-verified the new Master audits. Do not call that UI parity
+complete merely because the Master audit rows exist.
+
+The preceding lottery-audit rollout used workers.dev staging Worker version
 `445dd523-232d-4766-aaef-2c8d175e5bc6` at 100%. The code baseline is `f3787d8`;
 CI run `37026002389` passed both application and Worker jobs. A fresh staging
 build and Wrangler dry-run passed before deployment. The latest deployment
@@ -65,7 +86,7 @@ Account cleanup failure retains Auth/profile rows while prior committed
 license returns stay in grace, as documented. Migration data passes 237/237.
 
 Source-trigger review found the Master D1 emoji change-audit gap now being
-closed by the local implementation above; remote verification remains pending.
+closed at the mutation/storage boundary by the local and staging evidence above.
 Source security-alert behavior is database NOTICE
 only, with no external delivery call. See the updated object map and private
 non-timestamp-trigger review; do not clear the broad catalog gate.

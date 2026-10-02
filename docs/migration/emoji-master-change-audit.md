@@ -49,9 +49,22 @@ Local Auth/Worker/Master D1 suite passes 34/34, including:
 - Simultaneous actors remain separate; actorless repository writes fail closed.
 - Trusted insert/update/delete preserve NULL actors and deletion history.
 
-Migration-data tests pass 237/237. Release integration, CI and remote evidence
-are recorded in EXECUTION/HANDOFF as they complete. The new migration and
-Worker changes are currently local; remote application is still pending.
+Migration-data tests pass 237/237; emoji/reference release integrations pass
+7/7 and 6/6. CI `37031840989` on `ff7bcb8` passed both jobs. Master migration
+0008/ledger and all three exact triggers are readback-verified, with no pending
+Master migration. Worker `10f62b09-8592-449e-9040-4e396a395175` is deployed at
+100% on workers.dev after fresh build/dry-run. HTTP/anonymous gates/noindex and
+local/public JS hash match. Remote canary completed all checks below and cleanup.
+
+The initial canary completed its functional checks and Master cleanup, but the
+shared smoke's target-cleanup flag list omitted this mode. A target synthetic
+Auth user/profile remained. Exact private-journal recovery removed those rows;
+all modes now clean their always-provisioned target, and the fresh full run
+completed `verified-and-cleaned`. MFA generation remains monotonic.
+
+This establishes the mutation/audit storage contract. Administrator user-detail
+history currently combines Business/Auth audit stores; integration/readback of
+these new Master audits remains a separate open UI parity check.
 
 The guarded synthetic staging command is:
 

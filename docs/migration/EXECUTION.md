@@ -1,5 +1,30 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：絵文字マスター監査をstaging検証
+
+head `ff7bcb8`のCI run `37031840989`はstaging application / Worker APIの両job成功。
+Master D1へ追加`0008_emoji_master_change_audits.sql`とledgerをprivate file importで適用し、
+3つのnative triggerをchecked-in SQLとexact照合した。canonical 3,944件、audit/context 0、
+pending migrationなしを確認した。fresh staging build/dry-run後、Worker
+`10f62b09-8592-449e-9040-4e396a395175`をworkers.dev限定で配備。created_onで選ぶ最新版は100%。
+HTTP root/robots/session/catalog/languages 200、session=null、匿名admin/transfer 401、無効Stripe
+webhook 404。noindex headerとlocal/public JS SHA-256一致も確認した。
+
+versionをpinした合成canaryで実際のsignin/TOTP enrollment/verification/session rotation/MFA
+管理認可を通し、draft create/update、古い更新・client actor・API削除の拒否、100件mixed importを検証。
+個別監査102件のactor/action/resource/metadata/timeと、import全行の共通request/timeを照合した。
+公開3,944件の全ページdigestは前後同一、context leakなし。synthetic canonical/audit rowsと
+Auth/Businessプロフィールを除去し、Master基準値とAuth user-owned 0行を復元した。
+MFA generationは因子変更に伴うmonotonic counterとして保持する。
+
+初回は機能検証とMaster cleanupが成功した後、旧smokeのtarget cleanup flag一覧に新modeが
+含まれず確認用Auth user/profileが各1行残った。private journalのexact ID/usernameで回収し、
+毎回作成するtargetを全modeでcleanupするよう修正。fresh rerunは最後まで成功した。
+初回journalと成功journalをprivateに保持し、credential/cookie/TOTP secretは出力していない。
+Source-trigger追加レビューでは新規fanmark INSERT時のdiscovery/favorites linkageがtargetから欠ける
+ことを確認した。これが次の実装対象。Master監査の管理者ユーザー詳細historyへの統合も未検証。
+包括catalog gateとprovider/CPU acceptanceは残す。実ユーザー移行とdomain/DNS切替は実施していない。
+
 ## 2026-10-03：絵文字マスター変更監査（local）
 
 sourceの`log_emoji_master_changes`に相当する監査がMaster D1 draft編集から欠けていた。
