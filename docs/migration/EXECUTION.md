@@ -1,3 +1,16 @@
+# 2026-10-03 画像参照の実staging受け入れ
+
+`6a1870a`/CI37118191381両job成功。11:10:37.101ZにWorker51db2c90へ反映し、
+Supabase形式を保持した合成画像をR2から編集・公開表示、変更なし保存、既存key削除する
+実API/Chrome試験を受け入れた。合成2 account/2画像は削除済み。
+独立11:15:19.120Z readbackで業務/Authの非マスター行0、Master7888/release/history/料金値保持、
+reference世代10・activation追加0、wake17/17・MFA240・secret3名称を確認した。
+[画像URL対応](storage-image-url-mapping.md)と[受入証拠](evidence/storage-image-projection-2026-10-03.json)。
+前のread-only helperは過去の受入versionを新versionと比較して停止した。元の受入journalは
+保持し、今回preflight.oldVersionとの比較へ修正した。実稼働newVersionは独立照合し、再確認が成功。
+全実行handleはterminal。実ユーザー/Storage/DNSは未変更、実スマホ/provider/運用/全sourceと
+最終統合は未完了。次はCOMPLETION項目1の契約差/残件照合。以下は過去のcheckpoint。
+
 # 2026-10-03 画像参照対応
 
 [画像URL対応](storage-image-url-mapping.md)のlocal実Worker/D1/R2/Chrome試験が成功。元行を保持したDTO変換をowner/public/password-protected/admin経路へ適用する。現行candidateのCIとstaging反映は未受け入れ。既存合成remote復旧の証拠は保持する。

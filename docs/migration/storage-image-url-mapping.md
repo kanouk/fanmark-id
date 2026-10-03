@@ -55,5 +55,26 @@ private report: `/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-local-
 同directoryの`imported-images-editor.png`・`imported-images-public.png`を視覚確認した。
 API応答のfulfillは0件。R2の合成1px赤PNGが両画面で描画されている。
 
-remote stagingへの反映と現行candidateのCIは、この記載時点では未受け入れ。
+## 実stagingへの反映と受け入れ
+
+candidate `6a1870a`の[CI37118191381](https://github.com/kanouk/fanmark-id/actions/runs/37118191381)は両job成功。
+11:10:37.101ZにWorker `51db2c90-d79b-4d83-882a-c308d93ee278`へ反映した。
+専用account、25 Business migration、業務/Authの非マスター行0、保持Masterの
+fingerprintと現在の100% versionを配備前に確認した。schema・provider selectorは変更していない。
+配信JS/CSSはlocal buildとbytes/hashが一致し、noindexを保持している。
+
+2件の合成accountと2画像だけを作成し、元URL形式を保持した本人avatar・
+ファンマprofileをAPIで取得した。本人avatarの変更なし保存で元URLを保持する。
+実Chromeで編集画面と公開ページの画像decode、保存失敗→reload→再試行、
+元画像参照の保持、private公開拒否、他ownerの拒否、既存keyのDELETE204を確認した。
+合成画像と業務/Auth行を削除し、画像HEAD404とFK違反0を確認した。
+
+別のread-only処理で11:15:19.120Zに業務/Authの非マスター行0、Master絵文字7888・
+release/history/料金・Stripe ID保持、reference世代10と新activation0、wake17/17、
+MFA世代240、secret3名称を確認した。
+前のMaster受入journalと新deploymentを同一versionと比較してしまうprivate helperの
+初回はread-onlyで失敗した。前のjournalは書き換えず、今回preflightのoldVersionと
+比較し、実稼働newVersionは別に照合するよう修正した。再確認は成功した。
+[値を含まない受入証拠](evidence/storage-image-projection-2026-10-03.json)。
+この画像参照の差はlocal/実stagingで閉じたが、六工程全体の完了ではない。
 実ユーザー画像のinventory/bytes/metadata照合と既存Auth identityは最後のデータ工程で確認する。
