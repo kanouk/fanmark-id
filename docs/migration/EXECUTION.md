@@ -1,3 +1,24 @@
+# 2026-10-03 実Cronアーカイブと最新CIの受け入れ
+
+`dae2a70`/CI37123979783はcompleted/success、application/Worker両job成功。
+前回失敗したactual local Worker/split D1のeditor試験も成功した。
+CDPのmethod/code/固定kindの診断追加は受け入れ、秘密のraw値を出力しない。
+以前のprotocol拒否は今回再現せず、race修正とは主張しない。拒否を無視する変更はない。
+runtime/schemaは未変更で、main stagingは引き続きWorker51db2c90・code6a1870a。
+
+隔離した実Cron→archiveも受け入れ済み。全25 Businessの新しい合成D1で、
+古いdelivered/failed2件を履歴へ移し、pendingと新しいdelivered2件を残した。
+実schedule/binding、received/selected/start/completed、履歴ID/payload、FK違反0を確認。
+2回目のconductor34190はterminal/exit0、verified-and-cleaned。
+最初のfixtureのonly-archive期待値誤りによる失敗も保持し、アプリ不具合とは扱わない。
+所有した一時Worker/D1を削除、独立12:52:07.842Z metadata readで元の3 D1/2 Workersと
+一致した。[受け入れ](evidence/isolated-notification-archive-cron-2026-10-03.json)。
+同じ実Cron検証は再実行不要。main stagingの日次archive selectorは未設定。
+次は日次運用/保存期間/CPU・plan適合と、実provider設定待ちの残件。
+providerの現行OAuth signup hookと必要入力は[接続準備](staging-provider-readiness.md)。
+実ユーザーデータ・既存staging業務/Auth行・provider設定・ドメインは未変更。
+この証拠追記とconductor追加の新HEAD CIは別に追跡する。以下は過去のcheckpoint。
+
 # 2026-10-03 最新CIのブラウザ失敗を診断中
 
 `e3d5615`/CI37121269163はcompleted/failure。Worker jobは成功したが、

@@ -66,9 +66,17 @@ provider accepts the workers.dev callback or that its console is configured.
 Preserve the existing production Supabase callback. Provider client/subject
 identity must be reviewed before choosing a different OAuth application,
 particularly for Apple; matching email is not identity-migration proof.
-`configuredSocialProviders()` currently sets `disableSignUp: true`. A console
-setup and successful authorization screen alone do not prove first-login
-creation or safe account linking.
+`configuredSocialProviders()` supplies the default `disableSignUp: true`, but
+this is not the final staging sign-up configuration. The checked-in staging
+selector `AUTH_SOCIAL_PROVISIONING_BACKEND=d1` makes
+`createOAuthSignupIntegration()` override configured providers with
+`disableSignUp: false` and attach the verified-identity provisioning hooks.
+`index.ts` checks the business sign-in policy and required Auth/Business schema
+before exposing social start/callback. This processing is deployed and accepted
+with synthetic identities; without actual credentials, no configured provider
+is exposed. A console setup or authorization screen alone does not prove a
+real provider's first-login creation or safe account linking. See
+[OAuth provisioning](oauth-signup-provisioning.md).
 
 ## Evidence needed to close rehearsal
 
@@ -94,3 +102,32 @@ The credential and provider-console work, approved recipient/test-account
 selection, actual integration rehearsal and relevant CPU/plan verification
 remain incomplete. User/Auth/business/Storage migration and public DNS changes
 remain deferred, as recorded in `HANDOFF.md`.
+
+## 次の実接続に必要な入力
+
+2026-10-03、元checkoutと移行worktreeのroot/Workerの`.env*`について、上表の
+credential名があるかだけを確認した。値は表示・保存せず、該当名は見つからなかった。
+これは他の管理画面・秘密管理先に存在しないという証拠ではない。
+必要なのは以下の設定場所とテスト条件。秘密値はチャットやリポジトリに貼らない。
+
+- Stripe sandbox、Resend、Google/GitHub/Discord/Appleの設定を参照できる管理画面、
+  または秘密値を保管したローカルファイルの場所。
+- Resendの検証済み送信元と、認証メールのテスト宛先、その宛先への送信許可。
+- 各OAuth管理画面で上記staging callbackを設定できるアカウント。
+- WorkersのCPU測定と現行契約を照合して、必要ならPaidへ変更する判断。
+  これはR2有効化とは別で、この作業では購入・プラン変更をしていない。
+
+実接続以外の残件はCOMPLETION.mdで進める。設定待ちをローカルfixtureで代替して
+完了にせず、同じ受け入れ済み試験を繰り返して待ち時間を埋めない。
+
+## Workersプラン判断の根拠
+
+2026-10-03に公式資料を確認した。Workers Paidはアカウントごと月額最低$5、
+含まれるWorkerリクエスト/CPU枠を超えれば従量課金となる。他製品を含む総額を
+$5と保証するものではない。[公式料金](https://developers.cloudflare.com/workers/platform/pricing/)。
+FreeのHTTP/Cron CPU上限は10ms。ネットワークやDB応答の待ち時間とは別で、
+一時的な上振れが成功しても継続的な適合の証拠にならない。
+PaidのHTTP既定は30秒で、Cronの上限は実行間隔に依存する。
+[公式CPU制限](https://developers.cloudflare.com/workers/platform/limits/#cpu-time)。
+認証等の実測をこの上限と照合し、現行契約と必要な制限を確認してから判断する。
+Paid購入・変更の許可は未取得で、R2有効化からWorkers Paid契約を推定しない。

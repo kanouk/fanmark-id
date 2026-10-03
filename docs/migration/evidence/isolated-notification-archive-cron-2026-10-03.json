@@ -1,0 +1,181 @@
+{
+  "scope": "actual Cloudflare Cron, unchanged app scheduler, new isolated synthetic D1; no source users or staging app bindings",
+  "status": "accepted-and-cleaned",
+  "acceptedAt": "2026-10-03T12:50:25.665Z",
+  "codeHead": "a2d09dd14a29f3c296bdc67288331bcbeac0cf27",
+  "acceptedCodeCI": 37120631839,
+  "businessMigrationCount": 25,
+  "cron": "*/1 * * * *",
+  "deployedAt": "2026-10-03T12:31:05.929Z",
+  "actualSchedules": [
+    {
+      "cron": "*/1 * * * *",
+      "created_on": "2026-10-03T12:31:05.723363Z",
+      "modified_on": "2026-10-03T12:31:05.723363Z"
+    }
+  ],
+  "actualD1Bindings": [
+    {
+      "name": "FANMARK_DB",
+      "id": "51fe9491-2244-4fcf-bb9d-9c03df394d33"
+    },
+    {
+      "name": "SCHEDULED_DISPATCH_DIAGNOSTICS_DB",
+      "id": "51fe9491-2244-4fcf-bb9d-9c03df394d33"
+    }
+  ],
+  "diagnostics": [
+    {
+      "event_id": "1791031804000:*/1 * * * *:job_completed:notification-archive",
+      "cron": "*/1 * * * *",
+      "scheduled_time_ms": 1791031804000,
+      "stage": "job_completed",
+      "job_name": "notification-archive",
+      "details_json": "{\"status\":\"completed\",\"archived\":2,\"remaining\":0,\"conflicts\":0,\"batches\":1}"
+    },
+    {
+      "event_id": "1791031804000:*/1 * * * *:job_started:notification-archive",
+      "cron": "*/1 * * * *",
+      "scheduled_time_ms": 1791031804000,
+      "stage": "job_started",
+      "job_name": "notification-archive",
+      "details_json": "{\"status\":\"started\"}"
+    },
+    {
+      "event_id": "1791031804000:*/1 * * * *:received:",
+      "cron": "*/1 * * * *",
+      "scheduled_time_ms": 1791031804000,
+      "stage": "received",
+      "job_name": "",
+      "details_json": "{\"status\":\"received\"}"
+    },
+    {
+      "event_id": "1791031804000:*/1 * * * *:selected:",
+      "cron": "*/1 * * * *",
+      "scheduled_time_ms": 1791031804000,
+      "stage": "selected",
+      "job_name": "",
+      "details_json": "{\"selectedJobs\":[\"notification-archive\"]}"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "950eecc2-fc1f-4761-839d-28c12539f635",
+      "status": "delivered",
+      "triggered": "2020-01-01T00:00:00.000000Z",
+      "archive": true
+    },
+    {
+      "id": "72988a2c-2ea8-45d7-8cf9-d3b9cbfc9805",
+      "status": "failed",
+      "triggered": "2020-01-01T00:00:00.000000Z",
+      "archive": true
+    },
+    {
+      "id": "1f1b5e4d-975f-460d-ada5-3b789640f31f",
+      "status": "pending",
+      "triggered": "2020-01-01T00:00:00.000000Z",
+      "archive": false
+    },
+    {
+      "id": "23f808d6-7cc5-4e67-bd3e-e0d30f929b1d",
+      "status": "delivered",
+      "triggered": "2026-10-03T12:30:58.170000Z",
+      "archive": false
+    }
+  ],
+  "proof": {
+    "receivedAt": "2026-10-03T12:50:25.665Z",
+    "scheduledTime": 1791031804000,
+    "details": {
+      "status": "completed",
+      "archived": 2,
+      "remaining": 0,
+      "conflicts": 0,
+      "batches": 1
+    },
+    "retained": [
+      {
+        "id": "1f1b5e4d-975f-460d-ada5-3b789640f31f",
+        "status": "pending"
+      },
+      {
+        "id": "23f808d6-7cc5-4e67-bd3e-e0d30f929b1d",
+        "status": "delivered"
+      }
+    ],
+    "archived": [
+      {
+        "id": "72988a2c-2ea8-45d7-8cf9-d3b9cbfc9805",
+        "original_data": "{\"id\":\"72988a2c-2ea8-45d7-8cf9-d3b9cbfc9805\",\"user_id\":\"90000000-0000-4000-8000-00000000000d\",\"event_id\":null,\"rule_id\":null,\"template_id\":\"55163105-46a3-4af3-b1a9-9879361b53d2\",\"template_version\":1,\"channel\":\"in_app\",\"status\":\"failed\",\"payload\":{\"synthetic\":\"archive-cron\"},\"priority\":5,\"triggered_at\":\"2020-01-01T00:00:00.000000Z\",\"delivered_at\":null,\"read_at\":null,\"read_via\":null,\"expires_at\":null,\"retry_count\":0,\"error_reason\":null,\"created_at\":\"2020-01-01T00:00:00.000000Z\",\"updated_at\":\"2020-01-01T00:00:00.000000Z\"}",
+        "archived_at": "2026-10-03T12:50:05.670000Z"
+      },
+      {
+        "id": "950eecc2-fc1f-4761-839d-28c12539f635",
+        "original_data": "{\"id\":\"950eecc2-fc1f-4761-839d-28c12539f635\",\"user_id\":\"90000000-0000-4000-8000-00000000000d\",\"event_id\":null,\"rule_id\":null,\"template_id\":\"e26f52ab-e176-40cc-86dd-fa60afb22920\",\"template_version\":1,\"channel\":\"in_app\",\"status\":\"delivered\",\"payload\":{\"synthetic\":\"archive-cron\"},\"priority\":5,\"triggered_at\":\"2020-01-01T00:00:00.000000Z\",\"delivered_at\":null,\"read_at\":null,\"read_via\":null,\"expires_at\":null,\"retry_count\":0,\"error_reason\":null,\"created_at\":\"2020-01-01T00:00:00.000000Z\",\"updated_at\":\"2020-01-01T00:00:00.000000Z\"}",
+        "archived_at": "2026-10-03T12:50:05.670000Z"
+      }
+    ]
+  },
+  "foreignKeyViolations": 0,
+  "cleanup": {
+    "worker": "fanmark-archive-cron-d87639a6f59e1104",
+    "database": {
+      "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+      "databaseId": "51fe9491-2244-4fcf-bb9d-9c03df394d33",
+      "databaseName": "fanmark-recovery-archive-d87639a6f59e1104-business",
+      "createdAt": "2026-10-03T12:30:53.931Z",
+      "targetIncarnation": "c7422cf6-3446-4bb8-b14e-45210fec4e13"
+    },
+    "workerDeleted": true,
+    "databaseDeleted": true,
+    "inventoryMatches": true,
+    "independentReadback": {
+      "checkedAt": "2026-10-03T12:52:07.842Z",
+      "scope": "independent read-only metadata; no D1 rows or provider calls",
+      "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+      "after": {
+        "databases": [
+          {
+            "uuid": "160376b0-bde6-4d5f-8969-96deb5ae1183",
+            "name": "fanmark-emoji-master-staging",
+            "created_at": "2026-09-23T07:49:34.294Z"
+          },
+          {
+            "uuid": "2116bc43-32ab-4e3e-b762-9378df88b95f",
+            "name": "fanmark-auth-staging",
+            "created_at": "2026-09-23T15:34:06.723Z"
+          },
+          {
+            "uuid": "d4bb0c48-f24a-491f-8693-fa393ab0b873",
+            "name": "fanmark-business-staging",
+            "created_at": "2026-09-23T15:33:59.459Z"
+          }
+        ],
+        "workers": [
+          {
+            "id": "fanmark-app-staging",
+            "created_on": "2026-09-23T09:00:39.062934Z"
+          },
+          {
+            "id": "fanmark-emoji-master-staging-api",
+            "created_on": "2026-09-23T08:36:35.115784Z"
+          }
+        ]
+      },
+      "ownedWorkerAbsent": true,
+      "ownedDatabaseAbsent": true,
+      "baselineMatches": true
+    }
+  },
+  "privateJournalSHA256": "532f087d0b634087c9a52af086fbe3ac8679e5aef9d10fe0414c9d47aa63ad42",
+  "stagingAppArchiveSelectorEnabled": false,
+  "realUserDataReadOrMigrated": false,
+  "domainChanged": false,
+  "notProven": [
+    "main staging daily archive activation",
+    "recurring operations and retention policy acceptance",
+    "provider integration",
+    "CPU and plan suitability"
+  ]
+}

@@ -120,6 +120,26 @@ boolean修正で実位置374へ移ったためだった。testは実INSERT位置
 唯一のhistory writer、archived_at列、bind値とnative timestampの検証を維持する。
 修正後の全test:migration-dataは277/277、Worker typecheck/lint/diffも成功した。
 
+## 通知イベント生成とwake
+
+`create_notification_event`の未変更source定義hashは
+`dd6c274f7ceafc8fa6ccf59ba386356eccc01a294ac1d8500cfdb3c408a101f2`。
+sourceは任意のevent/payload/source/dedupe/trigger時刻を受け、pending/processingの
+同じdedupeを再利用し、なければpending行を挿入してUUIDを返す。
+現行リポジトリの呼出し元は抽選申込、coupon、transfer申請/承認/拒否、期限処理、
+返却helper、退会、管理者失効、旧延長Edge。targetではそれぞれのowner/MFA保護された
+業務API、Business0015 coupon適用、lifecycle/Stripe適用が、操作固有のreceipt/transaction
+と共にイベントを生成する。汎用の任意payload/source/dedupe RPCは公開しない。
+旧sourceの通知RPCと別transactionになる操作を、そのまま原子的処理と推定しない。
+
+管理画面の直接イベント作成はnotification-master-d1-api.tsでMFAを確認し、
+pending・admin_manual・version1・server UTC時刻とUUIDを設定する。0024 triggerの
+更新件数を混ぜず、RETURNING idで実挿入を確認する。HTTP完了時とscheduled job完了時の
+flushNotificationWakeSafelyが保存済みwake世代をDOへ届け、失敗時もD1 markerは保持する。
+各業務APIの既存受入と、実管理者MFA/作成/alarm排出/空queue停止/未来通知の復旧という
+既存のwake受入を対応する証拠に使う。全Edgeの本番versionや任意外部RPC consumer、
+メール/Stripe providerの成功まで、この対応から推定しない。
+
 ## D1 通知履歴アーカイブ
 
 `workers/api/src/notifications-scheduled.ts`は、90日より古い`delivered`/`failed`
@@ -205,3 +225,25 @@ Worker `ea309178`で実signin/TOTP/MFA後の手動POST 201、実alarm起動、�
 照合してAuth/業務fixtureを削除済み。手動作成は`INSERT ... RETURNING id`のexact receiptで
 確認する。remote D1の`meta.changes`はwake trigger更新を含み2件となるため、1件と比較しない。
 詳細と残るdelayed/他channel/provider/CPU等の境界は[通知起動・停止](notification-worker-wake.md)。
+
+### 実Cronの隔離受け入れ — 2026-10-03
+
+`a2d09dd`/CI37120631839両job成功済みのruntimeを変更せず、新しいWorker/D1と
+全25 Business migrationを使い、実Cloudflare Cronからarchiveを実行した。
+毎分と等価な`*/1 * * * *`をarchive専用の明示設定にして、実schedule/bindingを照合。
+`scheduledTime=1791031804000`でreceived/selected/start/completedをD1で確認した。
+古いdelivered/failedの2件だけを履歴へ移し、pendingと新しいdeliveredの2件を保持。
+履歴ID/payload、残るID/status、FK違反0を確認した。
+
+最初のfixtureは`* * * * *`がnotification/Stripeのdisabled処理も選ぶことを
+「archiveだけ」の期待値に含めず、実archive2件完了後のassertで失敗した。
+一時資源は削除済み。これはアプリ不具合の発見や修正とは扱わない。
+修正したfixtureの2回目はverified-and-cleanedでterminal/exit0。
+元の3 D1/2 Workersのinventoryへ戻り、独立12:52:07.842Z metadata readで
+所有した一時資源の不在とbaseline一致を確認した。
+[evidence](evidence/isolated-notification-archive-cron-2026-10-03.json)。
+
+この証拠で実Cron→archiveの配線と対象選択を受け入れる。同じ隔離検証を理由なく
+繰り返さない。main stagingの`NOTIFICATION_ARCHIVE_BACKEND`は依然未設定で、
+日次有効化・保存期間/監視/CPU/planを含む定常運用の受け入れは別の残件。
+実ユーザーデータ、既存staging業務/Auth行、provider、ドメインは変更していない。
