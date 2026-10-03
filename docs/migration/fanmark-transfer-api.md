@@ -58,10 +58,31 @@ real-session application test accepts400 for a preflight limit refusal or409
 for a conditional-batch loss, and still requires exactly one reservation.
 All three bindings receive foreign-key checks after each test.
 
-This candidate has local acceptance only. Exact-head CI, deployment and a new
-remote fault/rollback/retry canary remain required; the currently accepted
-Worker is lottery code027a949/version22a49009. Account-deletion audit integrity
-and other source writers/callers remain separate open work.
+## Staging integrity acceptance (2026-10-03 JST)
+
+Code c6a4f9d CI37090152096 passes both jobs and is deployed as Worker
+71d1612f-5220-4bf1-bc7f-99cc43adbbd7 at100%. Independent02:45:22.182Z readback
+follows five actual HTTP fault/rollback/retry cases: one of two applicant audits
+ignored, metadata-changed or deleted; transfer audit ignored; old profile DELETE
+ignored. Each fault is scoped to generated fixture IDs and is removed before
+retry. Failures500 preserve exact approval rows, event IDs and requested wake
+generation. Retries200 verify exact audits for both applicants and the transfer,
+old/new licenses, configuration deletion/new inactive config, lock and outbox.
+Repeated approval400 adds no rows. Native Master remains a fixture; the remote
+flow reads the actual Master Tier1 row and verifies the resulting license.
+
+Journal transfer-audit-5LT5tv/canary.json is verified-and-cleaned. All three
+synthetic Auth users, business fixtures and inboxes are removed; the temporary
+trigger is gone, all other trigger definitions match, both DB FK checks pass
+and cookies return null sessions. Master canonical3944/release7888/import/
+activation/history, MFA generation236 and the three secret names are unchanged.
+Wake legitimately advances7→17 and is acknowledged17:17; it is not reset.
+Static assets match and unconfigured provider entries stay closed. Private
+acceptance: /tmp/fanmark-transfer-c6a4f9d-staging-acceptance.json.
+
+Account-deletion audit integrity, other source runtime/RLS/callers, real provider/
+phone/CPU/plan and operational acceptance remain separate open work. Existing
+real users and domain/DNS have not moved; this is scoped transfer acceptance.
 
 ## Historical staging lifecycle canary (2026-09-25 JST)
 

@@ -7,17 +7,42 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- **Local transfer-approval integrity candidate (not deployed):** Native37/37
-  uses full25 Business/4 Auth migrations and real sessions/router; Master Tier
-  remains a focused fixture. Nine prior false-success entry-audit cases were
-  reproduced before the fix. Same-batch snapshot/exact entry/transfer audits
-  and complete approval effects now abort suppressed/altered writes. Test proof
-  includes whole-row rollback/retry, second-applicant audit omission, uncaptured
-  native entry creation, pre-batch snapshot race and warmed-cookie revocation.
-  Exact-head CI/deployment/new remote fault acceptance remain pending. Account
-  deletion audit integrity is next; do not call this whole-source parity.
+- **Newest accepted staging code:c6a4f9d**, both CI37090152096 jobs successful.
+  Fresh preflight02:40:55Z verifies Business ledger25/Auth owned0, retained
+  Master inventory and wake7:7. Read-only Auth schema02:41:25Z confirms existing
+  ledger4/marker6/index4/FK0 and MFA generation unchanged; no DDL applied.
+  Deployment02:41:55Z is **71d1612f-5220-4bf1-bc7f-99cc43adbbd7 at100%**.
+  Static JS/CSS/noindex/robots/sitemap match the exact build.
+- Transfer native37/37 uses full25 Business/4 Auth and real sessions/router;
+  native Master Tier remains a focused fixture. Actual remote Master Tier1
+  read and transfer duration are exercised by the new canary. Five remote
+  cases pass: one of two applicant audits ignored/metadata-changed/deleted,
+  transfer audit ignored, old profile deletion ignored. Each refuses500 with
+  exact license/config/code/request/entry/audit rollback, unchanged event IDs
+  and wake request generation; removing the own-ID scoped fault allows200
+  retry with both applicant audits, transfer audit, 30-day lock, new inactive
+  config and outbox readback. Repeated approval400 creates no additional rows.
+- Journal ends transfer-audit-5LT5tv/canary.json, verified-and-cleaned. Its
+  three Auth users, business fixtures/inboxes and temporary trigger are gone;
+  both-store FK0, exact trigger restoration and cookie invalidation pass.
+  Independent02:45:22.182Z readback confirms Worker71d at100%, owned0/ledger25,
+  unchanged Master canonical3944/release7888/import/activation/history, MFA
+  generation236 unchanged and the same three secret names. Legitimate wake
+  advances7→17 and is acknowledged17:17; it was not reset. Four provider start/
+  callback GET entries remain403/no cookie; capabilities/social/signup/email
+  stay closed. Private acceptance:
+  /tmp/fanmark-transfer-c6a4f9d-staging-acceptance.json.
+  This scope does not prove new remote OAuth users/providers, current editor/
+  lottery reexecution, real phones, full source/RLS/callers or whole migration.
+- Next: account-deletion lottery and DELETE_ACCOUNT audit integrity. Its older
+  suite uses a reduced Business fixture; the synthetic candidate seed is now
+  compatible with all25 canonical migrations/SQLite/FK0 but native/Auth route
+  integration and fault tests are still required. Private preparation is
+  /tmp/fanmark-account-deletion-canonical-preparation.json. Remaining full
+  source, lifecycle/archive/ops/recovery, providers and CPU/plan stay open.
+  Real user-data migration and domain/DNS remain intentionally last.
 - Docs-only3f4faac CI37089404509 passed both jobs; no deployment was needed.
-- **Newest accepted staging code:027a949**, both CI37088432269 jobs successful.
+- **Prior accepted staging code:027a949**, both CI37088432269 jobs successful.
   Full preflight02:12:10Z verifies Business ledger25/Auth owned0 and the fixed
   Master/secrets/wake5:5 baseline. Read-only Auth schema revalidation02:12:35Z
   confirms existing ledger4/marker6/index4/FK0 and unchanged MFA generation; no
@@ -40,8 +65,9 @@ older sections retain their historical acceptance and failure evidence.
   This accepts only the listed lottery/schema/static/baseline scope, not real
   providers/new OAuth users, current remote editor reexecution, real phones or
   the entire migration. The47b editor/OAuth guard proof below is historical.
-- Next: add suppress/corrupt/delete audit acceptance for transfer approval and
-  account deletion, then remaining full source runtime/authorization/caller,
+- At the027a949 checkpoint, transfer/account-deletion integrity remained open;
+  transfer is now accepted above, while account deletion remains next. Then
+  continue full source runtime/authorization/caller,
   lifecycle/archive/retention and ops/recovery. Stripe's existing transaction
   completion guard already checks exact entry-audit fields and its native suite
   includes suppression/corruption. Provider integration and CPU/plan remain open;
@@ -80,7 +106,7 @@ older sections retain their historical acceptance and failure evidence.
   Older boundary details below are historical; do not redeploy55b or treat its
   former pending-schema statements as current.
 
-- Lottery candidate027a949 is now deployed/accepted for the top boundary.
+- Prior lottery code027a949 was deployed/accepted at its historical boundary.
   Full25 Business/4 Auth with real sessions/router passes42/42, including27
   audit faults/retries, races and warmed-session revocation. Local typecheck,
   lint, migration-data278/278, CI isolation and bundle dry-run pass. Worker CI

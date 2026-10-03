@@ -6500,3 +6500,34 @@ CI/deployment/remote fault acceptance remain pending. Account-deletion integrity
 source runtime/RLS/callers, lifecycle/retention/ops, real provider/phone and
 CPU/plan acceptance remain open. No real users/providers/source writer/DNS
 changed during this local slice.
+
+### Transfer candidate staging acceptance
+
+Code c6a4f9d CI37090152096 passes both jobs. Fresh preflight02:40:55Z retains
+ledger25/owned0/Master inventory/wake7:7. Read-only Auth schema02:41:25Z verifies
+existing four migrations, six markers and four indexes/FK0/MFA; no DDL runs.
+Guarded deployment02:41:55Z produces71d1612f-5220-4bf1-bc7f-99cc43adbbd7 at100%.
+Static JS/CSS/root/noindex/robots/sitemap match. Five real-session remote HTTP
+faults pass: one of two applicant audits ignored/metadata-changed/deleted,
+transfer audit ignored, old profile deletion ignored. Each500 preserves exact
+approval rows and event IDs/requested wake generation. After removing the own-ID
+scoped trigger,200 retries read back exact audits for both applicants/transfer,
+old/new licenses, 30-day lock, config reset and outbox; repeat400 adds no rows.
+The remote flow reads actual Master Tier1, beyond the native focused fixture.
+
+Journal transfer-audit-5LT5tv ends verified-and-cleaned; three synthetic users,
+fixtures/inboxes and fault trigger are removed, all trigger definitions restored,
+both DB FK0 and cookies invalidated. Independent02:45:22.182Z readback verifies
+Worker71d, owned0/ledger25, unchanged Master canonical3944/release7888/import/
+active/history, MFA generation236 and the same three secret names. Wake advances
+monotonically7→17 and is acknowledged17:17; it was not reset. Unconfigured
+provider starts/callback GETs stay403/no-cookie and anonymous session is null.
+Private acceptance: /tmp/fanmark-transfer-c6a4f9d-staging-acceptance.json.
+
+The next account-deletion fixture is compatible with all25 canonical Business
+migrations in isolated SQLite and FK0. This is preparation only; native Auth/
+route integration and ignored/altered/deleted lottery/DELETE_ACCOUNT audit
+reproduction are next. Per-license returns precede cleanup and their committed
+grace transitions cannot be called part of a cross-store rollback. Full source/
+RLS/callers, lifecycle/retention/ops, real providers/phones and CPU/plan stay open.
+No real user data/source writer/DNS changed. Migration remains incomplete.

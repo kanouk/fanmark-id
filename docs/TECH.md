@@ -294,3 +294,5 @@ remote:falseとし、account/routes/servicesは使わず、終了時にlocal DB 
 抽選申込/再申込/取消のD1 APIはserver-generated audit UUIDで今回の監査を特定し、同じbatch内のSQL assertionで保存された申込状態とexact audit fieldsを検査する。不一致はSQLite errorでbatch全体をrollbackするため、commit後の件数チェックに依存しない。`test:fanmark-lottery-d1`は全25 Business/4 Auth migrationと実Better Auth session/routerを使い、Worker CIの`test:api-contracts-d1`にも含む。詳細は[migration/fanmark-lottery-api.md](migration/fanmark-lottery-api.md)。
 
 譲渡承認も`lottery-cancellation-audit.ts`と同一batchの完了assertionを使う。応募snapshotがbatch取得前に変わった場合、取消監査または移管監査が欠落・改変された場合、ライセンス・設定削除・申請更新・outboxが抑止された場合は全変更をrollbackする。`test:fanmark-transfer-d1`は全25 Business/4 Auth migration、実Better Auth signin/sessionとWorker routerを使う37件のnative proof。Masterはティア参照用fixtureなので全Master schema受け入れはこのsuiteでは主張しない。remote acceptanceは[migration/fanmark-transfer-api.md](migration/fanmark-transfer-api.md)とHANDOFFで区別する。
+
+譲渡承認の`c6a4f9d`はCIとstagingの5故障/rollback/retryケースまで受け入れ済み。remoteでは実Masterティアを参照し、テストデータ・triggers・cookieのcleanup、保持Master/MFA/secretとmonotonic wakeのreadbackも通過した。現在のstagingは`71d1612f-5220-4bf1-bc7f-99cc43adbbd7`。退会監査と全source/RLS/callers/provider/運用の検証は別の未完了条件。
