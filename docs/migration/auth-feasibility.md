@@ -491,9 +491,16 @@ malformed or unavailable settings close these paths before provider requests or
 Auth state mutation. The native Auth fixture applies all25 canonical Business
 migrations. Ten previously failing policy cases and three supported boolean
 encoding cases now pass with the prior34 tests: Auth47/47. Existing-UUID provider
-linking and the same-session MFA tests remain included. Policy CI/deployment
-are pending; accepted8144df2 does not contain this later change.
+linking and the same-session MFA tests remain included. Both CI37083522230
+jobs succeeded for55b40e0, deployed as a0fcd645 at100%. Independent01:00:34Z
+readback proves retained baselines; remote provider entries remain closed with
+keys absent. Accepted8144df2's combined canary is an earlier, separate proof.
 
-New social users still cannot register until recoverable Business provisioning
-is implemented and accepted. Reviewing installed getOAuthState/serverContext
-exports does not establish that counterpart or real provider acceptance.
+New social users remain closed by default. The new recoverable provisioning
+candidate uses Auth0009/private provider-subject markers and an explicit backend
+selector. Native54/54 proves all four callbacks through profile/session/initial
+password setup and tests pre-commit/lost-ACK recovery, conflicts, suspension,
+tampering/replay and schema readiness. Existing Auth47/47, signup15/15 and
+shared MFA6/6 still pass. This is a tested implementation rather than an SDK
+export review, but its exact-head CI, remote Auth schema/selector/deployment
+and real-provider acceptance remain open. See [registration recovery](oauth-signup-provisioning.md).

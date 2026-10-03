@@ -15,7 +15,8 @@ interface BetterAuthOptions {
   socialProviders?: Partial<Record<"google" | "github" | "discord" | "apple", {
     clientId: string;
     clientSecret: string;
-    disableSignUp: true;
+    disableSignUp: boolean;
+    getUserInfo?: (tokens: unknown) => Promise<unknown>;
   }>>;
 }
 
@@ -41,3 +42,4 @@ export function createAuth(
   assuranceBarrier?: unknown,
   authOptions?: BetterAuthOptions,
 ): BetterAuthHandler;
+export function assertUserCanCreateSession(env: { AUTH_DB: D1Database }, userId: string): Promise<void>;

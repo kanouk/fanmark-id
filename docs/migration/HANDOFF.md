@@ -7,12 +7,16 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- Accepted staging code is **8144df2**, with both CI37082406423 jobs successful.
-  Fresh preflight00:37:42Z verified account, old version, ledger25, owned0,
-  secrets and the retained Master release inventory. Deployment at00:38:19Z is
-  **f443eb15-d8ac-48a9-af90-da2aa587e976 at100%**. Static JS/CSS bytes match
-  the exact staging build; root/robots200, sitemap404 and noindex remain.
-- The combined native canary is **verified-and-cleaned**. Both synthetic users
+- Latest accepted staging code is **55b40e0**, both CI37083522230 jobs successful.
+  Fresh preflight00:54:45Z verified the dedicated account, old version, ledger25,
+  owned0, secrets, retained Master inventory and wake5:5. Deployment at00:56:12Z
+  is **a0fcd645-1409-473e-8816-997e87b3797e at100%**. Static JS/CSS bytes match
+  the exact build; root/robots200, sitemap404 and noindex remain. Closed-provider
+  capabilities/start/callback readback at00:57:21Z and independent readback at
+  **2026-10-03T01:00:34.127Z** prove this policy deployment and retained baselines.
+  Keys/selectors remain absent, so remote configured-provider acceptance is not
+  claimed. Private acceptance: /tmp/fanmark-oauth-policy-55b40e0-staging-acceptance.json.
+- The preceding8144df2 combined native canary is **verified-and-cleaned**. Both synthetic users
   sign in with newly SDK-generated UUID session IDs. This proves deployed
   session generation; its user IDs are seeded UUID fixtures, so remote new-user
   generation is not claimed. Native actual signup15/15 separately covers new
@@ -26,7 +30,7 @@ older sections retain their historical acceptance and failure evidence.
   ledger25, owned0, Master inventory, wake5:5 and secret names. Private acceptance
   is /tmp/fanmark-editor-8144df2-acceptance.json; journal ends canary-Pa2CR6.
   A390px viewport is not a real-phone/provider/full migration acceptance.
-- Next code implements the server-side OAuth policy. Ten native cases reproduce
+- Accepted55b40e0 implements the server-side OAuth policy. Ten native cases reproduce
   bypasses of social_login_enabled/invitation_mode in the prior gateway.
   Capabilities, authorization start and callback now reread both Business D1
   settings independently of email readiness. Missing/malformed settings or
@@ -34,12 +38,27 @@ older sections retain their historical acceptance and failure evidence.
   Native Auth47/47 covers the10 corrections,3 boolean encodings and the prior34
   cases, including four-provider existing-UUID linking/MFA/session boundaries.
   The test now applies all25 canonical Business migrations, not a reduced table
-  substitute. Current-code CI/deployment remain prerequisites for this policy.
-- All providers still use disableSignUp=true pending recoverable new OAuth
-  Business provisioning. Installed1.7.5 publicly exports addOAuthServerContext/
-  getOAuthState and overwrites client additionalData.serverContext during state
-  creation; this is a reviewed implementation option, not an accepted complete
-  provisioning flow. Private review: /tmp/fanmark-oauth-server-context-review.json.
+  substitute. Its exact-head CI and deployment are accepted above; configured
+  real-provider acceptance remains separate.
+- The new OAuth provisioning candidate now implements server-owned command/
+  profile UUIDs and provider-subject markers, missing-account recovery before
+  SDK email lookup, and profile readback before session issuance. The original
+  factory supplies account identity; email/name cannot establish ownership.
+  Native54/54 applies all25 Business migrations and Auth core/0007/0008/0009;
+  all four providers create a new UUID profile/session and finish password
+  setup. All four also recover account/profile/completion pre-commit and lost-
+  ACK failures. Conflicts, bans, partial markers, feature disablement, state
+  replay, concurrent callbacks, missing/altered indexes and policy changes are
+  covered. Existing Auth47/47, credential signup15/15 and shared MFA6/6 pass.
+  The first4 failed because hooks receive /callback/:id, not the concrete URL;
+  the provider is now checked through params.id. A banned pending-user case
+  exposed plugin-before-core ordering, corrected by checking suspension before
+  repair/profile writes while retaining the core session guard. No diagnostics
+  remain in runtime. See oauth-signup-provisioning.md.
+- Staging still has no Auth0009 or provisioning selector/provider credentials.
+  New providers default disableSignUp=true until the selector is explicitly
+  chosen. Candidate exact-head CI, guarded Auth schema apply/readback and new
+  Worker deployment remain prerequisites. No new remote acceptance is claimed.
   Source/runtime/Auth gates and real provider acceptance remain open.
 - D1 daily read quota recovered. An over-narrow private guard expected only
   one3944-row release, but metadata/history proves two retained ready releases
@@ -62,14 +81,14 @@ older sections retain their historical acceptance and failure evidence.
   oracle10 cases records credential defaults, OAuth setup and the separate
   display-name helper. No source application/Auth row/function was accessed.
   See source-signup-provisioning.md; target new OAuth-user Business provisioning
-  still needs implementation, while existing-UUID linking and initial password
-  setup have synthetic coverage. Their combined real-provider acceptance and
+  has native54-case implementation coverage, while staging activation and real
+  provider linking/provisioning/initial password setup acceptance remain open. Their combined real-provider acceptance and
   provider credentials remain open/absent. Credential signup code is included in
   accepted8144df2 staging; actual new signup/email acceptance is separate from seeded-user signin/session generation.
 
 - Edit only this managed migration worktree/branch and preserve the unrelated
   supabase/.temp/cli-latest change. PR #41 is draft/open; CI never deploys.
-- Staging isf443eb15 at100%, accepted for the UUID-session/editor/favorites slice above.
+- Latest recorded staging isa0fcd645 at100%, accepted for the policy/static/closed-provider slice above.
   Recheck identity/version/ledger25/empty owned Business/Auth/master/wake/secrets
   before deploying new Auth code; real data and domain cutover remain excluded.
 - Private combined editor/favorites preparation and the latest expected CI are

@@ -191,7 +191,16 @@ Cloudflare buildのOAuth初回パスワードゲートはBetter Auth sessionと`
 
 Better Authの`advanced.database.generateId="uuid"`で新規AuthレコードIDをUUIDにする。既存IDを更新する処理はない。SDK既定の32文字IDは課金APIのUUID actor境界と不一致だったため、実signup由来IDの形式とcustomer portalの認証境界をnativeで検証する。後者は合成user resolverとprovider未設定状態であり、実課金や確認メール/sessionの通し受け入れではない。
 
-OAuth policyは`auth-social.mjs`がBusiness D1の`social_login_enabled`/`invitation_mode`を1照会で読み、許可時だけgatewayがprovider一覧と認証開始/callbackを開く。欠落・不正値・読取り失敗では閉じる。設定をAuth instanceと共にcacheしないため、開始後の招待mode変更にもcallbackで対応する。Auth native suiteは全25 Business migrationsを使い、停止時の外部fetch0とAuth状態不変を確認する。新OAuthユーザーのprofile provisioning・実provider通し受け入れは別途必要。
+OAuth policyは`auth-social.mjs`がBusiness D1の`social_login_enabled`/`invitation_mode`を1照会で読み、許可時だけgatewayがprovider一覧と認証開始/callbackを開く。欠落・不正値・読取り失敗では閉じる。設定をAuth instanceと共にcacheしないため、開始後の招待mode変更にもcallbackで対応する。Auth native suiteは全25 Business migrationsを使い、停止時の外部fetch0とAuth状態不変を確認する。
+
+新OAuthユーザーのprofile provisioningは`oauth-signup-provisioning.mjs`を
+`AUTH_SOCIAL_PROVISIONING_BACKEND=d1`で選ぶ。Auth core/0007/0008/0009とBusiness
+schema、4つのidentity unique indexが必要で、gatewayはschema不足でもOAuthを閉じる。
+markerとprovider account subjectを検証し、profileの同じUUID/所有者をreadbackしてから
+sessionを発行する。停止確認はpluginがBusiness書込みより先に行い、共通のcore guardも
+維持する。`test:oauth-signup-d1`のnative54件は4provider・各段階のcommit前/ACK不明・
+復旧/競合/設定変更を検証し、Worker CIに含める。staging0009/selector適用と実provider
+受け入れは未実施。詳細は[OAuth登録の復旧契約](migration/oauth-signup-provisioning.md)。
 
 招待signupのnative検証は全25 Business migrationとAuth core/0007/0008、
 `AUTH_USER_STATUS_BACKEND=d1`を使用する。`test:invitation-signup-d1`の15件は

@@ -75,15 +75,21 @@ this ordinary helper as inactive or add email-derived display-name rewriting.
 Source OAuth provisioning identifies non-email providers and certain raw
 metadata keys, then sets `requires_password_setup=true`. The literal Google
 case demonstrates that source branch; it does not prove a target counterpart.
-Target social providers use `disableSignUp:true`. The gateway now rereads Business D1
+Target social providers default to `disableSignUp:true`. The gateway now rereads Business D1
 `social_login_enabled` and `invitation_mode` for capabilities/start/callback;
 Auth47/47 covers policy refusal, settings changes and existing-user linking under
 all25 Business migrations. This policy change does not create new users. Synthetic Auth tests already
 cover callbacks and linking to an existing UUID; the initial-password API and
 gate are implemented with synthetic coverage in
 [password setup](password-setup-api.md). A new OAuth user's Business profile
-provisioning counterpart is still missing, and the complete provider callback,
+provisioning counterpart now has a native synthetic implementation selected by
+`AUTH_SOCIAL_PROVISIONING_BACKEND=d1`, with Auth migration0009, server-only
+provider-subject markers and recoverable split-D1 writes. The54 native cases
+include all four new-user callbacks and first password setup, account/profile/
+completion pre-commit and lost-ACK faults, identity conflicts, suspension,
+state replay and schema readiness. See [OAuth registration](oauth-signup-provisioning.md).
+This code is not yet deployed or selected; the complete real-provider callback,
 provisioning and initial-setup flow still needs integration acceptance. Provider
-credentials remain absent. Credential proof cannot clear this Auth binding
+credentials remain absent. Credential or synthetic proof cannot clear this Auth binding
 for the complete migration. The function/RLS/trigger gate and real provider,
 mobile and remote acceptance remain open.

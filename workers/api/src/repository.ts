@@ -11,6 +11,7 @@ export interface Env {
   AUTH_BACKEND?: string;
   AUTH_USER_STATUS_BACKEND?: string;
   AUTH_SOCIAL_BACKEND?: string;
+  AUTH_SOCIAL_PROVISIONING_BACKEND?: string;
   GOOGLE_OAUTH_CLIENT_ID?: string;
   GOOGLE_OAUTH_CLIENT_SECRET?: string;
   GITHUB_OAUTH_CLIENT_ID?: string;

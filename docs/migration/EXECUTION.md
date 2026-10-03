@@ -1,5 +1,37 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：OAuth設定のstaging受け入れと新規登録の復旧実装
+
+55b40e0のCI37083522230は両job成功。00:54:45Zの完全preflight後、00:56:12Zに
+workers.devへa0fcd645-1409-473e-8816-997e87b3797eを100%配備した。JS/CSS bytes、
+root/robots200・sitemap404・noindex一致を確認。00:57:21Zのprovider未設定readbackで
+capabilitiesのprovider一覧空、4provider start/callback403、session cookieなし、
+匿名session nullを確認した。01:00:34.127Zの独立readbackがledger25・owned Auth/
+Business0・Master inventory・wake5:5・secret namesを再確認した。
+private報告は/tmp/fanmark-oauth-policy-55b40e0-staging-acceptance.json。
+provider key/selectorがないため、実設定済みproviderのremote policyは検証していない。
+8144df2のcombined editor/favorites canaryは別の過去受け入れで、55bへ再実行とは扱わない。
+
+次のcandidateは`oauth-signup-provisioning.mjs`とAuth0009 migrationで新OAuth登録を
+実装する。公開SDK APIのserver contextからcommand/profile UUIDとproviderを保持し、
+元provider factoryのaccount subjectをAuthのprivate markerへ結び付ける。pending userの
+account作成失敗は同じprovider/subjectの正式callbackで復旧し、profile ID/所有者の
+readback後だけcompleted/sessionへ進む。commit前失敗と応答だけ失われる失敗を区別し、
+どちらでもAuth/Business行を削除しない。既存edited profile、停止状態、別identity、
+衝突、partial marker、schema不足を検証する。選択しなければ新SNS登録は閉じたまま。
+
+最初の4providerテストはcallback hookのpath誤認で失敗した。SDKは`/callback/:id`と
+`params.id`を渡すため、それに合わせて修正。Apple POST後の正式GET redirectも追う。
+停止済みpending userのtestでplugin hookがcore guardより先にprofileを作る問題を再現し、
+共通停止検証をrepair/profile書込み前にも適用した。native54/54、既存Auth47/47、
+credential signup15/15、shared bcrypt/UUID/TOTP/MFA6/6が成功。native54はall25 Business/
+Auth core0003・0007・0008・0009で各case後FK checkも行う。Worker CIのnpm testへ追加。
+詳細は[OAuth登録の復旧契約](oauth-signup-provisioning.md)。
+
+新candidateのexact-head CI・Auth0009 remote適用/readback・staging selector有効化と
+配備はまだ必要。現stagingは55b/a0fのまま。実providerキー、メール・課金、実phone、
+全source runtime/認可移植の受け入れは未完了。実ユーザーデータとDNSは移行しない。
+
 ## 2026-10-03：UUID認証修正の配備・受け入れとOAuth設定の適用
 
 8144df2のCI37082406423は両job成功。00:37:42Zの完全preflight後、00:38:19Zに

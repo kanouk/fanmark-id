@@ -68,6 +68,7 @@
 - 認証: Supabase Auth。`social_login_enabled=false` または招待モード中は OAuth を抑止し、OAuth でも初回パスワード設定を強制。パスワード要件表示、メール確認・再送、リセット対応。
 - CloudflareのOAuthは認証開始・コールバック・利用可能provider表示で業務DBの上記設定を確認する。設定を読めない場合もOAuthへ進めない。メール機能の有効化とは独立した制御とし、認証開始後の設定変更をコールバックで再確認する。
 - Cloudflare経路の新規認証IDはUUIDで生成し、業務・課金APIのID契約に合わせる。既存IDを変更せず、ユーザーデータの実移送は別工程で扱う。
+- Cloudflareの新規OAuth登録は明示的な有効化と必要な認証schemaを要求する。本人のSNS識別子と紐付いたプロフィールの保存を確認してからログインを完了し、初回パスワード設定を要求する。途中失敗は同じSNSアカウントによる再試行で復旧し、別アカウントへの紐付けや既存プロフィールの上書きを拒否する。実provider接続とstaging有効化は未確認。
 - 確認メール: Supabase Auth の Confirm email は ON。メール/パスワード登録のみ確認メールを送信し、OAuth ユーザーは `send-auth-email` で `signup` および `password_changed_notification` をスキップする（provider≠email の場合）。
 - 多言語: 日本語/英語の翻訳バンドルを用意し、ヘッダーで切替可能。
 

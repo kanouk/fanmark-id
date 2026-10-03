@@ -13,6 +13,7 @@ import { createD1RecentFanmarksRepository } from "./d1-repository";
 import { captureMfaGeneration, createAuth } from "./better-auth.mjs";
 import { isResendAuthEmailConfigured } from "./auth-email.mjs";
 import { configuredSocialProviders, isSocialLoginAllowed, type ConfiguredSocialProviders } from "./auth-social.mjs";
+import { createOAuthSignupIntegration, isOAuthSignupSchemaReady } from "./oauth-signup-provisioning.mjs";
 import {
   handleInvitationCodeValidationRequest,
   handleInvitationSignupRequest,
@@ -347,6 +348,8 @@ const AUTH_KNOWN_ENDPOINTS = new Set([
 
 interface ConfiguredAuth {
   database: D1Database;
+  businessDatabase: D1Database | undefined;
+  socialProvisioningBackend: string;
   secret: string;
   url: string;
   trustedOrigins: string[];
@@ -358,6 +361,8 @@ interface ConfiguredAuth {
 }
 
 interface CachedApplicationAuth {
+  businessDatabase: D1Database | undefined;
+  socialProvisioningBackend: string;
   secret: string;
   url: string;
   trustedOrigins: string[];
@@ -376,6 +381,10 @@ function configuredAuth(env: Env): ConfiguredAuth | null {
   const secret = env.BETTER_AUTH_SECRET?.trim();
   const database = selectD1Database(env, "auth");
   if (!authUrl || !secret || secret.length < 32 || !database) return null;
+  const businessDatabase = selectD1Database(env, "business");
+  const socialProvisioningBackend = env.AUTH_SOCIAL_PROVISIONING_BACKEND?.trim() ?? "";
+  if ((socialProvisioningBackend && socialProvisioningBackend !== "d1") ||
+      (socialProvisioningBackend === "d1" && !businessDatabase)) return null;
 
   try {
     const base = new URL(authUrl);
@@ -401,6 +410,8 @@ function configuredAuth(env: Env): ConfiguredAuth | null {
     }
     return {
       database,
+      businessDatabase,
+      socialProvisioningBackend,
       secret,
       url: base.origin,
       trustedOrigins: [...origins],
@@ -428,6 +439,8 @@ function createApplicationAuth(
     cached.resendFromEmail === config.resendFromEmail;
   const sameUserStatusConfiguration = cached?.userStatusBackend === config.userStatusBackend;
   const sameSocialProviders = JSON.stringify(cached?.socialProviders) === JSON.stringify(config.socialProviders);
+  const sameSocialProvisioning = cached?.socialProvisioningBackend === config.socialProvisioningBackend &&
+    cached?.businessDatabase === config.businessDatabase;
   if (
     requestState === null && signupCommandId === null && cached &&
     cached.secret === config.secret &&
@@ -435,9 +448,15 @@ function createApplicationAuth(
     sameTrustedOrigins &&
     sameEmailConfiguration &&
     sameUserStatusConfiguration &&
-    sameSocialProviders
+    sameSocialProviders &&
+    sameSocialProvisioning
   ) return cached.auth;
 
+  const socialIntegration = createOAuthSignupIntegration(
+    { AUTH_DB: config.database, FANMARK_DB: config.businessDatabase },
+    config.socialProviders,
+    config.socialProvisioningBackend === "d1",
+  );
   const auth = createAuth(
     {
       AUTH_DB: config.database,
@@ -448,14 +467,14 @@ function createApplicationAuth(
       RESEND_API_KEY: config.resendApiKey,
       RESEND_FROM_EMAIL: config.resendFromEmail,
     },
-    [],
+    [socialIntegration.plugin],
     requestState,
     null,
     {
       appName: "fanmark.id",
       issuer: "fanmark.id",
       trustedOrigins: config.trustedOrigins,
-      socialProviders: config.socialProviders,
+      socialProviders: socialIntegration.socialProviders,
       ...(signupCommandId
         ? {
             allowSignUp: true,
@@ -471,6 +490,8 @@ function createApplicationAuth(
   // for one D1 binding/configuration and can be reused by the isolate.
   if (requestState === null && signupCommandId === null) {
     applicationAuthByDatabase.set(config.database, {
+      businessDatabase: config.businessDatabase,
+      socialProvisioningBackend: config.socialProvisioningBackend,
       secret: config.secret,
       url: config.url,
       trustedOrigins: [...config.trustedOrigins],
@@ -848,9 +869,10 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
   }
 
   const needsSocialPolicy = authPath === "/capabilities" || authPath === "/sign-in/social" || isOAuthCallback;
-  const socialAllowed = needsSocialPolicy && Object.keys(authConfig.socialProviders).length > 0
-    ? await isSocialLoginAllowed(selectD1Database(env, "business"))
-    : false;
+  const socialAllowed = needsSocialPolicy && Object.keys(authConfig.socialProviders).length > 0 &&
+    await isSocialLoginAllowed(authConfig.businessDatabase) &&
+    (authConfig.socialProvisioningBackend !== "d1" ||
+      await isOAuthSignupSchemaReady(authConfig.database, authConfig.businessDatabase));
 
   if (authPath === "/capabilities" && request.method.toUpperCase() === "GET") {
     const businessDb = env.INVITATION_SIGNUP_BACKEND?.trim() === "d1"

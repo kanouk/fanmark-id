@@ -159,7 +159,7 @@ function createAdminMfaAssurancePlugin(
   };
 }
 
-async function assertUserCanCreateSession(env, userId) {
+export async function assertUserCanCreateSession(env, userId) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const user = await env.AUTH_DB.prepare(
       'select "banned", "banExpires" from "user" where "id" = ? limit 1',
