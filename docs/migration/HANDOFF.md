@@ -12,6 +12,26 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Accepted real isolated-D1 REST primitive and CI placement fix**:
+  1d3085f6cfb74613b863c6e26f3d41514ad4b544 CI37108741104 completed/success
+  in both jobs, including relocated combined recovery and Worker Business/Auth
+  import; watcher81236 exited0 and is consumed. The pinned private conductor
+  verified the dedicated account and original three-database API inventory,
+  created one owned recovery database, then accepted unicode/NULL/int64
+  TEXT readback, real REST batch CHECK rollback (retained rows0), and one
+  committed row after intentional client-side loss of its success response
+  with no automatic retry. Accepted08:18:42.761Z. Exact creation receipt
+  matched before DELETE; final08:18:44.233Z API inventory equals the original
+  three UUID/name/creation-time records. Private journal:
+  /tmp/fanmark-isolated-d1-probe-Tf0H2Q/journal.json; process14077 exited0
+  and is consumed. Token stayed in memory; no real source or existing staging
+  SQL ran. The conductor is now checked in with workspace-relative paths and
+  clean-or-known-temp dirty guard; npm isolated-remote tests syntax-check it.
+  This closes the actual REST primitive gate, not complete remote snapshot/R2
+  restore, source-URL/browser delivery or production RTO. Deployed runtime
+  remainscbb90c7/e0a4b16e. Next: use these accepted primitives for the full
+  owned Business/Auth/Master and split-R2 synthetic bundle recovery.
+
 - **Combined-recovery CI dependency placement correction**:
   Candidate8bc3baa CI37108118976 is terminal: application succeeded, Worker
   failed in the newly enabled combined-recovery step before any assertions.
@@ -26,7 +46,7 @@ staging deployment does not close the whole goal.
   Wrangler whoami independently confirmed the dedicated fanmark account;
   the captured OAuth token was removed and no remote mutation started.
 
-- **Local recovery transport and split-R2 application read fix, CI pending**:
+- **Earlier local recovery transport and split-R2 application read fix**:
   The combined fixture stored logical avatars/key and cover-images/key inside
   already-separated physical buckets. The importer could read them, but actual
   storage-r2.ts GET returned404. The new split transport retains logical source
@@ -51,9 +71,10 @@ staging deployment does not close the whole goal.
   watcher49111 is terminal/exit1 and consumed, so rely on the authoritative run
   state and do not restart it. Current deployed runtime remainscbb90c7/e0a4b16e;
   this tool/test-only work changes no remote resource, real rows or DNS.
-  Next: finish the resource-owning synthetic remote runner and R2 transport,
-  prove a real empty-target REST batch rollback, then restore/replay/independently
-  reconcile the same complete bundle in fresh targets and record cleanup/RTO.
+  The actual REST primitive and corrected CI placement are accepted in the
+  newest checkpoint above. Still remaining: complete owned remote runner/R2
+  transport, restore/replay/independently reconcile the same bundle in fresh
+  targets, and record cleanup/RTO.
 
 - **Accepted timestamp/public-activation staging checkpoint**:
   cbb90c795b9b735a6d9a0ca06031772b443a3d0a CI37105400187 completed with both

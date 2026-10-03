@@ -70,7 +70,7 @@
     "test:oauth-signup-d1": "vitest run --config vitest.oauth-signup.config.mjs",
     "test:business-runtime-import": "node --test ../../scripts/migration/test-business-runtime-import.mjs",
     "test:combined-recovery": "node --experimental-strip-types --test ../../scripts/migration/test-combined-recovery.mjs",
-    "test:isolated-remote-d1": "node --test ../../scripts/migration/test-isolated-remote-d1.mjs"
+    "test:isolated-remote-d1": "node --check ../../scripts/migration/probe-isolated-remote-d1.mjs && node --test ../../scripts/migration/test-isolated-remote-d1.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.1.13",

@@ -2,9 +2,10 @@
 
 The importer accepts an explicitly injected D1-compatible binding and a
 verified PostgreSQL snapshot. Local synthetic rehearsal is the accepted
-snapshot-import proof. An isolated remote transport is now implemented and
-locally tested; complete remote snapshot/R2 recovery is not yet accepted.
-No real source rows or remote resource were touched by this transport work.
+snapshot-import proof. The isolated remote transport has passed a bounded
+real Cloudflare REST probe; complete remote snapshot/R2 recovery is not yet
+accepted. The probe created and deleted one owned empty database. No real
+source rows or existing staging database contents were read or changed.
 
 For encrypted backups, `importEncryptedD1Snapshot()` first authenticates and
 opens the bundle under a fresh mode-0700 OS temporary directory, verifies the
@@ -20,7 +21,7 @@ destinationId, targetIncarnation, reportPath, mode: "local", ... })` in
 and `batch()` methods. A standalone command intentionally refuses to choose a
 remote or Wrangler binding.
 
-### Isolated remote mode (local acceptance only)
+### Isolated remote mode (remote primitive accepted, full restore pending)
 
 `isolated-remote-d1.mjs` uses the [Cloudflare D1 query API](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/)
 with parameter binding and one REST batch per transaction. The caller supplies
@@ -42,8 +43,30 @@ Exact DDL, source/hash/type reconciliation and transactional guards remain;
 tests: values/NULL/int64, CHECK rollback, lost-ACK/no-retry, target/profile/
 statement refusal and malformed results. The HTTP envelope is simulated over
 real Miniflare D1, not a Cloudflare REST acceptance. Importer20 also passes.
-Remote acceptance still needs the resource-owning runner, a real empty-target
-REST rollback probe, all25 Business/4 Auth and8 Master migrations, same-bundle
+The real REST probe passed at 2026-10-03T08:18:42Z on candidate1d3085f
+(CI37108741104, both jobs successful). One newly created database preserved
+unicode/NULL/int64 TEXT readback, rolled back the first INSERT when a later
+CHECK failed (retained rows0), and committed exactly one row when the client
+intentionally discarded the successful write response without retrying.
+Deletion was preceded by an exact UUID/name/creation-time receipt check;
+final API inventory matched the original three databases. This tests real
+REST semantics, not a natural network outage or whole snapshot import.
+
+[`probe-isolated-remote-d1.mjs`](../../scripts/migration/probe-isolated-remote-d1.mjs)
+is the resource-owning conductor. Supply the exact tested commit and successful
+CI run from this repository; it verifies both jobs and the combined-recovery
+step, the dedicated Wrangler identity, and available D1 capacity before creating
+one unique probe. Tokens stay in memory, errors omit provider diagnostics, and
+a private journal records the receipt and identity-checked cleanup. It never
+deletes an older database to make space. A failed/unknown creation or cleanup
+must be resolved from that journal before starting a new run. Invocation:
+
+```sh
+node scripts/migration/probe-isolated-remote-d1.mjs <tested-40-character-head> <successful-CI-run>
+```
+
+Remote snapshot acceptance still needs the complete resource-owning runner,
+all25 Business/4 Auth and8 Master migrations, same-bundle
 restore/replay into a second incarnation, R2/API delivery and independent
 reconciliation/cleanup. Chunked schema initialization on a newly owned target
 must finish before the importer verifies its full DDL and writes snapshot rows.
