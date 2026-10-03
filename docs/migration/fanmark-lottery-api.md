@@ -73,9 +73,20 @@ refusal responses. The assertion creates no persistent guard row and requires
 no new remote schema. Other lottery writers, external callers and whole-trigger
 acceptance remain separate requirements.
 
-This candidate's local 42/42/typecheck/lint proof is not deployed acceptance.
-The currently accepted staging runtime remains 47b69c5; CI, guarded deployment
-and a synthetic lottery HTTP readback for the new code remain next steps.
+Code027a949 passed both CI37088432269 jobs and is deployed as
+22a49009-e962-471d-81a1-c82a49b22d7c at100%. Read-only Auth schema verification
+confirmed all four migrations/six markers/four unique indexes without DDL.
+Actual staging API sign-in and three owner-scoped faults accepted: ignored new
+application audit, changed reapplication metadata and deleted cancellation
+audit each return500 with unchanged entry/audit rows and event IDs. Each retry
+returns200 with exact audit fields after removing its fault. Anonymous/extra
+owner/foreign cancellation are refused. Scoped cleanup restores all triggers,
+FK0, owned Business/Auth0 and invalidated cookies. The independent02:16:25Z
+readback confirms ledger25 and unchanged Master/secrets; synthetic wake is7:7.
+Journal ends fanmark-lottery-audit-00uR5a/canary.json, verified-and-cleaned.
+Private acceptance: `/tmp/fanmark-lottery-027a949-staging-acceptance.json`.
+This is synthetic staging proof; real user/provider/phone, other lottery writers
+and full source/RLS/caller reconciliation remain unproven.
 
 The current business D1 staging database contains schema/master projections,
 not imported user rows. Synthetic fixtures can prove these route mechanics;

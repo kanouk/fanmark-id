@@ -7,7 +7,37 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- **Newest accepted staging code:47b69c5**, both CI37085997181 jobs successful.
+- **Newest accepted staging code:027a949**, both CI37088432269 jobs successful.
+  Full preflight02:12:10Z verifies Business ledger25/Auth owned0 and the fixed
+  Master/secrets/wake5:5 baseline. Read-only Auth schema revalidation02:12:35Z
+  confirms existing ledger4/marker6/index4/FK0 and unchanged MFA generation; no
+  migration applied. Worker **22a49009-e962-471d-81a1-c82a49b22d7c at100%**
+  deployed02:13:36Z. Static JS/CSS/noindex/robots/sitemap match.
+- New lottery integrity canary uses actual remote credential sign-in and API:
+  ignored new-entry audit, changed reapplication metadata and deleted cancel
+  audit each refuse500, roll back the exact entry/audit baseline and preserve
+  the event set. Removing each owner-scoped fault allows200 retry with exact
+  UUID/applicant/resource/action/old-new-reason/time audit readback. Anonymous
+  requests, caller-selected owner and foreign cancellation refuse.
+  Journal ends fanmark-lottery-audit-00uR5a/canary.json, verified-and-cleaned;
+  all test triggers restored, FK0, owned Business/Auth0 and cookies invalidated.
+- Independent02:16:25.705Z readback confirms those owned-row baselines, ledger25,
+  unchanged Master canonical3944/release7888/inventory/active/history and only
+  the same three secret names. Synthetic wake advanced monotonically5→7 and
+  is acknowledged7:7; it was not reset. Current four provider starts/callbacks
+  remain403/no-cookie, capabilities no providers/email/signup, anonymous null.
+  Private acceptance: /tmp/fanmark-lottery-027a949-staging-acceptance.json.
+  This accepts only the listed lottery/schema/static/baseline scope, not real
+  providers/new OAuth users, current remote editor reexecution, real phones or
+  the entire migration. The47b editor/OAuth guard proof below is historical.
+- Next: add suppress/corrupt/delete audit acceptance for transfer approval and
+  account deletion, then remaining full source runtime/authorization/caller,
+  lifecycle/archive/retention and ops/recovery. Stripe's existing transaction
+  completion guard already checks exact entry-audit fields and its native suite
+  includes suppression/corruption. Provider integration and CPU/plan remain open;
+  real user data/domain/DNS remain last.
+
+- **Prior accepted staging code:47b69c5**, both CI37085997181 jobs successful.
   Full preflight at01:34:21Z and again after Auth update verifies the dedicated
   account/version, Business ledger25, owned0, Master inventory, wake5:5/secrets.
   Auth0009 applied/read back at01:35:14Z: ledger4, marker columns6, unique
@@ -40,17 +70,11 @@ older sections retain their historical acceptance and failure evidence.
   Older boundary details below are historical; do not redeploy55b or treat its
   former pending-schema statements as current.
 
-- New local lottery-audit candidate after docs-only1cab106: the current remote
-  runtime remains47b69c5/b5a07a34. Source lottery INSERT/status audit hashes are
-  recorded in fanmark-lottery-api.md. Nine initial fault cases returned200
-  despite missing/changed/deleted audits; the fix gives each audit a server UUID
-  and verifies exact fields/entry state within its mutation batch, rolling back
-  on mismatch. Full25 Business/4 Auth with real sessions/router passes42/42,
-  including27 faults/retries, races and warmed-session revocation. Typecheck and
-  changed-file lint pass. Worker CI now invokes this previously manual suite.
-  No new remote migration is required. Candidate exact-commit CI, guarded
-  deployment and remote lottery HTTP canary remain pending. Other writers and
-  the complete source runtime/authorization/caller gate remain open.
+- Lottery candidate027a949 is now deployed/accepted for the top boundary.
+  Full25 Business/4 Auth with real sessions/router passes42/42, including27
+  audit faults/retries, races and warmed-session revocation. Local typecheck,
+  lint, migration-data278/278, CI isolation and bundle dry-run pass. Worker CI
+  includes the suite; other writers/full source reconciliation stay open.
 
 - Prior accepted staging code was **55b40e0**, both CI37083522230 jobs successful.
   Fresh preflight00:54:45Z verified the dedicated account, old version, ledger25,

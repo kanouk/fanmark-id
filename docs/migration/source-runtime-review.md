@@ -93,7 +93,9 @@ links its INSERT/status-change effects to full-schema native apply/reapply/cance
 acceptance. Nine failure cases reproduced success with suppressed, changed or
 deleted audits; a transaction-local exact audit assertion fixes that gap. The
 42-case suite includes 27 audit-integrity faults and actual sessions/router.
-This is local acceptance for these three writers only. It does not approve all
-other entry writers, external callers or a remote deployment, and does not
+Code027a949/CI37088432269 is now deployed as22a49009; three synthetic remote
+HTTP faults/rollbacks/retries and exact audit readback/cleanup are accepted.
+This accepts these three writers only. It does not approve all other entry
+writers or external callers, and does not
 change the classifier's 54 pending functions, fullRuntimeReconciled=false or
 converter deployable=false.

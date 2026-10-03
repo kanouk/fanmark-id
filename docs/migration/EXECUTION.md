@@ -6445,3 +6445,26 @@ CI/deployment/remote lottery acceptance and other source writers/callers remain
 open. Staging remains47b69c5/b5a07a34. No source/user rows, deployed selector/
 schema, provider credential, DNS or source writer changed. Docs-only1cab106
 CI37087626375 completed both jobs successfully without a redeploy.
+
+### Lottery candidate staging acceptance
+
+Code027a949 CI37088432269 completed both jobs successfully. Fresh full preflight
+02:12:10Z retained Business ledger25, owned0, Master inventory and wake5:5.
+Read-only Auth schema guard02:12:35Z required the existing four migrations, six
+markers and four indexes, FK0/owned0/MFA generation unchanged; it refused any
+missing schema rather than applying DDL. Guarded deployment02:13:36Z produced
+Worker22a49009-e962-471d-81a1-c82a49b22d7c at100%. Static asset bytes/noindex
+were checked at02:14:09Z. The actual remote API canary exercised ignored new
+application audit, changed reapplication metadata and deleted cancellation
+audit. All refused500 with entry/audit/event-set baselines preserved, followed
+by200 safe retry/exact audit readback. The unique temporary triggers affected
+only the fixture owner and were restored. Anonymous/extra actor/foreign cancel
+were refused. Journalfanmark-lottery-audit-00uR5a ended verified-and-cleaned,
+owned Business/Auth0/FK0 and invalidated cookies. Independent02:16:25.705Z
+readback verified ledger25, unchanged Master/secrets and acknowledged wake7:7
+(the canary legitimately advanced5→7; no shared wake state was reset). Current
+provider starts/callbacks stay403/no-cookie, capabilities empty and anonymous
+session null. Private acceptance: /tmp/fanmark-lottery-027a949-staging-acceptance.json.
+Other lottery writers, full source runtime/RLS/callers, lifecycle/retention/ops,
+real providers/phones and CPU/plan remain open. No real user data/source writer
+or domain/DNS changed.
