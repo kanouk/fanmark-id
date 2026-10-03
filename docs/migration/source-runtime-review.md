@@ -99,3 +99,25 @@ This accepts these three writers only. It does not approve all other entry
 writers or external callers, and does not
 change the classifier's 54 pending functions, fullRuntimeReconciled=false or
 converter deployable=false.
+
+## Search/favorite counterpart linkage (2026-10-03 JST)
+
+The unchanged source hashes in [favorites-api.md](favorites-api.md) are now
+linked to the selected application writers in [object-map.md](object-map.md):
+
+| Source function | Target/caller | Accepted effect and remaining boundary |
+| --- | --- | --- |
+| add_fanmark_favorite | favorites-d1-api.ts POST /api/me/favorites; FanmarkAcquisition | Session owner, duplicate false, preserved favorite spelling/time, count/event transaction; native17 and deployed add-event/count rollback/retry |
+| remove_fanmark_favorite | favorites-d1-api.ts DELETE /api/me/favorites; FanmarkAcquisition | Session owner, count zero-floor, absent false; native17 and deployed remove-event rollback/retry |
+| record_fanmark_search | fanmark-search-d1-api.ts POST /api/fanmarks/search/record; useFanmarkSearch | Count/spelling/time/event transaction; native17 and deployed search-event rollback/retry. Target intentionally records NULL actor and returns a narrow DTO rather than the source's caller actor/discovery UUID |
+| upsert_fanmark_discovery | Internal discovery-mutations.ts shared by the preceding writers | Stable first-seen/link/availability, refreshed raw IDs/last-seen and exact counters; no generic public upsert route. Int64 limits are native proof only |
+
+Codebce8993/CI37094750732 and Workerc09ece05 accept these four reproduced
+remote failure cases. Cleanup and independent04:07:49.929Z baseline readback
+pass. This links accepted current-application paths, not arbitrary direct legacy
+RPC consumers or all ACL/sequence-key historical arrays. normalize_emoji_ids,
+the three sequence-key indexes and possible external callers retain their own
+review requirements. The catalog-only classifier does not import this linkage;
+its54 pending count and false full-runtime/converter gates remain unchanged.
+Reconcile the remaining objects using their existing evidence and actual
+contract gaps; this follow-up does not require a new blanket fault campaign.

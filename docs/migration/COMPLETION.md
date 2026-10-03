@@ -18,7 +18,7 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |
 | --- | --- | --- | --- |
 | 1. 移行元・移行先・呼び出し元の照合 | 40表、58関数、37登録trigger、77policyのcatalogと211箇所のfrontend対応表はある。分類reportは全体照合未完了のまま。sequence keyの3候補indexなどに未解決の意味差がある。 | 各object/actionについて、source定義hash、権限、実行経路、targetまたは不使用の根拠、契約差、対応する検証を結び付ける。未実装の現行経路・未説明の差を残さない。実データでしか判断できない事項はデータ工程へ明示的に移す。 | #30, #33, #34 |
-| 2. アプリと認証・業務処理の仕上げ | 多くのsession/権限/競合/失敗時rollbackは受け入れ済み。直近の退会はcode388044b、CI37092452003、Worker4a8d85dd、native66とremote6が受け入れ済み。検索記録・お気に入りのevent/count抑止による不整合は、全25 Business migrationで再現し、local17ケースで修正を確認。CI・配備受け入れは未完了。 | 現行画面の必須操作、管理者MFA、登録/password setup/reset、ライセンス取得・返却・移管・抽選・上限・クーポンを統合構成で確認する。現在修正中の既知不具合を解消し、必要な新経路をstagingで確認する。 | #31, #33, #34 |
+| 2. アプリと認証・業務処理の仕上げ | 多くのsession/権限/競合/失敗時rollbackは受け入れ済み。退会388044b/Worker4a8d85ddはnative66・remote6を受け入れ済み。検索・お気に入りの4既知event/count不整合もbce8993、CI37094750732両job、Workerc09ece05のlocal17・remote4/cleanup/独立readbackで解消済み。ただし全画面・実provider・最終統合は未完了。 | 現行画面の必須操作、管理者MFA、登録/password setup/reset、ライセンス取得・返却・移管・抽選・上限・クーポンを統合構成で確認する。現在修正中の既知不具合を解消し、必要な新経路をstagingで確認する。 | #31, #33, #34 |
 | 3. 実サービスとのテスト接続 | Stripe、Resend、4 OAuth providerの実接続は未受け入れ。stagingのsecretは3名称のみで、signup/email/providerは閉じている。閉じていることの確認は接続成功の証拠ではない。 | Stripe sandboxのCheckout/Portal/変更/延長/署名Webhook・重複/逆順/再試行、テスト宛先の認証メール、4 providerの開始/callback/初回設定を確認する。Apple relayも含む。必要なprovider資格情報・テスト設定・テスト送信の許可が必要。本番課金・本番宛先送信は行わない。 | #31, #32, #34, #37 |
 | 4. ジョブ・運用・復旧 | 通知DOの起動/排出/停止・復旧、期限処理の合成一回実行、archive smoke、Time Travel/R2 replayの個別証拠はある。定常運用、archive/retention、CPU/plan適合、秘密管理/最小権限を含む運用全体は未受け入れ。 | 起動条件/周期/再開/監視、保存期間、担当と権限、秘密の保管・交換、停止時間/復旧時間目標を確定し、合成障害から復旧を実測する。測定で有料planが必要なら設定前に明示する。 | #30, #34, #37 |
 | 5. 移送器の合成データ受け入れ | resumable D1/R2 importer、件数/ID/hash/sequence/credential変換の個別検証がある。source schema converterのdeployableはfalse。実ユーザーデータは読み出して移送しない。 | 最終schemaと運用構成で合成snapshotの中断・再開・照合・復旧を通し、未説明差分0と所要時間を記録する。個別の旧schema検証から最終構成の成立を推定しない。 | #35, #37 |
@@ -40,9 +40,11 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
-1. 全schemaで再現した検索・お気に入りのevent/count不整合を修正する。
-2. 修正を既存のCI・staging受け入れにつなぎ、上記1の対応表へ反映する。
-3. 上記1と4の未照合を、object/運用条件ごとに閉じる。必要な外部設定は3で
+検索・お気に入りの4既知不具合は、修正・CI・staging配備・rollback/retry・cleanup・
+独立readbackまで完了。sourceの4関数とtargetの経路/差異/証拠をobject mapと
+source-runtime-reviewへ対応付けた。これで六項目のうち一項目全体を閉じたとは扱わない。
+
+次は上記1と4の未照合を、object/運用条件ごとに閉じる。必要な外部設定は3で
    一括して扱い、コード確認の途中で同じ依頼を繰り返さない。
 
 現在の実行・配備の詳細は[HANDOFF](HANDOFF.md)と[EXECUTION](EXECUTION.md)、

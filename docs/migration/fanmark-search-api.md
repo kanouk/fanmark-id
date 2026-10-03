@@ -152,5 +152,17 @@ Its user attribution remains NULL. All25 Business migrations are used by the
 native favorites/search-write suite (17/17), including counter precision beyond
 JavaScript's safe integer range and signed-int64 overflow refusal. Search detail
 projection and source sequence/index equality have separate acceptance scopes;
-these write tests do not close those broader gates. CI/deployed acceptance of
-the repair is pending.
+these write tests do not close those broader gates.
+
+bce8993/CI37094750732 passed both jobs and deployed Workerc09ece05 at100% on
+2026-10-03T04:05:27Z. The actual anonymous staging search-event suppression
+case returns503/no-store and preserves the exact discovery/favorite/event rows
+and event sequence. Removing the own-discovery trigger allows200 retry with
+one exact search receipt, user_id NULL, preserved first-seen time and control
+favorite, and incremented search count. It is one of the four accepted
+search/favorite failure cases. All synthetic rows/users/triggers are cleaned;
+independent04:07:49.929Z readback confirms Workerc09 and unchanged Master/MFA/
+wake/secrets plus owned0/ledger25. Static bytes match; real providers remain
+closed. No current remote search-details, int64 boundary, historical-row or
+external-caller acceptance is inferred. Private proof and the remaining six
+work packages are referenced in HANDOFF/COMPLETION.

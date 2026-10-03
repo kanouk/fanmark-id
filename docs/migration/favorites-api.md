@@ -147,5 +147,20 @@ favorites/search contracts. The schema converter's three sequence-key index
 gates remain open: these canonical product writes do not prove historical
 NULL/empty-array or arbitrary external-writer parity. The source bodies and
 policy hashes above are unchanged. CI and deployed acceptance of this new
-candidate are pending; the accepted deployed account/other scopes retain their
-own evidence and are not reclassified by these local tests.
+candidate are recorded below; the deployed account/other scopes retain their
+own evidence and are not reclassified by these tests.
+
+bce8993/CI37094750732 passed both jobs and deployed Workerc09ece05 at100% on
+2026-10-03T04:05:27Z. Four actual staging HTTP cases verify ignored add event,
+favorite-count update, search event and remove event:503/no-store with exact
+row/sequence rollback, then200 retry, control-owner favorite preservation and
+duplicate add/remove=false without another event/count change. The two synthetic
+Auth users, four discoveries and related favorites/events/profiles/trigger were
+removed; journal discovery-repair-KeQ2x4 ends verified-and-cleaned, both-store
+FK0, triggers restored and cookie invalidated. Successful event IDs legitimately
+advance; cleanup does not reset them. Independent04:07:49.929Z readback verifies
+owned Business/Auth0, retained Master inventory, MFA236/wake17:17 and secret
+names. Static bytes match; real providers/email/signup remain closed. This is
+the four reproduced-failure scope, not all source/index/caller/provider or phone
+acceptance; int64 boundaries are local only. See HANDOFF/COMPLETION for remaining
+requirements. Private proof:/tmp/fanmark-discovery-bce8993-staging-acceptance.json.

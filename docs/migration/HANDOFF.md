@@ -12,17 +12,37 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- **Local search/favorite repair candidate**: shared `discovery-mutations.ts`
-  verifies exact discovery/favorite rows and the inserted event before commit.
-  Four full-schema SQL faults reproduced partial commit and now roll back/retry;
-  native17/17, search-details13/13, client12/12, Worker typecheck/lint/CI isolation
-  pass. Integer deltas are cast explicitly, preserving int64 counters.
-  ea6309a's app CI failed an overly broad event-ID read prohibition. The two
-  exact SQL-only receipt assertions now have a hash-bound exception; guard4/4
-  and migration-data278/278 pass. New CI and deployment remain pending. Current
-  accepted Worker is still4a below; no provider/user/DNS change ran.
+- **Newest accepted staging code:bce8993**, CI37094750732 both jobs success.
+  Search/favorite native17/17, search-details13/13, client12/12 and migration-
+  data278/278 pass. Four reproduced event/count failures now roll back the
+  complete discovery/favorite/event state and event-ID sequence. Explicit
+  INTEGER deltas preserve int64 counters in local tests; the two SQL-only
+  receipt assertions have hash-bound static-guard exceptions.
+- Fresh preflight04:04:32Z and read-only Auth schema04:04:56Z confirm the
+  dedicated account, owned Business/Auth0, Business ledger25/Auth ledger4,
+  retained Master inventory and MFA generation236. No schema DDL was needed.
+  Worker **c09ece05-8169-488f-bc7c-8b5a0ab653fe at100%** deployed04:05:27Z.
+  JS/CSS bytes/noindex/robots/sitemap match; real providers/email/signup stay
+  closed and anonymous session is null.
+- All four synthetic remote HTTP fault cases pass: favorite event INSERT
+  ignored, favorite-count UPDATE ignored, search event INSERT ignored, and
+  favorite-remove event INSERT ignored. Each refuses503/no-store, preserves
+  the exact rows/sequence, then retries200 after removal of its scoped trigger.
+  The control owner's favorite remains unchanged; duplicate add/remove returns
+  false without another event/count change. Journal ends
+  discovery-repair-KeQ2x4/canary.json, **verified-and-cleaned**. Its two Auth
+  identities, four discoveries, favorites/events/profiles and temporary trigger
+  are removed; both-store FK0, trigger restoration and cookie invalidation pass.
+  Legitimate event IDs advance through successful operations and are not reset.
+- Independent04:07:49.929Z readback confirms Workerc09 at100%, owned Business/
+  Auth0, ledger25, unchanged Master3944/release7888/pointer/history/inventory,
+  MFA236, wake17:17 and the same three secret names. Private acceptance:
+  /tmp/fanmark-discovery-bce8993-staging-acceptance.json. Accepted scope is these
+  reproduced search/favorite failures and listed baselines; int64 edges are
+  local proof. This does not reexecute all prior features, accept real providers/
+  phones, reconcile every source object or complete the migration.
 
-- **Newest accepted staging code:388044b**, CI37092452003 both jobs success.
+- **Prior accepted staging code:388044b**, CI37092452003 both jobs success.
   Full25 Business/4 Auth native66/66, Auth47/47, client4/4, typecheck/lint/
   workflow isolation/staging dry-run pass. Preflight03:22:19Z confirms Worker71d,
   source-owned Business/Auth0, ledger25 and fixed Master/secrets/wake17:17.

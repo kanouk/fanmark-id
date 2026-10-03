@@ -1,5 +1,30 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：検索・お気に入りの既知不整合をstagingで解消
+
+bce8993のCI37094750732は両job成功。全25 Business migrationのnative17/17、
+検索詳細13/13、client12/12、migration-data278/278を通過した。04:04:32Zの
+完全preflightと04:04:56Zのread-only Auth schema確認後、04:05:27Zに
+c09ece05-8169-488f-bc7c-8b5a0ab653feを100%配備。Auth schemaは既存でDDLなし。
+JS/CSS bytes・noindex・robots200・sitemap404が一致し、実provider/signup/emailは
+閉鎖のまま、匿名session nullを確認した。
+
+実Worker/session/分離D1で既知の4障害を再現した。お気に入り追加event抑止、
+favorite_count更新抑止、検索event抑止、削除event抑止はすべて503/no-storeで、
+discovery/favorite/event全行とevent sequenceを完全rollbackする。各scoped triggerを
+外すと200で再試行でき、他userのお気に入りは不変。重複add/removeはfalseで追加event/
+件数変更なし。journalはdiscovery-repair-KeQ2x4/canary.json、verified-and-cleaned。
+Auth2user、Business4discoveryと関連favorite/event/profile、一時triggerを削除し、
+両store FK0・trigger復元・cookie無効を確認した。成功した操作のevent IDは進み、
+sequenceをリセットしない。int64境界の証拠はnativeのみでremoteへ拡大解釈しない。
+
+独立04:07:49.929Z readbackでWorkerc09、owned Auth/Business0、ledger25、
+Master3944/release7888・inventory/active/history、MFA236、wake17:17、3 secret namesを
+確認。private受入は/tmp/fanmark-discovery-bce8993-staging-acceptance.json。
+これは検索・お気に入りの4既知不具合を閉じる証拠であり、旧featureの一律再実行、
+source/RLS/caller全照合、実provider/実phone、移送器・運用全体の受入ではない。
+六項目の残件は[COMPLETION.md](COMPLETION.md)。実user移送・DNSは最後に残す。
+
 ## 2026-10-03：OAuth登録基盤のstaging配備と合成受け入れ
 
 47b69c5のCI37085997181は両job成功。専用native OAuth54に加え、Worker全suiteと
