@@ -15,6 +15,21 @@
 
 ## クライアント選択
 
+### 既読RPCと現行APIの照合（2026-10-03）
+
+未変更のsource catalogの定義hashと現行経路を照合した。
+
+| Source function / SHA-256 | Targetと契約差 |
+| --- | --- |
+| get_unread_notification_count / bcf1227815b3e79aa8ff7a0682ef64fa15a7be069cb8c82c8eaefcd9cf05cd8e | GET /api/me/notifications/unread-count。同じdelivered・未読・未期限切れ条件。sourceのcaller-selected user_idと匿名0を置換し、session本人だけ、偽owner query400・匿名401。既存native試験が本人/他人/期限/未配信と3種の偽ownerを確認する。 |
+| mark_notification_read / a8e7c9939169c2ce5be06408186395f12e451cd22bf291bf58a1a0bc04e09ec8 | PATCH /api/me/notifications/:id/read。本人かつread_at=NULLの条件は同じで、delivered/期限条件を追加しない。readViaは現行UIのapp/menuに制限。nativeが本人true/他人falseと時刻を確認する。 |
+| mark_all_notifications_read / 6d0a04c52d4af2d9e82ce44599903062d83b91c787abb311f4a4289eea131dfd | POST /api/me/notifications/read-all。source同様、本人のdelivered・未読・未期限切れだけを更新。bodyなし、read_via=appに固定する現行UI契約。nativeがpending/expired/read/他人の保持を確認する。 |
+
+呼出し元はuseUnreadNotifications、Notifications、AppHeaderで、Worker選択時は
+src/lib/notifications-api.tsを使う。sourceの自由なowner/read_via引数の汎用RPC互換性は
+提供しない。既存full25 Business・実Better Authの53件とstaging受入を対応する証拠に
+使い、未変更の経路を再デプロイしない。実provider配信、運用、外部consumerは別条件。
+
 既定はSupabase。`VITE_NOTIFICATIONS_BACKEND=worker`を明示すると通知一覧、ヘッダーのpreview、未読数、既読操作がWorkerを使う。Worker選択時はRealtimeを使わず、通知一覧とヘッダーpreviewを30秒間隔で更新する。ヘッダーの定期取得は背景タブでは止まり、タブ復帰時に再取得する。Supabase選択時は現在のRealtime経路を維持する。一括既読後は実際に更新されたデータを再取得し、pending/期限切れ通知を誤って既読表示しない。
 
 ## 検証と現在地

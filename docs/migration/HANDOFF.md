@@ -3,11 +3,14 @@
 取得の通常Worker CI漏れを修正し、既存21回帰と全25 Business/4 Auth/8 Master・実sessionの
 5件がlocal26/26成功。実admin signin/TOTP/停止による旧cookie拒否と、canonical ID・
 順序/肌色・全ownerお気に入り連携・有限/無期限取得を確認。typecheck/変更箇所lint成功。
-[取得API](fanmark-registration-api.md)。当該CIはcommit/push後のrunで確認する。
+[取得API](fanmark-registration-api.md)。`a2d09dd`/CI37120631839のアプリ・Worker両job成功。
+CIのWorker logで新旧両fileと26/26の実行を確認した。runtime再デプロイは不要。
 [sequence review](source-sequence-key-review.md)は現行writer/importと3indexを照合し、
 空/NULL/shape/衝突・外部consumerの差を最後のデータ工程へ明記。generic converterのgateは保持。
 今回runtime/schema/staging deploymentは変更しない。実稼働の受入は以下の画像checkpointを保持。
-provider/運用/58関数の全体対応/最終統合は未完了。次は残る関数対応を具体化する。
+通知read3関数とwaitlist2関数の定義hash・現行経路・既存受入を照合し、古い対応表を更新した。
+legacy toggleには現行実行callerがなく、汎用RPCの互換性を推定しない。
+provider/運用/全source/最終統合は未完了。次はイベント生成・archiveの運用条件を具体化する。
 
 # 2026-10-03 画像参照の実staging受け入れ
 

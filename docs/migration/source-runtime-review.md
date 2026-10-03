@@ -19,6 +19,19 @@ Own-profile verification now uses full25 Business/4 Auth native10 cases and
 joins normal Worker CI;7a603bd CI37096588121 passed both jobs.
 No whole-source approval is inferred from this linkage.
 
+The current counterpart table also replaces stale inbox/waitlist placeholders
+with the actual three notification-read functions and two waitlist definitions,
+their hashes, session/MFA boundaries and existing accepted tests. See
+[notifications](notifications-api.md) and [waitlist](waitlist-admin-api.md).
+The ordinary toggle_fanmark_favorite definitioncc084107 inserts only
+fanmark_id/user_id although the source normalized_emoji_ids column is NOT NULL
+with no default. Only its generated type declaration occurs in current
+frontend/Edge sources; the UI uses explicit add/remove APIs. No new generic
+toggle route is introduced, and absent application calls do not prove external
+consumers absent. Sequence-index current-writer/import correspondence is now
+explicit in [sequence review](source-sequence-key-review.md); historical-data
+dispositions and generic converter gates remain.
+
 The [access-helper review](source-access-helpers-review.md) now links exact
 username/role/admin/elevated-admin definitions to current application callers,
 target identity/MFA boundaries and their existing tests. It records the source

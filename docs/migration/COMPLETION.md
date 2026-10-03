@@ -48,12 +48,14 @@ readbackで業務/Authの非マスター行0、Master/履歴/料金値保持、w
 
 取得APIの通常CI漏れを修正した。既存21回帰を保持し、現行25 Business/4 Auth/8 Master、
 実signin、管理者TOTP/停止、canonical ID/順序/お気に入り連携とS/A/C取得の5件を追加。
-local26/26・Worker typecheck/変更箇所lint成功。CIの受け入れは当該run完了後に記録する。
+local26/26・Worker typecheck/変更箇所lint成功。`a2d09dd`/CI37120631839両job成功、Worker logで26件の実行を確認した。
 [取得API](fanmark-registration-api.md)と[sequence契約](source-sequence-key-review.md)。
 現行writer/importの3index対応を照合し、空/NULL・array shape・衝突等は最後の
 ユーザーデータ工程の事前確認へ明記した。generic converterはdeployable=falseを維持する。
 
-次は項目1の残る58関数の対応を、レビュー済み・意図的差・未解決へ具体化する。
+通知read3関数・waitlist2関数のsource hash/現行経路/既存受入を照合し、対応表の古い
+未実装に見える記載を更新した。legacy toggleの非使用と外部consumer境界も明記した。
+次はイベント生成・archiveの運用条件を具体化する。
 provider設定は項目3で一括して扱う。catalog classifierの54 pendingは、
 既存の手動レビューと受入を自動取込みしていない数であり、54件が未実装という意味ではない。
 対応表だけでfull-source gateを解除しない。

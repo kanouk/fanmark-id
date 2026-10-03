@@ -101,8 +101,9 @@ Normal Worker npm test's test:api-contracts-d1 previously omitted registration;
 it now runs this dedicated command. The new file is excluded from generic
 Vitest so its required bindings/provision execute only under this config.
 The older reduced suite remains useful for historical NULL/formatting and fault
-regressions; it is not full-schema proof. CI acceptance is recorded in
-HANDOFF/EXECUTION when the corresponding run completes.
+regressions; it is not full-schema proof. Code/test head a2d09dd passes both jobs of
+[CI37120631839](https://github.com/kanouk/fanmark-id/actions/runs/37120631839).
+Its Worker job log confirms both test files ran and26/26 passed.
 
 This slice changes tests/configuration only; no runtime/schema/deployment or
 real provider/user/DNS change. [Sequence review](source-sequence-key-review.md)

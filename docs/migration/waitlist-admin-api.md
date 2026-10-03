@@ -1,5 +1,19 @@
 # Waitlist admin API migration
 
+Source definition hashes from the unchanged catalog:
+get_waitlist_secure=`4a6c4e4e26a5c684bee702a6962c956ba52326d4182cefb91e69f03976f5b555`;
+get_waitlist_email_by_id=`c8cd1a13c022a311a3db3c0e670f22fdafd9d68c31deb74b15c404ab158cc983`.
+The current Worker list is bounded to100/offset0 rather than a general
+p_limit/p_offset RPC; email hashing uses the actual stored email bytes.
+Both source functions use is_super_admin and write an audit. Their denied
+branch then raises an exception, so the attempted insert is not evidence of a
+committed denial audit. The target deliberately commits a durable denial and
+returns403; earlier MFA/origin gates remain separate. Successful email reveal
+requires its committed audit before returning the address. Existing9 native
+cases and the recorded staged canaries below cover these current routes; this
+source-to-target correspondence does not settle retention or arbitrary RPC
+consumers.
+
 `SecureWaitlistAdmin` reads the waitlist through a restricted Cloudflare Worker
 when `VITE_WAITLIST_ADMIN_BACKEND=worker` is selected. The Worker requires
 `WAITLIST_ADMIN_BACKEND=d1`, split business D1, Better Auth, the existing
