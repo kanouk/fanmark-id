@@ -12,6 +12,22 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Access-helper and stale-mapping follow-up, runtime unchanged**:
+  source-access-helpers-review.md links4 exact username/role/admin/elevated-admin
+  definitions to current callers and existing profile/Auth/waitlist evidence.
+  Source is_super_admin's no-row SELECT yields NULL and bypasses IF NOT; the
+  literal five-case PostgreSQL oracle04:48:47Z confirms the decision expressions
+  without invoking a source function or reading/writing user data. Target
+  waitlist guards already refuse free/missing plans with durable denial audits
+  in the existing9 native cases. General target adminRole/MFA authority is
+  intentionally separate from source plan_type; actual admin identity mapping
+  and operator custody remain open. Object-map's wake/sleep pending statements
+  are corrected to the accepted ea309178/41cefc3 rehearsal with unchanged
+  coordinator/0024 at bce8993, retaining later processor/final-integration gates.
+  The frontend reset mapping now reflects the enabled, accepted0023 API/browser
+  flow rather than incorrectly saying no D1 endpoint exists. No Worker redeploy
+  or repeated staging fault campaign is required for this review/document work.
+
 - **Source/CI follow-up, runtime unchanged**: read-only source runtime04:12:13Z
   and ACL04:12:13Z retain58 definitions/37 bindings/77 policies and both prior
   fingerprints. source-trigger-counterparts.md enumerates all37 bindings and

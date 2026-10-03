@@ -17,6 +17,15 @@ correspondence is separately recorded for29 bindings, including internal SQL
 writers and explicit import/claim/no-op differences. This is the named
 application scope, not77-policy approval.
 
+The [source access helpers](source-access-helpers-review.md) record the exact
+username exclusion, user_roles helper, admin-plan helper and elevated-admin
+definitions. Target adminRole authority/current-session MFA is deliberately
+separate from a source plan or generic role-query RPC. Source is_super_admin's
+missing-plan SELECT/IF NULL fallthrough is recorded by a literal read-only
+five-case oracle; the target's existing native9 waitlist cases include missing
+settings refusal and denial-audit persistence. Actual identity/role import and
+operator bootstrap/custody remain explicit data/operational requirements.
+
 ## Reproduce the inventory
 
 `scripts/migration/source-authorization-bindings.sql` runs one `BEGIN READ ONLY`

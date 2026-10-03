@@ -19,6 +19,23 @@ Own-profile verification now uses full25 Business/4 Auth native10 cases and
 joins normal Worker CI;7a603bd CI37096588121 passed both jobs.
 No whole-source approval is inferred from this linkage.
 
+The [access-helper review](source-access-helpers-review.md) now links exact
+username/role/admin/elevated-admin definitions to current application callers,
+target identity/MFA boundaries and their existing tests. It records the source
+elevated-admin NULL fallthrough using a five-case literal PostgreSQL oracle;
+the target already refuses missing/non-admin settings and does not reproduce
+that branch. No stored source function or user data was invoked/read.
+
+The three notification wake/sleep definition hashes also match the latest
+runtime catalog. Their native marker/DO coordinator are unchanged between
+accepted41cefc3/ea309178 and accepted runtimebce8993. The existing staged
+activation/delivery/idle/recovery/cleanup evidence in notification-worker-wake.md
+therefore remains the bounded scheduler proof; object-map.md no longer calls
+that rehearsal unexecuted. Later notification processor changes and the final
+provider/operational integration keep their own requirements. This updates
+evidence linkage, not the catalog classifier's54 pending count or full-source
+approval.
+
 `schema-readiness.sql` captures triggers whose **table** is in `public`. It
 does not capture a public function attached to `auth.users`. Runtime migration
 review therefore also uses `scripts/migration/source-runtime-bindings.sql`, a

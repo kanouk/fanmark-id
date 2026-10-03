@@ -57,4 +57,6 @@ privilege/billing fields, R2 upload/update/delete/readback and first-password
 setup/retry pass10/10; Worker typecheck and focused lint pass. The existing
 test:profile-d1 command now runs through test:api-contracts-d1 and normal
 Worker CI. This changes verification, not runtime/profile/provider/data/DNS.
-New exact-head CI remains required; the accepted runtime is stillbce8993/c09.
+7a603bd CI37096588121 passed both jobs; the accepted runtime is stillbce8993/c09.
+Exact source username-check behavior, owner exclusion and administrator
+authority differences are in [source access helpers](source-access-helpers-review.md).

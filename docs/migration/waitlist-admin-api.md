@@ -6,8 +6,11 @@ when `VITE_WAITLIST_ADMIN_BACKEND=worker` is selected. The Worker requires
 same-session admin MFA check, and a `user_settings.plan_type='admin'` row for
 the caller. The plan check retains the source's elevated-admin requirement;
 the current-session MFA check is stricter than the local Supabase schema's
-four-hour recent-session check. The 2026-10-02 schema-only readback confirms source `is_super_admin` uses the
-admin plan and a four-hour Auth session, while the source denial helpers write
+four-hour recent-session check. The source `is_super_admin` attempts an admin-
+plan lookup, but its non-STRICT SELECT/IF NOT branch can continue with NULL when
+no matching admin row exists. The target explicitly refuses missing/non-admin
+rows; the source definition and literal five-case PostgreSQL evidence are in
+[source access helpers](source-access-helpers-review.md). Source denial helpers write
 the rejected action and email resource ID/risk. Target role/MFA and imported
 user mapping still need production acceptance before moving real users.
 

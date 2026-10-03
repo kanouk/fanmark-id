@@ -59,6 +59,15 @@ Masterの変更なし操作、内部claimのみの更新では、sourceとの意
 これは任意の直接D1更新や未知の旧consumerの互換性、最終schema移送・復旧の
 受け入れを証明しない。残る関数/権限・indexの照合は未完了で、上記1全体は開いたまま。
 
+追加でusername/role/admin/elevated-adminの4定義を現行callerと既存検証へ
+対応付けた。sourceの上位管理者判定は、該当行がないSELECTのNULLにより拒否分岐を
+通り抜け得る。実データ・保存関数を使わないPostgreSQLの5ケースで式を確認し、
+targetでは既存のwaitlist9ケースが非admin/設定なしを拒否していることを照合した。
+target管理者roleはplanとは独立し、実管理者の対応付け・運用権限の保管は未完了。
+通知wake/sleep3定義と既存のstaging受け入れの対応、管理データresetの有効化・
+API/browser受け入れも古い対応表へ反映した。後続processor変更、provider、運用、
+最終統合の条件は残す。この文書の更新だけで六項目のいずれか全体を閉じない。
+
 現在の実行・配備の詳細は[HANDOFF](HANDOFF.md)と[EXECUTION](EXECUTION.md)、
 関数/RLS/callerの照合は[source runtime](source-runtime-review.md)、
 [source authorization](source-authorization-review.md)、
