@@ -12,6 +12,25 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Browser bootstrap fixture fix; new CI required**:
+  d234ef8 CI37103506054's Worker job succeeded in both completed attempts.
+  Application attempts111147470619 and111148938390 failed only the first
+  Chrome bootstrap in the cold case, before navigation/application assertions;
+  the other7 UI cases passed in each attempt. The old harness discarded Chrome
+  stderr and polled DevToolsActivePort for15 seconds. The harness now captures
+  bounded stderr/exit status, waits up to30 seconds for a validated port, cleans
+  the failed isolated profile/process, and retries bootstrap once before any
+  navigation. Application assertion failures are not retried. Local UI8/8 and
+  a forced first-process exit23 followed by the real Chrome cold UI case pass;
+  Node syntax check passes. New CI/deployment are pending. No application UX or
+  validation assertion was removed. Old run37103506054 is terminal/failure;
+  watchers27252 and91655 exited1 and were consumed, so do not restart its jobs
+  again. Private logs:/tmp/fanmark-browser-bootstrap-{final,retry-proof}.log.
+  Source catalogv41 contains58 named functions; every name has an object-map
+  row. Seven obsolete generic design/test TODOs now link existing transfer,
+  password-proof/settings and invitation implementation/accepted scope instead.
+  This is evidence-linkage repair, not full source runtime/provider acceptance.
+
 - **Retained Master timestamp compatibility fix, local candidate**:
   c7b71c6 CI37101502623 passed both jobs and was deployed as
   70090cdc-7476-4892-8f53-ec38b21ed32e at100%. Root/static JS/CSS byte/hash
