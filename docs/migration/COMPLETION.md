@@ -21,7 +21,7 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 | 2. アプリと認証・業務処理の仕上げ | 多くのsession/権限/競合/失敗時rollbackは受け入れ済み。退会388044b/Worker4a8d85ddはnative66・remote6を受け入れ済み。検索・お気に入りの4既知event/count不整合もbce8993、CI37094750732両job、Workerc09ece05のlocal17・remote4/cleanup/独立readbackで解消済み。ただし全画面・実provider・最終統合は未完了。 | 現行画面の必須操作、管理者MFA、登録/password setup/reset、ライセンス取得・返却・移管・抽選・上限・クーポンを統合構成で確認する。現在修正中の既知不具合を解消し、必要な新経路をstagingで確認する。 | #31, #33, #34 |
 | 3. 実サービスとのテスト接続 | Stripe、Resend、4 OAuth providerの実接続は未受け入れ。stagingのsecretは3名称のみで、signup/email/providerは閉じている。閉じていることの確認は接続成功の証拠ではない。 | Stripe sandboxのCheckout/Portal/変更/延長/署名Webhook・重複/逆順/再試行、テスト宛先の認証メール、4 providerの開始/callback/初回設定を確認する。Apple relayも含む。必要なprovider資格情報・テスト設定・テスト送信の許可が必要。本番課金・本番宛先送信は行わない。 | #31, #32, #34, #37 |
 | 4. ジョブ・運用・復旧 | 通知DOの起動/排出/停止・復旧、期限処理の合成一回実行、archive smoke、Time Travel/R2 replayの個別証拠はある。定常運用、archive/retention、CPU/plan適合、秘密管理/最小権限を含む運用全体は未受け入れ。 | 起動条件/周期/再開/監視、保存期間、担当と権限、秘密の保管・交換、停止時間/復旧時間目標を確定し、合成障害から復旧を実測する。測定で有料planが必要なら設定前に明示する。 | #30, #34, #37 |
-| 5. 移送器の合成データ受け入れ | 現行25 Business/4 Auth、8 Master＋保持する旧Auth core、分離したavatar/cover R2で、同じbundleの合成40表/15行・マスター・2画像を別incarnationへ復旧した。source hash/型/閲覧password/画像参照・bytes/MIMEと通知wakeの単発性を照合。local復旧10182ms。プロフィールを後から取り込むとpassword世代照合が失敗する不具合をcodec v5の順序制御で修正し、専用試験コマンドを追加。通常CIに実行stepがないことを今回確認し、Business/Auth・combined復旧の明示stepを追加。復旧先画像の冗長bucket prefixによる実Storage API404を再現・修正し、primary/別incarnationのGET/HEAD・bytes/MIME/size一致を確認。fresh local復旧10812ms。隔離D1 REST経路はnative9件に加え、1d3085f/CI37108741104両job成功後の実APIで値・rollback・応答破棄後の非自動再送を確認し、所有した一時D1削除/既存3件inventory一致を受け入れた。共通fixture生成と一式remote conductorを準備し、HTTP R2経路のnative6件（import/replay・競合・実Storage GET/HEAD・所有key cleanup）と共通化後combined1件が成功。ただしconductorの一式remote実行・RTO/運用・source URL変換/ブラウザ・最終統合は残る。source schema converterのdeployableはfalse。実ユーザーデータは読み出して移送しない。 | 最終schemaと運用構成で合成snapshotの中断・再開・照合・復旧を通し、未説明差分0と所要時間を記録する。個別の旧schema検証から最終構成の成立を推定しない。 | #35, #37 |
+| 5. 移送器の合成データ受け入れ | 現行25 Business/4 Auth、8 Master＋保持する旧Auth core、分離したavatar/cover R2で、同じbundleの合成40表/15行・マスター・2画像を別incarnationへ復旧した。source hash/型/閲覧password/画像参照・bytes/MIMEと通知wakeの単発性を照合。local復旧10182ms。プロフィールを後から取り込むとpassword世代照合が失敗する不具合をcodec v5の順序制御で修正し、専用試験コマンドを追加。通常CIに実行stepがないことを今回確認し、Business/Auth・combined復旧の明示stepを追加。復旧先画像の冗長bucket prefixによる実Storage API404を再現・修正し、primary/別incarnationのGET/HEAD・bytes/MIME/size一致を確認。fresh local復旧10812ms。隔離D1 REST経路はnative9件に加え、1d3085f/CI37108741104両job成功後の実APIで値・rollback・応答破棄後の非自動再送を確認し、所有した一時D1削除/既存3件inventory一致を受け入れた。共通fixture生成と一式remote conductorを準備し、HTTP R2経路のnative6件（import/replay・競合・実Storage GET/HEAD・所有key cleanup）と共通化後combined1件が成功。2cbf4e0/CI37115000097両job成功後、一式remoteの2 targetで40表/15行（非空9表）・Master・2画像・source hash/count・FK/wake・中断再開が成功。新規targetの合成復旧90726msで本番RTOではない。所有した全資源を削除し、独立10:18:30.138Z inventory一致を受け入れた。Authはseedした合成依存userでcredential backup証拠ではない。RTO/運用・source URL変換/ブラウザ・最終統合は残る。source schema converterのdeployableはfalse。実ユーザーデータは読み出して移送しない。 | 最終schemaと運用構成で合成snapshotの中断・再開・照合・復旧を通し、未説明差分0と所要時間を記録する。個別の旧schema検証から最終構成の成立を推定しない。 | #35, #37 |
 | 6. 最終統合と引き渡し | desktop・390px viewportのeditor/favorites、API/static/PWA/noindexなどの個別証拠がある。実スマホ・対応言語・旧PWAからの更新を含む最終通し確認は未完了。PR #41はdraft。 | 同じ最終candidateで主要利用フロー、provider、ジョブ、PC/スマホ、言語、旧client更新、障害/復旧を一巡する。実行結果と残すデータ/DNS工程の手順を更新し、PRの最終差分・CIをレビュー可能にする。 | #33, #37 |
 
 ## 進行方法
@@ -39,6 +39,16 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
   必要なコード/infra/接続/統合の未完了を隠す理由にしない。
 
 ## 現在の直近作業
+
+一式remote復旧のfixture受け入れは完了した。2cbf4e0/CI37115000097両job成功後、
+異なる新規target2組で同じbundleの40表/15行（非空9表）、マスター、2画像を
+取り込み・照合・復旧し、最初のcommit後中断から再開した。新規target90726msは
+合成のprovision/restore時間で、本番RTOではない。Authは固定した依存userのseed。
+全所有資源を削除し、実行器と独立10:18:30.138Z確認の両方で元inventoryの一致を
+確認した。[値を含まない受入証拠](evidence/isolated-combined-recovery-2026-10-03.json)。
+これでsource URL変換/ブラウザや運用・全source gate、項目5全体を完了にしない。
+次は、取り込んだ画像参照がsource originのまま残る具体的な差を閉じる。
+以下の失敗/準備中記載は過去の経緯として保持する。
 
 認証固定ad8d7a5/CI37113804391は両job成功。次の一回は一時Workerとsecretの
 配備まで成功し、その後の接続先identity確認で終了した。schema・データ取り込み前。

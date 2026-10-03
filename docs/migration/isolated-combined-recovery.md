@@ -102,6 +102,21 @@ this readback does not prove profile URL conversion or rendered browser use.
 
 ## Current proof
 
+The latest accepted execution is candidate2cbf4e0/CI37115000097 (both jobs
+successful), private journal `/tmp/fanmark-combined-remote-KjkWWK/journal.json`.
+Session28956 exited0. The two separately owned target groups accepted40 tables/
+15 rows across9 nonempty tables, one fixed Auth dependency user, Master and two
+images, including primary committed-credential interruption/resume, source
+hash/count reconciliation, actual GET/HEAD, FK and wake checks. Fresh provision/
+restore took90726ms; this is synthetic, not production RTO. Both groups were
+removed by receipts/version checks; final original-inventory equality was
+independently rechecked at10:18:30.138Z. Initial identity responses404/503 became
+ready within the bounded GET check. Full source converter, Auth credential
+backup, source-URL conversion/browser display and operational RTO remain open.
+The [checked-in evidence](evidence/isolated-combined-recovery-2026-10-03.json)
+retains scope, both phases, counts/hashes and limitations without secrets.
+Earlier failed/prepared statements below describe historical attempts.
+
 - Real isolated D1 REST primitive: candidate1d3085f/CI37108741104, value/NULL/
   int64 readback, CHECK rollback, deliberate success-response loss without
   automatic write retry, owned resource deletion and original inventory equality.
@@ -127,8 +142,8 @@ this readback does not prove profile URL conversion or rendered browser use.
   then failed before schema/data import; its old bare Error lost the specific
   code, so the cause remains unknown. All owned resources were removed, and
   independent09:56:06.181Z inventory equals the original D1/R2/Worker lists.
-  Journal:/tmp/fanmark-combined-remote-h1aFb1/journal.json. The new readiness/
-  diagnostic candidate's native suite passes7/7; its CI/live retry remain gates.
+  Journal:/tmp/fanmark-combined-remote-h1aFb1/journal.json. The readiness/diagnostic candidate's native suite passes7/7. Its later CI/live
+  success is recorded above; the failed attempt remains failed.
 
 Private local logs:
 `/tmp/fanmark-recovery-shared-bundle-regression.log`,

@@ -1,5 +1,28 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：一式remote合成復旧を受け入れ
+
+2cbf4e0/CI37115000097は両job成功。実行process28956はexit0で終了した。
+新規3 D1/2 R2/Workerを各targetに作り、同じbundleをprimaryと別incarnationへ
+取り込んだ。40表/15行（非空9表）のcount/source hash、Master、2画像のbytes/MIME、
+物理key一覧と実Storage GET/HEAD、全store FK、wake1/0を確認した。
+primaryは保護閲覧credential commit直後の意図した中断→checkpoint再開が成功。
+Authは4 migration下の固定依存userのseedで、Auth credential backupではない。
+初期404/503は有限GET readiness後に正しいidentityとなり、認証拒否条件は維持した。
+primary102090ms/fresh90726msは小さな合成fixtureの資源作成込み所要時間。
+
+10:16:12.536Zに受け入れ、両targetの画像・Worker・R2・D1をreceipt/version照合後に
+削除した。final metadataは元のD1 3件/R2 3件/Worker2件と一致。
+独立10:18:30.138Z read-only API確認でも同じ一覧を確認した。journalは
+/tmp/fanmark-combined-remote-KjkWWK/journal.json。比較した両import reportとbundleも
+同directoryに保持。review可能な値を含まない証拠は
+[evidence](evidence/isolated-combined-recovery-2026-10-03.json)。
+
+source URL変換とブラウザ表示、運用RTO、全source converter/最終統合は未完了。
+converter deployable/fullMigrationReconciledはfalseを維持する。
+既存アプリruntimecbb90c7/Workere0a4b16e、実ユーザー/source行、DNSは変更していない。
+次は画像参照のtarget URL対応を閉じる。六項目は[COMPLETION](COMPLETION.md)。
+
 ## 2026-10-03：検索・お気に入りの既知不整合をstagingで解消
 
 bce8993のCI37094750732は両job成功。全25 Business migrationのnative17/17、

@@ -1,11 +1,14 @@
 # D1 importer and isolated recovery transport
 
 The importer accepts an explicitly injected D1-compatible binding and a
-verified PostgreSQL snapshot. Local synthetic rehearsal is the accepted
-snapshot-import proof. The isolated remote transport has passed a bounded
-real Cloudflare REST probe; complete remote snapshot/R2 recovery is not yet
-accepted. The probe created and deleted one owned empty database. No real
-source rows or existing staging database contents were read or changed.
+verified PostgreSQL snapshot. Local rehearsal and the complete isolated remote
+synthetic fixture recovery are accepted: candidate2cbf4e0/CI37115000097 restored
+40 tables/15 rows, Master and two linked R2 images in two separately owned targets,
+with committed-credential interruption/resume, reconciliation and independent
+cleanup inventory equality. See the [value-free evidence](evidence/isolated-combined-recovery-2026-10-03.json).
+Auth is a seeded dependency user, not credential backup. Source URL conversion/
+browser delivery, full source converter approval and production RTO remain open.
+No real source rows or existing staging database contents were read or changed.
 
 For encrypted backups, `importEncryptedD1Snapshot()` first authenticates and
 opens the bundle under a fresh mode-0700 OS temporary directory, verifies the
@@ -21,7 +24,7 @@ destinationId, targetIncarnation, reportPath, mode: "local", ... })` in
 and `batch()` methods. A standalone command intentionally refuses to choose a
 remote or Wrangler binding.
 
-### Isolated remote mode (remote primitive accepted, full restore pending)
+### Isolated remote mode (current synthetic fixture accepted)
 
 `isolated-remote-d1.mjs` uses the [Cloudflare D1 query API](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/)
 with parameter binding and one REST batch per transaction. The caller supplies

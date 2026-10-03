@@ -12,6 +12,32 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Accepted complete remote synthetic fixture recovery and independent cleanup**:
+  2cbf4e0/CI37115000097 completed/success in both jobs; watcher55572 exited0
+  and is consumed. Remote session28956 exited0 and is consumed. Both separately
+  created Business/Auth/Master and split-R2 targets accepted the same bundle:
+  40 source tables/15 rows across9 populated tables, source count/hash equality,
+  Master3 emojis/4 tiers, two PNGs, actual Storage GET/HEAD, physical inventories,
+  FK checks and wake1/0. Primary committed protected-credential interruption and
+  checkpoint resume passed. Auth is the fixed seeded dependency user, not Auth
+  credential backup/restore. Primary provision/restore102090ms; fresh90726ms,
+  neither is production RTO. Initial Workers returned404 (fresh also503), then
+  identity matched within bounded GET readiness. Settings and scoped credentials
+  matched; no authentication/identity check was relaxed or write retried.
+  Accepted10:16:12.536Z; both owned groups were deleted by receipt/version checks.
+  Final inventory equals the original3 D1/3 R2/2 Workers. A separate read-only
+  metadata check at10:18:30.138Z independently confirms the same original lists.
+  Private journal:/tmp/fanmark-combined-remote-KjkWWK/journal.json. The checked-in
+  value-free evidence is evidence/isolated-combined-recovery-2026-10-03.json.
+  This closes this complete remote fixture gate. It does not close source URL
+  conversion/browser delivery, production recovery operations, all source gates
+  or all six packages; converter deployable/fullMigrationReconciled remain false.
+  Existing app runtime remainscbb90c7/e0a4b16e; real source users/data and DNS are
+  unchanged. Next concrete gap: imported image URLs still name the source origin;
+  implement and verify their target mapping/rendering without altering exports.
+  Earlier failed/prepared checkpoints below are historical and superseded only
+  for the primitive/readiness/current-fixture recovery gates named here.
+
 - **Pinned-credential candidate accepted by CI/deploy; identity gate still open**:
   ad8d7a5/CI37113804391 completed/success in both jobs; watcher92593 exited0
   and is consumed. One remote attempt (session28828, terminal/exit1) verified
