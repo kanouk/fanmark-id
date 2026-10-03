@@ -31,28 +31,61 @@ R2 upload/update/delete/readback and password setup/retry. Local10/10,
 Worker typecheck and focused lint pass. The old reduced fixture and its custom
 privilege trigger are removed, so target validation is proved without that
 fixture-only guard. test:profile-d1 now joins test:api-contracts-d1/npm test;
-new exact-head CI is required. No runtime deployment is required for this test
+7a603bd CI37096588121 passed both Worker/API and staging application jobs.
+No runtime deployment is required for this test
 change; accepted runtime remains bce8993/Workerc09. Source guard definitions
 and the production Supabase environment are unchanged.
 
-## Registered bindings and finite timestamp review
+## Registered bindings and current application timestamp review
 
 The29 update_updated_at_column bindings all assign NEW.updated_at=now() in
-PostgreSQL. Target application writes capture trusted server timestamps;
+PostgreSQL. The function definition SHA-256 is
+6f82d0245c64ddc1a012c35b5c99905011b4d8c301389098f47771ad116ccbc5.
+The per-binding hashes in the index describe trigger definitions, not this
+shared function body. Target application writes capture trusted server timestamps;
 immutable reference releases retain source timestamps and change only edited
 records. Imports preserve historical timestamps. Target-only lease/claim fields
 have separate bookkeeping semantics. Direct D1 console writes do not inherit
 PostgreSQL BEFORE-trigger behavior.
 
-The index below accounts for all37 registered bindings exactly once. A located
-writer is a review entry point, not approval of all its statements or callers.
-Remaining timestamp work is to verify each mutable current writer and document
-no-op/import/internal-bookkeeping differences against its feature contract.
-The initial scan flagged dynamic profile SQL, a legacy fixture runner, and
-internal lifecycle_claim_id writes; manual inspection is needed to distinguish
-these from a missing timestamp on a real business transition. Source-shaped
-lifecycle transitions explicitly store/verify captured_now in their updated_at;
-license-expiry-scheduled.mjs uses those source-shaped repositories.
+The current application correspondence for these29 timestamp bindings is
+reviewed at runtime bce8993 and test/docs head7a603bd. The review included62
+literal UPDATE candidates over18 tables,15 located INSERT/ON CONFLICT candidates,
+dynamic statements and the final active SQL triggers after all25 Business
+migrations. These scan counts are navigation aids, not an AST completeness
+claim or a new runtime acceptance test. The table below also accounts for
+upsert-only configurations, versioned Master rows and preferences without an
+editor; locating a writer alone did not establish its clock semantics.
+
+| Writer or intentional difference | Reviewed behavior and repository evidence |
+| --- | --- |
+| Mutable application rows | Account deletion, settings/admin edits, registration, return, transfer, lottery, notification processing and billing bind a server/operation clock to updated_at. Configuration/enterprise/subscription upserts copy that clock from excluded.updated_at. Existing feature acceptance remains scoped to its recorded tests; this source review adds no remote test claim. |
+| Dynamic own-profile UPDATE | profile-d1-repository.ts:221–227 appends updated_at and binds toUtcMicrosecondTimestamp(new Date()); the static scan's missing literal was not a missing clock. |
+| Dynamic invitation/profile edits | invitation-admin-d1-api.ts:211,234–235 appends the server clock; fanmark-profile-d1-api.ts:390–415 appends updated_at=excluded.updated_at and binds the captured server clock to the inserted row. fanmark-settings-d1-api.ts handles the additional conditional password/profile upserts. |
+| SQL-trigger coupon application | Final extension_coupon_application_apply writes extension_coupons, fanmark_licenses and fanmark_lottery_entries with NEW.applied_at. Business0015/0021 and extension-coupon-application-d1-api.ts construct/use the persisted application command; retries retain its operation time. These database writers supplement the direct API writers. |
+| SQL-trigger invitation consumption | Final invitation_signup_consume_code writes invitation_codes.updated_at=NEW.updated_at. Business0014/0018 and invitation-signup-d1-api.ts use the server-stamped signup attempt; this is a separate writer from the invitation admin PATCH. |
+| Expiry/grace business transitions | license-expiry-source.mjs:454 and license-grace-finalization-source.mjs:796,955,1029 bind the persisted capturedNow and verify the resulting transition. license-expiry-scheduled.mjs imports these source-shaped repositories. |
+| Internal lifecycle claims | license-expiry-source.mjs:609 and license-grace-finalization-source.mjs:661,936,1222,1386 change only target-only lifecycle_claim_id. Acquiring/releasing a work claim preserves the business updated_at. These bookkeeping changes did not exist as source business fields. |
+| Legacy fixture expiry repository | license-expiry.mjs:514,653 belongs to the legacy fixture repository, not the deployed scheduled repository. Its pure time/operation helpers remain imported; the module is not declared wholly unused or removed. |
+| Four versioned Master tables | reference-master-admin-d1-repository.ts stages fanmark_tiers, fanmark_tier_extension_prices, languages and reserved_emoji_patterns with their source metadata. updatePricing changes the clock only on edited tier/price records; an unchanged edit publishes no new release. Languages/reserved patterns have no current row editor. This intentionally differs from a no-op PostgreSQL UPDATE touching now(). |
+| Notification preferences | notifications-scheduled.ts reads notification_preferences; account-deletion-d1-api.ts deletes the user's rows. No current application INSERT/UPDATE editor was found. Historical rows remain an importer/data-phase responsibility, and unknown legacy consumers are not classified inactive. |
+| CAS and retried operations | Coupon/admin template/emoji/rule/template edits can advance a timestamp beyond the prior revision for CAS. Billing returns use persisted returned_at; scheduled runs use captured_now. These stable or monotonic operation clocks intentionally differ from PostgreSQL transaction now(), rather than accepting a client-supplied timestamp. |
+| Historical import | row-conversion.mjs projects timestamptz as UTC microsecond text and converts the supplied envelope values. d1-import.mjs:996–998 inserts explicit columns/bindings and readTargetRow compares them. It does not replace ordinary source updated_at with import time. Import-run/credential-transform ledgers have their own clocks. This code correspondence is not final-schema importer acceptance. |
+
+The final active trigger definitions were inspected in an isolated SQLite
+schema built from all25 Business migrations; four writes to the29 source tables
+were found across the coupon and invitation triggers. This establishes the
+checked-in schema's writer mapping, not an additional workerd/remote proof.
+No missing business timestamp was identified in the reviewed current paths.
+No blanket AFTER UPDATE clock trigger is added: it would also alter import,
+no-op, replay and internal bookkeeping semantics and can cause extra audit work.
+
+The index below accounts for all37 registered bindings exactly once. The29
+timestamp rows have the bounded current-application disposition above; the
+other eight bindings retain their named feature acceptance/review requirements.
+Arbitrary direct D1 writes and unknown legacy RPC/SDK consumers do not acquire
+PostgreSQL BEFORE-trigger behavior. Their access/cutover controls belong to the
+remaining authorization/operations reconciliation.
 
 | Source binding | Function | Definition SHA-256 prefix | Target review entry point |
 | --- | --- | --- | --- |
@@ -63,12 +96,12 @@ license-expiry-scheduled.mjs uses those source-shaped repositories.
 | `public.emoji_master.audit_emoji_master_changes` | `log_emoji_master_changes` | `003687c5df57e0b3` | emoji-master-admin-d1-repository.ts + Master0008; emoji-master-change-audit.md |
 | `public.emoji_master.update_emoji_master_updated_at` | `update_updated_at_column` | `46c9854aca01e2c1` | emoji-master-admin-d1-repository.ts |
 | `public.enterprise_user_settings.update_enterprise_user_settings_updated_at` | `update_updated_at_column` | `a54404fc4fd0332b` | admin-user-management-d1-api.ts |
-| `public.extension_coupons.update_extension_coupons_updated_at` | `update_updated_at_column` | `45f61532573a0f3a` | extension-coupon-admin-d1-api.ts |
+| `public.extension_coupons.update_extension_coupons_updated_at` | `update_updated_at_column` | `45f61532573a0f3a` | extension-coupon-admin-d1-api.ts; Business0015/0021 extension_coupon_application_apply |
 | `public.fanmark_availability_rules.update_fanmark_availability_rules_updated_at` | `update_updated_at_column` | `c537477a3f83808b` | account-deletion-d1-api.ts, availability-rules-admin-d1-api.ts |
 | `public.fanmark_basic_configs.update_fanmark_basic_configs_updated_at` | `update_updated_at_column` | `16ceba96d100168f` | fanmark-registration-d1-api.ts, fanmark-settings-d1-api.ts, fanmark-transfer-d1-api.ts |
-| `public.fanmark_licenses.update_fanmark_licenses_updated_at` | `update_updated_at_column` | `4b1fd179f2dc025e` | account-deletion-d1-api.ts, admin-user-management-d1-api.ts, fanmark-registration-d1-api.ts, fanmark-return-d1-api.ts, fanmark-transfer-d1-api.ts, license-expiry-source.mjs, license-expiry.mjs, license-grace-finalization-source.mjs, stripe-subscription-reconciliation-d1.ts, stripe-webhook-d1-application.ts |
+| `public.fanmark_licenses.update_fanmark_licenses_updated_at` | `update_updated_at_column` | `4b1fd179f2dc025e` | account-deletion-d1-api.ts, admin-user-management-d1-api.ts, fanmark-registration-d1-api.ts, fanmark-return-d1-api.ts, fanmark-transfer-d1-api.ts, license-expiry-source.mjs, license-expiry.mjs (fixture repository only), license-grace-finalization-source.mjs, stripe-subscription-reconciliation-d1.ts, stripe-webhook-d1-application.ts; Business0015/0021 coupon application |
 | `public.fanmark_lottery_entries.audit_lottery_entry_changes` | `log_lottery_entry_changes` | `122ce5fd21b07a78` | fanmark-lottery-d1-api.ts / lottery-cancellation-audit.ts; fanmark-lottery-api.md; remaining writers separately |
-| `public.fanmark_lottery_entries.update_lottery_entries_updated_at` | `update_updated_at_column` | `a195cd1d84ce699c` | fanmark-lottery-d1-api.ts, license-grace-finalization-source.mjs, lottery-cancellation-audit.ts, stripe-webhook-d1-application.ts |
+| `public.fanmark_lottery_entries.update_lottery_entries_updated_at` | `update_updated_at_column` | `a195cd1d84ce699c` | fanmark-lottery-d1-api.ts, license-grace-finalization-source.mjs, lottery-cancellation-audit.ts, stripe-webhook-d1-application.ts; Business0015/0021 coupon application |
 | `public.fanmark_messageboard_configs.update_fanmark_messageboard_configs_updated_at` | `update_updated_at_column` | `604da5cc0c25a78d` | fanmark-registration-d1-api.ts, fanmark-settings-d1-api.ts |
 | `public.fanmark_password_configs.update_fanmark_password_configs_updated_at` | `update_updated_at_column` | `d098a5c9d75ee67b` | fanmark-settings-d1-api.ts |
 | `public.fanmark_profiles.update_fanmark_profiles_updated_at` | `update_updated_at_column` | `0f1183a55d171c2e` | fanmark-profile-d1-api.ts, fanmark-registration-d1-api.ts, fanmark-settings-d1-api.ts |
@@ -79,7 +112,7 @@ license-expiry-scheduled.mjs uses those source-shaped repositories.
 | `public.fanmark_transfer_requests.update_fanmark_transfer_requests_updated_at` | `update_updated_at_column` | `a64167a6750e12f2` | fanmark-transfer-d1-api.ts |
 | `public.fanmarks.trg_link_fanmark_discovery` | `link_fanmark_discovery_trigger` | `8b3deef998acb5bc` | Business0022 + registration; fanmark-registration-api.md |
 | `public.fanmarks.update_fanmarks_updated_at` | `update_updated_at_column` | `60a887477a5d3b22` | fanmark-registration-d1-api.ts |
-| `public.invitation_codes.update_invitation_codes_updated_at` | `update_updated_at_column` | `03f2ffd0f3ddb4e8` | invitation-admin-d1-api.ts |
+| `public.invitation_codes.update_invitation_codes_updated_at` | `update_updated_at_column` | `03f2ffd0f3ddb4e8` | invitation-admin-d1-api.ts; invitation-signup-d1-api.ts + Business0014/0018 invitation_signup_consume_code |
 | `public.languages.update_languages_updated_at` | `update_updated_at_column` | `3e3bbb569f1f70f2` | reference-master-admin-d1-repository.ts (versioned rows/import; tier/price edits) |
 | `public.notification_events.activate_notification_worker_on_pending_event` | `activate_notification_worker_on_pending_event` | `94b483239739ccc0` | Business0024 + notification-wake.ts; notification-worker-wake.md |
 | `public.notification_events.update_notification_events_updated_at` | `update_updated_at_column` | `31fa188a244d9960` | admin-user-management-d1-api.ts, fanmark-lottery-d1-api.ts, license-expiry-source.mjs, license-grace-finalization-source.mjs, notification-master-d1-api.ts, notifications-scheduled.ts |

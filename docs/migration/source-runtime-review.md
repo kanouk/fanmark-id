@@ -11,9 +11,13 @@ function hashes,37 registered bindings and fingerprint below. Its separate
 ACL observation04:12:13.485862Z also retains the prior fingerprint. The
 [37-binding counterpart index](source-trigger-counterparts.md) records the
 reviewed settings privilege guards, NOTICE-only security trigger behavior,
-current writer entry points and the remaining29 timestamp-binding review.
+current writer entry points and the completed current-application correspondence
+for29 timestamp bindings. The latter includes dynamic SQL and final active
+coupon/invitation trigger writes; it preserves documented differences for
+historical imports, Master no-op edits and target-only lifecycle claims.
 Own-profile verification now uses full25 Business/4 Auth native10 cases and
-joins normal Worker CI. No whole-source approval is inferred from this linkage.
+joins normal Worker CI;7a603bd CI37096588121 passed both jobs.
+No whole-source approval is inferred from this linkage.
 
 `schema-readiness.sql` captures triggers whose **table** is in `public`. It
 does not capture a public function attached to `auth.users`. Runtime migration

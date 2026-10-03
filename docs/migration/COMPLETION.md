@@ -51,8 +51,13 @@ source-runtime-reviewへ対応付けた。これで六項目のうち一項目�
 不変。37bindingの対応先を[source trigger counterparts](source-trigger-counterparts.md)
 へ列挙し、plan権限の2triggerとNOTICEのみのsecurity triggerの実処理を照合した。
 既存の本人profile10ケースは全25 Business/4 Auth・実FK・実session/R2で通過し、
-通常CIへ組み込んだ。29 timestamp bindingのwriter単位確認と残る関数/権限の
-照合は未完了で、この一覧や10ケースだけで上記1全体を完了としない。
+通常CIへ組み込み、7a603bdのCI37096588121は両job成功。
+29 timestamp bindingは現行アプリの対応照合を完了した。62 UPDATE候補と
+UPSERT/動的SQL、25 Business migration適用後のクーポン・招待消費triggerの
+書き込みを確認し、業務更新での日時設定欠落は見つからなかった。移送履歴の日時、
+Masterの変更なし操作、内部claimのみの更新では、sourceとの意図した差を記録した。
+これは任意の直接D1更新や未知の旧consumerの互換性、最終schema移送・復旧の
+受け入れを証明しない。残る関数/権限・indexの照合は未完了で、上記1全体は開いたまま。
 
 現在の実行・配備の詳細は[HANDOFF](HANDOFF.md)と[EXECUTION](EXECUTION.md)、
 関数/RLS/callerの照合は[source runtime](source-runtime-review.md)、

@@ -16,13 +16,18 @@ staging deployment does not close the whole goal.
   and ACL04:12:13Z retain58 definitions/37 bindings/77 policies and both prior
   fingerprints. source-trigger-counterparts.md enumerates all37 bindings and
   separates the source's NOTICE-only security trigger from delivery, the two
-  plan-escalation guards, and29 timestamp writer reviews. Own-profile native10
+  plan-escalation guards, and the completed current-application timestamp
+  correspondence for29 bindings. Dynamic SQL, final coupon/invitation SQL
+  triggers, versioned Master no-op edits, historical import and lifecycle-claim
+  differences are recorded; no missing business timestamp was found in the
+  reviewed paths. Own-profile native10
   now applies all25 Business/4 Auth migrations with real sessions/R2, an actual
   invitation FK and per-case both-store FK checks; reduced/custom-guard fixture
   removed. Local10/10/typecheck/lint pass and test:profile-d1 is added to normal
-  CI. New exact-head CI remains required; this test/docs change requires no
+  CI. 7a603bd CI37096588121 passed both jobs and its watcher exited0;
+  this test/docs change requires no
   redeployment. d0e42dd docs CI37095642337 passed both jobs. Workerc09 below is
-  still the accepted runtime. Full runtime/ACL/timestamp/provider/ops/import/
+  still the accepted runtime. Full runtime/ACL/provider/ops/import/
   final integration remain open; no gate is cleared just by listing a writer.
 
 - **Newest accepted staging code:bce8993**, CI37094750732 both jobs success.

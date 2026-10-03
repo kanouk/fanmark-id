@@ -12,7 +12,10 @@ separate runtime observation04:12:13.370671Z and v41. The new
 settings owner policies/plan-escalation guards to profile allowlists, server-
 selected signup plans, current-session MFA administration and verified billing.
 Full25 Business/4 Auth own-profile native10 cases pass; its existing command
-now joins normal CI. This is the named application scope, not77-policy approval.
+now joins normal CI;7a603bd CI37096588121 passed both jobs. Timestamp writer
+correspondence is separately recorded for29 bindings, including internal SQL
+writers and explicit import/claim/no-op differences. This is the named
+application scope, not77-policy approval.
 
 ## Reproduce the inventory
 
