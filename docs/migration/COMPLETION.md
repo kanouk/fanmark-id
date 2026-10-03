@@ -17,7 +17,7 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |
 | --- | --- | --- | --- |
-| 1. 移行元・移行先・呼び出し元の照合 | 40表、58関数、37登録trigger、77policyのcatalogと211箇所のfrontend対応表はある。分類reportは全体照合未完了のまま。sequence keyの3候補indexなどに未解決の意味差がある。 | 各object/actionについて、source定義hash、権限、実行経路、targetまたは不使用の根拠、契約差、対応する検証を結び付ける。未実装の現行経路・未説明の差を残さない。実データでしか判断できない事項はデータ工程へ明示的に移す。 | #30, #33, #34 |
+| 1. 移行元・移行先・呼び出し元の照合 | 40表、58関数、37登録trigger、77policyのcatalogと211箇所のfrontend対応表があり、77policy全件のidentity/hash→40表の現行経路・実装・検証への対応表を作成済み。分類reportは全体照合未完了のまま。sequence keyの3候補indexなどに未解決の意味差がある。 | 各object/actionについて、source定義hash、権限、実行経路、targetまたは不使用の根拠、契約差、対応する検証を結び付ける。未実装の現行経路・未説明の差を残さない。実データでしか判断できない事項はデータ工程へ明示的に移す。 | #30, #33, #34 |
 | 2. アプリと認証・業務処理の仕上げ | 多くのsession/権限/競合/失敗時rollbackは受け入れ済み。退会388044b/Worker4a8d85ddはnative66・remote6を受け入れ済み。検索・お気に入りの4既知event/count不整合もbce8993、CI37094750732両job、Workerc09ece05のlocal17・remote4/cleanup/独立readbackで解消済み。ただし全画面・実provider・最終統合は未完了。 | 現行画面の必須操作、管理者MFA、登録/password setup/reset、ライセンス取得・返却・移管・抽選・上限・クーポンを統合構成で確認する。現在修正中の既知不具合を解消し、必要な新経路をstagingで確認する。 | #31, #33, #34 |
 | 3. 実サービスとのテスト接続 | Stripe、Resend、4 OAuth providerの実接続は未受け入れ。stagingのsecretは3名称のみで、signup/email/providerは閉じている。閉じていることの確認は接続成功の証拠ではない。 | Stripe sandboxのCheckout/Portal/変更/延長/署名Webhook・重複/逆順/再試行、テスト宛先の認証メール、4 providerの開始/callback/初回設定を確認する。Apple relayも含む。必要なprovider資格情報・テスト設定・テスト送信の許可が必要。本番課金・本番宛先送信は行わない。 | #31, #32, #34, #37 |
 | 4. ジョブ・運用・復旧 | 通知DOの起動/排出/停止・復旧、期限処理の合成一回実行、archive smoke、Time Travel/R2 replayの個別証拠はある。定常運用、archive/retention、CPU/plan適合、秘密管理/最小権限を含む運用全体は未受け入れ。 | 起動条件/周期/再開/監視、保存期間、担当と権限、秘密の保管・交換、停止時間/復旧時間目標を確定し、合成障害から復旧を実測する。測定で有料planが必要なら設定前に明示する。 | #30, #34, #37 |
@@ -44,7 +44,7 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 独立readbackまで完了。sourceの4関数とtargetの経路/差異/証拠をobject mapと
 source-runtime-reviewへ対応付けた。これで六項目のうち一項目全体を閉じたとは扱わない。
 
-次は上記1と4の未照合を、object/運用条件ごとに閉じる。必要な外部設定は3で
+次は上記1の残る関数/indexと明示した契約差、上記4の運用条件を閉じる。必要な外部設定は3で
    一括して扱い、コード確認の途中で同じ依頼を繰り返さない。
 
 2026-10-03 04:12Zの最新source catalogは58定義/37binding/77policyと両fingerprintが
@@ -72,3 +72,13 @@ API/browser受け入れも古い対応表へ反映した。後続processor変更
 関数/RLS/callerの照合は[source runtime](source-runtime-review.md)、
 [source authorization](source-authorization-review.md)、
 [object map](object-map.md)、[frontend callsites](frontend-callsite-map.md)を参照する。
+
+2026-10-03の[source policy counterparts](source-policy-counterparts.md)で77policyの
+対応先・元式hash・所有者/管理者/内部処理条件を40表ごとに明示した。既存画面に
+直接callerのない行APIを増やさず、通知preferencesの内部参照、Enterpriseの管理
+操作、Auth D1のロール/MFAへの置換を確認した。未対応の旧行APIは不使用と断定せず
+外部consumerの扱いを残す。選択済みreference releaseの公開DTOはinactiveな
+pattern/priceを含む既存契約で、sourceのactive限定policyとの差を確認した。
+公開可否の判断と歴史的所有者のanalytics範囲、残る関数/indexは未完了で、項目1
+全体を完了にはしない。combined recovery candidate0019568のCI37100329703は
+両job成功を確認済み。稼働Workerは引き続きc09/bce8993。

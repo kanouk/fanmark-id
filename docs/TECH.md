@@ -42,7 +42,7 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
 - 制御: `MaintenanceGate` が設定値を監視し、`/admin` は常にバイパス、管理者は通常表示を継続できる。
 
 ## Supabase: スキーマ/関数運用
-- 移行用の認可catalogは`scripts/migration/source-authorization-bindings.sql`のread-only transactionで取得する。生のpolicy式/function本文はprivateに保持し、`source-authorization-review.mjs`でhashと権限metadataだけのreportを生成する。triggerへのEXECUTEと通常functionの権限を区別し、grantだけでRLS/API移行完了とは扱わない。手順・検証範囲は`docs/migration/source-authorization-review.md`。
+- 移行用の認可catalogは`scripts/migration/source-authorization-bindings.sql`のread-only transactionで取得する。生のpolicy式/function本文はprivateに保持し、`source-authorization-review.mjs`でhashと権限metadataだけのreportを生成する。triggerへのEXECUTEと通常functionの権限を区別し、grantだけでRLS/API移行完了とは扱わない。手順・検証範囲は`docs/migration/source-authorization-review.md`。全77policyのidentity/式hashと40表の現行API/内部処理・契約差は`docs/migration/source-policy-counterparts.md`に対応付ける。対応表は全権限・外部consumer・最終統合の承認を意味しない。
 - Migration-first: `supabase migration new <name>` で作成し、既存関数の返り値変更時は **必ず `DROP FUNCTION IF EXISTS ...`** を先頭に置く（`SUPABASE_MIGRATION_GUIDE.md` 方針）。
 - 主な Edge Functions:  
   - ライセンス/取得: `register-fanmark`, `return-fanmark`, `bulk-return-fanmarks`, `extend-fanmark-license`, `check-expired-licenses`  

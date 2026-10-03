@@ -26,6 +26,21 @@ five-case oracle; the target's existing native9 waitlist cases include missing
 settings refusal and denial-audit persistence. Actual identity/role import and
 operator bootstrap/custody remain explicit data/operational requirements.
 
+## Complete policy-to-current-path inventory
+
+[source-policy-counterparts.md](source-policy-counterparts.md) now binds all
+77 exact policy identities/commands/roles/expression hashes to 40 current table
+counterparts, implementation files, feature contracts and existing coverage.
+This closes the missing policy inventory, not full authorization acceptance.
+It records the active finite source profile INSERT versus perpetual target
+correction, participant ownership, session-only notification owner, server-side
+billing writes, private password storage and deliberate Auth D1 role/MFA model.
+Uncopied raw row/ALL surfaces and external consumers remain explicit. In
+particular, existing reference DTO tests include inactive pattern/price members;
+selected release is not row activation, and source active-only visibility still
+requires disposition. Historical-owner analytics also differs. These are named
+semantic decisions rather than an unexamined 77-policy backlog.
+
 ## Reproduce the inventory
 
 `scripts/migration/source-authorization-bindings.sql` runs one `BEGIN READ ONLY`
@@ -122,10 +137,10 @@ functions. The report retains `authorizationReconciled=false` and
 using `object-map.md`, `frontend-callsite-map.md` and the feature acceptance docs.
 Real user/Auth migration and domain cutover remain excluded.
 
-Local checks after adding this evidence: authorization report 9/9, full
+Historical checks when the earlier focused evidence was added: authorization report 9/9, full
 `test:migration-data` 266/266 (skip 0), native `test:notifications-d1` 16/16,
-Worker typecheck, changed-file ESLint and workflow isolation pass. D1 Free daily
-read exhaustion prevents a new remote editor preflight; these local checks do
+Worker typecheck, changed-file ESLint and workflow isolation pass. At that earlier checkpoint, D1 Free daily
+read exhaustion prevented a new remote editor preflight; these local checks do
 not substitute for the pending deployed editor acceptance.
 The notifications suite is now included in `test:api-contracts-d1`, and therefore
 the Worker's `npm test`/Cloudflare validation CI, rather than remaining a manual

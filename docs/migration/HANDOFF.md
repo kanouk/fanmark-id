@@ -12,6 +12,23 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Complete source policy inventory, runtime unchanged**:
+  source-policy-counterparts.md lists all77 exact source policy identities,
+  commands/roles/expression hashes and maps them to40 reviewed current table
+  surfaces, implementation files/contracts/existing coverage. No source rows or
+  raw policy/function bodies were exported. Owner/session, participant, private
+  password, internal billing/notification and Auth D1 role/MFA differences are
+  explicit. Current frontend/Edge internal usages replace stale no-caller
+  assumptions; broad legacy row APIs are not invented. Selected reference
+  release DTOs currently include inactive pattern/price members (existing
+  native contract), unlike source active-only RLS, so visibility disposition
+  remains open along with historical analytics/external consumers/functions/
+  indices. This completes the policy identity inventory, not authorization or
+  package1 acceptance. Combined candidate0019568 CI37100329703 completed with
+  both jobs successful; original watcher91802 exited0 and was consumed.
+  Accepted deployed runtime is still c09/bce8993.
+
+
 - **Combined local recovery and credential ordering candidate**:
   test:combined-recovery restores one SHA-bound synthetic bundle containing
   40 Business source tables/15 rows, four Auth migrations, eight Master
