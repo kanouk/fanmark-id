@@ -36,10 +36,13 @@ It records the active finite source profile INSERT versus perpetual target
 correction, participant ownership, session-only notification owner, server-side
 billing writes, private password storage and deliberate Auth D1 role/MFA model.
 Uncopied raw row/ALL surfaces and external consumers remain explicit. In
-particular, existing reference DTO tests include inactive pattern/price members;
-selected release is not row activation, and source active-only visibility still
-requires disposition. Historical-owner analytics also differs. These are named
-semantic decisions rather than an unexamined 77-policy backlog.
+particular, the inventory found that selected-release DTOs exposed inactive
+pattern/price members. The current candidate now verifies the whole release
+before filtering Tier/pattern/price rows to active members, retaining admin
+and stored inactive rows. Local API9/client8/release6/typechecks/lint pass;
+CI/deployed acceptance remains pending. Historical-owner analytics and
+external consumers still differ; these are named semantic decisions rather
+than an unexamined 77-policy backlog.
 
 ## Reproduce the inventory
 

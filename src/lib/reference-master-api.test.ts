@@ -115,10 +115,26 @@ test('rejects duplicate extension-price combinations and private or malformed pr
   }), (error: unknown) => error instanceof ReferenceMasterApiError && error.kind === 'invalid_response');
 });
 
-test('rejects malformed, duplicate, or incomplete release projections', () => {
+test('accepts a partial or empty active projection without inventing disabled tiers or prices', () => {
+  const base = { schemaVersion: 1, releaseVersion, master: 'fanmark_tiers' };
+  assert.deepEqual(parseFanmarkTierMasterPayload({ ...base, items: [tiers[3], tiers[0]] })
+    .map((tier) => tier.tierLevel), [1, 4]);
+  assert.deepEqual(parseFanmarkTierMasterPayload({ ...base, items: [] }), []);
+  assert.deepEqual(parseExtensionPriceMasterPayload({
+    schemaVersion: 1, releaseVersion, master: 'fanmark_tier_extension_prices', items: [],
+  }), []);
+});
+
+test('rejects malformed, duplicate, oversized or inactive public projections', () => {
   const base = { schemaVersion: 1, releaseVersion, master: 'fanmark_tiers', items: tiers };
-  assert.throws(() => parseFanmarkTierMasterPayload({ ...base, items: tiers.slice(0, 3) }),
+  assert.throws(() => parseFanmarkTierMasterPayload({ ...base, items: [...tiers, tiers[0]] }),
     (error: unknown) => error instanceof ReferenceMasterApiError && error.kind === 'invalid_response');
+  assert.throws(() => parseFanmarkTierMasterPayload({ ...base, items: [{ ...tiers[0], isActive: false }] }),
+    (error: unknown) => error instanceof ReferenceMasterApiError && error.kind === 'invalid_response');
+  assert.throws(() => parseExtensionPriceMasterPayload({
+    schemaVersion: 1, releaseVersion, master: 'fanmark_tier_extension_prices',
+    items: [{ ...extensionPrices[0], isActive: false }],
+  }), (error: unknown) => error instanceof ReferenceMasterApiError && error.kind === 'invalid_response');
   assert.throws(() => parseFanmarkTierMasterPayload({
     ...base,
     items: tiers.map((tier, index) => index === 3 ? { ...tier, tierLevel: 3 } : tier),

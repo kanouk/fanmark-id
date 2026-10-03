@@ -247,7 +247,12 @@ export function createReferenceMasterD1Repository(env: Env) {
           new Set(items.map((item) => `${item.tierLevel}:${item.months}`)).size !== items.length) {
         throw new ReferenceMasterUpstreamError();
       }
-      return { schemaVersion: 1, releaseVersion, master, items };
+      // Validate the complete release against its manifest before projecting
+      // public rows. Admin readers keep inactive members for reactivation.
+      // Source language SELECT is public for all rows; the other masters are
+      // public only while active.
+      const publicItems = master === "languages" ? items : items.filter((item) => item.isActive === true);
+      return { schemaVersion: 1, releaseVersion, master, items: publicItems };
     },
   };
 }

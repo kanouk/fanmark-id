@@ -251,11 +251,11 @@ Difference or remaining condition: Anonymous locked response never includes redi
 
 Source: Authenticated SELECT active.
 
-Target: Public versioned price DTO (including inactive status); MFA price management; service-only publication.
+Target: Public active-only versioned price DTO; MFA price management; service-only publication.
 
 Implementation: [reference-master-d1-repository.ts](../../workers/api/src/reference-master-d1-repository.ts), [reference-master-admin-d1-repository.ts](../../workers/api/src/reference-master-admin-d1-repository.ts). Contracts: [reference-master-data.md](reference-master-data.md). Coverage: [reference-master-d1-api.test.ts](../../workers/api/test/reference-master-d1-api.test.ts), [reference-master-release.integration.mjs](../../workers/api/test/reference-master-release.integration.mjs).
 
-Difference or remaining condition: The existing target public DTO includes inactive price members and exposes no Stripe IDs. This differs from source authenticated/active-only row SELECT; price visibility disposition and real sandbox acceptance remain open.
+Difference or remaining condition: The current candidate filters inactive price members after full-release verification. Anonymous minimal price preview is the established target contract, distinct from source authenticated row SELECT, and exposes no Stripe IDs. Real sandbox and deployed-candidate acceptance remain open.
 
 ### C23: fanmark_tiers (4 policies)
 
@@ -265,7 +265,7 @@ Target: Public DTO of the selected release; MFA draft/publication operations and
 
 Implementation: [reference-master-d1-repository.ts](../../workers/api/src/reference-master-d1-repository.ts), [reference-master-admin-d1-repository.ts](../../workers/api/src/reference-master-admin-d1-repository.ts). Contracts: [reference-master-data.md](reference-master-data.md), [source-emoji-helpers-review.md](source-emoji-helpers-review.md). Coverage: [reference-master-d1-api.test.ts](../../workers/api/test/reference-master-d1-api.test.ts), [reference-master-release.integration.mjs](../../workers/api/test/reference-master-release.integration.mjs).
 
-Difference or remaining condition: Multiple permissive source admin policies overlap; they are not four separate target permissions. The selected release DTO includes isActive fields without a row-level active filter; source active-only visibility differs and remains an explicit policy decision.
+Difference or remaining condition: Multiple permissive source admin policies overlap; they are not four separate target permissions. The current candidate returns only active Tier members after full-release verification, preserving source public visibility. Admin pricing retains all members; deployed-candidate acceptance remains open.
 
 ### C24: fanmark_transfer_codes (3 policies)
 
@@ -385,7 +385,7 @@ Target: Selected-release public DTO and MFA reference management; no current reg
 
 Implementation: [reference-master-d1-repository.ts](../../workers/api/src/reference-master-d1-repository.ts), [reference-master-admin-d1-repository.ts](../../workers/api/src/reference-master-admin-d1-repository.ts). Contracts: [reference-master-data.md](reference-master-data.md), [availability-contract.md](availability-contract.md). Coverage: [reference-master-d1-api.test.ts](../../workers/api/test/reference-master-d1-api.test.ts).
 
-Difference or remaining condition: The existing public DTO includes inactive patterns with isActive=false, unlike source active-only SELECT. Visibility disposition remains open. Admin management is a release workflow; lack of a source admin row policy does not prohibit service-role writes.
+Difference or remaining condition: The current candidate filters inactive patterns, preserving source active-only SELECT while keeping full release storage. Deployed-candidate acceptance remains open. Admin management is a release workflow; lack of a source admin row policy does not prohibit service-role writes.
 
 ### C36: system_settings (3 policies)
 
@@ -459,10 +459,11 @@ provider connections and final integration remain in this phase.
 
 Source profile finite-only INSERT versus perpetual target ownership is already
 an explicit PRODUCT correction. Source raw authenticated fanmark access does
-not override target public/password guards. Target reference DTOs publish the selected ready release, which is not the
-same as filtering every member by is_active. Existing native tests explicitly
-expect inactive pattern and price DTO members; source active-only pattern, tier
-and price visibility is therefore a documented outstanding policy decision.
+not override target public/password guards. The active-only pattern/Tier/price visibility gap found during inventory is
+fixed in the current candidate: full release verification precedes filtering,
+and admin/storage retention remains intact. Native API9/client8/release6 and
+both typechecks/focused lint pass; this is not deployed acceptance. Public
+minimal price preview remains the documented anonymous target API contract.
 The source language SELECT permits inactive members, and the language frontend
 filters its selected-release DTO. Public latest-license selection and
 historical-owner analytics are separately documented semantic/product gates;

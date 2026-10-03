@@ -130,6 +130,34 @@ serialization. The response contains a versioned minimal projection, uses
 user-owned tables. Tier prices are named and returned as exact integer cents.
 Unknown routes and backend values fail closed.
 
+### Public activation filter and retained-history activation correction
+
+The current candidate validates the complete selected release count, types and
+uniqueness before returning only active Tier, reserved-pattern and extension-
+price rows. Source active-only visibility no longer relies on the browser
+hiding inactive data. Languages retain the source's public-all scope, with
+inactive-language UI filtering. Public minimal price preview remains the
+established target API contract; no Stripe IDs or arbitrary row read is added.
+
+All-inactive nonempty snapshots return `200` with an empty public list. The
+Tier/price clients accept 0–4 active tiers and 0–64 prices; duplicate/private/
+malformed/inactive DTO members still refuse. Admin pricing and release storage
+retain inactive members. Release integrity is checked before filtering, so an
+incomplete manifest or malformed inactive member remains a 502 refusal.
+
+The expanded native fixture also reproduced a separate release helper bug:
+`activateReferenceMasterRelease` expected at most two historical activation
+rows, reporting failure after a valid switch once existing history was longer.
+It now verifies one appended audit and unchanged prior history against the
+captured pre-switch state. No activation records or generations are reset.
+
+Local reference API9/9, client8/8, standalone release6/6, app/Worker typecheck
+and focused lint pass. The native Worker fixture proves inactive public rows,
+empty active tiers, full admin retention, language scope and manifest/malformed
+refusal. The helper switches after the preceding multi-generation admin edits.
+This is local candidate evidence; CI and deployed acceptance remain pending.
+No source/user rows, remote Master pointer or provider configuration changed.
+
 `useLanguages` can opt into this API with
 `VITE_LANGUAGE_READ_BACKEND=worker`; the default remains Supabase. The Worker
 client uses the explicit API base or the current same-origin Worker, validates

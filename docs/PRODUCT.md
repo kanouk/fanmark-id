@@ -35,6 +35,12 @@
 - ファンマティア (絵文字数に応じたライセンス初期日数): S=1個/7日, A=2個または2〜5個連続/14日, B=3個/30日, C=4〜5個以上非連続/無期限 (`license_end=null`)。`fanmark_tiers.display_name` に S/A/B/C を保持。
 - AuthCode（移管コード）発行権限: アクティブライセンス保持者は発行可。発行には残期間48h以上が必要で、コード有効期限は発行から48hまたは `license_end` の短い方（Tierに関わらず一定）。承認後の再発行は不可。移管完了後は Transfer Lock 30日間（返却・再移管・再発行不可）。
 
+## Cloudflareの公開参照マスター
+
+- 公開APIのTier・予約パターン・延長価格は、選択したready releaseの有効行だけを返す。無効な行はMaster D1と管理画面に保持する。
+- release全体のmanifest件数・型・一意性を確認してから公開行を選ぶ。有効行がゼロなら正常な空一覧とし、manifest不足や不正な無効行を空一覧として隠さない。
+- 言語のsource SELECTは全行公開のため、APIは無効な言語もactivation状態とともに返し、言語選択UIで有効な項目だけを使う。公開価格は既存の最小DTOを維持し、Stripe IDは返さない。
+
 ## ライセンスライフサイクルと猶予
 - 取得時は初回日数を次の UTC 0:00 に丸めて `license_end` として保存（Tier C は無期限）。
 - 返却または期限到達: status=`grace` にし、`grace_expires_at = roundUpToNextUtcMidnight(now + grace_period_days)`（デフォルト24h以上保証）。グレース中は再取得不可。

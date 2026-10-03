@@ -79,6 +79,14 @@ API/browser受け入れも古い対応表へ反映した。後続processor変更
 操作、Auth D1のロール/MFAへの置換を確認した。未対応の旧行APIは不使用と断定せず
 外部consumerの扱いを残す。選択済みreference releaseの公開DTOはinactiveな
 pattern/priceを含む既存契約で、sourceのactive限定policyとの差を確認した。
-公開可否の判断と歴史的所有者のanalytics範囲、残る関数/indexは未完了で、項目1
+当時の公開可否の差と歴史的所有者のanalytics範囲、残る関数/indexにより、項目1
 全体を完了にはしない。combined recovery candidate0019568のCI37100329703は
 両job成功を確認済み。稼働Workerは引き続きc09/bce8993。
+
+公開inactive行の差は現行candidateで修正した。release全体の整合性確認後に
+Tier/pattern/priceのactive行だけを返し、管理・保存データは保持する。言語の全行
+公開と公開価格の最小DTO契約は維持する。全行inactiveなら200/空一覧を返すが、
+不完全なmanifest/不正なinactive行は拒否する。native API9/client8/release6、
+両typecheck/lintが成功。既存activation履歴が2件を超えると正常切替後にも誤って
+失敗するhelperの不具合も再現し、既存履歴を保持して1件追加を検証するよう修正。
+CI・staging受け入れは未完了で、稼働Workerはc09/bce8993のまま。

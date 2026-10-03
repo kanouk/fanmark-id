@@ -86,7 +86,7 @@ export function parseFanmarkTierMasterPayload(payload: unknown): FanmarkTierMast
   if (
     !isRecord(payload) || payload.schemaVersion !== 1 || payload.master !== 'fanmark_tiers' ||
     typeof payload.releaseVersion !== 'string' || !RELEASE_VERSION_RE.test(payload.releaseVersion) ||
-    !Array.isArray(payload.items) || payload.items.length !== 4
+    !Array.isArray(payload.items) || payload.items.length > 4
   ) {
     throw new ReferenceMasterApiError('invalid_response');
   }
@@ -116,7 +116,7 @@ export function parseFanmarkTierMasterPayload(payload: unknown): FanmarkTierMast
       !isIntegerInRange(emojiCountMin, 1, 5) || !isIntegerInRange(emojiCountMax, 1, 5) ||
       emojiCountMin > emojiCountMax ||
       (initialLicenseDays !== null && !isIntegerInRange(initialLicenseDays, 0, 36500)) ||
-      typeof isActive !== 'boolean' ||
+      isActive !== true ||
       !isIntegerInRange(monthlyPriceCents, -9_999_999_999, 9_999_999_999) ||
       !isIntegerInRange(tierLevel, 1, 4) || levels.has(tierLevel)
     ) {
@@ -136,7 +136,6 @@ export function parseFanmarkTierMasterPayload(payload: unknown): FanmarkTierMast
       tierLevel,
     });
   }
-  if (levels.size !== 4) throw new ReferenceMasterApiError('invalid_response');
   return items.sort((left, right) => left.tierLevel - right.tierLevel);
 }
 
@@ -144,7 +143,7 @@ export function parseExtensionPriceMasterPayload(payload: unknown): ExtensionPri
   if (
     !isRecord(payload) || payload.schemaVersion !== 1 || payload.master !== 'fanmark_tier_extension_prices' ||
     typeof payload.releaseVersion !== 'string' || !RELEASE_VERSION_RE.test(payload.releaseVersion) ||
-    !Array.isArray(payload.items) || payload.items.length < 1 || payload.items.length > 64
+    !Array.isArray(payload.items) || payload.items.length > 64
   ) throw new ReferenceMasterApiError('invalid_response');
 
   const combinations = new Set<string>();
@@ -162,7 +161,7 @@ export function parseExtensionPriceMasterPayload(payload: unknown): ExtensionPri
     const isActive = value.isActive;
     if (
       !isIntegerInRange(tierLevel, 1, 4) || !isIntegerInRange(months, 1, 120) ||
-      !isIntegerInRange(priceYen, 0, 2_147_483_647) || typeof isActive !== 'boolean'
+      !isIntegerInRange(priceYen, 0, 2_147_483_647) || isActive !== true
     ) throw new ReferenceMasterApiError('invalid_response');
     const combination = `${tierLevel}:${months}`;
     if (combinations.has(combination)) throw new ReferenceMasterApiError('invalid_response');

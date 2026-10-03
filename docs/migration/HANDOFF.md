@@ -12,6 +12,22 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Public reference activation filtering and retained-history helper candidate**:
+  reference-master public reads validate the complete ready release manifest,
+  all DTOs and uniqueness before filtering Tier/pattern/extension-price members
+  to isActive=true. Languages retain source public-all scope. An all-inactive
+  valid release returns200/empty; malformed inactive members or incomplete
+  release still refuse502. Public clients accept active subsets/empty lists
+  but reject inactive/duplicate/private/malformed items. Master/admin readers
+  retain inactive members. Native API9/client8/release6, app/Worker typecheck
+  and focused lint pass. The native fixture reproduced the helper's erroneous
+  two-row activation-history assumption after multiple admin edits; the helper
+  now verifies an unchanged historical prefix and one appended audit without
+  deleting/resetting history. CI and deployed acceptance remain pending.
+  No source/user/remote Master/provider changes have run; c09/bce8993 remains
+  the deployed baseline.
+
+
 - **Complete source policy inventory, runtime unchanged**:
   source-policy-counterparts.md lists all77 exact source policy identities,
   commands/roles/expression hashes and maps them to40 reviewed current table
@@ -19,12 +35,12 @@ staging deployment does not close the whole goal.
   raw policy/function bodies were exported. Owner/session, participant, private
   password, internal billing/notification and Auth D1 role/MFA differences are
   explicit. Current frontend/Edge internal usages replace stale no-caller
-  assumptions; broad legacy row APIs are not invented. Selected reference
-  release DTOs currently include inactive pattern/price members (existing
-  native contract), unlike source active-only RLS, so visibility disposition
-  remains open along with historical analytics/external consumers/functions/
-  indices. This completes the policy identity inventory, not authorization or
-  package1 acceptance. Combined candidate0019568 CI37100329703 completed with
+  assumptions; broad legacy row APIs are not invented. At that inventory checkpoint, selected reference
+  release DTOs included inactive pattern/price members, unlike source active-
+  only RLS. The newer filtering candidate above corrects this locally; deployed
+  acceptance and historical analytics/external consumers/functions/indices
+  remain open. This completes the policy identity inventory, not authorization or
+  package1 acceptance. Docs58ae449 CI37100997913 passed both jobs. Combined candidate0019568 CI37100329703 completed with
   both jobs successful; original watcher91802 exited0 and was consumed.
   Accepted deployed runtime is still c09/bce8993.
 

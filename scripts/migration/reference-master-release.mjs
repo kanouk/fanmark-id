@@ -360,8 +360,8 @@ export async function activateReferenceMasterRelease({ database, releaseVersion,
   if (!/^[0-9a-f]{64}$/.test(releaseVersion) || typeof activationId !== "string" || activationId.length < 1) {
     fail("reference_master_activation_input_invalid");
   }
-  const activeRows = await readRows(database,
-    "SELECT singleton_id, release_version, previous_release_version, activation_id, action, generation FROM fanmark_reference_master_active_release ORDER BY singleton_id");
+  const before = await captureActiveState(database);
+  const { activeRows } = before;
   if (activeRows.length > 1 || (expectedActiveVersion === null && activeRows.length !== 0) ||
       (expectedActiveVersion !== null && (activeRows.length !== 1 || activeRows[0].release_version !== expectedActiveVersion))) {
     fail("reference_master_active_state_conflict");
@@ -392,7 +392,8 @@ export async function activateReferenceMasterRelease({ database, releaseVersion,
   const after = await captureActiveState(database);
   if (after.activeRows.length !== 1 || after.activeRows[0].release_version !== releaseVersion ||
       after.activeRows[0].activation_id !== activationId || after.activeRows[0].generation !== generation ||
-      after.auditRows.length !== (activeRows.length ? 2 : 1) ||
+      after.auditRows.length !== before.auditRows.length + 1 ||
+      JSON.stringify(after.auditRows.slice(0, -1)) !== JSON.stringify(before.auditRows) ||
       after.auditRows.at(-1)?.to_version !== releaseVersion) fail("reference_master_activation_readback_mismatch");
   return { releaseVersion, generation, action: "promotion", reused: false };
 }

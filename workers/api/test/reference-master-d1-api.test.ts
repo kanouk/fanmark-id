@@ -207,20 +207,13 @@ describe("versioned reference-master Worker API", () => {
 
     const patterns = await request("/api/reference-masters/reserved_emoji_patterns");
     expect(patterns.status).toBe(200);
-    expect((await patterns.json() as Record<string, unknown>).items).toEqual([{
-      description: null,
-      id: "00000000-0000-4000-8000-000000000004",
-      isActive: false,
-      pattern: "🧪",
-      priceYen: 1200,
-    }]);
+    expect((await patterns.json() as Record<string, unknown>).items).toEqual([]);
 
     const extensionPrices = await request("/api/reference-masters/fanmark_tier_extension_prices");
     expect(extensionPrices.status).toBe(200);
     const extensionBody = await extensionPrices.json() as Record<string, unknown>;
     expect(extensionBody.items).toEqual([
       { tierLevel: 2, months: 1, priceYen: 500, isActive: true },
-      { tierLevel: 2, months: 3, priceYen: 1200, isActive: false },
     ]);
     expect(JSON.stringify(extensionBody)).not.toContain("stripe_");
   });
@@ -350,6 +343,7 @@ describe("versioned reference-master Worker API", () => {
     const publicPrices = await request("/api/reference-masters/fanmark_tier_extension_prices");
     const publicPayload = await publicPrices.text();
     expect(publicPrices.status).toBe(200);
+    expect(JSON.parse(publicPayload).items).toEqual([]);
     expect(publicPayload).not.toContain("stripe_");
     expect(publicPayload).not.toContain("price_syntheticUpdated1");
 
@@ -424,5 +418,77 @@ describe("versioned reference-master Worker API", () => {
   it("does not let the reference pricing admin repository choose a backend implicitly", async () => {
     expect(() => createReferenceMasterAdminD1Repository({ ...runtimeEnv, REFERENCE_MASTER_ADMIN_BACKEND: undefined }))
       .toThrow(ReferenceMasterAdminError);
+  });
+
+  it("filters inactive tiers/patterns/prices but retains admin rows and the source's public language scope", async () => {
+    const snapshot: Array<{ table_name: string; row_count: number; source_sha256: string; records: Record<string, unknown>[] }> =
+      structuredClone(sourceSnapshot);
+    const tiers = snapshot.find((table) => table.table_name === "fanmark_tiers")!;
+    tiers.records[0].is_active = false;
+    const patterns = snapshot.find((table) => table.table_name === "reserved_emoji_patterns")!;
+    patterns.records.push({
+      ...patterns.records[0],
+      id: "00000000-0000-4000-8000-000000000006",
+      is_active: true,
+      pattern: "🌱",
+    });
+    patterns.row_count += 1;
+    const languages = snapshot.find((table) => table.table_name === "languages")!;
+    languages.records.push({
+      ...languages.records[0],
+      id: "00000000-0000-4000-8000-000000000007",
+      code: "fr",
+      is_active: false,
+      label: "French",
+      native_label: "Français",
+      sort_order: 3,
+    });
+    languages.row_count += 1;
+    const previous = await database!.prepare(
+      "SELECT release_version FROM fanmark_reference_master_active_release WHERE singleton_id = 1",
+    ).first<{ release_version: string }>();
+    const version = "b".repeat(64);
+    await stageReferenceMasterRelease({ database, snapshot, snapshotSha256: version });
+    await activateReferenceMasterRelease({ database, releaseVersion: version, expectedActiveVersion: previous!.release_version });
+
+    const tierBody = await request("/api/reference-masters/fanmark_tiers").then((response) => response.json()) as Record<string, unknown>;
+    expect(tierBody).toMatchObject({ releaseVersion: version, items: [] });
+    const patternBody = await request("/api/reference-masters/reserved_emoji_patterns").then((response) => response.json()) as { items: Record<string, unknown>[] };
+    expect(patternBody.items).toMatchObject([{ pattern: "🌱", isActive: true }]);
+    const languageBody = await request("/api/reference-masters/languages").then((response) => response.json()) as { items: Record<string, unknown>[] };
+    expect(languageBody.items).toHaveLength(3);
+    expect(languageBody.items[2]).toMatchObject({ code: "fr", isActive: false });
+
+    const pricing = await createReferenceMasterAdminD1Repository({
+      ...runtimeEnv, D1_TOPOLOGY: "split", REFERENCE_MASTER_ADMIN_BACKEND: "d1",
+    }).getPricing();
+    expect(pricing.tiers[0].is_active).toBe(false);
+    expect(pricing.extensionPrices).toHaveLength(2);
+    expect(pricing.extensionPrices[1].is_active).toBe(false);
+    const storedPatterns = await database!.prepare(
+      "SELECT pattern, is_active FROM fanmark_reserved_emoji_pattern_release_rows WHERE release_version = ? ORDER BY pattern",
+    ).bind(version).all();
+    expect(storedPatterns.results).toHaveLength(2);
+    expect(storedPatterns.results.some((row) => row.is_active === 0)).toBe(true);
+  });
+
+  it("still refuses an incomplete release or malformed inactive member before public filtering", async () => {
+    const inactive = {
+      release_version: releaseVersion, expected_count: 1, tier_level: 2,
+      months: 3, price_yen: 1200, is_active: 0,
+    };
+    const dbFor = (row: Record<string, unknown>) => ({
+      prepare() {
+        return { async all() { return { success: true, results: [row] }; } };
+      },
+    }) as unknown as D1Database;
+    const incomplete = await request("/api/reference-masters/fanmark_tier_extension_prices", {}, {
+      MASTER_DB: dbFor({ ...inactive, expected_count: 2 }),
+    });
+    expect(incomplete.status).toBe(502);
+    const malformed = await request("/api/reference-masters/fanmark_tier_extension_prices", {}, {
+      MASTER_DB: dbFor({ ...inactive, price_yen: -1 }),
+    });
+    expect(malformed.status).toBe(502);
   });
 });
