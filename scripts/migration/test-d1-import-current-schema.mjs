@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { convertSchema } from "./schema-convert.mjs";
 import { exportSnapshot } from "./snapshot-export.mjs";
@@ -34,7 +34,7 @@ import {
   CREDENTIAL_CODEC_ID,
 } from "./credential-descriptor.mjs";
 
-const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
 const passwordTable = "fanmark_password_configs";
 const syntheticFanmarkId = "90000000-0000-4000-8000-000000000001";
@@ -339,7 +339,7 @@ async function applySql(database, sql) {
   assert.equal(results.every((result) => result.success === true), true);
 }
 
-async function applySyntheticAuthSchema(database) {
+export async function applySyntheticAuthSchema(database) {
   for (const name of ["0003_better_auth_core.sql", "0007_auth_signup_command.sql",
     "0008_auth_user_suspension.sql", "0009_auth_oauth_signup.sql"]) {
     const sql = await fs.readFile(new URL(`../../workers/api/migrations/${name}`, import.meta.url), "utf8");
@@ -431,8 +431,7 @@ async function createSyntheticSnapshot(catalog, rows, sequenceStates, directory)
   return result.manifestPath;
 }
 
-export async function runCurrentCatalogSyntheticImport(catalogResultPath, { canonicalBusinessSchema = false, auxiliaryRecovery = null } = {}) {
-  if (auxiliaryRecovery !== null && (typeof auxiliaryRecovery !== "function" || !canonicalBusinessSchema)) throw new Error("invalid_auxiliary_recovery");
+async function buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema, includeAuxiliary }) {
   if (typeof catalogResultPath !== "string" || catalogResultPath.length === 0) failUsage();
   const parsed = await fs.readFile(path.resolve(catalogResultPath), "utf8");
   const catalog = readCatalog(parsed);
@@ -449,7 +448,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
       }, arrayMetadata: {},
     }];
   }
-  if (auxiliaryRecovery) {
+  if (includeAuxiliary) {
     const timestamp = "2026-09-26T12:00:00.000000Z";
     const sourceOrigin = "https://synthetic-source.example.invalid/storage/v1/object/public/";
     const row = (table, values) => ({ schemaVersion: 1, table, columns: columnsFor(catalog, table), values, arrayMetadata: {} });
@@ -492,6 +491,22 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
     generationPlan,
     descriptor: descriptor(),
   });
+  return { catalog, tableNames, rows, sequenceStates, convertedSchema, lifecyclePlan, generationPlan, credentialPlan };
+}
+
+export async function prepareCurrentCatalogSyntheticSnapshot(catalogResultPath, { snapshotDirectory, includeAuxiliary = true } = {}) {
+  if (typeof snapshotDirectory !== "string" || !path.isAbsolute(snapshotDirectory)) throw new Error("synthetic_snapshot_directory_required");
+  const fixture = await buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema: true, includeAuxiliary });
+  const manifestPath = await createSyntheticSnapshot(fixture.catalog, fixture.rows, fixture.sequenceStates, snapshotDirectory);
+  return { ...fixture, manifestPath, syntheticAuthUserId, expectedTargetProfile: {
+    credentialPlan: fixture.credentialPlan, descriptor: descriptor(), generationPlan: fixture.generationPlan, lifecyclePlan: fixture.lifecyclePlan,
+  } };
+}
+
+export async function runCurrentCatalogSyntheticImport(catalogResultPath, { canonicalBusinessSchema = false, auxiliaryRecovery = null } = {}) {
+  if (auxiliaryRecovery !== null && (typeof auxiliaryRecovery !== "function" || !canonicalBusinessSchema)) throw new Error("invalid_auxiliary_recovery");
+  const { catalog, tableNames, rows, sequenceStates, convertedSchema, lifecyclePlan, generationPlan, credentialPlan } =
+    await buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema, includeAuxiliary: auxiliaryRecovery !== null });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-current-catalog-import-"));
   await fs.chmod(root, 0o700);
   const snapshotDirectory = path.join(root, "snapshot");

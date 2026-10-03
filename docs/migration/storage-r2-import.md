@@ -47,6 +47,22 @@ matching image bytes/MIME/size. Combined1/1 passes; fresh local restore10812ms
 is a small synthetic fixture result, not production RTO. Source URL rewriting,
 real browser delivery and full remote recovery remain separate acceptance.
 
+## Isolated HTTP recovery bridge
+
+`isolated-remote-r2.mjs` and `isolated-recovery-r2-worker.mjs` provide the
+explicit remote transport for newly owned recovery buckets. Token/incarnation
+and expected-name checks precede operations; only the two fixed synthetic
+fixture keys are allowed. The Worker preserves provider SHA-256 and conditional
+create and bundles the actual application public Storage handler. The owning
+conductor has a separate exact-key cleanup operation; the importer itself still
+never overwrites or deletes conflicts. GET can legitimately be chunked without
+Content-Length. Metadata size and the measured full body/hash remain required,
+and any declared HTTP length must match. Native local HTTP6/6 proves
+import/replay, real conditional conflict, app GET/HEAD and owned cleanup.
+Complete Cloudflare recovery has not yet run. See
+[isolated combined recovery](isolated-combined-recovery.md) for the explicit
+resource journal, candidate CI and live execution boundary.
+
 ## Copy and readback protocol
 
 For each object, the core:

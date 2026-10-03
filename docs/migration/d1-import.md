@@ -65,8 +65,11 @@ must be resolved from that journal before starting a new run. Invocation:
 node scripts/migration/probe-isolated-remote-d1.mjs <tested-40-character-head> <successful-CI-run>
 ```
 
-Remote snapshot acceptance still needs the complete resource-owning runner,
-all25 Business/4 Auth and8 Master migrations, same-bundle
+The [complete resource-owning conductor](isolated-combined-recovery.md) is
+now prepared with the shared synthetic fixture and explicit HTTP R2 transport.
+Local HTTP R2/native6 and shared combined regression pass. Its exact candidate
+CI and live execution are still required; no full remote snapshot result is
+accepted yet. That execution must cover all25 Business/4 Auth and8 Master migrations, same-bundle
 restore/replay into a second incarnation, R2/API delivery and independent
 reconciliation/cleanup. Chunked schema initialization on a newly owned target
 must finish before the importer verifies its full DDL and writes snapshot rows.

@@ -12,6 +12,27 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Prepared complete owned remote conductor and HTTP R2 bridge**:
+  CI37109545658 for1883880 completed/success in both jobs; watcher28442 exited0
+  and is consumed. R2 CLI/REST read-only inventory confirmed the dedicated
+  account's three existing buckets. Snapshot preparation is shared with the
+  existing local combined rehearsal; current 40-table/15-row/Master/two-image
+  regression passes1/1, fresh local restore10393ms. New temporary Worker/client
+  use only owned recovery names, token/incarnation gates and fixed synthetic
+  keys. Native HTTP R2 tests pass6/6: import/replay, conditional conflict without
+  overwrite, actual bundled app GET/HEAD, identity refusal and exact-key cleanup.
+  Native GET is legitimately chunked without Content-Length; require provider
+  metadata size and full measured body/hash, and compare a declared HTTP length
+  only when present. This fixed the new adapter's readback refusal. Focused lint
+  and syntax pass. run-isolated-combined-recovery.mjs is prepared, not remotely
+  accepted: it must wait for its exact candidate CI, then create three D1/two R2/
+  one Worker per sequential target, restore/resume/reconcile the same bundle,
+  verify FK/wake/assets, and journal receipt/version-checked cleanup plus original
+  inventory equality. Auth is a seeded synthetic dependency user, not credential
+  backup proof. Full remote result, source-URL/browser use, production RTO and
+  all six finish packages remain open. See isolated-combined-recovery.md.
+  No new remote resource or deployed runtime change occurred in this preparation.
+
 - **Accepted real isolated-D1 REST primitive and CI placement fix**:
   1d3085f6cfb74613b863c6e26f3d41514ad4b544 CI37108741104 completed/success
   in both jobs, including relocated combined recovery and Worker Business/Auth

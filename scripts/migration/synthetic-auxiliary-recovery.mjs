@@ -1,4 +1,4 @@
-/** Local synthetic bundle recovery; never reads production rows or objects. */
+/** Synthetic bundle recovery with explicit target transports; never reads production rows or objects. */
 import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -29,7 +29,7 @@ async function privateJson(file, value) {
   return bytes;
 }
 
-async function prepareBundle(root, manifestPath) {
+export async function prepareSyntheticAuxiliaryBundle(root, manifestPath) {
   const emojiDirectory = path.join(root, "recovery-emoji-release");
   const storageDirectory = path.join(root, "recovery-storage-export");
   await fs.mkdir(emojiDirectory, { mode: 0o700 });
@@ -85,10 +85,10 @@ async function prepareBundle(root, manifestPath) {
   return { emojiDirectory, storageDirectory, referenceSnapshot, referenceVersion, release, objects, bundle };
 }
 
-export function createSyntheticAuxiliaryRecovery() {
-  let prepared = null;
+export function createSyntheticAuxiliaryRecovery({ preparedBundle = null } = {}) {
+  let prepared = preparedBundle;
   return async ({ target, root, manifestPath, phase }) => {
-    prepared ??= await prepareBundle(root, manifestPath);
+    prepared ??= await prepareSyntheticAuxiliaryBundle(root, manifestPath);
     const persistedBundle = JSON.parse(await fs.readFile(path.join(root, "synthetic-recovery-bundle.json"), "utf8"));
     assert.deepEqual(persistedBundle, prepared.bundle);
     assert.equal(sha256Hex(await fs.readFile(manifestPath)), prepared.bundle.businessManifestSHA256);
@@ -99,7 +99,8 @@ export function createSyntheticAuxiliaryRecovery() {
     const master = target.masterDatabase;
     for (const name of masterMigrations) {
       const sql = await fs.readFile(new URL(`../../workers/api/migrations/${name}`, import.meta.url), "utf8");
-      await master.batch(businessMigrationStatements(sql).map(statement => master.prepare(statement)));
+      const initializer = target.masterInitializationDatabase ?? master;
+      await initializer.batch(businessMigrationStatements(sql).map(statement => initializer.prepare(statement)));
     }
     await stageEmojiMasterRelease({ database: master, releaseDirectory: prepared.emojiDirectory });
     await activateEmojiMasterRelease({ database: master, releaseDirectory: prepared.emojiDirectory, expectedCurrentVersion: null });
@@ -118,10 +119,17 @@ export function createSyntheticAuxiliaryRecovery() {
       for (const id of [...JSON.parse(fanmark.emoji_ids), ...JSON.parse(fanmark.normalized_emoji_ids)]) assert.equal(knownIds.has(id), true);
       assert.ok(await master.prepare("SELECT tier_level FROM fanmark_tiers WHERE tier_level = ? AND is_active = 1").bind(fanmark.tier_level).first());
     }
-    const loopbackBase = await target.miniflare.ready;
-    const avatar = createLocalR2ImportTransport({ bucket: target.avatarBucket, loopbackBase, bucketBinding: "AVATARS_BUCKET" });
-    const cover = createLocalR2ImportTransport({ bucket: target.coverBucket, loopbackBase, bucketBinding: "COVER_IMAGES_BUCKET" });
-    const r2 = createSplitR2ImportTransport({ avatars: avatar, covers: cover });
+    let r2 = target.r2Transport;
+    if (!r2) {
+      const loopbackBase = await target.miniflare.ready;
+      const avatar = createLocalR2ImportTransport({ bucket: target.avatarBucket, loopbackBase, bucketBinding: "AVATARS_BUCKET" });
+      const cover = createLocalR2ImportTransport({ bucket: target.coverBucket, loopbackBase, bucketBinding: "COVER_IMAGES_BUCKET" });
+      r2 = createSplitR2ImportTransport({ avatars: avatar, covers: cover });
+    }
+    const storageOrigin = target.storageOrigin ?? "https://synthetic-recovery.example.test";
+    const readStorage = target.readApplicationStorage ?? (request => handleStorageRequest(request,
+      { STORAGE_BACKEND: "r2", AVATARS_BUCKET: target.avatarBucket, COVER_IMAGES_BUCKET: target.coverBucket },
+      async () => ({ available: true, userId: null })));
     const options = { exportDir: prepared.storageDirectory, reportPath: path.join(prepared.storageDirectory, `${phase}-r2-import.status.json`),
       r2, operationTimeoutMs: 10000, chunkSize: 3 };
     assert.equal((await importStorageExport(options)).copiedCount, 2);
@@ -138,19 +146,11 @@ export function createSyntheticAuxiliaryRecovery() {
       assert.ok(object);
       assert.equal(sha256Hex(Buffer.from(await object.arrayBuffer())), prepared.objects[index].contentSHA256);
       assert.equal(object.httpMetadata.contentType, "image/png");
-      const response = await handleStorageRequest(
-        new Request(`https://synthetic-recovery.example.test/api/storage/public/${key}`),
-        { STORAGE_BACKEND: "r2", AVATARS_BUCKET: target.avatarBucket, COVER_IMAGES_BUCKET: target.coverBucket },
-        async () => ({ available: true, userId: null }),
-      );
+      const response = await readStorage(new Request(`${storageOrigin}/api/storage/public/${key}`));
       assert.equal(response?.status, 200, "restored asset must be readable through the actual application Storage API");
       assert.equal(response.headers.get("content-type"), "image/png");
       assert.equal(sha256Hex(Buffer.from(await response.arrayBuffer())), prepared.objects[index].contentSHA256);
-      const head = await handleStorageRequest(
-        new Request(`https://synthetic-recovery.example.test/api/storage/public/${key}`, { method: "HEAD" }),
-        { STORAGE_BACKEND: "r2", AVATARS_BUCKET: target.avatarBucket, COVER_IMAGES_BUCKET: target.coverBucket },
-        async () => ({ available: true, userId: null }),
-      );
+      const head = await readStorage(new Request(`${storageOrigin}/api/storage/public/${key}`, { method: "HEAD" }));
       assert.equal(head?.status, 200);
       assert.equal(head.headers.get("content-length"), String(prepared.objects[index].size));
     }

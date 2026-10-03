@@ -114,7 +114,16 @@ Cloudflare staging modeの管理画面はBetter Authでログインし、`GET /a
 
 `AdminDataReset`は全fanmark・license・関連設定を削除する旧Supabaseユーティリティである。Cloudflare staging buildでは`VITE_ADMIN_DATA_RESET_BACKEND=worker`を明示し、server `ADMIN_DATA_RESET_BACKEND=d1`を選ぶ。Worker 13dca8cfで合成MFA/API/desktop dialog/cleanupを確認済み。通常buildでは従来のSupabase動作を維持する。Worker/D1 counterpartは追加Business 0023と `POST /api/admin/data-reset` で実装し、同session MFA、明示Origin、DELETE確認、durable request IDを要求する。local全Business schemaで検証済みだが、staging selector有効化を空userdata/固定account/version/native canary guard/復旧journalを確認した合成canaryと併せて行い、保持Master/Authとcleanupを検証した。実ユーザー移行の実施は条件にしない。詳細は `docs/migration/admin-data-reset-api.md`。
 
+合成データの一式remote復旧は、[隔離復旧conductor](migration/isolated-combined-recovery.md)
+でBusiness/Auth/Master D1と分離R2・一時Workerを明示して所有し、同じbundleを
+別incarnationへ復旧する。画像のHTTP転送は`isolated-remote-r2.mjs`と一時Workerで
+条件付き作成、本文/hash/metadataの照合、実Storage GET/HEADを保つ。新経路の
+native6件と共通化後のlocal combined試験は通過済みだが、一式remote実行はまだ
+受け入れていない。CIはremote commandを実行せず、実ユーザー/DNSも変更しない。
+
 ## セキュリティ / RLS の公開方針（誤検知対策）
+
+
 このプロダクトは「ドメインレジストリ（WHOIS）モデル」で、**一部のデータは意図的に公開**します。セキュリティスキャナが「公開＝危険」と判定しやすいため、以下の公開方針は **誤検知として無視（ignore）** します。
 
 - `fanmarks`: 所有/登録状態は公開情報（検索・トレンド機能の前提）。
