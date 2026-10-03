@@ -237,6 +237,9 @@ export function createAuth(
     trustedOrigins: authOptions.trustedOrigins ?? [env.BETTER_AUTH_URL],
     advanced: {
       database: {
+        // New identities must match the source UUID domain and the UUID actor
+        // checks used by Business APIs. This does not rewrite existing IDs.
+        generateId: "uuid",
         // Provisioning must apply and read back the schema before enabling this
         // backend. Avoid re-introspecting the verified D1 schema on every request.
         validateSchema: false,

@@ -8,6 +8,7 @@ import sourceProvisioningJson from "./fixtures/source-signup-provisioning.json?r
 import { checkedInSqlStatements as splitSql } from "./schema-statements";
 import { handleRequest } from "../src";
 import { handleInvitationCodeValidationRequest } from "../src/invitation-signup-d1-api";
+import { handleStripeCustomerPortalD1Request } from "../src/stripe-customer-portal-d1-api";
 import type { Env } from "../src/repository";
 import { network } from "./network";
 
@@ -142,6 +143,34 @@ describe("invitation signup across split Auth and business D1", () => {
     const user = await authDb!.prepare('SELECT "id", "emailVerified", "banned" FROM "user" WHERE "signupCommandId" = ?')
       .bind(commandId).first<{ id: string; emailVerified: number; banned: number }>();
     expect(user).toMatchObject({ emailVerified: 0, banned: 0 });
+    // Source Auth IDs and downstream billing actor checks use UUIDs. Imported
+    // UUID fixtures do not prove the format Better Auth generates for signup.
+    expect(user!.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu);
+    // Exercise a real downstream UUID actor check with the generated ID. The
+    // resolver is synthetic; provider credentials are absent and no billing
+    // client may be constructed. This is not verified-email/session acceptance.
+    const billing = await handleStripeCustomerPortalD1Request(new Request(
+      `${apiBase}/api/billing/customer-portal`,
+      { method: "POST", headers: { Origin: appOrigin } },
+    ), {
+      ...runtimeEnv,
+      AUTH_BACKEND: "better-auth",
+      BETTER_AUTH_URL: appOrigin,
+      CORS_ALLOWED_ORIGINS: appOrigin,
+      STRIPE_CUSTOMER_PORTAL_BACKEND: "d1",
+      STRIPE_WEBHOOK_BACKEND: "d1",
+      STRIPE_DISPATCH_BACKEND: "d1",
+      STRIPE_WEBHOOK_SECRET: "whsec_synthetic_signup_actor_only",
+      STRIPE_MODE_POLICY: "test_only",
+      STRIPE_SECRET_KEY: undefined,
+      STRIPE_SECRET_KEY_TEST: undefined,
+      STRIPE_SECRET_KEY_LIVE: undefined,
+    }, {
+      resolveUser: async () => user!.id,
+      createStripeClient: () => { throw new Error("signup actor proof must not contact Stripe"); },
+    });
+    expect(billing?.status).toBe(503);
+    expect(await billing!.json()).toEqual({ error: "stripe_portal_not_ready" });
     const settings = await businessDb!.prepare(`SELECT user_id, username, display_name, plan_type,
       preferred_language, invited_by_code, requires_password_setup FROM user_settings WHERE user_id = ?`)
       .bind(user!.id).first();

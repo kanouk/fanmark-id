@@ -1,5 +1,33 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：editor/favoritesの実staging受け入れと新規Auth IDの不整合
+
+49cf07fのCI37081023518はapplication/Workerとも成功。00:20:54Zの完全preflight後、
+00:21:33Zにworkers.devへ5c3b4214-f285-4616-92d2-657ea080f715を100%配備した。
+00:21:40ZのJS/CSS bytes照合・root/robots200・sitemap404・noindexが成功。
+実合成canaryは2account signinと無期限profile API境界に加え、desktop→390px、
+最初の入力、503保存失敗時の元行/下書き保持、reload/復元/retry、D1保存、再open、
+公開preview、他所有者の編集拒否が成功。protected favoritesはowner/他userのredirect/
+textで名称・URL・本文NULL、proof-looking Cookieで解除されないこと、元config不変、
+保護disabled時の元内容、favorite count0を確認。grace拒否も成功した。
+scoped cleanupはverified-and-cleaned、owned Business/Auth0、retained baseline一致、
+license incarnation tombstone2。00:25:03Zの独立readbackが全baselineを再確認した。
+private報告は/tmp/fanmark-editor-49cf07f-acceptance.jsonとcanary-Olyt5G/canary.json。
+390pxはviewportで、実端末・provider接続・実data/domain移行は別の未完了工程。
+
+次の認証reviewで、createAuthにgenerateId overrideがなく、SDK既定の32文字英数字IDが
+billing APIのUUID actor契約と不一致であることを確認した。既存UUID fixtureのlogin
+成功は新規ID生成の証拠ではなかった。実native signup4言語へUUID契約assertを追加し、
+4失敗/11対象外のfocused再現を取得（/tmp/fanmark-auth-new-id-format-reproduction.log）。
+advanced.database.generateId=uuidへ変更し、実signup由来IDをcustomer portalのactor
+checkへ渡すと401ではなくprovider未設定503になることを確認した。resolverは合成で、
+Stripe clientは作成禁止・key全unset。実email確認/session/billing通し試験の証拠ではない。
+全signup15/15、Auth34/34、shared bcrypt/UUID/TOTP/MFA6/6、型/変更箇所lintと
+workflow isolationは成功。最初の型checkは試験側の誤った
+STRIPE_TEST_SECRET_KEY名で失敗し、既存Envに合わせKEY_TEST/KEY_LIVEへ修正した。
+既存ID・real Auth/Business行・source/DNS/provider設定は変更していない。新Auth codeは
+現在の49cf07f配備とは別で、new exact-HEAD CIと再配備が必要。
+
 ## 2026-10-03：最新staging配備とスマホ幅検証の見逃しを修正
 
 コードe4d9064のCI37079353334はapplication/Workerとも成功。D1 read quota復旧後の

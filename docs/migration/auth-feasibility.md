@@ -461,3 +461,20 @@ provider-backed staging acceptance gate remains open.
 - [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/) — CPU、memory、startup の上限。
 - [Cloudflare Workers Vitest integration](https://developers.cloudflare.com/workers/testing/vitest-integration/) — workerd/Miniflare の local binding test。
 - [Cloudflare Workers Vitest configuration](https://developers.cloudflare.com/workers/testing/vitest-integration/configuration/) — test-only auxiliary Worker と service binding。
+
+## New identity generation versus imported UUID proof (2026-10-03 JST)
+
+Existing synthetic UUID rows proved preservation on login, not the format of
+newly generated IDs. The installed1.7.5 SDK defaults to32 alphanumeric characters
+when no generateId option is supplied. Four actual signup language cases under
+all25 Business migrations and Auth core/0007/0008 failed the source/downstream
+UUID actor contract. createAuth now explicitly chooses advanced.database.
+generateId=uuid; existing IDs and password hashes are not rewritten.
+Full native signup15/15, Auth34/34 and shared bcrypt/UUID/TOTP/MFA6/6 pass. The actual signup ID is also sent
+to the real customer-portal actor validator: it passes that boundary and returns
+provider-unavailable503 rather than unauthenticated401. The resolver is synthetic
+and all Stripe keys are unset; constructing a provider client is forbidden by
+the test. This does not prove verified-email/session/real billing acceptance.
+The latest accepted remote editor/favorites code is49cf07f/version5c3b4214;
+new Auth generation code needs its own CI/deployment proof. No real user rows,
+provider configuration, source database or production route was changed.

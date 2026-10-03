@@ -7,27 +7,34 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- Deployed code e4d9064 passed both CI37079353334 jobs. Guarded deployment
-  at2026-10-03T00:05:19.354Z moved workers.dev staging to
-  **73f934f5-d171-431b-8153-14f5cad1c371 at100%**. Public JS/CSS bytes match
-  the exact staging build; noindex/robots200/sitemap404 remain intentional.
-- The combined native canary reached real two-account signin, perpetual profile
-  create/update/public/private and cross-owner refusal, then stopped at
-  canary_editor_mobile_overflow before browser saves/favorites. Its journal
-  is failed-and-cleaned: zero owned Business/Auth rows, identical retained
-  baselines and two incarnation tombstones. Independent readback at
-  2026-10-03T00:08:27.327Z confirms account/version/ledger25/owned0/wake5:5/
-  secret names/master metadata. **Do not claim combined remote acceptance.**
-- Offline reproduction of desktop-to-mobile resizing found client390 but
-  innerWidth/scrollWidth454: SNS handle input/card intrinsic width enlarged
-  Chrome's mobile viewport. Old local assertions compared the enlarged
-  viewport against itself. SocialLinkInputCard now permits card/input shrink;
-  offline and actual local tests assert the configured390px, and offline cold
-  also resizes1280→390. The diagnostic rerun reports all widths390/scale1/no
-  overflowing elements. Types/lint/build/offline8 and actual local Worker/3D1/
-  browser pass with scoped server/port/state cleanup (executed on e4d9064 plus
-  uncommitted patch). The new code requires its own exact-HEAD CI and
-  private pin updates before another remote deployment/canary.
+- Deployed code49cf07f passed both CI37081023518 jobs and was deployed at
+  2026-10-03T00:21:33.995Z. Current workers.dev staging is
+  **5c3b4214-f285-4616-92d2-657ea080f715 at100%**. Remote JS/CSS bytes match
+  the exact staging build; root/robots200, sitemap404 and noindex remain.
+- Combined native canary is **verified-and-cleaned**. Real two-account signin,
+  perpetual profile create/update/public/private/cross-owner refusal, actual
+  desktop→390 editor, failed-save D1/draft preservation, reload/retry/save/
+  reopen/preview/exact spaces, foreign-owner editor refusal, protected favorites
+  in redirect/text modes for both users and grace refusal all passed. Cookies
+  resembling access proof do not expose name/URL/text; disabling protection
+  restores stored content; favorite count returns0. Fixture Business/Auth rows
+  are0, retained baselines match and two license incarnation tombstones remain.
+  Independent2026-10-03T00:25:03.087Z readback confirms version/account/ledger25/
+  owned0/master inventory/wake5:5/secret names. Native mobile is a viewport;
+  real-phone/provider/full migration acceptance remains open. Private acceptance
+  is /tmp/fanmark-editor-49cf07f-acceptance.json; journal ends canary-Olyt5G.
+- Next code fixes newly generated Auth IDs. Imported UUID fixtures previously
+  hid that Better Auth's unconfigured generator creates32-character IDs while
+  billing APIs require UUID actors. Four actual signup language cases reproduce
+  the mismatch. createAuth now sets advanced.database.generateId=uuid, keeping
+  existing IDs untouched. Full signup15/15 and Auth34/34 pass; the generated ID
+  reaches the real customer-portal actor check before returning configured
+  provider-unavailable503 with no Stripe call. Its user resolver is synthetic,
+  not an end-to-end verified-email/session/billing claim. Shared bcrypt/UUID/TOTP/MFA6/6, types/lint and workflow isolation also pass.
+  Current-head CI/deployment remain prerequisite checks.
+- Existing49cf07f staging acceptance does not prove this new Auth code. Do not
+  reuse old CI or private pins for a changed HEAD. Source/runtime/Auth gates,
+  new OAuth Business provisioning and real provider acceptance remain open.
 - D1 daily read quota recovered. An over-narrow private guard expected only
   one3944-row release, but metadata/history proves two retained ready releases
   of3944 each plus one failed import with zero staged rows. The active release
@@ -56,9 +63,9 @@ older sections retain their historical acceptance and failure evidence.
 
 - Edit only this managed migration worktree/branch and preserve the unrelated
   supabase/.temp/cli-latest change. PR #41 is draft/open; CI never deploys.
-- Staging is73f934f5 at100%. Combined editor/favorites acceptance is still
-  incomplete as described above. Recheck identity/version/ledger25/empty
-  owned Business/Auth/master/wake/secrets before a new deployment/canary.
+- Staging is5c3b4214 at100%, accepted for the editor/favorites slice above.
+  Recheck identity/version/ledger25/empty owned Business/Auth/master/wake/secrets
+  before deploying new Auth code; real data and domain cutover remain excluded.
 - Private combined editor/favorites preparation and the latest expected CI are
   in /tmp/fanmark-favorites-protected-preparation.json. Re-pin the three private
   preflight/smoke/final-readback scripts only after both jobs succeed for the

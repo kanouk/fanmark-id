@@ -189,6 +189,8 @@ Better Authは `workers/api/src/better-auth.mjs` に共通化し、通常Worker�
 
 Cloudflare buildのOAuth初回パスワードゲートはBetter Auth sessionと`GET /api/me/profile`を照合し、profile取得失敗時は保護画面を閉じたままにする。`POST /api/me/password-setup`は本人session、business D1の`requires_password_setup`、server-only Better Auth `setPassword`を組み合わせ、Auth D1書込み後の再試行もcredential検証で復旧する。通常のCloudflareパスワード変更は現在パスワードを必須としてBetter Auth `/change-password`へ送り、Supabase buildは従来経路を維持する。契約と限界は[初回パスワード設定API](migration/password-setup-api.md)。
 
+Better Authの`advanced.database.generateId="uuid"`で新規AuthレコードIDをUUIDにする。既存IDを更新する処理はない。SDK既定の32文字IDは課金APIのUUID actor境界と不一致だったため、実signup由来IDの形式とcustomer portalの認証境界をnativeで検証する。後者は合成user resolverとprovider未設定状態であり、実課金や確認メール/sessionの通し受け入れではない。
+
 招待signupのnative検証は全25 Business migrationとAuth core/0007/0008、
 `AUTH_USER_STATUS_BACKEND=d1`を使用する。`test:invitation-signup-d1`の15件は
 4言語・source初期値・metadata権限入力・cross-D1復旧を検証し、各case後に両DBの

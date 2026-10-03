@@ -22,6 +22,7 @@
   - ヒーロー下の最近取得表示: `src/components/RecentFanmarksScroll.tsx` + `src/lib/recent-fanmarks.ts` → `VITE_FANMARK_API_BASE_URL` が設定されたビルドでは公開recent Worker API、未設定では公開用 RPC `list_recent_fanmarks`（トップ表示は新しい順に20件を要求、API/RPC上限は50件）。Worker 選択時の失敗は RPC にフォールバックしない。未ログインでも表示するため、閲覧者のRLSが適用される `recent_active_fanmarks` ビューを直接参照しない。
   - 絵文字ID変換: `src/lib/emojiConversion.ts`。Worker selectorのビルドはD1の有効releaseを起動時に取得し、取得完了前に画面を描画しない。
 - `/auth`: 認証/サインアップ/パスワードリセット: `src/pages/Auth.tsx`
+  - Workerの認証設定は`workers/api/src/better-auth.mjs`。`advanced.database.generateId="uuid"`で新規レコードのIDをUUIDにする。既存Auth IDは保持し、招待signup Coordinatorから同じユーザーIDでBusinessプロフィールを作成する。
 - `/forgot-password`: `ForgotPassword.tsx`
 - `/reset-password`: `ResetPassword.tsx`
 - `/profile`: ユーザー設定: `Profile.tsx` + `UserProfileForm.tsx`

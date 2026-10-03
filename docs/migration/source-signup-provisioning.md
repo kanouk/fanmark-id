@@ -33,6 +33,11 @@ verification flags, plan, roles and nested metadata are not forwarded to Auth
 or Business D1. Unsupported-language fallback is a target input rule; arbitrary
 source metadata is not claimed to behave identically.
 
+New target Auth IDs explicitly use Better Auth's UUID generator. The SDK's
+default32-character IDs were reproduced as incompatible with UUID actor
+validators in billing APIs; preserving imported UUID fixtures had not covered
+new creation. This setting does not rewrite existing IDs.
+
 The native signup suite uses all 25 canonical Business migrations, Auth
 core/0007/0008 and `AUTH_USER_STATUS_BACKEND=d1`. Its 15 cases include reservation,
 capacity/concurrency/lost-ack/email-failure/replay paths, four languages, exact
