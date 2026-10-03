@@ -40,6 +40,12 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
+復旧試験ツールの認証固定を実装した。専用stagingの資格情報を一時設定で使う
+Wrangler子プロセスへ明示し、資源作成前に一時設定のaccountを確認する。
+実read-only CLIで専用accountが選ばれることを確認済み。配備失敗時は値を含まない
+command/終了status/数値provider codeを記録し、Workerの不在をmetadataで確認する。
+既存profileやログインは変更していない。この修正のCIと一式remote復旧は次の条件。
+
 最新候補8c17c7eのCI37112092427は両job成功。一式remote復旧を初回実行したが、
 一時画像Workerの配備で失敗し、schema・データ取り込み前に終了した。作成した
 D1 3件/R2 2件は削除し、09:26:21.141Zの独立API inventoryで既存資源一覧の一致と

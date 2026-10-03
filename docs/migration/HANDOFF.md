@@ -12,6 +12,16 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Credential-selection fix prepared, live restore still unaccepted**:
+  The conductor now pins the verified staging OAuth credential in every later
+  Wrangler child environment, checks temporary-config account membership before
+  resource creation, and records value-free CLI command/status/numeric codes.
+  Failed deploy cleanup checks exact Worker absence instead of assuming failure
+  means absence; an unreceipted remaining Worker remains unresolved. Real
+  read-only temporary-config whoami with the explicit credential confirms the
+  fanmark account. No global profile/login was changed and no remote write ran
+  during this fix. Next: this candidate's CI, then one owned synthetic rehearsal.
+
 - **Latest full remote attempt failed before data import; cleanup verified**:
   Candidate8c17c7e/CI37112092427 passed both jobs. The first owned combined
   remote run stopped at temporary image Worker deploy, before schema or data

@@ -19,6 +19,13 @@ and Worker dependencies must be installed with the project Node version.
 node --experimental-strip-types scripts/migration/run-isolated-combined-recovery.mjs "$FANMARK_TESTED_HEAD" "$FANMARK_ACCEPTED_CI_RUN"
 ```
 
+The staging config is used only to acquire and verify the dedicated account's
+credential. Every later Wrangler child receives that credential through
+`CLOUDFLARE_API_TOKEN`, including commands whose config lives in `/tmp`; no
+profile is changed globally. A temporary-config `whoami` must include the
+expected account before any resource is created. The explicit-token path was
+verified with a real read-only CLI call; the token was neither printed nor saved.
+
 Those variables must name this candidate's accepted head/run. An empty or
 different head, pending/failed CI, or foreign account stops before resources
 are created. The command is explicit; CI syntax-checks the conductor and runs
@@ -59,7 +66,11 @@ Cleanup verifies the owned image bodies, removes only the two exact fixture
 keys and checks empty physical inventories. It preserves the Worker access
 path if image cleanup fails. Worker deletion requires its recorded deployment
 version and creation time; bucket/database deletion requires exact metadata
-receipts. The final metadata inventories must match the originals. A failure
+receipts. The final metadata inventories must match the originals. If deploy fails before a version receipt is available, cleanup independently
+checks Worker metadata. It accepts absence only when the exact owned name is
+absent; a remaining Worker without a receipt is unresolved and is not deleted
+blindly. CLI failures retain the command, exit status, known signal and bounded
+numeric provider codes only, never raw output or secret input. A failure
 leaves the journal and reports available; it is not accepted as a clean restore.
 
 ## R2 transport and app readback

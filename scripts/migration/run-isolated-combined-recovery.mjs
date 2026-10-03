@@ -31,12 +31,24 @@ assert.equal(ci.conclusion, 'success');
 assert.equal(ci.jobs.length, 2);
 assert.ok(ci.jobs.every(job => job.conclusion === 'success'));
 assert.ok(ci.jobs.some(job => job.steps.some(step => step.name === 'Test combined Business Auth Master and split R2 recovery' && step.conclusion === 'success')));
+let recoveryApiToken = null;
 function wrangler(args, { config = path.join(apiDirectory, 'wrangler.app-staging.jsonc'), input, json = false } = {}) {
   let output;
   try { output = execFileSync('npx', ['--yes', 'wrangler@4.139.0', ...args, '--config', config], {
     cwd: apiDirectory, encoding: 'utf8', timeout: 60000, maxBuffer: 8 * 1024 * 1024,
-    env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' }, input, stdio: ['pipe', 'pipe', 'pipe'],
-  }); } catch { throw new Error('recovery_wrangler_command_failed'); }
+    env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false',
+      ...(recoveryApiToken ? { CLOUDFLARE_API_TOKEN: recoveryApiToken } : {}) }, input, stdio: ['pipe', 'pipe', 'pipe'],
+  }); } catch (cause) {
+    // Never persist stdin, environment values or raw CLI output (secret commands
+    // use this same wrapper). Keep only bounded command/status/numeric API codes.
+    const error = new Error('recovery_wrangler_command_failed');
+    error.code = 'recovery_wrangler_command_failed';
+    error.commandFailure = { command: args[0], exitCode: Number.isInteger(cause.status) ? cause.status : null,
+      signal: ['SIGTERM', 'SIGKILL', 'SIGINT'].includes(cause.signal) ? cause.signal : null,
+      providerCodes: [...new Set([...String(cause.stderr ?? '').concat(String(cause.stdout ?? ''))
+        .matchAll(/\[code:\s*(\d{1,10})\]/gu)].map(match => match[1]))].slice(0, 5) };
+    throw error;
+  }
   if (!json) return null;
   try { return JSON.parse(output); } catch { throw new Error('recovery_wrangler_response_invalid'); }
 }
@@ -45,6 +57,9 @@ assert.equal(who.email, 'fanmark.id@gmail.com');
 assert.ok(who.accounts.some(account => account.id === accountId));
 const auth = wrangler(['auth', 'token', '--json'], { json: true });
 assert.equal(typeof auth.token, 'string');
+// A /tmp config otherwise selects the user's unrelated default profile. All
+// subsequent CLI calls must use the already verified staging credential.
+recoveryApiToken = auth.token;
 const root = await mkdtemp('/tmp/fanmark-combined-remote-');
 const journalPath = path.join(root, 'journal.json');
 const journal = { startedAt: new Date().toISOString(), expectedHead, ciRun, accountId,
@@ -197,6 +212,15 @@ async function cleanup(target, live, prepared) {
       await save();
     } catch { errors.push('worker_cleanup_failed'); }
   }
+  if (target.workerDeployRequestedAt && !target.workerDeleted && errors.length === 0) {
+    try {
+      const observed = await inventory();
+      assert.ok(observed.workers.every(worker => worker.id !== target.workerName));
+      target.workerAbsenceVerified = true;
+      target.workerAbsenceVerifiedAt = new Date().toISOString();
+      await save();
+    } catch { errors.push('worker_deployment_ownership_unresolved'); }
+  }
   if (errors.length === 0) for (const bucket of target.buckets) {
     try {
       const metadata = await apiRequest('r2/buckets/' + bucket.name);
@@ -215,13 +239,19 @@ async function cleanup(target, live, prepared) {
   }
   target.cleanupErrors = errors;
   target.cleanupVerified = errors.length === 0 && !target.pendingCreate &&
-    (!target.workerDeployRequestedAt || target.workerDeleted === true);
+    (!target.workerDeployRequestedAt || target.workerDeleted === true || target.workerAbsenceVerified === true);
   await save();
   if (!target.cleanupVerified) throw new Error('recovery_cleanup_incomplete');
 }
 let failure = null;
 await save();
 try {
+  const credentialConfig = path.join(root, 'credential-preflight-wrangler.json');
+  await writeFile(credentialConfig, JSON.stringify({ account_id: accountId }), { mode: 0o600 });
+  const temporaryIdentity = wrangler(['whoami', '--json'], { config: credentialConfig, json: true });
+  assert.ok(temporaryIdentity.accounts.some(account => account.id === accountId));
+  journal.temporaryConfigCredentialVerifiedAt = new Date().toISOString();
+  await save();
   journal.beforeInventory = await inventory();
   assert.ok(journal.beforeInventory.d1.length + 3 <= 10);
   const fixture = await prepareCurrentCatalogSyntheticSnapshot(fileURLToPath(new URL('./fixtures/business-import-structure.json', import.meta.url)),
@@ -281,7 +311,9 @@ try {
       await save();
     } catch (error) {
       const target = journal.targets[ownershipIndex];
-      if (target) { target.failureStage = target.stage ?? 'create-target'; target.failureCode = error.code ?? 'recovery_step_failed'; await save(); }
+      if (target) { target.failureStage = target.stage ?? 'create-target'; target.failureCode = error.code ?? 'recovery_step_failed';
+        if (error.commandFailure) target.commandFailure = error.commandFailure;
+        await save(); }
       throw error;
     } finally {
       const target = journal.targets[ownershipIndex];
@@ -295,8 +327,9 @@ try {
   assert.ok(journal.targets.every(target => target.cleanupVerified));
   journal.remoteSyntheticBundleAccepted = true;
   journal.acceptedAt = new Date().toISOString();
-} catch (error) { failure = error; journal.failureCode = error.code ?? 'recovery_assertion_or_resource_failure'; }
-finally { auth.token = null; await save(); }
+} catch (error) { failure = error; journal.failureCode = error.code ?? 'recovery_assertion_or_resource_failure';
+  if (error.commandFailure) journal.commandFailure = error.commandFailure; }
+finally { auth.token = null; recoveryApiToken = null; await save(); }
 console.log(JSON.stringify({ journalPath, remoteSyntheticBundleAccepted: journal.remoteSyntheticBundleAccepted ?? false,
   targetsCleaned: journal.targets.filter(target => target.cleanupVerified).length, failed: failure !== null }));
 if (failure) process.exitCode = 1;
