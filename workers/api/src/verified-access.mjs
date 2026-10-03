@@ -475,7 +475,7 @@ async function resolveEmoji(db, selectorKey, nowIso) {
     `${TARGET_SELECT}
      WHERE f."normalized_emoji_ids" = ? AND f."status" = 'active'
        AND l."status" = 'active' AND l."is_returned" = 0
-       AND l."license_end" IS NOT NULL AND l."license_end" > ?
+       AND (l."license_end" IS NULL OR l."license_end" > ?)
      LIMIT 2`,
   )
     .bind(selectorKey, nowIso)
@@ -668,7 +668,7 @@ async function finalizeSuccess(env, reservation, target, selectorKind, canonical
         AND f."status" = 'active'
         AND l."status" = 'active' AND l."is_returned" = 0
         AND (
-          (? = 'emoji' AND l."license_end" IS NOT NULL AND l."license_end" > ?)
+          (? = 'emoji' AND (l."license_end" IS NULL OR l."license_end" > ?))
           OR (? <> 'emoji' AND (l."license_end" IS NULL OR l."license_end" > ?))
         )
         AND (${selectorCondition(selectorKind)})
@@ -698,8 +698,8 @@ async function finalizeSuccess(env, reservation, target, selectorKind, canonical
                 AND matching_fanmark."normalized_emoji_ids" = ?
                 AND matching_license."status" = 'active'
                 AND matching_license."is_returned" = 0
-                AND matching_license."license_end" IS NOT NULL
-                AND matching_license."license_end" > ?) = 1
+                AND (matching_license."license_end" IS NULL
+                     OR matching_license."license_end" > ?)) = 1
           )
         )
     )
@@ -847,7 +847,7 @@ async function protectedProjection(env, request, selectorKind, canonical) {
         AND f."status" = 'active'
         AND l."status" = 'active' AND l."is_returned" = 0
         AND (
-          (? = 'emoji' AND l."license_end" IS NOT NULL AND l."license_end" > ?)
+          (? = 'emoji' AND (l."license_end" IS NULL OR l."license_end" > ?))
           OR (? <> 'emoji' AND (l."license_end" IS NULL OR l."license_end" > ?))
         )
     ),

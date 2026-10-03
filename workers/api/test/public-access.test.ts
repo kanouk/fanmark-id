@@ -449,7 +449,7 @@ describe("public fanmark access D1 contract", () => {
     expect(longBody.userInputFanmark).toBe(longDisplay);
   });
 
-  it("keeps unlicensed and grace rows unavailable while short lookup preserves indefinite licenses", async () => {
+  it("keeps unlicensed and grace rows unavailable while both lookups preserve indefinite licenses", async () => {
     for (const [path, expectedId] of [
       ["/api/fanmarks/access/short/unclaimed", IDS.fanmarkUnclaimed],
       ["/api/fanmarks/access/short/grace-only", IDS.fanmarkGrace],
@@ -467,8 +467,12 @@ describe("public fanmark access D1 contract", () => {
     });
     const indefiniteByEmoji = await jsonRequest("/api/fanmarks/access/emoji", { emojiIds: [IDS.emojiCloud] });
     expect(indefiniteByEmoji.status).toBe(200);
-    const indefiniteBody = await indefiniteByEmoji.json() as { accessState?: unknown };
-    expect(indefiniteBody.accessState).toBe("unavailable");
+    expect(await indefiniteByEmoji.json()).toMatchObject({
+      id: IDS.fanmarkIndefinite,
+      accessState: "open",
+      licenseId: LICENSE.indefinite,
+      licenseEnd: null,
+    });
   });
 
   it("returns the minimal locked response and never protected content", async () => {
@@ -587,6 +591,11 @@ describe("public fanmark access D1 contract", () => {
   });
 
   it("fails closed on multiple eligible licenses, tied short-id licenses, and duplicate configs", async () => {
+    // A finite and an indefinite active license are both eligible; the emoji
+    // path must refuse ambiguity instead of silently discarding the latter.
+    const mixed = await jsonRequest("/api/fanmarks/access/emoji", { emojiIds: [IDS.emojiFlower] });
+    expect(mixed.status).toBe(502);
+
     await run(
       "INSERT INTO fanmark_licenses (id, fanmark_id, display_fanmark, status, license_end, grace_expires_at, is_returned) VALUES (?, ?, ?, 'active', ?, NULL, 0)",
       "3d3d3d3d-3d3d-4d3d-8d3d-3d3d3d3d3d3d",

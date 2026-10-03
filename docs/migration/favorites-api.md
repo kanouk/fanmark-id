@@ -83,7 +83,7 @@ license, and unchanged stored configurations. Disabled/absent protection retains
 ordinary responses. Application/Worker typechecks, changed-file lint, normal
 staging build, pinned Wrangler dry-run, workflow isolation, and eight offline
 profile-editor browser cases pass. Native favorites now run in normal Worker CI.
-Remote acceptance is pending D1 quota recovery and the new exact-head CI.
+Remote acceptance was pending at this local checkpoint; the later guarded acceptance is recorded below.
 
 ## Identity and transactional mutations
 
@@ -164,3 +164,24 @@ names. Static bytes match; real providers/email/signup remain closed. This is
 the four reproduced-failure scope, not all source/index/caller/provider or phone
 acceptance; int64 boundaries are local only. See HANDOFF/COMPLETION for remaining
 requirements. Private proof:/tmp/fanmark-discovery-bce8993-staging-acceptance.json.
+
+## Protected-list staging acceptance and unchanged read contract
+
+`47b69c5`/CI37085997181 accepted Worker
+`b5a07a34-a086-4543-9569-31fa8a904def` with the combined editor/favorites
+conductor. Its journal is verified-and-cleaned; the favorite subprobe is
+verified for redirect/text with two synthetic accounts, unchanged stored
+configuration and preserved ordinary content. Source/Auth owned rows are0
+and the retained baseline matches after cleanup. This is the protected-list
+remote proof, distinct from the later bce8993 mutation fault/retry checks.
+
+Compared the exact `mapFavorite` + `LIST_SQL` + `listFavorites` region from
+47b69c5 to ef25b50: identical SHA-256
+`9842764fb970117864727456e075faf5c929e2b5a490cbfeb7155ef841e52256`.
+Later changes in this module replace mutation implementation; they do not
+change this read region. Latest ef25b50/CI37125702795 passed both jobs and
+normal Worker CI still executes native favorites. No new remote seed/retest
+is needed for the unchanged protected projection.
+[Evidence](evidence/protected-favorites-acceptance-2026-10-03.json).
+External/source RPC compatibility, real user rows, CPU/plan and final
+integration remain separate; this does not approve full source/RLS parity.

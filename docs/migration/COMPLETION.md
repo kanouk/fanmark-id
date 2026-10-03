@@ -40,6 +40,14 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
+2026-10-03の公開参照照合で、Tier CのNULL-endを絵文字参照だけから除外する
+source由来の条件を確認し、Workerを無期限という仕様へ修正した。local公開参照15件、
+取得26件、保護参照13件、Worker typecheckは成功。取得からshort/emoji両参照まで同じ投影を確認し、
+有限/無期限の複数ライセンスは曖昧として拒否する。パスワード認証・proof発行・保護内容の
+取得もNULL-end条件を揃え、比較中のライセンス追加とproofの別selector利用を拒否する。
+CI・staging受入は未実行で、
+項目2は未完了。[契約差と検証](public-access-contract.md)。
+
 画像参照の差を閉じた。`6a1870a`/CI37118191381両job成功後、実stagingの
 Worker51db2c90へ反映し、合成画像の編集・公開表示、変更なし保存、既存key削除を
 実API/Chromeで受け入れた。合成2 account/2画像は削除済み。独立11:15:19.120Z

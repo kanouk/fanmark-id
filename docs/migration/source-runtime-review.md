@@ -164,3 +164,15 @@ review requirements. The catalog-only classifier does not import this linkage;
 its54 pending count and false full-runtime/converter gates remain unchanged.
 Reconcile the remaining objects using their existing evidence and actual
 contract gaps; this follow-up does not require a new blanket fault campaign.
+
+## Current application counterpart trace (2026-10-03)
+
+[evidence/source-function-counterparts-2026-10-03.json](evidence/source-function-counterparts-2026-10-03.json)
+links all58 function signatures, definition hashes, effective EXECUTE privileges
+and trigger counts from the two independent catalogs to existing object-map
+counterparts. Missing/duplicate rows and cross-catalog definition mismatches
+are zero. The trace contains no source bodies or user/Auth rows. It does not
+infer semantic approval: pending provider/operations/integration and explicit
+contract differences remain, as do fullRuntimeReconciled=false and
+converterDeployable=false. The classifier's54 pending entries are not54
+unimplemented current-application routes.

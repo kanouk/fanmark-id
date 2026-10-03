@@ -9,6 +9,29 @@ deleted and all four involved business tables read back zero. This did not
 copy production rows, change production traffic, or modify the existing
 Supabase RPCs.
 
+### Tier C correction (2026-10-03, local candidate)
+
+The Worker emoji lookup now accepts an active license with a NULL end date,
+as required by PRODUCT's indefinite Tier C. The captured source
+`get_fanmark_by_emoji` definition (SHA-256
+`c98679a9e059a20f5824e008fcd4012e6f5af10965f3d087c545040c33bbcdef`)
+only accepts finite future licenses. The source behavior documented below is
+historical source evidence; the NULL-end exclusion is an intentional target
+correction. Supabase is unchanged. Finite expiry and ambiguous-license refusal
+remain enforced; password redaction remains in the shared mapper. The protected
+emoji resolver, atomic proof finalization, and protected projection use the
+same NULL-or-future eligibility, including the count used to reject ambiguity.
+
+Local public-access tests pass 15/15, including an indefinite lookup and a
+finite/indefinite ambiguity. Registration tests pass 26/26; the full-schema
+cases use real Better Auth, active releases and separate canonical identities,
+and confirm newly acquired S/A/C licenses return identical anonymous short-ID
+and emoji projections. Protected-access tests pass 13/13, including NULL-end
+verification/read, selector replay refusal, ambiguity after proof issuance, and
+an indefinite license arriving during password comparison. Worker typecheck
+passes. This candidate still needs CI
+and staging acceptance; the deployed Worker is not claimed to contain it.
+
 ## Implemented read routes
 
 One shared, read-only public projection is exposed through these routes:
@@ -40,10 +63,11 @@ use `Cache-Control: no-store`, and have a five-second client timeout and a
 64-KiB response bound.
 
 This selector covers anonymous reads only. Worker responses mark protected
-records as locked and redact their contents. Until a guarded Worker verifier
-and post-verification content read exist, the Worker-selected `/a/:shortId`
-flow fails closed on locked records; it does not call the legacy Supabase
-password RPC or render empty content. The default Supabase path retains the
+records as locked and redact their contents. Staging selects the guarded
+verification and protected-read routes described in
+[verified access](verified-access-design.md). Content requires a valid
+selector-bound HttpOnly proof cookie; a locked public response grants no access.
+The Worker path does not call the legacy Supabase password RPC. The default Supabase path retains the
 existing protected flow. Production/default access analytics still call the
 Supabase `record-fanmark-access` function; workers.dev staging selects the
 paired D1 write and owner-read APIs described below. The `/f/:shortId` details
@@ -163,7 +187,7 @@ license selection behavior:
   active row with an expired or indefinite selected license, excludes grace and
   expired-status rows, and returns a base row when no active license exists.
 
-The first D1 parity proof should preserve those source selection semantics
+The initial D1 parity proof preserved those source selection semantics
 explicitly, with the locked-field redaction above. It must not silently merge
 the two rules or substitute a new grace/expiry policy. The difference is a
 known product/security gate for later cleanup. The existing short-id UI expects
@@ -173,10 +197,10 @@ fixture. `is_returned` is selected and returned by the live short-id function
 but is not a selection predicate; the D1 mapper should preserve that fact until
 a lifecycle decision changes it.
 
-If a later product decision changes the active/expiry policy, it must update
-both the Supabase function and the D1 mapper together. Until then, expired or
-private fanmark rows must not become reachable merely by selecting a latest
-historical license, and protected content must remain locked.
+The Tier C correction above changes the target emoji NULL-end exclusion to
+match PRODUCT; it deliberately leaves Supabase unchanged during migration.
+Other source-selection differences retain their own stated scope. Private
+profile and protected-content authorization are not relaxed by this correction.
 
 All timestamps retain the imported canonical UTC representation, including
 subsecond precision. The repository must not parse, round, or localize stored

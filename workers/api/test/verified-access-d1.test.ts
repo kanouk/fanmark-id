@@ -371,6 +371,63 @@ describe("source-shaped protected public access through the app Worker", () => {
     });
   });
 
+  it("opens an indefinite emoji license only with its proof and refuses later ambiguity", async () => {
+    await BASE_ACCESS_DB.prepare("UPDATE fanmark_licenses SET license_end=NULL WHERE id=?")
+      .bind(EMOJI_LICENSE).run();
+    const path = "/api/fanmarks/access/emoji/protected";
+    expect((await jsonRequest(path, { emojiIds: EMOJI_IDS })).status).toBe(401);
+    const verification = await jsonRequest("/api/fanmarks/access/emoji/verify-password", {
+      emojiIds: EMOJI_IDS, password: "2468",
+    });
+    expect(verification.status).toBe(204);
+    const cookie = cookieFrom(verification);
+    const read = () => request(path, {
+      method: "POST", headers: { ...protectedHeaders(cookie), "Content-Type": "application/json" },
+      body: JSON.stringify({ emojiIds: EMOJI_IDS }),
+    });
+    const allowed = await read();
+    expect(allowed.status).toBe(200);
+    expect(await allowed.json()).toEqual({
+      fanmarkId: EMOJI_FANMARK, licenseId: EMOJI_LICENSE,
+      accessType: "text", textContent: "Synthetic protected text",
+    });
+    expect((await request("/api/fanmarks/access/short/3333/protected", {
+      headers: protectedHeaders(cookie),
+    })).status).toBe(401);
+    await addAdditionalLicense({
+      fanmarkId: EMOJI_FANMARK, licenseId: MULTI_NEW_LICENSE,
+      licenseEnd: "2026-10-02T00:00:00.000000Z",
+      name: "Ambiguous finite license", textContent: "Other protected text",
+    });
+    const denied = await read();
+    expect(denied.status).toBe(401);
+    expect(await denied.text()).not.toContain("protected text");
+    const retry = await jsonRequest("/api/fanmarks/access/emoji/verify-password", {
+      emojiIds: EMOJI_IDS, password: "2468",
+    });
+    expect(retry.status).toBe(401);
+    expect(retry.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("does not mint an emoji proof when an indefinite license appears during comparison", async () => {
+    setVerificationTestHooks({
+      now: () => testNow, requestAddress: () => "shared",
+      duringCompare: async () => {
+        await addAdditionalLicense({
+          fanmarkId: EMOJI_FANMARK, licenseId: MULTI_NEW_LICENSE,
+          licenseEnd: null, name: "New indefinite license", textContent: "Other protected text",
+        });
+      },
+    });
+    const verification = await jsonRequest("/api/fanmarks/access/emoji/verify-password", {
+      emojiIds: EMOJI_IDS, password: "2468",
+    });
+    expect(verification.status).toBe(401);
+    expect(verification.headers.get("set-cookie")).toBeNull();
+    expect(await row("SELECT count(*) AS count FROM fanmark_access_proofs WHERE license_id=?", EMOJI_LICENSE))
+      .toEqual({ count: 0 });
+  });
+
   it("uses neutral denial for wrong passwords, expired licenses, and unproven hash formats", async () => {
     const wrong = await jsonRequest("/api/fanmarks/access/short/1111/verify-password", { password: "0000" }, { ip: "198.51.100.31" });
     const expired = await jsonRequest("/api/fanmarks/access/short/4444/verify-password", { password: "2468" }, { ip: "198.51.100.32" });

@@ -1,3 +1,25 @@
+# 2026-10-03 Tier C公開・保護参照の修正candidate
+
+無期限のactiveライセンスをemoji参照から除外するsource由来の条件を、PRODUCTに合わせて
+公開projection・パスワード検証・atomic proof発行・保護内容取得で修正した。
+複数ライセンスの曖昧さ、有限の期限、selector-bound proofと世代の確認は維持する。
+local public15/registration26/protected13、Worker typecheck・変更箇所lintを確認。
+registrationの現行schema fixtureに、active releaseと別に保持するcanonical IDを追加し、
+実sessionで取得したS/A/Cのshort/emoji参照が同じ投影を返すことを確認した。
+CIとstaging受入は次HEADで実行する。main stagingはまだWorker51db2c90/code6a1870a。
+source RPC/実ユーザーデータ・provider設定・ドメインは変更していない。
+
+前HEAD ef25b50/CI37125702795はcompleted/success、application/Worker両job成功。
+実Chromeで同一networkIdの取消しreceiptを確認してcontinueRequest拒否を扱う修正が
+Linuxでも成功した。以前のe68e6e8失敗を最新CIの状態とは扱わない。
+58関数のidentity/hash/権限と既存counterpart行を結び付けた
+[evidence](evidence/source-function-counterparts-2026-10-03.json)を追加した。
+54 classifier pendingは未実装件数ではなく、手動照合を取り込んでいない分類数。
+semantic承認/fullRuntimeReconciled/converterDeployableは引き続きfalse。
+保護お気に入り一覧は47b69c5のremote受入と変わらない実装hashを照合し、対応表の古い
+未受入表記を訂正した。実Cron archiveの受入も保持し、同じremote試験を繰り返さない。
+以下は過去のcheckpoint。
+
 # 2026-10-03 ブラウザ取消し競合の修正candidate
 
 最新`e68e6e8`/CI37124843575はcompleted/failure。Workerは成功、applicationの

@@ -156,7 +156,7 @@ export const PUBLIC_ACCESS_BY_SHORT_SQL = publicAccessProjectionSql(
 
 export const PUBLIC_ACCESS_BY_EMOJI_SQL = publicAccessProjectionSql(
   "f.normalized_emoji_ids = ?",
-  "AND fl.license_end IS NOT NULL AND fl.license_end > ?",
+  "AND (fl.license_end IS NULL OR fl.license_end > ?)",
 );
 
 export const PUBLIC_ACCESS_EMOJI_MASTER_BY_ID_SQL = `

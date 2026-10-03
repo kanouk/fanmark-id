@@ -118,6 +118,12 @@ beforeAll(async () => {
   for (const migration of businessMigrations) await apply(business, migration.sql);
   for (const sql of [authSchema, authSignup, authSuspension, authOAuthSignup]) await apply(auth, sql);
   for (const migration of masterMigrations) await apply(master, migration.sql);
+  // Staging retains canonical identities separately from the active catalog.
+  // Public emoji lookup normalizes against those stable canonical IDs.
+  await master.batch(emojiRows.map(([id, emoji, codepoints], i) => master.prepare(`
+    INSERT INTO emoji_master (id, emoji, short_name, codepoints, sort_order)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(id, emoji, `synthetic-${i}`, codepoints, i)));
   // Use the real immutable ready-release tables and activation triggers.
   await master.batch([
     master.prepare(`INSERT INTO fanmark_emoji_master_release_imports
@@ -231,6 +237,19 @@ describe("registration through real Better Auth and all current D1 migrations", 
     for (const table of ["fanmarks", "fanmark_licenses", "fanmark_basic_configs", "fanmark_profiles", "audit_logs"]) {
       expect(await business.prepare(`SELECT COUNT(*) AS count FROM ${table}`).first()).toEqual({ count: 1 });
     }
+    // Prove the newly acquired finite/unlimited license is usable through the
+    // actual public projection, rather than only checking its stored expiry.
+    const publicRuntime = { ...runtime, PUBLIC_ACCESS_BACKEND: "d1" };
+    const shortId = payload.fanmark.short_id as string;
+    const byShort = await handleRequest(new Request(`${API}/api/fanmarks/access/short/${shortId}`), publicRuntime);
+    const byEmoji = await handleRequest(new Request(`${API}/api/fanmarks/access/emoji`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ emojiIds: ids }),
+    }), publicRuntime);
+    expect(byShort.status).toBe(200);
+    expect(byEmoji.status).toBe(200);
+    const shortProjection = await byShort.json() as { licenseId: string | null };
+    expect(shortProjection.licenseId).not.toBeNull();
+    expect(await byEmoji.json()).toEqual(shortProjection);
   });
 
   it("rejects absent, revoked, and suspended real sessions before any business mutation", async () => {
