@@ -39,6 +39,9 @@ verifies that the submitted emoji string matches the ordered catalog values,
 removes skin-tone code points only when deriving canonical identity IDs, and
 rejects a client-supplied normalized-ID list that differs from that derivation.
 Tier classification preserves the source rules and reads the active tier row.
+Availability and registration share `workers/api/src/fanmark-tier.ts`; the
+[source-helper review](source-emoji-helpers-review.md) records the identity,
+display and raw-text-counter boundaries.
 
 An existing fanmark can be reused only while active and without an active
 license, an unexpired grace license, or a pending lottery entry tied to an
@@ -66,7 +69,7 @@ new payment policy. Availability remains an advisory API and is not treated as
 authorization for registration.
 
 The local D1 integration suite uses synthetic identity/catalog rows and covers
-18 cases: first registration, native-writer discovery linkage, all-owner favorites,
+21 cases: first registration, finite repeated-ID tiers, native-writer discovery linkage, all-owner favorites,
 ordered/case/NULL/whitespace identity, ambiguous identity rejection, rejected
 and suppressed link rollback/retry, skin-tone identity, reuse, stale normalized IDs, grace and
 lottery conflicts, competing requests, dependent-write rollback, CORS, and

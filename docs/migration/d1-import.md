@@ -203,6 +203,68 @@ or remote calls; each temporary D1 and report directory is removed in
 
 ## Remaining gates
 
+### Current checked-in Business/Auth schema rehearsal (2026-10-03)
+
+The importer now has an explicit local `canonicalBusinessSchema: true` profile.
+It derives the expected complete SQLite object inventory in an independent,
+disposable Miniflare D1 by applying the checked-in Business migration sequence.
+It never derives expected DDL from the destination under inspection. Every
+table/index/view/trigger must match that inventory; only the exact provider
+metadata and separately verified importer-ledger objects are excluded. Missing
+or extra triggers fail before the importer creates its ledger.
+
+The profile remains distinct from the original generated-schema profile.
+The current generator adds timestamp CHECKs absent from the historical 0000
+bootstrap and target-only tables, while 0017 replaces the original generation
+trigger timestamps. The canonical profile checks the actual reviewed runtime
+DDL rather than claiming the freshly generated DDL was deployed. Source
+column order/type/nullability/PK checks, row conversion, credential descriptor
+and plan validation, typed readback and source-parity gates remain in place.
+The default generated-schema guard is unchanged. This is a local rehearsal,
+not permission to use the profile as a remote/production importer.
+
+Migration file digests plus the independent final object inventory produce a
+runtime fingerprint. The ledger/report `schemaDigest` binds both that fingerprint
+and the source-generated schema digest; the report also records and checks the
+runtime fingerprint. A different migration profile cannot resume the same run
+by reusing its destination/incarnation/report.
+
+`npm run test:business-runtime-import` in `workers/api` exercises all 25 Business
+and four Auth migrations with a schema-only structural fixture and 13 synthetic
+source rows across 40 source-table checkpoints. Real Auth D1 lookups verify
+synthetic owner references. It verifies credential ACK-unknown resume, enabled
+and disabled bcrypt transformation, inactive-license deferral, source timestamp
+and exact int64 readback, missing/extra-trigger refusal, fingerprint tamper
+refusal and credential-coverage corruption refusal. Importing one pending
+notification event advances the durable wake marker exactly once; replaying
+the completed import keeps it at requested 1 / acknowledged 0.
+
+The same snapshot restores into a second fresh Business/Auth target with a
+different incarnation. All 40 source-table stream hashes/counts reconcile,
+both stores pass FK checks, and the restored wake marker is again 1/0.
+Fresh credential hashes may differ because bcrypt salts are regenerated;
+credential conversion and independent reconciliation still run on that target.
+The structural fixture deliberately omits source function/trigger/policy/view
+definitions and all real application rows; it is not a complete source audit.
+The separate private full-catalog synthetic rehearsal also passed the current
+profile. CI runs the structural rehearsal as a dedicated step.
+
+This closes the Business/Auth portion of the final-schema local synthetic
+import/restart/fresh-target recovery gap. Combined Master/R2 recovery, recovery
+time acceptance, remote importer custody and the final application integration
+remain open. `deployable` and `fullMigrationReconciled` remain false.
+
+```sh
+cd workers/api
+npm run test:business-runtime-import
+```
+
+For a separately captured private schema-only source catalog:
+
+```sh
+node scripts/migration/test-d1-import-current-schema.mjs /private/path/catalog.json --canonical-business
+```
+
 This is a local importer and readback core. It does not create a production D1,
 run a remote schema migration, bind Auth identities, copy encrypted/private
 data, migrate Storage/cron settings, or switch application traffic. The

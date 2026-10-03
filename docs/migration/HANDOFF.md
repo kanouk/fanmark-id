@@ -12,6 +12,25 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Tier consolidation and current-schema synthetic import candidate**:
+  availability/registration share fanmark-tier.ts; source-emoji-helpers-review.md
+  links the classifier, ID mapping and old raw-text counter without inventing
+  a new unused API. Local availability10/registration21 and Worker typecheck
+  pass. The importer has an explicit local canonical Business profile derived
+  independently from all25 checked-in migrations; source/descriptor/codec and
+  exact destination DDL checks remain. The runtime fingerprint binds ledger
+  and report. Business25/Auth4, synthetic40 checkpoints/13 rows, ACK-unknown
+  resume, credential transformation/deferral, missing/extra-trigger and fingerprint
+  refusal, single wake1/0 after replay, and second fresh-target recovery are
+  covered by test:business-runtime-import, now a dedicated CI step. Default
+  importer regression20 passes. The structural fixture excludes source
+  functions/policies/triggers/views and all real rows; a separate private
+  full-catalog current-profile synthetic import passed too. This is local
+  Business/Auth acceptance, not combined Master/R2/remote recovery or full
+  migration acceptance. Worker deployment remains c09/bce8993 below; this
+  candidate has not been deployed. No schema DDL, user-data or DNS mutation
+  is required for this local importer work.
+
 - **Access-helper and stale-mapping follow-up, runtime unchanged**:
   source-access-helpers-review.md links4 exact username/role/admin/elevated-admin
   definitions to current callers and existing profile/Auth/waitlist evidence.

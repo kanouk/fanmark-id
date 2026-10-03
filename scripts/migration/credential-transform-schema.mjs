@@ -19,6 +19,7 @@ import {
 } from "./snapshot-format.mjs";
 import { compileCredentialDescriptor } from "./credential-descriptor.mjs";
 import { isD1ProviderObject } from "./d1-provider-objects.mjs";
+import { readBusinessRuntimeImportSchema } from "./business-runtime-import-schema.mjs";
 import {
   generateLifecycleTargetSchema,
   validateLifecycleTargetPlan,
@@ -445,7 +446,11 @@ function assertObjects(actual, expected, code, allowed = new Set()) {
   for (const object of expected) {
     const row = actual.get(objectKey(object.type, object.name));
     if (!row) fail(`${code}_missing`);
-    if (String(row.type) !== object.type || normalizedSql(row.sql) !== normalizedSql(object.sql)) fail(`${code}_mismatch`);
+    if (String(row.type) !== object.type || normalizedSql(row.sql) !== normalizedSql(object.sql)) {
+      const error = new CredentialTransformSchemaError(`${code}_mismatch`);
+      error.objectName = object.name;
+      throw error;
+    }
   }
   for (const [key, row] of actual) {
     if (expectedByKey.has(key) || allowed.has(key) || isD1ProviderObject(row.type, row.name)) continue;
@@ -498,6 +503,7 @@ export async function inspectCredentialTransformSchema(database, plan, {
   generationPlan,
   descriptor,
   additionalObjects = [],
+  canonicalBusinessSchema = false,
 } = {}) {
   if (!database || typeof database.prepare !== "function") fail("invalid_target_database");
   if (!catalog || !lifecyclePlan || !generationPlan || !descriptor) fail("credential_transform_profile_missing");
@@ -509,6 +515,19 @@ export async function inspectCredentialTransformSchema(database, plan, {
   const profile = validateProfilePlans({ catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor });
   const baseline = profileObjects(profile.lifecycle, profile.generation);
   const state = await extensionState(database, plan);
+  if (canonicalBusinessSchema === true) {
+    const runtime = await readBusinessRuntimeImportSchema();
+    // This is a distinct, explicit target profile: the checked-in deployed
+    // migrations, not a freshly regenerated schema. The latter now includes
+    // additional timestamp CHECKs; 0017 also repairs old generation triggers.
+    // Keep the source/descriptor/plans validation above and exact full runtime
+    // DDL below. The importer checks source column shape and every converted
+    // value separately; unresolved source-parity gates remain unresolved.
+    assertObjects(state.actual, [...runtime.objects, ...additionalObjects], "credential_transform_runtime_schema");
+    return { ...state, complete: true, missing: [], mismatched: [],
+      extensionDigest: plan.extensionDigest, targetProfileFingerprint: plan.targetProfileFingerprint,
+      runtimeSchemaFingerprint: runtime.fingerprint };
+  }
   assertBaseline(state.actual, baseline, [
     ...CREDENTIAL_TRANSFORM_TABLE_NAMES.map((name) => objectKey("table", name)),
     ...CREDENTIAL_TRANSFORM_INDEX_NAMES.map((name) => objectKey("index", name)),

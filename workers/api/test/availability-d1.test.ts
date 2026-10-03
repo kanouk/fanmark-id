@@ -191,6 +191,9 @@ describe("D1 availability repository", () => {
     const cases: Array<[string[], number]> = [
       [[A.toUpperCase()], 4],
       [[A, A], 3],
+      [[A, A, A], 3],
+      [[A, A, A, A], 3],
+      [[A, A, A, A, A], 3],
       [[A, B], 3],
       [[A, B, C], 2],
       [[A, B, C, TONE], 1],

@@ -40,6 +40,7 @@ import {
 import { compileRowConverter } from "./row-conversion.mjs";
 import { SnapshotVerificationError, verifySnapshot } from "./snapshot-verify.mjs";
 import { inspectCredentialTransformSchema } from "./credential-transform-schema.mjs";
+import { readBusinessRuntimeImportSchema } from "./business-runtime-import-schema.mjs";
 import { openSnapshotBundle } from "./snapshot-encryption.mjs";
 import {
   CREDENTIAL_NONCREDENTIAL_COLUMNS,
@@ -1403,7 +1404,7 @@ async function existingCredentialLedgerObjects(database) {
   return expected;
 }
 
-async function assertTargetSchema(database, snapshot, plan, { credentialProfile = null } = {}) {
+async function assertTargetSchema(database, snapshot, plan, { credentialProfile = null, canonicalBusinessSchema = false } = {}) {
   if (credentialProfile !== null) {
     const profileKeys = Reflect.ownKeys(credentialProfile);
     const expectedProfileKeys = ["credentialPlan", "descriptor", "generationPlan", "lifecyclePlan"];
@@ -1424,9 +1425,10 @@ async function assertTargetSchema(database, snapshot, plan, { credentialProfile 
         generationPlan: credentialProfile.generationPlan,
         descriptor: credentialProfile.descriptor,
         additionalObjects: await existingCredentialLedgerObjects(database),
+        canonicalBusinessSchema,
       });
-    } catch {
-      throw fail("target_profile_schema_mismatch");
+    } catch (error) {
+      throw fail("target_profile_schema_mismatch", { code: error?.code ?? "schema_inspection_failed", objectName: error?.objectName });
     }
     if (!inspected.complete) throw fail("target_profile_schema_incomplete");
   } else {
@@ -2117,6 +2119,7 @@ function initialReport(snapshot, plan, options) {
     catalogFingerprint: snapshot.catalogFingerprint,
     schemaReportFingerprint: snapshot.schemaReportFingerprint,
     schemaDigest: snapshot.schemaDigest,
+    ...(snapshot.runtimeSchemaFingerprint ? { runtimeSchemaFingerprint: snapshot.runtimeSchemaFingerprint } : {}),
     codecVersion: D1_IMPORT_CODEC_VERSION,
     tableCount: plan.tableNames.length,
     completedTables: 0,
@@ -2131,6 +2134,7 @@ function initialReport(snapshot, plan, options) {
 }
 
 function assertReportIdentity(report, snapshot, options, plan) {
+  if ((report?.runtimeSchemaFingerprint ?? null) !== (snapshot.runtimeSchemaFingerprint ?? null)) throw fail("report_identity_mismatch");
   if (!report || !isPlainObject(report) || report.schemaVersion !== D1_IMPORT_SCHEMA_VERSION || report.runId !== snapshot.manifest.runId || report.destinationId !== options.destinationId || report.targetIncarnation !== options.targetIncarnation || report.manifestDigest !== snapshot.manifestDigest || report.credentialDescriptorDigest !== snapshot.manifest.credentialDescriptorDigest || report.catalogFingerprint !== snapshot.catalogFingerprint || report.schemaReportFingerprint !== snapshot.schemaReportFingerprint || report.schemaDigest !== snapshot.schemaDigest || report.codecVersion !== D1_IMPORT_CODEC_VERSION || report.tableCount !== plan.tableNames.length || JSON.stringify(report.importOrder) !== JSON.stringify(plan.importOrder)) throw fail("report_identity_mismatch");
 }
 
@@ -2150,6 +2154,7 @@ export async function importD1Snapshot({
   allowUnresolvedGates = false,
   resolveAuthUserIds = null,
   expectedTargetProfile = null,
+  canonicalBusinessSchema = false,
   maxRowsPerBatch = DEFAULT_MAX_ROWS_PER_BATCH,
   maxBatchBytes = DEFAULT_MAX_BATCH_BYTES,
   maxBindingsPerBatch = DEFAULT_MAX_BINDINGS_PER_BATCH,
@@ -2162,19 +2167,28 @@ export async function importD1Snapshot({
   validateDatabase(database);
   if (mode !== "local") throw fail("unsupported_import_mode");
   if (allowUnresolvedGates !== true && allowUnresolvedGates !== false) throw fail("invalid_gate_option");
+  if (canonicalBusinessSchema !== true && canonicalBusinessSchema !== false) throw fail("invalid_runtime_schema_option");
+  if (canonicalBusinessSchema && expectedTargetProfile === null) throw fail("runtime_credential_profile_required");
   if (resolveAuthUserIds !== null && typeof resolveAuthUserIds !== "function") throw fail("invalid_auth_identity_resolver");
   validateIdentity(destinationId, "invalid_destination_id");
   validateIdentity(targetIncarnation, "invalid_target_incarnation");
   if (typeof now !== "function") throw fail("invalid_clock");
   validateOptions({ maxRowsPerBatch, maxBatchBytes, maxBindingsPerBatch, scanBatchRows, maxRowBytes, maxTargetRowBytes });
   const snapshot = await loadVerifiedSnapshot(manifestPath);
+  if (canonicalBusinessSchema) {
+    const runtime = await readBusinessRuntimeImportSchema();
+    // Bind both ledger and report to the full reviewed runtime schema. A retry
+    // cannot silently change migration profiles while keeping the same run.
+    snapshot.schemaDigest = sha256Hex({ sourceSchemaDigest: snapshot.schemaDigest, runtimeSchemaFingerprint: runtime.fingerprint });
+    snapshot.runtimeSchemaFingerprint = runtime.fingerprint;
+  }
   let plan = null;
   if (expectedTargetProfile !== null) {
     plan = buildImportPlan(snapshot.catalog, snapshot.convertedSchema, { allowUnresolvedGates, credentialDescriptor: snapshot.manifest.credentialDescriptor ?? undefined });
     // This is a read-only preflight. It confirms the exact lifecycle,
     // generation, and credential target profile before the generic importer
     // refuses to move any row from a credential-bearing catalog.
-    await assertTargetSchema(database, snapshot, plan, { credentialProfile: expectedTargetProfile });
+    await assertTargetSchema(database, snapshot, plan, { credentialProfile: expectedTargetProfile, canonicalBusinessSchema });
   }
   if (expectedTargetProfile === null) assertCredentialTransformBoundary(snapshot.catalog);
   const absoluteReportPath = reportPathFor(snapshot.manifestPath, reportPath);

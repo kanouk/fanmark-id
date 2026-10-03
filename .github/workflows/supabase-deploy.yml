@@ -154,6 +154,9 @@ jobs:
       - name: Test local D1 import and readback
         if: matrix.directory == 'workers/api'
         run: npm run test:d1-import
+      - name: Test synthetic import and fresh-target recovery against current D1 schemas
+        if: matrix.directory == 'workers/api'
+        run: npm run test:business-runtime-import
       - name: Test versioned emoji master D1 staging
         if: matrix.directory == 'workers/api'
         run: npm run test:emoji-master-release

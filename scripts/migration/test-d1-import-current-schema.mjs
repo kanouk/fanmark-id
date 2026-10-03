@@ -15,6 +15,7 @@ import { convertSchema } from "./schema-convert.mjs";
 import { exportSnapshot } from "./snapshot-export.mjs";
 import { importD1Snapshot } from "./d1-import.mjs";
 import { validateSequenceStates } from "./snapshot-format.mjs";
+import { applyBusinessRuntimeMigrations, businessMigrationStatements, readBusinessRuntimeImportSchema } from "./business-runtime-import-schema.mjs";
 import {
   applyLifecycleTargetSchema,
   generateLifecycleTargetSchema,
@@ -311,7 +312,8 @@ async function createLocalD1() {
         name: "fanmark-current-catalog-d1-import-test",
         type: "worker",
         compatibilityDate: "2026-09-18",
-        env: { DB: { type: "d1", name: "fanmark-current-catalog-d1-import-test" } },
+        env: { DB: { type: "d1", name: "fanmark-current-catalog-d1-import-test" },
+          AUTH_DB: { type: "d1", name: "fanmark-current-catalog-auth-test" } },
         manifest: {
           mainModule: "index.js",
           modules: {
@@ -321,12 +323,23 @@ async function createLocalD1() {
       },
     }],
   });
-  return { miniflare, database: await miniflare.getD1Database("DB") };
+  return { miniflare, database: await miniflare.getD1Database("DB"),
+    authDatabase: await miniflare.getD1Database("AUTH_DB") };
 }
 
 async function applySql(database, sql) {
   const results = await database.batch(splitSqlStatements(sql).map((statement) => database.prepare(statement)));
   assert.equal(results.every((result) => result.success === true), true);
+}
+
+async function applySyntheticAuthSchema(database) {
+  for (const name of ["0003_better_auth_core.sql", "0007_auth_signup_command.sql",
+    "0008_auth_user_suspension.sql", "0009_auth_oauth_signup.sql"]) {
+    const sql = await fs.readFile(new URL(`../../workers/api/migrations/${name}`, import.meta.url), "utf8");
+    await database.batch(businessMigrationStatements(sql).map(statement => database.prepare(statement)));
+  }
+  await database.prepare('INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt") VALUES (?, ?, ?, 1, ?, ?)')
+    .bind(syntheticAuthUserId, "Synthetic Import Owner", "synthetic-import@example.invalid", "2026-09-26T12:00:00.000Z", "2026-09-26T12:00:00.000Z").run();
 }
 
 function sqlOperationHint(sql) {
@@ -411,11 +424,23 @@ async function createSyntheticSnapshot(catalog, rows, sequenceStates, directory)
   return result.manifestPath;
 }
 
-export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
+export async function runCurrentCatalogSyntheticImport(catalogResultPath, { canonicalBusinessSchema = false } = {}) {
   if (typeof catalogResultPath !== "string" || catalogResultPath.length === 0) failUsage();
   const parsed = await fs.readFile(path.resolve(catalogResultPath), "utf8");
   const catalog = readCatalog(parsed);
   const { tableNames, rows } = buildRows(catalog);
+  if (canonicalBusinessSchema) {
+    for (const license of rows.fanmark_licenses) license.values.user_id = syntheticAuthUserId;
+    rows.notification_events = [{
+      schemaVersion: 1, table: "notification_events", columns: columnsFor(catalog, "notification_events"),
+      values: {
+        id: "90000000-0000-4000-8000-000000000010", event_type: "synthetic_migration_probe", event_version: "1",
+        source: "batch", payload: '{}', payload_schema: null, trigger_at: "2026-09-26T12:00:00.000000Z",
+        dedupe_key: "synthetic-import-notification", status: "pending", processed_at: null, error_reason: null,
+        retry_count: "0", created_at: "2026-09-26T12:00:00.000000Z", updated_at: "2026-09-26T12:00:00.000000Z",
+      }, arrayMetadata: {},
+    }];
+  }
   assert.equal(tableNames.length, 40, "current_public_table_count");
   const sequenceStates = sequenceStatesForCurrentCatalog(catalog);
   const convertedSchema = convertSchema(catalog, { credentialDescriptor: descriptor() });
@@ -445,6 +470,8 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
   await fs.chmod(reportDirectory, 0o700);
   const reportPath = path.join(reportDirectory, "d1-import.report.json");
   let miniflare = null;
+  let restoredMiniflare = null;
+  let freshTargetRestoreVerified = false;
   const trace = [];
   let phase = "snapshot";
   let authIdentityLookups = 0;
@@ -454,20 +481,27 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     const local = await createLocalD1();
     miniflare = local.miniflare;
     const database = tracedDatabase(local.database, trace);
-    phase = "apply-converted-schema";
-    await applySql(database, convertedSchema.sql);
-    phase = "apply-lifecycle-schema";
-    await applyLifecycleTargetSchema({
-      database, plan: lifecyclePlan, catalog, convertedSchema, credentialDescriptor: descriptor(),
-    });
-    phase = "apply-generation-schema";
-    await applyLifecycleGenerationSchema({
-      database, plan: generationPlan, catalog, convertedSchema, lifecyclePlan, credentialDescriptor: descriptor(),
-    });
-    phase = "apply-credential-schema";
-    await applyCredentialTransformSchema({
-      database, plan: credentialPlan, catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor: descriptor(),
-    });
+    const authDatabase = local.authDatabase;
+    if (canonicalBusinessSchema) {
+      phase = "apply-canonical-business-schema";
+      await applyBusinessRuntimeMigrations(database);
+      await applySyntheticAuthSchema(authDatabase);
+    } else {
+      phase = "apply-converted-schema";
+      await applySql(database, convertedSchema.sql);
+      phase = "apply-lifecycle-schema";
+      await applyLifecycleTargetSchema({
+        database, plan: lifecyclePlan, catalog, convertedSchema, credentialDescriptor: descriptor(),
+      });
+      phase = "apply-generation-schema";
+      await applyLifecycleGenerationSchema({
+        database, plan: generationPlan, catalog, convertedSchema, lifecyclePlan, credentialDescriptor: descriptor(),
+      });
+      phase = "apply-credential-schema";
+      await applyCredentialTransformSchema({
+        database, plan: credentialPlan, catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor: descriptor(),
+      });
+    }
     const expectedTargetProfile = { credentialPlan, descriptor: descriptor(), generationPlan, lifecyclePlan };
     const options = {
       manifestPath,
@@ -477,15 +511,34 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
       reportPath,
       allowUnresolvedGates: true,
       expectedTargetProfile,
+      canonicalBusinessSchema,
       now: () => new Date("2026-09-26T12:00:00.000Z"),
       scanBatchRows: 1,
       maxRowsPerBatch: 1,
       resolveAuthUserIds: async (requestedIds) => {
         authIdentityLookups += 1;
         assert.deepEqual(requestedIds, [syntheticAuthUserId]);
-        return new Set([syntheticAuthUserId]);
+        if (!canonicalBusinessSchema) return new Set([syntheticAuthUserId]);
+        const result = await authDatabase.prepare('SELECT "id" FROM "user" WHERE "id" = ?').bind(syntheticAuthUserId).all();
+        return new Set(result.results.map(row => row.id));
       },
     };
+    if (canonicalBusinessSchema) {
+      phase = "runtime-schema-guard";
+      const runtime = await readBusinessRuntimeImportSchema();
+      const trigger = runtime.objects.find(object => object.name === "notification_worker_wake_state_monotonic");
+      assert.ok(trigger);
+      await database.prepare('DROP TRIGGER "notification_worker_wake_state_monotonic"').run();
+      await assert.rejects(importD1Snapshot(options), error => error.code === "target_profile_schema_mismatch" &&
+        error.cause?.code === "credential_transform_runtime_schema_missing");
+      const ledgers = await database.prepare("SELECT name FROM sqlite_master WHERE name LIKE '__fanmark_d1_import_%'").all();
+      assert.deepEqual(ledgers.results, [], "schema rejection must precede creation of the import ledger");
+      await database.prepare(trigger.sql).run();
+      await database.prepare("CREATE TRIGGER synthetic_unreviewed_import_trigger AFTER INSERT ON notification_events BEGIN SELECT 1; END").run();
+      await assert.rejects(importD1Snapshot(options), error => error.code === "target_profile_schema_mismatch" &&
+        error.cause?.code === "credential_transform_runtime_schema_unexpected");
+      await database.prepare("DROP TRIGGER synthetic_unreviewed_import_trigger").run();
+    }
     let ackUnknown = true;
     phase = "initial-import";
     await assert.rejects(
@@ -580,6 +633,23 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     assert.equal(reconciliation.targetRowCount, 2);
     assert.equal(reconciliation.deferredRows, 1);
     assert.deepEqual(await database.prepare("PRAGMA foreign_key_check").all().then((result) => result.results), []);
+    if (canonicalBusinessSchema) {
+      assert.deepEqual(await authDatabase.prepare("PRAGMA foreign_key_check").all().then(result => result.results), []);
+      assert.deepEqual(await database.prepare("SELECT requested_generation, acknowledged_generation FROM notification_worker_wake_state WHERE singleton_id = 1").first(),
+        { requested_generation: 1, acknowledged_generation: 0 });
+      const reportBytes = await fs.readFile(reportPath, "utf8");
+      const changedReport = JSON.parse(reportBytes);
+      changedReport.runtimeSchemaFingerprint = "0".repeat(64);
+      await fs.writeFile(reportPath, JSON.stringify(changedReport), { mode: 0o600 });
+      await assert.rejects(importD1Snapshot(options), error => error.code === "report_identity_mismatch");
+      await fs.writeFile(reportPath, reportBytes, { mode: 0o600 });
+      const ownerRows = await database.prepare("SELECT DISTINCT user_id FROM fanmark_licenses").all();
+      assert.deepEqual(ownerRows.results, [{ user_id: syntheticAuthUserId }]);
+      // Reconciliation must not enqueue the same imported event a second time.
+      await importD1Snapshot(options);
+      assert.deepEqual(await database.prepare("SELECT requested_generation, acknowledged_generation FROM notification_worker_wake_state WHERE singleton_id = 1").first(),
+        { requested_generation: 1, acknowledged_generation: 0 });
+    }
     const importedPreference = await database.prepare(
       'SELECT "user_id", "channel", "event_type", "enabled", "created_at", "updated_at" FROM "notification_preferences" WHERE "id" = ?',
     ).bind("90000000-0000-4000-8000-00000000000e").first();
@@ -604,6 +674,35 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     // Miniflare's D1 authorizer rejects PRAGMA integrity_check with SQLITE_AUTH.
     // The importer has already streamed and read back every table/hash above.
 
+    if (canonicalBusinessSchema) {
+      phase = "fresh-target-restore";
+      const restored = await createLocalD1();
+      restoredMiniflare = restored.miniflare;
+      await applyBusinessRuntimeMigrations(restored.database);
+      await applySyntheticAuthSchema(restored.authDatabase);
+      const restoreReportPath = path.join(reportDirectory, "restored-d1-import.report.json");
+      const restore = await importD1Snapshot({
+        ...options, database: restored.database, targetIncarnation: "synthetic-current-source-schema-restored-2",
+        reportPath: restoreReportPath,
+        resolveAuthUserIds: async requestedIds => {
+          assert.deepEqual(requestedIds, [syntheticAuthUserId]);
+          const result = await restored.authDatabase.prepare('SELECT "id" FROM "user" WHERE "id" = ?').bind(syntheticAuthUserId).all();
+          return new Set(result.results.map(row => row.id));
+        },
+      });
+      assert.equal(restore.status, "public_rows_reconciled");
+      const restoreReport = JSON.parse(await fs.readFile(restoreReportPath, "utf8"));
+      assert.notEqual(restoreReport.targetIncarnation, resumedReport.targetIncarnation);
+      assert.equal(restoreReport.runtimeSchemaFingerprint, resumedReport.runtimeSchemaFingerprint);
+      assert.deepEqual(restoreReport.reconciledTables.map(table => [table.table, table.rowCount, table.sourceStreamHash]),
+        resumedReport.reconciledTables.map(table => [table.table, table.rowCount, table.sourceStreamHash]));
+      assert.deepEqual(await restored.database.prepare("PRAGMA foreign_key_check").all().then(result => result.results), []);
+      assert.deepEqual(await restored.authDatabase.prepare("PRAGMA foreign_key_check").all().then(result => result.results), []);
+      assert.deepEqual(await restored.database.prepare("SELECT requested_generation, acknowledged_generation FROM notification_worker_wake_state WHERE singleton_id = 1").first(),
+        { requested_generation: 1, acknowledged_generation: 0 });
+      freshTargetRestoreVerified = true;
+    }
+
     phase = "conflict-rejection";
     const completedReport = JSON.parse(await fs.readFile(reportPath, "utf8"));
     await database.prepare(
@@ -614,8 +713,14 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
       (error) => error.code === "credential_coverage_readback_mismatch",
     );
     return {
+      canonicalBusinessSchema,
+      ...(canonicalBusinessSchema ? { runtimeSchemaFingerprint: (await readBusinessRuntimeImportSchema()).fingerprint,
+        businessMigrationCount: (await readBusinessRuntimeImportSchema()).migrationDigests.length } : {}),
       tableCount: tableNames.length,
-      sourceRowCount: 12,
+      sourceRowCount: canonicalBusinessSchema ? 13 : 12,
+      ...(canonicalBusinessSchema ? { authMigrationCount: 4, runtimeSchemaGuardRejected: true,
+        runtimeFingerprintTamperRejected: true, freshTargetRestoreVerified,
+        notificationWakeAfterReplay: { requestedGeneration: 1, acknowledgedGeneration: 0 } } : {}),
       transformedCredentialCount: 2,
       deferredCredentialCount: 1,
       syntheticAuthIdentityLookupCount: authIdentityLookups,
@@ -632,6 +737,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     error.trace = trace.slice(-12);
     throw error;
   } finally {
+    if (restoredMiniflare) await restoredMiniflare.dispose();
     if (miniflare) await miniflare.dispose();
     await fs.rm(root, { recursive: true, force: true });
     await assert.rejects(fs.stat(root), (error) => error.code === "ENOENT");
@@ -640,7 +746,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
 
 const isMain = process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
 if (isMain) {
-  runCurrentCatalogSyntheticImport(process.argv[2])
+  runCurrentCatalogSyntheticImport(process.argv[2], { canonicalBusinessSchema: process.argv.includes("--canonical-business") })
     .then((result) => console.log(JSON.stringify(result)))
     .catch((error) => {
       console.error(JSON.stringify({

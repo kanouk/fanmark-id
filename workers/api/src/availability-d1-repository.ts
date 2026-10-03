@@ -9,6 +9,7 @@ import {
   type AvailabilityResult,
 } from "./availability";
 import { selectD1Database, type Env } from "./repository";
+import { classifyFanmarkTier } from "./fanmark-tier";
 
 const MAX_IDS = 5;
 const SKIN_TONE_MODIFIERS = /[\u{1f3fb}-\u{1f3ff}]/gu;
@@ -127,17 +128,6 @@ export const AVAILABILITY_BLOCKING_LICENSE_SQL = `
   LIMIT 1
 `;
 
-function classifyTier(emojiIds: string[]): number {
-  const count = emojiIds.length;
-  const uniqueCount = new Set(emojiIds).size;
-  if (count === 1) return 4;
-  if (uniqueCount === 1 && count >= 2 && count <= 5) return 3;
-  if (count >= 4) return 1;
-  if (count === 3) return 2;
-  if (count === 2) return 3;
-  return 1;
-}
-
 export function createD1AvailabilityRepository(
   env: Env,
   clock: AvailabilityClock = () => new Date(),
@@ -201,7 +191,7 @@ export function createD1AvailabilityRepository(
         if (!fanmark) {
           const tierResult = await masterDatabase
             .prepare(AVAILABILITY_TIER_SQL)
-            .bind(classifyTier(normalizedIds))
+            .bind(classifyFanmarkTier(normalizedIds))
             .first<TierRow>();
 
           if (!tierResult) return { available: false, reason: "invalid_length" };

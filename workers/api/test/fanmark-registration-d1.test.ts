@@ -198,6 +198,25 @@ describe("D1 fanmark registration", () => {
     expect(await count(business!, "fanmark_licenses")).toBe(0);
   });
 
+  it.each([3, 4, 5])("keeps %s repeated IDs in finite Tier A rather than the unlimited length tier", async (length) => {
+    await master!.batch([
+      master!.prepare("UPDATE fanmark_tiers SET initial_license_days = 14 WHERE tier_level = 3"),
+      master!.prepare("UPDATE fanmark_tiers SET initial_license_days = NULL WHERE tier_level = 1"),
+    ]);
+    const ids = Array.from({ length }, () => IDS.rose);
+    const response = await post(registration({
+      user_input_fanmark: "🌹".repeat(length), emoji_ids: ids, normalized_emoji_ids: ids,
+    }));
+    expect(response.status).toBe(201);
+    const payload = await response.json() as { success: boolean; fanmark: Record<string, unknown> };
+    expect(payload).toMatchObject({
+      success: true, fanmark: { tier_level: 3, initial_license_days: 14, normalized_emoji_ids: ids },
+    });
+    expect(await business!.prepare("SELECT tier_level FROM fanmarks").first()).toEqual({ tier_level: 3 });
+    expect(await business!.prepare("SELECT license_end FROM fanmark_licenses").first())
+      .toEqual({ license_end: "2026-10-10T00:00:00.000000Z" });
+  });
+
   it("creates the fanmark, initial license, configuration, profile, and audit atomically", async () => {
     const response = await post(registration({ createProfile: true }));
     expect(response.status).toBe(201);

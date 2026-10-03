@@ -1,6 +1,7 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
+import { classifyFanmarkTier } from "./fanmark-tier";
 
 const PATH = "/api/fanmarks/register";
 const METHODS = "POST, OPTIONS";
@@ -228,17 +229,6 @@ function computedLicenseEnd(now: Date, days: number | null): string | null {
   return toUtcMicrosecondTimestamp(raw);
 }
 
-function classifyTier(emojiIds: string[]): number {
-  const count = emojiIds.length;
-  const uniqueCount = new Set(emojiIds).size;
-  if (count === 1) return 4;
-  if (uniqueCount === 1 && count >= 2 && count <= 5) return 3;
-  if (count >= 4) return 1;
-  if (count === 3) return 2;
-  if (count === 2) return 3;
-  return 1;
-}
-
 function generateShortId(): string {
   const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
   const bytes = crypto.getRandomValues(new Uint8Array(8));
@@ -331,7 +321,7 @@ async function validateCatalog(
   }
 
   const normalizedEmoji = cleanInput.replace(SKIN_TONES, "");
-  const tierLevel = classifyTier(normalizedIds);
+  const tierLevel = classifyFanmarkTier(normalizedIds);
   const tier = await master.prepare(
     "SELECT tier_level, display_name, initial_license_days FROM fanmark_tiers WHERE tier_level = ? AND is_active = 1 LIMIT 1",
   ).bind(tierLevel).first<TierRow>();
