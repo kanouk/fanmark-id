@@ -6468,3 +6468,35 @@ session null. Private acceptance: /tmp/fanmark-lottery-027a949-staging-acceptanc
 Other lottery writers, full source runtime/RLS/callers, lifecycle/retention/ops,
 real providers/phones and CPU/plan remain open. No real user data/source writer
 or domain/DNS changed.
+
+## 2026-10-03 transfer approval audit/effect integrity candidate
+
+Reproduced prior200 responses for nine ignored/altered/deleted entry audits in
+actual native D1, after upgrading the transfer suite to all25 Business/4 Auth
+migrations and real credential sessions/router. A small Master Tier fixture
+remains explicit. Added server audit UUIDs, a guarded pending-entry snapshot,
+per-entry exact cancellation-audit assertions and an approval completion SQL
+assertion inside the same D1 batch. The final check includes exact old/new
+licenses, code/request, required configuration deletion/new inactive config,
+transfer audit and outbox, so suppressed effects cannot leave a partial commit.
+The existing router clock is supplied to the transfer handler only for injected
+time; production uses the same default current clock. Capacity refusals still
+return the existing409 when the recipient reservation total exceeds its limit.
+
+Native37/37 checks ten entry-audit faults, three transfer-audit faults, eight
+suppressed required effects, partial multi-applicant audit failure, uncaptured
+native entry creation, pre-batch snapshot change without undoing its concurrent
+write, no pending applicants, actual-session ownership/revocation and existing
+capacity/transfer contracts. Each failed mutation compares full relevant row
+snapshots including notification wake state, then retries safely. The original
+real-session race can reject at preflight400 or conditional409; exactly one
+reservation and the final recipient capacity are still enforced. All three
+binding FK checks pass. Worker typecheck, changed-file ESLint, workflow isolation and bundle dry-run pass.
+The dedicated suite was already included in Worker CI.
+
+Docs-only3f4faac CI37089404509 finished both jobs successfully without deployment.
+The current accepted runtime remains027a949/22a49009. New candidate exact-head
+CI/deployment/remote fault acceptance remain pending. Account-deletion integrity,
+source runtime/RLS/callers, lifecycle/retention/ops, real provider/phone and
+CPU/plan acceptance remain open. No real users/providers/source writer/DNS
+changed during this local slice.

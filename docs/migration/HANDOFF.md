@@ -7,6 +7,16 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Local transfer-approval integrity candidate (not deployed):** Native37/37
+  uses full25 Business/4 Auth migrations and real sessions/router; Master Tier
+  remains a focused fixture. Nine prior false-success entry-audit cases were
+  reproduced before the fix. Same-batch snapshot/exact entry/transfer audits
+  and complete approval effects now abort suppressed/altered writes. Test proof
+  includes whole-row rollback/retry, second-applicant audit omission, uncaptured
+  native entry creation, pre-batch snapshot race and warmed-cookie revocation.
+  Exact-head CI/deployment/new remote fault acceptance remain pending. Account
+  deletion audit integrity is next; do not call this whole-source parity.
+- Docs-only3f4faac CI37089404509 passed both jobs; no deployment was needed.
 - **Newest accepted staging code:027a949**, both CI37088432269 jobs successful.
   Full preflight02:12:10Z verifies Business ledger25/Auth owned0 and the fixed
   Master/secrets/wake5:5 baseline. Read-only Auth schema revalidation02:12:35Z

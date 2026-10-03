@@ -23,9 +23,15 @@ and associated settings unchanged.
 Approval also records `LOTTERY_ENTRY_STATUS_CHANGED` once for each pending
 lottery entry it cancels, matching the source `log_lottery_entry_changes`
 trigger. Each row records the applicant ID, entry ID, old/new status,
-`system` cancellation reason, and captured approval time. This insert and the
-cancellations share the approval batch, so an audit insertion error rolls back
-the licenses, code/request, settings, and outbox. Previously cancelled entries
+`system` cancellation reason, and captured approval time. These writes share the approval batch. The Worker captures pending entry
+identities and assigns an independent server UUID to each intended audit.
+A first assertion rejects any changed snapshot before effects; cancellation
+updates only captured rows. A later assertion checks every captured row and
+its exact audit UUID, actor, action, resource, time, null request ID and metadata.
+New uncaptured pending rows also abort the batch. The completion assertion
+checks both licenses, code/request, configuration cleanup/new inactive config,
+the exact transfer audit and notification outbox. A missing, altered or
+suppressed required write rolls back all approval effects. Previously cancelled entries
 and entries on another license are unaffected; a repeated approval creates no
 additional cancellation audit. These cases are covered by the D1 suite.
 
@@ -33,13 +39,37 @@ The current Supabase schema constrains `fanmark_lottery_entries.cancellation_rea
 
 Local proof is provided by `workers/api/test/fanmark-transfer-d1.test.ts` and `src/lib/fanmark-transfer-api.test.ts`, including two synthetic transfer requests competing for one recipient slot and a plan-limit change between application and approval. The staging smoke uses only short-lived synthetic Better Auth users and synthetic business rows, then verifies cleanup. It does not import existing Auth/users or touch domain/DNS state.
 
-## Staging lifecycle canary (2026-09-25 JST)
+## Native integrity follow-up (2026-10-03 JST)
 
-Worker version `929280ae-3285-4936-af67-a6f146aae03e` is active at 100% on
+The prior implementation returned200 in nine actual native
+ignored/altered/deleted entry-audit cases. The upgraded suite passes37/37 using
+all25 Business and4 Auth migrations, real credential sign-in/session cookies,
+and the Worker router. Its Master binding uses a focused Tier fixture rather
+than the entire Master schema. The router supplies its existing injected
+operation clock; production still uses current time.
+
+Coverage includes ten entry-audit field/suppression faults, three transfer-audit
+faults, eight suppressed required effects, one missing audit among multiple
+applicants, a new uncaptured native-trigger applicant, a pre-batch concurrent
+snapshot change, empty pending entries, ownership from the actual session,
+warmed-session revocation and capacity races. Every injected failure checks the
+entire relevant row set (including wake state) and safe retry. The competing
+real-session application test accepts400 for a preflight limit refusal or409
+for a conditional-batch loss, and still requires exactly one reservation.
+All three bindings receive foreign-key checks after each test.
+
+This candidate has local acceptance only. Exact-head CI, deployment and a new
+remote fault/rollback/retry canary remain required; the currently accepted
+Worker is lottery code027a949/version22a49009. Account-deletion audit integrity
+and other source writers/callers remain separate open work.
+
+## Historical staging lifecycle canary (2026-09-25 JST)
+
+Worker version `929280ae-3285-4936-af67-a6f146aae03e` was active at 100% on
 `fanmark-app-staging`. The live synthetic issue/apply/approve flow passed. Its
 first run exposed a D1 batch metadata mismatch: the database had committed the
 complete transfer, while the handler returned `409` because the reported
-change count did not match. Approval now reads back the request, code, old
+change count did not match. At that checkpoint, approval read back the request, code, old
 license, and recipient license and returns success only when those exact rows
 show a completed transfer.
 

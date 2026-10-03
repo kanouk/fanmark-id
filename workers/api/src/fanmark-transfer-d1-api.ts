@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { prepareLotteryCancellation } from "./lottery-cancellation-audit";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PREFIX = "/api/me/transfers";
@@ -475,113 +476,127 @@ async function approveRequest(
   }
   const lockUntil = toUtcMicrosecondTimestamp(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000));
   const newLicenseId = crypto.randomUUID();
+  const transferAuditId = crypto.randomUUID();
   const canonicalDisplay = typeof transfer.normalized_emoji === "string" ? transfer.normalized_emoji : null;
-  await db.batch([
-    db.prepare(`
-      UPDATE fanmark_licenses
-      SET status = 'expired', is_returned = 1, license_end = ?, excluded_at = ?, updated_at = ?
-      WHERE id = ? AND status = 'active' AND user_id = ?
-        AND EXISTS (
-          SELECT 1 FROM fanmark_transfer_requests AS r
-          JOIN fanmark_transfer_codes AS c ON c.id = r.transfer_code_id
-          WHERE r.id = ? AND r.status = 'pending' AND c.status = 'applied'
-            AND c.issuer_user_id = ? AND r.license_id = fanmark_licenses.id
-        )
-        AND (
-          (SELECT COUNT(*) FROM fanmark_licenses AS current
-           WHERE current.user_id = ? AND current.status = 'active'
-             AND (current.license_end IS NULL OR current.license_end > ?))
-          + (SELECT COUNT(*) FROM fanmark_transfer_requests AS pending
-             JOIN fanmark_transfer_codes AS pending_code ON pending_code.id = pending.transfer_code_id
-             WHERE pending.requester_user_id = ? AND pending.status = 'pending'
-               AND pending_code.status = 'applied')
-        ) <= ?
-    `).bind(nowIso, nowIso, nowIso, transfer.license_id, userId, requestId, userId,
-      transfer.requester_user_id, nowIso, transfer.requester_user_id, recipientPlan.limit),
-    db.prepare(`
-      INSERT INTO fanmark_licenses
-        (id, fanmark_id, user_id, license_start, license_end, display_fanmark, status,
-         is_initial_license, is_transferred, transfer_locked_until, created_at, updated_at)
-      SELECT ?, l.fanmark_id, ?, ?, ?, ?, 'active', 0, 1, ?, ?, ?
-      FROM fanmark_licenses AS l
-      WHERE l.id = ? AND l.status = 'expired' AND changes() = 1
-    `).bind(newLicenseId, transfer.requester_user_id, nowIso, newEnd, canonicalDisplay,
-      lockUntil, nowIso, nowIso, transfer.license_id),
-    db.prepare("DELETE FROM fanmark_basic_configs WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
-      .bind(transfer.license_id, newLicenseId),
-    db.prepare("DELETE FROM fanmark_redirect_configs WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
-      .bind(transfer.license_id, newLicenseId),
-    db.prepare("DELETE FROM fanmark_messageboard_configs WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
-      .bind(transfer.license_id, newLicenseId),
-    db.prepare("DELETE FROM fanmark_password_configs WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
-      .bind(transfer.license_id, newLicenseId),
-    db.prepare("DELETE FROM fanmark_profiles WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
-      .bind(transfer.license_id, newLicenseId),
-    db.prepare(`
-      INSERT INTO fanmark_basic_configs (license_id, fanmark_name, access_type, created_at, updated_at)
-      SELECT ?, ?, 'inactive', ?, ? FROM fanmark_licenses WHERE id = ?
-    `).bind(newLicenseId, transferredName, nowIso, nowIso, newLicenseId),
-    db.prepare("UPDATE fanmark_transfer_codes SET status = 'completed', updated_at = ? WHERE id = ? AND status = 'applied' AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
-      .bind(nowIso, transfer.transfer_code_id, newLicenseId),
-    db.prepare("UPDATE fanmark_transfer_requests SET status = 'approved', resolved_at = ?, updated_at = ? WHERE id = ? AND status = 'pending' AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
-      .bind(nowIso, nowIso, requestId, newLicenseId),
-    db.prepare(`
-      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
-      SELECT entry.user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', entry.id,
-        json_object('old_status', entry.entry_status, 'new_status', 'cancelled', 'cancellation_reason', 'system'), ?
-      FROM fanmark_lottery_entries AS entry
-      WHERE entry.license_id = ? AND entry.entry_status = 'pending'
-        AND EXISTS (SELECT 1 FROM fanmark_transfer_requests WHERE id = ? AND status = 'approved')
-    `).bind(nowIso, transfer.license_id, requestId),
-    db.prepare(`
-      UPDATE fanmark_lottery_entries
-      SET entry_status = 'cancelled', cancelled_at = ?, cancellation_reason = 'system', updated_at = ?
-      WHERE license_id = ? AND entry_status = 'pending'
-        AND EXISTS (SELECT 1 FROM fanmark_transfer_requests WHERE id = ? AND status = 'approved')
-    `).bind(nowIso, nowIso, transfer.license_id, requestId),
-    db.prepare(`
-      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
-      SELECT ?, 'LICENSE_TRANSFERRED', 'fanmark_license', ?, json_object(
-        'old_license_id', ?, 'new_license_id', ?, 'from_user_id', ?, 'to_user_id', ?,
-        'fanmark_id', ?, 'fanmark_name', ?, 'tier_level', ?, 'new_license_end', ?, 'request_id', ?
-      ), ?
-      WHERE EXISTS (SELECT 1 FROM fanmark_transfer_requests WHERE id = ? AND status = 'approved')
-    `).bind(userId, newLicenseId, transfer.license_id, newLicenseId, userId, transfer.requester_user_id,
-      transfer.fanmark_id, canonicalDisplay, transfer.tier_level, newEnd, requestId, nowIso, requestId),
-    db.prepare(`
-      INSERT OR IGNORE INTO notification_events
-        (event_type, event_version, source, payload, trigger_at, dedupe_key, status, created_at, updated_at)
-      SELECT 'transfer_approved', 1, 'edge_function',
-             json_object('user_id', ?, 'fanmark_id', ?, 'fanmark_name', ?,
-                         'fanmark_short_id', ?, 'license_id', ?, 'license_end', ?),
-             ?, 'transfer_approved_' || ?, 'pending', ?, ?
-      WHERE EXISTS (SELECT 1 FROM fanmark_transfer_requests WHERE id = ? AND status = 'approved')
-    `).bind(transfer.requester_user_id, transfer.fanmark_id, canonicalDisplay, transfer.short_id,
-      newLicenseId, newEnd, nowIso, requestId, nowIso, nowIso, requestId),
-  ]);
-  const finalized = await db.prepare(`
-    SELECT CASE WHEN
-      EXISTS (SELECT 1 FROM fanmark_transfer_requests
-              WHERE id = ? AND transfer_code_id = ? AND status = 'approved')
-      AND EXISTS (SELECT 1 FROM fanmark_transfer_codes
-                  WHERE id = ? AND status = 'completed')
-      AND EXISTS (SELECT 1 FROM fanmark_licenses
-                  WHERE id = ? AND fanmark_id = ? AND user_id = ? AND status = 'active' AND is_transferred = 1)
-      AND EXISTS (SELECT 1 FROM fanmark_licenses
-                  WHERE id = ? AND fanmark_id = ? AND user_id = ? AND status = 'expired' AND is_returned = 1)
-      THEN 1 ELSE 0 END AS completed
-  `).bind(requestId, transfer.transfer_code_id, transfer.transfer_code_id, newLicenseId,
-    transfer.fanmark_id, transfer.requester_user_id, transfer.license_id, transfer.fanmark_id, userId)
-    .first<{ completed: number }>();
-  if (finalized?.completed !== 1) {
+  const transferMetadata = JSON.stringify({
+    old_license_id: transfer.license_id, new_license_id: newLicenseId, from_user_id: userId,
+    to_user_id: transfer.requester_user_id, fanmark_id: transfer.fanmark_id, fanmark_name: canonicalDisplay,
+    tier_level: transfer.tier_level, new_license_end: newEnd, request_id: requestId,
+  });
+  const lotteryCancellation = await prepareLotteryCancellation(db, "license", transfer.license_id, "system", nowIso);
+  try {
+    await db.batch([
+      lotteryCancellation.before,
+      db.prepare(`
+        UPDATE fanmark_licenses
+        SET status = 'expired', is_returned = 1, license_end = ?, excluded_at = ?, updated_at = ?
+        WHERE id = ? AND status = 'active' AND user_id = ?
+          AND EXISTS (
+            SELECT 1 FROM fanmark_transfer_requests AS r
+            JOIN fanmark_transfer_codes AS c ON c.id = r.transfer_code_id
+            WHERE r.id = ? AND r.status = 'pending' AND c.status = 'applied'
+              AND c.issuer_user_id = ? AND r.license_id = fanmark_licenses.id
+          )
+          AND (
+            (SELECT COUNT(*) FROM fanmark_licenses AS current
+             WHERE current.user_id = ? AND current.status = 'active'
+               AND (current.license_end IS NULL OR current.license_end > ?))
+            + (SELECT COUNT(*) FROM fanmark_transfer_requests AS pending
+               JOIN fanmark_transfer_codes AS pending_code ON pending_code.id = pending.transfer_code_id
+               WHERE pending.requester_user_id = ? AND pending.status = 'pending'
+                 AND pending_code.status = 'applied')
+          ) <= ?
+      `).bind(nowIso, nowIso, nowIso, transfer.license_id, userId, requestId, userId,
+        transfer.requester_user_id, nowIso, transfer.requester_user_id, recipientPlan.limit),
+      db.prepare(`
+        INSERT INTO fanmark_licenses
+          (id, fanmark_id, user_id, license_start, license_end, display_fanmark, status,
+           is_initial_license, is_transferred, transfer_locked_until, created_at, updated_at)
+        SELECT ?, l.fanmark_id, ?, ?, ?, ?, 'active', 0, 1, ?, ?, ?
+        FROM fanmark_licenses AS l
+        WHERE l.id = ? AND l.status = 'expired' AND changes() = 1
+      `).bind(newLicenseId, transfer.requester_user_id, nowIso, newEnd, canonicalDisplay,
+        lockUntil, nowIso, nowIso, transfer.license_id),
+      db.prepare("DELETE FROM fanmark_basic_configs WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
+        .bind(transfer.license_id, newLicenseId),
+      db.prepare("DELETE FROM fanmark_redirect_configs WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
+        .bind(transfer.license_id, newLicenseId),
+      db.prepare("DELETE FROM fanmark_messageboard_configs WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
+        .bind(transfer.license_id, newLicenseId),
+      db.prepare("DELETE FROM fanmark_password_configs WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
+        .bind(transfer.license_id, newLicenseId),
+      db.prepare("DELETE FROM fanmark_profiles WHERE license_id = ? AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
+        .bind(transfer.license_id, newLicenseId),
+      db.prepare(`
+        INSERT INTO fanmark_basic_configs (license_id, fanmark_name, access_type, created_at, updated_at)
+        SELECT ?, ?, 'inactive', ?, ? FROM fanmark_licenses WHERE id = ?
+      `).bind(newLicenseId, transferredName, nowIso, nowIso, newLicenseId),
+      db.prepare("UPDATE fanmark_transfer_codes SET status = 'completed', updated_at = ? WHERE id = ? AND status = 'applied' AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
+        .bind(nowIso, transfer.transfer_code_id, newLicenseId),
+      db.prepare("UPDATE fanmark_transfer_requests SET status = 'approved', resolved_at = ?, updated_at = ? WHERE id = ? AND status = 'pending' AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
+        .bind(nowIso, nowIso, requestId, newLicenseId),
+      lotteryCancellation.insert,
+      lotteryCancellation.update,
+      db.prepare(`
+        INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+        SELECT ?, ?, 'LICENSE_TRANSFERRED', 'fanmark_license', ?, ?, ?
+        WHERE EXISTS (SELECT 1 FROM fanmark_transfer_requests WHERE id = ? AND status = 'approved')
+      `).bind(transferAuditId, userId, newLicenseId, transferMetadata, nowIso, requestId),
+      db.prepare(`
+        INSERT OR IGNORE INTO notification_events
+          (event_type, event_version, source, payload, trigger_at, dedupe_key, status, created_at, updated_at)
+        SELECT 'transfer_approved', 1, 'edge_function',
+               json_object('user_id', ?, 'fanmark_id', ?, 'fanmark_name', ?,
+                           'fanmark_short_id', ?, 'license_id', ?, 'license_end', ?),
+               ?, 'transfer_approved_' || ?, 'pending', ?, ?
+        WHERE EXISTS (SELECT 1 FROM fanmark_transfer_requests WHERE id = ? AND status = 'approved')
+      `).bind(transfer.requester_user_id, transfer.fanmark_id, canonicalDisplay, transfer.short_id,
+        newLicenseId, newEnd, nowIso, requestId, nowIso, nowIso, requestId),
+      lotteryCancellation.verify,
+      db.prepare(`SELECT CASE WHEN
+        EXISTS (SELECT 1 FROM fanmark_transfer_requests WHERE id = ? AND transfer_code_id = ?
+          AND requester_user_id = ? AND license_id = ? AND fanmark_id = ? AND status = 'approved' AND resolved_at = ? AND updated_at = ?)
+        AND EXISTS (SELECT 1 FROM fanmark_transfer_codes WHERE id = ? AND status = 'completed' AND updated_at = ?)
+        AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ? AND fanmark_id = ? AND user_id = ?
+          AND status = 'active' AND is_transferred = 1 AND is_initial_license = 0
+          AND license_start = ? AND license_end IS ? AND display_fanmark IS ? AND transfer_locked_until = ?
+          AND created_at = ? AND updated_at = ?)
+        AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ? AND fanmark_id = ? AND user_id = ?
+          AND status = 'expired' AND is_returned = 1 AND license_end = ? AND excluded_at = ? AND updated_at = ?)
+        AND EXISTS (SELECT 1 FROM fanmark_basic_configs WHERE license_id = ? AND fanmark_name IS ?
+          AND access_type = 'inactive' AND created_at = ? AND updated_at = ?)
+        AND NOT EXISTS (SELECT 1 FROM fanmark_basic_configs WHERE license_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM fanmark_redirect_configs WHERE license_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM fanmark_messageboard_configs WHERE license_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM fanmark_password_configs WHERE license_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM fanmark_profiles WHERE license_id = ?)
+        AND EXISTS (SELECT 1 FROM audit_logs WHERE id = ? AND user_id = ? AND action = 'LICENSE_TRANSFERRED'
+          AND resource_type = 'fanmark_license' AND resource_id = ? AND request_id IS NULL
+          AND created_at = ? AND json(metadata) = json(?))
+        AND EXISTS (SELECT 1 FROM notification_events WHERE dedupe_key = 'transfer_approved_' || ?
+          AND event_type = 'transfer_approved' AND event_version = 1 AND source = 'edge_function'
+          AND status = 'pending' AND trigger_at = ? AND created_at = ? AND updated_at = ?
+          AND json(payload) = json_object('user_id', ?, 'fanmark_id', ?, 'fanmark_name', ?,
+            'fanmark_short_id', ?, 'license_id', ?, 'license_end', ?))
+        THEN 1 ELSE json('transfer_approval_invariant_failed') END AS completed`
+      ).bind(requestId, transfer.transfer_code_id, transfer.requester_user_id, transfer.license_id, transfer.fanmark_id, nowIso, nowIso,
+        transfer.transfer_code_id, nowIso, newLicenseId, transfer.fanmark_id, transfer.requester_user_id,
+        nowIso, newEnd, canonicalDisplay, lockUntil, nowIso, nowIso,
+        transfer.license_id, transfer.fanmark_id, userId, nowIso, nowIso, nowIso,
+        newLicenseId, transferredName, nowIso, nowIso,
+        transfer.license_id, transfer.license_id, transfer.license_id, transfer.license_id, transfer.license_id,
+        transferAuditId, userId, newLicenseId, nowIso, transferMetadata,
+        requestId, nowIso, nowIso, nowIso, transfer.requester_user_id, transfer.fanmark_id,
+        canonicalDisplay, transfer.short_id, newLicenseId, newEnd),
+    ]);
+  } catch (error) {
     const currentPlan = await planLimit(db, transfer.requester_user_id, nowIso);
     if (currentPlan.current > currentPlan.limit) {
       throw new FanmarkTransferApiError("fanmark_limit_exceeded", 409, {
-        current: currentPlan.current,
-        limit: currentPlan.limit,
+        current: currentPlan.current, limit: currentPlan.limit,
       });
     }
-    throw new FanmarkTransferApiError("request_not_pending", 409);
+    throw error;
   }
   return json({ success: true, new_license_id: newLicenseId, new_license_end: newEnd, fanmark_name: canonicalDisplay }, 200);
 }

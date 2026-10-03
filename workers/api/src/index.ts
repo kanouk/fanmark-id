@@ -1385,7 +1385,7 @@ export async function handleRequest(
     return handleFanmarkLotteryRequest(request, env, resolveStorageAuth, publicAccessClock);
   }
   if (isFanmarkTransferPath(url.pathname)) {
-    return handleFanmarkTransferRequest(request, env, resolveStorageAuth);
+    return handleFanmarkTransferRequest(request, env, resolveStorageAuth, publicAccessClock);
   }
   if (isFanmarkSearchDetailsPath(url.pathname)) {
     return (await handleFanmarkSearchDetailsRequest(request, env, resolveStorageAuth, availabilityClock)) ??
