@@ -43,7 +43,14 @@ function cdpConnection(webSocketUrl) {
       if (!operation) return;
       pending.delete(message.id);
       clearTimeout(operation.timeout);
-      if (message.error) operation.reject(new Error("browser_cdp_command_failed"));
+      if (message.error) {
+        // Keep protocol diagnostics useful without copying request parameters,
+        // URLs, cookies or arbitrary provider messages into CI output.
+        const code = Number.isInteger(message.error.code) ? message.error.code : "unknown";
+        const kind = /invalid\s+(?:interceptionid|interception id)/iu.test(String(message.error.message))
+          ? "invalid_interception_id" : "other";
+        operation.reject(new Error(`browser_cdp_command_failed:${operation.method}:${code}:${kind}`));
+      }
       else operation.resolve(message.result ?? {});
       return;
     }
@@ -72,7 +79,7 @@ function cdpConnection(webSocketUrl) {
           pending.delete(id);
           reject(new Error("browser_cdp_timeout"));
         }, 15_000);
-        pending.set(id, { resolve, reject, timeout });
+        pending.set(id, { resolve, reject, timeout, method });
         socket.send(JSON.stringify({ id, method, params }));
       });
     },

@@ -55,7 +55,7 @@ local26/26・Worker typecheck/変更箇所lint成功。`a2d09dd`/CI37120631839�
 
 通知read3関数・waitlist2関数のsource hash/現行経路/既存受入を照合し、対応表の古い
 未実装に見える記載を更新した。legacy toggleの非使用と外部consumer境界も明記した。
-次はイベント生成・archiveの運用条件を具体化する。
+イベント生成のsource/target対応を照合中。隔離実Cronのarchive確認は上限20分の同一processを追跡中。
 provider設定は項目3で一括して扱う。catalog classifierの54 pendingは、
 既存の手動レビューと受入を自動取込みしていない数であり、54件が未実装という意味ではない。
 対応表だけでfull-source gateを解除しない。
@@ -64,3 +64,9 @@ provider設定は項目3で一括して扱う。catalog classifierの54 pending�
 照合は[source runtime](source-runtime-review.md)、[source authorization](source-authorization-review.md)、
 [object map](object-map.md)、[frontend callsites](frontend-callsite-map.md)、
 [trigger counterparts](source-trigger-counterparts.md)、[policy counterparts](source-policy-counterparts.md)を参照する。
+
+最新docs head `e3d5615`/CI37121269163はWorker成功・application失敗。
+actual local Workerのeditor試験でCDP protocol拒否が起きた。手元は成功したが
+原因は未再現で、method/code/固定kindのみの診断を追加した次HEADで調べる。
+取得APIの`a2d09dd`/CI37120631839両job成功とstaging runtime受入は保持する。
+診断追加自体を既知不具合の解消や全体CI成功とは扱わない。

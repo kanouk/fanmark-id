@@ -1,3 +1,21 @@
+# 2026-10-03 最新CIのブラウザ失敗を診断中
+
+`e3d5615`/CI37121269163はcompleted/failure。Worker jobは成功したが、
+actual local Worker/split D1のeditor試験が`browser_cdp_command_failed`で失敗した。
+直前の取得API追加`a2d09dd`/CI37120631839の両job成功は保持する。
+最新branchのCI成功・完了は主張しない。
+
+CDP helperの拒否診断にmethod・数値code・固定kindだけを追加した。
+raw provider message、URL、cookie、request引数は出力しない。
+手元のactual Worker/25 Business/4 Auth/8 Master/R2/Chrome試験は成功し、
+loopback server停止・port閉鎖・local DB削除を確認した。合成protocolエラーでも
+秘密値を出さないことを確認した。原因は未再現であり、race修正の証拠ではない。
+この診断変更の新HEAD CIで切り分ける。runtime再配備は不要。
+
+隔離した実Cron→archive確認は同じlive processで追跡中。20分で観測を打ち切り、
+所有した一時Worker/D1の削除とinventory照合を行う。main stagingのarchive
+selectorは依然未設定。実ユーザーデータ・ドメインは変更しない。
+
 # 2026-10-03 取得の現行schema/session検証とCI組込み
 
 取得の通常Worker CI漏れを修正し、既存21回帰と全25 Business/4 Auth/8 Master・実sessionの
