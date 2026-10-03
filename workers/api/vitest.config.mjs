@@ -31,6 +31,7 @@ export default defineConfig({
       "./test/fanmark-details-d1.test.ts",
       "./test/fanmark-access-analytics-d1.test.ts",
       "./test/fanmark-registration-d1.test.ts",
+      "./test/fanmark-registration-session.test.ts",
       "./test/fanmark-settings-d1.test.ts",
       "./test/fanmark-lottery-d1.test.ts",
       "./test/fanmark-transfer-d1.test.ts",

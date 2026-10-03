@@ -42,3 +42,37 @@ schema/index was altered. Converter42/42 includes a regression demonstrating
 that the candidate SQLite index accepts all four arrays from two source-key
 equivalence classes, and therefore cannot be marked deployable from that DDL.
 Actual source rows remain unread; their migration is deferred by user scope.
+
+## Current application and import disposition (2026-10-03 JST)
+
+The three source indexes above are valid, unique, non-primary indexes in the
+unchanged catalog. Business0000 indexes the JSON identity column and retains
+the favorites user_id prefix. Current counterparts:
+
+| Table | Current writer | Admitted identity domain |
+| --- | --- | --- |
+| fanmarks | fanmark-registration-d1-api.ts insert and unlicensed-row reacquisition | Lowercased UUIDs resolved against active Master, then ordered JSON.stringify; repeats remain repeated. |
+| fanmark_discoveries | discovery-mutations.ts via search/favorites APIs | Both callers validate non-empty 1–5-ID lists and lowercase UUIDs; the shared upsert uses the same serialized key. |
+| fanmark_favorites | discovery-mutations.ts via authenticated favorites API | The same key plus actual session owner; registration linkage preserves every owner's favorite display/time. |
+| All three imports | row-conversion.mjs / value-conversion.mjs | Canonical UUID case, preserved order/repeats; reject empty/NULL-element identities and unsupported dimensions/lower bounds before writing. Historical lengths are not rewritten to the UI maximum five. |
+
+For this admitted domain, canonical ordered JSON implements the intended
+sequence identity. The target deliberately does not reproduce MD5 collisions.
+The0022 linkage trigger separately tolerates case/formatting/NULL omission,
+refuses ambiguous matches, and does not make NULL arrays importable. This
+review covers current validated application writers, not arbitrary console
+writes, all PostgreSQL arrays or external RPC consumers.
+
+The final user-data stage must check the three source identity columns for
+empty/NULL-containing arrays, unsupported shapes/lower bounds, canonical
+duplicates and conflicts with the additional target normalized-emoji identity.
+If found, record an explicit disposition before import. Do not drop NULLs,
+merge favorites, regenerate UUIDs or silently skip rejected rows. External
+consumers depending on source MD5-key behavior need their own decision.
+No source user row was read for this review.
+
+Existing value/row/converter tests pass57/57, including all three tables'
+NULL/empty rejection and the converter's deliberately retained mismatch gate.
+[Registration](fanmark-registration-api.md) passes26/26 locally, including5
+new full-schema/real-session cases. The generic converter gate and
+deployable=false remain; this does not waive historical import prerequisites.

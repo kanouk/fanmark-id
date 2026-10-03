@@ -58,6 +58,12 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
 
 ## Cloudflare stagingの本人profile検証
 
+取得APIの検証は`npm run --prefix workers/api test:fanmark-registration-d1`。
+通常Worker CIに含め、既存21回帰と現行25 Business/4 Auth/8 Master・実sessionの5件を
+実行する。MasterのTierは実release view、停止は実管理者MFA/停止transactionを通す。
+契約・範囲は[取得API](migration/fanmark-registration-api.md)、現行writerと最後の
+データ工程へ残すindex条件は[sequence review](migration/source-sequence-key-review.md)。
+
 Cloudflareの本人profile native検証は`npm run --prefix workers/api test:profile-d1`。
 全25 Business/4 Auth migration・実session/R2・invitation FKと各caseのFK checkを
 使用し、通常Worker CIの`test:api-contracts-d1`にも含まれる。sourceのsettings権限と

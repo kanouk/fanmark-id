@@ -6,10 +6,19 @@
   "vars": {
     "D1_TOPOLOGY": "split",
     "AUTH_BACKEND": "better-auth",
+    "AUTH_USER_STATUS_BACKEND": "d1",
+    "BETTER_AUTH_SECRET": "local-registration-test-only-secret-not-for-deployment-000000000",
+    "BETTER_AUTH_URL": "https://api.example.test",
     "FANMARK_REGISTRATION_BACKEND": "d1",
+    "ADMIN_USER_MANAGEMENT_BACKEND": "d1",
     "CORS_ALLOWED_ORIGINS": "https://app.example.test"
   },
   "d1_databases": [
+    {
+      "binding": "AUTH_DB",
+      "database_name": "fanmark-registration-auth-local-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000093"
+    },
     {
       "binding": "FANMARK_DB",
       "database_name": "fanmark-registration-business-local-fixture",

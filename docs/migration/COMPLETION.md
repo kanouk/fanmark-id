@@ -17,8 +17,8 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |
 | --- | --- | --- | --- |
-| 1. 移行元・移行先・呼び出し元の照合 | 40表、58関数、37登録trigger、77policyのcatalogと211箇所のfrontend対応表があり、77policy全件のidentity/hash→40表の現行経路・実装・検証への対応表を作成済み。分類reportは全体照合未完了のまま。sequence keyの3候補indexなどに未解決の意味差がある。 | 各object/actionについて、source定義hash、権限、実行経路、targetまたは不使用の根拠、契約差、対応する検証を結び付ける。未実装の現行経路・未説明の差を残さない。実データでしか判断できない事項はデータ工程へ明示的に移す。 | #30, #33, #34 |
-| 2. アプリと認証・業務処理の仕上げ | 多くのsession/権限/競合/失敗時rollbackは受け入れ済み。退会388044b/Worker4a8d85ddはnative66・remote6を受け入れ済み。検索・お気に入りの4既知event/count不整合もbce8993、CI37094750732両job、Workerc09ece05のlocal17・remote4/cleanup/独立readbackで解消済み。ただし全画面・実provider・最終統合は未完了。 | 現行画面の必須操作、管理者MFA、登録/password setup/reset、ライセンス取得・返却・移管・抽選・上限・クーポンを統合構成で確認する。現在修正中の既知不具合を解消し、必要な新経路をstagingで確認する。 | #31, #33, #34 |
+| 1. 移行元・移行先・呼び出し元の照合 | 40表、58関数、37登録trigger、77policyのcatalogと211箇所のfrontend対応表があり、77policy全件のidentity/hash→40表の現行経路・実装・検証への対応表を作成済み。分類reportは全体照合未完了のまま。sequence keyの3候補indexは現行writer/importの契約を照合し、空/NULL配列等の残る差を最後のデータ工程の条件へ明記した。任意外部consumerとfull converterのgateは保持する。 | 各object/actionについて、source定義hash、権限、実行経路、targetまたは不使用の根拠、契約差、対応する検証を結び付ける。未実装の現行経路・未説明の差を残さない。実データでしか判断できない事項はデータ工程へ明示的に移す。 | #30, #33, #34 |
+| 2. アプリと認証・業務処理の仕上げ | 多くのsession/権限/競合/失敗時rollbackは受け入れ済み。退会388044b/Worker4a8d85ddはnative66・remote6を受け入れ済み。検索・お気に入りの4既知event/count不整合もbce8993、CI37094750732両job、Workerc09ece05のlocal17・remote4/cleanup/独立readbackで解消済み。取得の通常CI漏れを修正し、既存21と現行25 Business/4 Auth/8 Master・実signin/TOTP/停止・登録の5件（local26/26）を確認した。ただし全画面・実provider・最終統合は未完了。 | 現行画面の必須操作、管理者MFA、登録/password setup/reset、ライセンス取得・返却・移管・抽選・上限・クーポンを統合構成で確認する。現在修正中の既知不具合を解消し、必要な新経路をstagingで確認する。 | #31, #33, #34 |
 | 3. 実サービスとのテスト接続 | Stripe、Resend、4 OAuth providerの実接続は未受け入れ。stagingのsecretは3名称のみで、signup/email/providerは閉じている。閉じていることの確認は接続成功の証拠ではない。 | Stripe sandboxのCheckout/Portal/変更/延長/署名Webhook・重複/逆順/再試行、テスト宛先の認証メール、4 providerの開始/callback/初回設定を確認する。Apple relayも含む。必要なprovider資格情報・テスト設定・テスト送信の許可が必要。本番課金・本番宛先送信は行わない。 | #31, #32, #34, #37 |
 | 4. ジョブ・運用・復旧 | 通知DOの起動/排出/停止・復旧、期限処理の合成一回実行、archive smoke、Time Travel/R2 replayの個別証拠はある。定常運用、archive/retention、CPU/plan適合、秘密管理/最小権限を含む運用全体は未受け入れ。 | 起動条件/周期/再開/監視、保存期間、担当と権限、秘密の保管・交換、停止時間/復旧時間目標を確定し、合成障害から復旧を実測する。測定で有料planが必要なら設定前に明示する。 | #30, #34, #37 |
 | 5. 移送器の合成データ受け入れ | 現行25 Business/4 Auth、8 Master＋保持する旧Auth core、分離したavatar/cover R2で、同じbundleの合成40表/15行・マスター・2画像を別incarnationへ復旧した。source hash/型/閲覧password/画像参照・bytes/MIMEと通知wakeの単発性を照合。local復旧10182ms。プロフィールを後から取り込むとpassword世代照合が失敗する不具合をcodec v5の順序制御で修正し、専用試験コマンドを追加。通常CIに実行stepがないことを今回確認し、Business/Auth・combined復旧の明示stepを追加。復旧先画像の冗長bucket prefixによる実Storage API404を再現・修正し、primary/別incarnationのGET/HEAD・bytes/MIME/size一致を確認。fresh local復旧10812ms。隔離D1 REST経路はnative9件に加え、1d3085f/CI37108741104両job成功後の実APIで値・rollback・応答破棄後の非自動再送を確認し、所有した一時D1削除/既存3件inventory一致を受け入れた。共通fixture生成と一式remote conductorを準備し、HTTP R2経路のnative6件（import/replay・競合・実Storage GET/HEAD・所有key cleanup）と共通化後combined1件が成功。2cbf4e0/CI37115000097両job成功後、一式remoteの2 targetで40表/15行（非空9表）・Master・2画像・source hash/count・FK/wake・中断再開が成功。新規targetの合成復旧90726msで本番RTOではない。所有した全資源を削除し、独立10:18:30.138Z inventory一致を受け入れた。Authはseedした合成依存userでcredential backup証拠ではない。画像参照のDTO対応と変更なし保存・既存key削除は6a1870a/CI37118191381両job成功後、実stagingのWorker51db2c90でAPI・実Chromeの編集/公開画像decode・cleanup・独立readbackを受け入れた。RTO/運用・最終統合は残る。source schema converterのdeployableはfalse。実ユーザーデータは読み出して移送しない。 | 最終schemaと運用構成で合成snapshotの中断・再開・照合・復旧を通し、未説明差分0と所要時間を記録する。個別の旧schema検証から最終構成の成立を推定しない。 | #35, #37 |
@@ -46,11 +46,17 @@ Worker51db2c90へ反映し、合成画像の編集・公開表示、変更なし
 readbackで業務/Authの非マスター行0、Master/履歴/料金値保持、wake17/17・MFA240を
 確認した。[画像URL対応と証拠](storage-image-url-mapping.md)。実スマホは未確認。
 
-次は項目1の残る関数/indexの契約差と、現行アプリwriter・import対象条件・
-最後のデータ工程へ残す条件を照合し、説明できていない差を具体的な残件へ絞る。
+取得APIの通常CI漏れを修正した。既存21回帰を保持し、現行25 Business/4 Auth/8 Master、
+実signin、管理者TOTP/停止、canonical ID/順序/お気に入り連携とS/A/C取得の5件を追加。
+local26/26・Worker typecheck/変更箇所lint成功。CIの受け入れは当該run完了後に記録する。
+[取得API](fanmark-registration-api.md)と[sequence契約](source-sequence-key-review.md)。
+現行writer/importの3index対応を照合し、空/NULL・array shape・衝突等は最後の
+ユーザーデータ工程の事前確認へ明記した。generic converterはdeployable=falseを維持する。
+
+次は項目1の残る58関数の対応を、レビュー済み・意図的差・未解決へ具体化する。
 provider設定は項目3で一括して扱う。catalog classifierの54 pendingは、
 既存の手動レビューと受入を自動取込みしていない数であり、54件が未実装という意味ではない。
-ただしその対応表があるだけでfull-source gateを解除しない。
+対応表だけでfull-source gateを解除しない。
 
 現行実行・過去の失敗/修正の経緯は[HANDOFF](HANDOFF.md)と[EXECUTION](EXECUTION.md)。
 照合は[source runtime](source-runtime-review.md)、[source authorization](source-authorization-review.md)、

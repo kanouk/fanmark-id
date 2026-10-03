@@ -79,6 +79,36 @@ data parity or production behavior. The staging canary must use a disposable
 Better Auth identity, verify business D1 readback, and delete every synthetic
 row before the route is considered staging-verified.
 
+## Current-schema and session verification (2026-10-03 JST)
+
+`npm run --prefix workers/api test:fanmark-registration-d1` runs the existing21
+focused regressions plus5 new cases through handleRequest and real Better Auth
+sign-in/session cookies. The new suite applies all25 Business/4 Auth/8 Master
+migrations, uses immutable emoji release/activation tables and stages/activates
+reference masters with the migration helper. fanmark_tiers is the actual view.
+Local26/26, Worker typecheck and changed-file lint pass; all three D1 FK checks
+are empty after each new case. All credentials/rows are synthetic and local.
+
+New coverage: UUID case, tone display/identity, ordered/reversed IDs, actual
+session owner despite an untrusted body actor, discovery/all-owner-favorite
+linkage with retained times/counts, owner conflicts, S/A/C finite/unlimited
+licenses and absent/revoked-session rejection. Suspension uses actual admin
+sign-in, TOTP enrollment/challenge and the MFA-protected status route, confirms
+session deletion and rejects the suspended user's old cookie. A bare SQL banned
+flag retaining sessions is not substituted for the application's transaction.
+
+Normal Worker npm test's test:api-contracts-d1 previously omitted registration;
+it now runs this dedicated command. The new file is excluded from generic
+Vitest so its required bindings/provision execute only under this config.
+The older reduced suite remains useful for historical NULL/formatting and fault
+regressions; it is not full-schema proof. CI acceptance is recorded in
+HANDOFF/EXECUTION when the corresponding run completes.
+
+This slice changes tests/configuration only; no runtime/schema/deployment or
+real provider/user/DNS change. [Sequence review](source-sequence-key-review.md)
+records current-writer correspondence and final data-stage conditions. Broader
+source/provider/operational/final integration remain open.
+
 
 ## Discovery-link staging acceptance (2026-10-03 JST)
 

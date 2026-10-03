@@ -1,3 +1,14 @@
+# 2026-10-03 取得の現行schema/session検証とCI組込み
+
+取得の通常Worker CI漏れを修正し、既存21回帰と全25 Business/4 Auth/8 Master・実sessionの
+5件がlocal26/26成功。実admin signin/TOTP/停止による旧cookie拒否と、canonical ID・
+順序/肌色・全ownerお気に入り連携・有限/無期限取得を確認。typecheck/変更箇所lint成功。
+[取得API](fanmark-registration-api.md)。当該CIはcommit/push後のrunで確認する。
+[sequence review](source-sequence-key-review.md)は現行writer/importと3indexを照合し、
+空/NULL/shape/衝突・外部consumerの差を最後のデータ工程へ明記。generic converterのgateは保持。
+今回runtime/schema/staging deploymentは変更しない。実稼働の受入は以下の画像checkpointを保持。
+provider/運用/58関数の全体対応/最終統合は未完了。次は残る関数対応を具体化する。
+
 # 2026-10-03 画像参照の実staging受け入れ
 
 `6a1870a`/CI37118191381両job成功。11:10:37.101ZにWorker51db2c90へ反映し、
