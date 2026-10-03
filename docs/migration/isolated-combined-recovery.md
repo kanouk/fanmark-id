@@ -90,8 +90,15 @@ this readback does not prove profile URL conversion or rendered browser use.
 - New HTTP R2 transport: native Miniflare6/6 including importer/replay, real
   conditional conflict, app GET/HEAD, identity gates and exact-key cleanup.
   Syntax/focused lint pass. These are local HTTP/native proofs.
-- Complete owned remote conductor is prepared and syntax-checked, **not yet
-  executed/accepted**. Its candidate CI and the live restore remain prerequisites.
+- Candidate8c17c7e/CI37112092427 passed both jobs; the first full remote
+  attempt **failed before schema/data import**, at temporary Worker deploy.
+  Its three D1/two empty R2 resources were deleted. Independent API metadata
+  readback at09:26:21.141Z proves original inventory equality and Worker absence.
+  The restore is not accepted. A read-only temporary-config whoami selected an
+  unrelated account instead of the dedicated staging profile; fix and preflight
+  explicit credentials before another resource-creating attempt. The original
+  deploy CLI diagnostic was discarded, so its exact provider error is unknown.
+  Journal:/tmp/fanmark-combined-remote-fom0pq/journal.json.
   Synthetic provision/restore duration includes temporary resource bootstrap;
   it must not be presented as production RTO.
 

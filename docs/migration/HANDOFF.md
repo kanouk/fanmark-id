@@ -12,6 +12,24 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Latest full remote attempt failed before data import; cleanup verified**:
+  Candidate8c17c7e/CI37112092427 passed both jobs. The first owned combined
+  remote run stopped at temporary image Worker deploy, before schema or data
+  import. Its three owned D1 databases and two empty R2 buckets were deleted.
+  Independent09:26:21.141Z API inventory equals the original D1/R2/Worker
+  inventories, and the intended temporary Worker is absent. The failed restore
+  remains unaccepted. Journal:/tmp/fanmark-combined-remote-fom0pq/journal.json.
+  A subsequent read-only whoami using the temporary /tmp config selected the
+  unrelated fragrance account, whereas the staging config had selected the
+  dedicated fanmark profile. This confirms a credential-selection defect in
+  the rehearsal tool. The deploy wrapper discarded the original CLI error, so
+  the precise provider error was not retained. Pin the already verified fanmark
+  credential for temporary-config CLI operations, verify that identity before
+  resource creation, and retain value-free command failure diagnostics before
+  a new bounded attempt. Do not request another login as a substitute for this
+  tool fix. Existing app runtime remainscbb90c7/e0a4b16e; no source data or DNS
+  changed. Earlier prepared-only statements below are historical.
+
 - **Prepared complete owned remote conductor and HTTP R2 bridge**:
   CI37109545658 for1883880 completed/success in both jobs; watcher28442 exited0
   and is consumed. R2 CLI/REST read-only inventory confirmed the dedicated
