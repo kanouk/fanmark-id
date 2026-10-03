@@ -40,6 +40,15 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
+認証固定ad8d7a5/CI37113804391は両job成功。次の一回は一時Workerとsecretの
+配備まで成功し、その後の接続先identity確認で終了した。schema・データ取り込み前。
+D1 3件/R2 2件/Workerを削除し、09:56:06.181Zの独立API照合で元inventory一致を
+確認した。復旧は未受け入れ。秘密値の末尾改行はCLIが除去することを実装で確認。
+接続失敗の具体的なcodeがbare Errorで失われる点を修正し、HTTP statusと限定した
+通信code、Worker設定の照合、有限時間のread-only readinessを記録する。
+認証拒否・identity不一致・不正replyは待たず終了する。関連native7/7は成功。
+新候補のCIを通してから次の一回を実行し、まだ未確認の原因を推定で確定しない。
+
 復旧試験ツールの認証固定を実装した。専用stagingの資格情報を一時設定で使う
 Wrangler子プロセスへ明示し、資源作成前に一時設定のaccountを確認する。
 実read-only CLIで専用accountが選ばれることを確認済み。配備失敗時は値を含まない

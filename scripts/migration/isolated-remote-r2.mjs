@@ -2,7 +2,14 @@
 const OWNER = '90000000-0000-4000-8000-00000000000d';
 const MAX_BYTES = 1024 * 1024;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u;
-const refuse = code => { throw new Error(code); };
+const refuse = (code, httpStatus, transportCode) => {
+  const error = new Error(code);
+  error.code = code;
+  if (Number.isInteger(httpStatus)) error.httpStatus = httpStatus;
+  if (['ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'ECONNRESET', 'UND_ERR_CONNECT_TIMEOUT',
+    'CERT_HAS_EXPIRED', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'].includes(transportCode)) error.transportCode = transportCode;
+  throw error;
+};
 export function createIsolatedRemoteR2({ workerOrigin, token, targetIncarnation, expectedBuckets,
   fetchImpl = fetch, allowLoopback = false, timeoutMs = 30000 } = {}) {
   let origin;
@@ -19,13 +26,16 @@ export function createIsolatedRemoteR2({ workerOrigin, token, targetIncarnation,
     try { return await fetchImpl(new URL(path, origin), { method, redirect: 'error',
       headers: { authorization: `Bearer ${token}`, 'x-recovery-incarnation': targetIncarnation, ...headers },
       body, ...(body ? { duplex: 'half' } : {}), signal: AbortSignal.timeout(timeoutMs) }); }
-    catch { refuse('recovery_request_acknowledgement_unknown'); }
+    catch (cause) { refuse('recovery_request_acknowledgement_unknown', undefined, cause?.cause?.code ?? cause?.code); }
   }
   let verification;
   async function verify() {
     verification ??= (async () => {
       const response = await request('/_recovery/identity');
-      if (!response.ok) refuse('recovery_identity_unavailable');
+      if (!response.ok) {
+        await response.body?.cancel();
+        refuse('recovery_identity_unavailable', response.status);
+      }
       let actual;
       try { actual = await response.json(); } catch { refuse('recovery_identity_invalid'); }
       if (actual?.targetIncarnation !== receipt.targetIncarnation ||

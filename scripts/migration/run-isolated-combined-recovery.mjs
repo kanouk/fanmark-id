@@ -157,25 +157,52 @@ async function createTarget(phase) {
     r2_buckets: [{ binding: 'AVATARS_BUCKET', bucket_name: expectedBuckets.avatars }, { binding: 'COVER_IMAGES_BUCKET', bucket_name: expectedBuckets.covers }],
   }), { mode: 0o600 });
   target.workerDeployRequestedAt = new Date().toISOString();
+  target.stage = 'worker-deploy';
   await save();
   wrangler(['deploy'], { config: target.configPath });
   target.workerCreated = true;
   await save();
   const token = randomBytes(32).toString('hex');
+  target.stage = 'worker-secret'; await save();
   wrangler(['secret', 'put', 'RECOVERY_TOKEN', '--name', target.workerName], { config: target.configPath, input: token + '\n' });
   target.workerVersion = await latestDeployment(target);
   const workerMetadata = (await inventory()).workers.find(worker => worker.id === target.workerName);
   assert.ok(workerMetadata?.created_on);
   target.workerCreatedAt = workerMetadata.created_on;
+  target.stage = 'worker-binding-preflight'; await save();
+  const settings = await apiRequest('workers/scripts/' + target.workerName + '/settings');
+  const workerBindings = settings.bindings;
+  const expectedText = { STORAGE_BACKEND: 'r2', RECOVERY_INCARNATION: target.targetIncarnation,
+    RECOVERY_AVATARS_NAME: expectedBuckets.avatars, RECOVERY_COVERS_NAME: expectedBuckets.covers };
+  const invalidBinding = () => { const error = new Error('recovery_worker_binding_invalid');
+    error.code = 'recovery_worker_binding_invalid'; throw error; };
+  if (!Array.isArray(workerBindings)) invalidBinding();
+  for (const [name, text] of Object.entries(expectedText)) {
+    if (!workerBindings.some(binding => binding.name === name && binding.type === 'plain_text' && binding.text === text)) invalidBinding();
+  }
+  if (!workerBindings.some(binding => binding.name === 'RECOVERY_TOKEN' && binding.type === 'secret_text')) invalidBinding();
+  for (const [name, bucketName] of [['AVATARS_BUCKET', expectedBuckets.avatars], ['COVER_IMAGES_BUCKET', expectedBuckets.covers]]) {
+    if (!workerBindings.some(binding => binding.name === name && binding.type === 'r2_bucket' && binding.bucket_name === bucketName)) invalidBinding();
+  }
+  target.workerBindingNamesVerified = true;
   await save();
   const origin = `https://${target.workerName}.fanmark-id.workers.dev`;
   const r2 = createIsolatedRemoteR2({ workerOrigin: origin, token, targetIncarnation: target.targetIncarnation, expectedBuckets });
+  target.stage = 'worker-identity-readiness'; await save();
+  const readinessDeadline = performance.now() + 60000;
   for (let attempt = 0;; attempt += 1) {
     try { await r2.verifyIsolatedTarget(); break; }
     catch (error) {
-      if (attempt === 4) throw error;
-      // Read-only identity readiness after a fresh deployment. Never retry PUT.
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      target.identityReadinessFailures ??= [];
+      target.identityReadinessFailures.push({ code: error.code ?? 'recovery_identity_error', httpStatus: error.httpStatus ?? null,
+        transportCode: error.transportCode ?? null });
+      await save();
+      const transient = error.code === 'recovery_request_acknowledgement_unknown' ||
+        (error.code === 'recovery_identity_unavailable' && [404, 502, 503, 504].includes(error.httpStatus));
+      if (!transient || attempt === 23 || performance.now() >= readinessDeadline) throw error;
+      // Bounded read-only readiness only. Authentication/identity refusals and
+      // malformed replies are final; never retry PUT or other writes.
+      await new Promise(resolve => setTimeout(resolve, 2500));
     }
   }
   return { ownership: target, bindings, r2, applicationTarget: {
@@ -313,6 +340,7 @@ try {
       const target = journal.targets[ownershipIndex];
       if (target) { target.failureStage = target.stage ?? 'create-target'; target.failureCode = error.code ?? 'recovery_step_failed';
         if (error.commandFailure) target.commandFailure = error.commandFailure;
+        if (Number.isInteger(error.httpStatus)) target.failureHttpStatus = error.httpStatus;
         await save(); }
       throw error;
     } finally {

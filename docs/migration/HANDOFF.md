@@ -12,6 +12,25 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Pinned-credential candidate accepted by CI/deploy; identity gate still open**:
+  ad8d7a5/CI37113804391 completed/success in both jobs; watcher92593 exited0
+  and is consumed. One remote attempt (session28828, terminal/exit1) verified
+  temporary-config identity and successfully deployed the owned Worker plus
+  its secret. It stopped before schema/data import at the following identity
+  preflight; the R2 adapter's bare Error discarded the specific failure code.
+  All three owned D1/two R2/Worker were deleted by receipts, and independent
+  09:56:06.181Z API metadata equals all original inventories. Journal:
+  /tmp/fanmark-combined-remote-h1aFb1/journal.json. The restore remains false.
+  Wrangler4.139 source confirms stdin trailing whitespace is removed; do not
+  assert a secret newline or propagation cause without observed evidence.
+  The new candidate retains stable error codes, HTTP status and allowlisted
+  transport codes only, verifies Worker binding settings, and records a bounded
+  read-only readiness sequence. Authentication/identity refusal is immediate;
+  only transport failures or404/502/503/504 may wait. The60s start budget plus
+  a final request's30s timeout is bounded; writes are never retried. Native7/7,
+  including403/503/DNS code preservation and output redaction, passes. Next:
+  candidate CI then one owned retry with these diagnostics. No app re-deploy.
+
 - **Credential-selection fix prepared, live restore still unaccepted**:
   The conductor now pins the verified staging OAuth credential in every later
   Wrangler child environment, checks temporary-config account membership before

@@ -41,9 +41,20 @@ test('isolated HTTP recovery transport preserves real R2 create/readback and app
       assert.equal((await fetch(workerOrigin + '/_recovery/list/avatars')).status, 401);
       assert.throws(() => createIsolatedRemoteR2({ ...config, expectedBuckets: { ...expectedBuckets, avatars: 'fanmark-avatars-staging' } }), /recovery_transport_invalid/u);
       const wrong = createIsolatedRemoteR2({ ...config, targetIncarnation: '92222222-2222-4222-8222-222222222222' });
-      await assert.rejects(wrong.avatars.get(`${OWNER}/avatar.png`), /recovery_identity_unavailable/u);
+      await assert.rejects(wrong.avatars.get(`${OWNER}/avatar.png`), error =>
+        error.code === 'recovery_identity_unavailable' && error.httpStatus === 403);
       assert.equal((await physical[0].list()).objects.length, 0);
       await assert.rejects(remote.avatars.get(`${OWNER}/other.png`), /recovery_key_invalid/u);
+    });
+    await context.test('identity failures retain bounded codes/status without persisting provider body or transport messages', async () => {
+      const unavailable = createIsolatedRemoteR2({ ...config, fetchImpl: async () => new Response('private-provider-diagnostic', { status: 503 }) });
+      await assert.rejects(unavailable.verifyIsolatedTarget(), error => error.code === 'recovery_identity_unavailable' &&
+        error.httpStatus === 503 && !JSON.stringify(error).includes('private-provider-diagnostic'));
+      const unreachable = createIsolatedRemoteR2({ ...config, fetchImpl: async () => {
+        throw Object.assign(new Error('private-transport-diagnostic'), { cause: { code: 'ENOTFOUND' } });
+      } });
+      await assert.rejects(unreachable.verifyIsolatedTarget(), error => error.code === 'recovery_request_acknowledgement_unknown' &&
+        error.transportCode === 'ENOTFOUND' && !JSON.stringify(error).includes('private-transport-diagnostic'));
     });
     const exportDir = path.join(root, 'export');
     await mkdir(path.join(exportDir, 'objects'), { recursive: true, mode: 0o700 });

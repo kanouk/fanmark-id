@@ -75,6 +75,15 @@ leaves the journal and reports available; it is not accepted as a clean restore.
 
 ## R2 transport and app readback
 
+After deploy and secret update, the conductor verifies the expected plain-text
+identity/bucket bindings and the secret's name/type through Worker settings,
+without requesting or saving a secret value. Identity readiness records stable
+error codes, HTTP status and a small allowlist of transport codes; response bodies
+and transport messages are discarded. Only transport failures and HTTP404/502/
+503/504 may retry GET within a60s start budget (the final request has its own30s
+timeout). HTTP401/403, identity mismatch and malformed replies stop immediately.
+No writes are retried by this readiness check.
+
 [`isolated-remote-r2.mjs`](../../scripts/migration/isolated-remote-r2.mjs) connects
 only to the temporary recovery Worker family on the fanmark workers.dev
 subdomain, with a private token, incarnation and expected recovery bucket names.
@@ -112,6 +121,14 @@ this readback does not prove profile URL conversion or rendered browser use.
   Journal:/tmp/fanmark-combined-remote-fom0pq/journal.json.
   Synthetic provision/restore duration includes temporary resource bootstrap;
   it must not be presented as production RTO.
+
+- Pinned-credential candidatead8d7a5/CI37113804391 passed both jobs and one
+  live attempt successfully deployed the owned Worker/secret. Identity preflight
+  then failed before schema/data import; its old bare Error lost the specific
+  code, so the cause remains unknown. All owned resources were removed, and
+  independent09:56:06.181Z inventory equals the original D1/R2/Worker lists.
+  Journal:/tmp/fanmark-combined-remote-h1aFb1/journal.json. The new readiness/
+  diagnostic candidate's native suite passes7/7; its CI/live retry remain gates.
 
 Private local logs:
 `/tmp/fanmark-recovery-shared-bundle-regression.log`,

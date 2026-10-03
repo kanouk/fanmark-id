@@ -120,7 +120,10 @@ Cloudflare staging modeの管理画面はBetter Authでログインし、`GET /a
 条件付き作成、本文/hash/metadataの照合、実Storage GET/HEADを保つ。新経路の
 native6件と共通化後のlocal combined試験は通過済み。一式remote初回は配備段階で
 失敗し、所有資源のcleanupを独立確認済み。一時設定にも専用認証を明示し、
-資源作成前にaccountを確認する。一式remote復旧はまだ受け入れていない。CIはremote commandを実行せず、実ユーザー/DNSも変更しない。
+資源作成前にaccountを確認する。認証固定後は一時Worker/secret配備まで成功したが、
+identity確認で終了した。関連native7件は、HTTP/通信codeの値を含まない記録と
+401/403の拒否を確認する。設定照合と有限のread-only readiness後の一式remote復旧は
+まだ受け入れていない。CIはremote commandを実行せず、実ユーザー/DNSも変更しない。
 
 ## セキュリティ / RLS の公開方針（誤検知対策）
 
