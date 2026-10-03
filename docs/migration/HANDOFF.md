@@ -5,6 +5,11 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+The six current completion work packages are tracked in
+[COMPLETION.md](COMPLETION.md). This defines the finish line for the authorized
+work before real-user data and domain cutover; an individual passing test or
+staging deployment does not close the whole goal.
+
 ## Current resume boundary — 2026-10-03 JST
 
 - **Newest accepted staging code:388044b**, CI37092452003 both jobs success.
