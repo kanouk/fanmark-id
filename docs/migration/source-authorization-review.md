@@ -5,6 +5,15 @@ It does not approve the complete RLS-to-Worker migration. D1 authorization must
 be enforced by each server route and transaction; PostgreSQL grants and RLS
 policies are not copied into public D1 access.
 
+Latest read-only observation2026-10-03T04:12:13.485862Z retains all counts and
+the authorization fingerprint below; all58 definition hashes also match the
+separate runtime observation04:12:13.370671Z and v41. The new
+[trigger counterpart index](source-trigger-counterparts.md) links source
+settings owner policies/plan-escalation guards to profile allowlists, server-
+selected signup plans, current-session MFA administration and verified billing.
+Full25 Business/4 Auth own-profile native10 cases pass; its existing command
+now joins normal CI. This is the named application scope, not77-policy approval.
+
 ## Reproduce the inventory
 
 `scripts/migration/source-authorization-bindings.sql` runs one `BEGIN READ ONLY`

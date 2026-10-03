@@ -6,6 +6,8 @@
   "vars": {
     "D1_TOPOLOGY": "split",
     "AUTH_BACKEND": "better-auth",
+    "AUTH_USER_STATUS_BACKEND": "d1",
+    "AUTH_SOCIAL_PROVISIONING_BACKEND": "d1",
     "PROFILE_BACKEND": "d1",
     "STORAGE_BACKEND": "r2",
     "BETTER_AUTH_SECRET": "local-profile-test-only-secret-not-for-deployment-000000000000",

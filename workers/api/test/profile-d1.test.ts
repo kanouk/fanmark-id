@@ -1,10 +1,17 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
-import profileSchemaSql from "./fixtures/d1-profile-business.sql?raw";
+import signupCommandSql from "../migrations/0007_auth_signup_command.sql?raw";
+import suspensionSql from "../migrations/0008_auth_user_suspension.sql?raw";
+import oauthSignupSql from "../migrations/0009_auth_oauth_signup.sql?raw";
+import { checkedInSqlStatements } from "./schema-statements";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
+
+declare module "vitest" {
+  export interface ProvidedContext { businessProfileMigrations: Array<{ name: string; sql: string }>; }
+}
 
 const runtimeEnv = env as unknown as Env;
 const authDatabase = runtimeEnv.AUTH_DB;
@@ -14,6 +21,9 @@ const apiBase = "https://api.example.test";
 const appOrigin = "https://app.example.test";
 const ownerId = "e62ce4d0-8055-4ecb-9e3a-759d70d659e0";
 const otherId = "2a1b9c5f-3c8a-4890-9e04-3768885b6dd8";
+const ownerProfileId = "c4c3f3db-e13e-4598-8ae8-5ded9c72f31d";
+const otherProfileId = "b1d7af09-9fd6-4ce3-b65c-6f91609f954b";
+const invitationId = "a148676c-df55-46a7-b1a0-aee3f4359c5d";
 const ownerEmail = "profile-owner@example.invalid";
 const otherEmail = "profile-other@example.invalid";
 const password = "Synthetic-Profile-Only!2026";
@@ -22,35 +32,6 @@ const pngBytes = Uint8Array.from(
   atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC"),
   (character) => character.charCodeAt(0),
 );
-
-function splitSqlStatements(sql: string): string[] {
-  const statements: string[] = [];
-  let start = 0;
-  let singleQuoted = false;
-  let doubleQuoted = false;
-  for (let index = 0; index < sql.length; index += 1) {
-    const character = sql[index];
-    const next = sql[index + 1];
-    if (character === "'" && !doubleQuoted) {
-      if (singleQuoted && next === "'") index += 1;
-      else singleQuoted = !singleQuoted;
-      continue;
-    }
-    if (character === '"' && !singleQuoted) {
-      if (doubleQuoted && next === '"') index += 1;
-      else doubleQuoted = !doubleQuoted;
-      continue;
-    }
-    if (character !== ";" || singleQuoted || doubleQuoted) continue;
-    const candidate = sql.slice(start, index).trim();
-    if (/^create\s+trigger\b/iu.test(candidate) && !/\bend\s*$/iu.test(candidate)) continue;
-    if (candidate) statements.push(candidate);
-    start = index + 1;
-  }
-  const finalStatement = sql.slice(start).trim();
-  if (finalStatement) statements.push(finalStatement);
-  return statements;
-}
 
 async function request(path: string, init: RequestInit = {}, overrides: Partial<Env> = {}): Promise<Response> {
   const headers = new Headers(init.headers);
@@ -89,6 +70,9 @@ async function resetRows(): Promise<void> {
   await authDatabase.prepare('DELETE FROM "account" WHERE "userId" IN (?, ?)').bind(ownerId, otherId).run();
   await authDatabase.prepare('DELETE FROM "user" WHERE "id" IN (?, ?)').bind(ownerId, otherId).run();
   await businessDatabase.prepare("DELETE FROM user_settings WHERE user_id IN (?, ?)").bind(ownerId, otherId).run();
+  await businessDatabase.prepare("DELETE FROM invitation_codes WHERE id = ?").bind(invitationId).run();
+  await businessDatabase.prepare(`INSERT INTO invitation_codes (id, code, created_at, updated_at)
+    VALUES (?, 'owner-invite-code', ?, ?)`).bind(invitationId, now, now).run();
   for (const [id, email, name] of [
     [ownerId, ownerEmail, "Profile Owner"],
     [otherId, otherEmail, "Profile Other"],
@@ -102,21 +86,32 @@ async function resetRows(): Promise<void> {
   }
   await businessDatabase.prepare(
     "INSERT INTO user_settings (id, user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at, invited_by_code, requires_password_setup, stripe_customer_id) VALUES (?, ?, ?, ?, ?, 'creator', 'en', ?, ?, ?, 1, ?)",
-  ).bind("profile-owner-row", ownerId, "profile-owner", "Old Owner Name", "https://old-avatar.example.test/profile.png", now, now, "owner-invite-code", "cus_synthetic_owner").run();
+  ).bind(ownerProfileId, ownerId, "profile-owner", "Old Owner Name", "https://old-avatar.example.test/profile.png", now, now, "owner-invite-code", "cus_synthetic_owner").run();
   await businessDatabase.prepare(
     "INSERT INTO user_settings (id, user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at, requires_password_setup) VALUES (?, ?, ?, ?, NULL, 'free', 'ja', ?, ?, 0)",
-  ).bind("profile-other-row", otherId, "profile-other", "Other Private Name", now, now).run();
+  ).bind(otherProfileId, otherId, "profile-other", "Other Private Name", now, now).run();
 }
 
 beforeAll(async () => {
   if (!authDatabase || !businessDatabase || !avatarBucket) throw new Error("Split D1/R2 bindings unavailable");
-  await authDatabase.batch(splitSqlStatements(authSchemaSql).map((statement) => authDatabase.prepare(statement)));
-  await businessDatabase.batch(splitSqlStatements(profileSchemaSql).map((statement) => businessDatabase.prepare(statement)));
+  for (const sql of [authSchemaSql, signupCommandSql, suspensionSql, oauthSignupSql]) {
+    await authDatabase.batch(checkedInSqlStatements(sql).map((statement) => authDatabase.prepare(statement)));
+  }
+  const migrations = inject("businessProfileMigrations");
+  expect(migrations).toHaveLength(25);
+  for (const migration of migrations) {
+    await businessDatabase.batch(checkedInSqlStatements(migration.sql).map((statement) => businessDatabase.prepare(statement)));
+  }
 });
 
 beforeEach(async () => {
   await removeSyntheticAvatar();
   await resetRows();
+});
+
+afterEach(async () => {
+  expect((await authDatabase!.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
+  expect((await businessDatabase!.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
 });
 
 describe("Better Auth own-profile API", () => {
@@ -129,7 +124,7 @@ describe("Better Auth own-profile API", () => {
     const body = await response.json() as { schemaVersion: number; profile: Record<string, unknown> };
     expect(body.schemaVersion).toBe(1);
     expect(body.profile).toMatchObject({
-      id: "profile-owner-row",
+      id: ownerProfileId,
       user_id: ownerId,
       username: "profile-owner",
       display_name: "Old Owner Name",

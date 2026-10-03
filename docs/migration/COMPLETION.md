@@ -47,6 +47,13 @@ source-runtime-reviewへ対応付けた。これで六項目のうち一項目�
 次は上記1と4の未照合を、object/運用条件ごとに閉じる。必要な外部設定は3で
    一括して扱い、コード確認の途中で同じ依頼を繰り返さない。
 
+2026-10-03 04:12Zの最新source catalogは58定義/37binding/77policyと両fingerprintが
+不変。37bindingの対応先を[source trigger counterparts](source-trigger-counterparts.md)
+へ列挙し、plan権限の2triggerとNOTICEのみのsecurity triggerの実処理を照合した。
+既存の本人profile10ケースは全25 Business/4 Auth・実FK・実session/R2で通過し、
+通常CIへ組み込んだ。29 timestamp bindingのwriter単位確認と残る関数/権限の
+照合は未完了で、この一覧や10ケースだけで上記1全体を完了としない。
+
 現在の実行・配備の詳細は[HANDOFF](HANDOFF.md)と[EXECUTION](EXECUTION.md)、
 関数/RLS/callerの照合は[source runtime](source-runtime-review.md)、
 [source authorization](source-authorization-review.md)、

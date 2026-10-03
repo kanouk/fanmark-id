@@ -36,3 +36,25 @@ client contract coverage is in `src/lib/profile-api.test.ts`. Run them with:
 npm run --prefix workers/api test:profile-d1
 npm run test:profile-api
 ```
+
+## Source privilege guards and complete-schema CI (2026-10-03)
+
+The current source INSERT/UPDATE/SELECT settings policies bind auth.uid() to
+user_id. Its two plan-escalation triggers allow the service role/administrator
+and reject unauthorized admin-plan inserts or plan changes. Target own-profile
+PATCH accepts only display_name/avatar_url/preferred_language and uses the
+Better Auth owner. Server signup selects free; privileged plan writes are named
+MFA administrator or verified billing operations. Exact source definition
+hashes and the full37-binding index are in
+[source-trigger-counterparts.md](source-trigger-counterparts.md).
+
+The existing10 native cases now use all25 canonical Business migrations and
+Auth0003/0007/0008/0009, with staging suspension/OAuth-provisioning selection.
+The invitation is seeded to satisfy its real FK, profile IDs are UUIDs, and
+both stores' FK checks run after each case. The reduced fixture and its custom
+privilege trigger are removed. Own/foreign row preservation, rejected identity/
+privilege/billing fields, R2 upload/update/delete/readback and first-password
+setup/retry pass10/10; Worker typecheck and focused lint pass. The existing
+test:profile-d1 command now runs through test:api-contracts-d1 and normal
+Worker CI. This changes verification, not runtime/profile/provider/data/DNS.
+New exact-head CI remains required; the accepted runtime is stillbce8993/c09.

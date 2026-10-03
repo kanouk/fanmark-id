@@ -56,6 +56,13 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
   - `check-expired-licenses-daily` (`0 0 * * *`) → `functions/v1/check-expired-licenses`  
   - `process-notification-events-every-minute` (`* * * * *`) → `functions/v1/process-notification-events`。通常は無効で、`notification_events` に pending が追加された時だけDBトリガーが有効化する。Edge Function はキューが空になった時だけ無効化し、呼び出し失敗時は有効状態を維持して翌分に再実行する。将来時刻の pending がある場合も有効状態を維持する。
 
+## Cloudflare stagingの本人profile検証
+
+Cloudflareの本人profile native検証は`npm run --prefix workers/api test:profile-d1`。
+全25 Business/4 Auth migration・実session/R2・invitation FKと各caseのFK checkを
+使用し、通常Worker CIの`test:api-contracts-d1`にも含まれる。sourceのsettings権限と
+登録triggerの対応は[trigger照合](migration/source-trigger-counterparts.md)を参照する。
+
 ## 絵文字マスタ更新（Unicode emoji-test.txt）
 - Cloudflareの公開カタログAPIは、検証済み不変releaseの`ordinal`範囲を既存indexで読む。外部offset形式を保ち、SQL OFFSETによる前方走査を避ける。ページの連番/件数とクライアントの全カタログ検証は維持する。読み取りbudgetとnative検証は`docs/migration/emoji-releases.md`。
 1. Unicode 公式から `emoji-test.txt` を取得して `data/emoji/` に保存する。  

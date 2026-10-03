@@ -12,6 +12,19 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Source/CI follow-up, runtime unchanged**: read-only source runtime04:12:13Z
+  and ACL04:12:13Z retain58 definitions/37 bindings/77 policies and both prior
+  fingerprints. source-trigger-counterparts.md enumerates all37 bindings and
+  separates the source's NOTICE-only security trigger from delivery, the two
+  plan-escalation guards, and29 timestamp writer reviews. Own-profile native10
+  now applies all25 Business/4 Auth migrations with real sessions/R2, an actual
+  invitation FK and per-case both-store FK checks; reduced/custom-guard fixture
+  removed. Local10/10/typecheck/lint pass and test:profile-d1 is added to normal
+  CI. New exact-head CI remains required; this test/docs change requires no
+  redeployment. d0e42dd docs CI37095642337 passed both jobs. Workerc09 below is
+  still the accepted runtime. Full runtime/ACL/timestamp/provider/ops/import/
+  final integration remain open; no gate is cleared just by listing a writer.
+
 - **Newest accepted staging code:bce8993**, CI37094750732 both jobs success.
   Search/favorite native17/17, search-details13/13, client12/12 and migration-
   data278/278 pass. Four reproduced event/count failures now roll back the

@@ -6,6 +6,15 @@ ordinary-function privileges, current Cron state and invocation history are
 distinct scopes. Missing direct Cron mentions do not classify an ordinary
 function as inactive or retire an external caller.
 
+The latest runtime observation2026-10-03T04:12:13.370671Z retains the same58
+function hashes,37 registered bindings and fingerprint below. Its separate
+ACL observation04:12:13.485862Z also retains the prior fingerprint. The
+[37-binding counterpart index](source-trigger-counterparts.md) records the
+reviewed settings privilege guards, NOTICE-only security trigger behavior,
+current writer entry points and the remaining29 timestamp-binding review.
+Own-profile verification now uses full25 Business/4 Auth native10 cases and
+joins normal Worker CI. No whole-source approval is inferred from this linkage.
+
 `schema-readiness.sql` captures triggers whose **table** is in `public`. It
 does not capture a public function attached to `auth.users`. Runtime migration
 review therefore also uses `scripts/migration/source-runtime-bindings.sql`, a
