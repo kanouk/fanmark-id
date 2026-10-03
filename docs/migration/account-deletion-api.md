@@ -58,13 +58,16 @@ is distinct from deployment and remote acceptance.
 
 The current guarded candidate passes native **66/66**, existing Auth **47/47**,
 frontend contract **4/4**, Worker typecheck, focused lint, workflow isolation,
-and staging bundle dry-run. Its CI, deployment and remote acceptance remain
-separate gates. The pre-fix native run reproduced four failures (two missing
+and staging bundle dry-run. Code `388044b` passed both CI37092452003 jobs and was deployed as
+`4a8d85dd-dfc4-424b-94ff-14354ae1fc4f` at100%. The six remote cases below
+are accepted; broader provider/production acceptance remains separate. The pre-fix native run reproduced four failures (two missing
 audit cases and Auth IGNORE/ABORT); separate billing-race reproduction returned
 false 200 in both late-customer/late-subscription cases.
 
 - `npm run test:account-deletion-d1` covers real Better Auth/D1 behavior with synthetic users, including Tier C return, audit/notification cleanup, pending-lottery cancellation, exact audit faults, suppressed cleanup/cascades, retained history, Auth/batch races, warmed-session invalidation, retry audit integrity, broadcast-FK and license-transfer preflight before Stripe, invalid password, Stripe-secret fail-closed behavior, anonymous denial, and the closed direct deletion route.
 - `npm run test:stripe-account-deletion` covers test/live mode matching, cancellation confirmation, missing key custody, ambiguous identity, and retry after an uncertain Stripe response.
 - `npm run test:account-deletion-api` covers the frontend request contract and rejects cross-origin Auth/API configuration without Supabase fallback.
+- Current staging acceptance uses six actual Better Auth credential/session/HTTP cases: ignored/changed entry audit, ignored deletion audit, suppressed profile DELETE, and ignored/aborted Auth user DELETE. Failure503 preserves exact Auth credentials/session state. Four Business faults roll back cleanup; two Auth faults retain committed Business cleanup and the original deletion audit ID/time/metadata. Fault removal allows retry200, cookie expiry, exact audit/entry/retained-history readback and repeat401. Another user's session remains valid throughout. Fixtures use already returned grace licenses and omit pending delivery to isolate these boundaries; this does not prove a remote active-license return, populated billing or async-notification flow.
+- Journal `fanmark-account-deletion-audit-15KPFs/canary.json` ends verified-and-cleaned: seven synthetic Auth identities and source Business fixtures removed, both-store FK0, exact Business/Auth trigger and baseline-creator restoration, cookies invalidated. Independent readback at2026-10-03T03:29:23.044Z confirms Worker4a at100%, source-owned Business/Auth0, ledger25, retained Master canonical3944/release7888/pointers/history, MFA generation236, three secret names and wake17:17. No schema DDL, real provider operation, user-data migration or DNS change ran. Private evidence: `/tmp/fanmark-account-deletion-388044b-staging-acceptance.json`.
 - Historical simple deletion smoke used staging version `e64d6cd4-1cb0-4592-a4a2-276a648adf06`; it does not accept the new guarded candidate. A disposable synthetic Better Auth account signed in and deleted through the workers.dev API; exact remote readback showed zero Auth user/account/session rows and zero account-owned business rows. The deletion audit was verified, then the exact synthetic audit row was removed. No Stripe call or email ran.
 - This does not prove imported Supabase credential compatibility, real Stripe acceptance for populated billing accounts, concurrent-transfer recovery under load, or production deletion. Production remains on Supabase until the separately planned final cutover.

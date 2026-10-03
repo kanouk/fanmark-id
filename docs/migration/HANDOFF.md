@@ -7,22 +7,39 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- **Current local account-deletion candidate, not deployed:** full25 Business/4
-  Auth native66/66 and existing Auth47/47, client4/4, typecheck/lint/workflow
-  isolation/staging bundle dry-run pass. Shared user-scope cancellation guard,
-  exact DELETE_ACCOUNT audit and required cleanup/history checks abort the
-  Business batch on missing/altered audits or suppressed effects. Billing
-  projection snapshots fence changes after cancellation preflight and inside
-  cleanup. Auth now uses one guarded user DELETE/cascade batch instead of SDK
-  sequential session/account/user deletion; it retains all credentials/sessions
-  on SQL failure and respects a changed password/session/suspension/credential.
-  All warmed sessions are revoked on success; other users remain valid.
-  Native evidence: /tmp/fanmark-account-deletion-final-native.log;
-  Auth47 /tmp/fanmark-account-deletion-auth-regression.log.
-  Two pre-fix billing races and four original integrity failures were reproduced.
-  CI and exact-head staging deployment/remote fault-retry acceptance remain
-  required. Do not attribute native66 to the still-current Worker71d below.
-- **Newest accepted staging code:c6a4f9d**, both CI37090152096 jobs successful.
+- **Newest accepted staging code:388044b**, CI37092452003 both jobs success.
+  Full25 Business/4 Auth native66/66, Auth47/47, client4/4, typecheck/lint/
+  workflow isolation/staging dry-run pass. Preflight03:22:19Z confirms Worker71d,
+  source-owned Business/Auth0, ledger25 and fixed Master/secrets/wake17:17.
+  Auth read-only03:23:03Z confirms ledger4/marker6/index4/FK0 and unchanged MFA;
+  schema was already applied, no DDL. Deployment03:23:49Z is
+  **4a8d85dd-dfc4-424b-94ff-14354ae1fc4f at100%**. JS/CSS/noindex/robots/sitemap
+  match the exact build; signup/email/four provider starts/callback GET remain
+  closed, anonymous session null, no real provider calls.
+- Six actual credential/session/HTTP cases pass: entry audit ignored/metadata
+  changed, DELETE_ACCOUNT audit ignored, user profile DELETE ignored, Auth user
+  DELETE ignored/aborted. All refuse503 and preserve exact Auth credentials/
+  sessions, then retry200 and repeat401. Four Business faults roll back the
+  exact cleanup snapshot. Two Auth faults leave accepted Business cleanup and
+  preserve the original deletion audit ID/time/metadata through retry. Entry
+  and deletion audits, cancelled entry/time/reason, grace license, retained
+  winner history/creator references/foreign role, cleared ownership and the
+  other user's valid session are read back. The fixture starts with already
+  returned grace licenses and no pending delivery event: this is not remote
+  active-return/Stripe or asynchronous-notification acceptance.
+- Journal ends **fanmark-account-deletion-audit-15KPFs/canary.json**, state
+  verified-and-cleaned, flowPassed true. All seven synthetic Auth identities,
+  source Business fixtures, temporary Business/Auth triggers and cookies are
+  removed; both-store FK0 and exact baseline creator/trigger restoration pass.
+  Independent03:29:23.044Z readback pins Worker4a at100%, owned Business/Auth0,
+  ledger25, unchanged Master canonical3944/release7888/import/active/history,
+  MFA generation236 and the same three secret names. Wake stays17:17; no reset.
+  Private acceptance: /tmp/fanmark-account-deletion-388044b-staging-acceptance.json.
+  Accepted scope is the listed account-deletion fault/retry/schema/static/
+  provider-closure/baselines, not real providers/populated billing/remote active
+  return, current editor/lottery/transfer reexecution, real phones, full source/
+  RLS/callers or whole migration.
+- **Prior accepted staging code:c6a4f9d**, both CI37090152096 jobs successful.
   Fresh preflight02:40:55Z verifies Business ledger25/Auth owned0, retained
   Master inventory and wake7:7. Read-only Auth schema02:41:25Z confirms existing
   ledger4/marker6/index4/FK0 and MFA generation unchanged; no DDL applied.
@@ -49,12 +66,10 @@ older sections retain their historical acceptance and failure evidence.
   /tmp/fanmark-transfer-c6a4f9d-staging-acceptance.json.
   This scope does not prove new remote OAuth users/providers, current editor/
   lottery reexecution, real phones, full source/RLS/callers or whole migration.
-- Next: finish candidate CI, prepare exact-head guarded deployment and remote
-  account-deletion audit/cleanup/Auth failure-retry acceptance using disposable
-  users only, then restore and independently verify all retained baselines.
-  Private preparation: /tmp/fanmark-account-deletion-canonical-preparation.json.
-  Remaining full source, lifecycle/archive/ops/recovery, providers and CPU/plan
-  stay open. Real user-data migration and domain/DNS remain intentionally last.
+- Next: reconcile full source functions/RLS/triggers/callers and value/index
+  semantics, then lifecycle/archive/retention and ops/recovery/key custody/
+  least privilege. Real provider/CPU/plan/phone acceptance remain open.
+  Converter is not deployable; real user data/domain/DNS remain deferred.
 - Docs-only3f4faac CI37089404509 passed both jobs; no deployment was needed.
 - **Prior accepted staging code:027a949**, both CI37088432269 jobs successful.
   Full preflight02:12:10Z verifies Business ledger25/Auth owned0 and the fixed
@@ -80,7 +95,7 @@ older sections retain their historical acceptance and failure evidence.
   providers/new OAuth users, current remote editor reexecution, real phones or
   the entire migration. The47b editor/OAuth guard proof below is historical.
 - At the027a949 checkpoint, transfer/account-deletion integrity remained open;
-  transfer is now accepted above, while account deletion remains next. Then
+  transfer and account deletion are now accepted above in their listed scope. Then
   continue full source runtime/authorization/caller,
   lifecycle/archive/retention and ops/recovery. Stripe's existing transaction
   completion guard already checks exact entry-audit fields and its native suite
