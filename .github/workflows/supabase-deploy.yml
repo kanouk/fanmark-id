@@ -157,6 +157,9 @@ jobs:
       - name: Test synthetic import and fresh-target recovery against current D1 schemas
         if: matrix.directory == 'workers/api'
         run: npm run test:business-runtime-import
+      - name: Test combined synthetic D1 Master and split R2 recovery
+        if: matrix.directory == 'workers/api'
+        run: npm run test:combined-recovery
       - name: Test versioned emoji master D1 staging
         if: matrix.directory == 'workers/api'
         run: npm run test:emoji-master-release

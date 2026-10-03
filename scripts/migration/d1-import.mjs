@@ -54,7 +54,7 @@ import {
 } from "./credential-import-transform.mjs";
 
 export const D1_IMPORT_SCHEMA_VERSION = 2;
-export const D1_IMPORT_CODEC_VERSION = 4;
+export const D1_IMPORT_CODEC_VERSION = 5;
 export const DEFAULT_MAX_ROWS_PER_BATCH = 50;
 export const DEFAULT_MAX_BATCH_BYTES = 512 * 1024;
 export const DEFAULT_MAX_BINDINGS_PER_BATCH = 500;
@@ -327,6 +327,18 @@ function buildImportPlan(catalog, convertedSchema, { allowUnresolvedGates, crede
       throw fail("unsupported_internal_foreign_key");
     }
     dependencies.get(constraint.table_name)?.add(parsed.referenceTable);
+  }
+
+  // Native generation triggers also impose a write-order dependency. A
+  // credential's artifact/coverage binds the final access generation; importing
+  // a sibling profile/config afterward would invalidate that binding even
+  // though every source FK is satisfied. Preserve FK ordering and add these
+  // known generation writers as prerequisites of the credential table.
+  if (credentialDescriptor && tableSet.has(CREDENTIAL_SOURCE_RELATION)) {
+    for (const table of ["fanmarks", "fanmark_licenses", "fanmark_basic_configs",
+      "fanmark_redirect_configs", "fanmark_messageboard_configs", "fanmark_profiles"]) {
+      if (tableSet.has(table)) dependencies.get(CREDENTIAL_SOURCE_RELATION).add(table);
+    }
   }
 
   const importOrder = [];

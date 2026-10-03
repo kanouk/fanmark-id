@@ -265,6 +265,44 @@ For a separately captured private schema-only source catalog:
 node scripts/migration/test-d1-import-current-schema.mjs /private/path/catalog.json --canonical-business
 ```
 
+### Combined Master and split-R2 recovery
+
+`npm run test:combined-recovery` uses the same 40-table structural catalog and
+a 15-row synthetic snapshot including an owner avatar reference and a license
+profile with a cover reference. The private bundle binds the Business manifest,
+emoji release, reference-master snapshot and Storage manifest by SHA-256.
+The fresh target uses all 25 Business/four Auth migrations, eight Master
+migrations with its retained historical Auth core, and independent avatar and
+cover R2 bindings. It activates the saved emoji/reference releases, reads the
+catalog through the actual repository, verifies all imported emoji/tier IDs,
+and checks each saved image reference against the native R2 bytes and MIME.
+R2 replay keeps one object in each bucket. Expected bundle hashes are checked
+again from saved files before the second target restores them.
+
+Including the real profile/config generation triggers reproduced a failure:
+source-FK ordering alone imported credentials before sibling profiles, so a
+later profile INSERT changed access_generation and broke credential readback.
+Importer codec version 5 adds the known access-generation writers as
+prerequisites of the credential table. It preserves source FK dependencies
+and captures the final generation without relaxing readback. Version-4 runs
+cannot resume through the new order; use a new isolated target/rehearsal.
+The combined fixture confirms profile generation plus password generation
+remain reconciled across ACK-unknown retry and fresh-target restoration.
+
+The test reports the measured local fresh-target recovery duration, including
+schema creation, D1 import, Master activation and R2 copy/readback. It is not a
+production RTO measurement or an approved recovery-time target. Source images
+are synthetic PNG fixtures; no production Storage objects or user rows are
+read. The image references use a synthetic source URL and are checked at the
+bucket/key level; browser delivery and production URL rewriting are separate
+final-integration/data gates. Public Master scaling, remote recovery/custody,
+provider connectivity and the final candidate application rehearsal remain open.
+
+```sh
+cd workers/api
+npm run test:combined-recovery
+```
+
 This is a local importer and readback core. It does not create a production D1,
 run a remote schema migration, bind Auth identities, copy encrypted/private
 data, migrate Storage/cron settings, or switch application traffic. The

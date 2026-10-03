@@ -68,7 +68,8 @@
     "test:admin-data-reset-d1": "vitest run --config vitest.admin-data-reset.config.mjs",
     "test:notification-wake": "vitest run --config vitest.notification-wake.config.mjs",
     "test:oauth-signup-d1": "vitest run --config vitest.oauth-signup.config.mjs",
-    "test:business-runtime-import": "node --test ../../scripts/migration/test-business-runtime-import.mjs"
+    "test:business-runtime-import": "node --test ../../scripts/migration/test-business-runtime-import.mjs",
+    "test:combined-recovery": "node --experimental-strip-types --test ../../scripts/migration/test-combined-recovery.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.1.13",

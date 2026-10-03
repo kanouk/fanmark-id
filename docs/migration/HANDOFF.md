@@ -12,6 +12,27 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Combined local recovery and credential ordering candidate**:
+  test:combined-recovery restores one SHA-bound synthetic bundle containing
+  40 Business source tables/15 rows, four Auth migrations, eight Master
+  migrations plus retained historical Auth core, published three-emoji/four-tier
+  releases, and two profile-linked PNG objects in separate avatar/cover R2
+  bindings. The second independent target reconciles the same source hashes,
+  catalog IDs/tier IDs and image bytes/MIME; R2 replay keeps one object per
+  bucket. The measured fresh-target local restore was 10182ms; whole test
+  45004ms includes ACK loss/replay and both targets. This is not production RTO.
+  A real failure in the synthetic fixture was fixed: profile/config INSERTs
+  after fanmark_password_configs changed access_generation and invalidated
+  credential coverage. Codec v5 adds these trigger dependencies to source FK
+  ordering and refuses v4 run resume; it does not weaken generation readback.
+  Combined1/1, Business/Auth-only1/1, default importer20/20, standalone native
+  R2 proof and focused lint pass. This affects local importer/tests, not the
+  deployed Worker; c09/bce8993 remains the accepted runtime. 1e803a9's
+  CI37099588552 passed both jobs and its watcher exited0. Browser image URL
+  delivery, large/remote recovery, operator custody/RTO and the final provider/
+  application integration remain open. No real Supabase Auth passwords,
+  production Storage objects or user rows were read or transferred.
+
 - **Tier consolidation and current-schema synthetic import candidate**:
   availability/registration share fanmark-tier.ts; source-emoji-helpers-review.md
   links the classifier, ID mapping and old raw-text counter without inventing

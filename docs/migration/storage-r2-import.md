@@ -124,6 +124,16 @@ loopback HTTP only and makes no external network request.
 
 ## Remaining migration gates
 
+The combined local recovery command `npm run test:combined-recovery` in
+`workers/api` ties two synthetic image objects to actual imported owner/profile
+references and the same Business/Auth/Master snapshot bundle. It restores them
+into separate native avatar/cover bindings on two independent targets and
+verifies full body hashes, MIME and one object per bucket after replay. The
+shared local FixedLengthStream bridge is also used by the existing standalone
+native R2 proof. This does not migrate real Storage or prove browser URL
+rewriting; scope and import-generation ordering are recorded in
+[D1 import](d1-import.md#combined-master-and-split-r2-recovery).
+
 This evidence does not establish that a production R2 bucket exists, that its
 binding and permissions are configured, or that the export directory is a
 current source snapshot. A later reviewed runner still needs operator-selected

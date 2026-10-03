@@ -16,6 +16,7 @@ import { exportSnapshot } from "./snapshot-export.mjs";
 import { importD1Snapshot } from "./d1-import.mjs";
 import { validateSequenceStates } from "./snapshot-format.mjs";
 import { applyBusinessRuntimeMigrations, businessMigrationStatements, readBusinessRuntimeImportSchema } from "./business-runtime-import-schema.mjs";
+import { LOCAL_R2_IMPORT_WORKER } from "./local-r2-import-transport.mjs";
 import {
   applyLifecycleTargetSchema,
   generateLifecycleTargetSchema,
@@ -313,18 +314,24 @@ async function createLocalD1() {
         type: "worker",
         compatibilityDate: "2026-09-18",
         env: { DB: { type: "d1", name: "fanmark-current-catalog-d1-import-test" },
-          AUTH_DB: { type: "d1", name: "fanmark-current-catalog-auth-test" } },
+          AUTH_DB: { type: "d1", name: "fanmark-current-catalog-auth-test" },
+          MASTER_DB: { type: "d1", name: "fanmark-current-catalog-master-test" },
+          AVATARS_BUCKET: { type: "r2", name: "fanmark-current-catalog-avatars-test" },
+          COVER_IMAGES_BUCKET: { type: "r2", name: "fanmark-current-catalog-covers-test" } },
         manifest: {
           mainModule: "index.js",
           modules: {
-            "index.js": { type: "esm", contents: "export default { fetch() { return new Response('ok'); } };" },
+            "index.js": { type: "esm", contents: LOCAL_R2_IMPORT_WORKER },
           },
         },
       },
     }],
   });
   return { miniflare, database: await miniflare.getD1Database("DB"),
-    authDatabase: await miniflare.getD1Database("AUTH_DB") };
+    authDatabase: await miniflare.getD1Database("AUTH_DB"),
+    masterDatabase: await miniflare.getD1Database("MASTER_DB"),
+    avatarBucket: await miniflare.getR2Bucket("AVATARS_BUCKET"),
+    coverBucket: await miniflare.getR2Bucket("COVER_IMAGES_BUCKET") };
 }
 
 async function applySql(database, sql) {
@@ -424,7 +431,8 @@ async function createSyntheticSnapshot(catalog, rows, sequenceStates, directory)
   return result.manifestPath;
 }
 
-export async function runCurrentCatalogSyntheticImport(catalogResultPath, { canonicalBusinessSchema = false } = {}) {
+export async function runCurrentCatalogSyntheticImport(catalogResultPath, { canonicalBusinessSchema = false, auxiliaryRecovery = null } = {}) {
+  if (auxiliaryRecovery !== null && (typeof auxiliaryRecovery !== "function" || !canonicalBusinessSchema)) throw new Error("invalid_auxiliary_recovery");
   if (typeof catalogResultPath !== "string" || catalogResultPath.length === 0) failUsage();
   const parsed = await fs.readFile(path.resolve(catalogResultPath), "utf8");
   const catalog = readCatalog(parsed);
@@ -440,6 +448,28 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
         retry_count: "0", created_at: "2026-09-26T12:00:00.000000Z", updated_at: "2026-09-26T12:00:00.000000Z",
       }, arrayMetadata: {},
     }];
+  }
+  if (auxiliaryRecovery) {
+    const timestamp = "2026-09-26T12:00:00.000000Z";
+    const sourceOrigin = "https://synthetic-source.example.invalid/storage/v1/object/public/";
+    const row = (table, values) => ({ schemaVersion: 1, table, columns: columnsFor(catalog, table), values, arrayMetadata: {} });
+    rows.user_settings = [row("user_settings", {
+      id: "90000000-0000-4000-8000-000000000011", user_id: syntheticAuthUserId,
+      username: "synthetic_import_owner", display_name: "Imported Synthetic Owner",
+      avatar_url: `${sourceOrigin}avatars/${syntheticAuthUserId}/avatar.png`, plan_type: "free", preferred_language: "ja",
+      created_at: timestamp, updated_at: timestamp, invited_by_code: null, requires_password_setup: "f", stripe_customer_id: null,
+    })];
+    rows.fanmark_profiles = [row("fanmark_profiles", {
+      id: "90000000-0000-4000-8000-000000000012", license_id: syntheticLicenseId,
+      display_name: "Synthetic Emoji Profile", bio: "Recovery-only profile", social_links: "{}",
+      theme_settings: JSON.stringify({ cover_image_url: `${sourceOrigin}cover-images/${syntheticAuthUserId}/cover.png` }),
+      is_public: "t", created_at: timestamp, updated_at: timestamp,
+    })];
+    for (const fanmark of rows.fanmarks) {
+      fanmark.values.tier_level = "4";
+      fanmark.values.emoji_ids = fanmark.values.normalized_emoji_ids;
+      fanmark.arrayMetadata.emoji_ids = { isNull: false, ndims: 1, lowerBound: 1 };
+    }
   }
   assert.equal(tableNames.length, 40, "current_public_table_count");
   const sequenceStates = sequenceStatesForCurrentCatalog(catalog);
@@ -472,6 +502,9 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
   let miniflare = null;
   let restoredMiniflare = null;
   let freshTargetRestoreVerified = false;
+  let freshTargetRestoreDurationMs = null;
+  let primaryAuxiliary = null;
+  let restoredAuxiliary = null;
   const trace = [];
   let phase = "snapshot";
   let authIdentityLookups = 0;
@@ -598,7 +631,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
     const generation = await database.prepare(
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticLicenseId).first();
-    assert.deepEqual(generation, { password_generation: 1, access_generation: 1 });
+    assert.deepEqual(generation, { password_generation: 1, access_generation: auxiliaryRecovery ? 2 : 1 });
     const disabledGeneration = await database.prepare(
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticDisabledLicenseId).first();
@@ -671,11 +704,16 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
       created_by: null,
     });
     assert.ok(authIdentityLookups >= 1, "external synthetic Auth references must be preflighted");
+    if (auxiliaryRecovery) {
+      phase = "primary-auxiliary-recovery";
+      primaryAuxiliary = await auxiliaryRecovery({ target: local, root, manifestPath, phase: "primary" });
+    }
     // Miniflare's D1 authorizer rejects PRAGMA integrity_check with SQLITE_AUTH.
     // The importer has already streamed and read back every table/hash above.
 
     if (canonicalBusinessSchema) {
       phase = "fresh-target-restore";
+      const restoreStarted = performance.now();
       const restored = await createLocalD1();
       restoredMiniflare = restored.miniflare;
       await applyBusinessRuntimeMigrations(restored.database);
@@ -700,7 +738,13 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
       assert.deepEqual(await restored.authDatabase.prepare("PRAGMA foreign_key_check").all().then(result => result.results), []);
       assert.deepEqual(await restored.database.prepare("SELECT requested_generation, acknowledged_generation FROM notification_worker_wake_state WHERE singleton_id = 1").first(),
         { requested_generation: 1, acknowledged_generation: 0 });
+      if (auxiliaryRecovery) {
+        phase = "restored-auxiliary-recovery";
+        restoredAuxiliary = await auxiliaryRecovery({ target: restored, root, manifestPath, phase: "restored" });
+        assert.deepEqual(restoredAuxiliary, primaryAuxiliary, "Master/R2 recovery must match the original target");
+      }
       freshTargetRestoreVerified = true;
+      freshTargetRestoreDurationMs = Math.round(performance.now() - restoreStarted);
     }
 
     phase = "conflict-rejection";
@@ -714,12 +758,14 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
     );
     return {
       canonicalBusinessSchema,
+      ...(auxiliaryRecovery ? { auxiliaryRecovery: restoredAuxiliary } : {}),
       ...(canonicalBusinessSchema ? { runtimeSchemaFingerprint: (await readBusinessRuntimeImportSchema()).fingerprint,
         businessMigrationCount: (await readBusinessRuntimeImportSchema()).migrationDigests.length } : {}),
       tableCount: tableNames.length,
-      sourceRowCount: canonicalBusinessSchema ? 13 : 12,
+      sourceRowCount: Object.values(rows).reduce((sum, tableRows) => sum + tableRows.length, 0),
       ...(canonicalBusinessSchema ? { authMigrationCount: 4, runtimeSchemaGuardRejected: true,
         runtimeFingerprintTamperRejected: true, freshTargetRestoreVerified,
+        freshTargetRestoreDurationMs,
         notificationWakeAfterReplay: { requestedGeneration: 1, acknowledgedGeneration: 0 } } : {}),
       transformedCredentialCount: 2,
       deferredCredentialCount: 1,
