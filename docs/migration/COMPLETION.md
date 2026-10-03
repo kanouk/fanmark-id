@@ -77,3 +77,8 @@ actual local Workerのeditor試験でCDP protocol拒否が起きた。手元は�
 [evidence](evidence/isolated-notification-archive-cron-2026-10-03.json)に固定した。
 providerの設定場所/テスト宛先への送信許可と、Workers Paidの判断は入力待ち。
 これらの待ちを合成fixtureや同じ検証の反復で埋めない。
+
+`e68e6e8`/CI37124843575はWorker成功・application失敗。CDP診断から
+continueRequestの無効interception IDを確認した。同じ通信のChrome取消しreceiptを
+確認するhelperと、実Chromeのpause/abort再現を追加しlocal成功。Linux CIは次HEAD待ち。
+元の失敗時の取消しreceiptは未保存で、断定しない。未知のprotocol拒否は失敗を保持する。

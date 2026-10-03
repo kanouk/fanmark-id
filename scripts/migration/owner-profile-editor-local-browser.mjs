@@ -3,6 +3,7 @@ import {spawn} from 'node:child_process';
 import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
 import path from 'node:path';
+import { continuePausedRequest, recordCanceledNetworkRequest } from './browser-request-interception.mjs';
 
 export async function runBrowser({temp,origin,users,http,execute,sql,importedImages}){
  const {cdpConnection}=await import(path.join(temp,'cdp-helper.mjs'));
@@ -11,7 +12,9 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
  const chromeProfile=path.join(temp,'chrome-profile');await mkdir(chromeProfile,{mode:0o700});
  const chrome=spawn(chromePath,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--no-default-browser-check','--ignore-certificate-errors',`--user-data-dir=${chromeProfile}`,'--remote-debugging-port=0','about:blank'],{stdio:'ignore'});
  const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
- let cdp;const errors=[],blocked=[],requests=[];
+ let cdp;const errors=[],blocked=[],requests=[],canceledRequests=new Set();
+ let canceledInterceptions=0,cancellationFixture;
+ const cancellationPath='/__local_browser_cancellation_fixture';
  async function value(expression){const result=await cdp.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});assert.ok(!result.exceptionDetails,'local_browser_eval_failed');return result.result?.value;}
  async function wait(expression,predicate,timeout=15000){const until=Date.now()+timeout;while(Date.now()<until){const result=await value(expression);if(predicate(result))return result;await delay(100);}throw Error('local_browser_wait_timeout:'+expression);}
  const owner=users[0],other=users[1];
@@ -24,12 +27,14 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   let port;for(let i=0;i<150;i++){assert.equal(chrome.exitCode,null,'local_chrome_exited');try{port=(await readFile(path.join(chromeProfile,'DevToolsActivePort'),'utf8')).split('\n')[0];if(port)break;}catch{}await delay(100);}assert.ok(port);
   const targets=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();cdp=cdpConnection(targets.find(target=>target.type==='page').webSocketDebuggerUrl);await cdp.opened;
   await cdp.send('Page.enable');await cdp.send('Network.enable');await cdp.send('Runtime.enable');
+  cdp.on('Network.loadingFailed',event=>recordCanceledNetworkRequest(canceledRequests,event));
   cdp.on('Fetch.requestPaused',event=>{void(async()=>{
    const url=new URL(event.request.url);
    if(url.origin!==origin){blocked.push({origin:url.origin,path:url.pathname});await cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'BlockedByClient'});return;}
+   if(url.pathname===cancellationPath){cancellationFixture=event;return;}
    requests.push({path:url.pathname,method:event.request.method});
    if(failNextPatch&&url.pathname===profilePath&&event.request.method==='PATCH'){failNextPatch=false;failedPatches++;await cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'ConnectionFailed'});return;}
-   await cdp.send('Fetch.continueRequest',{requestId:event.requestId});
+   if((await continuePausedRequest(cdp,event,canceledRequests)).canceled)canceledInterceptions++;
   })().catch(error=>errors.push(error.message));});
   await cdp.send('Fetch.enable',{patterns:[{urlPattern:'*'}]});
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
@@ -38,6 +43,16 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   assert.equal(await value('history.state?.usr?.from'),editor);
   assert.equal(requests.some(req=>req.path===profilePath),false,'anonymous_owner_read');
   await wait("!!document.querySelector('#auth-email')",Boolean);
+  // Reproduce the exact Chrome protocol response deterministically. This GET
+  // stays paused and is aborted in the browser; no API response is substituted.
+  await value(`(()=>{window.__cancelFixture=new AbortController();void fetch(${JSON.stringify(cancellationPath)},{signal:window.__cancelFixture.signal}).catch(()=>null);})()`);
+  for(let i=0;i<100&&!cancellationFixture;i++)await delay(10);
+  assert.ok(cancellationFixture?.networkId,'cancellation_fixture_not_paused');
+  await value('window.__cancelFixture.abort()');
+  for(let i=0;i<100&&!canceledRequests.has(cancellationFixture.networkId);i++)await delay(10);
+  assert.ok(canceledRequests.has(cancellationFixture.networkId),'missing_chrome_cancellation_receipt');
+  assert.equal((await continuePausedRequest(cdp,cancellationFixture,canceledRequests)).canceled,true);
+  canceledInterceptions++;
   for(const [selector,text] of [['#auth-email',owner.email],['#auth-password',owner.password]]){await value(`document.querySelector(${JSON.stringify(selector)}).focus()`);await cdp.send('Input.insertText',{text});}
   await value("document.querySelector('#auth-email').closest('form').querySelector('button[type=\"submit\"]').click()");
   await wait("document.querySelector('input[name=\"display_name\"]')?.value",result=>result===owner.name);
@@ -101,7 +116,7 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   assert.deepEqual(errors,[]);
   assert.ok(requests.some(req=>req.path==='/api/auth/sign-in/email'&&req.method==='POST'));
   assert.ok(requests.some(req=>req.path===profilePath&&req.method==='PATCH'));
-  return {actualApiResponses:true,fulfilledApiResponses:0,importedImagesDecodedInEditor:true,importedImagesDecodedInPublicPage:true,unchangedSourceImageReferencesPreserved:true,legacyOwnerDelete:true,externalRequestsBlocked:blocked.length,anonymousReturn:true,actualFormSignin:true,viewport390Overflow:false,failedSaveRequests:failedPatches,failedSavePreservesRows:true,reloadRestoresDraft:true,retryPersistsInD1:true,successfulSaveClearsDraft:true,coldReopen:true,publicPrivateToggling:true,crossOwnerEditorRefused:true,suspensionRedirect:true,foreignKeyViolations:0,realPhone:false};
+  return {actualApiResponses:true,fulfilledApiResponses:0,canceledInterceptionFixture:true,canceledInterceptions,importedImagesDecodedInEditor:true,importedImagesDecodedInPublicPage:true,unchangedSourceImageReferencesPreserved:true,legacyOwnerDelete:true,externalRequestsBlocked:blocked.length,anonymousReturn:true,actualFormSignin:true,viewport390Overflow:false,failedSaveRequests:failedPatches,failedSavePreservesRows:true,reloadRestoresDraft:true,retryPersistsInD1:true,successfulSaveClearsDraft:true,coldReopen:true,publicPrivateToggling:true,crossOwnerEditorRefused:true,suspensionRedirect:true,foreignKeyViolations:0,realPhone:false};
  }finally{
   cdp?.close();if(chrome.exitCode===null){chrome.kill('SIGTERM');for(let i=0;i<20&&chrome.exitCode===null;i++)await delay(100);if(chrome.exitCode===null){chrome.kill('SIGKILL');for(let i=0;i<20&&chrome.exitCode===null;i++)await delay(100);}}
   await rm(chromeProfile,{recursive:true,force:true,maxRetries:5,retryDelay:100});

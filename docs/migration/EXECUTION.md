@@ -1,3 +1,21 @@
+# 2026-10-03 ブラウザ取消し競合の修正candidate
+
+最新`e68e6e8`/CI37124843575はcompleted/failure。Workerは成功、applicationの
+actual local Worker editor試験が`Fetch.continueRequest:-32602:invalid_interception_id`
+で失敗した。前の`dae2a70`/CI37123979783成功は保持するが、最新CI成功とはしない。
+
+Network.loadingFailed(canceled=true)の同一networkIdを確認できる場合だけ、
+continueRequestの上記拒否を正常な取消しとして扱うhelperを追加した。
+取消しreceiptがない、別ID、別method/code/kindの拒否は引き続き失敗させる。
+native6/6、変更箇所lint、check:ci、diff check成功。actual local Worker/Chromeでも
+通信をpause→AbortController取消し→Chrome receipt→無効ID拒否の順で再現し、
+fixtureの取消し1件を確認した。実API応答のみでeditor既存フロー・FK0が成功し、
+server停止/port閉鎖/local DB削除も確認した。前のCI失敗時に取消しreceiptを記録して
+いなかったため、元の1件の原因を断定しない。新HEAD CIでLinuxの回帰を確認する。
+
+実Cron archiveは前項のaccepted-and-cleanedを保持し、再実行しない。
+この変更はbrowser harness/通常CIの回帰のみ。runtime/source data/ドメインは未変更。
+
 # 2026-10-03 実Cronアーカイブと最新CIの受け入れ
 
 `dae2a70`/CI37123979783はcompleted/success、application/Worker両job成功。

@@ -64,6 +64,14 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
 契約・範囲は[取得API](migration/fanmark-registration-api.md)、現行writerと最後の
 データ工程へ残すindex条件は[sequence review](migration/source-sequence-key-review.md)。
 
+実Workerを使うeditor browser試験は、`Fetch.continueRequest`の無効ID拒否を
+同じ`networkId`のChrome `Network.loadingFailed(canceled=true)` receiptと照合する。
+receipt不明・別ID・別code等の失敗は隠さない。実Chromeでpause/abortを再現し、
+API応答の置換は行わずeditorの保存/下書き/所有権の確認を保つ。
+helperの6回帰は`node --test scripts/migration/test-browser-request-interception.mjs`で、
+通常`test:migration-data`/CIにも含める。全browser試験は
+`npm run test:staging-profile-editor-local`。390pxは実スマホ検証の代わりにはしない。
+
 Cloudflareの本人profile native検証は`npm run --prefix workers/api test:profile-d1`。
 全25 Business/4 Auth migration・実session/R2・invitation FKと各caseのFK checkを
 使用し、通常Worker CIの`test:api-contracts-d1`にも含まれる。sourceのsettings権限と
