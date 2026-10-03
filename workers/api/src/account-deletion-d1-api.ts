@@ -1,6 +1,7 @@
 import { selectD1Database, type Env } from "./repository";
 import { FanmarkReturnApiError, returnAllActiveFanmarksForAccountDeletion } from "./fanmark-return-d1-api";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
+import { prepareLotteryCancellation } from "./lottery-cancellation-audit";
 
 const ACCOUNT_DELETION_PATH = "/api/me/account/delete";
 const METHODS = "POST, OPTIONS";
@@ -22,7 +23,7 @@ export interface AccountDeletionDependencies {
   resolveUser(request: Request, env: Env): Promise<{ userId: string } | null>;
   verifyPassword(request: Request, password: string, env: Env): Promise<boolean>;
   cancelCustomerSubscriptions(customerIds: string[], env: Env): Promise<void>;
-  deleteAuthUser(request: Request, password: string, env: Env): Promise<{ success: boolean; setCookie?: string }>;
+  deleteAuthUser(request: Request, password: string, env: Env, expectedUserId: string): Promise<{ success: boolean; setCookies?: string[] }>;
 }
 
 export class AccountDeletionApiError extends Error {
@@ -37,12 +38,12 @@ export class AccountDeletionApiError extends Error {
   }
 }
 
-function json(body: unknown, status: number, headers?: HeadersInit, setCookie?: string): Response {
+function json(body: unknown, status: number, headers?: HeadersInit, setCookies: string[] = []): Response {
   const resultHeaders = new Headers(headers);
   resultHeaders.set("cache-control", "no-store");
   resultHeaders.set("content-type", "application/json; charset=utf-8");
   resultHeaders.set("x-content-type-options", "nosniff");
-  if (setCookie) resultHeaders.append("set-cookie", setCookie);
+  for (const cookie of setCookies) resultHeaders.append("set-cookie", cookie);
   return new Response(JSON.stringify(body), { status, headers: resultHeaders });
 }
 
@@ -110,7 +111,13 @@ async function readDeleteConfirmation(request: Request): Promise<string> {
   return value.password;
 }
 
-async function readBillingLinks(database: D1Database, userId: string): Promise<string[]> {
+interface AccountDeletionBillingSnapshot {
+  customerIds: string[];
+  profiles: string;
+  subscriptions: string;
+}
+
+async function readBillingLinks(database: D1Database, userId: string): Promise<AccountDeletionBillingSnapshot> {
   const [profile, subscriptions] = await Promise.all([
     database.prepare("SELECT stripe_customer_id FROM user_settings WHERE user_id = ? LIMIT 2")
       .bind(userId).all<{ stripe_customer_id: unknown }>(),
@@ -157,7 +164,7 @@ async function readBillingLinks(database: D1Database, userId: string): Promise<s
       throw new AccountDeletionApiError("billing_identity_shared", 409);
     }
   }
-  return [...customerIds].sort();
+  return { customerIds: [...customerIds].sort(), profiles: JSON.stringify(profile.results), subscriptions: JSON.stringify(subscriptions.results) };
 }
 
 async function preflightLicenseReturns(database: D1Database, userId: string, nowIso: string): Promise<void> {
@@ -187,67 +194,139 @@ async function preflightLicenseReturns(database: D1Database, userId: string, now
   if (activeTransfer) throw new AccountDeletionApiError("transfer_in_progress", 409);
 }
 
-async function cleanupBusinessRows(database: D1Database, userId: string, nowIso: string): Promise<void> {
-  const existingDeletionAudit = await database.prepare(`
-    SELECT id FROM audit_logs
+async function cleanupBusinessRows(database: D1Database, userId: string, nowIso: string, billing: AccountDeletionBillingSnapshot): Promise<void> {
+  const audits = await database.prepare(`
+    SELECT id, metadata, created_at, request_id FROM audit_logs
     WHERE user_id = ? AND action = 'DELETE_ACCOUNT' AND resource_type = 'user' AND resource_id = ?
-    LIMIT 1
-  `).bind(userId, userId).first();
+    LIMIT 2
+  `).bind(userId, userId).all<{ id: string; metadata: string; created_at: string; request_id: string | null }>();
+  if (!audits.success || audits.results.length > 1) throw new AccountDeletionApiError("account_delete_unavailable", 503);
+  const existing = audits.results[0];
+  if (existing) {
+    let metadata: unknown;
+    try { metadata = JSON.parse(existing.metadata) as unknown; } catch {
+      throw new AccountDeletionApiError("account_delete_unavailable", 503);
+    }
+    if (typeof existing.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(existing.id) ||
+        typeof existing.created_at !== "string" || !Number.isFinite(Date.parse(existing.created_at)) ||
+        existing.request_id !== null || !isRecord(metadata) || Object.keys(metadata).length !== 2 ||
+        metadata.deletion_method !== "user_initiated" || metadata.deleted_at !== existing.created_at) {
+      throw new AccountDeletionApiError("account_delete_unavailable", 503);
+    }
+  }
+  const auditId = existing?.id ?? crypto.randomUUID();
+  const auditTime = existing?.created_at ?? nowIso;
+  const auditMetadata = JSON.stringify({ deletion_method: "user_initiated", deleted_at: auditTime });
+  const exactAudit = `id = ? AND user_id = ? AND action = 'DELETE_ACCOUNT'
+    AND resource_type = 'user' AND resource_id = ? AND request_id IS NULL
+    AND created_at = ? AND json(metadata) = json(?)`;
+  const auditBindings = [auditId, userId, userId, auditTime, auditMetadata];
+  const cancellation = await prepareLotteryCancellation(database, "user", userId, "user_request", nowIso);
+
+  // Cross-database SET NULL references must retain their original rows. Merely
+  // counting remaining owned rows would also accept a trigger deleting history.
+  const retainedSpecs = [
+    { table: "fanmark_availability_rules", column: "created_by", where: "created_by = ?", timed: true, fields: [] },
+    { table: "notification_rules", column: "created_by", where: "created_by = ?", timed: true, fields: [] },
+    { table: "user_roles", column: "created_by", where: "created_by = ? AND user_id <> ?", timed: false, fields: ["user_id", "role"] },
+    { table: "fanmark_lottery_history", column: "winner_user_id", where: "winner_user_id = ?", timed: false, fields: [] },
+    { table: "fanmark_licenses", column: "user_id", where: "user_id = ?", timed: true,
+      fields: ["fanmark_id", "license_start", "license_end", "status", "grace_expires_at", "is_returned", "created_at"] },
+  ] as const;
+  const retained = await Promise.all(retainedSpecs.map(async spec => {
+    const rows = await database.prepare(`SELECT id${spec.fields.map(field => `, ${field}`).join("")}
+      FROM ${spec.table} WHERE ${spec.where} ORDER BY id`)
+      .bind(...(spec.table === "user_roles" ? [userId, userId] : [userId])).all();
+    if (!rows.success) throw new AccountDeletionApiError("account_delete_unavailable", 503);
+    return { ...spec, snapshot: JSON.stringify(rows.results) };
+  }));
+  const retentionGuards = retained.map(spec => database.prepare(`SELECT CASE WHEN
+    NOT EXISTS (SELECT 1 FROM json_each(?) AS item WHERE NOT EXISTS (
+      SELECT 1 FROM ${spec.table} AS kept WHERE kept.id = json_extract(item.value, '$.id')
+        AND kept.${spec.column} IS NULL ${spec.timed ? "AND kept.updated_at = ?" : ""}
+        ${spec.fields.map(field => `AND kept.${field} IS json_extract(item.value, '$.${field}')`).join(" ")}
+    )) THEN 1 ELSE json('account_delete_history_incomplete') END AS verified`
+  ).bind(spec.snapshot, ...(spec.timed ? [nowIso] : [])));
   const statements = [
+    database.prepare(`SELECT CASE WHEN
+      (SELECT count(*) FROM audit_logs WHERE user_id = ? AND action = 'DELETE_ACCOUNT'
+        AND resource_type = 'user' AND resource_id = ?) = ?
+      ${existing ? `AND EXISTS (SELECT 1 FROM audit_logs WHERE ${exactAudit})` : ""}
+      AND NOT EXISTS (SELECT 1 FROM broadcast_emails WHERE created_by = ?)
+      THEN 1 ELSE json('account_delete_snapshot_changed') END AS verified`
+    ).bind(userId, userId, existing ? 1 : 0, ...(existing ? auditBindings : []), userId),
+    database.prepare(`SELECT CASE WHEN
+      (SELECT count(*) FROM user_settings WHERE user_id = ?) = json_array_length(?)
+      AND NOT EXISTS (SELECT 1 FROM json_each(?) AS item WHERE NOT EXISTS (
+        SELECT 1 FROM user_settings WHERE user_id = ? AND stripe_customer_id IS json_extract(item.value, '$.stripe_customer_id')
+      ))
+      AND (SELECT count(*) FROM user_subscriptions WHERE user_id = ?) = json_array_length(?)
+      AND NOT EXISTS (SELECT 1 FROM json_each(?) AS item WHERE NOT EXISTS (
+        SELECT 1 FROM user_subscriptions WHERE user_id = ?
+          AND stripe_customer_id = json_extract(item.value, '$.stripe_customer_id')
+          AND stripe_subscription_id = json_extract(item.value, '$.stripe_subscription_id')
+          AND status = json_extract(item.value, '$.status')
+      ))
+      AND NOT EXISTS (SELECT 1 FROM user_settings WHERE user_id <> ?
+        AND stripe_customer_id IN (SELECT value FROM json_each(?)))
+      AND NOT EXISTS (SELECT 1 FROM user_subscriptions WHERE user_id <> ?
+        AND stripe_customer_id IN (SELECT value FROM json_each(?)))
+      THEN 1 ELSE json('account_delete_billing_changed') END AS verified`
+    ).bind(userId, billing.profiles, billing.profiles, userId,
+      userId, billing.subscriptions, billing.subscriptions, userId,
+      userId, JSON.stringify(billing.customerIds), userId, JSON.stringify(billing.customerIds)),
+    cancellation.before,
     database.prepare("UPDATE fanmark_availability_rules SET created_by = NULL, updated_at = ? WHERE created_by = ?").bind(nowIso, userId),
     database.prepare("UPDATE notification_rules SET created_by = NULL, updated_at = ? WHERE created_by = ?").bind(nowIso, userId),
     database.prepare("UPDATE user_roles SET created_by = NULL WHERE created_by = ?").bind(userId),
-    database.prepare(`
-      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
-      SELECT user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', id,
-        json_object('old_status', entry_status, 'new_status', 'cancelled', 'cancellation_reason', 'user_request'), ?
-      FROM fanmark_lottery_entries WHERE user_id = ? AND entry_status = 'pending'
-    `).bind(nowIso, userId),
-    database.prepare(`
-      UPDATE fanmark_lottery_entries
-      SET entry_status = 'cancelled', cancelled_at = ?, cancellation_reason = 'user_request', updated_at = ?
-      WHERE user_id = ? AND entry_status = 'pending'
-    `).bind(nowIso, nowIso, userId),
+    cancellation.insert,
+    cancellation.update,
     database.prepare("UPDATE fanmark_lottery_history SET winner_user_id = NULL WHERE winner_user_id = ?").bind(userId),
     database.prepare("DELETE FROM notifications WHERE user_id = ?").bind(userId),
-    database.prepare(`
-      DELETE FROM notification_events
-      WHERE status IN ('pending', 'processing') AND json_extract(payload, '$.user_id') = ?
-    `).bind(userId),
+    database.prepare(`DELETE FROM notification_events
+      WHERE status IN ('pending', 'processing') AND json_extract(payload, '$.user_id') = ?`).bind(userId),
     database.prepare("DELETE FROM notification_preferences WHERE user_id = ?").bind(userId),
     database.prepare("DELETE FROM fanmark_favorites WHERE user_id = ?").bind(userId),
     database.prepare("DELETE FROM user_roles WHERE user_id = ?").bind(userId),
-    database.prepare("DELETE FROM user_settings WHERE user_id = ?").bind(userId),
+    database.prepare(`DELETE FROM user_settings WHERE user_id = ? AND EXISTS (
+      SELECT 1 FROM json_each(?) AS item WHERE user_settings.stripe_customer_id IS json_extract(item.value, '$.stripe_customer_id')
+    )`).bind(userId, billing.profiles),
     database.prepare("DELETE FROM enterprise_user_settings WHERE user_id = ?").bind(userId),
-    database.prepare("DELETE FROM user_subscriptions WHERE user_id = ?").bind(userId),
+    database.prepare(`DELETE FROM user_subscriptions WHERE user_id = ? AND EXISTS (
+      SELECT 1 FROM json_each(?) AS item
+      WHERE user_subscriptions.stripe_customer_id = json_extract(item.value, '$.stripe_customer_id')
+        AND user_subscriptions.stripe_subscription_id = json_extract(item.value, '$.stripe_subscription_id')
+        AND user_subscriptions.status = json_extract(item.value, '$.status')
+    )`).bind(userId, billing.subscriptions),
     database.prepare("UPDATE fanmark_licenses SET user_id = NULL, updated_at = ? WHERE user_id = ?").bind(nowIso, userId),
   ];
-  if (!existingDeletionAudit) {
-    statements.push(database.prepare(`
-      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
-      VALUES (?, 'DELETE_ACCOUNT', 'user', ?, ?, ?)
-    `).bind(userId, userId, JSON.stringify({ deletion_method: "user_initiated", deleted_at: nowIso }), nowIso));
-  }
-
+  if (!existing) statements.push(database.prepare(`
+    INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+    VALUES (?, ?, 'DELETE_ACCOUNT', 'user', ?, ?, ?)
+  `).bind(auditId, userId, userId, auditMetadata, auditTime));
+  statements.push(cancellation.verify, ...retentionGuards,
+    database.prepare(`SELECT CASE WHEN
+      EXISTS (SELECT 1 FROM audit_logs WHERE ${exactAudit})
+      AND (SELECT count(*) FROM audit_logs WHERE user_id = ? AND action = 'DELETE_ACCOUNT'
+        AND resource_type = 'user' AND resource_id = ?) = 1
+      AND NOT EXISTS (SELECT 1 FROM user_settings WHERE user_id = ?)
+      AND NOT EXISTS (SELECT 1 FROM fanmark_licenses WHERE user_id = ?)
+      AND NOT EXISTS (SELECT 1 FROM fanmark_favorites WHERE user_id = ?)
+      AND NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = ?)
+      AND NOT EXISTS (SELECT 1 FROM notification_preferences WHERE user_id = ?)
+      AND NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = ? OR created_by = ?)
+      AND NOT EXISTS (SELECT 1 FROM user_subscriptions WHERE user_id = ?)
+      AND NOT EXISTS (SELECT 1 FROM enterprise_user_settings WHERE user_id = ?)
+      AND NOT EXISTS (SELECT 1 FROM fanmark_lottery_entries WHERE user_id = ? AND entry_status = 'pending')
+      AND NOT EXISTS (SELECT 1 FROM notification_events WHERE status IN ('pending', 'processing') AND json_extract(payload, '$.user_id') = ?)
+      AND NOT EXISTS (SELECT 1 FROM fanmark_lottery_history WHERE winner_user_id = ?)
+      AND NOT EXISTS (SELECT 1 FROM fanmark_availability_rules WHERE created_by = ?)
+      AND NOT EXISTS (SELECT 1 FROM notification_rules WHERE created_by = ?)
+      AND NOT EXISTS (SELECT 1 FROM broadcast_emails WHERE created_by = ?)
+      THEN 1 ELSE json('account_delete_cleanup_incomplete') END AS verified`
+    ).bind(...auditBindings, ...Array.from({ length: 17 }, () => userId)));
   const results = await database.batch(statements);
-  if (results.length !== statements.length || results.some((result) => !result.success)) {
-    throw new AccountDeletionApiError("account_delete_unavailable", 503);
-  }
-  const verification = await database.prepare(`
-    SELECT
-      (SELECT COUNT(*) FROM user_settings WHERE user_id = ?) AS settings,
-      (SELECT COUNT(*) FROM fanmark_licenses WHERE user_id = ?) AS licenses,
-      (SELECT COUNT(*) FROM fanmark_favorites WHERE user_id = ?) AS favorites,
-      (SELECT COUNT(*) FROM notifications WHERE user_id = ?) AS notifications,
-      (SELECT COUNT(*) FROM notification_preferences WHERE user_id = ?) AS preferences,
-      (SELECT COUNT(*) FROM user_roles WHERE user_id = ?) AS roles,
-      (SELECT COUNT(*) FROM user_subscriptions WHERE user_id = ?) AS subscriptions,
-      (SELECT COUNT(*) FROM enterprise_user_settings WHERE user_id = ?) AS enterprise_settings,
-      (SELECT COUNT(*) FROM fanmark_lottery_entries WHERE user_id = ? AND entry_status = 'pending') AS pending_lottery_entries,
-      (SELECT COUNT(*) FROM notification_events WHERE status IN ('pending', 'processing') AND json_extract(payload, '$.user_id') = ?) AS pending_user_notifications
-  `).bind(userId, userId, userId, userId, userId, userId, userId, userId, userId, userId)
-    .first<Record<string, unknown>>();
-  if (!verification || Object.values(verification).some((value) => value !== 0)) {
+  if (results.length !== statements.length || results.some(result => !result.success)) {
     throw new AccountDeletionApiError("account_delete_unavailable", 503);
   }
 }
@@ -318,8 +397,8 @@ export async function handleAccountDeletionRequest(
     const operationNowIso = toUtcMicrosecondTimestamp(operationNow);
     await preflightLicenseReturns(database, userId, operationNowIso);
 
-    const customerIds = await readBillingLinks(database, userId);
-    await dependencies.cancelCustomerSubscriptions(customerIds, env);
+    const billing = await readBillingLinks(database, userId);
+    await dependencies.cancelCustomerSubscriptions(billing.customerIds, env);
 
     try {
       await returnAllActiveFanmarksForAccountDeletion(database, userId, operationNow);
@@ -330,10 +409,10 @@ export async function handleAccountDeletionRequest(
       return json({ error: "account_delete_unavailable" }, 503, headers);
     }
 
-    await cleanupBusinessRows(database, userId, operationNowIso);
-    const deleted = await dependencies.deleteAuthUser(request, password, env);
+    await cleanupBusinessRows(database, userId, operationNowIso, billing);
+    const deleted = await dependencies.deleteAuthUser(request, password, env, userId);
     if (!deleted.success) return json({ error: "auth_delete_failed" }, 503, headers);
-    return json({ success: true, message: "Account deleted successfully" }, 200, headers, deleted.setCookie);
+    return json({ success: true, message: "Account deleted successfully" }, 200, headers, deleted.setCookies);
   } catch (error) {
     if (error instanceof AccountDeletionApiError) return json({ error: error.code }, error.status, headers);
     return json({ error: "account_delete_unavailable" }, 503, headers);

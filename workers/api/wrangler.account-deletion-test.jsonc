@@ -10,7 +10,9 @@
     "FANMARK_RETURN_BACKEND": "d1",
     "BETTER_AUTH_SECRET": "local-account-deletion-test-only-secret-not-for-deployment-000000000000",
     "BETTER_AUTH_URL": "https://api.example.test",
-    "CORS_ALLOWED_ORIGINS": "https://app.example.test"
+    "CORS_ALLOWED_ORIGINS": "https://app.example.test",
+    "AUTH_USER_STATUS_BACKEND": "d1",
+    "AUTH_SOCIAL_PROVISIONING_BACKEND": "d1"
   },
   "d1_databases": [
     {

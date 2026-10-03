@@ -6531,3 +6531,16 @@ reproduction are next. Per-license returns precede cleanup and their committed
 grace transitions cannot be called part of a cross-store rollback. Full source/
 RLS/callers, lifecycle/retention/ops, real providers/phones and CPU/plan stay open.
 No real user data/source writer/DNS changed. Migration remains incomplete.
+
+
+## 2026-10-03：退会の監査・cleanup・Auth削除をnative D1で検証
+
+縮小Business fixtureを廃止し、全25 Business/4 Auth migrationと合成seedを実Worker router/Better Authの退会試験へ接続した。既存6ケースが通過してから、監査抑止/改変/削除とAuth user DELETEのIGNORE/ABORTを追加。修正前は4ケース失敗し、監査欠落とAuth DELETE抑止で誤った200、最後のAuth DELETEがABORTするとcredential/sessionだけ消える状態を実D1で再現した。ログは`/tmp/fanmark-account-deletion-fault-reproduction.log`。
+
+業務cleanupに共通のuser-scope pending snapshot/取消audit guard、server UUID付きDELETE_ACCOUNT exact guard、所有行の削除/参照解除/履歴保持の終了assertionを同じbatchで追加した。Auth失敗からの再試行は既存退会監査のID・時刻・metadataを保持し、重複/不正内容を拒否する。Auth側は本人sessionと現在パスワードを再確認し、同じbatchでuser DELETE・FK cascade・全関連行不在を確定する。逐次SDK deleteUserは使わずendpoint自体も無効化し、commit後のSDK sign-outからcookieを個別に返す。
+
+追加レビューで、事前のbilling確認後にD1顧客/契約linkが追加される2ケースも誤った200を再現した（`/tmp/fanmark-account-deletion-billing-race-reproduction.log`）。事前に確認したprofile/subscription snapshotとcustomer共有をBusiness batchで照合し、その値に一致するprojectionだけ削除する。batch途中の追加/改変も終了assertionで全cleanupをrollbackする。Stripeとの分散transactionを証明したものではない。
+
+最終native66/66は、両監査それぞれの10種fault（計20ケース）、13 cleanup抑止、4保持行削除、5 Auth cascade抑止、Auth user IGNORE/ABORT、5 Auth identity race、2 Business race、4 billing race、2不正/重複retry audit、複数license応募の一部監査欠落と他人license保持、pending0、複数のwarmed sessionと別ユーザー保持、従来のパスワード/Stripe未設定/transfer/FK/本人/直接route閉鎖を含む。全test後にBusiness/AuthのFK0と別のAuthユーザー保持を確認した。ログ`/tmp/fanmark-account-deletion-final-native.log`。既存Auth47/47、frontend4/4、Worker型検査、focused lint、workflow isolation、staging bundle dry-runも成功。native Masterは不要な退会経路で、実provider課金・メール・ユーザーデータ移送は実施していない。
+
+このcandidateはまだCI・配備・remote故障/rollback/retry/readbackを受け入れていない。現stagingは既存`71d1612f-5220-4bf1-bc7f-99cc43adbbd7`のまま。BusinessとAuth、Stripeおよび先に確定した個別ライセンス返却は別transactionであり、後段失敗で全工程が巻き戻るとは主張しない。全source/RLS/caller、定常lifecycle/archive/retention、運用復旧/権限/秘密、実provider・実端末、CPU/planなど全体の残件は継続する。ユーザーデータとドメインは最終工程として今回の実行対象外。

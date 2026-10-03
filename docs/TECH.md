@@ -296,3 +296,8 @@ remote:falseとし、account/routes/servicesは使わず、終了時にlocal DB 
 譲渡承認も`lottery-cancellation-audit.ts`と同一batchの完了assertionを使う。応募snapshotがbatch取得前に変わった場合、取消監査または移管監査が欠落・改変された場合、ライセンス・設定削除・申請更新・outboxが抑止された場合は全変更をrollbackする。`test:fanmark-transfer-d1`は全25 Business/4 Auth migration、実Better Auth signin/sessionとWorker routerを使う37件のnative proof。Masterはティア参照用fixtureなので全Master schema受け入れはこのsuiteでは主張しない。remote acceptanceは[migration/fanmark-transfer-api.md](migration/fanmark-transfer-api.md)とHANDOFFで区別する。
 
 譲渡承認の`c6a4f9d`はCIとstagingの5故障/rollback/retryケースまで受け入れ済み。remoteでは実Masterティアを参照し、テストデータ・triggers・cookieのcleanup、保持Master/MFA/secretとmonotonic wakeのreadbackも通過した。現在のstagingは`71d1612f-5220-4bf1-bc7f-99cc43adbbd7`。退会監査と全source/RLS/callers/provider/運用の検証は別の未完了条件。
+
+
+## 退会処理のtransaction境界（Cloudflare移行候補）
+
+`account-deletion-d1-api.ts`は共通の抽選取消snapshot/audit guardを使い、DELETE_ACCOUNT監査とcleanup効果・保持履歴をBusiness D1の同じbatchで検査する。既存退会監査はID・時刻・内容を保持してAuth削除の再試行に使い、重複・不正内容は拒否する。`account-deletion-auth.ts`は現在パスワードと本人sessionを再確認し、ユーザーDELETEのFK cascadeと終了状態をAuth D1の一つのbatchで確定する。失敗時にcredential/sessionだけ先に消えるSDKの逐次deleteUserは使わず、SDK endpoint自体も無効化した。削除後のSDK sign-outで複数cookieをそのまま返す。Business/Auth/Stripe間の原子性はなく、先に確定した返却・billing・Business cleanupは残る。全25 Business/4 Auth migrationのnativeテストで検証する候補であり、現在の配備済みWorker `71d1612f-5220-4bf1-bc7f-99cc43adbbd7`への適用・remote受入は別工程。詳細は[退会API](migration/account-deletion-api.md)。

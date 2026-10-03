@@ -32,6 +32,7 @@ import {
 import { createD1AvailabilityRepository } from "./availability-d1-repository";
 import { createSupabaseAvailabilityRepository } from "./availability-repository";
 import { handleAccountDeletionRequest, isAccountDeletionPath } from "./account-deletion-d1-api";
+import { deleteAuthenticatedAccount } from "./account-deletion-auth";
 import { cancelLinkedStripeSubscriptionsForAccountDeletion } from "./stripe-account-deletion";
 import { createD1PublicAccessRepository } from "./public-access-d1-repository";
 import { handleVerifiedAccessRequest, isVerifiedAccessPath } from "./verified-access.mjs";
@@ -1079,28 +1080,33 @@ export async function handleRequest(
       },
       cancelCustomerSubscriptions: (customerIds, requestEnv) =>
         cancelLinkedStripeSubscriptionsForAccountDeletion(customerIds, requestEnv),
-      deleteAuthUser: async (deleteRequest, password, requestEnv) => {
+      deleteAuthUser: async (deleteRequest, password, requestEnv, expectedUserId) => {
         const config = configuredAuth(requestEnv);
         if (!config) throw new Error("auth_unavailable");
-        const authApi = createApplicationAuth(config).api as unknown as {
-          deleteUser(input: { headers: Headers; body: { password: string }; asResponse: true }): Promise<Response>;
-        };
-        const response = await authApi.deleteUser({
+        const auth = createApplicationAuth(config);
+        const current = await auth.api.getSession({
           headers: deleteRequest.headers,
-          body: { password },
-          asResponse: true,
+          query: { disableCookieCache: true },
         });
-        if (!response.ok) return { success: false };
-        let body: unknown;
-        try {
-          body = await response.json();
-        } catch {
+        if (current?.user?.id !== expectedUserId || typeof current.session?.id !== "string") {
           return { success: false };
         }
-        return {
-          success: typeof body === "object" && body !== null && (body as { success?: unknown }).success === true,
-          ...(response.headers.get("set-cookie") ? { setCookie: response.headers.get("set-cookie") as string } : {}),
-        };
+        await deleteAuthenticatedAccount(config.database, expectedUserId, current.session.id, password);
+        // Auth is now authoritatively deleted. Cookie clearing is best effort:
+        // a failed sign-out response must not report a retryable deletion failure
+        // for an identity which no longer exists. No secondary store or deletion
+        // hooks are configured; the D1 cascade owns all credential/session rows.
+        try {
+          const authApi = auth.api as unknown as {
+            signOut(input: { headers: Headers; body: { disableRedirect: true }; asResponse: true }): Promise<Response>;
+          };
+          const response = await authApi.signOut({
+            headers: deleteRequest.headers, body: { disableRedirect: true }, asResponse: true,
+          });
+          return { success: true, setCookies: response.headers.getSetCookie() };
+        } catch {
+          return { success: true };
+        }
       },
     });
   }

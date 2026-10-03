@@ -7,6 +7,21 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Current local account-deletion candidate, not deployed:** full25 Business/4
+  Auth native66/66 and existing Auth47/47, client4/4, typecheck/lint/workflow
+  isolation/staging bundle dry-run pass. Shared user-scope cancellation guard,
+  exact DELETE_ACCOUNT audit and required cleanup/history checks abort the
+  Business batch on missing/altered audits or suppressed effects. Billing
+  projection snapshots fence changes after cancellation preflight and inside
+  cleanup. Auth now uses one guarded user DELETE/cascade batch instead of SDK
+  sequential session/account/user deletion; it retains all credentials/sessions
+  on SQL failure and respects a changed password/session/suspension/credential.
+  All warmed sessions are revoked on success; other users remain valid.
+  Native evidence: /tmp/fanmark-account-deletion-final-native.log;
+  Auth47 /tmp/fanmark-account-deletion-auth-regression.log.
+  Two pre-fix billing races and four original integrity failures were reproduced.
+  CI and exact-head staging deployment/remote fault-retry acceptance remain
+  required. Do not attribute native66 to the still-current Worker71d below.
 - **Newest accepted staging code:c6a4f9d**, both CI37090152096 jobs successful.
   Fresh preflight02:40:55Z verifies Business ledger25/Auth owned0, retained
   Master inventory and wake7:7. Read-only Auth schema02:41:25Z confirms existing
@@ -34,13 +49,12 @@ older sections retain their historical acceptance and failure evidence.
   /tmp/fanmark-transfer-c6a4f9d-staging-acceptance.json.
   This scope does not prove new remote OAuth users/providers, current editor/
   lottery reexecution, real phones, full source/RLS/callers or whole migration.
-- Next: account-deletion lottery and DELETE_ACCOUNT audit integrity. Its older
-  suite uses a reduced Business fixture; the synthetic candidate seed is now
-  compatible with all25 canonical migrations/SQLite/FK0 but native/Auth route
-  integration and fault tests are still required. Private preparation is
-  /tmp/fanmark-account-deletion-canonical-preparation.json. Remaining full
-  source, lifecycle/archive/ops/recovery, providers and CPU/plan stay open.
-  Real user-data migration and domain/DNS remain intentionally last.
+- Next: finish candidate CI, prepare exact-head guarded deployment and remote
+  account-deletion audit/cleanup/Auth failure-retry acceptance using disposable
+  users only, then restore and independently verify all retained baselines.
+  Private preparation: /tmp/fanmark-account-deletion-canonical-preparation.json.
+  Remaining full source, lifecycle/archive/ops/recovery, providers and CPU/plan
+  stay open. Real user-data migration and domain/DNS remain intentionally last.
 - Docs-only3f4faac CI37089404509 passed both jobs; no deployment was needed.
 - **Prior accepted staging code:027a949**, both CI37088432269 jobs successful.
   Full preflight02:12:10Z verifies Business ledger25/Auth owned0 and the fixed
