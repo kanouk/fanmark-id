@@ -1,5 +1,32 @@
 # Reference master data release
 
+## Retained timestamps and latest deployment (2026-10-03 JST)
+
+Candidatec7b71c6 passed CI37101502623 and is deployed at100% as
+Worker70090cdc-7476-4892-8f53-ec38b21ed32e. Public reference counts4/4/5/16,
+static JS/CSS bytes and retained7888-row emoji inventory/history passed readback.
+The subsequent activation canary found the MFA-protected pricing read returning
+503 before any Master write: retained reference rows contain PostgreSQL UTC
+export timestamps and older ISO millisecond writes, incompatible with the
+new canonical-only admin snapshot reader.
+
+The newer reader fix accepts those exact UTC representations and canonicalizes
+them in a new snapshot without rounding their fractional digits or changing the
+immutable old release. New snapshot timestamps are six-digit UTC; prior
+millisecond values express zero sub-millisecond digits. Invalid calendar dates,
+non-UTC offsets, unsupported ISO forms and fractions beyond six digits refuse.
+Generic importer and standalone release-input validation remain strict. Native
+D1 API10/10 covers loading->ready legacy fixtures, read/edit/restore, exact
+five-digit source fraction preservation, retained old rows and invalid-format
+refusal without disabling immutability guards. Worker typecheck/lint pass.
+CI, deployment and remote activation/restore of this newer fix remain pending.
+
+The failed canary's synthetic Auth and sole leftover synthetic admin profile
+were cleaned. Independent06:25:49Z readback confirms owned Business/Auth0,
+unchanged active referenceba598c61 and retained emoji inventory/history. MFA
+generation advanced236->238 during its factor lifecycle; no counter was reset.
+This is not inactive-member remote acceptance or provider integration evidence.
+
 The first explicit non-user reference-data release contained:
 
 | Source table | Rows | Source SHA-256 |

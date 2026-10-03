@@ -12,6 +12,34 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Retained Master timestamp compatibility fix, local candidate**:
+  c7b71c6 CI37101502623 passed both jobs and was deployed as
+  70090cdc-7476-4892-8f53-ec38b21ed32e at100%. Root/static JS/CSS byte/hash
+  readback, noindex/robots/sitemap, four public reference APIs and independent
+  retained baseline verification passed. Public counts are4/4/5/16; this did
+  not test an inactive remote member. The bounded deactivate/restore canary
+  then found HTTP503 on the MFA-protected admin baseline read, before any
+  Master write. Retained rows have PostgreSQL UTC export text and earlier ISO
+  millisecond writes, while the current reader required canonical six-digit
+  ISO text. A native loading->ready fixture reproduces503 without disabling
+  immutability guards. The reader now canonicalizes these exact UTC formats
+  when building a new snapshot, preserving up to six fractional digits and
+  leaving old releases unchanged. Invalid dates/non-UTC/sub-microsecond input
+  still refuse before writing. Local reference API10/10, Worker typecheck and
+  focused lint pass; CI/deployed acceptance of this newer fix remains pending.
+  Generic import/release input validation is not relaxed.
+  The failed private canary cleaned Auth; its added synthetic admin profile
+  was not covered by the old cleanup condition. The sole leftover profile was
+  identified by empty-before state, fixed synthetic fields, username/UUID and
+  bounded run timestamp, captured in a private recovery journal and deleted
+  by its exact predicate. Independent06:25:49.704Z readback proves owned
+  Business/Auth0,25 Business migrations,Master7888/inventory/history/active
+  reference unchanged, wake17/17 and only the original3 secret names. Retained
+  MFA generation advanced236->238 during factor creation/deletion; it was not
+  reset. Private proof prefix:/tmp/fanmark-reference-c7b71c6.
+  Workers Free was also confirmed by the authenticated account plans page;
+  the owner decision on Workers Paid and provider setup remains pending.
+
 - **Public reference activation filtering and retained-history helper candidate**:
   reference-master public reads validate the complete ready release manifest,
   all DTOs and uniqueness before filtering Tier/pattern/extension-price members
@@ -23,9 +51,10 @@ staging deployment does not close the whole goal.
   and focused lint pass. The native fixture reproduced the helper's erroneous
   two-row activation-history assumption after multiple admin edits; the helper
   now verifies an unchanged historical prefix and one appended audit without
-  deleting/resetting history. CI and deployed acceptance remain pending.
-  No source/user/remote Master/provider changes have run; c09/bce8993 remains
-  the deployed baseline.
+  deleting/resetting history. CI passed and this code is deployed as70090cdc;
+  public all-active/static/retained readback passed. Remote inactive-member
+  acceptance remains pending on the timestamp fix above. No source/user/remote
+  Master/provider changes ran in the deployment or failed canary.
 
 
 - **Complete source policy inventory, runtime unchanged**:

@@ -356,12 +356,12 @@ describe("versioned reference-master Worker API", () => {
     ).bind(afterLiveIdEdit.releaseVersion).run()).rejects.toThrow(/reference_release_rows_immutable/u);
   });
 
-  it("rejects an active master with rounded timestamps before staging an admin edit", async () => {
+  it("rejects unsupported timestamp precision before staging an admin edit", async () => {
     const writes: string[] = [];
     const validTimestamp = "2026-09-23T01:02:03.123456Z";
     const rowsFor = (sql: string): Record<string, unknown>[] => {
       if (sql.includes("FROM fanmark_tier_release_rows")) return [{
-        id: "00000000-0000-4000-8000-000000000001", created_at: "2026-09-23T01:02:03.123Z",
+        id: "00000000-0000-4000-8000-000000000001", created_at: "2026-09-23T01:02:03.1234567Z",
         description: "Synthetic tier", display_name: "Synthetic", emoji_count_max: 5, emoji_count_min: 1,
         initial_license_days: 30, is_active: 1, monthly_price_cents: 30_000, tier_level: 4,
         updated_at: validTimestamp,
@@ -490,5 +490,86 @@ describe("versioned reference-master Worker API", () => {
       MASTER_DB: dbFor({ ...inactive, price_yen: -1 }),
     });
     expect(malformed.status).toBe(502);
+  });
+
+  it("reads and edits retained Master UTC timestamps without losing source microseconds", async () => {
+    const pointer = await database!.prepare(
+      "SELECT release_version FROM fanmark_reference_master_active_release WHERE singleton_id=1",
+    ).first<{ release_version: string }>();
+    const sourceVersion = pointer!.release_version;
+    const tables = ["fanmark_tier_release_rows", "fanmark_language_release_rows",
+      "fanmark_reserved_emoji_pattern_release_rows", "fanmark_extension_price_release_rows"];
+    const legacyCreated = "2025-10-12 13:24:24.97595+00";
+    const legacyUpdated = "2026-09-26T18:44:14.759Z";
+    // Retained rows were imported before the canonical timestamp contract.
+    // Build each fixture through loading -> ready; keep immutable-row guards.
+    async function retainedFixture(version: string, created: string, updated: string, expected: string) {
+      await database!.prepare(
+        "INSERT INTO fanmark_reference_master_releases (release_version,source_snapshot_sha256,manifest_json,status,created_at) " +
+        "SELECT ?,?,manifest_json,'loading',created_at FROM fanmark_reference_master_releases WHERE release_version=?",
+      ).bind(version, version, sourceVersion).run();
+      for (const table of [...tables, "fanmark_reference_master_release_tables", "fanmark_reference_master_extension_price_manifests"]) {
+        const columns = (await database!.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>()).results.map((row) => row.name);
+        const values: string[] = [];
+        const select = columns.map((column) => {
+          if (column === "release_version" || column === "created_at" || column === "updated_at") {
+            values.push(column === "release_version" ? version : column === "created_at" ? created : updated);
+            return "?";
+          }
+          return `"${column}"`;
+        });
+        await database!.prepare(`INSERT INTO ${table} (${columns.map((column) => `"${column}"`).join(",")}) ` +
+          `SELECT ${select.join(",")} FROM ${table} WHERE release_version=?`).bind(...values, sourceVersion).run();
+      }
+      await database!.prepare("UPDATE fanmark_reference_master_releases SET status='ready',verified_at=? WHERE release_version=?")
+        .bind("2026-10-03T00:00:00.000000Z", version).run();
+      await activateReferenceMasterRelease({ database, releaseVersion: version, expectedActiveVersion: expected });
+    }
+    const oldVersion = "c".repeat(64);
+    await retainedFixture(oldVersion, legacyCreated, legacyUpdated, sourceVersion);
+
+    const repository = createReferenceMasterAdminD1Repository({
+      ...runtimeEnv, D1_TOPOLOGY: "split", REFERENCE_MASTER_ADMIN_BACKEND: "d1",
+    });
+    const initial = await repository.getPricing();
+    const price = initial.extensionPrices[0];
+    if (typeof price.id !== "string" || typeof price.price_yen !== "number") throw new Error("invalid price fixture");
+    const priceId = price.id;
+    const priceYen = price.price_yen;
+    const changed = await repository.updatePricing(initial.releaseVersion, {
+      type: "extension_price", id: priceId, changes: { priceYen: priceYen + 1 },
+    });
+    const restored = await repository.updatePricing(changed.releaseVersion, {
+      type: "extension_price", id: priceId, changes: { priceYen },
+    });
+    expect(restored.extensionPrices).toEqual(initial.extensionPrices);
+    expect(restored.tiers).toEqual(initial.tiers);
+    for (const table of tables) {
+      const retained = await database!.prepare(
+        `SELECT created_at,updated_at FROM ${table} WHERE release_version=?`,
+      ).bind(oldVersion).all();
+      expect(retained.results.every((row) => row.created_at === legacyCreated && row.updated_at === legacyUpdated)).toBe(true);
+      const written = await database!.prepare(
+        `SELECT created_at FROM ${table} WHERE release_version=?`,
+      ).bind(restored.releaseVersion).all();
+      expect(written.results.length).toBeGreaterThan(0);
+      expect(written.results.every((row) => row.created_at === "2025-10-12T13:24:24.975950Z")).toBe(true);
+    }
+    const untouched = await database!.prepare(
+      "SELECT updated_at FROM fanmark_language_release_rows WHERE release_version=?",
+    ).bind(restored.releaseVersion).all();
+    expect(untouched.results.every((row) => row.updated_at === "2026-09-26T18:44:14.759000Z")).toBe(true);
+
+    const invalidDates = ["2025-02-30 13:24:24.123456+00", "2025-10-12 13:24:24.1234567+00",
+      "2025-10-12 13:24:24.123456+09", "2025-10-12T13:24:24Z", "not-a-timestamp"];
+    for (const [index, invalid] of invalidDates.entries()) {
+      const invalidVersion = String(index + 4).repeat(64);
+      await retainedFixture(invalidVersion, invalid, legacyUpdated, restored.releaseVersion);
+      try {
+        await expect(repository.getPricing()).rejects.toMatchObject({ status: 503, message: "reference_master_admin_unavailable" });
+      } finally {
+        await activateReferenceMasterRelease({ database, releaseVersion: restored.releaseVersion, expectedActiveVersion: invalidVersion });
+      }
+    }
   });
 });

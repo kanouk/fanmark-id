@@ -1,5 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
-import { assertUtcMicrosecondTimestamp } from "./utc-timestamp.mjs";
+import { assertUtcMicrosecondTimestamp, normalizeUtcMicrosecondTimestamp } from "./utc-timestamp.mjs";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const HASH_RE = /^[0-9a-f]{64}$/u;
@@ -101,7 +101,18 @@ function requiredText(value: unknown, max = 2048): string {
 
 function requiredTimestamp(value: unknown): string {
   try {
-    return assertUtcMicrosecondTimestamp(value);
+    // Retained releases contain PostgreSQL UTC export text and earlier ISO
+    // millisecond writes. Canonicalize exact fractions for a new snapshot;
+    // reading never rewrites the immutable source release.
+    if (typeof value === "string") {
+      const postgresUtc = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?\+00(?::00)?$/u.exec(value);
+      if (postgresUtc) {
+        return assertUtcMicrosecondTimestamp(
+          `${postgresUtc[1]}T${postgresUtc[2]}.${(postgresUtc[3] ?? "").padEnd(6, "0")}Z`,
+        );
+      }
+    }
+    return normalizeUtcMicrosecondTimestamp(value);
   } catch {
     fail("reference_master_admin_unavailable");
   }

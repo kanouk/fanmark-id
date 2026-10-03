@@ -89,4 +89,13 @@ Tier/pattern/priceのactive行だけを返し、管理・保存データは保�
 不完全なmanifest/不正なinactive行は拒否する。native API9/client8/release6、
 両typecheck/lintが成功。既存activation履歴が2件を超えると正常切替後にも誤って
 失敗するhelperの不具合も再現し、既存履歴を保持して1件追加を検証するよう修正。
-CI・staging受け入れは未完了で、稼働Workerはc09/bce8993のまま。
+候補c7b71c6のCI37101502623は両job成功し、Worker70090cdcへ配備した。
+公開4マスター4/4/5/16件、JS/CSS一致と保持データの独立readbackが成功。
+ただし無効化・復元のstagingテストは管理APIのbaseline503で変更前に停止した。
+保持済みMasterのPostgreSQL UTC/旧ISOミリ秒表記を新しいstrict日時readerが
+拒否する不具合を修正。snapshot内で精度を保って正規化し、古いreleaseは
+書き換えず、不正日付/非UTC/6桁超は拒否する。local API10/10・型・lintは成功。
+合成Authと取り残した一時管理者profileは削除し、06:25:49Zの独立readbackで
+owned0・Master7888/履歴不変を確認。MFA世代は236から238へ進んだ。
+日時修正のCI/配備/無効化・復元受け入れは残る。Workers Freeを実アカウント
+画面で確認済み。有料planの判断とprovider設定は回答待ち。
