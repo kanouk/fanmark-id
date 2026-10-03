@@ -55,9 +55,22 @@ older sections retain their historical acceptance and failure evidence.
   exposed plugin-before-core ordering, corrected by checking suspension before
   repair/profile writes while retaining the core session guard. No diagnostics
   remain in runtime. See oauth-signup-provisioning.md.
-- Staging still has no Auth0009 or provisioning selector/provider credentials.
+- The deployed staging still has no Auth0009 or provisioning selector/provider credentials.
+  Checked-in app/Auth migration allowlists now include Auth0009 only in Auth,
+  and app config selects the new backend for a future guarded deployment. The
+  actual local editor's Auth fixture follows all four migrations. The initial
+  candidate CI found that generic Vitest also picked up the D1-only new file
+  without its provided Business migrations; it is now excluded there and runs
+  once through its dedicated configuration in npm test. Exact corrected CI and
+  Auth0009 remote apply/readback are required before deploying that selection.
+  Corrected generic suite56/56 and migration allowlist6/6 pass. Actual local
+  HTTPS Worker/browser compose with all25 Business/4 Auth/8 Master migrations
+  passes real form signin, failed-save D1/draft preservation, reload/retry/save,
+  public/private, cross-owner and suspension guards, zero fulfilled APIs/FK
+  violations, and scoped server/port/state cleanup. This local working-tree
+  evidence is separate from remote staging and the next exact-head CI.
   New providers default disableSignUp=true until the selector is explicitly
-  chosen. Candidate exact-head CI, guarded Auth schema apply/readback and new
+  chosen. Corrected candidate exact-head CI, guarded Auth schema apply/readback and new
   Worker deployment remain prerequisites. No new remote acceptance is claimed.
   Source/runtime/Auth gates and real provider acceptance remain open.
 - D1 daily read quota recovered. An over-narrow private guard expected only

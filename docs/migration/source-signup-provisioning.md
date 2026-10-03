@@ -88,7 +88,7 @@ provider-subject markers and recoverable split-D1 writes. The54 native cases
 include all four new-user callbacks and first password setup, account/profile/
 completion pre-commit and lost-ACK faults, identity conflicts, suspension,
 state replay and schema readiness. See [OAuth registration](oauth-signup-provisioning.md).
-This code is not yet deployed or selected; the complete real-provider callback,
+This code and its committed backend selection are not yet deployed; the complete real-provider callback,
 provisioning and initial-setup flow still needs integration acceptance. Provider
 credentials remain absent. Credential or synthetic proof cannot clear this Auth binding
 for the complete migration. The function/RLS/trigger gate and real provider,

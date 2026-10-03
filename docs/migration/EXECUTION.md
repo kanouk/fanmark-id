@@ -32,6 +32,19 @@ Auth core0003・0007・0008・0009で各case後FK checkも行う。Worker CIのn
 配備はまだ必要。現stagingは55b/a0fのまま。実providerキー、メール・課金、実phone、
 全source runtime/認可移植の受け入れは未完了。実ユーザーデータとDNSは移行しない。
 
+初回candidate4f62045のWorker CIでは、generic Vitestのglobが新D1専用fileも拾い、
+Business migration provideなしで実行して失敗した。専用fileをgeneric excludeへ加え、
+専用config経由の54ケースだけをnpm test内で実行する。次の配備準備としてAuth/app
+configのAuth allowlistへ0009を追加し、Master側には含めない。app configでは
+AUTH_SOCIAL_PROVISIONING_BACKEND=d1を選び、実local editorもAuth4 migrationに合わせる。
+この選択はまだremoteに反映されていない。修正後のCIとAuth0009 readbackが配備条件。
+修正したgeneric suite56/56とmigration allowlist6/6が成功。all25 Business/4 Auth/
+8 Masterで実local HTTPS Worker/browserを接続したeditorもverified、API応答模擬0、
+provider/remote/source read0。実フォームsignin、保存失敗時の行/下書き保持、reload/
+retry/save、公開/非公開、他所有者・停止拒否、FK違反0、server/port/state cleanupを確認。
+private reportはfanmark-local-editor-compose-MOMyEH/report.json。これは修正working treeの
+local証拠で、4f62045のCI成功やremote検証ではない。
+
 ## 2026-10-03：UUID認証修正の配備・受け入れとOAuth設定の適用
 
 8144df2のCI37082406423は両job成功。00:37:42Zの完全preflight後、00:38:19Zに

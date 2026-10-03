@@ -2,8 +2,9 @@
 
 The Worker implementation is a **local synthetic acceptance candidate**.
 `AUTH_SOCIAL_PROVISIONING_BACKEND=d1` explicitly selects it; an absent selector
-keeps provider `disableSignUp=true`. Staging has not applied Auth migration
-`0009_auth_oauth_signup.sql` or selected this new backend. Real provider keys,
+keeps provider `disableSignUp=true`. The checked-in staging configuration selects
+this backend and adds Auth0009 to the Auth-only migration allowlist. The deployed
+staging Worker still has neither Auth0009 nor the active new backend. Real provider keys,
 remote new-user acceptance and the complete migration remain open.
 
 ## Creation and identity
@@ -83,10 +84,16 @@ pre-0009 schema, missing/non-unique indexes, schema-read failure and invitation
 policy changes. Both databases' FK checks run after every case. Faults wrap
 actual native writes; after-commit faults execute the write before throwing.
 
+The generic Vitest configuration excludes this D1-only file; the dedicated
+configuration provides the full Business ledger and is invoked separately by
+`npm test`. Its initial CI wiring failure showed why both paths must be checked.
+The actual local editor now applies four Auth migrations, matching the selected
+staging backend, while all provider credentials remain absent.
+
 Before remote activation: both CI jobs must succeed for the exact candidate
 commit, the dedicated Cloudflare account and staging version must be checked,
-Auth migration0009 must be guarded/applied/read back, and the backend must be
-explicitly selected. Duplicate provider account keys are a separate rejection/
+Auth migration0009 must be guarded/applied/read back, then the committed backend
+selection may be deployed. Duplicate provider account keys are a separate rejection/
 reconciliation gate before any eventual existing-identity import. These tests
 do not authorize or prove live user-data migration, provider configuration,
 email delivery, real billing, mobile acceptance or domain/DNS cutover.

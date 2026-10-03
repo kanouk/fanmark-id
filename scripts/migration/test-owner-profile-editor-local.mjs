@@ -61,12 +61,12 @@ const sql=value=>value===null?'NULL':typeof value==='number'?String(value):"'"+S
 const now=new Date().toISOString().replace(/\.(\d{3})Z$/u,(_match,fraction)=>`.${fraction}000Z`);
 let server;
 let serverLog='';
-let report={state:'preparing',head,temp,origin,remoteBindings:false,remoteD1Calls:0,sourceRowsRead:false,providerCalls:0,sourceOwnedDataMigrated:false,fullBusinessMigrations:BUSINESS_MIGRATION_SEQUENCE.length,authMigrations:3,masterMigrations:8};
+let report={state:'preparing',head,temp,origin,remoteBindings:false,remoteD1Calls:0,sourceRowsRead:false,providerCalls:0,sourceOwnedDataMigrated:false,fullBusinessMigrations:BUSINESS_MIGRATION_SEQUENCE.length,authMigrations:4,masterMigrations:8};
 async function checkpoint(){await privateWrite(journalPath,JSON.stringify(report,null,2)+'\n');}
 await checkpoint();
 try{
  await child([path.join(root,'node_modules/vite/bin/vite.js'),'build','--mode','cloudflare-staging','--outDir',config.assets.directory],root,buildEnv);
- const authSql=(await Promise.all(['0003_better_auth_core.sql','0007_auth_signup_command.sql','0008_auth_user_suspension.sql'].map(name=>readFile(path.join(api,'migrations',name),'utf8')))).join('\n');
+ const authSql=(await Promise.all(['0003_better_auth_core.sql','0007_auth_signup_command.sql','0008_auth_user_suspension.sql','0009_auth_oauth_signup.sql'].map(name=>readFile(path.join(api,'migrations',name),'utf8')))).join('\n');
  const masterSql=(await Promise.all(['0000_emoji_master.sql','0001_emoji_master_release_staging.sql','0002_emoji_master_release_activation.sql','0004_reference_master_releases.sql','0005_emoji_master_admin_guards.sql','0006_reference_master_extension_prices.sql','0007_release_audit_timestamps.sql','0008_emoji_master_change_audits.sql'].map(name=>readFile(path.join(api,'migrations',name),'utf8')))).join('\n');
  for(const name of BUSINESS_MIGRATION_SEQUENCE)await execute('FANMARK_DB',await readFile(path.join(api,'migrations-business',name),'utf8'));
  await execute('AUTH_DB',authSql);await execute('MASTER_DB',masterSql);

@@ -16,6 +16,7 @@ export default defineConfig({
       "./test/public-access.test.ts",
       "./test/emoji-catalog-api.test.ts",
       "./test/auth-d1.test.ts",
+      "./test/oauth-signup-d1.test.ts",
       "./test/reference-master-d1-api.test.ts",
       "./test/storage-r2-api.test.ts",
       "./test/verified-access-d1.test.ts",

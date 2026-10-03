@@ -9,6 +9,7 @@ const expectedAuthMigrations = [
   "0003_better_auth_core.sql",
   "0007_auth_signup_command.sql",
   "0008_auth_user_suspension.sql",
+  "0009_auth_oauth_signup.sql",
 ].sort();
 const authMigrationPattern = `migrations/{${expectedAuthMigrations.join(",")}}`;
 const expectedMasterMigrations = [
@@ -75,6 +76,7 @@ for (const [relativePath, bindingName] of [
     for (const filename of selected) assert.ok(availableMigrations.has(filename), `${filename} must exist`);
     assert.ok(!selected.includes("0007_auth_signup_command.sql"));
     assert.ok(!selected.includes("0008_auth_user_suspension.sql"));
+    assert.ok(!selected.includes("0009_auth_oauth_signup.sql"));
   });
 }
 
