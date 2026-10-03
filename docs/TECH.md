@@ -65,6 +65,11 @@ Cloudflareの本人profile native検証は`npm run --prefix workers/api test:pro
 絵文字ID正規化・Tier・旧文字列counterの対応は[source emoji helpers](migration/source-emoji-helpers-review.md)。availabilityとregistrationは`workers/api/src/fanmark-tier.ts`を共有し、公開APIの1〜5個の入力制約とMaster参照は各経路に保持する。
 現行25 Business/4 Authスキーマでの合成移送・再開・新DB復旧は`workers/api`の`npm run test:business-runtime-import`。`business-runtime-import-schema.mjs`が独立したD1でチェックイン済みmigrationの期待DDLを作り、移送先の全objectと照合する。scopeと生成スキーマとの差は[d1 import](migration/d1-import.md)を参照する。
 Masterのrelease・avatar/coverの分離R2を同じbundleへ含めた復旧は`npm run test:combined-recovery`。importer codec v5はprofile等の世代writerを認証情報より先に取り込み、v4の途中runを継続しない。合成データ限定で、画像URLのブラウザ配信・remote復旧時間は別に確認する。
+隔離D1向けのREST prepared/batch transportは`isolated-remote-d1.mjs`、専用native試験は
+`test:isolated-remote-d1`。作成receiptのUUID/名前/時刻/incarnationと実metadataを照合し、
+明示remote mode・全runtime profile・Auth resolverを必須にする。完全remote復旧は未受け入れ。
+分離R2は`split-r2-import-transport.mjs`でlogical bucket/keyとphysical keyを対応付け、
+combined復旧で実Storage GET/HEADとbytes/MIME/sizeを検証する。
 
 ## 絵文字マスタ更新（Unicode emoji-test.txt）
 - Cloudflareの公開カタログAPIは、検証済み不変releaseの`ordinal`範囲を既存indexで読む。外部offset形式を保ち、SQL OFFSETによる前方走査を避ける。ページの連番/件数とクライアントの全カタログ検証は維持する。読み取りbudgetとnative検証は`docs/migration/emoji-releases.md`。

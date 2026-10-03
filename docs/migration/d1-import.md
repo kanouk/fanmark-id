@@ -1,16 +1,16 @@
-# Local D1 importer
+# D1 importer and isolated recovery transport
 
-This slice implements a local, synthetic D1 rehearsal for the verified
-PostgreSQL snapshot format. It does not connect to Cloudflare, Wrangler, a
-remote database, or production storage. The importer accepts an explicitly
-injected D1-compatible binding and a snapshot manifest that has already passed
-the private snapshot verifier.
+The importer accepts an explicitly injected D1-compatible binding and a
+verified PostgreSQL snapshot. Local synthetic rehearsal is the accepted
+snapshot-import proof. An isolated remote transport is now implemented and
+locally tested; complete remote snapshot/R2 recovery is not yet accepted.
+No real source rows or remote resource were touched by this transport work.
 
 For encrypted backups, `importEncryptedD1Snapshot()` first authenticates and
 opens the bundle under a fresh mode-0700 OS temporary directory, verifies the
 normal snapshot contract, runs this same importer, and removes the plaintext
-restore directory on success or failure. It accepts only an explicitly
-injected local D1 binding; no remote transport is added.
+restore directory on success or failure. Destination bindings are explicit;
+the isolated-remote restrictions below apply equally to encrypted restore.
 
 ## Contract
 
@@ -19,6 +19,34 @@ destinationId, targetIncarnation, reportPath, mode: "local", ... })` in
 `scripts/migration/d1-import.mjs`. `database` must expose the D1 `prepare()`
 and `batch()` methods. A standalone command intentionally refuses to choose a
 remote or Wrangler binding.
+
+### Isolated remote mode (local acceptance only)
+
+`isolated-remote-d1.mjs` uses the [Cloudflare D1 query API](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/)
+with parameter binding and one REST batch per transaction. The caller supplies
+an exact account/database UUID, creation timestamp, fresh incarnation and
+`fanmark-recovery-...-{business,auth,master}` name from its creation receipt.
+A metadata GET must match before SQL. Ordinary staging/production names,
+foreign statements, unsupported values and oversized requests are refused.
+Errors contain no provider SQL/data/token diagnostics. The transport never
+retries writes automatically; the importer resolves unknown ACKs by its
+existing checkpoint and typed readback.
+
+Explicit `mode: "isolated-remote"` requires the recognized pinned transport,
+matching incarnation, canonical Business schema, complete credential/lifecycle/
+generation profile and Auth resolver. Remote bindings cannot claim local mode.
+Exact DDL, source/hash/type reconciliation and transactional guards remain;
+`deployable` and `fullMigrationReconciled` stay false.
+
+`npm run --prefix workers/api test:isolated-remote-d1` passes nine local native
+tests: values/NULL/int64, CHECK rollback, lost-ACK/no-retry, target/profile/
+statement refusal and malformed results. The HTTP envelope is simulated over
+real Miniflare D1, not a Cloudflare REST acceptance. Importer20 also passes.
+Remote acceptance still needs the resource-owning runner, a real empty-target
+REST rollback probe, all25 Business/4 Auth and8 Master migrations, same-bundle
+restore/replay into a second incarnation, R2/API delivery and independent
+reconciliation/cleanup. Chunked schema initialization on a newly owned target
+must finish before the importer verifies its full DDL and writes snapshot rows.
 
 `destinationId` identifies the logical destination. A newly created isolated
 target must receive a fresh cryptographic incarnation from

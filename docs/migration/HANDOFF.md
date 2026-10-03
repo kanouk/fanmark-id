@@ -12,6 +12,35 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Local recovery transport and split-R2 application read fix, CI pending**:
+  The combined fixture stored logical avatars/key and cover-images/key inside
+  already-separated physical buckets. The importer could read them, but actual
+  storage-r2.ts GET returned404. The new split transport retains logical source
+  identity for reconciliation while storing only the source key in the chosen
+  physical bucket; metadata/hash/conditional-create rules remain. Combined1/1
+  now proves exact one-key inventories and actual app GET/HEAD200 with matching
+  bytes/MIME/size on both primary and fresh targets. Fresh local restore10812ms
+  is synthetic, not production RTO. Source-URL rewriting/browser delivery and
+  complete remote recovery remain open. Private before/final logs:
+  /tmp/fanmark-combined-application-storage-{before,final}.log.
+  isolated-remote-d1.mjs adds a metadata-pinned prepared/REST-batch transport
+  restricted to newly owned fanmark-recovery names. Explicit remote mode,
+  canonical runtime/profile/Auth resolver and matching incarnation are required;
+  local mode refuses this remote binding. Native9 tests prove values/NULL/int64,
+  CHECK rollback, no automatic lost-ACK retry and target/result guards through
+  a simulated HTTP envelope over actual local D1. Importer20 and focused lint
+  pass. This is not actual Cloudflare REST or remote snapshot acceptance.
+  The checked-in workflow lacked Business/Auth and combined-recovery execution
+  steps despite having their npm commands. Explicit steps are now added;
+  earlier CI success did not exercise them. CI isolation passes. The prior
+  documentation headfb3fe04 CI37106463295 is completed/success in both jobs;
+  watcher49111 is terminal/exit1 and consumed, so rely on the authoritative run
+  state and do not restart it. Current deployed runtime remainscbb90c7/e0a4b16e;
+  this tool/test-only work changes no remote resource, real rows or DNS.
+  Next: finish the resource-owning synthetic remote runner and R2 transport,
+  prove a real empty-target REST batch rollback, then restore/replay/independently
+  reconcile the same complete bundle in fresh targets and record cleanup/RTO.
+
 - **Accepted timestamp/public-activation staging checkpoint**:
   cbb90c795b9b735a6d9a0ca06031772b443a3d0a CI37105400187 completed with both
   jobs successful; its single watcher36203 exited0 and was consumed. This

@@ -17,6 +17,8 @@ test("one synthetic snapshot bundle restores Business/Auth/Master and linked ass
   assert.equal(result.auxiliaryRecovery.masterTierCount, 4);
   assert.equal(result.auxiliaryRecovery.r2ObjectCount, 2);
   assert.equal(result.auxiliaryRecovery.linkedAssetsVerified, true);
+  assert.equal(result.auxiliaryRecovery.physicalBucketKeysVerified, true);
+  assert.equal(result.auxiliaryRecovery.applicationStorageReadVerified, true);
   assert.equal(result.deployable, false);
   assert.equal(result.fullMigrationReconciled, false);
   context.diagnostic(JSON.stringify({ freshTargetRestoreDurationMs: result.freshTargetRestoreDurationMs,

@@ -10,8 +10,10 @@ import { createEmojiMasterD1Repository } from "../../workers/api/src/emoji-maste
 import { objectIdentityHash } from "./storage-export.mjs";
 import { importStorageExport } from "./storage-r2-import.mjs";
 import { createLocalR2ImportTransport } from "./local-r2-import-transport.mjs";
+import { createSplitR2ImportTransport } from "./split-r2-import-transport.mjs";
 import { businessMigrationStatements } from "./business-runtime-import-schema.mjs";
 import { sha256Hex } from "./snapshot-format.mjs";
+import { handleStorageRequest } from "../../workers/api/src/storage-r2.ts";
 
 const OWNER = "90000000-0000-4000-8000-00000000000d";
 const timestamp = "2026-09-26T12:00:00.000000Z";
@@ -119,11 +121,7 @@ export function createSyntheticAuxiliaryRecovery() {
     const loopbackBase = await target.miniflare.ready;
     const avatar = createLocalR2ImportTransport({ bucket: target.avatarBucket, loopbackBase, bucketBinding: "AVATARS_BUCKET" });
     const cover = createLocalR2ImportTransport({ bucket: target.coverBucket, loopbackBase, bucketBinding: "COVER_IMAGES_BUCKET" });
-    const transport = key => key.startsWith("avatars/") ? avatar : key.startsWith("cover-images/") ? cover : null;
-    const r2 = {
-      get(key) { assert.ok(transport(key)); return transport(key).get(key); },
-      putWithSize(key, ...args) { assert.ok(transport(key)); return transport(key).putWithSize(key, ...args); },
-    };
+    const r2 = createSplitR2ImportTransport({ avatars: avatar, covers: cover });
     const options = { exportDir: prepared.storageDirectory, reportPath: path.join(prepared.storageDirectory, `${phase}-r2-import.status.json`),
       r2, operationTimeoutMs: 10000, chunkSize: 3 };
     assert.equal((await importStorageExport(options)).copiedCount, 2);
@@ -140,12 +138,28 @@ export function createSyntheticAuxiliaryRecovery() {
       assert.ok(object);
       assert.equal(sha256Hex(Buffer.from(await object.arrayBuffer())), prepared.objects[index].contentSHA256);
       assert.equal(object.httpMetadata.contentType, "image/png");
+      const response = await handleStorageRequest(
+        new Request(`https://synthetic-recovery.example.test/api/storage/public/${key}`),
+        { STORAGE_BACKEND: "r2", AVATARS_BUCKET: target.avatarBucket, COVER_IMAGES_BUCKET: target.coverBucket },
+        async () => ({ available: true, userId: null }),
+      );
+      assert.equal(response?.status, 200, "restored asset must be readable through the actual application Storage API");
+      assert.equal(response.headers.get("content-type"), "image/png");
+      assert.equal(sha256Hex(Buffer.from(await response.arrayBuffer())), prepared.objects[index].contentSHA256);
+      const head = await handleStorageRequest(
+        new Request(`https://synthetic-recovery.example.test/api/storage/public/${key}`, { method: "HEAD" }),
+        { STORAGE_BACKEND: "r2", AVATARS_BUCKET: target.avatarBucket, COVER_IMAGES_BUCKET: target.coverBucket },
+        async () => ({ available: true, userId: null }),
+      );
+      assert.equal(head?.status, 200);
+      assert.equal(head.headers.get("content-length"), String(prepared.objects[index].size));
     }
-    assert.equal((await target.avatarBucket.list()).objects.length, 1);
-    assert.equal((await target.coverBucket.list()).objects.length, 1);
+    assert.deepEqual((await target.avatarBucket.list()).objects.map(object => object.key), [prepared.objects[0].key]);
+    assert.deepEqual((await target.coverBucket.list()).objects.map(object => object.key), [prepared.objects[1].key]);
     assert.deepEqual((await master.prepare("PRAGMA foreign_key_check").all()).results, []);
     return { bundleSHA256: sha256Hex(prepared.bundle), emojiVersion: prepared.release.version,
       referenceVersion: prepared.referenceVersion, masterEmojiCount: 3, masterTierCount: 4,
-      masterMigrationCount: 8, retainedMasterAuthCore: true, r2ObjectCount: 2, linkedAssetsVerified: true };
+      masterMigrationCount: 8, retainedMasterAuthCore: true, r2ObjectCount: 2, linkedAssetsVerified: true,
+      physicalBucketKeysVerified: true, applicationStorageReadVerified: true };
   };
 }

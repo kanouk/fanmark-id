@@ -29,6 +29,24 @@ source bucket, source key, source size, source SHA-256, and optional source
 content type as custom metadata; the source identity and content hash are
 also checked during readback.
 
+## Separate application buckets
+
+The core's logical identity remains `<source bucket>/<source key>`.
+`split-r2-import-transport.mjs` chooses the corresponding avatar/cover transport
+and passes only `<source key>` to that physical bucket, matching the app's
+Storage API. Readback exposes the logical key to the core only after checking
+the provider's physical key. Source metadata, conditional create and byte/hash
+verification are preserved; each body has a single consumer.
+
+The combined synthetic recovery previously stored a redundant bucket prefix
+inside each separate bucket. Its own transport could read the objects, but
+actual application GET returned404. The regression reproduces that failure.
+After the mapping fix, primary and fresh-target recovery preserve exactly one
+unprefixed key per bucket, and actual `storage-r2.ts` GET/HEAD return200 with
+matching image bytes/MIME/size. Combined1/1 passes; fresh local restore10812ms
+is a small synthetic fixture result, not production RTO. Source URL rewriting,
+real browser delivery and full remote recovery remain separate acceptance.
+
 ## Copy and readback protocol
 
 For each object, the core:

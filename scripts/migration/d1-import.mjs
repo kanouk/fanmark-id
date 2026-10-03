@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Import a verified PostgreSQL snapshot into an explicitly supplied local D1
- * binding. This module has no Wrangler, credential, or remote-runner path.
+ * Import a verified PostgreSQL snapshot into an explicitly supplied D1 binding.
+ * Isolated remote recovery requires a pinned transport and canonical runtime
+ * profile. This module never chooses Wrangler credentials or a destination.
  *
  * The destination schema must already have been created by a reviewed schema
  * rehearsal. The importer creates only its private progress ledger tables.
@@ -42,6 +43,7 @@ import { SnapshotVerificationError, verifySnapshot } from "./snapshot-verify.mjs
 import { inspectCredentialTransformSchema } from "./credential-transform-schema.mjs";
 import { readBusinessRuntimeImportSchema } from "./business-runtime-import-schema.mjs";
 import { openSnapshotBundle } from "./snapshot-encryption.mjs";
+import { assertIsolatedRemoteD1Target, isIsolatedRemoteD1 } from "./isolated-remote-d1.mjs";
 import {
   CREDENTIAL_NONCREDENTIAL_COLUMNS,
   CREDENTIAL_SOURCE_RELATION,
@@ -2177,11 +2179,18 @@ export async function importD1Snapshot({
   hooks = {},
 } = {}) {
   validateDatabase(database);
-  if (mode !== "local") throw fail("unsupported_import_mode");
+  if (mode !== "local" && mode !== "isolated-remote") throw fail("unsupported_import_mode");
+  if (mode === "local" && isIsolatedRemoteD1(database)) throw fail("remote_binding_requires_remote_mode");
   if (allowUnresolvedGates !== true && allowUnresolvedGates !== false) throw fail("invalid_gate_option");
   if (canonicalBusinessSchema !== true && canonicalBusinessSchema !== false) throw fail("invalid_runtime_schema_option");
   if (canonicalBusinessSchema && expectedTargetProfile === null) throw fail("runtime_credential_profile_required");
   if (resolveAuthUserIds !== null && typeof resolveAuthUserIds !== "function") throw fail("invalid_auth_identity_resolver");
+  if (mode === "isolated-remote") {
+    if (!canonicalBusinessSchema || expectedTargetProfile === null || typeof resolveAuthUserIds !== "function") {
+      throw fail("isolated_remote_runtime_profile_required");
+    }
+    await assertIsolatedRemoteD1Target(database, targetIncarnation);
+  }
   validateIdentity(destinationId, "invalid_destination_id");
   validateIdentity(targetIncarnation, "invalid_target_incarnation");
   if (typeof now !== "function") throw fail("invalid_clock");

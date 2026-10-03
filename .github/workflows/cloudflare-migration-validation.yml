@@ -101,6 +101,12 @@ jobs:
       - name: Test Worker API and local D1 contracts
         run: npm test
 
+      - name: Test current Business and Auth runtime import
+        run: npm run test:business-runtime-import
+
+      - name: Test combined Business Auth Master and split R2 recovery
+        run: npm run test:combined-recovery
+
       - name: Type check Worker API
         run: npm run typecheck
 
