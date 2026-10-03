@@ -1,5 +1,33 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：OAuth登録基盤のstaging配備と合成受け入れ
+
+47b69c5のCI37085997181は両job成功。専用native OAuth54に加え、Worker全suiteと
+アプリの実local Worker/browser editorが通過した。01:34:21Zの全体preflight後、
+Auth0009をAuthだけへ適用し、01:35:14Zにledger4・marker6列・unique index4・
+Auth owned0/FK0・MFA generation不変をreadback。更新後も全体baselineを再確認し、
+01:37:00Zにb5a07a34-a086-4543-9569-31fa8a904defを100%配備した。
+AUTH_SOCIAL_PROVISIONING_BACKEND=d1は配備済み。JS/CSS bytes/noindex・root/robots200・
+sitemap404が一致。provider資格情報はなく、01:39:54Zのcapabilitiesはprovider一覧空、
+4provider start/callback403・cookieなし、匿名session nullを維持する。
+
+実remote split D1でseedしたmarker付きAuth/credential user5ケースは成功。
+未作成profileの作成・作成済みprofileの再認識、同じUUID/所有者とmarker completed、
+private marker非公開、既存credentialを使うpassword setup再試行、API編集の保持を確認。
+profile ID衝突・provider account欠落は409、completed profile欠落は500でsessionを
+出さず、既存行を変更しない。Auth userとcredentialはseedなので、remote新規SDK/
+OAuth userや新OAuth credential作成の証拠ではない。journalはoauth-session-guard-BtQmD3。
+
+同じ47b配備のcombined real browser editor/favorites canaryも成功。2user実signinと
+UUID session、desktop→390、503時の元行/下書き保持、reload/retry/save/reopen/preview、
+public/private、他所有者とgrace拒否、両userの保護redirect/text favorites・SQL NULL・
+proof-looking Cookie拒否・元config/disabled後の内容保持を確認。journalはcanary-Etytn8。
+両canaryはverified-and-cleaned。01:44:48.995Zの独立全体readbackでowned Auth/Business0、
+ledger25、Master release/import/active/history digest、wake5:5とsecret names不変を確認。
+合成license incarnation tombstonesは保持する。private受け入れは
+/tmp/fanmark-oauth-signup-47b69c5-staging-acceptance.json。実phone/provider/full migrationは
+未受け入れ。source/runtime/認可/定常job/ops・実provider接続の残りを進める。
+
 ## 2026-10-03：OAuth設定のstaging受け入れと新規登録の復旧実装
 
 55b40e0のCI37083522230は両job成功。00:54:45Zの完全preflight後、00:56:12Zに

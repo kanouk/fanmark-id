@@ -1,11 +1,14 @@
 # Recoverable new OAuth registration
 
-The Worker implementation is a **local synthetic acceptance candidate**.
+The Worker implementation has **local native and staging synthetic acceptance**.
 `AUTH_SOCIAL_PROVISIONING_BACKEND=d1` explicitly selects it; an absent selector
 keeps provider `disableSignUp=true`. The checked-in staging configuration selects
-this backend and adds Auth0009 to the Auth-only migration allowlist. The deployed
-staging Worker still has neither Auth0009 nor the active new backend. Real provider keys,
-remote new-user acceptance and the complete migration remain open.
+this backend and adds Auth0009 to the Auth-only migration allowlist. Code47b69c5
+passed both CI37085997181 jobs and was deployed as b5a07a34 at100%. Auth0009 was
+guarded/applied/read back before deployment, with six marker columns, four unique
+indexes, owned Auth0, FK0 and unchanged MFA generation. Real provider keys,
+remote new-user acceptance and the complete migration remain open. Unconfigured
+capabilities list no providers and all four start/callback entries remain403.
 
 ## Creation and identity
 
@@ -90,10 +93,33 @@ configuration provides the full Business ledger and is invoked separately by
 The actual local editor now applies four Auth migrations, matching the selected
 staging backend, while all provider credentials remain absent.
 
-Before remote activation: both CI jobs must succeed for the exact candidate
+## Staging acceptance (2026-10-03 JST)
+
+After full identity/version/ledger25/owned0/Master/wake/secret preflight,
+schema acceptance at01:35:14Z and deployment at01:37:00Z were verified. Static
+JS/CSS bytes/root/robots200/sitemap404/noindex match. A marked-user canary
+seeded synthetic Auth users with valid private markers and tested the actual
+credential-signin session hook against remote split D1: absent/committed
+profile recovery, owner/private-marker readback, existing-credential password
+setup retry, and preservation of API-edited profile data passed. Wrong profile
+IDs and missing provider accounts refuse409; missing completed profiles refuse500
+without recreation. The five cases end verified-and-cleaned, Auth/profile0/FK0
+and invalidated cookies. This tests a seeded session guard, **not remote new
+SDK/OAuth-user or new OAuth-credential creation**.
+
+The separate real browser combined editor/favorites canary also passes under
+the new Worker/schema: both signin/session UUIDs, desktop→390px, failed-save
+row/draft preservation, reload/retry/save/reopen/preview, public/private and
+cross-owner/grace refusal, and protected redirect/text favorites for both users.
+Both canaries are cleaned. Independent01:44:48.995Z readback confirms owned
+Business/Auth0, ledger25 and unchanged Master/wake5:5/secrets. Private acceptance:
+`/tmp/fanmark-oauth-signup-47b69c5-staging-acceptance.json`.
+
+The activation requirements were: both CI jobs succeed for the exact candidate
 commit, the dedicated Cloudflare account and staging version must be checked,
-Auth migration0009 must be guarded/applied/read back, then the committed backend
-selection may be deployed. Duplicate provider account keys are a separate rejection/
+Auth migration0009 is guarded/applied/read back, then the committed backend
+selection is deployed. These requirements are satisfied for47b69c5. Duplicate
+provider account keys are still a separate rejection/
 reconciliation gate before any eventual existing-identity import. These tests
 do not authorize or prove live user-data migration, provider configuration,
 email delivery, real billing, mobile acceptance or domain/DNS cutover.

@@ -199,8 +199,11 @@ schema、4つのidentity unique indexが必要で、gatewayはschema不足でも
 markerとprovider account subjectを検証し、profileの同じUUID/所有者をreadbackしてから
 sessionを発行する。停止確認はpluginがBusiness書込みより先に行い、共通のcore guardも
 維持する。`test:oauth-signup-d1`のnative54件は4provider・各段階のcommit前/ACK不明・
-復旧/競合/設定変更を検証し、Worker CIに含める。staging0009/selector適用と実provider
-受け入れは未実施。詳細は[OAuth登録の復旧契約](migration/oauth-signup-provisioning.md)。
+復旧/競合/設定変更を検証し、Worker CIに含める。47b69c5の両CI成功後、stagingの
+Auth0009/selectorを適用し、合成marker付きユーザーの実session guard5ケースと
+既存editor/favoritesの実ブラウザ検証が成功した。marker付きAuthユーザーはseedで、
+remote新規SDKユーザー/新OAuth credential生成や実provider接続の証拠ではない。
+詳細は[OAuth登録の復旧契約](migration/oauth-signup-provisioning.md)。
 
 招待signupのnative検証は全25 Business migrationとAuth core/0007/0008、
 `AUTH_USER_STATUS_BACKEND=d1`を使用する。`test:invitation-signup-d1`の15件は

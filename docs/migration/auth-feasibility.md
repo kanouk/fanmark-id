@@ -504,3 +504,17 @@ tampering/replay and schema readiness. Existing Auth47/47, signup15/15 and
 shared MFA6/6 still pass. This is a tested implementation rather than an SDK
 export review, but its exact-head CI, remote Auth schema/selector/deployment
 and real-provider acceptance remain open. See [registration recovery](oauth-signup-provisioning.md).
+
+### OAuth provisioning staging acceptance (2026-10-03 JST)
+
+Corrected47b69c5 passes both CI37085997181 jobs. Auth0009 is applied/read back
+(four Auth migrations, six marker columns, four unique indexes, Auth0/FK0/MFA
+generation unchanged) and the selected backend is deployed as b5a07a34 at100%.
+Five seeded Auth/credential session-guard cases prove split-D1 profile recovery,
+private marker omission, existing-password setup retry, edited-profile retention
+and refusal of wrong/missing profiles/accounts. The real browser combined
+editor/favorites canary also passes under this code/schema. Both are cleaned;
+independent01:44:48Z readback proves owned0 and retained baselines. Real provider
+keys are absent and entries stay closed. This does not prove remote SDK new-user/
+OAuth credential creation or a real provider callback; prior pending statements
+above are historical. See the registration recovery contract for exact scope.

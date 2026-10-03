@@ -7,7 +7,40 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- Latest accepted staging code is **55b40e0**, both CI37083522230 jobs successful.
+- **Newest accepted staging code:47b69c5**, both CI37085997181 jobs successful.
+  Full preflight at01:34:21Z and again after Auth update verifies the dedicated
+  account/version, Business ledger25, owned0, Master inventory, wake5:5/secrets.
+  Auth0009 applied/read back at01:35:14Z: ledger4, marker columns6, unique
+  indexes4, owned Auth0/FK0 and unchanged MFA generation. Deployment at01:37:00Z
+  is **b5a07a34-a086-4543-9569-31fa8a904def at100%**, selecting the provisioning
+  backend. Static JS/CSS/root/robots/sitemap/noindex match. Provider keys remain
+  absent: capabilities lists none, all four start/callback403, no cookie,
+  anonymous session null. This closes the candidate schema/deployment boundary.
+- Five remote seeded-marker session cases pass: absent/committed profile
+  recovery, private-marker omission, owner/profile identity, existing-credential
+  password-setup retry and preservation of API edits; wrong-profile/missing
+  account409 and deleted completed-profile500 refuse without changing rows.
+  Journal ends oauth-session-guard-BtQmD3/canary.json, verified-and-cleaned.
+  This is seeded Auth/credential proof, not remote new SDK/OAuth-user or new
+  OAuth-credential creation; those remain unproven with provider keys absent.
+- The separate combined real browser editor/favorites canary for **this47b**
+  also passes and is verified-and-cleaned, journal ends canary-Etytn8.
+  Actual signin/UUID sessions, desktop→390, failed-save rows/draft, reload/
+  retry/save/reopen/preview, public/private/cross-owner/grace refusal and both
+  users' protected redirect/text favorites/config preservation pass. Independent
+  **2026-10-03T01:44:48.995Z** readback confirms owned Business/Auth0, ledger25,
+  Master inventory unchanged, wake5:5 and secret names unchanged; new synthetic
+  incarnation tombstones remain as designed. A390px viewport is not a real phone.
+  Private acceptance: /tmp/fanmark-oauth-signup-47b69c5-staging-acceptance.json.
+- Next: full source runtime/authorization/caller reconciliation, lifecycle/
+  archive/retention and ops/recovery acceptance. Real Stripe/Resend/four OAuth
+  integration and CPU/plan fit remain open; keys/setup authorization were not
+  supplied. Do not repeat an unanswered setup/paid-operation request or send
+  real mail/billing. User-data movement and domain/DNS remain intentionally last.
+  Older boundary details below are historical; do not redeploy55b or treat its
+  former pending-schema statements as current.
+
+- Prior accepted staging code was **55b40e0**, both CI37083522230 jobs successful.
   Fresh preflight00:54:45Z verified the dedicated account, old version, ledger25,
   owned0, secrets, retained Master inventory and wake5:5. Deployment at00:56:12Z
   is **a0fcd645-1409-473e-8816-997e87b3797e at100%**. Static JS/CSS bytes match
