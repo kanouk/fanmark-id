@@ -1,10 +1,13 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import emojiReleaseSchemaSql from "../migrations/0001_emoji_master_release_staging.sql?raw";
 import emojiReleaseActivationSql from "../migrations/0002_emoji_master_release_activation.sql?raw";
-import businessSchemaSql from "./fixtures/d1-favorites.sql?raw";
+import { checkedInSqlStatements } from "./schema-statements";
+declare module "vitest" {
+  export interface ProvidedContext { businessFavoritesMigrations: Array<{ name: string; sql: string }>; }
+}
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 
@@ -36,41 +39,6 @@ const searchLimiter = {
     return { success: searchLimiterMode === "allowed" };
   },
 };
-
-function splitSqlStatements(sql: string): string[] {
-  const statements: string[] = [];
-  let start = 0;
-  let singleQuoted = false;
-  let doubleQuoted = false;
-  for (let index = 0; index < sql.length; index += 1) {
-    const character = sql[index];
-    const next = sql[index + 1];
-    if (!singleQuoted && !doubleQuoted && character === "-" && next === "-") {
-      const lineEnd = sql.indexOf("\n", index + 2);
-      if (lineEnd < 0) break;
-      index = lineEnd;
-      continue;
-    }
-    if (character === "'" && !doubleQuoted) {
-      if (singleQuoted && next === "'") index += 1;
-      else singleQuoted = !singleQuoted;
-      continue;
-    }
-    if (character === '"' && !singleQuoted) {
-      if (doubleQuoted && next === '"') index += 1;
-      else doubleQuoted = !doubleQuoted;
-      continue;
-    }
-    if (character !== ";" || singleQuoted || doubleQuoted) continue;
-    const candidate = sql.slice(start, index).trim();
-    if (/^create\s+trigger\b/iu.test(candidate) && !/\bend\s*$/iu.test(candidate)) continue;
-    if (candidate && candidate.split(/\r?\n/u).some((line) => line.trim() && !line.trim().startsWith("--"))) statements.push(candidate);
-    start = index + 1;
-  }
-  const finalStatement = sql.slice(start).trim();
-  if (finalStatement && finalStatement.split(/\r?\n/u).some((line) => line.trim() && !line.trim().startsWith("--"))) statements.push(finalStatement);
-  return statements;
-}
 
 async function request(path: string, init: RequestInit = {}, overrides: Partial<Env> = {}): Promise<Response> {
   const headers = new Headers(init.headers);
@@ -113,24 +81,24 @@ async function resetBusinessRows(): Promise<void> {
     "fanmark_messageboard_configs", "fanmark_redirect_configs", "fanmark_basic_configs",
     "fanmark_licenses", "user_settings", "fanmarks",
   ]) await businessDatabase.prepare(`DELETE FROM ${table}`).run();
-  await businessDatabase.prepare("INSERT INTO fanmarks (id, short_id) VALUES (?, ?)").bind(fanmarkId, "leaf-42").run();
+  await businessDatabase.prepare("INSERT INTO fanmarks (id, short_id, user_input_fanmark, normalized_emoji, tier_level, created_at, updated_at, emoji_ids, normalized_emoji_ids) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?)").bind(fanmarkId, "leaf-42", "👋", "👋", now, now, JSON.stringify([baseEmojiId]), JSON.stringify([baseEmojiId])).run();
   await businessDatabase.prepare(
-    "INSERT INTO fanmark_licenses (id, fanmark_id, user_id, license_start, license_end, status) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT INTO fanmark_licenses (id, fanmark_id, user_id, license_start, license_end, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, '2026-09-25T00:00:00.000000Z', '2026-09-25T00:00:00.000000Z')",
   ).bind(licenseId, fanmarkId, otherId, now, "2026-09-24T00:00:00.000Z", "active").run();
   await businessDatabase.prepare(
-    "INSERT INTO user_settings (id, user_id, username, display_name) VALUES (?, ?, ?, ?)",
+    "INSERT INTO user_settings (id, user_id, username, display_name, created_at, updated_at) VALUES (?, ?, ?, ?, '2026-09-25T00:00:00.000000Z', '2026-09-25T00:00:00.000000Z')",
   ).bind("7876f608-6fda-4616-b6b3-5fb1f013ee66", otherId, "synthetic-owner", "Synthetic Owner").run();
   await businessDatabase.prepare(
-    "INSERT INTO fanmark_basic_configs (id, license_id, fanmark_name, access_type) VALUES (?, ?, ?, ?)",
+    "INSERT INTO fanmark_basic_configs (id, license_id, fanmark_name, access_type, created_at, updated_at) VALUES (?, ?, ?, ?, '2026-09-25T00:00:00.000000Z', '2026-09-25T00:00:00.000000Z')",
   ).bind("b4c9d1a2-5c12-452f-96ce-2614f1343aad", licenseId, "Synthetic Leaf", "redirect").run();
   await businessDatabase.prepare(
-    "INSERT INTO fanmark_redirect_configs (id, license_id, target_url) VALUES (?, ?, ?)",
+    "INSERT INTO fanmark_redirect_configs (id, license_id, target_url, created_at, updated_at) VALUES (?, ?, ?, '2026-09-25T00:00:00.000000Z', '2026-09-25T00:00:00.000000Z')",
   ).bind("77e35468-fc22-4f78-a1be-585456a83dbf", licenseId, "https://example.invalid/leaf").run();
   await businessDatabase.prepare(
-    "INSERT INTO fanmark_messageboard_configs (id, license_id, content) VALUES (?, ?, ?)",
+    "INSERT INTO fanmark_messageboard_configs (id, license_id, content, created_at, updated_at) VALUES (?, ?, ?, '2026-09-25T00:00:00.000000Z', '2026-09-25T00:00:00.000000Z')",
   ).bind("8dc4f3d4-5c70-44ca-8142-5182772946fa", licenseId, "synthetic public text").run();
   await businessDatabase.prepare(
-    "INSERT INTO fanmark_password_configs (id, license_id, is_enabled) VALUES (?, ?, 1)",
+    "INSERT INTO fanmark_password_configs (id, license_id, is_enabled, access_password, created_at, updated_at) VALUES (?, ?, 1, 'synthetic-password-not-used', '2026-09-25T00:00:00.000000Z', '2026-09-25T00:00:00.000000Z')",
   ).bind("dd139865-4fd5-4a25-8e84-21d661aa3377", licenseId).run();
   await businessDatabase.prepare(
     "INSERT INTO fanmark_discoveries (id, emoji_ids, normalized_emoji_ids, fanmark_id, availability_status, first_seen_at, last_seen_at, search_count, favorite_count) VALUES (?, ?, ?, ?, 'claimed_external', ?, ?, 4, 0)",
@@ -146,11 +114,18 @@ async function insertOtherOwnerFavorite(): Promise<void> {
 
 beforeAll(async () => {
   if (!authDatabase || !businessDatabase || !masterDatabase) throw new Error("Split D1 bindings unavailable");
-  await authDatabase.batch(splitSqlStatements(authSchemaSql).map((statement) => authDatabase.prepare(statement)));
-  await businessDatabase.batch(splitSqlStatements(businessSchemaSql).map((statement) => businessDatabase.prepare(statement)));
+  await authDatabase.batch(checkedInSqlStatements(authSchemaSql).map((statement) => authDatabase.prepare(statement)));
+  const migrations = inject("businessFavoritesMigrations");
+  expect(migrations.length).toBeGreaterThanOrEqual(25);
+  for (const migration of migrations) {
+    const parts = checkedInSqlStatements(migration.sql);
+    for (let offset = 0; offset < parts.length; offset += 50) {
+      await businessDatabase.batch(parts.slice(offset, offset + 50).map(sql => businessDatabase.prepare(sql)));
+    }
+  }
   await masterDatabase.batch([
-    ...splitSqlStatements(emojiReleaseSchemaSql).map((statement) => masterDatabase.prepare(statement)),
-    ...splitSqlStatements(emojiReleaseActivationSql).map((statement) => masterDatabase.prepare(statement)),
+    ...checkedInSqlStatements(emojiReleaseSchemaSql).map((statement) => masterDatabase.prepare(statement)),
+    ...checkedInSqlStatements(emojiReleaseActivationSql).map((statement) => masterDatabase.prepare(statement)),
   ]);
   await masterDatabase.prepare(
     "INSERT INTO fanmark_emoji_master_release_imports (release_version, manifest_json, row_count, status, verified_at) VALUES (?, '{}', 2, 'loading', NULL)",
@@ -178,7 +153,87 @@ beforeEach(async () => {
   await resetBusinessRows();
 });
 
+afterEach(async () => {
+  expect((await businessDatabase!.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
+});
+
 describe("Better Auth favorites D1 API", () => {
+  it("preserves exact int64 counters through search and favorite mutations", async () => {
+    await businessDatabase!.prepare("UPDATE fanmark_discoveries SET search_count = CAST(? AS INTEGER), favorite_count = CAST(? AS INTEGER) WHERE id = ?")
+      .bind("9007199254740993", "9007199254740995", discoveryId).run();
+    const counters = () => businessDatabase!.prepare("SELECT CAST(search_count AS TEXT) AS searches, CAST(favorite_count AS TEXT) AS favorites FROM fanmark_discoveries WHERE id = ?")
+      .bind(discoveryId).first();
+    const search = await request("/api/fanmarks/search/record", {
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": searchSyntheticIp },
+      body: JSON.stringify({ input_emoji_ids: [tonedEmojiId] }),
+    }, { FANMARK_SEARCH_BACKEND: "d1", FANMARK_SEARCH_LIMITER: searchLimiter, CORS_ALLOWED_ORIGINS: appOrigin });
+    expect(search.status).toBe(200);
+    expect(await counters()).toEqual({ searches: "9007199254740994", favorites: "9007199254740995" });
+    const cookie = await signIn(ownerEmail);
+    const favorite = (method: "POST" | "DELETE") => request("/api/me/favorites", {
+      method, headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ input_emoji_ids: [tonedEmojiId], ...(method === "POST" ? { input_display_fanmark: "👋🏽" } : {}) }),
+    });
+    expect((await favorite("POST")).status).toBe(200);
+    expect(await counters()).toEqual({ searches: "9007199254740994", favorites: "9007199254740996" });
+    expect(await (await favorite("POST")).json()).toEqual({ added: false });
+    expect(await counters()).toEqual({ searches: "9007199254740994", favorites: "9007199254740996" });
+    expect((await favorite("DELETE")).status).toBe(200);
+    expect(await counters()).toEqual({ searches: "9007199254740994", favorites: "9007199254740995" });
+  });
+
+  it("rolls back counter overflow without recording a successful search", async () => {
+    await businessDatabase!.prepare("UPDATE fanmark_discoveries SET search_count = CAST(? AS INTEGER) WHERE id = ?")
+      .bind("9223372036854775807", discoveryId).run();
+    const before = await businessDatabase!.prepare("SELECT emoji_ids, last_seen_at, CAST(search_count AS TEXT) AS count FROM fanmark_discoveries WHERE id = ?")
+      .bind(discoveryId).first();
+    const response = await request("/api/fanmarks/search/record", {
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": searchSyntheticIp },
+      body: JSON.stringify({ input_emoji_ids: [tonedEmojiId] }),
+    }, { FANMARK_SEARCH_BACKEND: "d1", FANMARK_SEARCH_LIMITER: searchLimiter, CORS_ALLOWED_ORIGINS: appOrigin });
+    expect(response.status).toBe(503);
+    expect(await businessDatabase!.prepare("SELECT emoji_ids, last_seen_at, CAST(search_count AS TEXT) AS count FROM fanmark_discoveries WHERE id = ?")
+      .bind(discoveryId).first()).toEqual(before);
+    expect(await businessDatabase!.prepare("SELECT count(*) AS count FROM fanmark_events").first()).toEqual({ count: 0 });
+  });
+
+  it.each(["favorite-event", "favorite-count", "search-event", "remove-event"])("rolls back %s suppression and permits retry", async (fault) => {
+    const cookie = await signIn(ownerEmail);
+    const mutate = () => request("/api/me/favorites", {
+      method: fault === "remove-event" ? "DELETE" : "POST",
+      headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ input_emoji_ids: [tonedEmojiId], ...(fault === "remove-event" ? {} : { input_display_fanmark: "👋🏽" }) }),
+    });
+    const search = () => request("/api/fanmarks/search/record", {
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": searchSyntheticIp },
+      body: JSON.stringify({ input_emoji_ids: [tonedEmojiId] }),
+    }, { FANMARK_SEARCH_BACKEND: "d1", FANMARK_SEARCH_LIMITER: searchLimiter, CORS_ALLOWED_ORIGINS: appOrigin });
+    if (fault === "remove-event") {
+      expect((await request("/api/me/favorites", {
+        method: "POST", headers: { Cookie: cookie, "content-type": "application/json" },
+        body: JSON.stringify({ input_emoji_ids: [baseEmojiId], input_display_fanmark: "👋" }),
+      })).status).toBe(200);
+    }
+    const snapshot = async () => Promise.all(["fanmark_discoveries", "fanmark_favorites", "fanmark_events", "sqlite_sequence"].map(async table => ({
+      table, rows: (await businessDatabase!.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()).results,
+    })));
+    const before = await snapshot();
+    const trigger = fault === "favorite-count"
+      ? `CREATE TRIGGER synthetic_discovery_fault BEFORE UPDATE OF favorite_count ON fanmark_discoveries WHEN NEW.id = '${discoveryId}' BEGIN SELECT RAISE(IGNORE); END`
+      : `CREATE TRIGGER synthetic_discovery_fault BEFORE INSERT ON fanmark_events WHEN NEW.event_type = '${fault === "search-event" ? "search" : fault === "remove-event" ? "favorite_remove" : "favorite_add"}' BEGIN SELECT RAISE(IGNORE); END`;
+    await businessDatabase!.prepare(trigger).run();
+    try {
+      const response = await (fault === "search-event" ? search() : mutate());
+      expect(response.status).toBe(503);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(await snapshot()).toEqual(before);
+    } finally {
+      await businessDatabase!.prepare("DROP TRIGGER synthetic_discovery_fault").run();
+    }
+    const retry = await (fault === "search-event" ? search() : mutate());
+    expect(retry.status).toBe(200);
+  });
+
   it("records anonymous aggregate searches atomically without storing a user id", async () => {
     const response = await request("/api/fanmarks/search/record", {
       method: "POST",

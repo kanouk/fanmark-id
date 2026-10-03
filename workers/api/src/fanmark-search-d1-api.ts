@@ -1,3 +1,4 @@
+import { mutateDiscovery } from "./discovery-mutations";
 import { formatAvailabilityNow } from "./availability";
 import { selectD1Database, type Env } from "./repository";
 import { FavoritesApiError, normalizeEmojiIdsForActiveMaster } from "./favorites-d1-api";
@@ -265,14 +266,6 @@ async function limiterKey(request: Request): Promise<string> {
   return `fanmark-search:v1:${hex}`;
 }
 
-function resultRows(value: unknown): Array<Record<string, unknown>> {
-  const result = value as { success?: unknown; results?: unknown };
-  if (result.success !== true || !Array.isArray(result.results)) {
-    throw new FanmarkSearchApiError("fanmark_search_unavailable");
-  }
-  return result.results as Array<Record<string, unknown>>;
-}
-
 export async function handleFanmarkSearchRecordRequest(
   request: Request,
   env: Env,
@@ -312,33 +305,10 @@ export async function handleFanmarkSearchRecordRequest(
       throw new FanmarkSearchApiError("fanmark_search_unavailable");
     }
 
-    const rawJson = JSON.stringify(ids);
-    const normalizedJson = JSON.stringify(normalizedIds);
-    const now = formatAvailabilityNow(clock());
-    const results = await business.batch([
-      business.prepare(`
-        INSERT INTO fanmark_discoveries
-          (id, emoji_ids, normalized_emoji_ids, first_seen_at, last_seen_at, search_count)
-        VALUES (?, ?, ?, ?, ?, 1)
-        ON CONFLICT(normalized_emoji_ids) DO UPDATE SET
-          emoji_ids = excluded.emoji_ids,
-          last_seen_at = excluded.last_seen_at,
-          search_count = fanmark_discoveries.search_count + 1
-        RETURNING id
-      `).bind(crypto.randomUUID(), rawJson, normalizedJson, now, now),
-      business.prepare(`
-        INSERT INTO fanmark_events (event_type, user_id, discovery_id, normalized_emoji_ids, created_at)
-        SELECT 'search', NULL, d.id, ?, ?
-        FROM fanmark_discoveries AS d
-        WHERE d.normalized_emoji_ids = ? AND changes() = 1
-      `).bind(normalizedJson, now, normalizedJson),
-    ]);
-    const discoveryRows = resultRows(results[0]);
-    if (discoveryRows.length !== 1 || typeof discoveryRows[0].id !== "string" || !UUID_RE.test(discoveryRows[0].id)) {
-      throw new FanmarkSearchApiError("fanmark_search_unavailable");
-    }
-    const eventMeta = (results[1] as { meta?: { changes?: unknown } } | undefined)?.meta;
-    if (Number(eventMeta?.changes) !== 1) throw new FanmarkSearchApiError("fanmark_search_unavailable");
+    await mutateDiscovery(business, {
+      operation: "search", userId: null, rawIds: ids, normalizedIds,
+      displayFanmark: null, now: formatAvailabilityNow(clock()),
+    });
     return json({ schemaVersion: 1, recorded: true }, 200, headers);
   } catch (error) {
     const failure = error instanceof FanmarkSearchApiError ? error : new FanmarkSearchApiError("fanmark_search_unavailable");

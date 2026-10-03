@@ -301,3 +301,12 @@ remote:falseとし、account/routes/servicesは使わず、終了時にlocal DB 
 ## 退会処理のtransaction境界（Cloudflare staging受入）
 
 `account-deletion-d1-api.ts`は共通の抽選取消snapshot/audit guardを使い、DELETE_ACCOUNT監査とcleanup効果・保持履歴をBusiness D1の同じbatchで検査する。既存退会監査はID・時刻・内容を保持してAuth削除の再試行に使い、重複・不正内容は拒否する。`account-deletion-auth.ts`は現在パスワードと本人sessionを再確認し、ユーザーDELETEのFK cascadeと終了状態をAuth D1の一つのbatchで確定する。失敗時にcredential/sessionだけ先に消えるSDKの逐次deleteUserは使わず、SDK endpoint自体も無効化した。削除後のSDK sign-outで複数cookieをそのまま返す。Business/Auth/Stripe間の原子性はなく、先に確定した返却・billing・Business cleanupは残る。全25 Business/4 Auth migrationのnative66/66、両CI37092452003とstagingの合成故障/再試行6ケースを受入済み。現在のWorkerは`4a8d85dd-dfc4-424b-94ff-14354ae1fc4f`。remoteでは返却済みgrace fixtureでBusiness rollbackとAuth failure/retryを分けて検証し、cleanup・独立baseline readbackも通過した。実provider、populated billing、remote active返却、実端末、全source/運用の完了を意味しない。詳細は[退会API](migration/account-deletion-api.md)。
+
+
+検索記録とお気に入りの更新は`workers/api/src/discovery-mutations.ts`を共有する。
+全25 Business migrationのnative試験で再現したevent/count抑止時の部分commitを修正し、
+期待するdiscovery/favorite全列と新規eventのreceiptをcommit前に検証する。
+件数はSQLite INTEGERで計算し、bindされた増分も明示castして浮動小数への変換を防ぐ。
+同一identityの競合による確定済みSQL rollbackのみ最大2回再試行する。
+通信断などcommit成否が不明な結果は内部再実行しない。native17/17とclient12/12が通過。
+CI/配備の受け入れは別途必要で、source seq_keyの3 index gateは閉じない。

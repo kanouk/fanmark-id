@@ -140,3 +140,17 @@ zero new sessions. Native search now passes 13/13 under Node 22.6.0.
 This case verifies the API after native session revocation, not the admin
 MFA/audit/suspension transaction itself; its separate existing suite owns that
 proof. Provider-backed OAuth/email and real user import remain unverified.
+
+
+## Aggregate-write atomicity repair (2026-10-03 JST)
+
+Search recording now shares `workers/api/src/discovery-mutations.ts` with
+favorite add/remove. A suppressed search event previously returned503 after
+committing the discovery update. The batch now verifies its exact discovery
+state and event receipt before commit and rolls back all effects on failure.
+Its user attribution remains NULL. All25 Business migrations are used by the
+native favorites/search-write suite (17/17), including counter precision beyond
+JavaScript's safe integer range and signed-int64 overflow refusal. Search detail
+projection and source sequence/index equality have separate acceptance scopes;
+these write tests do not close those broader gates. CI/deployed acceptance of
+the repair is pending.

@@ -1,3 +1,4 @@
+import { mutateDiscovery } from "./discovery-mutations";
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
@@ -327,55 +328,12 @@ async function listFavorites(db: D1Database, userId: string): Promise<Record<str
 }
 
 async function mutateFavorite(db: D1Database, userId: string, rawIds: string[], normalizedIds: string[], displayFanmark: string | null, add: boolean): Promise<boolean> {
-  const rawJson = JSON.stringify(rawIds);
-  const normalizedJson = JSON.stringify(normalizedIds);
-  const now = toUtcMicrosecondTimestamp(new Date());
   try {
-    if (add) {
-      const results = await db.batch([
-        db.prepare(`INSERT INTO fanmark_discoveries
-          (id, emoji_ids, normalized_emoji_ids, availability_status, first_seen_at, last_seen_at, search_count, favorite_count)
-          VALUES (?, ?, ?, 'unknown', ?, ?, 0, 0)
-          ON CONFLICT(normalized_emoji_ids) DO UPDATE SET
-            emoji_ids = excluded.emoji_ids,
-            last_seen_at = excluded.last_seen_at`)
-          .bind(crypto.randomUUID(), rawJson, normalizedJson, now, now),
-        db.prepare(`INSERT INTO fanmark_favorites
-          (id, user_id, discovery_id, fanmark_id, normalized_emoji_ids, created_at, display_fanmark)
-          SELECT ?, ?, d.id, d.fanmark_id, ?, ?, ?
-          FROM fanmark_discoveries AS d
-          WHERE d.normalized_emoji_ids = ?
-          ON CONFLICT(user_id, normalized_emoji_ids) DO NOTHING`)
-          .bind(crypto.randomUUID(), userId, normalizedJson, now, displayFanmark, normalizedJson),
-        db.prepare(`INSERT INTO fanmark_events
-          (event_type, user_id, discovery_id, normalized_emoji_ids, created_at)
-          SELECT 'favorite_add', ?, d.id, ?, ?
-          FROM fanmark_discoveries AS d
-          WHERE d.normalized_emoji_ids = ? AND changes() = 1`)
-          .bind(userId, normalizedJson, now, normalizedJson),
-        db.prepare(`UPDATE fanmark_discoveries
-          SET favorite_count = favorite_count + 1
-          WHERE normalized_emoji_ids = ? AND changes() = 1`)
-          .bind(normalizedJson),
-      ]);
-      return Number(results[1]?.meta?.changes) === 1;
-    }
-
-    const results = await db.batch([
-      db.prepare("DELETE FROM fanmark_favorites WHERE user_id = ? AND normalized_emoji_ids = ?")
-        .bind(userId, normalizedJson),
-      db.prepare(`UPDATE fanmark_discoveries
-        SET favorite_count = MAX(favorite_count - 1, 0)
-        WHERE normalized_emoji_ids = ? AND changes() = 1`)
-        .bind(normalizedJson),
-      db.prepare(`INSERT INTO fanmark_events
-        (event_type, user_id, discovery_id, normalized_emoji_ids, created_at)
-        SELECT 'favorite_remove', ?, d.id, ?, ?
-        FROM fanmark_discoveries AS d
-        WHERE d.normalized_emoji_ids = ? AND changes() = 1`)
-        .bind(userId, normalizedJson, now, normalizedJson),
-    ]);
-    return Number(results[0]?.meta?.changes) === 1;
+    return await mutateDiscovery(db, {
+      operation: add ? "favorite_add" : "favorite_remove", userId,
+      rawIds, normalizedIds, displayFanmark,
+      now: toUtcMicrosecondTimestamp(new Date()),
+    });
   } catch {
     throw new FavoritesApiError("favorites_unavailable");
   }

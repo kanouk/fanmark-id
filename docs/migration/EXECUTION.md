@@ -6555,3 +6555,15 @@ CI37092452003はhead `388044b057b4d0192fe98bcb1d242565e323ad25`でアプリ/Work
 Journal `/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-account-deletion-audit-15KPFs/canary.json`はverified-and-cleaned/flowPassed true。合成Auth7ユーザー、source Business fixtures、一時triggersは全削除、cookie無効、両store FK0、Business/Auth triggerとbaseline creatorの完全復元を確認。独立03:29:23.044Z readbackはWorker4a at100%、Business ledger25/source owned0/Auth owned0、Master canonical3944/release7888/import/active pointer/history完全一致、MFA generation236とsecret names保持を証明した。wakeは17:17のままresetしていない。anti-reuse license incarnationなど保持対象のregistryは削除していない。private acceptanceは`/tmp/fanmark-account-deletion-388044b-staging-acceptance.json`。
 
 受入scopeは以上の退会SQL fault/retry/schema/static/provider閉鎖/baselineのみ。新規remote OAuth user/credential、実providers、現在版でのeditor/lottery/transfer再実行、実端末、全source/RLS/callers、運用・CPU/plan適合、全移行は未証明。ユーザーデータ移送とdomain/DNSは最終工程として未実行。次は全source runtime/authorization/caller/value/index gateの照合と定常lifecycle/archive/retention・復旧/秘密/最小権限・実provider acceptanceを進める。
+
+
+## 2026-10-03：検索・お気に入りの部分commitを修正（local）
+
+全25 Business migrationsで既存11ケースを確認後、event/count抑止の4ケースを追加。
+3ケースは誤った200、検索は503でもdiscovery更新がcommitされることを再現した。
+shared discovery-mutations.tsのtransaction内確認で4ケースのrollback/retryを修正した。
+候補の初回実行はD1 numeric bindがREALとして評価され、JSONの4と4.0比較で拒否された。
+SQLの増分をINTEGERへcastし、整数精度も保持する。native17/17、client12/12、
+Worker typecheck/changed-file ESLint/CI isolation通過。full-schemaのfixtureへ置換し、
+旧縮小fixtureを削除。CI/staging受け入れはまだ。実user/provider/DNS変更なし。
+完了条件はCOMPLETION.mdの六項目で管理し、新規fault仮説を無制限に追加しない。

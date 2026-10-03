@@ -92,9 +92,14 @@ Worker removes the five skin-tone code points and resolves each resulting
 codepoint sequence back to its canonical release ID while preserving order
 and duplicates. Missing or ambiguous mappings fail closed. Add, duplicate
 add, remove, favorite-count reconciliation, and event insertion run in one D1
-batch. `changes()` guards ensure duplicate requests do not create extra events
-or increment counts; a new favorite increments by one and removal decrements by
-one with a zero floor, matching the source RPC.
+batch. `discovery-mutations.ts` fences the captured discovery and owner favorite,
+then checks the complete expected row state and exact inserted event before
+commit. Suppressed or changed required writes abort the whole batch. Duplicate
+add preserves the existing favorite spelling/time and does not create an event
+or increment counts; remove decrements with a zero floor. Confirmed SQLite
+rollback caused by a changed preflight state can retry twice; unknown commit
+acknowledgments are never retried internally. Integer arithmetic explicitly
+casts bound deltas to INTEGER, retaining exact signed 64-bit counter values.
 
 The schema converter now has a narrow `seq_key(uuid[])` translation to a
 unique index over the target's canonical JSON array text. This supports the
@@ -122,3 +127,25 @@ synthetic account completed add/list/remove against the separate Master D1 and
 business D1; the favorite, event, and newly-created discovery rows were
 removed and composite readback returned zero. No historical favorite rows
 were imported. Production and domain/DNS migration remain deferred.
+
+
+## Search/favorite transaction repair — 2026-10-03 JST
+
+The native suite now applies all 25 canonical Business migrations instead of a
+reduced fixture. Four faults reproduced committed partial effects: ignored
+favorite event/count and removal event returned200; ignored search event
+returned503 after committing its discovery count/spelling/time. The shared
+transaction guard repairs those cases. Failed operations preserve discoveries,
+favorites, events and SQLite sequence exactly; removal of each synthetic fault
+permits retry200. These are regression cases for a reproduced bug, not a new
+whole-database fault acceptance requirement.
+
+Native17/17 includes the existing concurrent duplicate add (true/false), other
+owner preservation, protected projections, new discovery timestamps, exact
+9007199254740993+ arithmetic and int64-overflow rollback. Client12/12 covers
+favorites/search contracts. The schema converter's three sequence-key index
+gates remain open: these canonical product writes do not prove historical
+NULL/empty-array or arbitrary external-writer parity. The source bodies and
+policy hashes above are unchanged. CI and deployed acceptance of this new
+candidate are pending; the accepted deployed account/other scopes retain their
+own evidence and are not reclassified by these local tests.
