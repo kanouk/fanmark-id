@@ -6567,3 +6567,13 @@ SQLの増分をINTEGERへcastし、整数精度も保持する。native17/17、c
 Worker typecheck/changed-file ESLint/CI isolation通過。full-schemaのfixtureへ置換し、
 旧縮小fixtureを削除。CI/staging受け入れはまだ。実user/provider/DNS変更なし。
 完了条件はCOMPLETION.mdの六項目で管理し、新規fault仮説を無制限に追加しない。
+
+
+### 同candidateのCI guard修正
+
+codeea6309aのアプリCI37094485854は、event bigintのJavaScript読出し禁止checkが、
+SQL内のreceipt照合も一律拒否して失敗した。二つのSQLはIDをresponseへ射影せず、
+verifiedの整数1だけを返す。SQL全文hashを固定した二つの確認済みassertionだけを
+許可し、RETURNING IDや他のSELECTは引き続き拒否する。guard4/4、全migration-data
+278/278（skip0）、changed-file lint通過。Worker CIの実行中状態をアプリ失敗で
+終了済みと推定せず、既存handleを保持。次のheadで両CIを再確認する。配備は未実行。

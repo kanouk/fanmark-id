@@ -103,9 +103,23 @@ test("the exact sequence-backed fanmark event bigint key stays internal to SQL",
   const readPattern = /\b(?:FROM|JOIN|UPDATE|DELETE\s+FROM)\s+(?:(?:"public"|public)\s*\.\s*)?["`]?fanmark_events["`]?(?![A-Za-z0-9_])/giu;
   const insertPattern = /\bINSERT\s+INTO\s+(?:(?:"public"|public)\s*\.\s*)?["`]?fanmark_events["`]?(?![A-Za-z0-9_])/giu;
   const insertStatements = [];
+  // These two exact SQL assertions inspect the integer event receipt inside
+  // SQLite and project only `verified = 1`. Neither exports an event ID.
+  // Any SQL change, including an added ID projection, requires a new review.
+  const reviewedReceiptGuards = new Set([
+    "5b82a0967a8aa519b36fcb5d1279cead439787f6258f6c7e9f41e2ce9c408973",
+    "102f04631926bbc1c66f110a4f9164f26ce04fdd93ee7f007ea0d8c47caef9a4",
+  ]);
 
   for (const { filePath, text } of workerSources) {
-    assert.doesNotMatch(text, readPattern, `${path.basename(filePath)} must not read the bigint event key into JavaScript`);
+    for (const match of text.matchAll(readPattern)) {
+      const templateStart = text.lastIndexOf("`", match.index);
+      const templateEnd = text.indexOf("`", match.index);
+      assert.ok(templateStart >= 0 && templateEnd > match.index, "event assertions must remain inspectable SQL templates");
+      const sql = text.slice(templateStart + 1, templateEnd).replace(/\s+/gu, " ").trim();
+      const digest = createHash("sha256").update(sql).digest("hex");
+      assert.ok(reviewedReceiptGuards.has(digest), `${path.basename(filePath)} must not read the bigint event key into JavaScript`);
+    }
     for (const match of text.matchAll(insertPattern)) {
       const templateStart = text.lastIndexOf("`", match.index);
       const templateEnd = text.indexOf("`", match.index);

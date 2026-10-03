@@ -12,6 +12,16 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Local search/favorite repair candidate**: shared `discovery-mutations.ts`
+  verifies exact discovery/favorite rows and the inserted event before commit.
+  Four full-schema SQL faults reproduced partial commit and now roll back/retry;
+  native17/17, search-details13/13, client12/12, Worker typecheck/lint/CI isolation
+  pass. Integer deltas are cast explicitly, preserving int64 counters.
+  ea6309a's app CI failed an overly broad event-ID read prohibition. The two
+  exact SQL-only receipt assertions now have a hash-bound exception; guard4/4
+  and migration-data278/278 pass. New CI and deployment remain pending. Current
+  accepted Worker is still4a below; no provider/user/DNS change ran.
+
 - **Newest accepted staging code:388044b**, CI37092452003 both jobs success.
   Full25 Business/4 Auth native66/66, Auth47/47, client4/4, typecheck/lint/
   workflow isolation/staging dry-run pass. Preflight03:22:19Z confirms Worker71d,
