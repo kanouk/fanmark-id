@@ -115,7 +115,7 @@ Target: Session-bound analytics DTOs and internal public-access aggregate mutati
 
 Implementation: [fanmark-analytics-d1-api.ts](../../workers/api/src/fanmark-analytics-d1-api.ts), [fanmark-access-analytics-d1-api.ts](../../workers/api/src/fanmark-access-analytics-d1-api.ts). Contracts: [fanmark-access-analytics-api.md](fanmark-access-analytics-api.md). Coverage: [fanmark-access-analytics-d1.test.ts](../../workers/api/test/fanmark-access-analytics-d1.test.ts).
 
-Difference or remaining condition: Target uses endpoint-specific active/current license and plan guards, narrower than any historical owner. Historical analytics disposition remains a data/product gate.
+Difference or remaining condition: Target uses endpoint-specific active/current license and plan guards, narrower than any historical owner. The current Analytics screen already selects status=active licenses, and the dashboard filters derived-active licenses before reading stats; these caller scopes correspond to the target. See the current-screen review in fanmark-access-analytics-api.md. Broader historical-owner direct-row access, imported rows, retention and final populated-user integration remain separate data/operations/cutover requirements.
 
 ### C09: fanmark_access_logs (1 policies)
 

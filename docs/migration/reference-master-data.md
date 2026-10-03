@@ -287,3 +287,27 @@ Master D1 release history; no Supabase row, production resource, Stripe
 resource, user-owned record, or
 domain/DNS setting was changed. Browser interaction with the admin editor,
 payment processing, and production selector changes remain unverified.
+
+
+## Accepted retained-timestamp and active-price staging check (2026-10-03)
+
+Code `cbb90c7`, CI37105400187 (both jobs successful) is deployed as Worker
+`e0a4b16e-d829-4016-95df-26471cd7940d`. The MFA-protected admin reader now
+accepts the retained PostgreSQL UTC and old ISO millisecond representations
+without changing the old immutable releases. The previous baseline503 is
+resolved. A synthetic admin deactivated the tier-1 one-month price through the
+API, verified public15/admin16, rejected anonymous/stale writes, and restored
+it through the same API. Public counts returned to4/4/5/16. All four Master
+contents and Stripe identifiers matched the normalized original snapshot;
+public DTOs contain no Stripe identifiers. Existing activation audits are
+unchanged with two appended entries, generation8->10; the restored active
+release is `e44ecbeda38fe4a5c7c7adf66e2168e181da08b9033932543f991a54a868a036`.
+
+Independent07:25:20.731Z readback confirms zero owned Business/Auth rows, the
+retained emoji7888 inventory/history, wake17/17 and the original three secret
+names. MFA generation advanced238->240 from the synthetic factor lifecycle.
+The subsequent four-public-API readback also passed. Private proof prefix:
+`/tmp/fanmark-reference-cbb90c7`. This accepts the price deactivate/restore
+contract and retained timestamp reader; native Tier/pattern filtering evidence
+is separate from remote mutation. Real Stripe/provider, browser pricing-editor
+interaction, real users and production/domain cutover remain open.

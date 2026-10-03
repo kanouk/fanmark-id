@@ -12,7 +12,32 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- **Browser bootstrap fixture fix; new CI required**:
+- **Accepted timestamp/public-activation staging checkpoint**:
+  cbb90c795b9b735a6d9a0ca06031772b443a3d0a CI37105400187 completed with both
+  jobs successful; its single watcher36203 exited0 and was consumed. This
+  includes the repaired Chrome bootstrap and the retained Master timestamp
+  fix. Dedicated-account preflight and read-only Auth4 schema verification
+  passed, then the candidate was deployed at07:20:42.775Z as
+  e0a4b16e-d829-4016-95df-26471cd7940d at100%. Static JS/CSS byte/hash,
+  noindex/robots/sitemap, closed-provider and full retained-baseline readback
+  passed. The MFA-protected extension-price API now reads the retained UTC
+  formats instead of503. A bounded deactivate/restore canary passed:
+  public15/admin16 while inactive, public16 after restoration, anonymous401
+  and stale409; all four Master contents and Stripe IDs are preserved.
+  Existing reference audit history is retained with exactly two appended
+  activations, generation8->10. Restored active reference release is
+  e44ecbeda38fe4a5c7c7adf66e2168e181da08b9033932543f991a54a868a036.
+  Independent07:25:20.731Z readback confirms owned Business/Auth0,
+  Business25, retained emoji7888/inventory/history unchanged, wake17/17,
+  original3 secret names and expected monotonic MFA238->240. Final public
+  four-master readback at07:25:33.962Z returns4/4/5/16 at the restored version
+  with no public Stripe IDs. No source data, real provider, production route
+  or DNS changed. Private proof prefix:/tmp/fanmark-reference-cbb90c7.
+  This closes the reproduced admin503 and the remote price visibility
+  acceptance, not all six finish packages or remote Tier/pattern mutation.
+  All preflight/deploy/readback/canary processes are terminal and consumed.
+
+- **Historical browser bootstrap failure/fix, superseded by the accepted checkpoint above**:
   d234ef8 CI37103506054's Worker job succeeded in both completed attempts.
   Application attempts111147470619 and111148938390 failed only the first
   Chrome bootstrap in the cold case, before navigation/application assertions;
@@ -22,7 +47,7 @@ staging deployment does not close the whole goal.
   the failed isolated profile/process, and retries bootstrap once before any
   navigation. Application assertion failures are not retried. Local UI8/8 and
   a forced first-process exit23 followed by the real Chrome cold UI case pass;
-  Node syntax check passes. New CI/deployment are pending. No application UX or
+  Node syntax check passes. New CI/deployment passed as recorded above. No application UX or
   validation assertion was removed. Old run37103506054 is terminal/failure;
   watchers27252 and91655 exited1 and were consumed, so do not restart its jobs
   again. Private logs:/tmp/fanmark-browser-bootstrap-{final,retry-proof}.log.
@@ -31,7 +56,7 @@ staging deployment does not close the whole goal.
   password-proof/settings and invitation implementation/accepted scope instead.
   This is evidence-linkage repair, not full source runtime/provider acceptance.
 
-- **Retained Master timestamp compatibility fix, local candidate**:
+- **Historical retained Master timestamp compatibility failure/fix**:
   c7b71c6 CI37101502623 passed both jobs and was deployed as
   70090cdc-7476-4892-8f53-ec38b21ed32e at100%. Root/static JS/CSS byte/hash
   readback, noindex/robots/sitemap, four public reference APIs and independent
@@ -45,7 +70,7 @@ staging deployment does not close the whole goal.
   when building a new snapshot, preserving up to six fractional digits and
   leaving old releases unchanged. Invalid dates/non-UTC/sub-microsecond input
   still refuse before writing. Local reference API10/10, Worker typecheck and
-  focused lint pass; CI/deployed acceptance of this newer fix remains pending.
+  focused lint pass; its CI/deployed acceptance is recorded above.
   Generic import/release input validation is not relaxed.
   The failed private canary cleaned Auth; its added synthetic admin profile
   was not covered by the old cleanup condition. The sole leftover profile was
@@ -71,8 +96,8 @@ staging deployment does not close the whole goal.
   two-row activation-history assumption after multiple admin edits; the helper
   now verifies an unchanged historical prefix and one appended audit without
   deleting/resetting history. CI passed and this code is deployed as70090cdc;
-  public all-active/static/retained readback passed. Remote inactive-member
-  acceptance remains pending on the timestamp fix above. No source/user/remote
+  public all-active/static/retained readback passed. Remote price inactive-member
+  acceptance passed in the newest checkpoint above. No source/user/remote
   Master/provider changes ran in the deployment or failed canary.
 
 

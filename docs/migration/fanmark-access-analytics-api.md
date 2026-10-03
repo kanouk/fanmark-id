@@ -43,3 +43,32 @@ This proves only a synthetic staging flow. Historical data is not migrated;
 raw referrer/user-agent retention policy, populated-user authorization, and
 production CPU/plan fit remain open. Owner history details also remain on
 Supabase.
+
+
+## Current analytics screen correspondence — 2026-10-03
+
+`src/pages/Analytics.tsx` obtains only the caller's `status=active` licenses,
+then limits aggregate queries to those fanmark IDs (or a selection from that
+list). Its creator/business/enterprise/admin plan gate matches
+`fanmark-analytics-d1-api.ts`. The Worker derives the caller from the Auth
+session, keeps the active-license list and repeats its scope in every aggregate
+query; it additionally refuses a foreign selected ID. The source RLS permits
+any historical license owner, but that broader row permission is not the
+current Analytics screen's requested dataset.
+
+`FanmarkDashboard.tsx` uses deriveLicenseTiming to select active licenses,
+then sums access_count for those fanmark IDs for the preceding 30 days. The
+Worker summary uses the corresponding active finite/perpetual predicate and
+excludes grace/expired states. Existing analytics native tests verify another
+owner's aggregates are absent, invalid/foreign filters are refused, grace
+counts are absent from dashboard totals, and the one-microsecond license-end
+boundary is retained. Those tests use the reduced analytics fixture and an
+injected owner resolver; the earlier staged rendered canary is the separate
+real-session/UI proof. The current full Worker CI includes this unchanged
+suite. No new fault campaign or broader historical-owner endpoint is needed
+for this screen correspondence.
+
+Current application scope is therefore explained. Retained historical rows,
+legacy direct-row/RPC access, raw-log retention and final populated-user
+integration remain explicit data/operations/cutover requirements. No real
+analytics row was read, imported or changed in this review.
