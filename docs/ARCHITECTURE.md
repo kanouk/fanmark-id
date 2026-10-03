@@ -33,6 +33,7 @@
 - `/plans` and `/plan`: ログイン後のプラン選択・ダウングレード選択モーダル: `PlanSelection.tsx`, `FanmarkSelectionModal.tsx`。両routeは`ProtectedRoute`で保護する。Worker選択時の無料→有料Checkoutは`stripe-plan-checkout-api.ts`、既存契約の有料プラン変更は`stripe-plan-change-api.ts`を使う。計画変更は同じプランの選択済みfanmark返却後にowner-bound commandとして送信し、プラン反映は署名検証済みWebhookを待つ。
 - `/fanmarks/:fanmarkId/settings`: `FanmarkSettingsPage.tsx` + `FanmarkSettings.tsx`。既定はSupabase。stagingの`VITE_FANMARK_SETTINGS_BACKEND=worker`ではBetter Auth本人sessionの`GET/PATCH /api/me/fanmarks/:fanmarkId/settings`へ切り替え、メッセージボードpreviewも同じ所有者限定APIから設定を読む。
 - `/fanmarks/:fanmarkId/profile/edit|preview`: `EmojiProfileEdit.tsx`, `FanmarkProfilePreview.tsx`。`VITE_FANMARK_PROFILE_BACKEND=worker`で編集とpreviewが所有者限定profile APIを使う。Workerのread/saveは本人activeかつ期限内または無期限を要求し、grace/expiredと曖昧な所有状態を拒否する。編集は認証復元を待ち、Workerログイン後は元のURLへ戻る。`useEmojiProfile.tsx`は取得エラーを公開し、古いread結果を無効化する。取得失敗ではフォームを開かず再試行を表示する。production既定はSupabase。
+- `SocialLinkInputCard.tsx`: SNSリンクのユーザー名・URL入力。grid内のカードとflex内の入力欄に`min-w-0`を指定し、狭い画面で入力欄の既定幅がページ幅を押し広げるのを防ぐ。
 - `/fanmarks/:fanmarkId/messageboard/preview`: `FanmarkMessageboardPreview.tsx`
 - `/f/:shortId`: ファンマ詳細（whois）: `FanmarkDetailsPage.tsx` + `useFanmarkDetails.tsx`。Cloudflare staging buildでは`VITE_FANMARK_DETAILS_BACKEND=worker`で`POST /api/fanmarks/details`を使う。匿名時は公開概要のみ、ログイン時は本人session由来のお気に入り・抽選状態と所有履歴を表示する。通常buildはSupabaseを維持。
 - `/a/:shortId`: 短縮アクセス: `FanmarkAccessByShortId.tsx`。匿名読取は`VITE_PUBLIC_ACCESS_READ_BACKEND=worker`の明示時にWorker APIを選択し、未設定ではSupabase RPC。Worker失敗時はSupabaseへ戻らない。

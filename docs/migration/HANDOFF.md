@@ -7,14 +7,33 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- Head2ad6b07 CI37078676014 application failed on offline save-failure draft
-  wait (no PATCH was sent); Worker job ultimately completed successfully. Do
-  not re-pin or deploy from that run. The form now waits for draft hydration
-  and installs persistence in a layout effect before showing inputs, closing
-  the first-edit gap. Root types/lint/build/offline8 and actual local composed
-  Worker/3D1/browser pass, including draft recovery and scoped server/state
-  cleanup. Migration-data278/278 passes with no skips. These changes need new
-  exact-HEAD CI and private canary re-pinning.
+- Deployed code e4d9064 passed both CI37079353334 jobs. Guarded deployment
+  at2026-10-03T00:05:19.354Z moved workers.dev staging to
+  **73f934f5-d171-431b-8153-14f5cad1c371 at100%**. Public JS/CSS bytes match
+  the exact staging build; noindex/robots200/sitemap404 remain intentional.
+- The combined native canary reached real two-account signin, perpetual profile
+  create/update/public/private and cross-owner refusal, then stopped at
+  canary_editor_mobile_overflow before browser saves/favorites. Its journal
+  is failed-and-cleaned: zero owned Business/Auth rows, identical retained
+  baselines and two incarnation tombstones. Independent readback at
+  2026-10-03T00:08:27.327Z confirms account/version/ledger25/owned0/wake5:5/
+  secret names/master metadata. **Do not claim combined remote acceptance.**
+- Offline reproduction of desktop-to-mobile resizing found client390 but
+  innerWidth/scrollWidth454: SNS handle input/card intrinsic width enlarged
+  Chrome's mobile viewport. Old local assertions compared the enlarged
+  viewport against itself. SocialLinkInputCard now permits card/input shrink;
+  offline and actual local tests assert the configured390px, and offline cold
+  also resizes1280→390. The diagnostic rerun reports all widths390/scale1/no
+  overflowing elements. Types/lint/build/offline8 and actual local Worker/3D1/
+  browser pass with scoped server/port/state cleanup (executed on e4d9064 plus
+  uncommitted patch). The new code requires its own exact-HEAD CI and
+  private pin updates before another remote deployment/canary.
+- D1 daily read quota recovered. An over-narrow private guard expected only
+  one3944-row release, but metadata/history proves two retained ready releases
+  of3944 each plus one failed import with zero staged rows. The active release
+  remains10ec42 at generation3/action rollback; inactive d78d798 is the retained
+  rehearsal. Private guards now pin all import metadata and activation history
+  by SHA-256; no Master rows were deleted or changed. See emoji-releases.md.
 - Source seq_keyfbe91b15 literal PostgreSQL oracle7 exposes that NULL elements
   are omitted and empty arrays are hashed, contradicting the old documentation
   about source input invariants. Converter42/42 reproduces candidate JSON-index
@@ -32,15 +51,14 @@ older sections retain their historical acceptance and failure evidence.
   See source-signup-provisioning.md; target new OAuth-user Business provisioning
   still needs implementation, while existing-UUID linking and initial password
   setup have synthetic coverage. Their combined real-provider acceptance and
-  provider credentials remain open/absent. This new test/doc HEAD needs its own CI success
+  provider credentials remain open/absent. Its deployed e4d9064 CI passed; the current mobile correction needs new CI
   and private canary HEAD/CI re-pin before deployment.
 
 - Edit only this managed migration worktree/branch and preserve the unrelated
   supabase/.temp/cli-latest change. PR #41 is draft/open; CI never deploys.
-- Staging remains Worker 010a4d7a at 100%. New editor/favorites/catalog changes
-  are not remotely accepted yet. The last deploy preflight stopped on D1 Free
-  daily-read error 7500 before writes. Full identity/version/ledger25/empty
-  owned Business/Auth/master/wake/secrets checks are required before deployment.
+- Staging is73f934f5 at100%. Combined editor/favorites acceptance is still
+  incomplete as described above. Recheck identity/version/ledger25/empty
+  owned Business/Auth/master/wake/secrets before a new deployment/canary.
 - Private combined editor/favorites preparation and the latest expected CI are
   in /tmp/fanmark-favorites-protected-preparation.json. Re-pin the three private
   preflight/smoke/final-readback scripts only after both jobs succeed for the

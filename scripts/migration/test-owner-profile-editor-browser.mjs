@@ -163,7 +163,20 @@ async function run(mode){
    await wait(cdp,'!!document.querySelector(\'input[name="display_name"]\')',Boolean);
    assert.equal(await value(cdp,'location.pathname'),editor);
    assert.equal(await value(cdp,'document.querySelector(\'input[name="display_name"]\').value'),' Offline perpetual ');
-   const size=await value(cdp,'({width:innerWidth,scroll:document.documentElement.scrollWidth})');assert.ok(size.scroll<=size.width,`overflow ${JSON.stringify(size)}`);
+   const assertMobileWidth=async()=>{
+    const size=await value(cdp,'({width:innerWidth,client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth})');
+    assert.equal(size.client,390,`mobile client width ${JSON.stringify(size)}`);
+    assert.equal(size.width,390,`mobile layout expanded ${JSON.stringify(size)}`);
+    assert.ok(size.scroll<=390,`overflow ${JSON.stringify(size)}`);
+   };
+   await assertMobileWidth();
+   // Chrome can expand the mobile layout viewport to fit overflowing content.
+   // Check the configured width again after switching from the desktop layout.
+   await cdp.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+   await wait(cdp,'innerWidth',width=>width===1280);
+   await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+   await wait(cdp,'document.documentElement.clientWidth',width=>width===390);
+   await assertMobileWidth();
   }else if(mode==='anonymous'||mode==='login'){
    await wait(cdp,'location.pathname',v=>v==='/auth');
    const from=await value(cdp,'history.state?.usr?.from');assert.equal(from,editor,'login return target must be a string');

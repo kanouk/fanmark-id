@@ -64,7 +64,8 @@ failed-save case proves that a 503 keeps the editor and draft, reload restores
 unsaved content, and only a successful retry removes the draft. The page
 rethrows a save failure after its toast so the form can distinguish success
 from failure. The restored-owner case
-checks exact entered spaces and no horizontal overflow at 390px. Font requests
+checks exact entered spaces, clientWidth/innerWidth390 and scrollWidth<=390,
+including a desktop-to-mobile resize. Font requests
 are blocked; no Supabase or real API calls are permitted. Set
 `FANMARK_STAGING_CHROME` when Chrome is outside the discovered standard paths.
 This rendered regression runs after the staging build in the application CI
@@ -91,7 +92,10 @@ unchanged and the draft survives reload; its retry saves through the actual
 Worker into D1 and clears the draft. Actual form sign-in preserves the anonymous
 return URL, cold reopening preserves exact spaces, public/private HTTP reads
 follow the saved flag, another owner's editor refuses the form and revocation
-returns the editor to sign-in. At390px there is no horizontal overflow; this is
+returns the editor to sign-in. Width assertions require clientWidth/innerWidth390
+and scrollWidth<=390; comparing scrollWidth to an expanded innerWidth alone
+previously missed SNS input overflow. SocialLinkInputCard constrains the grid
+card and flex input with min-w-0 without changing input semantics. This is
 not a real-phone check. It verifies zero Business foreign-key violations and
 stops both local server/browser, removing local database state. A private report
 and diagnostic logs remain in the temporary directory; no remote D1/provider
@@ -155,3 +159,13 @@ the exact same-owner URL through this API, reject another owner's URL and the
 avatar bucket used as a cover, then owner-delete and read back 404. Synthetic
 Auth and source business rows were cleaned. Existing Supabase objects remain
 for the final user-data phase.
+
+## Remote editor canary boundary (2026-10-03 JST)
+
+Deployed e4d9064/version73f934f5 passed real two-account signin, perpetual
+profile create/update/public/private and cross-owner API refusal. The combined
+browser canary stopped at mobile overflow before browser save/recovery and
+protected favorites. Scoped cleanup and independent remote readback confirmed
+owned Business/Auth0 and retained baseline equality. These unfinished checks
+remain required after the mobile correction passes exact-HEAD CI and deploys;
+local browser tests or an API save do not replace that acceptance.

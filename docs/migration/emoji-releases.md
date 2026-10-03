@@ -329,3 +329,17 @@ The independent remote D1 query returned 3,944 active-release rows and matched
 all eight columns; its metadata reported `changed_db=false` and zero rows
 written. The active pointer remains generation 3/action `rollback`. No source
 rows were imported and no activation or D1 mutation occurred.
+
+## Retained release inventory readback (2026-10-03 JST)
+
+Metadata-only D1 reads at00:03:30Z confirmed two ready immutable releases:
+active10ec42 has3944 rows; inactive rollback-rehearsal d78d798 has3944 rows.
+The earlier failed35b34 import retains metadata and zero staged rows. Total
+staged rows are7888; this is retained release history, not duplicate canonical
+rows. Canonical count stays3944 and the active pointer stays generation3,
+action rollback, with the same three activation events. A private preflight
+incorrectly expected total3944 and stopped before deployment/fixtures. Its
+correction pins the complete import metadata/manifest hashes/pointer/history
+SHA-2565dddb3109b218fe1c7566d3d6c8348f5c95c7bd2b03d4b4e1d265297d3ed009e.
+Independent00:08:27Z readback matched it. No retained release was deleted and
+no canonical master, activation or legacy Auth row was changed.

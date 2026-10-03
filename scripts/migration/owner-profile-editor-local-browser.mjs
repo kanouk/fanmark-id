@@ -42,7 +42,8 @@ export async function runBrowser({temp,origin,users,http,execute,sql}){
   await value("document.querySelector('#auth-email').closest('form').querySelector('button[type=\"submit\"]').click()");
   await wait("document.querySelector('input[name=\"display_name\"]')?.value",result=>result===owner.name);
   assert.equal(await value('location.pathname'),editor);
-  const width=await value('({width:innerWidth,scroll:document.documentElement.scrollWidth})');assert.ok(width.scroll<=width.width);
+  const width=await value('({width:innerWidth,client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth})');
+  assert.equal(width.client,390);assert.equal(width.width,390,'mobile layout viewport expanded');assert.ok(width.scroll<=390);
   const snapshot=async()=>{const result=await execute('FANMARK_DB',`SELECT id,display_name,bio,is_public FROM fanmark_profiles WHERE license_id=${sql(owner.licenseId)};`);return result.flatMap(part=>part.results);};
   const before=await snapshot();
   for(const [selector,text] of [['input[name="display_name"]',textName],['textarea[name="bio"]',textBio]]){await value(`(()=>{const field=document.querySelector(${JSON.stringify(selector)});field.focus();field.select();})()`);await cdp.send('Input.insertText',{text});}

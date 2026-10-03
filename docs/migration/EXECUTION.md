@@ -1,5 +1,40 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：最新staging配備とスマホ幅検証の見逃しを修正
+
+コードe4d9064のCI37079353334はapplication/Workerとも成功。D1 read quota復旧後の
+完全preflightが00:04:41Zに成功し、00:05:19Zにworkers.dev Worker
+73f934f5-d171-431b-8153-14f5cad1c371へ配備した。配信JS/CSSはstaging buildとbytes一致、
+noindex、robots200、sitemap404を確認した。最初のstatic照合は誤って通常distを
+参照して失敗したため、Wrangler assets.directoryのdist-stagingを使って再照合した。
+
+private Master guardの総release行数3944という前提も誤りだった。metadata-only
+readbackで公開10ec42/ready3944、rollback試験d78d798/ready3944、failed35b34/0と
+generation1→2→3の履歴を確認。総7888を保持し、import metadata/manifest SHA-256・
+active pointer・履歴を固定digest5dddb310…で照合する。Master書込みは行わない。
+
+合成canaryは2accountの実signin、無期限profile作成/更新、公開/非公開、他人のread/write
+拒否まで進んだが、desktop→390px時のcanary_editor_mobile_overflowで停止した。
+保存失敗/復元/実browser保存とprotected favoritesは未到達で、合格扱いにしない。
+scoped cleanup後はowned Business/Auth0、全retained baseline一致、tombstone2を確認。
+00:08:27Zの独立readbackもaccount/version/ledger25/owned0/wake5:5/secret names/
+master inventoryの保持を確認した。
+
+同じbuilt UIのoffline再現でclientWidth390に対してinnerWidth/scrollWidth454、
+visualViewport scale0.859を確認した。既存local試験は拡大したinnerWidthとの比較だけで
+見逃していた。SNS handle inputの既定最小幅とgrid cardが原因で、両方をmin-w-0にする。
+入力モード/正規化は維持する。offline/local composed試験は390を明示assertし、cold
+caseはdesktop→mobile切替も確認する。診断再実行はwidth/client/scroll390、scale1、
+offender0。新HEADのCI・配備・combined canaryは別途必要。実phone未検証、実user移送・
+source writer停止・公開domain/DNS・provider送信/課金・Paid upgradeは行わない。
+
+修正後の型/lint/staging build、offline8 casesと実local Worker/全25 Business・3 Auth・
+8 Master D1/browserが成功。390px明示確認、保存失敗時の行/下書き保持、reload/retry、
+公開/非公開、他人拒否、停止session拒否とserver/port/local state cleanupを含む。
+実行時はe4d9064に未commit変更を重ねたworktreeであり、新HEAD CIの証拠ではない。
+private報告はfanmark-local-editor-compose-Ubh8GS/report.json、logは
+/tmp/fanmark-editor-mobile-width-{build,offline,compose}.log。
+
 ## 2026-10-03：編集フォームの初回入力とsequence keyのsource前提を修正
 
 head2ad6b07 CI37078676014のapplicationはoffline保存失敗caseで下書き待機が
