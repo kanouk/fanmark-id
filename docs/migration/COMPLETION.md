@@ -40,6 +40,11 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
+8bc3baaのCI37108118976はアプリ成功、Workerのcombined復旧step失敗で終了。
+Master生成が参照するアプリ依存をWorker-only jobがinstallしていないことが原因で、
+復旧のassertion開始前に止まった。両依存をinstall済みのアプリjobへcombined試験を
+移し、Business/Auth試験はWorker jobに保持する。remote復旧資源は未作成。
+
 検索・お気に入りの4既知不具合は、修正・CI・staging配備・rollback/retry・cleanup・
 独立readbackまで完了。sourceの4関数とtargetの経路/差異/証拠をobject mapと
 source-runtime-reviewへ対応付けた。これで六項目のうち一項目全体を閉じたとは扱わない。

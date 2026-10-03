@@ -12,6 +12,20 @@ staging deployment does not close the whole goal.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- **Combined-recovery CI dependency placement correction**:
+  Candidate8bc3baa CI37108118976 is terminal: application succeeded, Worker
+  failed in the newly enabled combined-recovery step before any assertions.
+  Master artifact generation imports application catalog tools and therefore
+  requires the root @supabase/supabase-js dependency; the Worker-only job had
+  installed only workers/api dependencies. Move this cross-tree test to the
+  application job, which already installs both dependency trees. Keep the
+  Business/Auth runtime-import step in the Worker job; that step and native
+  isolated-D1 tests passed in the failed run. No application/runtime assertion
+  is removed. Watcher46948 exited1 and is consumed. New CI must prove the
+  relocated combined step before any remote-recovery resource is created.
+  Wrangler whoami independently confirmed the dedicated fanmark account;
+  the captured OAuth token was removed and no remote mutation started.
+
 - **Local recovery transport and split-R2 application read fix, CI pending**:
   The combined fixture stored logical avatars/key and cover-images/key inside
   already-separated physical buckets. The importer could read them, but actual

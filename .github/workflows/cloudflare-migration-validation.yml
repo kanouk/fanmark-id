@@ -47,6 +47,11 @@ jobs:
       - name: Test migration data boundaries
         run: npm run test:migration-data
 
+      # Master artifact generation also imports the application's catalog tools.
+      # This job installs both application and Worker dependency trees.
+      - name: Test combined Business Auth Master and split R2 recovery
+        run: npm --prefix workers/api run test:combined-recovery
+
       - name: Install Stripe receipt migration test dependencies
         run: npm ci --prefix experiments/stripe-receipts
 
@@ -103,9 +108,6 @@ jobs:
 
       - name: Test current Business and Auth runtime import
         run: npm run test:business-runtime-import
-
-      - name: Test combined Business Auth Master and split R2 recovery
-        run: npm run test:combined-recovery
 
       - name: Type check Worker API
         run: npm run typecheck
