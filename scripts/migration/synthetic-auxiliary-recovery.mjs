@@ -14,6 +14,7 @@ import { createSplitR2ImportTransport } from "./split-r2-import-transport.mjs";
 import { businessMigrationStatements } from "./business-runtime-import-schema.mjs";
 import { sha256Hex } from "./snapshot-format.mjs";
 import { handleStorageRequest } from "../../workers/api/src/storage-r2.ts";
+import { mapStoredStorageImageUrl } from "../../workers/api/src/storage-image-url.mjs";
 
 const OWNER = "90000000-0000-4000-8000-00000000000d";
 const timestamp = "2026-09-26T12:00:00.000000Z";
@@ -140,17 +141,20 @@ export function createSyntheticAuxiliaryRecovery({ preparedBundle = null } = {})
       .bind("90000000-0000-4000-8000-000000000002").first();
     const assetUrls = [user.avatar_url, JSON.parse(profile.theme_settings).cover_image_url];
     for (const [index, url] of assetUrls.entries()) {
-      const key = new URL(url).pathname.split("/storage/v1/object/public/")[1];
+      const mapped = mapStoredStorageImageUrl(url, prepared.objects[index].bucket, {
+        STORAGE_BACKEND: "r2", STORAGE_LEGACY_ORIGIN: "https://synthetic-source.example.invalid", STORAGE_PUBLIC_BASE_URL: storageOrigin,
+      });
+      const key = new URL(mapped).pathname.slice("/api/storage/public/".length);
       assert.equal(key, `${prepared.objects[index].bucket}/${prepared.objects[index].key}`);
       const object = await r2.get(key);
       assert.ok(object);
       assert.equal(sha256Hex(Buffer.from(await object.arrayBuffer())), prepared.objects[index].contentSHA256);
       assert.equal(object.httpMetadata.contentType, "image/png");
-      const response = await readStorage(new Request(`${storageOrigin}/api/storage/public/${key}`));
+      const response = await readStorage(new Request(mapped));
       assert.equal(response?.status, 200, "restored asset must be readable through the actual application Storage API");
       assert.equal(response.headers.get("content-type"), "image/png");
       assert.equal(sha256Hex(Buffer.from(await response.arrayBuffer())), prepared.objects[index].contentSHA256);
-      const head = await readStorage(new Request(`${storageOrigin}/api/storage/public/${key}`, { method: "HEAD" }));
+      const head = await readStorage(new Request(mapped, { method: "HEAD" }));
       assert.equal(head?.status, 200);
       assert.equal(head.headers.get("content-length"), String(prepared.objects[index].size));
     }

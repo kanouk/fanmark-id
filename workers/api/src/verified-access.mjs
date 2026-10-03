@@ -1,3 +1,4 @@
+import { mapStoredProfileImages } from "./storage-image-url.mjs";
 import bcrypt from "bcryptjs";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.mjs";
 
@@ -1059,20 +1060,20 @@ async function fetchHandler(request, env) {
       if (!normalizedIds) return errorResponse(request, env, 401, "access_denied");
       const canonical = canonicalSelector("emoji", normalizedIds);
       const row = await protectedProjection(env, request, "emoji", canonical);
-      return row ? jsonResponse(request, env, projectionBody(row), 200) : errorResponse(request, env, 401, "access_denied");
+      return row ? jsonResponse(request, env, projectionBody(row, env), 200) : errorResponse(request, env, 401, "access_denied");
     }
 
     const value = decodePathValue(route.value);
     const canonical = route.selectorKind === "short" ? normalizeShortId(value) : normalizeLicenseId(value);
     const row = await protectedProjection(env, request, route.selectorKind, canonical);
-    return row ? jsonResponse(request, env, projectionBody(row), 200) : errorResponse(request, env, 401, "access_denied");
+    return row ? jsonResponse(request, env, projectionBody(row, env), 200) : errorResponse(request, env, 401, "access_denied");
   } catch (error) {
     if (error instanceof InputError) return errorResponse(request, env, 400, error.message);
     return errorResponse(request, env, 503, "unavailable");
   }
 }
 
-function projectionBody(row) {
+function projectionBody(row, env) {
   if (typeof row.fanmark_id !== "string" || typeof row.license_id !== "string") {
     throw new Error("invalid protected projection");
   }
@@ -1100,7 +1101,7 @@ function projectionBody(row) {
       name: row.profile_name,
       bio: row.profile_bio,
       socialLinks: sanitizeProfileSocialLinks(row.profile_social_links),
-      themeSettings: sanitizeProfileTheme(row.profile_theme_settings),
+      themeSettings: mapStoredProfileImages(sanitizeProfileTheme(row.profile_theme_settings), env),
     };
   }
   if (bytes(JSON.stringify(body)) > 64 * 1024) throw new Error("invalid protected projection");

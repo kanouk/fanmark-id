@@ -1,3 +1,7 @@
+# 2026-10-03 画像参照対応の現行checkpoint
+
+画像read DTO対応、変更なし保存時の元参照保持、既存timestamp/nested keyのowner削除を実装。localの実Worker・25 Business/4 Auth・R2・Chromeの編集/公開画像decodeと削除が成功した。typecheck/lintも成功（public-accessの既存2診断は不変）。[対応と受け入れ](storage-image-url-mapping.md)。このcandidateのCI・remote staging反映は次の工程。稼働Workerはcbb90c7/e0a4b16eのまま。実ユーザー行/objectとDNSは未変更。
+
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains

@@ -1,3 +1,4 @@
+import { mapStoredStorageImageUrl } from "./storage-image-url.mjs";
 import { selectD1Database, type Env } from "./repository.ts";
 import { isResendAuthEmailConfigured } from "./auth-email.mjs";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
@@ -868,6 +869,7 @@ async function getUserDetail(
   authorization: { userId: string; sessionId: string },
   now: Date,
   headers: Headers,
+  env: Env,
 ): Promise<Response> {
   const [authUser, profile] = await Promise.all([
     auth.prepare(`SELECT id, name, email, emailVerified, createdAt, updatedAt, twoFactorEnabled, banned, banExpires
@@ -883,6 +885,7 @@ async function getUserDetail(
       (authUser.banned !== 0 && authUser.banned !== 1) || !(authUser.banExpires === null || validTimestamp(authUser.banExpires))) {
     fail("admin_user_management_unavailable");
   }
+  const avatarUrl = mapStoredStorageImageUrl(profile.avatar_url as string | null, "avatars", env);
   const status = effectiveUserStatus({ banned: authUser.banned, banExpires: authUser.banExpires }, now);
   const [lastSignIns, factorsResult, enterprise, summaryRows, fanmarkRows, auditRows, statusAuditRows, masterAuditRows] = await Promise.all([
     readLastSignIns(auth, [userId]),
@@ -987,7 +990,7 @@ async function getUserDetail(
       userId: profile.user_id,
       username: profile.username,
       displayName: profile.display_name,
-      avatarUrl: profile.avatar_url,
+      avatarUrl,
       planType: profile.plan_type,
       preferredLanguage: profile.preferred_language,
       createdAt: profile.created_at,
@@ -1061,7 +1064,7 @@ export async function handleAdminUserManagementRequest(
       if (!isRecord(body) || Object.keys(body).length !== 1 || body.userId !== userId) fail("invalid_request", 400);
       const master = selectD1Database(env, "master");
       if (!master) fail("admin_user_management_unavailable", 500);
-      return await getUserDetail(userId, business, auth, master, authorization, dependencies.now?.() ?? new Date(), headers);
+      return await getUserDetail(userId, business, auth, master, authorization, dependencies.now?.() ?? new Date(), headers, env);
     }
     return await listUsers(request, business, auth, authorization, dependencies.now?.() ?? new Date(), headers);
   } catch (error) {

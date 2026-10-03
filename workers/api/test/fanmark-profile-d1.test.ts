@@ -136,6 +136,36 @@ beforeAll(async () => {
 beforeEach(resetRows);
 
 describe("owner fanmark-profile API", () => {
+  it("projects imported images, preserves unchanged source references and rejects another owner's source image", async () => {
+    const source = "https://synthetic-source.example.invalid";
+    const config = { STORAGE_BACKEND: "r2", STORAGE_LEGACY_ORIGIN: source, STORAGE_PUBLIC_BASE_URL: apiBase };
+    const theme = {
+      cover_image_url: `${source}/storage/v1/object/public/cover-images/${ownerId}/1700000000000_cover.png`,
+      profile_image_url: `${source}/storage/v1/object/public/avatars/${ownerId}/1700000000000.jpg`,
+      theme_color: "#123456",
+    };
+    await businessDatabase!.prepare("UPDATE fanmark_profiles SET theme_settings = ? WHERE license_id = ?")
+      .bind(JSON.stringify(theme), ownerLicenseId).run();
+    const cookie = await signIn(ownerEmail);
+    const route = `/api/me/fanmarks/${ownerFanmarkId}/profile`;
+    const get = await request(route, { headers: { Cookie: cookie } }, config);
+    expect(get.status).toBe(200);
+    const body = await get.json() as { profile: { theme_settings: Record<string, string> } };
+    const projected = body.profile.theme_settings;
+    expect(projected.cover_image_url).toBe(`${apiBase}/api/storage/public/cover-images/${ownerId}/1700000000000_cover.png`);
+    expect(projected.profile_image_url).toBe(`${apiBase}/api/storage/public/avatars/${ownerId}/1700000000000.jpg`);
+    const patch = (theme_settings: Record<string, string>) => request(route, {
+      method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ theme_settings }),
+    }, config);
+    expect((await patch(projected)).status).toBe(200);
+    const stored = () => businessDatabase!.prepare("SELECT theme_settings FROM fanmark_profiles WHERE license_id = ?")
+      .bind(ownerLicenseId).first<{ theme_settings: string }>();
+    expect(JSON.parse((await stored())!.theme_settings)).toEqual(theme);
+    expect((await patch({ ...projected, profile_image_url: theme.profile_image_url.replace(ownerId, otherId) })).status).toBe(400);
+    expect(JSON.parse((await stored())!.theme_settings)).toEqual(theme);
+  });
+
   it("returns the authenticated owner's profile and profile context without exposing another owner", async () => {
     const cookie = await signIn(ownerEmail);
     const response = await request(`/api/me/fanmarks/${ownerFanmarkId}/profile`, { headers: { Cookie: cookie } });

@@ -40,6 +40,11 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
+画像参照のread DTO対応と変更なし保存・既存key削除を実装し、localの実Worker/
+D1/R2とChromeで編集・公開両画面のdecodeを確認した。元行の参照は保持し、
+合成source origin以外へ置換しない。[画像URL対応](storage-image-url-mapping.md)。
+この修正の現行CI・staging反映は未受け入れで、六項目全体は開いたまま。
+
 一式remote復旧のfixture受け入れは完了した。2cbf4e0/CI37115000097両job成功後、
 異なる新規target2組で同じbundleの40表/15行（非空9表）、マスター、2画像を
 取り込み・照合・復旧し、最初のcommit後中断から再開した。新規target90726msは

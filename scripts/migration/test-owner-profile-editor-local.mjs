@@ -32,7 +32,7 @@ config.main=path.join(api,'src/index.ts');
 config.assets.directory=path.join(temp,'assets');
 config.d1_databases=config.d1_databases.map((binding,index)=>({binding:binding.binding,database_name:`fanmark-local-editor-${binding.binding.toLowerCase()}`,database_id:`00000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,remote:false}));
 config.r2_buckets=config.r2_buckets.map(binding=>({binding:binding.binding,bucket_name:`fanmark-local-editor-${binding.binding.toLowerCase().replaceAll('_','-')}`,remote:false}));
-config.vars={...config.vars,BETTER_AUTH_URL:origin,CORS_ALLOWED_ORIGINS:origin,BETTER_AUTH_SECRET:'local-editor-compose-secret-only-never-a-live-secret-'+randomUUID(),VERIFIED_ACCESS_SECRET:'local-editor-proof-only-'+randomUUID(),REFERENCE_MASTER_SERVICE_SECRET:'local-editor-reference-only-'+randomUUID()};
+config.vars={...config.vars,BETTER_AUTH_URL:origin,CORS_ALLOWED_ORIGINS:origin,STORAGE_PUBLIC_BASE_URL:origin,STORAGE_LEGACY_ORIGIN:"https://synthetic-source.example.invalid",BETTER_AUTH_SECRET:'local-editor-compose-secret-only-never-a-live-secret-'+randomUUID(),VERIFIED_ACCESS_SECRET:'local-editor-proof-only-'+randomUUID(),REFERENCE_MASTER_SERVICE_SECRET:'local-editor-reference-only-'+randomUUID()};
 assert.ok(!config.account_id && !config.services && !config.routes);
 assert.ok(config.d1_databases.every(binding=>binding.remote===false&&!binding.database_id.includes('d4bb0c48')));
 assert.ok(config.r2_buckets.every(binding=>binding.remote===false));
@@ -79,6 +79,16 @@ try{
  `INSERT INTO fanmark_profiles(id,license_id,display_name,bio,social_links,theme_settings,is_public,created_at,updated_at) VALUES(${[user.profileId,user.licenseId,user.name,'Stored local biography','{}','{}',1,now,now].map(sql).join(',')});`,
  ].join('\n');}).join('\n'));
  await execute('MASTER_DB',`INSERT INTO fanmark_emoji_master_release_imports(release_version,manifest_json,row_count,status) VALUES(${sql(version)},${sql(JSON.stringify({version}))},8,'loading');\n`+emoji.map(item=>`INSERT INTO fanmark_emoji_master_release_staging(release_version,ordinal,id,emoji,short_name,keywords_json,category,subcategory,codepoints_json,sort_order) VALUES(${[version,item.index+1,item.id,item.emoji,`local synthetic ${item.index}`,'[]',null,null,JSON.stringify([...item.emoji].map(char=>char.codePointAt(0).toString(16).toUpperCase().padStart(4,'0'))),item.index+1].map(sql).join(',')});`).join('\n')+`\nUPDATE fanmark_emoji_master_release_imports SET status='ready' WHERE release_version=${sql(version)};\nINSERT INTO fanmark_emoji_master_active_release(singleton_id,release_version,previous_release_version,activation_id,action,generation) VALUES(1,${sql(version)},NULL,${sql(randomUUID())},'promotion',1);`);
+ const importedImages={};
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC','base64');
+ const imagePath=path.join(temp,'synthetic-import.png');await privateWrite(imagePath,png);
+ for(const [field,bucket,binding,name] of [['profile_image_url','avatars','AVATARS_BUCKET','1700000000000.png'],['cover_image_url','cover-images','COVER_IMAGES_BUCKET','1700000000000_cover.png']]){
+  const physical=config.r2_buckets.find(item=>item.binding===binding).bucket_name;
+  const key=users[0].id+'/'+name;
+  await child([wrangler,'r2','object','put',physical+'/'+key,'--file',imagePath,'--content-type','image/png','--local','--persist-to',state,'--config',configPath]);
+  importedImages[field]=config.vars.STORAGE_LEGACY_ORIGIN+'/storage/v1/object/public/'+bucket+'/'+key;
+ }
+ await execute('FANMARK_DB',`UPDATE fanmark_profiles SET theme_settings=${sql(JSON.stringify(importedImages))} WHERE license_id=${sql(users[0].licenseId)};`);
  report.state='seeded';await checkpoint();
  server=spawn(process.execPath,[wrangler,'dev','--local','--local-protocol','https','--ip','127.0.0.1','--port',String(port),'--inspector-port','0','--persist-to',state,'--config',configPath,'--log-level','error'],{cwd:temp,env:{...process.env,WRANGLER_SEND_METRICS:'false',CI:'1'},stdio:['ignore','pipe','pipe']});
  server.stdout.on('data',chunk=>serverLog+=chunk);server.stderr.on('data',chunk=>serverLog+=chunk);
@@ -92,7 +102,7 @@ try{
  const helper=source.slice(source.indexOf('function cdpConnection('),source.indexOf('\nasync function value('));assert.ok(helper.startsWith('function cdpConnection('));
  await privateWrite(path.join(temp,'cdp-helper.mjs'),helper+'\nexport {cdpConnection};\n');
  const {runBrowser}=await import('./owner-profile-editor-local-browser.mjs');
- report.browser=await runBrowser({temp,root,origin,users,http,execute,sql});
+ report.browser=await runBrowser({temp,root,origin,users,http,execute,sql,importedImages});
  report.state='verified';await checkpoint();
  console.log(JSON.stringify({...report,temp:undefined,origin:undefined,httpsOrigin:undefined,reportPath:journalPath}));
 }catch(error){report.state='failed';report.error=error instanceof Error?error.message:'local_failure';await checkpoint();console.log(JSON.stringify({state:report.state,error:report.error,journalPath}));process.exitCode=1;}

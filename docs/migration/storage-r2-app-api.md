@@ -45,6 +45,14 @@ npm run test:storage-api
 npm run typecheck
 ```
 
+## Imported source image references
+
+Read DTOs can explicitly project imported Supabase public image URLs to R2 without
+rewriting snapshot/source rows. Owner delete supports safe legacy timestamp/nested
+keys; new upload responses still require UUID filenames. See
+[image URL mapping and evidence](storage-image-url-mapping.md). The staging source
+origin is synthetic only; actual user objects are still deferred.
+
 ## Current boundary
 
 R2 is enabled for the account. Two APAC Standard staging buckets,

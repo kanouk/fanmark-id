@@ -1585,7 +1585,7 @@ export async function handleRequest(
       }
       const row = await repository.getPublicProfile(licenseId.toLowerCase(), publicAccessClock());
       if (!row) return errorResponse("not_found", 404, responseHeaders);
-      return publicAccessJsonResponse(mapPublicProfileRow(row), 200, responseHeaders);
+      return publicAccessJsonResponse(mapPublicProfileRow(row, env), 200, responseHeaders);
     } catch (error) {
       if (error instanceof PublicAccessUnavailableError) {
         return errorResponse("public_access_unavailable", 503, responseHeaders);

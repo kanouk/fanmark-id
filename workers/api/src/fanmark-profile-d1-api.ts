@@ -1,3 +1,4 @@
+import { mapStoredProfileImages, preserveStoredImagePatch } from "./storage-image-url.mjs";
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
@@ -307,7 +308,7 @@ function timestampNow(): string {
   return toUtcMicrosecondTimestamp(new Date());
 }
 
-function mapContext(row: ContextRow): Record<string, unknown> {
+function mapContext(row: ContextRow, env: Env): Record<string, unknown> {
   const fanmark = {
     id: requiredString(row.fanmarkId),
     user_input_fanmark: requiredString(row.userInputFanmark),
@@ -323,7 +324,7 @@ function mapContext(row: ContextRow): Record<string, unknown> {
     display_name: nullableString(row.displayName),
     bio: nullableString(row.bio),
     social_links: parseSocialLinks(jsonObject(row.socialLinks), false),
-    theme_settings: parseThemeSettings(jsonObject(row.themeSettings), false),
+    theme_settings: mapStoredProfileImages(parseThemeSettings(jsonObject(row.themeSettings), false), env),
     is_public: bool(row.isPublic),
     created_at: requiredString(row.createdAt),
     updated_at: requiredString(row.updatedAt),
@@ -476,13 +477,26 @@ export async function handleFanmarkProfileRequest(
     const current = await readContext(db, fanmarkId, auth.userId, now);
     if (request.method === "PATCH") {
       const patch = parsePatch(await readJson(request));
-      assertOwnedR2ProfileImages(patch, auth.userId, url.origin);
+      if (patch.theme_settings) {
+        const oldTheme = parseThemeSettings(jsonObject(current.themeSettings), false);
+        for (const [field, bucket] of [["cover_image_url", "cover-images"], ["profile_image_url", "avatars"]] as const) {
+          const value = patch.theme_settings[field];
+          if (typeof value === "string") {
+            patch.theme_settings[field] = preserveStoredImagePatch(value,
+              typeof oldTheme[field] === "string" ? oldTheme[field] as string : null, bucket, env);
+          }
+        }
+      }
+      const storageOrigin = env.STORAGE_BACKEND?.trim() === "r2" && env.STORAGE_PUBLIC_BASE_URL
+        ? new URL(env.STORAGE_PUBLIC_BASE_URL).origin : url.origin;
+      assertOwnedR2ProfileImages(patch, auth.userId, storageOrigin);
+      if (storageOrigin !== url.origin) assertOwnedR2ProfileImages(patch, auth.userId, url.origin);
       await applyPatch(db, fanmarkId, auth.userId, now, patch);
     }
     const row = request.method === "PATCH"
       ? await readContext(db, fanmarkId, auth.userId, timestampNow())
       : current;
-    return json({ schemaVersion: 1, ...mapContext(row) }, 200, headers);
+    return json({ schemaVersion: 1, ...mapContext(row, env) }, 200, headers);
   } catch (error) {
     if (error instanceof FanmarkProfileApiError) return json({ error: error.code }, error.status, headers);
     return json({ error: "fanmark_profile_unavailable" }, 503, headers);

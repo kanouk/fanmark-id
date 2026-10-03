@@ -26,6 +26,8 @@ export interface Env {
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   STORAGE_BACKEND?: string;
+  STORAGE_LEGACY_ORIGIN?: string;
+  STORAGE_PUBLIC_BASE_URL?: string;
   OWNED_FANMARKS_BACKEND?: string;
   PROFILE_BACKEND?: string;
   ACCOUNT_DELETION_BACKEND?: string;

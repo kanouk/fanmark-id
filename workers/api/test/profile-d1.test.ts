@@ -115,6 +115,28 @@ afterEach(async () => {
 });
 
 describe("Better Auth own-profile API", () => {
+  it("projects an imported avatar through actual R2 and preserves its stored URL on an unchanged form save", async () => {
+    const source = "https://synthetic-source.example.invalid";
+    const key = `${ownerId}/1700000000000.jpg`;
+    const original = `${source}/storage/v1/object/public/avatars/${key}`;
+    const mapping = { STORAGE_LEGACY_ORIGIN: source, STORAGE_PUBLIC_BASE_URL: apiBase };
+    await businessDatabase!.prepare("UPDATE user_settings SET avatar_url=? WHERE user_id=?").bind(original, ownerId).run();
+    await avatarBucket!.put(key, pngBytes, { httpMetadata: { contentType: "image/png" } });
+    const cookie = await signIn(ownerEmail);
+    const read = await request("/api/me/profile", { headers: { Cookie: cookie } }, mapping);
+    expect(read.status).toBe(200);
+    const result = await read.json() as { profile: { avatar_url: string } };
+    expect(result.profile.avatar_url).toBe(`${apiBase}/api/storage/public/avatars/${key}`);
+    const image = await request(result.profile.avatar_url.slice(apiBase.length));
+    expect(image.status).toBe(200);
+    expect(new Uint8Array(await image.arrayBuffer())).toEqual(pngBytes);
+    const patch = await request("/api/me/profile", { method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ display_name: "Imported image owner", avatar_url: result.profile.avatar_url }) }, mapping);
+    expect(patch.status).toBe(200);
+    expect((await businessDatabase!.prepare("SELECT avatar_url FROM user_settings WHERE user_id=?").bind(ownerId).first())!.avatar_url).toBe(original);
+    expect((await request("/api/me/profile", {}, mapping)).status).toBe(401);
+  });
+
   it("returns only the authenticated user's public profile fields", async () => {
     const cookie = await signIn(ownerEmail);
     const response = await request("/api/me/profile", { headers: { Cookie: cookie } });

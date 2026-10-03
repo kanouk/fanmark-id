@@ -219,7 +219,7 @@ export async function handleOgpRequest(
       fanmark.licenseId !== null
     ) {
       const rawProfile = await repository.getPublicProfile(fanmark.licenseId, clock());
-      const profile = rawProfile ? mapPublicProfileRow(rawProfile) : null;
+      const profile = rawProfile ? mapPublicProfileRow(rawProfile, env) : null;
       if (profile?.displayName) displayName = profile.displayName;
     }
 

@@ -1,3 +1,7 @@
+# 2026-10-03 画像参照対応
+
+[画像URL対応](storage-image-url-mapping.md)のlocal実Worker/D1/R2/Chrome試験が成功。元行を保持したDTO変換をowner/public/password-protected/admin経路へ適用する。現行candidateのCIとstaging反映は未受け入れ。既存合成remote復旧の証拠は保持する。
+
 # Cloudflare移行の実行・再開手順
 
 ## 2026-10-03：一式remote合成復旧を受け入れ

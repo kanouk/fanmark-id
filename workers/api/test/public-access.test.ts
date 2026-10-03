@@ -232,6 +232,32 @@ beforeEach(async () => {
 });
 
 describe("public fanmark access D1 contract", () => {
+  it("projects imported images only for a published unprotected profile without rewriting the source row", async () => {
+    const source = "https://synthetic-source.example.invalid";
+    const theme = {
+      cover_image_url: `${source}/storage/v1/object/public/cover-images/owner/1700000000000_cover.png`,
+      profile_image_url: `${source}/storage/v1/object/public/avatars/owner/1700000000000.jpg`,
+    };
+    const mapping = d1Environment({ STORAGE_BACKEND: "r2", STORAGE_LEGACY_ORIGIN: source, STORAGE_PUBLIC_BASE_URL: API_ORIGIN });
+    for (const license of [LICENSE.emoji, LICENSE.privateProfile, LICENSE.protectedProfile]) {
+      await run("UPDATE fanmark_profiles SET theme_settings = ? WHERE license_id = ?", JSON.stringify(theme), license);
+    }
+    const response = await request(`/api/fanmarks/public-profile/${LICENSE.emoji}`, {}, mapping);
+    expect(response.status).toBe(200);
+    const body = await response.json() as { themeSettings: Record<string, string> };
+    expect(body.themeSettings).toEqual({
+      cover_image_url: `${API_ORIGIN}/api/storage/public/cover-images/owner/1700000000000_cover.png`,
+      profile_image_url: `${API_ORIGIN}/api/storage/public/avatars/owner/1700000000000.jpg`,
+    });
+    expect(await database!.prepare("SELECT theme_settings FROM fanmark_profiles WHERE license_id = ?")
+      .bind(LICENSE.emoji).first("theme_settings")).toBe(JSON.stringify(theme));
+    for (const license of [LICENSE.privateProfile, LICENSE.protectedProfile]) {
+      const refused = await request(`/api/fanmarks/public-profile/${license}`, {}, mapping);
+      expect(refused.status).toBe(404);
+      expect(await refused.json()).toEqual({ error: "not_found" });
+    }
+  });
+
   it("serves crawler OGP from public D1 projections and hides protected profile metadata", async () => {
     const crawlerEnv = d1Environment({ ASSETS: undefined, STAGING_NO_INDEX: "true" });
     await run(

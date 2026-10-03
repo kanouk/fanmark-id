@@ -64,7 +64,7 @@ async function resetDatabase(database: D1Database, tables: string[]) {
   await database.batch(splitSqlStatements(schemaSql).map((statement) => database.prepare(statement)));
 }
 
-function appEnv() {
+function appEnv(overrides: Partial<WorkerEnv> = {}) {
   return {
     ...bindings,
     D1_TOPOLOGY: "split",
@@ -72,16 +72,17 @@ function appEnv() {
     VERIFIED_ACCESS_SECRET: SECRET,
     VERIFIED_ACCESS_TEST: "1",
     CORS_ALLOWED_ORIGINS: ORIGIN,
+    ...overrides,
   };
 }
 
-function request(path: string, init: RequestInit = {}, options: { origin?: string | null; ip?: string } = {}) {
+function request(path: string, init: RequestInit = {}, options: { origin?: string | null; ip?: string; env?: Partial<WorkerEnv> } = {}) {
   const headers = new Headers(init.headers);
   if (options.origin !== null) headers.set("Origin", options.origin || ORIGIN);
   if (options.ip) headers.set("CF-Connecting-IP", options.ip);
   return handleRequest(
     new Request(`https://app.example.test${path}`, { ...init, headers }),
-    appEnv(),
+    appEnv(options.env),
     fetch,
     () => new Date(testNow),
     () => new Date(testNow),
@@ -283,6 +284,31 @@ beforeEach(async () => {
 });
 
 describe("source-shaped protected public access through the app Worker", () => {
+  it("projects imported images after password proof without exposing them to an anonymous viewer", async () => {
+    const source = "https://synthetic-source.example.invalid";
+    const target = "https://app.example.test";
+    const theme = { cover_image_url: `${source}/storage/v1/object/public/cover-images/owner/1700000000000_cover.png`,
+      profile_image_url: `${source}/storage/v1/object/public/avatars/owner/1700000000000.jpg` };
+    await BASE_ACCESS_DB.prepare("UPDATE fanmark_profiles SET theme_settings = ? WHERE license_id = ?")
+      .bind(JSON.stringify(theme), PROFILE_LICENSE).run();
+    const options = { env: { STORAGE_BACKEND: "r2", STORAGE_LEGACY_ORIGIN: source, STORAGE_PUBLIC_BASE_URL: target } };
+    const path = "/api/fanmarks/access/short/1111/protected";
+    const denied = await request(path, {}, options);
+    expect(denied.status).toBe(401);
+    expect(await denied.text()).not.toContain("1700000000000");
+    const verification = await jsonRequest("/api/fanmarks/access/short/1111/verify-password", { password: "2468" });
+    expect(verification.status).toBe(204);
+    const allowed = await request(path, { headers: protectedHeaders(cookieFrom(verification)) }, options);
+    expect(allowed.status).toBe(200);
+    const body = await allowed.json() as { profile: { themeSettings: Record<string, string> } };
+    expect(body.profile.themeSettings).toEqual({
+      cover_image_url: `${target}/api/storage/public/cover-images/owner/1700000000000_cover.png`,
+      profile_image_url: `${target}/api/storage/public/avatars/owner/1700000000000.jpg`,
+    });
+    expect(await BASE_ACCESS_DB.prepare("SELECT theme_settings FROM fanmark_profiles WHERE license_id = ?")
+      .bind(PROFILE_LICENSE).first("theme_settings")).toBe(JSON.stringify(theme));
+  });
+
   it("issues a selector-bound proof and returns an allowlisted profile projection", async () => {
     const verification = await jsonRequest("/api/fanmarks/access/short/1111/verify-password", { password: "2468" });
     expect(verification.status).toBe(204);

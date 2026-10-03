@@ -1,3 +1,4 @@
+import { mapStoredStorageImageUrl, preserveStoredImagePatch } from "./storage-image-url.mjs";
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
@@ -77,13 +78,13 @@ function booleanValue(value: unknown): boolean {
   throw new ProfileApiError("profile_unavailable");
 }
 
-function mapProfile(row: ProfileRow, userId: string): Record<string, unknown> {
+function mapProfile(row: ProfileRow, userId: string, env: Env): Record<string, unknown> {
   const result = {
     id: requiredText(row.id),
     user_id: requiredText(row.user_id),
     username: requiredText(row.username),
     display_name: nullableText(row.display_name),
-    avatar_url: nullableText(row.avatar_url),
+    avatar_url: mapStoredStorageImageUrl(nullableText(row.avatar_url), "avatars", env),
     plan_type: requiredText(row.plan_type),
     preferred_language: requiredText(row.preferred_language),
     created_at: requiredText(row.created_at),
@@ -273,17 +274,20 @@ export async function handleProfileRequest(
   try {
     if (request.method === "GET") {
       const row = await readProfile(db, auth.userId);
-      return json({ schemaVersion: 1, profile: mapProfile(row, auth.userId) }, 200, headers);
+      return json({ schemaVersion: 1, profile: mapProfile(row, auth.userId, env) }, 200, headers);
     }
     const patch = parsePatch(await readJson(request));
     const current = await readProfile(db, auth.userId);
-    const mapped = mapProfile(current, auth.userId);
+    mapProfile(current, auth.userId, env);
     if (typeof patch.avatar_url === "string") {
-      assertOwnedR2Avatar(patch.avatar_url, mapped.avatar_url as string | null, request, auth.userId, env);
+      patch.avatar_url = preserveStoredImagePatch(patch.avatar_url, nullableText(current.avatar_url), "avatars", env);
+      if (typeof patch.avatar_url === "string") {
+        assertOwnedR2Avatar(patch.avatar_url, nullableText(current.avatar_url), request, auth.userId, env);
+      }
     }
     await applyPatch(db, auth.userId, patch);
     const updated = await readProfile(db, auth.userId);
-    return json({ schemaVersion: 1, profile: mapProfile(updated, auth.userId) }, 200, headers);
+    return json({ schemaVersion: 1, profile: mapProfile(updated, auth.userId, env) }, 200, headers);
   } catch (error) {
     if (error instanceof ProfileApiError) return json({ error: error.code }, error.status, headers);
     return json({ error: "profile_unavailable" }, 503, headers);

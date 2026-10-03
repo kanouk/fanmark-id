@@ -200,7 +200,7 @@ function extractOwnedR2Path(bucket: StorageBucket, ownerId: string, publicUrlVal
   }
 
   const encodedSegments = publicUrl.pathname.slice(prefix.length).split('/');
-  if (encodedSegments.length !== 2 || encodedSegments.some((segment) => !segment)) {
+  if (encodedSegments.length < 2 || encodedSegments.length > 32 || encodedSegments.some((segment) => !segment)) {
     throw new StorageApiError('configuration');
   }
   let segments: string[];
@@ -211,9 +211,10 @@ function extractOwnedR2Path(bucket: StorageBucket, ownerId: string, publicUrlVal
   }
   const key = segments.join('/');
   if (
-    segments.some((segment) => segment === '.' || segment === '..' || segment.includes('/') || segment.includes('\\')) ||
+    segments.some((segment) => segment === '.' || segment === '..' || segment.includes('/') || segment.includes('\\') ||
+      [...segment].some(character => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) ||
     segments[0] !== ownerId ||
-    !FILE_NAME_PATTERN.test(segments[1]) ||
+    new TextEncoder().encode(key).byteLength > 1024 ||
     publicUrl.pathname !== `${prefix}${encodeKey(key)}`
   ) {
     throw new StorageApiError('configuration');

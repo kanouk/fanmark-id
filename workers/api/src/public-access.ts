@@ -1,3 +1,4 @@
+import { mapStoredProfileImages, type StorageImageMappingEnv } from "./storage-image-url.mjs";
 import { isUuid } from "./availability";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
@@ -504,7 +505,7 @@ export function mapPublicAccessRow(row: PublicAccessRawRow): PublicAccessRespons
   };
 }
 
-export function mapPublicProfileRow(row: PublicProfileRawRow): PublicProfileResponse {
+export function mapPublicProfileRow(row: PublicProfileRawRow, env: StorageImageMappingEnv = {}): PublicProfileResponse {
   const licenseId = assertString(row.licenseId, PUBLIC_ACCESS_RESPONSE_STRING_BYTES);
   if (!isUuid(licenseId)) throw new PublicAccessUpstreamError();
   const displayName = row.displayName === null ? null : assertStringUnits(row.displayName, MAX_PROFILE_NAME_UNITS);
@@ -517,7 +518,7 @@ export function mapPublicProfileRow(row: PublicProfileRawRow): PublicProfileResp
     displayName,
     bio,
     socialLinks: sanitizeSocialLinks(row.socialLinks),
-    themeSettings: sanitizeThemeSettings(row.themeSettings),
+    themeSettings: mapStoredProfileImages(sanitizeThemeSettings(row.themeSettings), env),
     createdAt,
     updatedAt,
   };

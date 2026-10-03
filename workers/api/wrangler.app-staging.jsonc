@@ -122,6 +122,8 @@
     "STRIPE_MODE_POLICY": "test_only",
     "VERIFIED_ACCESS_BACKEND": "d1",
     "STORAGE_BACKEND": "r2",
+    "STORAGE_LEGACY_ORIGIN": "https://synthetic-source.example.invalid",
+    "STORAGE_PUBLIC_BASE_URL": "https://fanmark-app-staging.fanmark-id.workers.dev",
     "BETTER_AUTH_URL": "https://fanmark-app-staging.fanmark-id.workers.dev",
     "SUPABASE_URL": "https://synthetic-project.supabase.co",
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_fixture_only",

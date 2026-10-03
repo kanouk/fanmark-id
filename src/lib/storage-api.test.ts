@@ -96,6 +96,22 @@ test('R2 upload refuses malformed, cross-origin, and oversized server responses'
   );
 });
 
+test('R2 delete supports imported timestamp and nested keys while retaining owner and path guards', async () => {
+  const calls: string[] = [];
+  const api = createStorageApi({ baseUrl: API_BASE, fetchImpl: async input => {
+    calls.push(String(input)); return new Response(null, { status: 204 });
+  } });
+  for (const key of [`${OWNER_ID}/1700000000000.jpg`, `${OWNER_ID}/archive/1700000000000_cover.png`]) {
+    await api.delete('avatars', OWNER_ID, `${API_BASE}/api/storage/public/avatars/${key}`);
+    assert.equal(calls.at(-1), `${API_BASE}/api/storage/object/avatars/${key}`);
+  }
+  const before = calls.length;
+  for (const key of [`${OWNER_ID}/%2e%2e/other.png`, `${OWNER_ID}/%2fother.png`, `${OWNER_ID}/%00.png`, `other/1700000000000.jpg`]) {
+    await assert.rejects(api.delete('avatars', OWNER_ID, `${API_BASE}/api/storage/public/avatars/${key}`));
+  }
+  assert.equal(calls.length, before);
+});
+
 test('R2 delete encodes owner object keys and never accepts another origin or owner', async () => {
   let requestUrl = '';
   let requestInit: RequestInit | undefined;
