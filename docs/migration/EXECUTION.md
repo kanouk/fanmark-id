@@ -6424,3 +6424,24 @@ This closes a local composed-editor evidence gap only. Latest staging deploy,
 real editor/favorite browser acceptance, providers, source catalog/ops/CPU gates
 remain open. Current staging is010a4d7a; no remote query/deploy/canary ran while
 the D1 quota blocker remains. Live user-data and domain migration stay deferred.
+
+## 2026-10-03 lottery audit integrity follow-up
+
+The prior code returned200 in nine native new-application/reapplication/
+cancellation × ignored/metadata-changed/deleted-audit cases. Full-schema test
+setup was upgraded from a small fixture to all25 Business/4 Auth migrations,
+actual credential sign-in/cookies and Worker router. The route now passes the
+existing injected operation clock to the lottery handler (production default
+remains current time). Each audit has a server-generated UUID; a same-batch
+SQL assertion verifies its exact identity/owner/action/resource/time/metadata
+and the intended entry state. A missing or changed record causes SQLite to
+abort the entire D1 batch. No persistent assertion rows or new DDL are needed.
+Native42/42 includes27 audit-integrity faults and safe retries, concurrent
+apply/cancel, quota/perpetual limits, foreign owner/origin/client actor refusal,
+claimed/stale licenses, real warmed-cookie revocation and both stores' FK checks.
+Worker typecheck and changed-file ESLint pass. The dedicated suite is included
+in Worker npm test via test:api-contracts-d1. These are local results; candidate
+CI/deployment/remote lottery acceptance and other source writers/callers remain
+open. Staging remains47b69c5/b5a07a34. No source/user rows, deployed selector/
+schema, provider credential, DNS or source writer changed. Docs-only1cab106
+CI37087626375 completed both jobs successfully without a redeploy.

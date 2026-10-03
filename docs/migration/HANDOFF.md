@@ -40,6 +40,18 @@ older sections retain their historical acceptance and failure evidence.
   Older boundary details below are historical; do not redeploy55b or treat its
   former pending-schema statements as current.
 
+- New local lottery-audit candidate after docs-only1cab106: the current remote
+  runtime remains47b69c5/b5a07a34. Source lottery INSERT/status audit hashes are
+  recorded in fanmark-lottery-api.md. Nine initial fault cases returned200
+  despite missing/changed/deleted audits; the fix gives each audit a server UUID
+  and verifies exact fields/entry state within its mutation batch, rolling back
+  on mismatch. Full25 Business/4 Auth with real sessions/router passes42/42,
+  including27 faults/retries, races and warmed-session revocation. Typecheck and
+  changed-file lint pass. Worker CI now invokes this previously manual suite.
+  No new remote migration is required. Candidate exact-commit CI, guarded
+  deployment and remote lottery HTTP canary remain pending. Other writers and
+  the complete source runtime/authorization/caller gate remain open.
+
 - Prior accepted staging code was **55b40e0**, both CI37083522230 jobs successful.
   Fresh preflight00:54:45Z verified the dedicated account, old version, ledger25,
   owned0, secrets, retained Master inventory and wake5:5. Deployment at00:56:12Z

@@ -1,11 +1,26 @@
 import { env } from "cloudflare:workers";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import schema from "./fixtures/d1-fanmark-lottery.sql?raw";
-import { handleFanmarkLotteryRequest } from "../src/fanmark-lottery-d1-api";
+import { afterEach, beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
+import bcrypt from "bcryptjs";
+import { handleRequest } from "../src";
+import { checkedInSqlStatements } from "./schema-statements";
+import authSchema from "../migrations/0003_better_auth_core.sql?raw";
+import signupSchema from "../migrations/0007_auth_signup_command.sql?raw";
+import suspensionSchema from "../migrations/0008_auth_user_suspension.sql?raw";
+import oauthSchema from "../migrations/0009_auth_oauth_signup.sql?raw";
+
+declare module "vitest" {
+  export interface ProvidedContext {
+    businessLotteryMigrations: Array<{ name: string; sql: string }>;
+  }
+}
 import type { Env } from "../src/repository";
 
 const runtimeEnv = env as unknown as Env;
 const business = runtimeEnv.FANMARK_DB;
+const authDb = runtimeEnv.AUTH_DB;
+const PASSWORD = "Synthetic-Lottery-Only!2026";
+const PASSWORD_HASH = bcrypt.hashSync(PASSWORD, 10);
+const cookies = new Map<string, Promise<string>>();
 const OWNER = "e62ce4d0-8055-4ecb-9e3a-759d70d659e0";
 const OTHER = "2a1b9c5f-3c8a-4890-9e04-3768885b6dd8";
 const FANMARK = "10000000-0000-4000-8000-000000000001";
@@ -24,10 +39,6 @@ const requestEnv: Env = {
   CORS_ALLOWED_ORIGINS: ORIGIN,
 };
 
-function splitStatements(sql: string): string[] {
-  return sql.split(/;\s*(?:\r?\n|$)/u).map((part) => part.trim()).filter(Boolean);
-}
-
 async function run(sql: string, ...values: unknown[]): Promise<void> {
   await business!.prepare(sql).bind(...values).run();
 }
@@ -35,14 +46,25 @@ async function run(sql: string, ...values: unknown[]): Promise<void> {
 async function reset(): Promise<void> {
   if (!business) throw new Error("Lottery D1 binding unavailable");
   clockValue = new Date("2026-09-25T10:15:23.123Z");
+  cookies.clear();
+  await authDb!.prepare('DELETE FROM "user" WHERE id IN (?, ?)').bind(OWNER, OTHER).run();
+  for (const id of [OWNER, OTHER]) {
+    await authDb!.prepare('INSERT INTO "user" (id,name,email,emailVerified,createdAt,updatedAt) VALUES (?, ?, ?, 1, ?, ?)')
+      .bind(id, "Synthetic lottery owner", `${id}@example.invalid`, NOW, NOW).run();
+    await authDb!.prepare('INSERT INTO account (id,accountId,providerId,userId,password,createdAt,updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, id, "credential", id, PASSWORD_HASH, NOW, NOW).run();
+  }
   for (const table of ["notification_events", "audit_logs", "fanmark_lottery_entries", "fanmark_licenses", "fanmarks", "user_settings", "system_settings"]) {
     await business.prepare(`DELETE FROM ${table}`).run();
   }
-  await run("INSERT INTO fanmarks (id, user_input_fanmark, short_id, status) VALUES (?, '🌹', 'rose0001', 'active')", FANMARK);
+  const ids = '["5bb06a1c-a5d2-4e3f-a31d-58fce75887b3"]';
+  await run(`INSERT INTO fanmarks (id, user_input_fanmark, normalized_emoji, emoji_ids, normalized_emoji_ids,
+    short_id, status, tier_level, created_at, updated_at) VALUES (?, '🌹', '🌹', ?, ?, 'rose0001', 'active', 4, ?, ?)`,
+    FANMARK, ids, ids, NOW, NOW);
   await run(`INSERT INTO fanmark_licenses
-    (id, fanmark_id, user_id, license_end, status, is_returned, grace_expires_at, display_fanmark, created_at, updated_at)
-    VALUES (?, ?, ?, NULL, 'grace', 0, '2026-09-26T00:00:00.000000Z', '🌹', ?, ?)`, LICENSE, FANMARK, OTHER, NOW, NOW);
-  await run("INSERT INTO user_settings (id, user_id, plan_type) VALUES (?, ?, 'free')", crypto.randomUUID(), OWNER);
+    (id, fanmark_id, user_id, license_start, license_end, status, is_returned, grace_expires_at, display_fanmark, created_at, updated_at)
+    VALUES (?, ?, ?, '2026-09-01T00:00:00.000000Z', NULL, 'grace', 0, '2026-09-26T00:00:00.000000Z', '🌹', ?, ?)`, LICENSE, FANMARK, OTHER, NOW, NOW);
+  await run("INSERT INTO user_settings (id, user_id, username, display_name, plan_type, created_at, updated_at) VALUES (?, ?, 'lottery_owner', 'Synthetic owner', 'free', ?, ?)", crypto.randomUUID(), OWNER, NOW, NOW);
 }
 
 async function post(
@@ -51,12 +73,26 @@ async function post(
   userId: string | null = OWNER,
   origin = ORIGIN,
 ): Promise<Response> {
+  let cookie = "";
+  if (userId) {
+    if (!cookies.has(userId)) cookies.set(userId, (async () => {
+      const response = await handleRequest(new Request("https://api.example.test/api/auth/sign-in/email", {
+        method: "POST", headers: { Origin: ORIGIN, "content-type": "application/json" },
+        body: JSON.stringify({ email: `${userId}@example.invalid`, password: PASSWORD }),
+      }), requestEnv);
+      expect(response.status).toBe(200);
+      const value = response.headers.get("set-cookie")?.split(";")[0];
+      if (!value) throw new Error("Synthetic lottery session cookie missing");
+      return value;
+    })());
+    cookie = await cookies.get(userId)!;
+  }
   const request = new Request(`https://api.example.test/api/fanmarks/lottery/${action}`, {
     method: "POST",
-    headers: { "content-type": "application/json", Origin: origin },
+    headers: { "content-type": "application/json", Origin: origin, Cookie: cookie },
     body: JSON.stringify(body),
   });
-  return handleFanmarkLotteryRequest(request, requestEnv, async () => ({ available: true, userId }), CLOCK);
+  return handleRequest(request, requestEnv, fetch, CLOCK, CLOCK);
 }
 
 async function count(table: string): Promise<number> {
@@ -65,11 +101,25 @@ async function count(table: string): Promise<number> {
 }
 
 beforeAll(async () => {
-  if (!business) throw new Error("Lottery D1 binding unavailable");
-  for (const statement of splitStatements(schema)) await business.prepare(statement).run();
+  if (!business || !authDb) throw new Error("Lottery split D1 bindings unavailable");
+  for (const schema of [authSchema, signupSchema, suspensionSchema, oauthSchema]) {
+    await authDb.batch(checkedInSqlStatements(schema).map(sql => authDb.prepare(sql)));
+  }
+  const migrations = inject("businessLotteryMigrations");
+  expect(migrations.length).toBeGreaterThanOrEqual(25);
+  for (const migration of migrations) {
+    const sql = checkedInSqlStatements(migration.sql);
+    for (let offset = 0; offset < sql.length; offset += 50) {
+      await business.batch(sql.slice(offset, offset + 50).map(statement => business.prepare(statement)));
+    }
+  }
 });
 
 beforeEach(reset);
+afterEach(async () => {
+  expect((await business!.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
+  expect((await authDb!.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
+});
 
 describe("D1 fanmark lottery entry actions", () => {
   it("applies atomically, returns the source contract, and enqueues the best-effort event", async () => {
@@ -139,11 +189,11 @@ describe("D1 fanmark lottery entry actions", () => {
   });
 
   it("enforces the plan limit and uses the source default of three when the setting is absent", async () => {
-    await run("INSERT INTO system_settings (id, setting_key, setting_value) VALUES (?, 'free_fanmarks_limit', '2')", crypto.randomUUID());
+    await run("INSERT INTO system_settings (id, setting_key, setting_value, created_at, updated_at) VALUES (?, 'free_fanmarks_limit', '2', ?, ?)", crypto.randomUUID(), NOW, NOW);
     for (let index = 0; index < 2; index += 1) {
       await run(`INSERT INTO fanmark_licenses
-        (id, fanmark_id, user_id, license_end, status, is_returned, created_at, updated_at)
-        VALUES (?, ?, ?, '2026-10-01T00:00:00.000Z', 'active', 0, ?, ?)`, crypto.randomUUID(), FANMARK, OWNER, NOW, NOW);
+        (id, fanmark_id, user_id, license_start, license_end, status, is_returned, created_at, updated_at)
+        VALUES (?, ?, ?, '2026-09-01T00:00:00.000000Z', '2026-10-01T00:00:00.000000Z', 'active', 0, ?, ?)`, crypto.randomUUID(), FANMARK, OWNER, NOW, NOW);
     }
     const limited = await post("apply", { fanmark_id: FANMARK });
     expect(limited.status).toBe(400);
@@ -152,8 +202,8 @@ describe("D1 fanmark lottery entry actions", () => {
     await business!.prepare("DELETE FROM fanmark_licenses WHERE status = 'active'").run();
     for (let index = 0; index < 3; index += 1) {
       await run(`INSERT INTO fanmark_licenses
-        (id, fanmark_id, user_id, license_end, status, is_returned, created_at, updated_at)
-        VALUES (?, ?, ?, '2026-10-01T00:00:00.000Z', 'active', 0, ?, ?)`, crypto.randomUUID(), FANMARK, OWNER, NOW, NOW);
+        (id, fanmark_id, user_id, license_start, license_end, status, is_returned, created_at, updated_at)
+        VALUES (?, ?, ?, '2026-09-01T00:00:00.000000Z', '2026-10-01T00:00:00.000000Z', 'active', 0, ?, ?)`, crypto.randomUUID(), FANMARK, OWNER, NOW, NOW);
     }
     const defaultLimited = await post("apply", { fanmark_id: FANMARK });
     expect(defaultLimited.status).toBe(400);
@@ -161,10 +211,10 @@ describe("D1 fanmark lottery entry actions", () => {
   });
 
   it("counts a perpetual active license against the plan limit", async () => {
-    await run("INSERT INTO system_settings (id, setting_key, setting_value) VALUES (?, 'free_fanmarks_limit', '1')", crypto.randomUUID());
+    await run("INSERT INTO system_settings (id, setting_key, setting_value, created_at, updated_at) VALUES (?, 'free_fanmarks_limit', '1', ?, ?)", crypto.randomUUID(), NOW, NOW);
     await run(`INSERT INTO fanmark_licenses
-      (id, fanmark_id, user_id, license_end, status, is_returned, created_at, updated_at)
-      VALUES (?, ?, ?, NULL, 'active', 0, ?, ?)`, crypto.randomUUID(), FANMARK, OWNER, NOW, NOW);
+      (id, fanmark_id, user_id, license_start, license_end, status, is_returned, created_at, updated_at)
+      VALUES (?, ?, ?, '2026-09-01T00:00:00.000000Z', NULL, 'active', 0, ?, ?)`, crypto.randomUUID(), FANMARK, OWNER, NOW, NOW);
     const response = await post("apply", { fanmark_id: FANMARK });
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({ error: "fanmark_limit_reached", current_count: 1, limit: 1 });
@@ -239,4 +289,92 @@ describe("D1 fanmark lottery entry actions", () => {
       await business!.prepare("DROP TRIGGER IF EXISTS reject_lottery_notification").run();
     }
   });
+});
+
+const auditFaults = [
+  ["ignored", "BEFORE INSERT", "SELECT RAISE(IGNORE)"],
+  ["metadata changed", "AFTER INSERT", "UPDATE audit_logs SET metadata = '{}' WHERE id = NEW.id"],
+  ["deleted", "AFTER INSERT", "DELETE FROM audit_logs WHERE id = NEW.id"],
+  ["ID changed", "AFTER INSERT", "UPDATE audit_logs SET id = '10000000-0000-4000-8000-000000000099' WHERE id = NEW.id"],
+  ["actor changed", "AFTER INSERT", "UPDATE audit_logs SET user_id = '10000000-0000-4000-8000-000000000099' WHERE id = NEW.id"],
+  ["action changed", "AFTER INSERT", "UPDATE audit_logs SET action = 'LOTTERY_ENTRY_CHANGED' WHERE id = NEW.id"],
+  ["resource changed", "AFTER INSERT", "UPDATE audit_logs SET resource_id = '10000000-0000-4000-8000-000000000099' WHERE id = NEW.id"],
+  ["time changed", "AFTER INSERT", "UPDATE audit_logs SET created_at = '2026-09-25T10:15:23.123000Z' WHERE id = NEW.id"],
+  ["request changed", "AFTER INSERT", "UPDATE audit_logs SET request_id = 'unrelated-command' WHERE id = NEW.id"],
+] as const;
+
+for (const action of ["new application", "reapplication", "cancellation"] as const) {
+  for (const [fault, timing, sql] of auditFaults) {
+    it(`rolls back ${action} when its required audit is ${fault}, then retries safely`, async () => {
+      let id = ENTRY;
+      if (action === "reapplication") {
+        await run(`INSERT INTO fanmark_lottery_entries
+          (id, fanmark_id, user_id, license_id, entry_status, applied_at, cancelled_at, cancellation_reason, created_at, updated_at)
+          VALUES (?, ?, ?, ?, 'cancelled', ?, ?, 'user_request', ?, ?)`, ENTRY, FANMARK, OWNER, LICENSE, NOW, NOW, NOW, NOW);
+      } else if (action === "cancellation") {
+        const response = await post("apply", { fanmark_id: FANMARK });
+        expect(response.status).toBe(200);
+        id = (await response.json() as { entry_id: string }).entry_id;
+      }
+      const before = {
+        entries: (await business!.prepare("SELECT * FROM fanmark_lottery_entries ORDER BY id").all()).results,
+        audits: (await business!.prepare("SELECT * FROM audit_logs ORDER BY id").all()).results,
+        events: (await business!.prepare("SELECT * FROM notification_events ORDER BY id").all()).results,
+      };
+      clockValue = new Date("2026-09-25T10:16:23.123Z");
+      await business!.prepare(`CREATE TRIGGER fault_lottery_audit ${timing} ON audit_logs
+        WHEN NEW.action IN ('LOTTERY_ENTRY_CREATED', 'LOTTERY_ENTRY_STATUS_CHANGED')
+        BEGIN ${sql}; END`).run();
+      try {
+        const response = await post(action === "cancellation" ? "cancel" : "apply",
+          action === "cancellation" ? { entry_id: id } : { fanmark_id: FANMARK });
+        expect(response.status).toBe(500);
+        expect((await business!.prepare("SELECT * FROM fanmark_lottery_entries ORDER BY id").all()).results).toEqual(before.entries);
+        expect((await business!.prepare("SELECT * FROM audit_logs ORDER BY id").all()).results).toEqual(before.audits);
+        expect((await business!.prepare("SELECT * FROM notification_events ORDER BY id").all()).results).toEqual(before.events);
+      } finally {
+        await business!.prepare("DROP TRIGGER fault_lottery_audit").run();
+      }
+      const response = await post(action === "cancellation" ? "cancel" : "apply",
+        action === "cancellation" ? { entry_id: id } : { fanmark_id: FANMARK });
+      expect(response.status).toBe(200);
+      expect(await count("audit_logs")).toBe(before.audits!.length + 1);
+      expect(await count("fanmark_lottery_entries")).toBe(1);
+    });
+  }
+}
+
+it("serializes cancellation races and records one exact status audit", async () => {
+  const applied = await post("apply", { fanmark_id: FANMARK });
+  expect(applied.status).toBe(200);
+  const id = (await applied.json() as { entry_id: string }).entry_id;
+  clockValue = new Date("2026-09-25T10:16:23.123Z");
+  const responses = await Promise.all([post("cancel", { entry_id: id }), post("cancel", { entry_id: id })]);
+  expect(responses.map(response => response.status).sort()).toEqual([200, 400]);
+  const audits = (await business!.prepare("SELECT user_id, resource_type, resource_id, metadata, created_at FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'").all()).results;
+  expect(audits).toEqual([{ user_id: OWNER, resource_type: "fanmark_lottery_entry", resource_id: id,
+    metadata: JSON.stringify({ old_status: "pending", new_status: "cancelled", cancellation_reason: "user_request" }), created_at: NEXT }]);
+});
+
+it("rejects caller-selected owner IDs without mutating either user's data", async () => {
+  const response = await post("apply", { fanmark_id: FANMARK, user_id: OTHER });
+  expect(response.status).toBe(400);
+  expect(await count("fanmark_lottery_entries")).toBe(0);
+  expect(await count("audit_logs")).toBe(0);
+  expect(await count("notification_events")).toBe(0);
+});
+
+it("refuses a warmed, revoked session for apply and cancel and preserves the entry", async () => {
+  const applied = await post("apply", { fanmark_id: FANMARK });
+  expect(applied.status).toBe(200);
+  const id = (await applied.json() as { entry_id: string }).entry_id;
+  const before = (await business!.prepare("SELECT * FROM fanmark_lottery_entries").all()).results;
+  await authDb!.batch([
+    authDb!.prepare('UPDATE "user" SET banned = 1, banExpires = NULL WHERE id = ?').bind(OWNER),
+    authDb!.prepare('DELETE FROM session WHERE userId = ?').bind(OWNER),
+  ]);
+  expect((await post("apply", { fanmark_id: FANMARK })).status).toBe(401);
+  expect((await post("cancel", { entry_id: id })).status).toBe(401);
+  expect((await business!.prepare("SELECT * FROM fanmark_lottery_entries").all()).results).toEqual(before);
+  expect(await count("audit_logs")).toBe(1);
 });

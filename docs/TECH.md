@@ -290,3 +290,5 @@ loopback用の実frontendをbuildし、local Worker/Business・Auth・Master D1�
 remote:falseとし、account/routes/servicesは使わず、終了時にlocal DB stateを削除する。
 既存offline描画8ケースと併せてapplication CIで実行する。provider/staging/実端末の証拠とは
 区別する。詳細は[owner profile API](migration/fanmark-profile-api.md)を参照する。
+
+抽選申込/再申込/取消のD1 APIはserver-generated audit UUIDで今回の監査を特定し、同じbatch内のSQL assertionで保存された申込状態とexact audit fieldsを検査する。不一致はSQLite errorでbatch全体をrollbackするため、commit後の件数チェックに依存しない。`test:fanmark-lottery-d1`は全25 Business/4 Auth migrationと実Better Auth session/routerを使い、Worker CIの`test:api-contracts-d1`にも含む。詳細は[migration/fanmark-lottery-api.md](migration/fanmark-lottery-api.md)。

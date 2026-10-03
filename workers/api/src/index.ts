@@ -1382,7 +1382,7 @@ export async function handleRequest(
     return handleFanmarkRegistrationRequest(request, env, resolveStorageAuth);
   }
   if (isFanmarkLotteryPath(url.pathname)) {
-    return handleFanmarkLotteryRequest(request, env, resolveStorageAuth);
+    return handleFanmarkLotteryRequest(request, env, resolveStorageAuth, publicAccessClock);
   }
   if (isFanmarkTransferPath(url.pathname)) {
     return handleFanmarkTransferRequest(request, env, resolveStorageAuth);

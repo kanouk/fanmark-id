@@ -84,3 +84,16 @@ and non-destructive private CLI output. Continue with source/RLS/trigger-to-
 counterpart reconciliation and provider/operational/mobile acceptance. This
 step changed no runtime schema, Cloudflare deployment, source data, real-user
 credentials, or domain/DNS.
+
+## Lottery audit counterpart follow-up (2026-10-03 JST)
+
+The exact source lottery audit definition/binding above remain recorded by the
+private schema catalog, and [fanmark-lottery-api.md](fanmark-lottery-api.md) now
+links its INSERT/status-change effects to full-schema native apply/reapply/cancel
+acceptance. Nine failure cases reproduced success with suppressed, changed or
+deleted audits; a transaction-local exact audit assertion fixes that gap. The
+42-case suite includes 27 audit-integrity faults and actual sessions/router.
+This is local acceptance for these three writers only. It does not approve all
+other entry writers, external callers or a remote deployment, and does not
+change the classifier's 54 pending functions, fullRuntimeReconciled=false or
+converter deployable=false.

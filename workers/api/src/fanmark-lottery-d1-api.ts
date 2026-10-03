@@ -136,6 +136,65 @@ async function pendingCount(db: D1Database, fanmarkId: string, licenseId: string
   return typeof row?.count === "number" ? row.count : 1;
 }
 
+// Evaluate the exact audit inside the same D1 batch. Invalid JSON deliberately
+// raises a SQLite error, so a missing, suppressed or changed audit rolls back
+// the entry mutation too; checking a result after batch commit is too late.
+function auditGuard(
+  db: D1Database, auditId: string, entryId: string, userId: string, now: string,
+  oldStatus: "pending" | "cancelled" | null, newStatus: "pending" | "cancelled",
+): D1PreparedStatement {
+  const metadata = oldStatus === null
+    ? "json_object('fanmark_id', entry.fanmark_id, 'license_id', entry.license_id, 'lottery_probability', CAST(1 AS REAL))"
+    : "json_object('old_status', ?, 'new_status', ?, 'cancellation_reason', entry.cancellation_reason)";
+  const metadataBindings = oldStatus === null ? [] : [oldStatus, newStatus];
+  return db.prepare(`
+    SELECT CASE WHEN EXISTS (
+      SELECT 1 FROM audit_logs AS audit JOIN fanmark_lottery_entries AS entry ON entry.id = audit.resource_id
+      WHERE audit.id = ? AND audit.user_id = ? AND audit.resource_id = ?
+        AND audit.action = ? AND audit.resource_type = 'fanmark_lottery_entry'
+        AND audit.created_at = ? AND audit.request_id IS NULL
+        AND entry.user_id = audit.user_id AND entry.entry_status = ? AND entry.updated_at = ?
+        AND audit.metadata = ${metadata}
+        AND (? != 'pending' OR (entry.applied_at = ? AND entry.lottery_probability = '1.0'))
+        AND (? != 'cancelled' OR (entry.cancelled_at = ? AND entry.cancellation_reason = 'user_request'))
+    ) THEN 1 ELSE json('lottery_audit_invariant_failed') END AS verified
+  `).bind(auditId, userId, entryId, oldStatus === null ? "LOTTERY_ENTRY_CREATED" : "LOTTERY_ENTRY_STATUS_CHANGED",
+    now, newStatus, now, ...metadataBindings, newStatus, now, newStatus, now);
+}
+
+async function failedApplication(
+  db: D1Database, userId: string, fanmarkId: string, licenseId: string, now: string,
+  limit: number | null, reuse: boolean,
+): Promise<Response> {
+  const concurrentEntry = await db.prepare(`
+    SELECT entry_status FROM fanmark_lottery_entries
+    WHERE fanmark_id = ? AND user_id = ? AND license_id = ? LIMIT 1
+  `).bind(fanmarkId, userId, licenseId).first<{ entry_status: unknown }>();
+  if (concurrentEntry?.entry_status === "pending") {
+    throw new FanmarkLotteryApiError("You have already applied for this fanmark", 400);
+  }
+  const stillGrace = await db.prepare(`
+    SELECT 1 AS found FROM fanmark_licenses
+    WHERE id = ? AND fanmark_id = ? AND status = 'grace' AND grace_expires_at > ?
+      AND lifecycle_claim_id IS NULL
+  `).bind(licenseId, fanmarkId, now).first();
+  if (!stillGrace) throw new FanmarkLotteryApiError("Fanmark is not in grace period or not available for lottery", 400);
+  const active = limit === null ? null : await db.prepare(`
+    SELECT COUNT(*) AS count FROM fanmark_licenses
+    WHERE user_id = ? AND status = 'active' AND is_returned = 0
+      AND (license_end IS NULL OR license_end > ?)
+  `).bind(userId, now).first<{ count: unknown }>();
+  if (limit !== null && typeof active?.count === "number" && active.count >= limit) {
+    return json({
+      error: "fanmark_limit_reached",
+      message: "You have reached your fanmark limit. Please upgrade your plan or return a fanmark before applying.",
+      current_count: active.count,
+      limit,
+    }, 400);
+  }
+  throw new FanmarkLotteryApiError(reuse ? "Failed to update lottery entry" : "Failed to create lottery entry", 500);
+}
+
 async function apply(
   db: D1Database,
   userId: string,
@@ -213,6 +272,7 @@ async function apply(
   }
 
   const entryId = typeof oldEntry?.id === "string" ? oldEntry.id : crypto.randomUUID();
+  const auditId = crypto.randomUUID();
   const statements: D1PreparedStatement[] = [];
   const capacityGuard = limit === null
     ? "1 = 1"
@@ -235,11 +295,11 @@ async function apply(
       AND ${licenseGuard} AND ${capacityGuard}
     `).bind(now, now, entryId, fanmarkId, userId, licenseId, licenseId, fanmarkId, now, ...capacityBindings));
     statements.push(db.prepare(`
-      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
-      SELECT user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', id,
+      INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+      SELECT ?, user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', id,
         json_object('old_status', 'cancelled', 'new_status', 'pending', 'cancellation_reason', cancellation_reason), ?
       FROM fanmark_lottery_entries WHERE id = ? AND changes() = 1
-    `).bind(now, entryId));
+    `).bind(auditId, now, entryId));
   } else {
     statements.push(db.prepare(`
       INSERT INTO fanmark_lottery_entries
@@ -254,48 +314,23 @@ async function apply(
     `).bind(entryId, fanmarkId, userId, licenseId, now, now, now,
       licenseId, fanmarkId, now, ...capacityBindings, fanmarkId, userId, licenseId));
     statements.push(db.prepare(`
-      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
-      SELECT user_id, 'LOTTERY_ENTRY_CREATED', 'fanmark_lottery_entry', id,
+      INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+      SELECT ?, user_id, 'LOTTERY_ENTRY_CREATED', 'fanmark_lottery_entry', id,
         json_object('fanmark_id', fanmark_id, 'license_id', license_id,
           'lottery_probability', CAST(lottery_probability AS REAL)), ?
       FROM fanmark_lottery_entries WHERE id = ? AND changes() = 1
-    `).bind(now, entryId));
+    `).bind(auditId, now, entryId));
   }
 
+  statements.push(auditGuard(db, auditId, entryId, userId, now, oldEntry ? "cancelled" : null, "pending"));
   try {
-  const results = await db.batch(statements);
+    const results = await db.batch(statements);
     if (results[0]?.meta.changes !== 1) {
-      const concurrentEntry = await db.prepare(`
-        SELECT entry_status FROM fanmark_lottery_entries
-        WHERE fanmark_id = ? AND user_id = ? AND license_id = ? LIMIT 1
-      `).bind(fanmarkId, userId, licenseId).first<{ entry_status: unknown }>();
-      if (concurrentEntry?.entry_status === "pending") {
-        throw new FanmarkLotteryApiError("You have already applied for this fanmark", 400);
-      }
-      const stillGrace = await db.prepare(`
-        SELECT 1 AS found FROM fanmark_licenses
-        WHERE id = ? AND fanmark_id = ? AND status = 'grace' AND grace_expires_at > ?
-          AND lifecycle_claim_id IS NULL
-      `).bind(licenseId, fanmarkId, now).first();
-      if (!stillGrace) throw new FanmarkLotteryApiError("Fanmark is not in grace period or not available for lottery", 400);
-      const active = limit === null ? null : await db.prepare(`
-        SELECT COUNT(*) AS count FROM fanmark_licenses
-        WHERE user_id = ? AND status = 'active' AND is_returned = 0
-          AND (license_end IS NULL OR license_end > ?)
-      `).bind(userId, now).first<{ count: unknown }>();
-      if (limit !== null && typeof active?.count === "number" && active.count >= limit) {
-        return json({
-          error: "fanmark_limit_reached",
-          message: "You have reached your fanmark limit. Please upgrade your plan or return a fanmark before applying.",
-          current_count: active.count,
-          limit,
-        }, 400);
-      }
-      throw new FanmarkLotteryApiError(oldEntry ? "Failed to update lottery entry" : "Failed to create lottery entry", 500);
+      return failedApplication(db, userId, fanmarkId, licenseId, now, limit, Boolean(oldEntry));
     }
   } catch (error) {
     if (error instanceof FanmarkLotteryApiError) throw error;
-    throw new FanmarkLotteryApiError(oldEntry ? "Failed to update lottery entry" : "Failed to create lottery entry", 500);
+    return failedApplication(db, userId, fanmarkId, licenseId, now, limit, Boolean(oldEntry));
   }
 
   const probability = await db.prepare("SELECT lottery_probability, applied_at FROM fanmark_lottery_entries WHERE id = ?")
@@ -348,22 +383,37 @@ async function cancel(db: D1Database, userId: string, entryId: string, now: stri
     throw new FanmarkLotteryApiError(`Cannot cancel entry with status: ${String(entry.entry_status)}`, 400);
   }
 
-  const updated = await db.batch([
-    db.prepare(`
-    UPDATE fanmark_lottery_entries
-    SET entry_status = 'cancelled', cancelled_at = ?, cancellation_reason = 'user_request', updated_at = ?
-    WHERE id = ? AND user_id = ? AND entry_status = 'pending'
-      AND EXISTS (SELECT 1 FROM fanmark_licenses AS license
-        WHERE license.id = fanmark_lottery_entries.license_id
-          AND license.status = 'grace' AND license.lifecycle_claim_id IS NULL)
-  `).bind(now, now, entryId, userId),
-    db.prepare(`
-      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
-      SELECT user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', id,
-        json_object('old_status', 'pending', 'new_status', 'cancelled', 'cancellation_reason', 'user_request'), ?
-      FROM fanmark_lottery_entries WHERE id = ? AND changes() = 1
-    `).bind(now, entryId),
-  ]);
+  const auditId = crypto.randomUUID();
+  let updated: D1Result[];
+  try {
+    updated = await db.batch([
+      db.prepare(`
+      UPDATE fanmark_lottery_entries
+      SET entry_status = 'cancelled', cancelled_at = ?, cancellation_reason = 'user_request', updated_at = ?
+      WHERE id = ? AND user_id = ? AND entry_status = 'pending'
+        AND EXISTS (SELECT 1 FROM fanmark_licenses AS license
+          WHERE license.id = fanmark_lottery_entries.license_id
+            AND license.status = 'grace' AND license.lifecycle_claim_id IS NULL)
+    `).bind(now, now, entryId, userId),
+      db.prepare(`
+        INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+        SELECT ?, user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', id,
+          json_object('old_status', 'pending', 'new_status', 'cancelled', 'cancellation_reason', 'user_request'), ?
+        FROM fanmark_lottery_entries WHERE id = ? AND changes() = 1
+      `).bind(auditId, now, entryId),
+      auditGuard(db, auditId, entryId, userId, now, "pending", "cancelled"),
+    ]);
+  } catch {
+    const current = await db.prepare(`
+      SELECT entry.entry_status, license.status AS license_status, license.lifecycle_claim_id
+      FROM fanmark_lottery_entries AS entry JOIN fanmark_licenses AS license ON license.id = entry.license_id
+      WHERE entry.id = ? AND entry.user_id = ?
+    `).bind(entryId, userId).first<{ entry_status: string; license_status: string; lifecycle_claim_id: string | null }>();
+    if (!current || current.entry_status !== "pending" || current.license_status !== "grace" || current.lifecycle_claim_id !== null) {
+      throw new FanmarkLotteryApiError("Cannot cancel entry with status: changed", 400);
+    }
+    throw new FanmarkLotteryApiError("Failed to cancel lottery entry", 500);
+  }
   if (updated[0]?.meta.changes !== 1) {
     throw new FanmarkLotteryApiError("Cannot cancel entry with status: changed", 400);
   }
