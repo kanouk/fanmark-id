@@ -21,3 +21,5 @@ export interface SocialAuthEnvironment {
 }
 
 export function configuredSocialProviders(env: SocialAuthEnvironment): ConfiguredSocialProviders;
+
+export function isSocialLoginAllowed(database: D1Database | undefined): Promise<boolean>;

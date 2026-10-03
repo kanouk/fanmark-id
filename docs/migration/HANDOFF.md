@@ -7,34 +7,40 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
-- Deployed code49cf07f passed both CI37081023518 jobs and was deployed at
-  2026-10-03T00:21:33.995Z. Current workers.dev staging is
-  **5c3b4214-f285-4616-92d2-657ea080f715 at100%**. Remote JS/CSS bytes match
+- Accepted staging code is **8144df2**, with both CI37082406423 jobs successful.
+  Fresh preflight00:37:42Z verified account, old version, ledger25, owned0,
+  secrets and the retained Master release inventory. Deployment at00:38:19Z is
+  **f443eb15-d8ac-48a9-af90-da2aa587e976 at100%**. Static JS/CSS bytes match
   the exact staging build; root/robots200, sitemap404 and noindex remain.
-- Combined native canary is **verified-and-cleaned**. Real two-account signin,
-  perpetual profile create/update/public/private/cross-owner refusal, actual
-  desktop→390 editor, failed-save D1/draft preservation, reload/retry/save/
-  reopen/preview/exact spaces, foreign-owner editor refusal, protected favorites
-  in redirect/text modes for both users and grace refusal all passed. Cookies
-  resembling access proof do not expose name/URL/text; disabling protection
-  restores stored content; favorite count returns0. Fixture Business/Auth rows
-  are0, retained baselines match and two license incarnation tombstones remain.
-  Independent2026-10-03T00:25:03.087Z readback confirms version/account/ledger25/
-  owned0/master inventory/wake5:5/secret names. Native mobile is a viewport;
-  real-phone/provider/full migration acceptance remains open. Private acceptance
-  is /tmp/fanmark-editor-49cf07f-acceptance.json; journal ends canary-Olyt5G.
-- Next code fixes newly generated Auth IDs. Imported UUID fixtures previously
-  hid that Better Auth's unconfigured generator creates32-character IDs while
-  billing APIs require UUID actors. Four actual signup language cases reproduce
-  the mismatch. createAuth now sets advanced.database.generateId=uuid, keeping
-  existing IDs untouched. Full signup15/15 and Auth34/34 pass; the generated ID
-  reaches the real customer-portal actor check before returning configured
-  provider-unavailable503 with no Stripe call. Its user resolver is synthetic,
-  not an end-to-end verified-email/session/billing claim. Shared bcrypt/UUID/TOTP/MFA6/6, types/lint and workflow isolation also pass.
-  Current-head CI/deployment remain prerequisite checks.
-- Existing49cf07f staging acceptance does not prove this new Auth code. Do not
-  reuse old CI or private pins for a changed HEAD. Source/runtime/Auth gates,
-  new OAuth Business provisioning and real provider acceptance remain open.
+- The combined native canary is **verified-and-cleaned**. Both synthetic users
+  sign in with newly SDK-generated UUID session IDs. This proves deployed
+  session generation; its user IDs are seeded UUID fixtures, so remote new-user
+  generation is not claimed. Native actual signup15/15 separately covers new
+  user IDs and the billing actor boundary; shared bcrypt/UUID/TOTP/MFA6/6 pass.
+- Profile create/update/public/private/cross-owner refusal, desktop→390 editor,
+  failed-save D1/draft preservation, reload/retry/save/reopen/preview/exact
+  spaces, foreign-owner editor refusal, protected favorites for both users in
+  redirect/text modes and grace refusal all pass. Cleanup owned Business/Auth0
+  and retained baselines match; synthetic license incarnation tombstones remain.
+  Independent readback at **2026-10-03T00:41:56.364Z** verifies version, account,
+  ledger25, owned0, Master inventory, wake5:5 and secret names. Private acceptance
+  is /tmp/fanmark-editor-8144df2-acceptance.json; journal ends canary-Pa2CR6.
+  A390px viewport is not a real-phone/provider/full migration acceptance.
+- Next code implements the server-side OAuth policy. Ten native cases reproduce
+  bypasses of social_login_enabled/invitation_mode in the prior gateway.
+  Capabilities, authorization start and callback now reread both Business D1
+  settings independently of email readiness. Missing/malformed settings or
+  read/binding failure close OAuth; no policy is cached with the Auth instance.
+  Native Auth47/47 covers the10 corrections,3 boolean encodings and the prior34
+  cases, including four-provider existing-UUID linking/MFA/session boundaries.
+  The test now applies all25 canonical Business migrations, not a reduced table
+  substitute. Current-code CI/deployment remain prerequisites for this policy.
+- All providers still use disableSignUp=true pending recoverable new OAuth
+  Business provisioning. Installed1.7.5 publicly exports addOAuthServerContext/
+  getOAuthState and overwrites client additionalData.serverContext during state
+  creation; this is a reviewed implementation option, not an accepted complete
+  provisioning flow. Private review: /tmp/fanmark-oauth-server-context-review.json.
+  Source/runtime/Auth gates and real provider acceptance remain open.
 - D1 daily read quota recovered. An over-narrow private guard expected only
   one3944-row release, but metadata/history proves two retained ready releases
   of3944 each plus one failed import with zero staged rows. The active release
@@ -58,17 +64,17 @@ older sections retain their historical acceptance and failure evidence.
   See source-signup-provisioning.md; target new OAuth-user Business provisioning
   still needs implementation, while existing-UUID linking and initial password
   setup have synthetic coverage. Their combined real-provider acceptance and
-  provider credentials remain open/absent. Its deployed e4d9064 CI passed; the current mobile correction needs new CI
-  and private canary HEAD/CI re-pin before deployment.
+  provider credentials remain open/absent. Credential signup code is included in
+  accepted8144df2 staging; actual new signup/email acceptance is separate from seeded-user signin/session generation.
 
 - Edit only this managed migration worktree/branch and preserve the unrelated
   supabase/.temp/cli-latest change. PR #41 is draft/open; CI never deploys.
-- Staging is5c3b4214 at100%, accepted for the editor/favorites slice above.
+- Staging isf443eb15 at100%, accepted for the UUID-session/editor/favorites slice above.
   Recheck identity/version/ledger25/empty owned Business/Auth/master/wake/secrets
   before deploying new Auth code; real data and domain cutover remain excluded.
 - Private combined editor/favorites preparation and the latest expected CI are
-  in /tmp/fanmark-favorites-protected-preparation.json. Re-pin the three private
-  preflight/smoke/final-readback scripts only after both jobs succeed for the
+  in /tmp/fanmark-favorites-protected-preparation.json. Re-pin the private
+  preflight/deploy/static/smoke/final-readback scripts only after both jobs succeed for the
   exact current HEAD. Do not reuse a stale successful run for a new HEAD.
 - Native notifications now use all25 Business migrations plus staging Auth
   core/0007/0008 and suspension selector:53/53. Search uses the same Auth
@@ -88,8 +94,8 @@ older sections retain their historical acceptance and failure evidence.
   all external browser origins are blocked. It proves failed-save rows/draft,
   reload/retry/D1 persistence, exact spaces, public/private reads, cross-owner
   editor refusal and revoked-session redirect at390px. Server/local state
-  cleanup is checked. Application CI includes it. Remote/real-phone proof
-  remains open; see fanmark-profile-api.md and the latest private test log.
+  cleanup is checked. Application CI includes it. Remote combined acceptance is
+  recorded above; real-phone proof remains open; see fanmark-profile-api.md and the latest private test log.
 - The daily entrypoint replays a missed notification bridge even with expiry
   disabled; the strengthened native case also keeps a drained queue asleep.
   Daily replay is conditional on the invocation and available D1/DO, not a

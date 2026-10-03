@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, inject, it, vi } from "vitest";
 import emojiMasterSchemaSql from "../migrations/0000_emoji_master.sql?raw";
 import emojiReleaseSchemaSql from "../migrations/0001_emoji_master_release_staging.sql?raw";
 import emojiActivationSchemaSql from "../migrations/0002_emoji_master_release_activation.sql?raw";
@@ -12,10 +12,18 @@ import emojiAdminGuardsSchemaSql from "../migrations/0005_emoji_master_admin_gua
 import { handleRequest } from "../src";
 import { createEmojiMasterAdminD1Repository } from "../src/emoji-master-admin-d1-repository";
 import type { Env } from "../src/repository";
+import { checkedInSqlStatements } from "./schema-statements";
+
+declare module "vitest" {
+  export interface ProvidedContext {
+    businessAuthMigrations: Array<{ name: string; sql: string }>;
+  }
+}
 
 const runtimeEnv = env as unknown as Env;
 const database = runtimeEnv.AUTH_DB;
 const masterDatabase = runtimeEnv.MASTER_DB;
+const businessDatabase = runtimeEnv.FANMARK_DB;
 const apiBase = "https://api.example.test";
 const appOrigin = "https://app.example.test";
 const verifiedUserId = "5c5f9001-449c-4b7f-a01d-284302a71ea1";
@@ -25,6 +33,25 @@ const verifiedEmail = "auth-worker@example.invalid";
 const unverifiedEmail = "unverified-worker@example.invalid";
 const password = "Synthetic-Auth-Only!2026";
 const passwordHash = bcrypt.hashSync(password, 10);
+const socialPolicyEnv: Partial<Env> = {
+  AUTH_SOCIAL_BACKEND: "better-auth",
+  GOOGLE_OAUTH_CLIENT_ID: "synthetic-google-client-id",
+  GOOGLE_OAUTH_CLIENT_SECRET: "synthetic-google-client-secret",
+  GITHUB_OAUTH_CLIENT_ID: "synthetic-github-client-id",
+  GITHUB_OAUTH_CLIENT_SECRET: "synthetic-github-client-secret",
+  DISCORD_OAUTH_CLIENT_ID: "synthetic-discord-client-id",
+  DISCORD_OAUTH_CLIENT_SECRET: "synthetic-discord-client-secret",
+  APPLE_OAUTH_CLIENT_ID: "synthetic-apple-client-id",
+  APPLE_OAUTH_CLIENT_SECRET: "synthetic-apple-client-secret",
+};
+
+async function authPolicyCounts() {
+  return database!.prepare(`SELECT
+    (SELECT count(*) FROM "user") AS users,
+    (SELECT count(*) FROM "account") AS accounts,
+    (SELECT count(*) FROM "session") AS sessions,
+    (SELECT count(*) FROM "verification") AS verifications`).first();
+}
 
 function decodeBase32(value: string): Uint8Array {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -254,6 +281,13 @@ async function grantSyntheticAdminRoleAndMfa(sessionId: string): Promise<void> {
 
 async function resetFixture(): Promise<void> {
   if (!database) throw new Error("AUTH_DB binding is unavailable");
+  if (!businessDatabase) throw new Error("FANMARK_DB binding is unavailable");
+  await businessDatabase.batch([
+    businessDatabase.prepare("DELETE FROM system_settings WHERE setting_key IN ('social_login_enabled', 'invitation_mode')"),
+    businessDatabase.prepare(`INSERT INTO system_settings (setting_key, setting_value, created_at, updated_at)
+      VALUES ('social_login_enabled', 'true', ?, ?), ('invitation_mode', 'false', ?, ?)`)
+      .bind(...Array(4).fill("2026-10-03T00:00:00.000000Z")),
+  ]);
   await database.prepare('DELETE FROM "adminUserStatusAudit" WHERE "targetUserId" IN (?, ?)')
     .bind(verifiedUserId, unverifiedUserId).run();
   await database.batch([
@@ -329,6 +363,14 @@ async function createSyntheticIdToken(
 }
 
 beforeAll(async () => {
+  if (!businessDatabase) throw new Error("FANMARK_DB binding is unavailable");
+  const businessMigrations = inject("businessAuthMigrations");
+  expect(businessMigrations).toHaveLength(25);
+  for (const migration of businessMigrations) {
+    await businessDatabase.batch(
+      checkedInSqlStatements(migration.sql).map(statement => businessDatabase.prepare(statement)),
+    );
+  }
   if (!database) throw new Error("AUTH_DB binding is unavailable");
   await database.batch(
     splitMigrationStatements(schemaSql).map((statement) => database.prepare(statement)),
@@ -565,6 +607,112 @@ describe("Better Auth through the application Worker", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it.each([
+    ["social_login_enabled", "false"],
+    ["invitation_mode", "true"],
+  ])("enforces the OAuth policy when %s=%s without email readiness", async (key, value) => {
+    await businessDatabase!.prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?")
+      .bind(value, key).run();
+    const counts = await authPolicyCounts();
+    const unexpectedFetch = vi.fn(async () => { throw new Error("OAuth policy must stop provider traffic"); });
+    vi.stubGlobal("fetch", unexpectedFetch);
+    try {
+      const capabilities = await authRequest("/capabilities", { method: "GET" }, socialPolicyEnv);
+      expect(capabilities.status).toBe(200);
+      expect(await capabilities.json()).toMatchObject({ emailVerification: false, socialProviders: [] });
+      for (const provider of ["google", "github", "discord", "apple"]) {
+        const start = await authRequest("/sign-in/social", jsonBody({
+          provider, callbackURL: `${appOrigin}/auth`,
+        }), socialPolicyEnv);
+        expect(start.status, `${provider} start`).toBe(403);
+        expect(start.headers.get("set-cookie")).toBeNull();
+        expect(await start.json()).toEqual({ error: "auth_flow_unavailable" });
+        const callback = await authRequest(`/callback/${provider}?code=synthetic-code&state=synthetic-state`, {}, socialPolicyEnv);
+        expect(callback.status, `${provider} callback`).toBe(403);
+        expect(callback.headers.get("set-cookie")).toBeNull();
+      }
+      expect(unexpectedFetch).not.toHaveBeenCalled();
+      expect(await authPolicyCounts()).toEqual(counts);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each(["google", "github", "discord", "apple"])("rereads the OAuth policy before the %s callback and after re-enabling", async provider => {
+    const start = await authRequest("/sign-in/social", jsonBody({
+      provider, callbackURL: `${appOrigin}/auth`, errorCallbackURL: `${appOrigin}/auth`,
+    }), socialPolicyEnv);
+    expect(start.status).toBe(200);
+    const { url } = await start.json() as { url: string };
+    const state = new URL(url).searchParams.get("state")!;
+    const cookie = (start.headers.get("set-cookie") ?? "").split(/,(?=[^;,]+=)/u)
+      .map(value => value.trim().split(";", 1)[0]).filter(Boolean).join("; ");
+    expect(state).toBeTruthy();
+    expect(cookie).not.toBe("");
+    const counts = await authPolicyCounts();
+    await businessDatabase!.prepare("UPDATE system_settings SET setting_value = 'true' WHERE setting_key = 'invitation_mode'").run();
+    const unexpectedFetch = vi.fn(async () => { throw new Error("Revoked callback must stop provider traffic"); });
+    vi.stubGlobal("fetch", unexpectedFetch);
+    try {
+      const callback = await authRequest(`/callback/${provider}?${new URLSearchParams({ code: "synthetic-code", state })}`,
+        { headers: { cookie } }, socialPolicyEnv);
+      expect(callback.status).toBe(403);
+      expect(callback.headers.get("set-cookie")).toBeNull();
+      expect(unexpectedFetch).not.toHaveBeenCalled();
+      expect(await authPolicyCounts()).toEqual(counts);
+      const disabled = await authRequest("/capabilities", {}, socialPolicyEnv);
+      expect(await disabled.json()).toMatchObject({ socialProviders: [] });
+      await businessDatabase!.prepare("UPDATE system_settings SET setting_value = 'false' WHERE setting_key = 'invitation_mode'").run();
+      const enabled = await authRequest("/capabilities", {}, socialPolicyEnv);
+      expect(await enabled.json()).toMatchObject({ socialProviders: ["apple", "discord", "github", "google"] });
+      const retry = await authRequest("/sign-in/social", jsonBody({ provider, callbackURL: `${appOrigin}/auth` }), socialPolicyEnv);
+      expect(retry.status).toBe(200);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
+    ['"true"', '"false"'],
+    ["on", "off"],
+    ["1", "0"],
+  ])("accepts supported policy encodings %s/%s", async (enabled, invitation) => {
+    await businessDatabase!.batch([
+      businessDatabase!.prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'social_login_enabled'").bind(enabled),
+      businessDatabase!.prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'invitation_mode'").bind(invitation),
+    ]);
+    const capabilities = await authRequest("/capabilities", {}, socialPolicyEnv);
+    expect(await capabilities.json()).toMatchObject({ socialProviders: ["apple", "discord", "github", "google"] });
+    const start = await authRequest("/sign-in/social", jsonBody({ provider: "google", callbackURL: `${appOrigin}/auth` }), socialPolicyEnv);
+    expect(start.status).toBe(200);
+  });
+
+  it.each(["missing", "malformed", "binding", "read-error"])("closes OAuth when its policy is %s", async condition => {
+    let overrides = socialPolicyEnv;
+    if (condition === "missing") {
+      await businessDatabase!.prepare("DELETE FROM system_settings WHERE setting_key = 'invitation_mode'").run();
+    } else if (condition === "malformed") {
+      await businessDatabase!.prepare("UPDATE system_settings SET setting_value = 'perhaps' WHERE setting_key = 'social_login_enabled'").run();
+    } else if (condition === "binding") {
+      overrides = { ...socialPolicyEnv, FANMARK_DB: undefined };
+    } else {
+      overrides = { ...socialPolicyEnv, FANMARK_DB: new Proxy(businessDatabase!, {
+        get(target, property) {
+          if (property === "prepare") return () => { throw new Error("Synthetic policy read failure"); };
+          return Reflect.get(target, property);
+        },
+      }) };
+    }
+    const counts = await authPolicyCounts();
+    const capabilities = await authRequest("/capabilities", {}, overrides);
+    expect(await capabilities.json()).toMatchObject({ socialProviders: [] });
+    const start = await authRequest("/sign-in/social", jsonBody({ provider: "google", callbackURL: `${appOrigin}/auth` }), overrides);
+    expect(start.status).toBe(403);
+    const callback = await authRequest("/callback/google?code=synthetic-code&state=synthetic-state", {}, overrides);
+    expect(callback.status).toBe(403);
+    expect(await authPolicyCounts()).toEqual(counts);
   });
 
   it("starts only explicitly configured OAuth providers and never enables social signup", async () => {
@@ -1428,9 +1576,9 @@ describe("admin session authorization through the application Worker", () => {
     expect(wrongSession.status).toBe(403);
     expect(await wrongSession.json()).toEqual({ error: "mfa_required" });
 
-    // This auth-only fixture deliberately has no business D1; 503 proves the
-    // request passed the same role/session/factor MFA gate as other admin APIs.
-    const authorized = await notificationMasterAdminRequest("/rules", { headers: { cookie: first.cookie } });
+    // Keep the missing Business binding proof explicit now that this suite
+    // also applies canonical Business migrations for the OAuth policy.
+    const authorized = await notificationMasterAdminRequest("/rules", { headers: { cookie: first.cookie } }, { FANMARK_DB: undefined });
     expect(authorized.status).toBe(503);
     expect(await authorized.json()).toEqual({ error: "notification_master_unavailable" });
   });

@@ -191,6 +191,8 @@ Cloudflare buildのOAuth初回パスワードゲートはBetter Auth sessionと`
 
 Better Authの`advanced.database.generateId="uuid"`で新規AuthレコードIDをUUIDにする。既存IDを更新する処理はない。SDK既定の32文字IDは課金APIのUUID actor境界と不一致だったため、実signup由来IDの形式とcustomer portalの認証境界をnativeで検証する。後者は合成user resolverとprovider未設定状態であり、実課金や確認メール/sessionの通し受け入れではない。
 
+OAuth policyは`auth-social.mjs`がBusiness D1の`social_login_enabled`/`invitation_mode`を1照会で読み、許可時だけgatewayがprovider一覧と認証開始/callbackを開く。欠落・不正値・読取り失敗では閉じる。設定をAuth instanceと共にcacheしないため、開始後の招待mode変更にもcallbackで対応する。Auth native suiteは全25 Business migrationsを使い、停止時の外部fetch0とAuth状態不変を確認する。新OAuthユーザーのprofile provisioning・実provider通し受け入れは別途必要。
+
 招待signupのnative検証は全25 Business migrationとAuth core/0007/0008、
 `AUTH_USER_STATUS_BACKEND=d1`を使用する。`test:invitation-signup-d1`の15件は
 4言語・source初期値・metadata権限入力・cross-D1復旧を検証し、各case後に両DBの

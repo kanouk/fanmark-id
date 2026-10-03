@@ -66,6 +66,7 @@
 - 招待制: `system_settings.invitation_mode` が ON の場合、サインアップ前に `validate_invitation_code` 成功が必須。`use_invitation_code` で消費し、残数と期限を検証。待機リストは `waitlist` テーブルで管理し、管理UIから招待コード配布。
 - 管理待機リスト: Cloudflare経路では同じsessionの管理者MFAとadmin planを要求する。一覧はメールのhashだけを返し、個別メールの参照前に監査を保存する。権限不足の一覧/メール参照も監査し、メール参照の拒否には対象IDと重大度を保持する。運用警告は監査IDと操作種別・時刻だけを記録し、メール・IP・cookie・tokenを複製しない。
 - 認証: Supabase Auth。`social_login_enabled=false` または招待モード中は OAuth を抑止し、OAuth でも初回パスワード設定を強制。パスワード要件表示、メール確認・再送、リセット対応。
+- CloudflareのOAuthは認証開始・コールバック・利用可能provider表示で業務DBの上記設定を確認する。設定を読めない場合もOAuthへ進めない。メール機能の有効化とは独立した制御とし、認証開始後の設定変更をコールバックで再確認する。
 - Cloudflare経路の新規認証IDはUUIDで生成し、業務・課金APIのID契約に合わせる。既存IDを変更せず、ユーザーデータの実移送は別工程で扱う。
 - 確認メール: Supabase Auth の Confirm email は ON。メール/パスワード登録のみ確認メールを送信し、OAuth ユーザーは `send-auth-email` で `signup` および `password_changed_notification` をスキップする（provider≠email の場合）。
 - 多言語: 日本語/英語の翻訳バンドルを用意し、ヘッダーで切替可能。

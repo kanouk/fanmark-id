@@ -12,7 +12,7 @@ import {
 import { createD1RecentFanmarksRepository } from "./d1-repository";
 import { captureMfaGeneration, createAuth } from "./better-auth.mjs";
 import { isResendAuthEmailConfigured } from "./auth-email.mjs";
-import { configuredSocialProviders, type ConfiguredSocialProviders } from "./auth-social.mjs";
+import { configuredSocialProviders, isSocialLoginAllowed, type ConfiguredSocialProviders } from "./auth-social.mjs";
 import {
   handleInvitationCodeValidationRequest,
   handleInvitationSignupRequest,
@@ -847,6 +847,11 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
     return jsonResponse({ ok: true }, 200, corsHeaders);
   }
 
+  const needsSocialPolicy = authPath === "/capabilities" || authPath === "/sign-in/social" || isOAuthCallback;
+  const socialAllowed = needsSocialPolicy && Object.keys(authConfig.socialProviders).length > 0
+    ? await isSocialLoginAllowed(selectD1Database(env, "business"))
+    : false;
+
   if (authPath === "/capabilities" && request.method.toUpperCase() === "GET") {
     const businessDb = env.INVITATION_SIGNUP_BACKEND?.trim() === "d1"
       ? selectD1Database(env, "business")
@@ -860,7 +865,7 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
       passwordReset: emailEnabled,
       signUp: invitationMode !== null,
       invitationRequired: invitationMode === true,
-      socialProviders: Object.keys(authConfig.socialProviders).sort(),
+      socialProviders: socialAllowed ? Object.keys(authConfig.socialProviders).sort() : [],
     }, 200, corsHeaders);
   }
 
@@ -925,6 +930,7 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
     AUTH_CLOSED_ENDPOINTS.has(authPath) ||
     (AUTH_EMAIL_ENDPOINTS.has(authPath) && !emailEnabled) ||
     (isResetTokenRoute && !emailEnabled) ||
+    ((authPath === "/sign-in/social" || isOAuthCallback) && !socialAllowed) ||
     (authPath === "/sign-in/social" && (!requestedSocialProvider || !Object.hasOwn(authConfig.socialProviders, requestedSocialProvider))) ||
     (isOAuthCallback && (!oauthCallbackProvider || !Object.hasOwn(authConfig.socialProviders, oauthCallbackProvider)))
   ) {

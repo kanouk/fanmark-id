@@ -1,5 +1,37 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：UUID認証修正の配備・受け入れとOAuth設定の適用
+
+8144df2のCI37082406423は両job成功。00:37:42Zの完全preflight後、00:38:19Zに
+workers.dev stagingへf443eb15-d8ac-48a9-af90-da2aa587e976を100%配備した。
+配信JS/CSS bytes、root/robots200・sitemap404・noindexを確認。合成2accountの実signinで
+SDKが生成するsession IDのUUID形式と本人IDを確認した。user ID自体はseed fixtureなので、
+remote新規user生成の証拠にはしない。新規user生成は別のnative signup15ケースで検証済み。
+
+combined editor/favorites canary-Pa2CR6はverified-and-cleaned。最初の入力、desktop→390px、
+503保存失敗時の元D1行/下書き保持、reload/復元/retry/実保存、再open/preview、他人拒否、
+両userの保護redirect/text favoriteとgrace拒否が成功。scoped cleanup後にowned Business/Auth0、
+retained baseline一致を確認。00:41:56.364Zの独立readbackでaccount/version/ledger25、
+Master release metadata/active/history digest、wake5:5とsecret namesを再確認した。
+private報告は/tmp/fanmark-editor-8144df2-acceptance.json。実phone/provider/移行全体は未完了。
+
+次のOAuth gateway reviewで、provider key pairのみを条件にし、管理設定を適用しない不具合を
+native10ケースで再現。設定false、招待mode true、認証開始後の設定変更、missing/malformed/
+binding/read失敗でもcapabilitiesやcallbackへ進んでいた。現在の修正はBusiness D1の2設定を
+capabilities/start/callbackで毎回照会する。Resend readinessと独立させ、Auth cacheへ設定状態を
+保持しない。無効時はprovider network、Auth user/account/session/verificationの変更を拒否する。
+
+全25 canonical Business migrationsをAuth suiteへ加え、Auth47/47で10修正ケース、JSON文字列/
+on-off/1-0表記3ケースと従来34ケースが成功。既存の通知master MFA試験は欠落bindingを
+明示し、full Business fixtureへの変更後も503境界の検証を保持する。新policy codeには別の
+exact-HEAD CI/配備が必要。disableSignUp=trueは維持し、新OAuth userのBusiness provisioning、
+初回password setupまでのrecoverable flowと実provider受け入れは引き続き必要。
+
+installed Better Auth1.7.5の公開APIにはaddOAuthServerContext/getOAuthStateがあり、
+server contextはclient additionalDataで上書きできないことをソースで確認した。これを新規
+provisioningの実装候補として記録したが、native counterpart/ACK不明/restart/collisionの
+検証前なので完了とは扱わない。source/real user rows/DNS/provider設定は変更していない。
+
 ## 2026-10-03：editor/favoritesの実staging受け入れと新規Auth IDの不整合
 
 49cf07fのCI37081023518はapplication/Workerとも成功。00:20:54Zの完全preflight後、

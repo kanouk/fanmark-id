@@ -20,3 +20,27 @@ export function configuredSocialProviders(env) {
   }
   return providers;
 }
+
+function booleanSetting(value) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().replace(/^"([\s\S]*)"$/u, "$1").toLowerCase();
+  if (["true", "1", "on"].includes(normalized)) return true;
+  if (["false", "0", "off"].includes(normalized)) return false;
+  return null;
+}
+
+// This policy belongs to Business D1, independently of email/signup readiness.
+// Do not cache it with the Auth instance: settings can change during OAuth.
+export async function isSocialLoginAllowed(database) {
+  if (!database) return false;
+  try {
+    const result = await database.prepare(`SELECT setting_key, setting_value
+      FROM system_settings
+      WHERE setting_key IN ('social_login_enabled', 'invitation_mode')`).all();
+    if (result.success !== true || !Array.isArray(result.results) || result.results.length !== 2) return false;
+    const values = new Map(result.results.map(row => [row.setting_key, booleanSetting(row.setting_value)]));
+    return values.get("social_login_enabled") === true && values.get("invitation_mode") === false;
+  } catch {
+    return false;
+  }
+}

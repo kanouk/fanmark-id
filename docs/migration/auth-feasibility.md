@@ -475,6 +475,25 @@ to the real customer-portal actor validator: it passes that boundary and returns
 provider-unavailable503 rather than unauthenticated401. The resolver is synthetic
 and all Stripe keys are unset; constructing a provider client is forbidden by
 the test. This does not prove verified-email/session/real billing acceptance.
-The latest accepted remote editor/favorites code is49cf07f/version5c3b4214;
-new Auth generation code needs its own CI/deployment proof. No real user rows,
-provider configuration, source database or production route was changed.
+Both CI37082406423 jobs passed for8144df2. Staging versionf443eb15 was deployed
+and accepted with the combined editor/favorites canary. Two real synthetic
+signins issue new UUID sessions; seeded user IDs do not prove remote new-user
+creation. Cleanup and independent00:41:56Z readback confirm owned0 and retained
+baselines. No real user rows, provider configuration, source database or
+production route was changed.
+
+## Server-side OAuth settings policy (2026-10-03 JST)
+
+The gateway now checks social_login_enabled=true and invitation_mode=false
+from Business D1 for capabilities, authorization start and callback, independently
+of email readiness. It does not cache settings with the Auth instance. Missing,
+malformed or unavailable settings close these paths before provider requests or
+Auth state mutation. The native Auth fixture applies all25 canonical Business
+migrations. Ten previously failing policy cases and three supported boolean
+encoding cases now pass with the prior34 tests: Auth47/47. Existing-UUID provider
+linking and the same-session MFA tests remain included. Policy CI/deployment
+are pending; accepted8144df2 does not contain this later change.
+
+New social users still cannot register until recoverable Business provisioning
+is implemented and accepted. Reviewing installed getOAuthState/serverContext
+exports does not establish that counterpart or real provider acceptance.
