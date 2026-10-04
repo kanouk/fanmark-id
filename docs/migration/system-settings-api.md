@@ -112,3 +112,20 @@ The browser-level lifecycle and maximum-emoji settings forms are verified with
 a synthetic authenticated administrator. Populated-user behavior, Stripe
 sandbox acceptance, full integrated #37 acceptance, production routing, real
 user-data import, and final domain/DNS cutover remain open.
+
+## 2026-10-04 fixed staging API checkpoint
+
+`12fa13f` passed client 4/4, Worker/lifecycle 13/13, application/Worker
+typechecks, targeted ESLint, and both jobs in CI37208535583. It was deployed at
+100% as `cc6d9da7-b81b-45fe-b0be-6c0978570232`. Independent monitoring confirmed
+public settings HTTP200/no-store with exactly 11 keys and no Price IDs;
+anonymous admin reads returned HTTP401. Original Auth 2 users/6 accounts/1
+session, owned business counts, Master history, MFA/wake, bindings/secrets,
+and schedules were preserved. No schema or production change occurred.
+
+The original actual browser fixture had reached Free dashboard and failed on
+`/plans` before any Customer/Checkout/payment was created. It was removed and
+independently verified. Post-deploy native UI confirmation remains pending:
+the Mac is locked and requires a human unlock. API recovery is accepted; the
+repaired screen and same-user whole billing UI are not yet accepted. See
+`evidence/plan-settings-public-projection-2026-10-04.json`.

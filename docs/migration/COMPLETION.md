@@ -40,6 +40,15 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
+2026-10-04の実Chrome Freeログイン後に`/plans`の設定503を発見し、private Stripe価格IDを
+公開設定読取から除外する修正を`12fa13f`/CI37208535583両job成功後に配備した。
+現在の100% Workerは`cc6d9da7-b81b-45fe-b0be-6c0978570232`。公開設定は200/exact11/価格IDなし、
+匿名管理設定401と元の2/6/1・Master全履歴/MFA/wake・他設定の保持を確認した。
+元の決済前fixtureはcleanup済み。Macロックにより配備後の実画面は未確認で、手動解除待ち。
+同一利用者の全UIフローは未受け入れ。以下の旧runtime結果は過去checkpointとして保持する。
+[設定修正と境界](evidence/plan-settings-public-projection-2026-10-04.json)。
+
+
 現在のruntime candidateは`87b61ef`、CI37200812928は両job成功、100% Workerは
 `ca971193-b17b-4a44-9991-76ab6eb7f20c`。Stripe test-only接続・Portalの空POST修正を
 反映した。元の本人管理2 user/6 account/session1、Masterの全履歴・MFA/wakeを

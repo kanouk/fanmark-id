@@ -1,3 +1,31 @@
+# 2026-10-04 実プラン画面の設定503を修正・staging APIを確認
+
+専用合成ownerの実Chromeシークレットログインでdashboard Free/0件/上限3を確認し、
+「もっとファンマを増やす」から実`/plans`へ移動したところ、設定読取エラーを確認した。
+公開設定APIがprivateにしたtest Stripe Price IDにもpublic flagを要求して503を返していた。
+価格IDを公開読取から外し、公開設定11キー／MFA付き管理者設定19キーに分けた。
+旧sourceのpublic flag付きlive価格IDも公開応答へ返さない。管理者読取はtest/live価格IDの
+旧flag1とprivate flag0を扱い、実値を変更する監査付き更新では当該価格IDをprivateへ揃える。
+Enterpriseの厳格なprivate flag確認、料金を既定値で隠さないエラー表示は維持する。
+
+`12fa13f`はclient4件、Worker/Lifecycle13件、両typecheck、変更箇所ESLintと
+[CI37208535583](https://github.com/kanouk/fanmark-id/actions/runs/37208535583)両jobが成功。
+専用whoamiと元状態を照合後、100% Worker`cc6d9da7-b81b-45fe-b0be-6c0978570232`へ配備した。
+独立監視tokenで公開設定200/no-store・exact11キー・価格IDなし、匿名管理設定401、
+元の2 user/6 account/session1・40表所有件数・Master全履歴・MFA/wake・他binding/
+秘密14名称・毎分/日次Cron・schema不変を確認した。元のprivate test価格IDは維持する。
+決済前の合成ownerはCustomer/Checkout/請求を作る前に片付けた。初回cleanupのD1要求は
+失敗したが、CLI認証を更新した別processで同じjournalの所有fixtureだけを回復・削除し、
+独立read-only照合で元状態一致を確認した。アプリ障害とは混同しない。
+
+配備後の実画面操作はMacがロックされ、自動解除も失敗したため未実施。
+Macの手動解除を依頼済み。再確認用のprivate v2 fixture/preflight/独立readbackを準備したが、
+新fixtureはまだ開始していない。公開設定APIの回復から実画面・同一利用者の決済フローの
+成功を推定しない。[設定修正の証拠](evidence/plan-settings-public-projection-2026-10-04.json)。
+以前のStripe testサービス受け入れは過去証拠として保持し、新runtimeの全体統合成功とは
+扱わない。六作業の完了条件と実ユーザー移送・本番課金・公開domain/DNSの除外は維持する。
+以下は過去のcheckpoint。
+
 # 2026-10-04 定期請求の追加認証・同じPaymentIntentの復旧を確認
 
 runtimeは`87b61ef`/CI37200812928両job成功・Worker`ca971193`を維持。
