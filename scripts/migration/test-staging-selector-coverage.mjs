@@ -147,8 +147,16 @@ test("Paid staging enables bounded daily lifecycle and archive while inert rehea
   assert.equal(vars.AUTH_SOCIAL_PROVISIONING_BACKEND, "d1");
   assert.ok(!Object.keys(vars).some(key => /_OAUTH_CLIENT_(?:ID|SECRET)$/u.test(key)),
     "provider credentials belong in Worker secrets, not checked-in vars");
-  for (const key of ["STRIPE_DISPATCH_BACKEND", "STRIPE_WEBHOOK_BACKEND", "BROADCAST_SEND_BACKEND", "AUTH_EMAIL_BACKEND"]) assert.equal(vars[key], undefined);
+  for (const key of ["BROADCAST_SEND_BACKEND", "AUTH_EMAIL_BACKEND"]) assert.equal(vars[key], undefined);
+  for (const key of ["STRIPE_DISPATCH_BACKEND", "STRIPE_WEBHOOK_BACKEND", "STRIPE_PLAN_CHECKOUT_BACKEND",
+    "STRIPE_PLAN_CHANGE_BACKEND", "STRIPE_CUSTOMER_PORTAL_BACKEND", "STRIPE_EXTENSION_CHECKOUT_BACKEND"]) {
+    assert.equal(vars[key], "d1");
+  }
+  assert.equal(vars.STRIPE_MODE_POLICY, "test_only");
+  for (const key of ["STRIPE_SECRET_KEY", "STRIPE_SECRET_KEY_TEST", "STRIPE_SECRET_KEY_LIVE", "STRIPE_WEBHOOK_SECRET"]) {
+    assert.equal(vars[key], undefined, "Stripe credentials belong in Worker secrets");
+  }
   assert.equal(vars.LICENSE_EXPIRY_CRON, "0 0 * * *");
-  assert.deepEqual(appStagingConfig.triggers.crons, ["0 0 * * *"]);
+  assert.deepEqual(appStagingConfig.triggers.crons, ["0 0 * * *", "* * * * *"]);
   assert.equal(isStagingNotificationWakeTarget(appStagingConfig), false);
 });

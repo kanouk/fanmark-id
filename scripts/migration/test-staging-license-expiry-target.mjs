@@ -10,6 +10,9 @@ const deployed = JSON.parse(await readFile(new URL("../../workers/api/wrangler.a
 const config = structuredClone(deployed);
 delete config.vars.LICENSE_EXPIRY_BACKEND;
 delete config.vars.NOTIFICATION_ARCHIVE_BACKEND;
+delete config.vars.STRIPE_DISPATCH_BACKEND;
+delete config.vars.STRIPE_WEBHOOK_BACKEND;
+config.triggers.crons = ["0 0 * * *"];
 
 test("accepts the checked-in staging notification and daily-expiry Cron baseline", () => {
   assert.equal(isStagingExpiryCronBaseline(deployed), false);

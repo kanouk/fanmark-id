@@ -14,7 +14,10 @@ private test Price IDだけを差し替える派生版を作成した。最初�
 料金ポータルはtest defaultを作成し、請求履歴/支払い方法更新のみを許可する。
 [設定と修正の証拠](evidence/stripe-staging-test-setup-2026-10-04.json)。
 
-次は6 billing selectorとStripe毎分dispatch Cronを含む候補のCI確認・staging配備、
+077c30eのCIで、日次のみ・provider無効を想定する試験fixtureが現在の設定を継承して
+失敗した。fixtureを明示的に無効化し、実staging設定のStripe test-only/毎分dispatchを
+別に照合した。inert rehearsalのtarget guardは緩めず、ローカルmigration289件は成功。
+次は修正後候補のCI確認・staging配備、
 その後に専用test Webhookの有効化と実Stripe Checkout/Portal/変更/延長の確認。
 毎分通知pollingはDO selectorで選択されない。日次expiry/archiveはUTC00:00のまま。
 実課金、実ユーザー移送、公開domain/DNSは後工程。Resend宛先と別Apple/Discord

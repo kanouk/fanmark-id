@@ -6,6 +6,9 @@ const deployed = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app
 const current = structuredClone(deployed);
 delete current.vars.LICENSE_EXPIRY_BACKEND;
 delete current.vars.NOTIFICATION_ARCHIVE_BACKEND;
+delete current.vars.STRIPE_DISPATCH_BACKEND;
+delete current.vars.STRIPE_WEBHOOK_BACKEND;
+current.triggers.crons = ["0 0 * * *"];
 const candidate = {
   ...current,
   vars: { ...current.vars, NOTIFICATION_WAKE_BACKEND: "durable-object" },
