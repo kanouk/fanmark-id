@@ -24,6 +24,7 @@
   - 絵文字ID変換: `src/lib/emojiConversion.ts`。Worker selectorのビルドはD1の有効releaseを起動時に取得し、取得完了前に画面を描画しない。
 - `/auth`: 認証/サインアップ/パスワードリセット: `src/pages/Auth.tsx`
   - OAuthのgatewayは`workers/api/src/index.ts`、provider設定とBusiness D1 policy読取りは`workers/api/src/auth-social.mjs`。capabilities/start/callbackは`social_login_enabled=true`かつ`invitation_mode=false`を毎回確認する。設定欠落・不正値・DB障害ではOAuthを閉じ、email readinessやAuth instance cacheから独立して判定する。新規OAuthユーザーのBusiness provisioningは`workers/api/src/oauth-signup-provisioning.mjs`に実装し、Auth migration0009と`AUTH_SOCIAL_PROVISIONING_BACKEND=d1`で選択する。server-only markerとprovider識別子によりcross-D1途中失敗を復旧し、profile保存・停止状態確認後だけsessionを発行する。native合成検証とstaging schema/selector適用・合成session guard検証は済んでいる。GitHubの実callback・初回パスワード保存は確認済みで、実ログアウト・同一identity再ログインも確認済みで、他providerは未完了。契約は`docs/migration/oauth-signup-provisioning.md`。
+  - Appleの`form_post`は`POST /api/auth/callback/apple`・正確なApple Origin・form-urlencodedに限定してgatewayへ通す。Appleを共通trustedOriginsへ追加せずCORSも付けない。業務policy/schemaの再確認とSDKのredirect後のstate cookie照合を保持する。native OAuth検証はcross-site POSTでcookieなし、GETでcookie復帰というブラウザの動作を再現する。
   - Workerの認証設定は`workers/api/src/better-auth.mjs`。`advanced.database.generateId="uuid"`で新規レコードのIDをUUIDにする。既存Auth IDは保持し、招待signup Coordinatorから同じユーザーIDでBusinessプロフィールを作成する。
 - `/forgot-password`: `ForgotPassword.tsx`
 - `/reset-password`: `ResetPassword.tsx`

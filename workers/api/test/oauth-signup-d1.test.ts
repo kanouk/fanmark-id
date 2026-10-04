@@ -28,7 +28,7 @@ let providerRequests: string[] = [];
 
 function request(path: string, init: RequestInit = {}, overrides: Partial<Env> = {}) {
   const headers = new Headers(init.headers);
-  headers.set("Origin", appOrigin);
+  if (!headers.has("Origin")) headers.set("Origin", appOrigin);
   return handleRequest(new Request(apiBase + path, { ...init, headers }), { ...runtimeEnv, ...overrides });
 }
 
@@ -69,13 +69,18 @@ async function callback(provider: Provider, flow: { state: string; cookie: strin
   const params = new URLSearchParams({ code: `synthetic-${provider}-code`, state: flow.state });
   if (provider === "apple") {
     const response = await request(`/api/auth/callback/${provider}`, {
-      method: "POST", headers: { cookie: flow.cookie, "content-type": "application/x-www-form-urlencoded" }, body: params,
+      // SameSite=Lax omits the state cookie on Apple's cross-site POST, then
+      // restores it on the redirected top-level GET.
+      method: "POST", headers: { Origin: "https://appleid.apple.com", "content-type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: params,
     }, overrides);
     expect(response.status).toBe(302);
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    expect(response.headers.get("access-control-allow-credentials")).toBeNull();
+    expect(response.headers.get("set-cookie")).toBeNull();
     const next = new URL(response.headers.get("location")!);
     expect(next.origin).toBe(apiBase);
     expect(next.pathname).toBe("/api/auth/callback/apple");
-    return request(next.pathname + next.search, { headers: { cookie: flow.cookie } }, overrides);
+    return handleRequest(new Request(next, { headers: { cookie: flow.cookie } }), { ...runtimeEnv, ...overrides });
   }
   return request(`/api/auth/callback/${provider}?${params}`, { headers: { cookie: flow.cookie } }, overrides);
 }
@@ -367,19 +372,61 @@ it("preserves edited completed profile data on later OAuth logins", async () => 
   expect((await businessDb.prepare("SELECT * FROM user_settings").all()).results).toEqual(before);
 });
 
-it("rejects tampered state and replay without additional provider requests or writes", async () => {
-  await stubProvider("google", "state-proof@example.invalid");
-  const flow = await start("google");
+it.each(["google", "apple"] as const)("rejects %s tampered state and replay without additional provider requests or writes", async provider => {
+  await stubProvider(provider, "state-proof@example.invalid");
+  const flow = await start(provider);
   const before = await counts();
-  refusesSession(await callback("google", { ...flow, state: "tampered-state" }));
+  refusesSession(await callback(provider, { ...flow, state: "tampered-state" }));
   expect(providerRequests).toEqual([]);
   expect(await counts()).toEqual(before);
-  expect((await callback("google", flow)).headers.get("location")).toBe(`${appOrigin}/auth`);
+  expect((await callback(provider, flow)).headers.get("location")).toBe(`${appOrigin}/auth`);
   const after = await counts();
   const requests = providerRequests.length;
-  refusesSession(await callback("google", flow));
+  refusesSession(await callback(provider, flow));
   expect(providerRequests).toHaveLength(requests);
   expect(await counts()).toEqual(after);
+});
+
+it("rejects an Apple callback without the original state cookie before provider traffic", async () => {
+  await stubProvider("apple", "missing-cookie@example.invalid");
+  const flow = await start("apple");
+  const before = await counts();
+  refusesSession(await callback("apple", { ...flow, cookie: "" }));
+  expect(providerRequests).toEqual([]);
+  expect(await counts()).toEqual(before);
+});
+
+it.each([
+  ["/api/auth/callback/apple", "GET", "https://appleid.apple.com", "application/x-www-form-urlencoded"],
+  ["/api/auth/callback/apple", "OPTIONS", "https://appleid.apple.com", "application/x-www-form-urlencoded"],
+  ["/api/auth/callback/apple", "POST", "https://appleid.apple.com", "application/json"],
+  ["/api/auth/callback/apple", "POST", "https://appleid.apple.com.attacker.invalid", "application/x-www-form-urlencoded"],
+  ["/api/auth/callback/apple", "POST", "https://attacker.invalid", "application/x-www-form-urlencoded"],
+  ["/api/auth/callback/apple", "POST", "null", "application/x-www-form-urlencoded"],
+  ["/api/auth/callback/google", "POST", "https://appleid.apple.com", "application/x-www-form-urlencoded"],
+  ["/api/auth/sign-in/social", "POST", "https://appleid.apple.com", "application/x-www-form-urlencoded"],
+  ["/api/auth/sign-out", "POST", "https://appleid.apple.com", "application/x-www-form-urlencoded"],
+])("rejects cross-site requests outside Apple's form callback: %s %s %s %s", async (path, method, origin, type) => {
+  const before = await counts();
+  const response = await request(path, { method, headers: { Origin: origin, "content-type": type },
+    ...(method === "POST" ? { body: "state=synthetic&code=synthetic" } : {}) });
+  expect(response.status).toBe(403);
+  expect(await response.json()).toEqual({ error: "forbidden_origin" });
+  expect(response.headers.get("access-control-allow-origin")).toBeNull();
+  expect(providerRequests).toEqual([]);
+  expect(await counts()).toEqual(before);
+});
+
+it("keeps Apple's form callback closed when the business social-login policy is disabled", async () => {
+  await businessDb.prepare("UPDATE system_settings SET setting_value='false' WHERE setting_key='social_login_enabled'").run();
+  const before = await counts();
+  const response = await request("/api/auth/callback/apple", { method: "POST",
+    headers: { Origin: "https://appleid.apple.com", "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    body: "state=synthetic&code=synthetic" });
+  expect(response.status).toBe(403);
+  expect(await response.json()).toEqual({ error: "auth_flow_unavailable" });
+  expect(providerRequests).toEqual([]);
+  expect(await counts()).toEqual(before);
 });
 
 it("concurrent callbacks retain one durable identity, account and profile and can be retried", async () => {

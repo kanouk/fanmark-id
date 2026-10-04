@@ -1,3 +1,15 @@
+# 2026-10-04 Apple callback origin拒否を再現・限定修正、配備前
+
+本人のApple認証がcallback画面の`forbidden_origin`で停止した。
+以前の合成callbackはアプリOriginを送っており、実Appleのcross-site form POSTを
+再現していなかった。テストをcookieなしのApple Origin POST→cookie付きGETへ修正し、
+修正前gatewayで403を再現した。専用path/POST/正確なApple Origin/form-urlencodedだけ
+受け付けるよう変更し、共通trustedOrigins/CORSは広げない。業務policy/schema再確認と
+SDKの元state cookie照合は保持する。OAuth66件、Auth48件、型と変更箇所ESLintが成功。
+[回帰証拠](evidence/apple-form-post-regression-2026-10-04.json)。
+CIと保持account/master/設定の再確認後にstagingへ配備する。現時点では未配備で、
+実Apple callback/初回設定/logout/reloginは未受け入れ。以下は過去のcheckpoint。
+
 # 2026-10-04 Apple staging callback・有効な資格情報を保存
 
 本人の追加保存許可後、既存Services IDへstaging domain/callbackを保存し、設定を

@@ -26,7 +26,14 @@ claims `sub`, GitHub/Discord profile `id`. Email, public name and avatar do not
 establish identity. A WeakMap binds that proof to the current parsed request
 state, rather than storing a last-user value in the cached Auth instance.
 Database hooks receive `/callback/:id`, with the provider in `params.id`.
-Apple's POST callback follows the SDK's same-origin GET redirect.
+Apple's POST callback follows the SDK's same-origin GET redirect. The gateway
+accepts `Origin: https://appleid.apple.com` only on `POST /api/auth/callback/apple`
+with `application/x-www-form-urlencoded` content (including charset parameters).
+This does not add Apple to global trusted origins or grant it CORS access.
+Business social-login/schema checks still run before SDK delegation. The SDK
+checks the original state cookie on the subsequent top-level GET; the cross-site
+POST carries no SameSite=Lax cookie. Invalid/missing state cookies and replay
+must not reach provider requests or create a session.
 
 A new Auth user stores six private recovery fields: command UUID, preassigned
 profile UUID, provider, subject, language and pending/completed state. They are

@@ -843,13 +843,22 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
   if (!authConfig) return jsonResponse({ error: "auth_unavailable" }, 503);
 
   const requestOrigin = request.headers.get("Origin");
-  if (requestOrigin && !authConfig.trustedOrigins.includes(requestOrigin)) {
+  // Apple returns authorization results through a cross-site form POST.
+  // Better Auth redirects it to GET before checking the OAuth state cookie.
+  const isAppleFormPostCallback = authPath === "/callback/apple" &&
+    request.method === "POST" && requestOrigin === "https://appleid.apple.com" &&
+    request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() ===
+      "application/x-www-form-urlencoded";
+  const trustedRequestOrigin = requestOrigin && authConfig.trustedOrigins.includes(requestOrigin)
+    ? requestOrigin
+    : null;
+  if (requestOrigin && !trustedRequestOrigin && !isAppleFormPostCallback) {
     return jsonResponse({ error: "forbidden_origin" }, 403);
   }
 
   const corsHeaders = new Headers();
-  if (requestOrigin) {
-    corsHeaders.set("access-control-allow-origin", requestOrigin);
+  if (trustedRequestOrigin) {
+    corsHeaders.set("access-control-allow-origin", trustedRequestOrigin);
     corsHeaders.set("access-control-allow-credentials", "true");
     corsHeaders.set("access-control-allow-methods", "GET, POST, OPTIONS");
     corsHeaders.set("access-control-allow-headers", "content-type, authorization, x-requested-with, x-csrf-token");
@@ -965,7 +974,7 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
       ? await captureMfaGeneration({ AUTH_DB: authConfig.database })
       : null;
     const auth = createApplicationAuth(authConfig, requestState);
-    return authResponseHeaders(await auth.handler(request), requestOrigin);
+    return authResponseHeaders(await auth.handler(request), trustedRequestOrigin);
   } catch {
     return jsonResponse({ error: "auth_unavailable" }, 503, corsHeaders);
   }
