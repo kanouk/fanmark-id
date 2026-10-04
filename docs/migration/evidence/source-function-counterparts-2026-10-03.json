@@ -1,0 +1,1942 @@
+{
+  "schemaVersion": 1,
+  "scope": "source metadata identities/permissions linked to all58 existing current-application counterpart rows; not whole-source equivalence approval",
+  "runtimeObservedAt": "2026-10-03T04:12:13.370671+00:00",
+  "authorizationObservedAt": "2026-10-03T04:12:13.485862+00:00",
+  "runtimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+  "authorizationFingerprint": "8e9859a0fe06eb1e7b123f55f3cde2c1ae482081ed6912dd9dbc53a7452cd273",
+  "functionsCount": 58,
+  "missingOrDuplicateCounterpartRows": 0,
+  "definitionMismatchesAcrossIndependentCatalogs": 0,
+  "codeEvidenceHead": "ef25b5091bab752385a4af0135e263d6186da47f",
+  "codeCI": 37125702795,
+  "sourceBodiesIncluded": false,
+  "sourceOrAuthRowsRead": false,
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "classifierPendingFunctionCount": 54,
+  "classifierPendingMeaning": "classifier has not consumed manual counterpart acceptance; this count is not missing implementations",
+  "functions": [
+    {
+      "name": "activate_notification_worker",
+      "identityArguments": "",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "165d1495b7bd7d1c3f7da09727aceb16f71cfa7a44e8030470408c61351ed950",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": false
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1929; N:45; reviewed source hash165d1495",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Native Business0024 generation plus post-commit SQLite Durable Object wake replaces minute Cron",
+        "remainingBoundary": "The guarded ea309178/41cefc3 rehearsal accepted actual TOTP/manual creation, alarm activation/delivery/idle stop, interrupted-bridge MFA recovery and cleanup. Wake coordinator/0024 are unchanged at accepted bce8993; latest read-only source hash matches. Later processor changes, recurring/CPU/operational fit and final integration retain their own acceptance requirements. See notification-worker-wake.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "activate_notification_worker_on_pending_event",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "fbf33c2e5a1836d85b7cd3e39ce425dd547cc081a98866ccf4756fbcbfbcec59",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": false
+        }
+      ],
+      "bindingCount": 1,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "N:45,112; enabled source binding94b48323 / functionfbf33c2e",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Native AFTER INSERT/UPDATE OF status, trigger_at marker when NEW pending; HTTP/scheduled flush after commit",
+        "remainingBoundary": "Marker and event persistence are atomic; D1-to-DO wake is separately replayable. The guarded ea309178 rehearsal verified a native future event leaves a generation gap, MFA repair arms/acknowledges it, a due update delivers once and idle drain stops the alarm, with complete cleanup. It is no longer an unexecuted rehearsal. Full source/catalog/provider/operations gates remain open. See notification-worker-wake.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "add_fanmark_favorite",
+      "identityArguments": "input_emoji_ids uuid[], input_display_fanmark text",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "c1390f691aed08442425db34ac96f5c0cb84b5f7934a62cb7ea58e30867fa83d",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1930; F FanmarkAcquisition.tsx:288; reviewed source hash c1390f69",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "POST /api/me/favorites binds Better Auth owner; shared discovery-mutations preserves duplicate spelling/time and count/event idempotency",
+        "remainingBoundary": "Full25 Business native17 and Workerc09/bce8993 remote add-event/count suppression verify exact rollback/retry and control-owner preservation. Duplicate add returns false without another event/count change. Source hash and wider index/caller/ACL boundaries remain in favorites-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "archive_old_notifications",
+      "identityArguments": "days_old integer",
+      "result": "integer",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "d207d6ccb0010a5dc1f4525b005e533894a696ea7ef32bd61c9741c1cdc9cb9f",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1934; M:66",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Source effective EXECUTE is service-role-only. D1 scheduled operation implements its default 90-day delivered/failed archive, preserving all 19 fields with bounded atomic batches and conflict retention. Full-schema tests verify rollback/retry and 2,500-row backlog resume.",
+        "remainingBoundary": "Source hashd207d6cc; internal service-role counterpart. Full-schema archive checks and isolated actual Cron accepted2 archived/2 retained, payload/FK/cleanup and independent inventory. Main daily selector, retention and external/custom-cutoff callers remain operational/data gates. No public RPC/history-body reader. See notifications-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "check_fanmark_availability",
+      "identityArguments": "input_emoji_ids uuid[]",
+      "result": "json",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "80d1bfeaf110d139f7b8911234f5e97eddf9733e6f0de21b6d5ac72ef9f5df63",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1938; F useFanmarkSearch.tsx:281,547",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "Public advisory availability; preserve earliest current blocker with NULL last",
+        "remainingBoundary": "Fresh catalog body review matches `availability-contract.md`; the complete-data latest-license contract is distinct. Public response omits owner/license/config fields. Integrated imported-row parity remains open."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "check_fanmark_availability_secure",
+      "identityArguments": "fanmark_uuid uuid",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "5d1e6f3fe52dff2549a00115bf4c88c8d613d9275e6cd1ce29fd6c5279b5038e",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1942; M:234",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Registration's server-side active perpetual/finite and grace blocker check",
+        "remainingBoundary": "Fresh body review matches the advisory blocker predicate. Registration rechecks inside its transaction; advisory availability never grants acquisition. See `fanmark-search-api.md` and `fanmark-registration-api.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "check_username_availability_secure",
+      "identityArguments": "username_to_check text, current_user_id uuid",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "96a9b815f6c6d6ef6adcd920af20924867b6980b91b5022e5db9e2adc9b88bdd",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1946; F useProfile.tsx, src/lib/profile-utils.ts; source hash96a9b815",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "Profile username availability uses lower(candidate) and excludes only the Better Auth session owner",
+        "remainingBoundary": "Existing full25 Business/4 Auth profile10 cases and normal CI verify own/foreign/case/empty candidates and authentication/forged-owner/query/origin guards. Target omits the source's arbitrary owner exclusion and anonymous lookup; usernames remain read-only in profile PATCH. Historical/import/legacy consumers retain their separate boundary. See source-access-helpers-review.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "classify_fanmark_tier",
+      "identityArguments": "input_emoji_ids uuid[]",
+      "result": "TABLE(tier_level integer, display_name text, initial_license_days integer, monthly_price_usd numeric)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "94f92531b85d33460cd6c4a708ffa240805181b46b0ee6576087a6fd5051104f",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1950; F E:register-fanmark; source hash94f92531",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Shared fanmark-tier.ts selects source tier for canonical ordered IDs in availability and registration",
+        "remainingBoundary": "Native availability10 and registration26 include current25 Business/4 Auth/8 Master real-session S/A/C and repeated Tier A; old focused21 retained. Raw invalid-array/historical/legacy contracts remain separate. See source-emoji-helpers-review.md and fanmark-registration-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "count_fanmark_emoji_units",
+      "identityArguments": "input text",
+      "result": "integer",
+      "language": "plpgsql",
+      "securityDefiner": false,
+      "volatility": "i",
+      "definitionSha256": "931a36364bce6ec8c8bdd8870fe104360e8513b42024d57548a1e5d9eccde55c",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1959; M:343; source hash931a3636",
+        "actor": "Ordinary source helper; no current target caller",
+        "boundaryAndEvidence": "Source removes FE0F/skin tones and subtracts ZWJ count; current application limits/classifies canonical Master ID arrays",
+        "remainingBoundary": "No captured executable frontend/Edge or other source-function caller was located. Do not replace ID count with this non-grapheme text algorithm or classify the ordinary function inactive; legacy consumers remain unknown. See source-emoji-helpers-review.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "create_notification_event",
+      "identityArguments": "event_type_param text, payload_param jsonb, source_param text, dedupe_key_param text, trigger_at_param timestamp with time zone",
+      "result": "uuid",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "dd6c274f7ceafc8fa6ccf59ba386356eccc01a294ac1d8500cfdb3c408a101f2",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1960; F AdminNotificationManager.tsx:58; F E:check-expired-licenses",
+        "actor": "Worker internal/admin",
+        "boundaryAndEvidence": "Typed owner/MFA business commands, Business0015/lifecycle/Stripe application and admin manual-event API; no generic payload RPC",
+        "remainingBoundary": "Source hashdd6c274f reuses pending/processing dedupe or inserts pending UUID. Target uses operation-specific receipts/transactions and native0024 marker plus HTTP/scheduled post-commit DO flush. Existing per-feature and staged manual/alarm/idle/future-repair proofs apply. Actual providers and arbitrary consumers remain separate; see notifications-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "deactivate_notification_worker_if_idle",
+      "identityArguments": "",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "d973f8937fbbf22d095eae23f18255ce71d2cf6209bb967cce426666a0933701",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1970; N:45; reviewed source hashd973f893",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Short serialized DO reconciliation and native generation CAS; empty queue deletes alarm",
+        "remainingBoundary": "Local20/20 includes enqueue/sleep race, delayed pending, stale processing, outage retention and conditional daily replay. ea309178's actual alarm drain/NULL-after-drain and recovery/cleanup were accepted. Coordinator/0024 are unchanged at bce8993; later processor behavior and final recurring/operational integration remain separate requirements. See notification-worker-wake.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "generate_safe_display_name",
+      "identityArguments": "user_email text, user_id uuid",
+      "result": "text",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "1f7d9d417a3b37d4b8260e093d3ec8b37ac2b8d615fbe202c9d22374ca970852",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1971; M:425",
+        "actor": "Ordinary source helper; no new Worker rewrite",
+        "boundaryAndEvidence": "Email prefix or UUID fallback; separate from `handle_new_user`",
+        "remainingBoundary": "Exact source definition1f7d9d41 has no collision/localization logic and is not called by provisioning. Literal PostgreSQL four-case oracle records NULL/no-at/empty-prefix behavior. No executable frontend/Edge call found; external/direct RPC callers remain unknown, so ordinary function is not classified inactive. See `source-signup-provisioning.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "generate_transfer_code_string",
+      "identityArguments": "",
+      "result": "text",
+      "language": "plpgsql",
+      "securityDefiner": false,
+      "volatility": "v",
+      "definitionSha256": "7d853d8d388ea615d5c1ac39ed12894db58923614a972016c2243d878a7520f5",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1975; M:446; F E:generate-transfer-code",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "fanmark-transfer-d1-api.ts issues owner-scoped AuthCodes from60 random bits",
+        "remainingBoundary": "Current issue/apply/cancel/reject/approve routes are implemented; native37 and code c6a4f9d/Worker71d remote5 cover the transfer transaction, capacity/audit faults, lock and scoped cleanup. This is the target command scope, not a generic legacy helper RPC. See fanmark-transfer-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_fanmark_by_emoji",
+      "identityArguments": "input_emoji_ids uuid[]",
+      "result": "TABLE(id uuid, user_input_fanmark text, display_fanmark text, emoji_ids uuid[], fanmark_name text, access_type text, target_url text, text_content text, status text, is_password_protected boolean, short_id text)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "c98679a9e059a20f5824e008fcd4012e6f5af10965f3d087c545040c33bbcdef",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1976; F FanmarkAccess.tsx; source hashc98679a9",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "Public access by emoji path; explicit frontend read selector uses the reviewed public projection",
+        "remainingBoundary": "Staging anonymous reads and guarded locked-content verification are selected. Accepted0e86688/CI37130360266/Workerbddc0dad corrects source's finite-only eligibility to include indefinite Tier C across public read/verify/proof/content; native public15/registration26/protected13 pass. Remote public2/owner settings/locked redaction/verify/protected/replay/grace/expiry and cleanup/independent readback passed. Dedicated public15 now joins ordinary CI; its earlier proof was local. Production/default routing and historical analytics remain on Supabase. See public-access-contract.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_fanmark_by_short_id",
+      "identityArguments": "shortid_param text",
+      "result": "TABLE(id uuid, short_id text, user_input_fanmark text, display_fanmark text, emoji_ids uuid[], fanmark_name text, access_type text, target_url text, text_content text, status text, is_password_protected boolean, license_id uuid, license_status text, license_end timestamp with time zone, grace_expires_at timestamp with time zone, is_returned boolean)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "d461f24f2513724556c080bb1ffc3035c265ee7a9ffbe47e315648514a43fabd",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:1992; F FanmarkAccessByShortId.tsx, useFanmarkByShortId.ts",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "Public short-id access and QR lookup use the same opt-in projection; OGP remains separate",
+        "remainingBoundary": "Anonymous projection stays locked on protected records; the separate selector-bound proof API opens content after verification.0e86688/Workerbddc0dad real NULL-end short/emoji correspondence, protected emoji proof and cross-selector refusal passed. Owner/history use the separate details endpoint; actual source rows/default routing remain deferred."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_fanmark_complete_data",
+      "identityArguments": "fanmark_id_param uuid, emoji_ids_param uuid[]",
+      "result": "TABLE(id uuid, user_input_fanmark text, display_fanmark text, emoji_ids uuid[], normalized_emoji text, short_id text, access_type text, status text, created_at timestamp with time zone, updated_at timestamp with time zone, fanmark_name text, target_url text, text_content text, is_password_protected boolean, current_owner_id uuid, license_end timestamp with time zone, has_active_license boolean, license_id uuid, current_license_status text, current_grace_expires_at timestamp with time zone, is_blocked_for_registration boolean, next_available_at timestamp with time zone, lottery_entry_count bigint, has_user_lottery_entry boolean, user_lottery_entry_id uuid)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "bceaa1e6b4c2378d08d057a27193b0d4f6e5a523bf7a855af2ba0ae2f38de4e0",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2013; F useFanmarkSearch.tsx:327,560; F preview/settings pages",
+        "actor": "Worker public/user",
+        "boundaryAndEvidence": "Search uses a narrow DTO and Better Auth session-derived pending lottery state; settings/profile use separate owner APIs",
+        "remainingBoundary": "Fresh body review and full-schema native D1 search13/13 cover sessions, anonymous state, caller-ID refusal, lifecycle precision, config omission and revoked/suspended sessions. Source latest NULL-first ordering is retained; NULL-end history ties and imported-row parity remain open. See `fanmark-search-api.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_fanmark_details_by_short_id",
+      "identityArguments": "shortid_param text",
+      "result": "TABLE(fanmark_id uuid, user_input_fanmark text, display_fanmark text, emoji_ids uuid[], normalized_emoji text, short_id text, fanmark_created_at timestamp with time zone, current_license_id uuid, current_owner_username text, current_owner_display_name text, current_license_start timestamp with time zone, current_license_end timestamp with time zone, current_license_status text, current_grace_expires_at timestamp with time zone, current_is_returned boolean, is_currently_active boolean, first_acquired_date timestamp with time zone, first_owner_username text, first_owner_display_name text, license_history jsonb, is_favorited boolean, lottery_entry_count bigint, has_user_lottery_entry boolean, user_lottery_entry_id uuid, current_owner_id uuid)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "071eb66e0647166682a179e5956b08713f39ef321cb34f240d9713020c58a5ba",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2043; F useFanmarkDetails.tsx:66",
+        "actor": "Worker public/user",
+        "boundaryAndEvidence": "Staging `POST /api/fanmarks/details` returns anonymous-redacted or Better Auth session-scoped whois/history and favorite state",
+        "remainingBoundary": "Local owner/other-user tests and a rendered staging `/f/:shortId` canary pass. The synthetic owner sees one history row; after session-cookie removal the anonymous page shows no history/owner name. Imported-row parity and production route remain open."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_fanmark_ownership_status",
+      "identityArguments": "fanmark_license_id uuid",
+      "result": "TABLE(is_taken boolean, has_active_license boolean)",
+      "language": "sql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "bacbc1b1f79f07a34c6594886fc3ce179536d759836d80f5417acd917929c788",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2073; M:807",
+        "actor": "Worker user/internal",
+        "boundaryAndEvidence": "Legacy license-ID ownership helper",
+        "remainingBoundary": "Fresh definition excludes NULL-end licenses; no executable frontend/Edge call or name mention in other captured function bodies. External consumers remain unverified. Do not use as Worker authorization; see `public-profile-runtime-review.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_favorite_fanmarks",
+      "identityArguments": "",
+      "result": "TABLE(favorite_id uuid, discovery_id uuid, favorited_at timestamp with time zone, fanmark_id uuid, display_fanmark text, normalized_emoji_ids uuid[], emoji_ids uuid[], sequence_key uuid, availability_status text, search_count bigint, favorite_count bigint, short_id text, fanmark_name text, access_type text, target_url text, text_content text, current_owner_username text, current_owner_display_name text, current_license_start timestamp with time zone, current_license_end timestamp with time zone, current_license_status text, is_password_protected boolean)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "bace00baac2634b29e8d5fecfb1bc9aa423cd5535213b13b3c28d7a6d39864ac",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2080; F useFavoriteFanmarks.ts:33",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "Session owner's favorites; target redacts protected name/target/text for owner and other users alike",
+        "remainingBoundary": "Source hashbace00ba selects raw protected fields; target corrects that privacy behavior. Native11/client6 and guarded47b69c5/Workerb5a07a34 accepted both owners for redirect/text, retained ordinary content/configs and scoped cleanup. LIST_SQL/mapper/listFavorites are unchanged through ef25b50; mutation acceptance is separate. Source/default is unchanged. See favorites-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_public_emoji_profile",
+      "identityArguments": "profile_license_id uuid",
+      "result": "TABLE(license_id uuid, display_name text, bio text, social_links jsonb, theme_settings jsonb, created_at timestamp with time zone, updated_at timestamp with time zone)",
+      "language": "sql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "f0486111074007df437fe0cae78b8c88e4f471e03d2e4a22b1ca153e86c884c6",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2107; F useEmojiProfile.tsx; F E:fanmark-ogp",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "Published-profile, short-ID, emoji-path, and QR reads use the reviewed Worker projection when `VITE_PUBLIC_ACCESS_READ_BACKEND=worker`; OGP uses the same mapper",
+        "remainingBoundary": "Local split-D1 tests and synthetic staging reads (200/no-store) pass. No real profiles are staged, so media/source-row parity and production/default routing remain open. See `public-access-contract.md` and `fanmark-ogp-api.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_public_fanmark_profile",
+      "identityArguments": "profile_fanmark_id uuid",
+      "result": "TABLE(id uuid, fanmark_id uuid, display_name text, bio text, social_links jsonb, theme_settings jsonb, created_at timestamp with time zone, updated_at timestamp with time zone)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "3145b8ad0faae73233fdd1d9179a4adb5ad2349a983954674c615e9047604972",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2119; M:903",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "Legacy fanmark-ID profile RPC; actual UI/OGP uses license-ID `get_public_emoji_profile`",
+        "remainingBoundary": "Fresh definition references missing `fanmark_profiles.fanmark_id`. No executable frontend/Edge callsite; external consumers remain unverified. Do not invent a compatibility column/route; see `public-profile-runtime-review.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_unread_notification_count",
+      "identityArguments": "user_id_param uuid",
+      "result": "integer",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "bcf1227815b3e79aa8ff7a0682ef64fa15a7be069cb8c82c8eaefcd9cf05cd8e",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2132; F useUnreadNotifications.ts:18",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "Session-bound GET /api/me/notifications/unread-count; delivered/unread/unexpired predicate retained",
+        "remainingBoundary": "Source hashbcf12278 permits a supplied owner/anonymous0; target rejects forged owner queries and anonymous access. Existing full25 Business/real-session native53 covers both owners and eligibility; see notifications-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_waitlist_email_by_id",
+      "identityArguments": "waitlist_id uuid",
+      "result": "text",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "c8cd1a13c022a311a3db3c0e670f22fdafd9d68c31deb74b15c404ab158cc983",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2136; M:957; F SecureWaitlistAdmin.tsx:107",
+        "actor": "Worker admin",
+        "boundaryAndEvidence": "MFA/admin-plan GET /api/admin/waitlist/:id/email; committed EMAIL_ACCESS audit before reveal",
+        "remainingBoundary": "Source hashc8cd1a13 checks is_super_admin and audits the exact resource. Target current-session MFA/explicit admin plan, durable denial and audit-failure closure are covered by native9/staged canaries. Retention and real-user mapping remain; see waitlist-admin-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "get_waitlist_secure",
+      "identityArguments": "p_limit integer, p_offset integer",
+      "result": "TABLE(id uuid, email_hash text, referral_source text, status text, created_at timestamp with time zone)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "4a6c4e4e26a5c684bee702a6962c956ba52326d4182cefb91e69f03976f5b555",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2140; M:1019; F SecureWaitlistAdmin.tsx:76",
+        "actor": "Worker admin",
+        "boundaryAndEvidence": "MFA/admin-plan GET /api/admin/waitlist; bounded100/offset0 hashed-email projection with durable audit",
+        "remainingBoundary": "Source hash4a6c4e4e uses is_super_admin and p_limit/p_offset; target refuses its NULL-plan fallthrough and narrows pagination. Native9/staged canaries prove current route, denials and minimization. Source INSERT then RAISE does not prove durable denial; see waitlist-admin-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "handle_new_user",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "09d55e8ddc314623b0fb0ac876d0e5c57ff8f444d8d39493a3c27a80690007a9",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 1,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "M:1079; enabled auth.users binding in all-schema catalog",
+        "actor": "Worker internal / retain Auth provisioning behavior",
+        "boundaryAndEvidence": "Credential signup coordinator uses server-derived private username/display defaults, Free plan, captured language, reserved invitation and setup=false; selected OAuth candidate uses private provider-subject markers and setup=true",
+        "remainingBoundary": "Literal source expressions and full25 Business/Auth core/0007/0008 signup15/15 cover credential defaults, retry/capacity and forged metadata. Native OAuth54/54 adds core/0009 and covers all four new-user callbacks/initial setup, cross-D1 commit/ACK recovery, conflicts, suspension and state/schema guards. Source metadata access is intentionally narrower in the target. Code47b69c5/Auth0009/backend selection are deployed; five seeded session-guard cases and the real browser editor/favorites canary pass with owned0 after cleanup. Remote SDK new-user/new-OAuth-credential creation, real provider new-user/linking/initial setup and external callers remain open; do not clear the whole Auth trigger. See `source-signup-provisioning.md` and `oauth-signup-provisioning.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "has_active_transfer",
+      "identityArguments": "license_uuid uuid",
+      "result": "boolean",
+      "language": "sql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "d84e8b52822ccb79a767d1f11a487d99f8a2166584a6166a455c8f98833e6b5a",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2150; M:1131; F E:return-fanmark, E:extend-fanmark-license",
+        "actor": "Worker user/internal",
+        "boundaryAndEvidence": "Transfer-state and time-window predicates in named owner commands",
+        "remainingBoundary": "Transfer approval rechecks ownership, capacity, current code/request and lock in its transaction; native37/remote5 are accepted. Return/extension keep their own guards and feature evidence; arbitrary direct helper callers and imported state remain separate. See fanmark-transfer-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "has_role",
+      "identityArguments": "_user_id uuid, _role app_role",
+      "result": "boolean",
+      "language": "sql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "5506e560b7779ac4ef2d9a656aafe3e24b4e036121464e60dec1008af8f05acb",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2151; reviewed source hash5506e560",
+        "actor": "Ordinary source role helper; no generic target role query",
+        "boundaryAndEvidence": "Source checks supplied UUID/role in user_roles; no captured executable frontend/Edge or policy/function reference was located",
+        "remainingBoundary": "Target admin authority uses server-managed Auth D1 adminRole, distinct from the source's user_roles and admin-plan helper. No role is inferred from client/profile/billing fields. Ordinary function is not classified inactive; legacy consumers and actual admin-role identity mapping/custody remain for cutover/data/operations. See source-access-helpers-review.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "is_admin",
+      "identityArguments": "",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "916d2d00836f723c79756271c71aa7c9ab294b42b011ed71a82c1a2e0b97edaa",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2158; F AdminApp.tsx, MaintenanceGate.tsx; source hash916d2d00",
+        "actor": "Worker admin/internal",
+        "boundaryAndEvidence": "Source checks auth.uid's admin plan; Cloudflare routes read server-owned adminRole and exact current-session/factor assurance",
+        "remainingBoundary": "Actual auth-d1 router tests and staged sign-in/TOTP/admin rehearsals prove the central gate. General target administrator authority intentionally differs from plan_type; an imported admin plan alone grants no role. Privileged routes use the authorizer, and production role bootstrap/mapping/custody remain explicit. See source-access-helpers-review.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "is_fanmark_licensed",
+      "identityArguments": "fanmark_license_id uuid",
+      "result": "boolean",
+      "language": "sql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "2d7ff6ab60fbd419afd265359c3883d6b8a5b3e7c1a45efd00e55e8e39001097",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2159; M:1161",
+        "actor": "Worker internal/user",
+        "boundaryAndEvidence": "Legacy license-ID state helper",
+        "remainingBoundary": "Fresh definition excludes perpetual NULL-end licenses. No executable frontend/Edge call or other captured function body mention; external consumers remain open. Worker authorization uses explicit owner/active/finite-or-perpetual predicates. See `public-profile-runtime-review.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "is_fanmark_password_protected",
+      "identityArguments": "fanmark_uuid uuid",
+      "result": "boolean",
+      "language": "sql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "1afb259e7297386d728cb0bc412944ab700af2fc8ed3df4391cd67ca89a9a397",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2163; M:1177",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "Selected public projection exposes only a protection flag; verified-access.mjs handles proof-scoped reads",
+        "remainingBoundary": "A logged-in user does not bypass the fanmark password. Staging synthetic four-digit verification/protected read and a390px rendered locked/wrong/correct path passed with scoped cleanup. Imported credential formats, CPU/plan and production-origin acceptance remain separate. See verified-access-design.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "is_super_admin",
+      "identityArguments": "",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "71b926d07b7f6279cfea4919dc05c7ed8b87dec8bb6d381835afc470a3ac30ec",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2167; F SecureWaitlistAdmin.tsx; source hash71b926d0",
+        "actor": "Worker admin",
+        "boundaryAndEvidence": "Central adminRole/exact-session MFA plus explicit Business admin plan protects waitlist list/reveal",
+        "remainingBoundary": "Source non-STRICT admin-plan SELECT can yield NULL and skip its IF NOT refusal; five literal PostgreSQL cases reproduce that decision branch without source rows/functions. Target refuses free/missing settings rows, covered by existing native9 and qualified/denied staging evidence. It does not copy source NULL fallthrough or any-session/non-empty-AAL checks. See source-access-helpers-review.md and waitlist-admin-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "link_fanmark_discovery",
+      "identityArguments": "new_fanmark_id uuid, normalized_ids uuid[]",
+      "result": "void",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "2ca151a0ef746603973aaa96bce9a8a1e4b4019a5dcad3edbc1a360a330fb9b5",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2168; M:1190; 2026-10-02 schema-only definition readback",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Source matches ordered normalized UUID sequences, updates discovery fanmark_id/owned_by_user, then links all favorites of that discovery",
+        "remainingBoundary": "Additive Business migration 0022 links discoveries/all owners’ favorites atomically for every new fanmark writer. Ordered UUID case/NULL/JSON whitespace semantics are preserved; failures/suppressed updates/ambiguous identity abort registration. Local registration suite 18/18. Business 0022 exact trigger/ledger and guarded deployed registration/favorites API/cleanup verification passed on Worker 1eb5d9ac."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "link_fanmark_discovery_trigger",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "60913abdc1a56788d3713eea9c06eaf643f0db3ecc04e24d3710d78c22651197",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 1,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "M:1220; 2026-10-02 schema-only definition readback",
+        "actor": "Business D1 trigger or atomic registration transaction",
+        "boundaryAndEvidence": "Source fanmarks INSERT invokes link_fanmark_discovery(NEW.id, NEW.normalized_emoji_ids)",
+        "remainingBoundary": "Implemented by native AFTER INSERT trigger in Business migration 0022. Local API/native-writer, ordering, null/case, rollback/retry and duplicate-identity coverage passes; remote migration/exact trigger and guarded synthetic registration/favorites API readback/cleanup passed."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "list_recent_fanmarks",
+      "identityArguments": "p_limit integer",
+      "result": "TABLE(license_id uuid, fanmark_id uuid, fanmark_short_id text, display_emoji text, license_created_at timestamp with time zone)",
+      "language": "sql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "77771e1a44ff072975e242de1cb643f9258f00b11d20bf454179725d5d2c52e5",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2172; F RecentFanmarksScroll.tsx and useFanmarkSearch.tsx",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "Recent list for landing page and search, capped by limit; the shared frontend loader selects the Worker API on workers.dev staging and retains Supabase as the default fallback",
+        "remainingBoundary": "Local adapter contracts pass and the live staging GET returned HTTP 200 (see `live-observations.md`). No real user rows are staged; source-row parity and production/default routing remain for the final data/cutover phases."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "log_emoji_master_changes",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "c780c04c03b2c8696f2d82e0e45efe275fe44169219a6034d93c35dbf94b4663",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 1,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "M:1251; 2026-10-02 schema-only definition readback",
+        "actor": "Master D1 native triggers and transaction-scoped administrator context",
+        "boundaryAndEvidence": "Additive Master migration 0008 records the source INSERT/UPDATE/DELETE action, actor, emoji UUID, emoji/short_name metadata and operation time. Authenticated draft writes and per-row audits share a Master D1 batch; trusted CLI writes retain NULL actors. Missing/corrupted audits abort the mutation.",
+        "remainingBoundary": "Local D1 fault/bulk/concurrent-actor tests and staging exact trigger/TOTP/100-row import/102-audit/public-catalog/cleanup verification pass. Administrator user-detail now merges Business/Auth/Master latest-20 audits; local D1 tests pass 14/14. Extended staging latest-20 exact history API readback/cleanup passed on Worker 1eb5d9ac; authenticated desktop rendered history acceptance passed: 20 rows matched their exact API order/metadata, including 18 Master audits, with screenshot and scoped cleanup. Published release activation audits are separate. See emoji-master-change-audit.md; broad functions/RLS/triggers gate remains."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "log_lottery_entry_changes",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "487ca629d71ec1cad7bfab41fc158394c85e8f6e74b337d0a1733e5faf98f7f0",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 1,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "M:1309; reviewed definition 487ca629 / enabled binding 122ce5fd",
+        "actor": "Worker internal / each writer transaction",
+        "boundaryAndEvidence": "Source INSERT records applicant/entry/fanmark/license/probability; status UPDATE records old/new/reason",
+        "remainingBoundary": "Apply/reapply/cancel now verifies a server-generated audit UUID and exact owner/resource/action/time/metadata within the same D1 batch. Native full25 Business/4 Auth + actual sessions/router42/42 includes 27 suppress/corrupt/delete faults, retries, races and revoked cookies. Prior code reproduced nine successful responses with broken audits. Code027a949/CI37088432269 and Worker22a49009 accept three actual staging audit-fault/rollback/retry cases, exact readback and scoped cleanup/FK0/owned0. Other writer paths and external callers remain open; see fanmark-lottery-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "log_profile_cache_access",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "c6f638475a8ec48dd0751e69bbab35566abc99e0afdb466aabfe474df3cbcd51",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "reviewed_unbound_trigger_definition",
+      "counterpart": {
+        "location": "M:1358",
+        "actor": "Worker internal / derived artifact",
+        "boundaryAndEvidence": "Profile cache/audit helper",
+        "remainingBoundary": "2026-10-03 all-schema source binding readback finds no registered trigger/event binding for the exact reviewed definition. Do not introduce a logging trigger; see `source-runtime-review.md`. Source definition remains recorded."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "log_waitlist_access",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "9db34d104d15c6adee8d02b5db3f83435d1c6183e1b7182b595fcda791be5672",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "reviewed_unbound_trigger_definition",
+      "counterpart": {
+        "location": "M:1388",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Waitlist audit helper",
+        "remainingBoundary": "2026-10-03 all-schema readback confirms the exact trigger function is unbound. Do not add its trigger; active waitlist RPC audit effects are separately reproduced by the Worker. See `source-runtime-review.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "mark_all_notifications_read",
+      "identityArguments": "user_id_param uuid, read_via_param text",
+      "result": "integer",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "6d0a04c52d4af2d9e82ce44599903062d83b91c787abb311f4a4289eea131dfd",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2182; F Notifications.tsx:111",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "Session-owned POST /api/me/notifications/read-all; delivered/unread/unexpired predicate, read_via app",
+        "remainingBoundary": "Source hash6d0a04c5 and existing full-schema native53 retain pending/expired/already-read/other-owner rows. Target omits arbitrary owner/read_via parameters and takes no body; see notifications-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "mark_notification_read",
+      "identityArguments": "notification_id_param uuid, read_via_param text",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "a8e7c9939169c2ce5be06408186395f12e451cd22bf291bf58a1a0bc04e09ec8",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2186; F AppHeader.tsx:139, Notifications.tsx:79",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "Session-owned PATCH /api/me/notifications/:id/read; unread condition retained, readVia app/menu",
+        "remainingBoundary": "Source hasha8e7c993 and target both constrain ID/session owner/read_at NULL without a delivered/expiry filter. Existing full-schema native confirms own true, other false and timestamps. Free-form source read_via is intentionally narrowed; see notifications-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "normalize_emoji_ids",
+      "identityArguments": "input_ids uuid[]",
+      "result": "uuid[]",
+      "language": "plpgsql",
+      "securityDefiner": false,
+      "volatility": "v",
+      "definitionSha256": "721c1dacd251704445209a72ea06c2e9e00812d3308182aeb7a23317b6fa48fb",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2190; M:1483; source hash721c1dac",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Active-Master mapping retains ordered repetitions and removes only skin-tone codepoints",
+        "remainingBoundary": "Registration, favorites/search recording and public-access identity paths correspond; advisory availability display normalization is a distinct operation. Missing/ambiguous mapping is refused. Historical catalog/legacy consumers and whole ACL/index review remain separate. See source-emoji-helpers-review.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "notify_security_breach",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "0565124948f692b68362bfd980b8bee1222210cea800bcf721f9398d459fda81",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 1,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "M:1549; 2026-10-02 schema-only definition readback",
+        "actor": "Worker structured security diagnostics",
+        "boundaryAndEvidence": "Source emits a database NOTICE for UNAUTHORIZED_WAITLIST_ACCESS or UNAUTHORIZED_EMAIL_ACCESS; its definition makes no external delivery call.",
+        "remainingBoundary": "Target retains denied list/email actions in D1; email denial now preserves resource ID/CRITICAL_RISK/email_address. A bounded post-commit Worker warning carries only action/audit ID/time; raw actor/email/IP/credentials stay out. Local 9/9 includes exact correlation and audit-failure closed behavior. Worker 4199fd09 staging authorized/denied canary, exact live operator-log/D1 audit correlation and scoped cleanup passed; external alert delivery is not an existing source integration."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "prevent_user_settings_insert_escalation",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "0fae1473f8fa3b1caffa6f2dfd26a19a3215373b0bd17790c56c6128632d4de3",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 1,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "S:46",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "User-settings write guard / trigger replacement",
+        "remainingBoundary": "Source service-role bypass and non-admin plan invariants were reviewed against own-profile exact allowlist/no INSERT and server-Free signup provisioning; local profile/signup D1 tests pass 10/10 each. See source-user-settings-guards.md. Imported roles and broad catalog gate remain."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "prevent_user_settings_privilege_escalation",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "5d75756c214881d9ee330bc04d9795e6abae18d8aa3004ffc1d6ddacb9faa61d",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 1,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "S:15",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "User-settings write guard / trigger replacement",
+        "remainingBoundary": "Source service-role bypass and non-admin plan invariants were reviewed against own-profile exact allowlist/no INSERT and server-Free signup provisioning; local profile/signup D1 tests pass 10/10 each. See source-user-settings-guards.md. Imported roles and broad catalog gate remain."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "record_fanmark_search",
+      "identityArguments": "input_emoji_ids uuid[]",
+      "result": "uuid",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "57b6480d94b5164498c0bd2e0c53d27044c20f12000684ecb0e89acd30d1880e",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2191; F useFanmarkSearch.tsx:301; reviewed source hash 57b6480d",
+        "actor": "Worker public (staging); Supabase default",
+        "boundaryAndEvidence": "POST /api/fanmarks/search/record applies active-Master normalization and atomic discovery/event write; D1 event deliberately uses user_id NULL and returns a narrow DTO instead of source discovery UUID",
+        "remainingBoundary": "Full25 Business native17 and Workerc09/bce8993 remote event suppression verify exact rollback/sequence and retry with one anonymous receipt. 120/min hashed-IP limiter remains. Historical user-attributed events and broader callers/index semantics remain for their separate reviews. See fanmark-search-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "remove_fanmark_favorite",
+      "identityArguments": "input_emoji_ids uuid[]",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "9b401a970606f6c465a44386179e39de7bf219f112f57518cc15249bbf5e6167",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2195; F FanmarkAcquisition.tsx:279; reviewed source hash 9b401a97",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "DELETE /api/me/favorites binds Better Auth owner, preserves count zero-floor and false no-op",
+        "remainingBoundary": "Full25 Business native17 and Workerc09/bce8993 remote remove-event suppression verify exact rollback/retry, control-owner preservation and repeated removal=false without extra event/count change. Wider index/caller/ACL review remains. See favorites-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "render_notification_template",
+      "identityArguments": "template_id_param uuid, template_version_param integer, payload_param jsonb, language_param text",
+      "result": "jsonb",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "730aaec79e000cb375ad6d98005a2c908973efce3a6fd605db7f13c2830c987e",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2199; M:1628; F E:process-notification-events",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "Source STABLE/definer helper (730aaec7), target internal template renderer",
+        "remainingBoundary": "Source literal-only PostgreSQL oracle7 cases exposed/fixed JSONB text/key order, decimal formatting and dollar replacement; target uses source channel-unfiltered lookup. Four locales/override/fallback covered in native notifications53/53. Ambiguous multi-channel rows, original import codecs, callers and remote acceptance remain open; see notifications-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "search_fanmarks_with_lottery",
+      "identityArguments": "input_emoji_ids uuid[]",
+      "result": "json",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "5f7ca109288d480b48905257b99a21d1e8c77083f7f270454250adc8e8dc9f89",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2208; M:1685",
+        "actor": "Worker public/user",
+        "boundaryAndEvidence": "Combined advisory earliest-blocker availability and caller-derived pending lottery state",
+        "remainingBoundary": "Fresh definition reviewed; only its generated type declaration was found in current frontend/Edge files. No literal invocation was found, but external/dynamic callers remain unknown; do not mark this ordinary function inactive. Actual search uses separate availability/details APIs. See `fanmark-search-api.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "seq_key",
+      "identityArguments": "normalized_ids uuid[]",
+      "result": "uuid",
+      "language": "plpgsql",
+      "securityDefiner": false,
+      "volatility": "i",
+      "definitionSha256": "fbe91b15cd36716684ec05918433dc0c0606962b5c5396bfbba4c994415dba09",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2212; M:1830; reviewed definition fbe91b15",
+        "actor": "Internal sequence equality with explicit source/import review",
+        "boundaryAndEvidence": "Source MD5/array_to_string identity; canonical JSON for admitted current writer/import domain",
+        "remainingBoundary": "Seven-case PostgreSQL oracle records NULL/empty equivalences. Current three writers/import rules are reviewed; native registration26 and value/row/converter57 pass. Historical empty/NULL/shape/conflict/MD5 consumers are final data-stage conditions; generic converter gate remains. See source-sequence-key-review.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "sync_public_profile_cache",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "04ae72969504489c3c2f3b71d82fb597e11bfc820e1fbc272fc0c4bbf679b18c",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "reviewed_unbound_trigger_definition",
+      "counterpart": {
+        "location": "M:1855",
+        "actor": "Derived artifact / Worker internal",
+        "boundaryAndEvidence": "Public profile cache maintenance",
+        "remainingBoundary": "2026-10-03 all-schema source binding readback confirms this exact trigger function is unbound. Do not introduce a cache-maintenance trigger. Public profile RPC/read projection needs its separate runtime review; see `source-runtime-review.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "toggle_fanmark_favorite",
+      "identityArguments": "fanmark_uuid uuid",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "cc0841079ff9240e299c40c2bc8b459a1ca7799c5b298f907696a108fc66b28f",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2213; M:1885",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "Legacy ordinary RPC; current UI uses explicit session-owned add/remove APIs",
+        "remainingBoundary": "Source hashcc084107 inserts only fanmark_id/user_id despite normalized_emoji_ids NOT NULL/no default. Only generated type declaration occurs in current frontend/Edge source; no generic target toggle route. External/dynamic consumers are unknown, not classified inactive; see source-runtime-review.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "update_updated_at_column",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": false,
+      "volatility": "v",
+      "definitionSha256": "6f82d0245c64ddc1a012c35b5c99905011b4d8c301389098f47771ad116ccbc5",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": false
+        },
+        {
+          "role": "authenticated",
+          "execute": false
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 29,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "M:1922; reviewed source hash6f82d024 /29 registered bindings",
+        "actor": "Trusted Worker clocks, explicit SQL-command clocks and versioned Master metadata",
+        "boundaryAndEvidence": "Current-application correspondence completed across literal/dynamic/upsert writes and final coupon/invitation SQL triggers",
+        "remainingBoundary": "No missing business clock was found. Import history, no-op Master edits and target-only claims retain documented differences; arbitrary console writes do not inherit a PostgreSQL BEFORE trigger. Final importer, legacy consumer and operational gates stay separate. See source-trigger-counterparts.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "upsert_fanmark_discovery",
+      "identityArguments": "input_emoji_ids uuid[], increment_search boolean",
+      "result": "uuid",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "c836771937eb89d7e276e2c60cd64eab354ea5544e107e4b618aeedf0ad0dfa0",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2217; M:1934; reviewed source hash c8367719",
+        "actor": "Worker internal",
+        "boundaryAndEvidence": "discovery-mutations.ts is shared by the selected search/favorite routes; no generic public upsert RPC is added",
+        "remainingBoundary": "Fenced row snapshots and final SQL assertions preserve raw spelling/last-seen updates, stable first-seen/link/availability and exact counters. Native17 and Workerc09/bce8993 remote4 rollback/retry are accepted; int64 boundaries are local only. Three sequence-key index and arbitrary external-caller contracts remain open. See favorites-api.md and source-sequence-key-review.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "upsert_fanmark_password_config",
+      "identityArguments": "license_uuid uuid, new_password text, enable_password boolean",
+      "result": "uuid",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "71b289846a26148a239a93365d902c293685ad999d630bc62bb692303ee94e7d",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2221; F FanmarkSettings.tsx:443,452,462",
+        "actor": "Worker user",
+        "boundaryAndEvidence": "fanmark-settings-d1-api.ts owner password-setting mutation with bcrypt and native generation invalidation",
+        "remainingBoundary": "Implemented owner/settings contract replaces the legacy RPC; hash values are not accepted as frontend input or returned in the owner/public DTO. Reconciled immutable credential-transform artifacts govern imported hashes; actual source passwords stay in the deferred data phase. See fanmark-settings-api.md and verified-access-design.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "use_invitation_code",
+      "identityArguments": "code_to_use text",
+      "result": "TABLE(success boolean, special_perks jsonb, error_message text)",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "a3fa6a3dccb782459de3d73816bfa6df865956b2154d34eb63425cbd5f897aa9",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2229; F useAuthForm.tsx:165, useInvitationCode.tsx:56",
+        "actor": "Worker public/user",
+        "boundaryAndEvidence": "Signup coordinator reserves capacity and consumes it with profile/command completion",
+        "remainingBoundary": "Full25 Business/Auth core/0007/0008 native15 cases cover depleted invites, last-slot races, email failure/retry, duplicate privacy and lost-ACK/browser reload recovery. Schema/trigger deployment is verified; signup stays closed until Resend and mode configuration, so live email/provider signup is not accepted. See invitation-signup-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "validate_display_name",
+      "identityArguments": "",
+      "result": "trigger",
+      "language": "plpgsql",
+      "securityDefiner": false,
+      "volatility": "v",
+      "definitionSha256": "e2a4293a7111d2e8ebc90b5db51acd8b555096efee742707c6f820e9645a22a5",
+      "invocationKind": "trigger",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "reviewed_unbound_trigger_definition",
+      "counterpart": {
+        "location": "M:2054",
+        "actor": "Derived artifact / Worker internal",
+        "boundaryAndEvidence": "Display-name validation helper",
+        "remainingBoundary": "2026-10-03 all-schema readback confirms this exact trigger function is unbound. Do not add automatic display-name rewriting to the Worker. Its ordinary helper `generate_safe_display_name` retains separate RPC review; see `source-runtime-review.md`."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "validate_invitation_code",
+      "identityArguments": "code_to_check text",
+      "result": "TABLE(is_valid boolean, special_perks jsonb, remaining_uses integer)",
+      "language": "sql",
+      "securityDefiner": true,
+      "volatility": "s",
+      "definitionSha256": "67872c7ac9b1d984166495780191feef1ac7612286f94f142b2cd085494acb28",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2237; F useAuthForm.tsx:126, useInvitationCode.tsx:25",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "Pre-auth invitation validity DTO for the selected signup coordinator",
+        "remainingBoundary": "Implemented validation exposes the bounded signup contract rather than raw invitation/config rows. Native15 signup cases cover invalid/depleted invitation and capacity behavior; actual provider/email-backed signup remains gated. See invitation-signup-api.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    },
+    {
+      "name": "verify_fanmark_password",
+      "identityArguments": "fanmark_uuid uuid, provided_password text",
+      "result": "boolean",
+      "language": "plpgsql",
+      "securityDefiner": true,
+      "volatility": "v",
+      "definitionSha256": "5c209e4ffff5ed5319a87cb68f48de07e475dd394379334bd43fb133fb64e5fa",
+      "invocationKind": "ordinary_function",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "bindingCount": 0,
+      "sourceReviewDisposition": "runtime_review_required",
+      "counterpart": {
+        "location": "T:2245; F PasswordProtection.tsx:32",
+        "actor": "Worker public",
+        "boundaryAndEvidence": "verified-access.mjs verifies the anonymous fanmark-scoped password and issues a short-lived proof cookie",
+        "remainingBoundary": "D1-backed rate/proof state, generation/lifecycle invalidation and credential-transform provenance are implemented. Synthetic staging verification/protected read and the rendered390px locked/wrong/correct path are accepted. Actual source hash formats, recurring CPU fit and final production-origin integration remain open; see verified-access-design.md."
+      },
+      "counterpartSemanticApprovalInferred": false
+    }
+  ],
+  "publicAccessCorrectionAcceptance": {
+    "status": "verified-and-cleaned",
+    "codeHead": "0e866880f508d1d934df8e5199bf46ca3024eab0",
+    "ciRun": 37130360266,
+    "workerVersion": "bddc0dad-e996-4930-bf1d-97aacc6065b7",
+    "evidence": "tier-c-public-access-2026-10-04.json"
+  }
+}

@@ -6,6 +6,9 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Point staging verification builds at a known-empty directory so they do
+  // not implicitly load workstation-specific credentials from mode files.
+  envDir: process.env.FANMARK_VITE_ENV_DIR?.trim() || undefined,
   server: {
     host: "::",
     port: 8080,
@@ -44,19 +47,11 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/ppqgtbjykitqtiaisyji\.supabase\.co\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-cache",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24
-              }
-            }
-          }
-        ]
+        // API responses may contain account state. Only static build assets
+        // are cached; requests outside precache go directly to the network.
+        importScripts: ["clear-legacy-api-cache.js"],
+        navigateFallbackDenylist: [/^\/api(?:[/?]|$)/],
+        runtimeCaching: [],
       }
     })
   ].filter(Boolean),

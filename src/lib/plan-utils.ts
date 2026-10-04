@@ -1,4 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getOwnedFanmarksBackend, loadOwnedFanmarks } from './owned-fanmarks-api';
+import { mapActiveOwnedFanmarks } from './owned-fanmarks-plan-projection';
+import type { ActiveFanmark } from './owned-fanmarks-plan-projection';
+
+export type { ActiveFanmark } from './owned-fanmarks-plan-projection';
 
 export type PlanType = 'free' | 'creator' | 'max' | 'business' | 'enterprise' | 'admin';
 
@@ -16,17 +21,6 @@ export interface PlanPricing {
   max: number;
   business: number;
   enterprise: number;
-}
-
-export interface ActiveFanmark {
-  id: string;
-  user_input_fanmark: string;
-  emoji_ids: string[];
-  fanmark: string;
-  fanmark_name: string | null;
-  license_id: string;
-  license_end: string | null;
-  access_type: string | null;
 }
 
 export function getPlanLimit(planType: PlanType, planLimits: PlanLimits): number {
@@ -50,6 +44,10 @@ interface LicenseQueryResult {
 }
 
 export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark[]> {
+  if (getOwnedFanmarksBackend() === 'worker') {
+    return mapActiveOwnedFanmarks(await loadOwnedFanmarks());
+  }
+
   const nowIso = new Date().toISOString();
 
   // Fetch active licenses where:

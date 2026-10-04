@@ -1,0 +1,3824 @@
+#!/usr/bin/env node
+
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { createHash, randomBytes, randomUUID, webcrypto } from "node:crypto";
+import { existsSync, realpathSync } from "node:fs";
+import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
+
+import bcrypt from "bcryptjs";
+import { buildResetCanaryDeleteGuards, assertResetCanaryEmptyCounts, RESET_TABLES as resetTables } from "../../../scripts/migration/admin-data-reset-canary-guards.mjs";
+import { hasBusinessMigrationApplied } from "../../../scripts/migration/business-migration-ledger.mjs";
+import { businessTablesWithoutStagingBaselines } from "../../../scripts/migration/staging-notification-master-baseline.mjs";
+import { isStagingNotificationWakeTarget } from "../../../scripts/migration/staging-notification-wake-target.mjs";
+
+const apiDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const wrangler = "npx";
+const wranglerVersion = "4.139.0";
+const configPath = path.join(apiDirectory, "wrangler.app-staging.jsonc");
+const expectedBusinessDatabase = "fanmark-business-staging";
+const expectedBusinessDatabaseId = "d4bb0c48-f24a-491f-8693-fa393ab0b873";
+const expectedDatabase = "fanmark-auth-staging";
+const expectedDatabaseId = "2116bc43-32ab-4e3e-b762-9378df88b95f";
+const expectedMasterDatabase = "fanmark-emoji-master-staging";
+const expectedMasterDatabaseId = "160376b0-bde6-4d5f-8969-96deb5ae1183";
+const expectedWorker = "fanmark-app-staging";
+const expectedOrigin = "https://fanmark-app-staging.fanmark-id.workers.dev";
+const userOwnedTables = [
+  "user",
+  "account",
+  "session",
+  "verification",
+  "twoFactor",
+  "adminRole",
+  "mfaAssurance",
+  "adminUserStatusAudit",
+];
+
+function requireExplicitStagingConsent() {
+  const args = new Set(process.argv.slice(2));
+  const adminResetBrowser = args.has("--admin-data-reset-browser");
+  const adminResetRoundtrip = args.has("--admin-data-reset-roundtrip") || adminResetBrowser;
+  if (adminResetRoundtrip && [...args].some(arg => arg.startsWith("--") &&
+      !["--run-live-staging-write", `--database=${expectedDatabase}`, "--admin-data-reset-browser", "--admin-data-reset-roundtrip"].includes(arg))) {
+    throw new Error("data reset canary cannot be composed with other smoke actions");
+  }
+  const emojiMasterRoundtrip = args.has("--emoji-master-draft-roundtrip");
+  const emojiMasterAuditBrowser = args.has("--emoji-master-audit-browser");
+  const emojiMasterAuditRoundtrip = args.has("--emoji-master-audit-roundtrip") || emojiMasterAuditBrowser;
+  const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
+  const referenceMasterTierRoundtrip = args.has("--reference-master-tier-roundtrip");
+  const referenceMasterExtensionPriceRoundtrip = args.has("--reference-master-extension-price-roundtrip");
+  const authEmailTemplateEditRoundtrip = args.has("--auth-email-template-edit-roundtrip");
+  const adminUserManagementBrowser = args.has("--admin-user-management-browser");
+  const adminUserManagementReadback = args.has("--admin-user-management-readback") || adminUserManagementBrowser;
+  const adminUserPlanReadback = args.has("--admin-user-plan-readback") || adminUserManagementBrowser;
+  const adminUserStatusReadback = args.has("--admin-user-status-readback") || adminUserManagementBrowser;
+  const lifecycleSettingsBrowser = args.has("--lifecycle-settings-browser");
+  const lifecycleRunReadback = args.has("--lifecycle-run-readback");
+  const waitlistSecurityRoundtrip = args.has("--waitlist-security-roundtrip");
+  const waitlistAdminReadback = args.has("--waitlist-admin-readback") || waitlistSecurityRoundtrip;
+  const broadcastEmailBrowser = args.has("--broadcast-email-browser");
+  const broadcastEmailReadback = args.has("--broadcast-email-readback") || broadcastEmailBrowser;
+  const systemSettingsReadback = args.has("--system-settings-readback") || lifecycleSettingsBrowser;
+  const lifecycleSettingsReadback = args.has("--lifecycle-settings-readback") || lifecycleSettingsBrowser;
+  const notificationAlarmRoundtrip = args.has("--notification-alarm-roundtrip");
+  const notificationManualEvent = args.has("--notification-manual-event") || notificationAlarmRoundtrip;
+  if (notificationManualEvent && [...args].some(arg => arg.startsWith("--") &&
+      !["--run-live-staging-write", `--database=${expectedDatabase}`, notificationAlarmRoundtrip ? "--notification-alarm-roundtrip" : "--notification-manual-event"].includes(arg))) {
+    throw new Error("notification canary cannot be composed with other smoke actions");
+  }
+  const hasExplicitSmokeAction = [
+    adminResetRoundtrip,
+    emojiMasterRoundtrip,
+    emojiMasterAuditRoundtrip,
+    emojiMasterAuditBrowser,
+    referenceMasterPricingReadback,
+    referenceMasterTierRoundtrip,
+    referenceMasterExtensionPriceRoundtrip,
+    authEmailTemplateEditRoundtrip,
+    adminUserManagementReadback,
+    adminUserPlanReadback,
+    adminUserStatusReadback,
+    lifecycleSettingsBrowser,
+    lifecycleRunReadback,
+    waitlistAdminReadback,
+    waitlistSecurityRoundtrip,
+    broadcastEmailReadback,
+    systemSettingsReadback,
+    lifecycleSettingsReadback,
+    notificationManualEvent,
+    broadcastEmailBrowser,
+    adminUserManagementBrowser,
+  ].some(Boolean);
+  if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
+      !hasExplicitSmokeAction) {
+    throw new Error(
+      `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
+    );
+  }
+  return {
+    notificationAlarmRoundtrip,
+    adminResetRoundtrip,
+    adminResetBrowser,
+    emojiMasterRoundtrip,
+    emojiMasterAuditRoundtrip,
+    emojiMasterAuditBrowser,
+    referenceMasterPricingReadback,
+    referenceMasterTierRoundtrip,
+    referenceMasterExtensionPriceRoundtrip,
+    authEmailTemplateEditRoundtrip,
+    adminUserManagementReadback,
+    adminUserPlanReadback,
+    adminUserStatusReadback,
+    lifecycleSettingsBrowser,
+    lifecycleRunReadback,
+    waitlistAdminReadback,
+    waitlistSecurityRoundtrip,
+    broadcastEmailReadback,
+    systemSettingsReadback,
+    lifecycleSettingsReadback,
+    notificationManualEvent,
+    broadcastEmailBrowser,
+    adminUserManagementBrowser,
+  };
+}
+
+async function assertStagingTarget(actions) {
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  assert.equal(config.name, expectedWorker, "unexpected Worker config");
+  assert.equal(config.workers_dev, true, "staging Worker must be workers.dev only");
+  const binding = config.d1_databases?.find((database) => database.binding === "AUTH_DB");
+  assert.equal(binding?.database_name, expectedDatabase, "unexpected Auth D1 name");
+  assert.equal(binding?.database_id, expectedDatabaseId, "unexpected Auth D1 id");
+  assert.equal(binding?.migrations_pattern,
+    "migrations/{0003_better_auth_core.sql,0007_auth_signup_command.sql,0008_auth_user_suspension.sql}",
+    "expected only Better Auth migrations in the Auth D1 migration set");
+  const businessBinding = config.d1_databases?.find((database) => database.binding === "FANMARK_DB");
+  assert.equal(businessBinding?.database_name, expectedBusinessDatabase, "unexpected business D1 name");
+  assert.equal(businessBinding?.database_id, expectedBusinessDatabaseId, "unexpected business D1 id");
+  assert.equal(businessBinding?.remote, true, "business D1 must be the remote staging database");
+  assert.equal(config.vars?.AUTH_BACKEND, "better-auth", "unexpected Auth backend");
+  assert.equal(config.vars?.INVITATION_ADMIN_BACKEND, "d1", "expected D1-backed invitation admin API");
+  assert.equal(config.vars?.WAITLIST_ADMIN_BACKEND, "d1", "expected D1-backed waitlist admin API");
+  assert.equal(config.vars?.AVAILABILITY_RULES_ADMIN_BACKEND, "d1", "expected D1-backed availability rule admin API");
+  assert.equal(config.vars?.NOTIFICATION_MASTER_BACKEND, "d1", "expected D1-backed notification admin API");
+  assert.equal(config.vars?.EMAIL_TEMPLATE_ADMIN_BACKEND, "d1", "expected D1-backed auth email-template admin API");
+  assert.equal(config.vars?.AUTH_EMAIL_TEMPLATE_BACKEND, "d1", "expected D1-backed Better Auth email templates");
+  assert.equal(config.vars?.STAGING_NO_INDEX, "true", "expected no-index staging Worker");
+  assert.equal(config.vars?.REFERENCE_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed reference-master admin API");
+  assert.equal(config.vars?.ADMIN_USER_MANAGEMENT_BACKEND, "d1", "expected D1-backed admin user-management API");
+  assert.equal(config.vars?.AUTH_USER_STATUS_BACKEND, "d1", "expected Auth D1 suspension enforcement");
+  assert.equal(config.vars?.SYSTEM_SETTINGS_BACKEND, "d1", "expected D1-backed system settings API");
+  if (actions.lifecycleRunReadback) {
+    assert.equal(config.vars?.LIFECYCLE_RUN_BACKEND, "d1", "expected the staging manual lifecycle route to use D1");
+    assert.equal(config.vars?.LICENSE_EXPIRY_BACKEND, undefined, "scheduled license expiry must remain disabled");
+    assert.equal(config.vars?.LICENSE_EXPIRY_TARGET_INCARNATION, "fanmark-business-staging-lifecycle-v1");
+    assert.match(config.vars?.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST ?? "", /^[0-9a-f]{64}$/u);
+    assert.equal(config.vars?.LICENSE_EXPIRY_MAX_PAGES, "4");
+  }
+  if (actions.broadcastEmailReadback) {
+    assert.equal(config.vars?.BROADCAST_EMAIL_BACKEND, "d1", "expected D1-backed broadcast admin API");
+    assert.equal(config.vars?.BROADCAST_SEND_BACKEND, undefined, "bulk delivery selector must remain disabled");
+    assert.notEqual(config.vars?.BROADCAST_TEST_SEND_BACKEND, "resend", "broadcast test delivery must remain disabled");
+  }
+  if (actions.notificationManualEvent) {
+    assert.equal(config.vars?.NOTIFICATION_PROCESSOR_BACKEND, "d1", "expected D1-backed notification processor");
+    if (actions.notificationAlarmRoundtrip) {
+      assert.ok(isStagingNotificationWakeTarget(config), "notification alarm target configuration is not prepared");
+      const secrets = JSON.parse(await runWrangler(["secret", "list"]));
+      assert.ok(secrets.every(secret => ["BETTER_AUTH_SECRET", "REFERENCE_MASTER_SERVICE_SECRET", "VERIFIED_ACCESS_SECRET"].includes(secret.name)),
+        "notification alarm canary requires billing/email/provider secrets to remain absent");
+      const ledger = await queryBusiness("SELECT name FROM d1_migrations ORDER BY id");
+      assert.ok(hasBusinessMigrationApplied(ledger.map(row => row.name), "0024_notification_worker_wake.sql"));
+      const ddl = await readFile(path.join(apiDirectory, "migrations-business/0024_notification_worker_wake.sql"), "utf8");
+      const normalize = value => value.replace(/^[ \t]*--.*$/gmu, "").replace(/;+\s*$/u, "").replace(/\s+/gu, " ").trim();
+      const triggers = [...ddl.matchAll(/CREATE TRIGGER (\w+)\n[\s\S]*?\nEND;/gu)];
+      assert.equal(triggers.length, 3);
+      for (const match of triggers) {
+        const actual = await queryBusiness(`SELECT sql FROM sqlite_master WHERE type='trigger' AND name=${sqlLiteral(match[1])}`);
+        assert.equal(actual.length, 1);
+        assert.equal(normalize(actual[0].sql), normalize(match[0]));
+      }
+      await assertResetBusinessEmpty();
+    } else {
+      assert.equal(config.vars?.NOTIFICATION_WAKE_BACKEND, undefined, "legacy manual-event canary requires Cron mode");
+      assert.ok(config.triggers?.crons?.includes("* * * * *"), "expected the one-minute staging notification Cron");
+    }
+  }
+  const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
+  assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
+  assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
+  assert.equal(masterBinding?.migrations_pattern, "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}", "unexpected Master D1 migration set");
+  assert.equal(config.vars?.EMOJI_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed emoji-master admin API");
+  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip || actions.adminResetRoundtrip || actions.notificationAlarmRoundtrip) {
+    assert.equal(config.account_id, "bfc2890741f0b3fb236e2d755b6c9adc");
+    assert.ok(!config.routes?.length, "audit canary must stay on workers.dev");
+    const identity = JSON.parse(await runWrangler(["whoami", "--json"]));
+    assert.equal(identity.loggedIn, true);
+    assert.equal(identity.email, "fanmark.id@gmail.com");
+    assert.ok(identity.accounts?.some(account => account.id === config.account_id));
+    assert.ok(process.env.FANMARK_EXPECTED_STAGING_VERSION, "audit canary requires a pinned deployed version");
+    const deployments = JSON.parse(await runWrangler(["deployments", "list", "--name", expectedWorker, "--json"]));
+    const latest = deployments.toSorted((left, right) => Date.parse(right.created_on) - Date.parse(left.created_on))[0];
+    assert.ok(Number.isFinite(Date.parse(latest?.created_on)));
+    assert.ok(latest.versions.some(version => version.percentage === 100 &&
+      version.version_id === process.env.FANMARK_EXPECTED_STAGING_VERSION));
+    const migration = "0008_emoji_master_change_audits.sql";
+    const ledger = await queryMaster(`SELECT name FROM d1_migrations WHERE name = ${sqlLiteral(migration)}`);
+    assert.deepEqual(ledger, [{ name: migration }]);
+    const sql = await readFile(path.join(apiDirectory, "migrations", migration), "utf8");
+    const normalize = value => value.replace(/^--.*$/gmu, "").replace(/\s+/gu, " ").trim().replace(/;$/u, "");
+    const requiredTriggers = [...sql.matchAll(/^CREATE TRIGGER ([a-z_]+)\n[\s\S]*?^END;/gmu)];
+    assert.equal(requiredTriggers.length, 3);
+    for (const match of requiredTriggers) {
+      const actual = await queryMaster(`SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = ${sqlLiteral(match[1])}`);
+      assert.equal(actual.length, 1, "required Master audit trigger is missing");
+      assert.equal(normalize(actual[0].sql), normalize(match[0]), "Master audit trigger differs from migration");
+    }
+  }
+  if (actions.adminResetRoundtrip) {
+    assert.equal(config.vars?.ADMIN_DATA_RESET_BACKEND, "d1");
+    const ledger = await queryBusiness("SELECT name FROM d1_migrations ORDER BY id");
+    assert.ok(hasBusinessMigrationApplied(ledger.map(row => row.name), "0023_admin_data_reset.sql"));
+    const ddl = await readFile(path.join(apiDirectory, "migrations-business/0023_admin_data_reset.sql"), "utf8");
+    const normalize = value => String(value).replace(/^[ \t]*--.*$/gmu, "").replace(/;+\s*$/u, "").replace(/\s+/gu, " ").trim();
+    for (const match of ddl.matchAll(/CREATE TRIGGER (\w+)\n[\s\S]*?\nEND;/gu)) {
+      const actual = await queryBusiness(`SELECT sql FROM sqlite_master WHERE type='trigger' AND name=${sqlLiteral(match[1])}`);
+      assert.equal(actual.length, 1);
+      assert.equal(normalize(actual[0].sql), normalize(match[0]));
+    }
+    assert.equal(Number((await queryBusiness("SELECT count(*) AS count FROM sqlite_master WHERE type='trigger' AND name GLOB 'canary_admin_reset_*'"))[0].count), 0,
+      "stale reset canary guard requires journaled recovery");
+    await assertResetBusinessEmpty();
+    assertResetCanaryEmptyCounts(await resetTargetCounts());
+    assert.equal(Number((await queryBusiness("SELECT count(*) AS count FROM admin_data_reset_commands"))[0].count), 0);
+  }
+
+}
+
+function runWrangler(args) {
+  const activeNode = realpathSync(process.execPath);
+  const childPath = (process.env.PATH ?? "").split(path.delimiter).filter((directory) => {
+    const candidate = path.join(directory, "node");
+    if (!existsSync(candidate)) return true;
+    try {
+      return realpathSync(candidate) !== activeNode;
+    } catch {
+      return true;
+    }
+  }).join(path.delimiter);
+  const childEnv = { ...process.env, PATH: childPath, CI: process.env.CI ?? "1" };
+  for (const key of Object.keys(childEnv)) {
+    if (/^npm_config_/iu.test(key) || key === "npm_execpath" || /^npm_lifecycle_/iu.test(key)) delete childEnv[key];
+  }
+  return new Promise((resolve, reject) => {
+    const child = spawn(wrangler, ["--yes", `wrangler@${wranglerVersion}`, ...args, "--config", configPath], {
+      cwd: apiDirectory,
+      env: childEnv,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let failed = false;
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+      if (stdout.length > 100_000) {
+        failed = true;
+        child.kill("SIGTERM");
+      }
+    });
+    // Wrangler diagnostics may include submitted statements; never relay stderr.
+    child.stderr.on("data", () => {});
+    child.on("error", () => reject(new Error("Wrangler could not be started")));
+    child.on("close", (code) => {
+      if (failed || code !== 0) return reject(new Error("Wrangler D1 command failed"));
+      resolve(stdout);
+    });
+  });
+}
+
+function parseWranglerJson(stdout) {
+  try {
+    const normalized = stdout.replace(/\u001b\[[0-9;]*m/gu, "").trim();
+    const start = normalized.search(/\[\s*\{\s*"results"\s*:/u);
+    const end = normalized.lastIndexOf("]");
+    if (start < 0 || end < start) throw new Error("missing JSON array");
+    return JSON.parse(normalized.slice(start, end + 1));
+  } catch {
+    throw new Error("Wrangler returned an invalid JSON result");
+  }
+}
+
+async function query(sql) {
+  const output = await runWrangler([
+    "d1", "execute", expectedDatabase, "--remote", "--command", sql, "--json",
+  ]);
+  const result = parseWranglerJson(output);
+  if (!Array.isArray(result) || result[0]?.success !== true) {
+    throw new Error("Remote Auth D1 read failed");
+  }
+  return result[0].results ?? [];
+}
+
+async function queryMaster(sql) {
+  const output = await runWrangler([
+    "d1", "execute", expectedMasterDatabase, "--remote", "--command", sql, "--json",
+  ]);
+  const result = parseWranglerJson(output);
+  if (!Array.isArray(result) || result[0]?.success !== true) {
+    throw new Error("Remote Master D1 read failed");
+  }
+  return result[0].results ?? [];
+}
+
+async function queryBusiness(sql) {
+  const output = await runWrangler([
+    "d1", "execute", expectedBusinessDatabase, "--remote", "--command", sql, "--json",
+  ]);
+  const result = parseWranglerJson(output);
+  if (!Array.isArray(result) || result[0]?.success !== true) {
+    throw new Error("Remote business D1 read failed");
+  }
+  return result[0].results ?? [];
+}
+
+async function executeFile(sql, label) {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "fanmark-auth-staging-"));
+  try {
+    await writeFile(path.join(temporaryDirectory, "operation.sql"), sql, {
+      encoding: "utf8",
+      mode: 0o600,
+      flag: "wx",
+    });
+    const output = await runWrangler([
+      "d1", "execute", expectedDatabase, "--remote", "--file",
+      path.join(temporaryDirectory, "operation.sql"), "--yes", "--json",
+    ]);
+    const result = parseWranglerJson(output);
+    if (!Array.isArray(result) || result.some((item) => item.success !== true)) {
+      throw new Error(`Remote Auth D1 ${label} failed`);
+    }
+  } finally {
+    await rm(temporaryDirectory, { recursive: true, force: true });
+  }
+}
+
+async function executeBusiness(sql, label) {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "fanmark-business-staging-"));
+  try {
+    await writeFile(path.join(temporaryDirectory, "operation.sql"), sql, {
+      encoding: "utf8",
+      mode: 0o600,
+      flag: "wx",
+    });
+    const output = await runWrangler([
+      "d1", "execute", expectedBusinessDatabase, "--remote", "--file",
+      path.join(temporaryDirectory, "operation.sql"), "--yes", "--json",
+    ]);
+    const result = parseWranglerJson(output);
+    if (!Array.isArray(result) || result.some((item) => item.success !== true)) {
+      throw new Error(`Remote business D1 ${label} failed`);
+    }
+  } finally {
+    await rm(temporaryDirectory, { recursive: true, force: true });
+  }
+}
+
+function sqlLiteral(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+async function readUserOwnedCounts() {
+  const expressions = userOwnedTables.map(
+    (table) => `(SELECT count(*) FROM "${table}") AS "${table}"`,
+  );
+  const rows = await query(`SELECT ${expressions.join(", ")}`);
+  const counts = rows[0];
+  assert.ok(counts && typeof counts === "object", "Auth D1 count row is missing");
+  for (const table of userOwnedTables) {
+    assert.equal(Number(counts[table]), 0, `expected empty staging Auth table: ${table}`);
+  }
+  return counts;
+}
+
+function decodeBase32(value) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const bytes = [];
+  let buffer = 0;
+  let bits = 0;
+  for (const character of value.toUpperCase().replace(/=+$/u, "")) {
+    const digit = alphabet.indexOf(character);
+    if (digit < 0) throw new Error("TOTP enrollment returned an invalid secret");
+    buffer = (buffer << 5) | digit;
+    bits += 5;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((buffer >> bits) & 0xff);
+    }
+  }
+  return Uint8Array.from(bytes);
+}
+
+async function createTotpCode(secret, now = Date.now()) {
+  const counter = new Uint8Array(8);
+  new DataView(counter.buffer).setBigUint64(0, BigInt(Math.floor(now / 30_000)));
+  const key = await webcrypto.subtle.importKey(
+    "raw",
+    decodeBase32(secret),
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"],
+  );
+  const digest = new Uint8Array(await webcrypto.subtle.sign("HMAC", key, counter));
+  const offset = digest[digest.length - 1] & 0x0f;
+  const value = (
+    ((digest[offset] & 0x7f) << 24) |
+    ((digest[offset + 1] & 0xff) << 16) |
+    ((digest[offset + 2] & 0xff) << 8) |
+    (digest[offset + 3] & 0xff)
+  ) % 1_000_000;
+  return String(value).padStart(6, "0");
+}
+
+function sessionCookie(response, fallback = "") {
+  const cookies = typeof response.headers.getSetCookie === "function"
+    ? response.headers.getSetCookie()
+    : [response.headers.get("set-cookie") ?? ""];
+  const pairs = cookies.map((value) => value.split(";", 1)[0]).filter(Boolean);
+  const session = pairs.find((value) => value.includes("session_token="));
+  return session ?? fallback;
+}
+
+async function request(path, init = {}) {
+  return fetch(`${expectedOrigin}${path}`, {
+    ...init,
+    headers: {
+      Origin: expectedOrigin,
+      accept: "application/json",
+      ...(init.headers ?? {}),
+    },
+    redirect: "manual",
+    signal: AbortSignal.timeout(10_000),
+  });
+}
+
+async function readActiveCatalogItem(id) {
+  let offset = 0;
+  let version = null;
+  let total = null;
+  while (total === null || offset < total) {
+    const response = await request(`/api/emoji/catalog?offset=${offset}&limit=500`);
+    assertStatus(response, 200, "active emoji catalog read");
+    const page = await response.json();
+    assert.equal(typeof page.version, "string");
+    assert.ok(Array.isArray(page.items));
+    if (version === null) {
+      version = page.version;
+      total = page.total;
+    } else {
+      assert.equal(page.version, version, "active release changed during catalog read");
+      assert.equal(page.total, total, "active catalog row count changed during read");
+    }
+    const item = page.items.find((candidate) => candidate.id === id);
+    if (item) return { version, total, item };
+    if (page.nextOffset === null || page.nextOffset === undefined) break;
+    assert.ok(Number.isSafeInteger(page.nextOffset) && page.nextOffset > offset);
+    offset = page.nextOffset;
+  }
+  throw new Error("protected emoji was not found in the active release");
+}
+
+async function exerciseEmojiMasterDraft(cookie) {
+  const list = await request("/api/admin/emoji-master?page=1&pageSize=50", { headers: { cookie } });
+  assertStatus(list, 200, "MFA-protected emoji-master list");
+  const page = await list.json();
+  assert.equal(page.schemaVersion, 1);
+  assert.match(page.activeReleaseVersion, /^[0-9a-f]{64}$/u);
+  const record = page.items.find((item) => item.releaseProtected === true);
+  assert.ok(record, "staging Master D1 has no release-protected record for round-trip verification");
+  const publicBefore = await readActiveCatalogItem(record.id);
+  assert.equal(publicBefore.version, page.activeReleaseVersion);
+
+  const draftUpdate = {
+    updatedAt: record.updatedAt,
+    emoji: record.emoji,
+    shortName: `Staging smoke ${record.shortName}`.slice(0, 256),
+    keywords: ["staging-smoke"],
+    category: record.category,
+    subcategory: record.subcategory,
+    codepoints: record.codepoints,
+    sortOrder: record.sortOrder,
+  };
+  let changedRecord = null;
+  try {
+    const update = await request(`/api/admin/emoji-master/${encodeURIComponent(record.id)}`, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify(draftUpdate),
+    });
+    assertStatus(update, 200, "emoji-master draft edit");
+    changedRecord = await update.json();
+    assert.equal(changedRecord.id, record.id, "draft edit changed the stable UUID");
+    assert.equal(changedRecord.shortName, draftUpdate.shortName);
+    assert.equal(changedRecord.releaseProtected, true);
+
+    const deletion = await request(`/api/admin/emoji-master/${encodeURIComponent(record.id)}`, {
+      method: "DELETE",
+      headers: { cookie },
+    });
+    assertStatus(deletion, 409, "protected emoji deletion guard");
+    assert.equal((await deletion.json()).error, "emoji_deletion_requires_release_review");
+  } finally {
+    if (changedRecord?.updatedAt) {
+      const restore = await request(`/api/admin/emoji-master/${encodeURIComponent(record.id)}`, {
+        method: "PUT",
+        headers: { cookie, "content-type": "application/json" },
+        body: JSON.stringify({
+          updatedAt: changedRecord.updatedAt,
+          emoji: record.emoji,
+          shortName: record.shortName,
+          keywords: record.keywords,
+          category: record.category,
+          subcategory: record.subcategory,
+          codepoints: record.codepoints,
+          sortOrder: record.sortOrder,
+        }),
+      });
+      assertStatus(restore, 200, "emoji-master draft restoration");
+    }
+  }
+
+  const [publicAfter, draftReadback, activeVersionRows] = await Promise.all([
+    readActiveCatalogItem(record.id),
+    request(`/api/admin/emoji-master/${encodeURIComponent(record.id)}`, { headers: { cookie } }),
+    queryMaster("SELECT release_version FROM fanmark_emoji_master_active_release WHERE singleton_id = 1"),
+  ]);
+  assert.deepEqual(publicAfter, publicBefore, "active public catalog changed during draft-only edit");
+  assertStatus(draftReadback, 200, "restored emoji-master draft readback");
+  const restored = await draftReadback.json();
+  assert.equal(restored.id, record.id);
+  assert.equal(restored.shortName, record.shortName);
+  assert.equal(activeVersionRows.length, 1);
+  assert.equal(activeVersionRows[0].release_version, page.activeReleaseVersion);
+}
+
+async function exerciseEmojiMasterAudit(cookie, userId, journalPath, { browserReview = false, email } = {}) {
+  const journal = JSON.parse(await readFile(journalPath, "utf8"));
+  const marker = `audit-${journal.runId}`;
+  const records = Array.from({ length: 100 }, (_, index) => ({
+    emoji: "🧪" + String.fromCodePoint(0x1F300 + index), shortName: `${marker}-${index}`,
+    keywords: ["synthetic-staging"], category: "Synthetic", subcategory: null,
+    codepoints: ["1F9EA", (0x1F300 + index).toString(16).toUpperCase()], sortOrder: index,
+  }));
+  const plannedEmoji = records.map(record => record.emoji);
+  const predicate = `emoji IN (SELECT value FROM json_each(${sqlLiteral(JSON.stringify(plannedEmoji))}))`;
+  const baselineSql = `SELECT
+    (SELECT count(*) FROM emoji_master) AS canonical_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_change_audits) AS audit_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_mutation_context) AS context_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_release_staging) AS release_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_release_activations) AS activations,
+    (SELECT release_version FROM fanmark_emoji_master_active_release WHERE singleton_id = 1) AS active_version`;
+  const baseline = await queryMaster(baselineSql);
+  assert.equal(Number(baseline[0]?.canonical_rows), 3944);
+  assert.equal(Number(baseline[0]?.context_rows), 0);
+  assert.deepEqual(await queryMaster(`SELECT id FROM emoji_master WHERE ${predicate}`), []);
+  const catalogDigest = async () => {
+    const pages = [];
+    let nextOffset = 0;
+    do {
+      const response = await request(`/api/emoji/catalog?offset=${nextOffset}&limit=500`);
+      assertStatus(response, 200, "public catalog audit readback");
+      const page = await response.json();
+      assert.equal(page.version, baseline[0].active_version);
+      assert.equal(page.total, 3944);
+      pages.push(...page.items);
+      nextOffset = page.nextOffset;
+    } while (nextOffset !== null && nextOffset !== undefined);
+    assert.equal(pages.length, 3944);
+    return createHash("sha256").update(JSON.stringify(pages)).digest("hex");
+  };
+  const publicDigest = await catalogDigest();
+  Object.assign(journal, { state: "master-prepared", marker, plannedEmoji, masterBaseline: baseline, publicDigest });
+  await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  const write = (body, method = "POST") => ({ method, headers: { cookie, "content-type": "application/json" }, body: JSON.stringify(body) });
+  const auditSql = `SELECT id, user_id, action, resource_type, resource_id, request_id, metadata, created_at
+    FROM fanmark_emoji_master_change_audits WHERE user_id = ${sqlLiteral(userId)} ORDER BY rowid`;
+  let verified = false;
+  try {
+    const spoof = await request("/api/admin/emoji-master", write({ ...records[0], userId: randomUUID() }));
+    assertStatus(spoof, 400, "client-supplied audit actor rejection");
+    const create = await request("/api/admin/emoji-master", write(records[0]));
+    assertStatus(create, 201, "synthetic audited draft create");
+    const created = await create.json();
+    const edited = { ...records[0], shortName: `${marker}-edited` };
+    const update = await request(`/api/admin/emoji-master/${created.id}`, write({ ...edited, updatedAt: created.updatedAt }, "PUT"));
+    assertStatus(update, 200, "synthetic audited draft update");
+    const beforeRejected = await queryMaster(auditSql);
+    assert.equal(beforeRejected.length, 2);
+    assert.deepEqual(beforeRejected.map(row => row.action), ["EMOJI_MASTER_INSERT", "EMOJI_MASTER_UPDATE"]);
+    for (const [index, row] of beforeRejected.entries()) {
+      assert.equal(row.user_id, userId);
+      assert.equal(row.resource_type, "emoji_master");
+      assert.equal(row.resource_id, created.id);
+      assert.match(row.request_id, /^[0-9a-f-]{36}$/u);
+      assert.match(row.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+      assert.deepEqual(JSON.parse(row.metadata), { emoji: records[0].emoji, short_name: index === 0 ? records[0].shortName : edited.shortName });
+    }
+    assertStatus(await request(`/api/admin/emoji-master/${created.id}`, write({ ...edited, updatedAt: created.updatedAt }, "PUT")), 409, "stale draft edit rejection");
+    assertStatus(await request(`/api/admin/emoji-master/${created.id}`, { method: "DELETE", headers: { cookie } }), 409, "draft API deletion remains closed");
+    assert.deepEqual(await queryMaster(auditSql), beforeRejected, "rejected writes produced audit rows");
+    const imported = await request("/api/admin/emoji-master/import", write({ records }));
+    assertStatus(imported, 200, "100-row audited draft import");
+    assert.deepEqual(await imported.json(), { importedCount: 100 });
+    const rows = await queryMaster(`SELECT id, emoji, short_name, created_at, updated_at FROM emoji_master WHERE ${predicate} ORDER BY emoji`);
+    assert.equal(rows.length, 100);
+    assert.equal(rows.find(row => row.emoji === created.emoji)?.id, created.id, "upsert replaced the stable UUID");
+    const audits = await queryMaster(auditSql);
+    assert.equal(audits.length, 102);
+    const importAudits = audits.slice(2);
+    assert.equal(new Set(importAudits.map(row => row.request_id)).size, 1);
+    assert.ok(!beforeRejected.some(row => row.request_id === importAudits[0].request_id));
+    assert.equal(importAudits.filter(row => row.action === "EMOJI_MASTER_INSERT").length, 99);
+    assert.equal(importAudits.filter(row => row.action === "EMOJI_MASTER_UPDATE").length, 1);
+    for (const row of rows) {
+      const audit = importAudits.find(value => value.resource_id === row.id);
+      assert.ok(audit, "import row lacks its audit");
+      assert.equal(audit.user_id, userId);
+      assert.equal(audit.resource_type, "emoji_master");
+      assert.deepEqual(JSON.parse(audit.metadata), { emoji: row.emoji, short_name: row.short_name });
+      assert.match(audit.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    }
+    assert.equal(new Set(importAudits.map(row => row.created_at)).size, 1);
+    const historyResponse = await request(`/api/admin/users/${encodeURIComponent(userId)}`, write({ userId }));
+    assertStatus(historyResponse, 200, "administrator's combined Master audit history");
+    const history = await historyResponse.json();
+    const expectedHistory = audits.toSorted((left, right) => right.created_at.localeCompare(left.created_at) || left.id.localeCompare(right.id)).slice(0, 20);
+    assert.deepEqual(history.recentAuditLogs.map(row => ({ id: row.id, action: row.action, resourceId: row.resourceId,
+      userId: row.userId, createdAt: row.createdAt, metadata: row.metadata })),
+    expectedHistory.map(row => ({ id: row.id, action: row.action, resourceId: row.resource_id,
+      userId: row.user_id, createdAt: row.created_at, metadata: JSON.parse(row.metadata) })),
+    "administrator user-detail history did not include the latest exact Master audits");
+    if (browserReview) {
+      journal.browserHistory = await reviewEmojiMasterAuditHistoryInBrowser(cookie, email, userId, audits, journalPath);
+    }
+    assert.deepEqual(await queryMaster("SELECT count(*) AS count FROM fanmark_emoji_master_mutation_context"), [{ count: 0 }]);
+    assert.equal(await catalogDigest(), publicDigest, "draft changes altered the public catalog");
+    verified = true;
+  } finally {
+    const owned = await queryMaster(`SELECT id, short_name FROM emoji_master WHERE ${predicate}`);
+    assert.ok(owned.every(row => row.short_name.startsWith(marker)), "cleanup refuses an unexpected canonical record");
+    const ids = owned.map(row => row.id);
+    Object.assign(journal, { state: "master-cleanup", resourceIds: ids });
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+    if (ids.length) {
+      const idPredicate = `IN (SELECT value FROM json_each(${sqlLiteral(JSON.stringify(ids))}))`;
+      await queryMaster(`DELETE FROM emoji_master WHERE id ${idPredicate}`);
+      const scopedAudits = await queryMaster(`SELECT id, user_id FROM fanmark_emoji_master_change_audits WHERE resource_id ${idPredicate}`);
+      assert.ok(scopedAudits.every(row => row.user_id === userId || row.user_id === null));
+      await queryMaster(`DELETE FROM fanmark_emoji_master_change_audits WHERE resource_id ${idPredicate}`);
+    }
+    assert.deepEqual(await queryMaster(baselineSql), baseline, "Master baseline was not restored");
+    assert.equal(await catalogDigest(), publicDigest, "cleanup altered the public catalog");
+    journal.state = verified ? "master-verified-and-cleaned" : "master-failed-and-cleaned";
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
+  console.log(JSON.stringify({ emojiAudit: "verified", importRows: 100, exactPerRowAudits: 102,
+    actor: "server-authorized", adminHistory: "latest-20-exact", contextRows: 0, publicCatalog: "unchanged", masterCleanup: "verified" }));
+}
+
+async function exerciseNotificationMasters(cookie) {
+  const [rulesResponse, templatesResponse, eventsResponse, notificationsResponse, beforeCounts] = await Promise.all([
+    request("/api/admin/notification-masters/rules", { headers: { cookie } }),
+    request("/api/admin/notification-masters/templates", { headers: { cookie } }),
+    request("/api/admin/notification-masters/events", { headers: { cookie } }),
+    request("/api/admin/notification-masters/notifications", { headers: { cookie } }),
+    queryBusiness(`SELECT (SELECT count(*) FROM notification_events) AS events,
+      (SELECT count(*) FROM notifications) AS notifications`),
+  ]);
+  assertStatus(rulesResponse, 200, "MFA-protected notification rules read");
+  assertStatus(templatesResponse, 200, "MFA-protected notification templates read");
+  assertStatus(eventsResponse, 200, "MFA-protected notification event log read");
+  assertStatus(notificationsResponse, 200, "MFA-protected notification delivery log read");
+  const rulesBody = await rulesResponse.json();
+  const templatesBody = await templatesResponse.json();
+  const eventsBody = await eventsResponse.json();
+  const notificationsBody = await notificationsResponse.json();
+  assert.equal(rulesBody.schemaVersion, 1);
+  assert.equal(templatesBody.schemaVersion, 1);
+  assert.ok(Array.isArray(rulesBody.rules));
+  assert.ok(Array.isArray(templatesBody.templates));
+  assert.equal(rulesBody.rules.length, 10);
+  assert.equal(templatesBody.templates.length, 40);
+  assert.ok(rulesBody.rules.every((rule) => !Object.hasOwn(rule, "created_by")));
+  assert.ok(templatesBody.templates.every((template) => !Object.hasOwn(template, "payload_schema")));
+  assert.equal(eventsBody.schemaVersion, 1);
+  assert.equal(notificationsBody.schemaVersion, 1);
+  assert.ok(Array.isArray(eventsBody.events) && eventsBody.events.length <= 100);
+  assert.ok(Array.isArray(notificationsBody.notifications) && notificationsBody.notifications.length <= 100);
+  assert.ok(eventsBody.events.every((event) => !Object.hasOwn(event, "payload")));
+  assert.ok(notificationsBody.notifications.every((notification) =>
+    !Object.hasOwn(notification, "payload") && /^[0-9a-f]{8}\.\.\.$/iu.test(notification.user_id)));
+  const afterCounts = await queryBusiness(`SELECT (SELECT count(*) FROM notification_events) AS events,
+    (SELECT count(*) FROM notifications) AS notifications`);
+  assert.deepEqual(afterCounts, beforeCounts, "notification log reads changed D1 rows");
+}
+
+async function readNotificationAlarmStatus(cookie) {
+  const response = await request("/api/admin/notifications/wake", { headers: { cookie } });
+  assertStatus(response, 200, "MFA-protected notification alarm status");
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/iu);
+  const status = await response.json();
+  assert.deepEqual(Object.keys(status).sort(), ["acknowledgedGeneration", "nextAlarmAt", "pendingEvents", "processingEvents", "requestedGeneration"]);
+  for (const key of ["requestedGeneration", "acknowledgedGeneration", "pendingEvents", "processingEvents"]) {
+    assert.ok(Number.isSafeInteger(status[key]) && status[key] >= 0, "invalid bounded notification status");
+  }
+  assert.ok(status.acknowledgedGeneration <= status.requestedGeneration);
+  assert.ok(status.nextAlarmAt === null || (Number.isSafeInteger(status.nextAlarmAt) && status.nextAlarmAt > 0));
+  return status;
+}
+
+async function waitForNotificationAlarmIdle(cookie) {
+  const deadline = Date.now() + 15_000;
+  do {
+    const status = await readNotificationAlarmStatus(cookie);
+    if (status.nextAlarmAt === null && status.pendingEvents === 0 && status.processingEvents === 0 &&
+        status.requestedGeneration === status.acknowledgedGeneration) return status;
+    await delay(250);
+  } while (Date.now() < deadline);
+  throw new Error("the deployed notification alarm did not stop after draining");
+}
+
+async function updateNotificationJournal(journalPath, changes) {
+  if (!journalPath) return;
+  const journal = JSON.parse(await readFile(journalPath, "utf8"));
+  const nextPath = `${journalPath}.pending-${randomUUID()}`;
+  await writeFile(nextPath, JSON.stringify({ ...journal, ...changes }), { mode: 0o600, flag: "wx" });
+  await rename(nextPath, journalPath);
+}
+
+async function recordNotificationFixture(journalPath, fixture) {
+  assert.ok(journalPath, "notification writes require a private recovery journal");
+  const journal = JSON.parse(await readFile(journalPath, "utf8"));
+  await updateNotificationJournal(journalPath, { state: "notification-prepared",
+    notificationFixtures: [...(journal.notificationFixtures ?? []), fixture] });
+}
+
+async function exerciseNotificationManualEvent(cookie, userId, { alarmMode = false, journalPath } = {}) {
+  const baseline = await queryBusiness(`SELECT
+    (SELECT count(*) FROM notification_events) AS events,
+    (SELECT count(*) FROM notifications) AS notifications,
+    (SELECT count(*) FROM user_settings WHERE user_id = ${sqlLiteral(userId)}) AS profiles`);
+  assert.equal(Number(baseline[0]?.events), 0, "notification event baseline is not empty");
+  assert.equal(Number(baseline[0]?.notifications), 0, "notification delivery baseline is not empty");
+  assert.equal(Number(baseline[0]?.profiles), 1, "synthetic notification recipient profile is missing");
+
+  const fanmarkId = randomUUID();
+  const fanmarkShortId = `n${randomBytes(10).toString("hex")}`;
+  const payload = {
+    user_id: userId,
+    fanmark_id: fanmarkId,
+    fanmark_short_id: fanmarkShortId,
+    fanmark_name: "合成通知イベント",
+    language: "ja",
+    grace_expires_at: "2026-10-10T00:00:00.000Z",
+  };
+  // Save the recipient and unique payload nonce BEFORE submitting a request.
+  // They identify a committed event even if the HTTP response is lost.
+  await recordNotificationFixture(journalPath, { kind: "api", userId, payload });
+  const anonymous = await request("/api/admin/notification-masters/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ eventType: "favorite_fanmark_available", payload }),
+  });
+  assertStatus(anonymous, 401, "anonymous manual notification-event create");
+  assert.deepEqual(await queryBusiness("SELECT (SELECT count(*) FROM notification_events) AS events"), [{ events: 0 }]);
+
+  const response = await request("/api/admin/notification-masters/events", {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ eventType: "favorite_fanmark_available", payload }),
+  });
+  assertStatus(response, 201, "MFA-protected manual notification-event create");
+  const body = await response.json();
+  assert.equal(body.schemaVersion, 1);
+  assert.match(body.event?.id ?? "", /^[0-9a-f-]{36}$/iu);
+  const eventId = body.event.id;
+  await updateNotificationJournal(journalPath, { apiEventId: eventId });
+  if (alarmMode) {
+    const deadline = Date.now() + 10_000;
+    let active;
+    do {
+      active = await readNotificationAlarmStatus(cookie);
+      if (active.nextAlarmAt !== null) break;
+      await delay(100);
+    } while (Date.now() < deadline);
+    assert.ok(active.nextAlarmAt !== null, "API-created event did not expose a real deployed wake alarm");
+    await updateNotificationJournal(journalPath, { apiWakeStatus: active });
+  }
+  const inserted = await queryBusiness(`SELECT event_type, source, status, payload
+    FROM notification_events WHERE id = ${sqlLiteral(eventId)}`);
+  assert.equal(inserted.length, 1, "manual notification event was not inserted exactly once");
+  assert.equal(inserted[0].event_type, "favorite_fanmark_available");
+  assert.equal(inserted[0].source, "admin_manual");
+  if (alarmMode) assert.ok(["pending", "processing", "processed"].includes(inserted[0].status));
+  else assert.equal(inserted[0].status, "pending");
+  assert.deepEqual(JSON.parse(inserted[0].payload), payload);
+
+  const eventLog = await request("/api/admin/notification-masters/events", { headers: { cookie } });
+  assertStatus(eventLog, 200, "MFA-protected manual notification-event log read");
+  const eventLogBody = await eventLog.json();
+  const logged = eventLogBody.events.find((event) => event.id === eventId);
+  assert.ok(logged, "created event is missing from the admin event log");
+  assert.equal(Object.hasOwn(logged, "payload"), false, "admin event log exposed the event payload");
+
+  await awaitNotificationDelivery(eventId, payload, userId);
+  if (alarmMode) await updateNotificationJournal(journalPath, { apiIdleStatus: await waitForNotificationAlarmIdle(cookie) });
+  await updateNotificationJournal(journalPath, { state: "notification-verified" });
+  return { eventId };
+}
+
+async function awaitNotificationDelivery(eventId, payload, userId) {
+  const deadline = Date.now() + 120_000;
+  let resultRows = [];
+  while (Date.now() < deadline) {
+    resultRows = await queryBusiness(`SELECT e.status AS event_status, e.processed_at,
+        e.error_reason, n.id AS notification_id, n.user_id, n.channel, n.status AS notification_status,
+        n.delivered_at, json_extract(n.payload, '$.title') AS title,
+        json_extract(n.payload, '$.body') AS body,
+        json_extract(n.payload, '$.metadata.fanmark_id') AS payload_fanmark_id
+      FROM notification_events e LEFT JOIN notifications n ON n.event_id = e.id
+      WHERE e.id = ${sqlLiteral(eventId)} ORDER BY n.id`);
+    if (resultRows.some((row) => row.event_status === "failed")) {
+      throw new Error("manual notification event failed in the staging processor");
+    }
+    if (resultRows.length === 1 && resultRows[0].event_status === "processed" && resultRows[0].notification_id) break;
+    await delay(5_000);
+  }
+  assert.equal(resultRows.length, 1, "manual notification event did not produce exactly one delivery");
+  assert.equal(resultRows[0].event_status, "processed");
+  assert.ok(resultRows[0].processed_at);
+  assert.equal(resultRows[0].user_id, userId);
+  assert.equal(resultRows[0].channel, "in_app");
+  assert.equal(resultRows[0].notification_status, "delivered");
+  assert.ok(resultRows[0].delivered_at);
+  assert.equal(resultRows[0].title, "お気に入りファンマが返却されました");
+  assert.equal(resultRows[0].payload_fanmark_id, payload.fanmark_id);
+  assert.match(String(resultRows[0].body), /合成通知イベント/u);
+}
+
+async function exerciseNotificationAlarmRecovery(cookie, userId, journalPath) {
+  const before = await waitForNotificationAlarmIdle(cookie);
+  const id = randomUUID();
+  const payload = { user_id: userId, fanmark_id: randomUUID(), fanmark_short_id: `n${randomBytes(10).toString("hex")}`,
+    fanmark_name: "合成通知イベント・起動復旧", language: "ja", grace_expires_at: "2026-10-10T00:00:00.000Z" };
+  const timestamp = new Date().toISOString();
+  const future = new Date(Date.now() + 600_000).toISOString();
+  await recordNotificationFixture(journalPath, { kind: "interrupted-bridge", id, userId, payload });
+  await executeBusiness(`INSERT INTO notification_events (id, event_type, source, payload, trigger_at, status, created_at, updated_at)
+    VALUES (${sqlLiteral(id)}, 'favorite_fanmark_available', 'admin_manual', ${sqlLiteral(JSON.stringify(payload))},
+      ${sqlLiteral(future)}, 'pending', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`, "synthetic interrupted notification bridge");
+  // A GET must not repair the bridge: prove the native request survives alone.
+  const unbridged = await readNotificationAlarmStatus(cookie);
+  assert.equal(unbridged.nextAlarmAt, null);
+  assert.equal(unbridged.pendingEvents, 1);
+  assert.equal(unbridged.requestedGeneration, before.requestedGeneration + 1);
+  assert.equal(unbridged.acknowledgedGeneration, before.acknowledgedGeneration);
+  const repair = await request("/api/admin/notifications/wake", { method: "POST", headers: { cookie } });
+  assertStatus(repair, 200, "MFA-protected notification wake replay");
+  assert.deepEqual(await repair.json(), { success: true });
+  const active = await readNotificationAlarmStatus(cookie);
+  assert.ok(active.nextAlarmAt !== null);
+  assert.equal(active.pendingEvents, 1);
+  assert.equal(active.requestedGeneration, active.acknowledgedGeneration);
+  const preserved = await queryBusiness(`SELECT status, trigger_at FROM notification_events WHERE id=${sqlLiteral(id)}`);
+  assert.deepEqual(preserved, [{ status: "pending", trigger_at: future }]);
+  await updateNotificationJournal(journalPath, { recoveryUnbridgedStatus: unbridged, recoveryActiveStatus: active });
+  await executeBusiness(`UPDATE notification_events SET trigger_at=${sqlLiteral(new Date(Date.now() - 1000).toISOString())}
+    WHERE id=${sqlLiteral(id)} AND source='admin_manual' AND json_extract(payload, '$.fanmark_id')=${sqlLiteral(payload.fanmark_id)};`,
+    "synthetic notification due-time update");
+  const secondRepair = await request("/api/admin/notifications/wake", { method: "POST", headers: { cookie } });
+  assertStatus(secondRepair, 200, "MFA-protected updated notification wake replay");
+  await awaitNotificationDelivery(id, payload, userId);
+  await updateNotificationJournal(journalPath, { state: "notification-verified", recoveryIdleStatus: await waitForNotificationAlarmIdle(cookie) });
+}
+
+async function exerciseAuthEmailTemplatesAdmin(cookie, { editRoundtrip = false, adminUserId = null } = {}) {
+  const route = "/api/admin/email-templates";
+  const rowsSql = `SELECT id, email_type, language, subject, body_text, button_text,
+      is_active, created_at, updated_at
+    FROM email_templates
+    WHERE email_type IN ('signup', 'recovery', 'magiclink', 'email_change')
+    ORDER BY email_type, language`;
+  const beforeRows = await queryBusiness(rowsSql);
+  assert.equal(beforeRows.length, 16, "expected all 16 allowlisted auth email templates before admin read");
+  const anonymous = await request(route);
+  assertStatus(anonymous, 401, "unauthenticated auth email-template admin read");
+
+  const response = await request(route, { headers: { cookie } });
+  assertStatus(response, 200, "MFA-protected auth email-template list");
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/iu);
+  const body = await response.json();
+  assert.ok(Array.isArray(body.templates));
+  assert.equal(body.templates.length, 16);
+  const expected = new Set(
+    ["signup", "recovery", "magiclink", "email_change"]
+      .flatMap((type) => ["en", "ja", "ko", "id"].map((language) => `${type}/${language}`)),
+  );
+  const actual = body.templates.map((template) => `${template.email_type}/${template.language}`);
+  assert.equal(new Set(actual).size, 16, "auth email-template identities must be unique");
+  assert.deepEqual([...actual].sort(), [...expected].sort());
+  assert.ok(body.templates.every((template) => template.is_active === true));
+  assert.deepEqual(
+    body.templates,
+    beforeRows.map((row) => ({ ...row, is_active: Number(row.is_active) === 1 })),
+    "MFA-protected auth email-template response differed from the full D1 readback",
+  );
+
+  const afterRows = await queryBusiness(rowsSql);
+  assert.deepEqual(afterRows, beforeRows, "auth email-template admin read changed D1 data");
+
+  if (!editRoundtrip) return;
+
+  assert.ok(adminUserId, "synthetic admin ID is required for the auth email-template edit canary");
+  const template = beforeRows.find((row) => row.email_type === "signup" && row.language === "ja");
+  assert.ok(template, "Japanese signup template is missing");
+  const templatePath = `${route}/${template.id}`;
+  const temporarySubject = `${template.subject} [staging canary]`;
+  assert.ok(temporarySubject.length <= 256, "Japanese signup template subject is too long for a reversible canary");
+  const originalFields = {
+    subject: template.subject,
+    bodyText: template.body_text,
+    buttonText: template.button_text,
+  };
+  const canaryFields = { ...originalFields, subject: temporarySubject };
+  const staleFields = { ...canaryFields, subject: `${temporarySubject} stale` };
+  const update = (expectedUpdatedAt, fields) => request(templatePath, {
+    method: "PATCH",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ expectedUpdatedAt, ...fields }),
+  });
+  const matches = (row, fields) => row.subject === fields.subject &&
+    row.body_text === fields.bodyText && row.button_text === fields.buttonText;
+
+  const preflightRows = await queryBusiness(rowsSql);
+  assert.deepEqual(preflightRows, beforeRows, "auth email-template content changed before the edit canary");
+  const preexistingCanaryAudit = await queryBusiness(`SELECT id FROM audit_logs
+    WHERE user_id = ${sqlLiteral(adminUserId)} AND action = 'admin_update_email_template' AND resource_type = 'email_template'
+      AND resource_id = ${sqlLiteral(template.id)}`);
+  assert.equal(preexistingCanaryAudit.length, 0, "email-template canary audit baseline was not empty");
+
+  const anonymousEdit = await request(templatePath, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedUpdatedAt: template.updated_at, ...canaryFields }),
+  });
+  assertStatus(anonymousEdit, 401, "unauthenticated auth email-template edit");
+
+  let updatedAt = null;
+  try {
+    const edited = await update(template.updated_at, canaryFields);
+    assertStatus(edited, 200, "MFA-protected auth email-template edit");
+    const editedBody = await edited.json();
+    assert.equal(editedBody.template.subject, temporarySubject);
+    assert.equal(editedBody.template.body_text, template.body_text);
+    assert.equal(editedBody.template.button_text, template.button_text);
+    assert.notEqual(editedBody.template.updated_at, template.updated_at);
+    updatedAt = editedBody.template.updated_at;
+
+    const stale = await update(template.updated_at, {
+      ...staleFields,
+    });
+    assertStatus(stale, 409, "stale auth email-template edit");
+  } finally {
+    const currentResponse = await request(route, { headers: { cookie } });
+    assertStatus(currentResponse, 200, "MFA-protected auth email-template read before restoration");
+    const currentBody = await currentResponse.json();
+    const current = currentBody.templates.find((row) => row.id === template.id);
+    assert.ok(current, "Japanese signup template disappeared during the edit canary");
+
+    if (matches(current, canaryFields) || matches(current, staleFields)) {
+      const restored = await update(current.updated_at, originalFields);
+      assertStatus(restored, 200, "MFA-protected auth email-template restoration");
+      const restoredBody = await restored.json();
+      assert.ok(matches(restoredBody.template, originalFields), "auth email-template content was not restored");
+      updatedAt = restoredBody.template.updated_at;
+    } else {
+      assert.ok(matches(current, originalFields),
+        "auth email-template changed unexpectedly; refusing to overwrite another admin edit");
+    }
+
+    const finalRows = await queryBusiness(rowsSql);
+    const projectContent = (rows) => rows.map(({ updated_at: _updatedAt, ...row }) => row);
+    assert.deepEqual(projectContent(finalRows), projectContent(beforeRows),
+      "auth email-template content or non-editable fields did not return to baseline");
+    const finalTemplate = finalRows.find((row) => row.id === template.id);
+    assert.ok(finalTemplate, "restored Japanese signup template is missing");
+    if (updatedAt) assert.equal(finalTemplate.updated_at, updatedAt, "D1 restoration timestamp differs from the API response");
+    for (const row of finalRows.filter((candidate) => candidate.id !== template.id)) {
+      const original = beforeRows.find((candidate) => candidate.id === row.id);
+      assert.equal(row.updated_at, original?.updated_at, "an unrelated auth email-template timestamp changed");
+    }
+
+    const canaryAuditRows = await queryBusiness(`SELECT id, user_id, action, resource_type, resource_id
+      FROM audit_logs WHERE user_id = ${sqlLiteral(adminUserId)} AND action = 'admin_update_email_template'
+        AND resource_type = 'email_template' AND resource_id = ${sqlLiteral(template.id)}`);
+    if (canaryAuditRows.length) {
+      assert.ok(canaryAuditRows.every((row) => row.user_id === adminUserId && row.resource_id === template.id),
+        "email-template audit rows were not scoped to this canary admin and template");
+      await executeBusiness(`DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(adminUserId)}
+        AND action = 'admin_update_email_template' AND resource_type = 'email_template'
+        AND resource_id = ${sqlLiteral(template.id)}`, "synthetic auth email-template audit cleanup");
+      const remainingAuditRows = await queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs
+        WHERE user_id = ${sqlLiteral(adminUserId)} AND action = 'admin_update_email_template'
+          AND resource_type = 'email_template' AND resource_id = ${sqlLiteral(template.id)}`);
+      assert.equal(Number(remainingAuditRows[0]?.count), 0, "synthetic auth email-template audit rows remained in business D1");
+    }
+    assert.equal(canaryAuditRows.length, updatedAt === template.updated_at ? 0 : 2,
+      "email-template edit/restore did not create the expected two scoped audit rows");
+  }
+}
+
+function digest(value) {
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+async function exerciseReferenceMasterPricingReadback(cookie) {
+  const route = "/api/admin/reference-masters/pricing";
+  const before = await queryMaster(`SELECT a.release_version, a.generation
+    FROM fanmark_reference_master_active_release AS a
+    JOIN fanmark_reference_master_releases AS r
+      ON r.release_version = a.release_version AND r.status = 'ready'
+    WHERE a.singleton_id = 1`);
+  assert.equal(before.length, 1, "active reference-master release is missing");
+  const version = before[0].release_version;
+  const generation = Number(before[0].generation);
+  const expectedTiers = await queryMaster(`SELECT id, tier_level, display_name, description,
+      initial_license_days, is_active
+    FROM fanmark_tier_release_rows
+    WHERE release_version = ${sqlLiteral(version)}
+    ORDER BY tier_level, id`);
+  const expectedPrices = await queryMaster(`SELECT id, tier_level, months, price_yen,
+      is_active, stripe_price_id, stripe_price_id_live
+    FROM fanmark_extension_price_release_rows
+    WHERE release_version = ${sqlLiteral(version)}
+    ORDER BY tier_level, months`);
+  assert.equal(expectedTiers.length, 4, "expected four tier rows in the active release");
+  assert.equal(expectedPrices.length, 16, "expected sixteen extension-price rows in the active release");
+
+  const anonymous = await request(route);
+  assertStatus(anonymous, 401, "unauthenticated reference-master pricing admin read");
+  const response = await request(route, { headers: { cookie } });
+  assertStatus(response, 200, "MFA-protected reference-master pricing read");
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/iu);
+  const body = await response.json();
+  assert.equal(body.schemaVersion, 1);
+  assert.equal(body.releaseVersion, version);
+  assert.equal(body.generation, generation);
+  assert.equal(body.tiers.length, 4);
+  assert.equal(body.extensionPrices.length, 16);
+
+  const normalizedTiers = (rows) => rows.map((row) => ({
+    id: row.id,
+    tier_level: Number(row.tier_level),
+    display_name: row.display_name,
+    description: row.description,
+    initial_license_days: row.initial_license_days === null ? null : Number(row.initial_license_days),
+    is_active: typeof row.is_active === "boolean" ? row.is_active : Number(row.is_active) === 1,
+  }));
+  const normalizedPrices = (rows) => rows.map((row) => ({
+    id: row.id,
+    tier_level: Number(row.tier_level),
+    months: Number(row.months),
+    price_yen: Number(row.price_yen),
+    is_active: typeof row.is_active === "boolean" ? row.is_active : Number(row.is_active) === 1,
+    stripe_price_id: row.stripe_price_id,
+    stripe_price_id_live: row.stripe_price_id_live,
+  }));
+  assert.equal(digest(normalizedTiers(body.tiers)), digest(normalizedTiers(expectedTiers)),
+    "MFA-protected tier DTO differs from active Master D1");
+  assert.equal(digest(normalizedPrices(body.extensionPrices)), digest(normalizedPrices(expectedPrices)),
+    "MFA-protected extension-price DTO differs from active Master D1");
+
+  const publicResponse = await request("/api/reference-masters/fanmark_tier_extension_prices");
+  assertStatus(publicResponse, 200, "public extension-price release read");
+  assert.match(publicResponse.headers.get("cache-control") ?? "", /no-store/iu);
+  const publicBody = await publicResponse.json();
+  assert.equal(publicBody.releaseVersion, version);
+  assert.equal(publicBody.items.length, 16);
+  assert.ok(publicBody.items.every((item) => !Object.keys(item).some((key) => key.toLowerCase().includes("stripe"))));
+
+  const after = await queryMaster(`SELECT release_version, generation
+    FROM fanmark_reference_master_active_release WHERE singleton_id = 1`);
+  assert.deepEqual(after, before, "reference-master admin read changed the active release pointer");
+}
+
+async function readActiveReferenceMasterState() {
+  const activeRows = await queryMaster("SELECT active.release_version, active.generation " +
+    "FROM fanmark_reference_master_active_release AS active " +
+    "JOIN fanmark_reference_master_releases AS release " +
+    "ON release.release_version = active.release_version AND release.status = 'ready' " +
+    "WHERE active.singleton_id = 1");
+  assert.equal(activeRows.length, 1, "active reference-master release is missing or not ready");
+  const releaseVersion = activeRows[0].release_version;
+  const generation = Number(activeRows[0].generation);
+  const versionSql = sqlLiteral(releaseVersion);
+  const [tiers, languages, patterns, prices] = await Promise.all([
+    queryMaster("SELECT id, created_at, description, display_name, emoji_count_max, emoji_count_min, " +
+      "initial_license_days, is_active, monthly_price_cents, tier_level, updated_at " +
+      "FROM fanmark_tier_release_rows WHERE release_version = " + versionSql + " ORDER BY tier_level, id"),
+    queryMaster("SELECT code, created_at, id, is_active, label, native_label, sort_order, updated_at " +
+      "FROM fanmark_language_release_rows WHERE release_version = " + versionSql + " ORDER BY sort_order, code, id"),
+    queryMaster("SELECT created_at, description, id, is_active, pattern, price_yen, updated_at " +
+      "FROM fanmark_reserved_emoji_pattern_release_rows WHERE release_version = " + versionSql + " ORDER BY id"),
+    queryMaster("SELECT id, created_at, is_active, months, price_yen, stripe_price_id, stripe_price_id_live, " +
+      "tier_level, updated_at FROM fanmark_extension_price_release_rows " +
+      "WHERE release_version = " + versionSql + " ORDER BY tier_level, months, id"),
+  ]);
+  assert.equal(tiers.length, 4, "expected four active tier rows");
+  assert.equal(languages.length, 4, "expected four active language rows");
+  assert.equal(patterns.length, 5, "expected five active reserved-pattern rows");
+  assert.equal(prices.length, 16, "expected sixteen active extension-price rows");
+  const afterReads = await queryMaster("SELECT release_version, generation " +
+    "FROM fanmark_reference_master_active_release WHERE singleton_id = 1");
+  assert.deepEqual(afterReads, activeRows, "reference-master release changed while reading its active rows");
+  return { releaseVersion, generation, rows: { tiers, languages, patterns, prices } };
+}
+
+function canonicalReferenceMasterRows(state, tierId, tierDays, priceId = null, priceYen = undefined) {
+  const canonical = {};
+  for (const [tableName, rows] of Object.entries(state.rows)) {
+    canonical[tableName] = rows.map((row) => {
+      const copy = { ...row };
+      delete copy.release_version;
+      delete copy.updated_at;
+      if (tableName === "tiers" && copy.id === tierId) {
+        copy.initial_license_days = tierDays;
+      }
+      if (tableName === "prices" && copy.id === priceId) {
+        copy.price_yen = priceYen;
+      }
+      return Object.fromEntries(Object.entries(copy).sort(([left], [right]) => left.localeCompare(right)));
+    }).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  }
+  return canonical;
+}
+
+async function exerciseReferenceMasterTierRoundtrip(cookie) {
+  const route = "/api/admin/reference-masters/pricing";
+  const businessRows = await queryBusiness("SELECT (SELECT count(*) FROM fanmarks) AS fanmarks, " +
+    "(SELECT count(*) FROM fanmark_licenses) AS licenses");
+  assert.equal(Number(businessRows[0]?.fanmarks), 0, "staging fanmarks must be empty before the master-edit canary");
+  assert.equal(Number(businessRows[0]?.licenses), 0, "staging licenses must be empty before the master-edit canary");
+
+  const baseline = await readActiveReferenceMasterState();
+  const targetTier = baseline.rows.tiers.find((tier) => tier.display_name === "C");
+  assert.ok(targetTier, "perpetual Tier C is missing from staging reference masters");
+  assert.equal(targetTier.initial_license_days, null, "Tier C must retain the PRODUCT.md perpetual baseline");
+  const originalDays = null;
+  const temporaryDays = 1;
+  const anonymous = await request(route, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      expectedReleaseVersion: baseline.releaseVersion,
+      type: "tier",
+      id: targetTier.id,
+      changes: { initialLicenseDays: temporaryDays },
+    }),
+  });
+  assertStatus(anonymous, 401, "anonymous reference-master tier write");
+
+  const initialRead = await request(route, { headers: { cookie } });
+  assertStatus(initialRead, 200, "MFA-protected reference-master canary baseline read");
+  const initialPricing = await initialRead.json();
+  assert.equal(initialPricing.releaseVersion, baseline.releaseVersion);
+  assert.equal(initialPricing.generation, baseline.generation);
+  assert.equal(initialPricing.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, originalDays);
+
+  let writeAttempted = false;
+  let restored = false;
+  try {
+    writeAttempted = true;
+    const update = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: baseline.releaseVersion,
+        type: "tier",
+        id: targetTier.id,
+        changes: { initialLicenseDays: temporaryDays },
+      }),
+    });
+    assertStatus(update, 200, "MFA-protected reference-master tier update");
+    assert.match(update.headers.get("cache-control") ?? "", /no-store/iu);
+    const changedPricing = await update.json();
+    assert.equal(changedPricing.schemaVersion, 1);
+    assert.notEqual(changedPricing.releaseVersion, baseline.releaseVersion);
+    assert.equal(changedPricing.generation, baseline.generation + 1);
+    assert.equal(changedPricing.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, temporaryDays);
+
+    const changedState = await readActiveReferenceMasterState();
+    assert.equal(changedState.releaseVersion, changedPricing.releaseVersion);
+    assert.equal(changedState.generation, baseline.generation + 1);
+    assert.equal(changedState.rows.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, temporaryDays);
+    assert.deepEqual(
+      canonicalReferenceMasterRows(changedState, targetTier.id, originalDays),
+      canonicalReferenceMasterRows(baseline, targetTier.id, originalDays),
+      "the temporary tier edit changed another reference-master value",
+    );
+
+    const stale = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: baseline.releaseVersion,
+        type: "tier",
+        id: targetTier.id,
+        changes: { initialLicenseDays: 2 },
+      }),
+    });
+    assertStatus(stale, 409, "stale reference-master tier write");
+    assert.equal((await stale.json()).error, "reference_master_edit_conflict");
+    const afterStale = await readActiveReferenceMasterState();
+    assert.equal(afterStale.releaseVersion, changedState.releaseVersion);
+    assert.equal(afterStale.generation, changedState.generation);
+    assert.equal(afterStale.rows.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, temporaryDays);
+
+    const restore = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: changedPricing.releaseVersion,
+        type: "tier",
+        id: targetTier.id,
+        changes: { initialLicenseDays: originalDays },
+      }),
+    });
+    assertStatus(restore, 200, "MFA-protected reference-master tier restoration");
+    const restoredPricing = await restore.json();
+    assert.equal(restoredPricing.generation, baseline.generation + 2);
+    assert.notEqual(restoredPricing.releaseVersion, changedPricing.releaseVersion);
+    assert.equal(restoredPricing.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, originalDays);
+
+    const restoredState = await readActiveReferenceMasterState();
+    assert.equal(restoredState.releaseVersion, restoredPricing.releaseVersion);
+    assert.equal(restoredState.generation, baseline.generation + 2);
+    assert.deepEqual(
+      canonicalReferenceMasterRows(restoredState, targetTier.id, originalDays),
+      canonicalReferenceMasterRows(baseline, targetTier.id, originalDays),
+      "restored reference-master values differ from the pre-canary baseline",
+    );
+    const activationRows = await queryMaster("SELECT generation, action, from_version, to_version " +
+      "FROM fanmark_reference_master_release_activations WHERE generation IN (" +
+      String(baseline.generation + 1) + ", " + String(baseline.generation + 2) + ") ORDER BY generation");
+    assert.deepEqual(activationRows.map((row) => ({
+      generation: Number(row.generation),
+      action: row.action,
+      from_version: row.from_version,
+      to_version: row.to_version,
+    })), [
+      { generation: baseline.generation + 1, action: "promotion", from_version: baseline.releaseVersion, to_version: changedPricing.releaseVersion },
+      { generation: baseline.generation + 2, action: "promotion", from_version: changedPricing.releaseVersion, to_version: restoredPricing.releaseVersion },
+    ], "append-only reference-master activation history differs from the two canary edits");
+    restored = true;
+  } finally {
+    if (writeAttempted && !restored) {
+      const current = await readActiveReferenceMasterState();
+      const currentDays = current.rows.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days;
+      const baselineContent = canonicalReferenceMasterRows(baseline, targetTier.id, originalDays);
+      if (currentDays === originalDays &&
+          digest(canonicalReferenceMasterRows(current, targetTier.id, originalDays)) === digest(baselineContent)) {
+        restored = true;
+      } else {
+        assert.equal(currentDays, temporaryDays,
+          "refusing automatic restoration because Tier C no longer has the canary value");
+        assert.equal(digest(canonicalReferenceMasterRows(current, targetTier.id, originalDays)), digest(baselineContent),
+          "refusing automatic restoration because another master value changed concurrently");
+        const currentRead = await request(route, { headers: { cookie } });
+        assertStatus(currentRead, 200, "reference-master cleanup baseline read");
+        const currentPricing = await currentRead.json();
+        assert.equal(currentPricing.releaseVersion, current.releaseVersion);
+        const cleanup = await request(route, {
+          method: "PUT",
+          headers: { cookie, "content-type": "application/json" },
+          body: JSON.stringify({
+            expectedReleaseVersion: current.releaseVersion,
+            type: "tier",
+            id: targetTier.id,
+            changes: { initialLicenseDays: originalDays },
+          }),
+        });
+        assertStatus(cleanup, 200, "reference-master cleanup restoration");
+        const cleanupPricing = await cleanup.json();
+        const cleanupState = await readActiveReferenceMasterState();
+        assert.equal(cleanupState.releaseVersion, cleanupPricing.releaseVersion);
+        assert.equal(cleanupState.rows.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, originalDays);
+        assert.equal(digest(canonicalReferenceMasterRows(cleanupState, targetTier.id, originalDays)), digest(baselineContent),
+          "reference-master cleanup did not restore the pre-canary values");
+        restored = true;
+      }
+    }
+  }
+}
+
+async function exerciseReferenceMasterExtensionPriceRoundtrip(cookie) {
+  const route = "/api/admin/reference-masters/pricing";
+  const businessRows = await queryBusiness("SELECT (SELECT count(*) FROM fanmarks) AS fanmarks, " +
+    "(SELECT count(*) FROM fanmark_licenses) AS licenses");
+  assert.equal(Number(businessRows[0]?.fanmarks), 0, "staging fanmarks must be empty before the price-edit canary");
+  assert.equal(Number(businessRows[0]?.licenses), 0, "staging licenses must be empty before the price-edit canary");
+
+  const baseline = await readActiveReferenceMasterState();
+  const targetPrice = baseline.rows.prices.find((price) =>
+    Number(price.tier_level) === 1 && Number(price.months) === 1 && Number(price.is_active) === 1);
+  assert.ok(targetPrice, "active tier-1 one-month extension price is missing");
+  const originalPriceYen = Number(targetPrice.price_yen);
+  assert.ok(Number.isSafeInteger(originalPriceYen) && originalPriceYen >= 0 && originalPriceYen <= 2_147_483_645,
+    "staging extension price cannot safely accept a temporary one-yen increment");
+  const temporaryPriceYen = originalPriceYen + 1;
+
+  const anonymous = await request(route, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      expectedReleaseVersion: baseline.releaseVersion,
+      type: "extension_price",
+      id: targetPrice.id,
+      changes: { priceYen: temporaryPriceYen },
+    }),
+  });
+  assertStatus(anonymous, 401, "anonymous reference-master extension-price write");
+  const initialRead = await request(route, { headers: { cookie } });
+  assertStatus(initialRead, 200, "MFA-protected extension-price canary baseline read");
+  const initialPricing = await initialRead.json();
+  assert.equal(initialPricing.releaseVersion, baseline.releaseVersion);
+  assert.equal(initialPricing.generation, baseline.generation);
+  assert.equal(initialPricing.extensionPrices.find((price) => price.id === targetPrice.id)?.price_yen, originalPriceYen);
+
+  let writeAttempted = false;
+  let restored = false;
+  try {
+    writeAttempted = true;
+    const update = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: baseline.releaseVersion,
+        type: "extension_price",
+        id: targetPrice.id,
+        changes: { priceYen: temporaryPriceYen },
+      }),
+    });
+    assertStatus(update, 200, "MFA-protected extension-price edit");
+    assert.match(update.headers.get("cache-control") ?? "", /no-store/iu);
+    const changedPricing = await update.json();
+    assert.notEqual(changedPricing.releaseVersion, baseline.releaseVersion);
+    assert.equal(changedPricing.generation, baseline.generation + 1);
+    assert.equal(changedPricing.extensionPrices.find((price) => price.id === targetPrice.id)?.price_yen, temporaryPriceYen);
+
+    const changedState = await readActiveReferenceMasterState();
+    assert.equal(changedState.releaseVersion, changedPricing.releaseVersion);
+    assert.equal(changedState.generation, baseline.generation + 1);
+    assert.equal(changedState.rows.prices.find((price) => price.id === targetPrice.id)?.price_yen, temporaryPriceYen);
+    assert.deepEqual(
+      canonicalReferenceMasterRows(changedState, null, undefined, targetPrice.id, originalPriceYen),
+      canonicalReferenceMasterRows(baseline, null, undefined, targetPrice.id, originalPriceYen),
+      "the temporary extension-price edit changed another reference-master value or Stripe identifier",
+    );
+
+    const stale = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: baseline.releaseVersion,
+        type: "extension_price",
+        id: targetPrice.id,
+        changes: { priceYen: temporaryPriceYen + 1 },
+      }),
+    });
+    assertStatus(stale, 409, "stale reference-master extension-price write");
+    assert.equal((await stale.json()).error, "reference_master_edit_conflict");
+    const afterStale = await readActiveReferenceMasterState();
+    assert.equal(afterStale.releaseVersion, changedState.releaseVersion);
+    assert.equal(afterStale.generation, changedState.generation);
+    assert.equal(afterStale.rows.prices.find((price) => price.id === targetPrice.id)?.price_yen, temporaryPriceYen);
+
+    const restore = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: changedPricing.releaseVersion,
+        type: "extension_price",
+        id: targetPrice.id,
+        changes: { priceYen: originalPriceYen },
+      }),
+    });
+    assertStatus(restore, 200, "MFA-protected extension-price restoration");
+    const restoredPricing = await restore.json();
+    assert.equal(restoredPricing.generation, baseline.generation + 2);
+    assert.notEqual(restoredPricing.releaseVersion, changedPricing.releaseVersion);
+    assert.equal(restoredPricing.extensionPrices.find((price) => price.id === targetPrice.id)?.price_yen, originalPriceYen);
+
+    const restoredState = await readActiveReferenceMasterState();
+    assert.equal(restoredState.releaseVersion, restoredPricing.releaseVersion);
+    assert.equal(restoredState.generation, baseline.generation + 2);
+    assert.deepEqual(
+      canonicalReferenceMasterRows(restoredState, null, undefined, targetPrice.id, originalPriceYen),
+      canonicalReferenceMasterRows(baseline, null, undefined, targetPrice.id, originalPriceYen),
+      "restored extension-price release differs from the pre-canary values or Stripe identifiers",
+    );
+    const publicRead = await request("/api/reference-masters/fanmark_tier_extension_prices");
+    assertStatus(publicRead, 200, "public extension-price read after admin restoration");
+    assert.match(publicRead.headers.get("cache-control") ?? "", /no-store/iu);
+    const publicPricing = await publicRead.json();
+    assert.equal(publicPricing.releaseVersion, restoredState.releaseVersion);
+    assert.ok(publicPricing.items.every((item) =>
+      !Object.keys(item).some((key) => key.toLowerCase().includes("stripe"))),
+    "public extension-price DTO exposed a Stripe identifier");
+    const publicTarget = publicPricing.items.find((item) =>
+      item.tierLevel === Number(targetPrice.tier_level) && item.months === Number(targetPrice.months));
+    assert.equal(publicTarget?.priceYen, originalPriceYen);
+
+    const activationRows = await queryMaster("SELECT generation, action, from_version, to_version " +
+      "FROM fanmark_reference_master_release_activations WHERE generation IN (" +
+      String(baseline.generation + 1) + ", " + String(baseline.generation + 2) + ") ORDER BY generation");
+    assert.deepEqual(activationRows.map((row) => ({
+      generation: Number(row.generation),
+      action: row.action,
+      from_version: row.from_version,
+      to_version: row.to_version,
+    })), [
+      { generation: baseline.generation + 1, action: "promotion", from_version: baseline.releaseVersion, to_version: changedPricing.releaseVersion },
+      { generation: baseline.generation + 2, action: "promotion", from_version: changedPricing.releaseVersion, to_version: restoredPricing.releaseVersion },
+    ], "append-only extension-price activation history differs from the edit/restore pair");
+    restored = true;
+  } finally {
+    if (writeAttempted && !restored) {
+      const current = await readActiveReferenceMasterState();
+      const currentYen = Number(current.rows.prices.find((price) => price.id === targetPrice.id)?.price_yen);
+      const baselineContent = canonicalReferenceMasterRows(baseline, null, undefined, targetPrice.id, originalPriceYen);
+      if (currentYen === originalPriceYen &&
+          digest(canonicalReferenceMasterRows(current, null, undefined, targetPrice.id, originalPriceYen)) === digest(baselineContent)) {
+        restored = true;
+      } else {
+        assert.equal(currentYen, temporaryPriceYen,
+          "refusing automatic price restoration because the row no longer has the canary value");
+        assert.equal(digest(canonicalReferenceMasterRows(current, null, undefined, targetPrice.id, originalPriceYen)), digest(baselineContent),
+          "refusing automatic price restoration because another master value changed concurrently");
+        const currentRead = await request(route, { headers: { cookie } });
+        assertStatus(currentRead, 200, "extension-price cleanup baseline read");
+        const currentPricing = await currentRead.json();
+        assert.equal(currentPricing.releaseVersion, current.releaseVersion);
+        const cleanup = await request(route, {
+          method: "PUT",
+          headers: { cookie, "content-type": "application/json" },
+          body: JSON.stringify({
+            expectedReleaseVersion: current.releaseVersion,
+            type: "extension_price",
+            id: targetPrice.id,
+            changes: { priceYen: originalPriceYen },
+          }),
+        });
+        assertStatus(cleanup, 200, "extension-price cleanup restoration");
+        const cleanupPricing = await cleanup.json();
+        const cleanupState = await readActiveReferenceMasterState();
+        assert.equal(cleanupState.releaseVersion, cleanupPricing.releaseVersion);
+        assert.equal(Number(cleanupState.rows.prices.find((price) => price.id === targetPrice.id)?.price_yen), originalPriceYen);
+        assert.equal(digest(canonicalReferenceMasterRows(cleanupState, null, undefined, targetPrice.id, originalPriceYen)), digest(baselineContent),
+          "extension-price cleanup did not restore the pre-canary values");
+        restored = true;
+      }
+    }
+  }
+}
+
+async function exerciseAdminUserManagementReadback(cookie, target) {
+  const route = "/api/admin/users";
+  const listBody = { search: target.email, page: 1, pageSize: 20 };
+  const unfiltered = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ page: 1, pageSize: 20 }),
+  });
+  assertStatus(unfiltered, 200, "MFA-protected unfiltered admin user list");
+  assert.match(unfiltered.headers.get("cache-control") ?? "", /no-store/iu);
+  const unfilteredBody = await unfiltered.json();
+  assert.ok(unfilteredBody.data.some((user) => user.userId === target.userId),
+    "unfiltered user list omitted the synthetic target");
+
+  const usernameMatch = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ search: target.username, page: 1, pageSize: 20 }),
+  });
+  assertStatus(usernameMatch, 200, "MFA-protected profile-field admin user search");
+  const usernameMatchBody = await usernameMatch.json();
+  assert.equal(usernameMatchBody.data.length, 1);
+  assert.equal(usernameMatchBody.data[0].userId, target.userId);
+
+  const anonymousList = await request(route, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(listBody),
+  });
+  assertStatus(anonymousList, 401, "anonymous admin user list");
+
+  const listed = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify(listBody),
+  });
+  if (listed.status !== 200) {
+    const failure = await listed.json().catch(() => null);
+    throw new Error(`MFA-protected synthetic user list returned HTTP ${listed.status} (${failure?.error ?? "no error code"})`);
+  }
+  assert.match(listed.headers.get("cache-control") ?? "", /no-store/iu);
+  const list = await listed.json();
+  assert.equal(list.data.length, 1);
+  assert.equal(list.data[0].userId, target.userId);
+  assert.equal(list.data[0].email, target.email);
+  assert.equal(list.data[0].username, target.username);
+  assert.equal(list.data[0].planType, "free");
+  assert.deepEqual(list.data[0].licenseCounts, { active: 0, grace: 0, expired: 0 });
+  assert.deepEqual(list.filters, { search: target.email, plans: null, status: null });
+
+  const anonymousDetail = await request(`${route}/${encodeURIComponent(target.userId)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId }),
+  });
+  assertStatus(anonymousDetail, 401, "anonymous admin user detail");
+
+  const detailResponse = await request(`${route}/${encodeURIComponent(target.userId)}`, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId }),
+  });
+  assertStatus(detailResponse, 200, "MFA-protected synthetic user detail");
+  assert.match(detailResponse.headers.get("cache-control") ?? "", /no-store/iu);
+  const detail = await detailResponse.json();
+  assert.equal(detail.auth.email, target.email);
+  assert.equal(detail.profile.userId, target.userId);
+  assert.equal(detail.profile.username, target.username);
+  assert.equal(detail.profile.planType, "free");
+  assert.deepEqual(detail.licenseSummary, { active: 0, grace: 0, expired: 0, total: 0 });
+  assert.deepEqual(detail.recentFanmarks, []);
+  assert.ok(!/password|credential|secret|token/iu.test(JSON.stringify(detail)));
+}
+
+async function exerciseAdminUserPlanReadback(cookie, target) {
+  const route = `/api/admin/users/${encodeURIComponent(target.userId)}/plan`;
+  const anonymous = await request(route, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, newPlanType: "enterprise" }),
+  });
+  assertStatus(anonymous, 401, "anonymous admin plan update");
+
+  const enterprise = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      userId: target.userId,
+      newPlanType: "enterprise",
+      enterpriseOverrides: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic staging verification" },
+      reason: "synthetic staging verification",
+    }),
+  });
+  assertStatus(enterprise, 200, "MFA-protected Enterprise plan update");
+  const enterpriseBody = await enterprise.json();
+  assert.equal(enterpriseBody.success, true);
+  assert.equal(enterpriseBody.previousPlanType, "free");
+  assert.equal(enterpriseBody.newPlanType, "enterprise");
+  assert.deepEqual(enterpriseBody.enterpriseSettings, {
+    customFanmarksLimit: 250,
+    customPricing: 55000,
+    notes: "synthetic staging verification",
+  });
+  assert.ok(Number.isFinite(Date.parse(enterpriseBody.updatedAt)), "plan response did not contain an update timestamp");
+
+  const rows = await queryBusiness(`SELECT id, custom_fanmarks_limit, custom_pricing, notes, created_by
+    FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(target.userId)}`);
+  assert.equal(rows.length, 1, "Enterprise settings row was not written exactly once");
+  assert.equal(Number(rows[0].custom_fanmarks_limit), 250);
+  assert.equal(Number(rows[0].custom_pricing), 55000);
+  assert.equal(rows[0].notes, "synthetic staging verification");
+  assert.equal(rows[0].created_by, target.adminUserId);
+
+  const max = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, newPlanType: "max" }),
+  });
+  assertStatus(max, 200, "MFA-protected Max plan update and Enterprise cleanup");
+  assert.equal((await max.json()).newPlanType, "max");
+  const deletedSettings = await queryBusiness(`SELECT COUNT(*) AS count FROM enterprise_user_settings
+    WHERE user_id = ${sqlLiteral(target.userId)}`);
+  assert.equal(Number(deletedSettings[0]?.count), 0, "Enterprise settings remained after leaving Enterprise");
+
+  const restore = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, newPlanType: "free" }),
+  });
+  assertStatus(restore, 200, "synthetic plan baseline restoration");
+  assert.equal((await restore.json()).newPlanType, "free");
+  const finalProfile = await queryBusiness(`SELECT plan_type FROM user_settings WHERE user_id = ${sqlLiteral(target.userId)}`);
+  assert.equal(finalProfile[0]?.plan_type, "free", "synthetic plan baseline was not restored");
+}
+
+async function readSystemSettingValue(key) {
+  const rows = await queryBusiness(`SELECT setting_value FROM system_settings WHERE setting_key = ${sqlLiteral(key)} AND is_public = 1`);
+  assert.equal(rows.length, 1, "the allowlisted public system setting is missing or duplicated");
+  assert.equal(typeof rows[0].setting_value, "string");
+  return rows[0].setting_value;
+}
+
+async function restoreSystemSetting(cookie, state) {
+  if (!state.key || state.originalValue === null || state.temporaryValue === null) return;
+  const current = await readSystemSettingValue(state.key);
+  if (current === state.originalValue) return;
+  assert.equal(current, state.temporaryValue, "system setting changed to an unexpected value during canary");
+  const response = await request("/api/admin/system-settings", {
+    method: "PATCH",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ key: state.key, value: state.originalValue, expectedValue: state.temporaryValue }),
+  });
+  assertStatus(response, 200, "system setting baseline restoration");
+  assert.deepEqual(await response.json(), { schemaVersion: 1, updatedSetting: state.key });
+  assert.equal(await readSystemSettingValue(state.key), state.originalValue, "system setting baseline was not restored");
+}
+
+async function exerciseSystemSettingsReadback(cookie, adminUserId, state) {
+  const route = "/api/admin/system-settings";
+  const anonymous = await request(route);
+  assertStatus(anonymous, 401, "anonymous admin system settings read");
+
+  const admin = await request(route, { headers: { cookie } });
+  assertStatus(admin, 200, "MFA-protected admin system settings read");
+  const adminPayload = await admin.json();
+  const expectedAdminKeys = [
+    "invitation_mode", "social_login_enabled", "free_fanmarks_limit", "creator_fanmarks_limit",
+    "max_fanmarks_limit", "business_fanmarks_limit", "premium_pricing", "max_pricing",
+    "business_pricing", "max_emoji_characters", "creator_stripe_price_id", "max_stripe_price_id",
+    "business_stripe_price_id", "creator_stripe_price_id_live", "max_stripe_price_id_live",
+    "business_stripe_price_id_live", "stripe_mode", "enterprise_fanmarks_limit", "enterprise_pricing",
+  ].sort();
+  assert.equal(adminPayload.schemaVersion, 1);
+  assert.deepEqual(Object.keys(adminPayload.settings ?? {}).sort(), expectedAdminKeys);
+  assert.ok(Object.values(adminPayload.settings).every((value) => typeof value === "string"));
+
+  state.key = "max_emoji_characters";
+  state.originalValue = await readSystemSettingValue(state.key);
+  assert.match(state.originalValue, /^(?:0|[1-9]\d*)$/u);
+  const originalNumber = Number(state.originalValue);
+  assert.ok(Number.isSafeInteger(originalNumber) && originalNumber >= 1 && originalNumber <= 1_000_000);
+  state.temporaryValue = String(originalNumber === 1_000_000 ? originalNumber - 1 : originalNumber + 1);
+
+  try {
+    const update = await request(route, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ key: state.key, value: state.temporaryValue, expectedValue: state.originalValue }),
+    });
+    assertStatus(update, 200, "MFA-protected system setting update");
+    assert.deepEqual(await update.json(), { schemaVersion: 1, updatedSetting: state.key });
+    assert.equal(await readSystemSettingValue(state.key), state.temporaryValue, "system setting update did not reach D1");
+
+    const stale = await request(route, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ key: state.key, value: state.originalValue, expectedValue: state.originalValue }),
+    });
+    assertStatus(stale, 409, "stale system setting update");
+    assert.equal(await readSystemSettingValue(state.key), state.temporaryValue, "stale update changed the setting");
+  } finally {
+    await restoreSystemSetting(cookie, state);
+  }
+
+  const auditRows = await queryBusiness(`SELECT action, resource_type, resource_id, metadata FROM audit_logs
+    WHERE user_id = ${sqlLiteral(adminUserId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING'
+      AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(state.key)} ORDER BY created_at, id`);
+  assert.equal(auditRows.length, 2, "expected the update and restoration audit rows");
+  for (const row of auditRows) {
+    assert.deepEqual(JSON.parse(row.metadata), { settingKey: state.key });
+  }
+}
+
+async function readPublicLifecycleDays() {
+  const response = await request("/api/system/lifecycle");
+  assertStatus(response, 200, "public lifecycle settings read");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  const body = await response.json();
+  assert.equal(body.schemaVersion, 1);
+  assert.deepEqual(Object.keys(body.settings ?? {}), ["grace_period_days"]);
+  assert.ok(Number.isSafeInteger(body.settings.grace_period_days));
+  assert.ok(body.settings.grace_period_days >= 1 && body.settings.grace_period_days <= 365);
+  return body.settings.grace_period_days;
+}
+
+async function restoreLifecycleSetting(cookie, state) {
+  if (state.originalValue === null || state.temporaryValue === null) return;
+  const current = await readPublicLifecycleDays();
+  if (current === state.originalValue) return;
+  assert.equal(current, state.temporaryValue, "lifecycle setting changed to an unexpected value during canary");
+  const restore = await request("/api/admin/system-settings/lifecycle", {
+    method: "PATCH",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ grace_period_days: state.originalValue }),
+  });
+  assertStatus(restore, 200, "lifecycle setting baseline restoration");
+  assert.deepEqual(await restore.json(), {
+    schemaVersion: 1,
+    settings: { grace_period_days: state.originalValue },
+  });
+  assert.equal(await readPublicLifecycleDays(), state.originalValue, "lifecycle setting baseline was not restored");
+}
+
+async function exerciseLifecycleSettingsReadback(cookie, state) {
+  const route = "/api/admin/system-settings/lifecycle";
+  state.originalValue = await readPublicLifecycleDays();
+  assert.equal(await readSystemSettingValue("grace_period_days"), String(state.originalValue));
+  state.temporaryValue = state.originalValue === 365 ? 364 : state.originalValue + 1;
+
+  try {
+    const anonymous = await request(route, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ grace_period_days: state.temporaryValue }),
+    });
+    assertStatus(anonymous, 401, "anonymous lifecycle setting update");
+    assert.equal(await readPublicLifecycleDays(), state.originalValue, "anonymous lifecycle update changed D1");
+
+    const update = await request(route, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ grace_period_days: state.temporaryValue }),
+    });
+    assertStatus(update, 200, "MFA-protected lifecycle setting update");
+    assert.deepEqual(await update.json(), {
+      schemaVersion: 1,
+      settings: { grace_period_days: state.temporaryValue },
+    });
+    assert.equal(await readPublicLifecycleDays(), state.temporaryValue, "lifecycle setting did not reach public D1 readback");
+
+    const invalid = await request(route, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ grace_period_days: 0 }),
+    });
+    assertStatus(invalid, 400, "invalid lifecycle setting update");
+    assert.equal(await readPublicLifecycleDays(), state.temporaryValue, "invalid lifecycle update changed D1");
+  } finally {
+    await restoreLifecycleSetting(cookie, state);
+  }
+}
+
+async function cleanupEmptyManualLifecycleJournals(targetIncarnation) {
+  const expiryRuns = await queryBusiness(`SELECT run_id, status, candidate_count, processed_count, conflict_count
+    FROM license_expiry_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}`);
+  const finalizationRuns = await queryBusiness(`SELECT run_id, status, candidate_count, processed_count, conflict_count
+    FROM license_grace_finalization_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}`);
+  if (expiryRuns.length === 0 && finalizationRuns.length === 0) return;
+  assert.equal(expiryRuns.length, 1, "manual lifecycle cleanup found an unexpected number of expiry journals");
+  assert.equal(finalizationRuns.length, 1, "manual lifecycle cleanup found an unexpected number of finalization journals");
+  for (const [row, label] of [[expiryRuns[0], "expiry"], [finalizationRuns[0], "finalization"]]) {
+    assert.equal(row.status, "completed", `${label} lifecycle journal is not safe to remove`);
+    assert.equal(Number(row.candidate_count), 0, `${label} lifecycle journal contains candidates`);
+    assert.equal(Number(row.processed_count), 0, `${label} lifecycle journal contains processed rows`);
+    assert.equal(Number(row.conflict_count), 0, `${label} lifecycle journal contains conflicts`);
+  }
+  const runIds = [expiryRuns[0].run_id, finalizationRuns[0].run_id];
+  const journalDetails = await queryBusiness(`SELECT
+    (SELECT COUNT(*) FROM license_expiry_run_items WHERE run_id = ${sqlLiteral(runIds[0])}) AS expiry_items,
+    (SELECT COUNT(*) FROM license_grace_finalization_items WHERE run_id = ${sqlLiteral(runIds[1])}) AS finalization_items,
+    (SELECT COUNT(*) FROM license_expiry_effect_guards) AS effect_guards,
+    (SELECT COUNT(*) FROM fanmarks) AS fanmarks,
+    (SELECT COUNT(*) FROM fanmark_licenses) AS licenses`);
+  assert.deepEqual(journalDetails, [{ expiry_items: 0, finalization_items: 0, effect_guards: 0, fanmarks: 0, licenses: 0 }],
+    "manual lifecycle cleanup refuses to remove journals with effects or business rows");
+
+  await executeBusiness(
+    `DELETE FROM license_grace_finalization_runs WHERE run_id = ${sqlLiteral(runIds[1])};\n` +
+    `DELETE FROM license_expiry_runs WHERE run_id = ${sqlLiteral(runIds[0])};`,
+    "empty synthetic manual lifecycle journal cleanup",
+  );
+  const finalCounts = await queryBusiness(`SELECT
+    (SELECT COUNT(*) FROM license_expiry_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}) AS expiry_runs,
+    (SELECT COUNT(*) FROM license_expiry_run_items) AS expiry_items,
+    (SELECT COUNT(*) FROM license_grace_finalization_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}) AS finalization_runs,
+    (SELECT COUNT(*) FROM license_grace_finalization_items) AS finalization_items,
+    (SELECT COUNT(*) FROM license_expiry_effect_guards) AS effect_guards`);
+  assert.deepEqual(finalCounts, [{
+    expiry_runs: 0, expiry_items: 0, finalization_runs: 0, finalization_items: 0, effect_guards: 0,
+  }], "manual lifecycle canary left a run journal or effect guard behind");
+}
+
+async function exerciseManualLifecycleRun(cookie) {
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  const targetIncarnation = config.vars?.LICENSE_EXPIRY_TARGET_INCARNATION;
+  const schemaDigest = config.vars?.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST;
+  assert.equal(config.vars?.LIFECYCLE_RUN_BACKEND, "d1");
+  assert.equal(config.vars?.LICENSE_EXPIRY_BACKEND, undefined, "scheduled expiry must stay disabled during the manual canary");
+  assert.equal(typeof targetIncarnation, "string");
+  assert.match(schemaDigest ?? "", /^[0-9a-f]{64}$/u);
+
+  const baseline = await queryBusiness(`SELECT
+    (SELECT COUNT(*) FROM fanmarks) AS fanmarks,
+    (SELECT COUNT(*) FROM fanmark_licenses) AS licenses,
+    (SELECT COUNT(*) FROM license_expiry_runs) AS expiry_runs,
+    (SELECT COUNT(*) FROM license_expiry_run_items) AS expiry_items,
+    (SELECT COUNT(*) FROM license_grace_finalization_runs) AS finalization_runs,
+    (SELECT COUNT(*) FROM license_grace_finalization_items) AS finalization_items,
+    (SELECT COUNT(*) FROM license_expiry_effect_guards) AS effect_guards`);
+  assert.deepEqual(baseline, [{
+    fanmarks: 0, licenses: 0, expiry_runs: 0, expiry_items: 0,
+    finalization_runs: 0, finalization_items: 0, effect_guards: 0,
+  }], "manual lifecycle canary requires empty synthetic business and journal baselines");
+
+  try {
+    const response = await request("/api/admin/license-expiry/run", {
+      method: "POST",
+      headers: { cookie },
+    });
+    assertStatus(response, 200, "MFA-protected manual lifecycle execution");
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    const result = await response.json();
+    assert.deepEqual(Object.keys(result).sort(), [
+      "activeToGrace", "elapsedMs", "graceFinalization", "pagesLimit", "schemaVersion", "status",
+    ].sort());
+    assert.equal(result.schemaVersion, 1);
+    assert.equal(result.status, "completed");
+    assert.deepEqual(result.activeToGrace, {
+      status: "completed", candidateCount: 0, processed: 0, conflicts: 0, pagesProcessed: 0,
+    });
+    assert.deepEqual(result.graceFinalization, {
+      status: "completed", candidateCount: 0, processed: 0, conflicts: 0, pagesProcessed: 0,
+    });
+    assert.equal(result.pagesLimit, 4);
+    assert.ok(Number.isSafeInteger(result.elapsedMs) && result.elapsedMs >= 0);
+
+    const expiryRuns = await queryBusiness(`SELECT run_id, target_incarnation, schema_extension_digest
+      FROM license_expiry_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}`);
+    const finalizationRuns = await queryBusiness(`SELECT run_id, target_incarnation, schema_extension_digest
+      FROM license_grace_finalization_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}`);
+    assert.equal(expiryRuns.length, 1, "manual API did not create exactly one expiry run journal");
+    assert.equal(finalizationRuns.length, 1, "manual API did not create exactly one finalization journal");
+    for (const [row, label] of [[expiryRuns[0], "expiry"], [finalizationRuns[0], "finalization"]]) {
+      assert.equal(row.target_incarnation, targetIncarnation);
+      assert.equal(row.schema_extension_digest, schemaDigest);
+      assert.match(row.run_id, /^[0-9a-f-]{36}$/iu, `${label} journal ID is invalid`);
+    }
+  } finally {
+    await cleanupEmptyManualLifecycleJournals(targetIncarnation);
+  }
+}
+
+async function exerciseAdminUserStatusReadback(cookie, target) {
+  const route = `/api/admin/users/${encodeURIComponent(target.userId)}/status`;
+  const now = new Date();
+  const until = new Date(now.getTime() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString();
+  const sessionId = randomUUID();
+  const sessionToken = randomBytes(32).toString("hex");
+  await executeFile(
+    `INSERT INTO "session" ("id", "expiresAt", "token", "createdAt", "updatedAt", "userId") VALUES (${sqlLiteral(sessionId)}, ${sqlLiteral(new Date(now.getTime() + 60_000).toISOString())}, ${sqlLiteral(sessionToken)}, ${sqlLiteral(now.toISOString())}, ${sqlLiteral(now.toISOString())}, ${sqlLiteral(target.userId)});`,
+    "synthetic target session provision",
+  );
+
+  const anonymous = await request(route, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, suspend: true, reason: "synthetic staging verification" }),
+  });
+  assertStatus(anonymous, 401, "anonymous admin user-status update");
+
+  const suspended = await request(route, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, suspend: true, reason: "synthetic staging verification", bannedUntil: until }),
+  });
+  assertStatus(suspended, 200, "MFA-protected synthetic user suspension");
+  const suspendedBody = await suspended.json();
+  assert.equal(suspendedBody.status, "suspended");
+  assert.equal(Date.parse(suspendedBody.bannedUntil), Date.parse(until),
+    "suspension response did not preserve the requested expiry instant");
+  const [suspendedUser, remainingSessions, suspendedAudit] = await Promise.all([
+    query(`SELECT banned, banReason, banExpires FROM "user" WHERE id = ${sqlLiteral(target.userId)}`),
+    query(`SELECT COUNT(*) AS count FROM "session" WHERE "userId" = ${sqlLiteral(target.userId)}`),
+    query(`SELECT actorUserId, action, reason, banExpires FROM "adminUserStatusAudit" WHERE targetUserId = ${sqlLiteral(target.userId)}`),
+  ]);
+  assert.deepEqual(suspendedUser.map(({ banned, banReason }) => ({ banned, banReason })), [
+    { banned: 1, banReason: "synthetic staging verification" },
+  ]);
+  assert.equal(Date.parse(suspendedUser[0]?.banExpires), Date.parse(until),
+    "D1 suspension expiry did not preserve the requested instant");
+  assert.equal(Number(remainingSessions[0]?.count), 0, "suspension left a target session active");
+  assert.deepEqual(suspendedAudit.map(({ actorUserId, action, reason }) => ({ actorUserId, action, reason })), [{
+    actorUserId: target.adminUserId,
+    action: "ADMIN_SUSPEND_USER",
+    reason: "synthetic staging verification",
+  }]);
+  assert.equal(Date.parse(suspendedAudit[0]?.banExpires), Date.parse(until),
+    "D1 suspension audit did not preserve the requested instant");
+
+  const suspendedList = await request("/api/admin/users", {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ search: target.email, status: "suspended", page: 1, pageSize: 10 }),
+  });
+  assertStatus(suspendedList, 200, "MFA-protected suspended-user filter");
+  const suspendedListBody = await suspendedList.json();
+  assert.equal(suspendedListBody.data.length, 1);
+  assert.equal(suspendedListBody.data[0].userId, target.userId);
+  assert.equal(suspendedListBody.data[0].status, "suspended");
+
+  const suspendedDetail = await request(`/api/admin/users/${encodeURIComponent(target.userId)}`, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId }),
+  });
+  assertStatus(suspendedDetail, 200, "MFA-protected suspended-user detail");
+  const detailBody = await suspendedDetail.json();
+  assert.equal(detailBody.auth.status, "suspended");
+  assert.equal(Date.parse(detailBody.auth.bannedUntil), Date.parse(until),
+    "suspended detail did not preserve the requested expiry instant");
+  assert.ok(detailBody.recentAuditLogs.some((entry) => entry.action === "ADMIN_SUSPEND_USER"));
+
+  const restored = await request(route, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, suspend: false, reason: "synthetic baseline restore" }),
+  });
+  assertStatus(restored, 200, "MFA-protected synthetic user restoration");
+  assert.equal((await restored.json()).status, "active");
+  const [restoredUser, auditCount] = await Promise.all([
+    query(`SELECT banned, banReason, banExpires FROM "user" WHERE id = ${sqlLiteral(target.userId)}`),
+    query(`SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE targetUserId = ${sqlLiteral(target.userId)}`),
+  ]);
+  assert.deepEqual(restoredUser, [{ banned: 0, banReason: null, banExpires: null }]);
+  assert.equal(Number(auditCount[0]?.count), 2, "suspension and restoration were not both audited");
+
+  const createdAt = new Date().toISOString();
+  await executeBusiness(`
+    INSERT INTO fanmarks (id, user_input_fanmark, normalized_emoji, short_id, status, created_at, updated_at, emoji_ids, normalized_emoji_ids, tier_level)
+    VALUES (${sqlLiteral(target.expiryFanmarkId)}, ${sqlLiteral(target.expiryFanmark)}, ${sqlLiteral(target.expiryFanmark)}, ${sqlLiteral(target.expiryShortId)}, 'active', ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)}, ${sqlLiteral(JSON.stringify([target.expiryFanmarkId]))}, ${sqlLiteral(JSON.stringify([target.expiryFanmarkId]))}, 1);
+    INSERT INTO fanmark_licenses (id, fanmark_id, user_id, license_start, license_end, status, is_initial_license, created_at, updated_at, display_fanmark)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, ${sqlLiteral(target.expiryFanmarkId)}, ${sqlLiteral(target.userId)}, ${sqlLiteral(createdAt)}, '2999-12-31T23:59:59.000Z', 'active', 1, ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)}, ${sqlLiteral(target.expiryFanmark)});
+    INSERT INTO fanmark_basic_configs (license_id, fanmark_name, access_type, created_at, updated_at)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, ${sqlLiteral(target.expiryFanmark)}, 'profile', ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)});
+    INSERT INTO fanmark_redirect_configs (license_id, target_url, created_at, updated_at)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, 'https://example.invalid/synthetic', ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)});
+    INSERT INTO fanmark_messageboard_configs (license_id, content, created_at, updated_at)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, 'synthetic expiry test', ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)});
+    INSERT INTO fanmark_password_configs (license_id, access_password, is_enabled, created_at, updated_at)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, 'synthetic-only-placeholder', 1, ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)});
+  `, "synthetic immediate-expiry license and configs provision");
+
+  const expirePath = `/api/admin/users/${encodeURIComponent(target.userId)}/licenses/${encodeURIComponent(target.expiryLicenseId)}/expire`;
+  const anonymousExpire = await request(expirePath, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, licenseId: target.expiryLicenseId, reason: "synthetic staging verification" }),
+  });
+  assertStatus(anonymousExpire, 401, "anonymous admin license expiry");
+
+  const expired = await request(expirePath, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, licenseId: target.expiryLicenseId, reason: "synthetic staging verification" }),
+  });
+  assertStatus(expired, 200, "MFA-protected synthetic immediate license expiry");
+  const expiredBody = await expired.json();
+  assert.equal(expiredBody.success, true);
+  assert.equal(expiredBody.licenseId, target.expiryLicenseId);
+  assert.equal(expiredBody.alreadyExpired, false);
+  assert.ok(Number.isFinite(Date.parse(expiredBody.updatedAt)), "expiry response did not contain a valid timestamp");
+  const eventKey = `admin_expired_${target.expiryLicenseId}_${new Date(expiredBody.updatedAt).getTime()}`;
+  const [expiredLicense, configCounts, expiryAudit, expiryEvent] = await Promise.all([
+    queryBusiness(`SELECT status, license_end, grace_expires_at, excluded_at FROM fanmark_licenses WHERE id = ${sqlLiteral(target.expiryLicenseId)}`),
+    queryBusiness(`SELECT
+      (SELECT COUNT(*) FROM fanmark_basic_configs WHERE license_id = ${sqlLiteral(target.expiryLicenseId)}) AS basic,
+      (SELECT COUNT(*) FROM fanmark_redirect_configs WHERE license_id = ${sqlLiteral(target.expiryLicenseId)}) AS redirect,
+      (SELECT COUNT(*) FROM fanmark_messageboard_configs WHERE license_id = ${sqlLiteral(target.expiryLicenseId)}) AS messageboard,
+      (SELECT COUNT(*) FROM fanmark_password_configs WHERE license_id = ${sqlLiteral(target.expiryLicenseId)}) AS password`),
+    queryBusiness(`SELECT user_id, action, metadata FROM audit_logs WHERE action = 'license_expired' AND resource_id = ${sqlLiteral(target.expiryLicenseId)}`),
+    queryBusiness(`SELECT event_type, source, payload_schema, status, payload FROM notification_events WHERE dedupe_key = ${sqlLiteral(eventKey)}`),
+  ]);
+  assert.deepEqual(expiredLicense, [{
+    status: "expired", license_end: expiredBody.updatedAt,
+    grace_expires_at: expiredBody.updatedAt, excluded_at: expiredBody.updatedAt,
+  }]);
+  assert.deepEqual(configCounts, [{ basic: 0, redirect: 0, messageboard: 0, password: 0 }]);
+  assert.equal(expiryAudit.length, 1);
+  assert.equal(expiryAudit[0].user_id, target.userId);
+  assert.equal(expiryAudit[0].action, "license_expired");
+  assert.equal(JSON.parse(expiryAudit[0].metadata).admin_user_id, target.adminUserId);
+  assert.equal(expiryEvent.length, 1, "license expiry notification event was not queued exactly once");
+  assert.equal(expiryEvent[0].event_type, "license_expired");
+  assert.equal(expiryEvent[0].source, "admin_ui");
+  assert.equal(expiryEvent[0].payload_schema, "license_expired.v1");
+  assert.ok(["pending", "processing", "processed"].includes(expiryEvent[0].status));
+  assert.deepEqual(JSON.parse(expiryEvent[0].payload), {
+    user_id: target.userId, fanmark_id: target.expiryFanmarkId, fanmark_name: target.expiryFanmark,
+    expired_at: expiredBody.updatedAt, license_end: "2999-12-31T23:59:59.000Z",
+  });
+  const repeated = await request(expirePath, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, licenseId: target.expiryLicenseId }),
+  });
+  assertStatus(repeated, 200, "repeat immediate license expiry");
+  assert.equal((await repeated.json()).alreadyExpired, true);
+  const [eventCount, expiryAuditCount] = await Promise.all([
+    queryBusiness(`SELECT COUNT(*) AS count FROM notification_events WHERE dedupe_key = ${sqlLiteral(eventKey)}`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'license_expired' AND resource_id = ${sqlLiteral(target.expiryLicenseId)}`),
+  ]);
+  assert.equal(Number(eventCount[0]?.count), 1, "repeat expiry duplicated notification event");
+  assert.equal(Number(expiryAuditCount[0]?.count), 1, "repeat expiry duplicated lifecycle audit");
+}
+
+async function exerciseAvailabilityRulesAdmin(cookie) {
+  const route = "/api/admin/availability-rules";
+  const initialRows = await queryBusiness(`SELECT id, rule_type, priority, is_available, rule_config
+    FROM fanmark_availability_rules ORDER BY priority ASC, id ASC`);
+  assert.equal(initialRows.length, 4, "expected the four non-user availability rules in staging D1");
+  assert.ok(initialRows.every((row) => Number(row.is_available) === 0), "availability rules must start disabled in the source snapshot");
+
+  const anonymous = await request(route);
+  assertStatus(anonymous, 401, "unauthenticated availability rule admin read");
+  const response = await request(route, { headers: { cookie } });
+  assertStatus(response, 200, "MFA-protected availability rule list");
+  const body = await response.json();
+  assert.equal(body.schemaVersion, 1);
+  assert.equal(body.rules.length, 4);
+  assert.ok(body.rules.every((rule) => !Object.hasOwn(rule, "created_by") && !Object.hasOwn(rule, "user_id")));
+  const target = body.rules.find((rule) => rule.rule_type === "specific_pattern");
+  assert.ok(target, "specific-pattern rule is missing from staging");
+  assert.equal(target.is_available, false);
+
+  let changed = null;
+  let restored = false;
+  try {
+    const update = await request(`${route}/${encodeURIComponent(target.id)}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ isAvailable: true, expectedUpdatedAt: target.updated_at }),
+    });
+    assertStatus(update, 200, "MFA-protected availability rule edit");
+    changed = (await update.json()).rule;
+    assert.equal(changed.is_available, true);
+    assert.equal(changed.id, target.id);
+
+    const stale = await request(`${route}/${encodeURIComponent(target.id)}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ isAvailable: false, expectedUpdatedAt: target.updated_at }),
+    });
+    assertStatus(stale, 409, "stale availability rule edit guard");
+    assert.equal((await stale.json()).error, "availability_rule_conflict");
+
+    const restore = await request(`${route}/${encodeURIComponent(target.id)}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ isAvailable: false, expectedUpdatedAt: changed.updated_at }),
+    });
+    assertStatus(restore, 200, "availability rule restoration");
+    restored = true;
+    assert.equal((await restore.json()).rule.is_available, false);
+  } finally {
+    if (changed && !restored) {
+      const current = await request(route, { headers: { cookie } });
+      assertStatus(current, 200, "availability rule cleanup read");
+      const row = (await current.json()).rules.find((item) => item.id === target.id);
+      if (row?.is_available === true) {
+        const cleanup = await request(`${route}/${encodeURIComponent(target.id)}`, {
+          method: "PATCH",
+          headers: { cookie, "content-type": "application/json" },
+          body: JSON.stringify({ isAvailable: false, expectedUpdatedAt: row.updated_at }),
+        });
+        assertStatus(cleanup, 200, "availability rule cleanup restore");
+      }
+    }
+  }
+
+  const finalRows = await queryBusiness(`SELECT id, is_available, created_by FROM fanmark_availability_rules ORDER BY priority ASC, id ASC`);
+  assert.equal(finalRows.length, 4);
+  assert.ok(finalRows.every((row) => Number(row.is_available) === 0), "availability rule state was not restored");
+  assert.ok(finalRows.every((row) => row.created_by === null), "source administrator IDs must not be copied into D1");
+}
+
+async function exerciseInvitationAdmin(cookie) {
+  const route = "/api/admin/invitation-codes";
+  const baseline = await queryBusiness("SELECT COUNT(*) AS count FROM invitation_codes");
+  assert.equal(Number(baseline[0]?.count), 0, "staging invitation table must be empty before the synthetic round-trip");
+  const anonymous = await request(route);
+  assertStatus(anonymous, 401, "unauthenticated invitation admin read");
+
+  const code = `MIGRATION-SMOKE-${randomBytes(6).toString("hex").toUpperCase()}`;
+  let invitationId = null;
+  try {
+    const createdResponse = await request(route, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        code,
+        max_uses: 2,
+        expires_at: null,
+        special_perks: { migration_smoke: true },
+      }),
+    });
+    assertStatus(createdResponse, 201, "MFA-protected invitation creation");
+    const createdBody = await createdResponse.json();
+    assert.equal(createdBody.schemaVersion, 1);
+    const created = createdBody.code;
+    invitationId = created?.id;
+    assert.equal(created?.code, code);
+    assert.equal(created?.max_uses, 2);
+    assert.equal(created?.used_count, 0);
+    assert.equal(created?.is_active, true);
+    assert.deepEqual(created?.special_perks, { migration_smoke: true });
+    assert.equal(Object.hasOwn(created ?? {}, "created_by"), false);
+
+    const listResponse = await request(route, { headers: { cookie } });
+    assertStatus(listResponse, 200, "MFA-protected invitation list");
+    const listed = await listResponse.json();
+    const listedCode = listed.codes.find((candidate) => candidate.id === invitationId);
+    assert.deepEqual(listedCode, created);
+
+    const updateResponse = await request(`${route}/${encodeURIComponent(invitationId)}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        max_uses: 3,
+        special_perks: { migration_smoke: true, updated: true },
+        expectedUpdatedAt: created.updated_at,
+      }),
+    });
+    assertStatus(updateResponse, 200, "invitation compare-and-set edit");
+    const updatedBody = await updateResponse.json();
+    const updated = updatedBody.code;
+    assert.equal(updated.max_uses, 3);
+    assert.deepEqual(updated.special_perks, { migration_smoke: true, updated: true });
+
+    const staleResponse = await request(`${route}/${encodeURIComponent(invitationId)}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ max_uses: 4, expectedUpdatedAt: created.updated_at }),
+    });
+    assertStatus(staleResponse, 409, "stale invitation edit guard");
+    assert.equal((await staleResponse.json()).error, "stale_revision");
+
+    const disableResponse = await request(`${route}/${encodeURIComponent(invitationId)}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ is_active: false, expectedUpdatedAt: updated.updated_at }),
+    });
+    assertStatus(disableResponse, 200, "invitation disable");
+    const disabled = (await disableResponse.json()).code;
+    assert.equal(disabled.is_active, false);
+    assert.equal(disabled.max_uses, 3);
+
+    const deleteResponse = await request(`${route}/${encodeURIComponent(invitationId)}`, {
+      method: "DELETE",
+      headers: { cookie },
+    });
+    assertStatus(deleteResponse, 200, "synthetic invitation deletion");
+    assert.deepEqual(await deleteResponse.json(), { schemaVersion: 1, deleted: true });
+    invitationId = null;
+  } finally {
+    if (!invitationId) {
+      const orphaned = await queryBusiness(`SELECT id FROM invitation_codes WHERE code = ${sqlLiteral(code)} LIMIT 2`);
+      assert.ok(orphaned.length <= 1, "synthetic invitation code was duplicated");
+      invitationId = orphaned[0]?.id ?? null;
+    }
+    if (invitationId) {
+      const cleanup = await request(`${route}/${encodeURIComponent(invitationId)}`, {
+        method: "DELETE",
+        headers: { cookie },
+      });
+      if (![200, 404].includes(cleanup.status)) {
+        const cleanupSql = `DELETE FROM invitation_codes WHERE id = ${sqlLiteral(invitationId)} AND code = ${sqlLiteral(code)}`;
+        const output = await runWrangler([
+          "d1", "execute", expectedBusinessDatabase, "--remote", "--command", cleanupSql, "--yes", "--json",
+        ]);
+        const results = parseWranglerJson(output);
+        assert.ok(Array.isArray(results) && results.every((result) => result.success === true), "synthetic invitation cleanup failed");
+      }
+    }
+  }
+
+  const [remainingByCode, remainingTotal] = await Promise.all([
+    queryBusiness(`SELECT COUNT(*) AS count FROM invitation_codes WHERE code = ${sqlLiteral(code)}`),
+    queryBusiness("SELECT COUNT(*) AS count FROM invitation_codes"),
+  ]);
+  assert.equal(Number(remainingByCode[0]?.count), 0, "synthetic invitation remained in business D1");
+  assert.equal(Number(remainingTotal[0]?.count), 0, "invitation table did not return to its staging baseline");
+}
+
+async function exerciseWaitlistAdmin(cookie, userId, { securityRoundtrip = false, journalPath } = {}) {
+  const route = "/api/admin/waitlist";
+  const baseline = await queryBusiness("SELECT COUNT(*) AS count FROM waitlist");
+  assert.equal(Number(baseline[0]?.count), 0, "staging waitlist must be empty before the synthetic round-trip");
+  const adminProfile = await queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)}`);
+  assert.equal(Number(adminProfile[0]?.count), 0, "synthetic waitlist administrator already has a business profile");
+
+  const waitlistId = randomUUID();
+  const email = `codex-waitlist-${randomBytes(8).toString("hex")}@example.invalid`;
+  const username = `codex-waitlist-admin-${randomBytes(5).toString("hex")}`;
+  const timestamp = new Date().toISOString();
+  const journal = journalPath ? JSON.parse(await readFile(journalPath, "utf8")) : null;
+  if (journal) {
+    Object.assign(journal, { state: "waitlist-prepared", waitlistId, waitlistEmail: email, waitlistUsername: username });
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
+  let deniedAudits = [];
+  let seedAttempted = false;
+  try {
+    seedAttempted = true;
+    await executeBusiness(
+      `INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at) VALUES (${sqlLiteral(userId)}, ${sqlLiteral(username)}, 'Synthetic waitlist admin', NULL, 'admin', 'en', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n` +
+      `INSERT INTO waitlist (id, email, referral_source, status, created_at) VALUES (${sqlLiteral(waitlistId)}, ${sqlLiteral(email)}, 'synthetic-migration-smoke', 'waiting', ${sqlLiteral(timestamp)});`,
+      "synthetic waitlist canary provision",
+    );
+
+    const anonymous = await request(route);
+    assertStatus(anonymous, 401, "unauthenticated waitlist admin read");
+
+    const listResponse = await request(route, { headers: { cookie } });
+    assertStatus(listResponse, 200, "MFA-protected waitlist listing");
+    const listed = await listResponse.json();
+    const entry = listed.entries.find((candidate) => candidate.id === waitlistId);
+    assert.ok(entry, "synthetic waitlist row was not returned");
+    assert.equal(entry.email_hash, createHash("sha256").update(email, "utf8").digest("hex"));
+    assert.equal(Object.hasOwn(entry, "email"), false, "list route exposed an email address");
+    assert.equal(JSON.stringify(listed).includes(email), false, "list response exposed the synthetic email address");
+    assert.ok(listed.securityLogs.some((row) => row.action === "AUTHORIZED_WAITLIST_ACCESS"));
+
+    const revealResponse = await request(`${route}/${encodeURIComponent(waitlistId)}/email`, { headers: { cookie } });
+    assertStatus(revealResponse, 200, "MFA-protected waitlist email reveal");
+    const revealed = await revealResponse.json();
+    assert.equal(revealed.email, email);
+    assert.ok(revealed.securityLogs.some((row) => row.action === "EMAIL_ACCESS"));
+    const accessAudit = await queryBusiness(`SELECT user_id, resource_id, metadata FROM audit_logs WHERE action = 'EMAIL_ACCESS' AND resource_id = ${sqlLiteral(waitlistId)} LIMIT 2`);
+    assert.equal(accessAudit.length, 1, "email reveal did not produce exactly one audit event");
+    assert.equal(accessAudit[0].user_id, userId);
+    assert.equal(accessAudit[0].resource_id, waitlistId);
+    assert.equal(String(accessAudit[0].metadata).includes(email), false, "email reveal audit copied the email address");
+    if (securityRoundtrip) {
+      await executeBusiness(`UPDATE user_settings SET plan_type = 'free' WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)} AND plan_type = 'admin'`, "synthetic elevated-plan removal");
+      for (const path of [route, `${route}/${encodeURIComponent(waitlistId)}/email`]) {
+        const denied = await request(path, { headers: { cookie } });
+        assertStatus(denied, 403, "valid-MFA waitlist access without the elevated plan");
+        assert.deepEqual(await denied.json(), { error: "super_admin_required" });
+      }
+      deniedAudits = await queryBusiness(`SELECT id, user_id, action, resource_id, metadata, created_at FROM audit_logs
+        WHERE user_id = ${sqlLiteral(userId)} AND action IN ('UNAUTHORIZED_WAITLIST_ACCESS','UNAUTHORIZED_EMAIL_ACCESS') ORDER BY action`);
+      assert.equal(deniedAudits.length, 2);
+      for (const audit of deniedAudits) {
+        const isEmail = audit.action === "UNAUTHORIZED_EMAIL_ACCESS";
+        assert.equal(audit.user_id, userId);
+        assert.equal(audit.resource_id, isEmail ? waitlistId : null);
+        const metadata = JSON.parse(audit.metadata);
+        assert.equal(metadata.security_level, isEmail ? "CRITICAL_RISK" : "HIGH_RISK");
+        if (isEmail) assert.equal(metadata.attempted_resource, "email_address");
+        assert.equal(metadata.timestamp, audit.created_at);
+        assert.match(audit.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+        assert.equal(audit.metadata.includes(email), false);
+      }
+      if (journal) {
+        journal.deniedAlerts = deniedAudits.map(row => ({ event: "security_alert", action: row.action, auditId: row.id, createdAt: row.created_at }));
+        journal.state = "waitlist-verified-cleanup-pending";
+        await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+      }
+    }
+  } finally {
+    if (seedAttempted) {
+      await executeBusiness(
+        `DELETE FROM audit_logs WHERE (resource_id = ${sqlLiteral(waitlistId)} AND action IN ('AUTHORIZED_WAITLIST_ACCESS', 'EMAIL_ACCESS', 'UNAUTHORIZED_WAITLIST_ACCESS', 'UNAUTHORIZED_EMAIL_ACCESS')) OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'system' AND action = 'ADMIN_CHECK') OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'waitlist' AND resource_id IS NULL AND action IN ('AUTHORIZED_WAITLIST_ACCESS','UNAUTHORIZED_WAITLIST_ACCESS'));\n` +
+        `DELETE FROM waitlist WHERE id = ${sqlLiteral(waitlistId)} AND email = ${sqlLiteral(email)};\n` +
+        `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)};`,
+        "synthetic waitlist canary cleanup",
+      );
+    }
+  }
+
+  const [waitlistRows, profileRows, auditRows] = await Promise.all([
+    queryBusiness(`SELECT COUNT(*) AS count FROM waitlist WHERE id = ${sqlLiteral(waitlistId)} OR email = ${sqlLiteral(email)}`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)}`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE resource_id = ${sqlLiteral(waitlistId)} OR (user_id = ${sqlLiteral(userId)} AND ((action = 'ADMIN_CHECK' AND resource_type = 'system') OR (action IN ('AUTHORIZED_WAITLIST_ACCESS','UNAUTHORIZED_WAITLIST_ACCESS') AND resource_type = 'waitlist' AND resource_id IS NULL)))`),
+  ]);
+  assert.equal(Number(waitlistRows[0]?.count), 0, "synthetic waitlist row remained in business D1");
+  assert.equal(Number(profileRows[0]?.count), 0, "synthetic waitlist administrator profile remained in business D1");
+  assert.equal(Number(auditRows[0]?.count), 0, "synthetic waitlist audit remained in business D1");
+  if (journal) {
+    journal.state = "waitlist-verified-and-cleaned";
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
+  if (securityRoundtrip) console.log(JSON.stringify({ waitlistSecurity: "exact-and-cleaned", denials: deniedAudits.length,
+    alerts: deniedAudits.map(row => ({ event: "security_alert", action: row.action, auditId: row.id, createdAt: row.created_at })) }));
+}
+
+function cdpConnection(webSocketUrl) {
+  const socket = new WebSocket(webSocketUrl);
+  const pending = new Map();
+  const listeners = new Map();
+  let nextId = 0;
+  const opened = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("browser_cdp_connect_timeout")), 15_000);
+    socket.addEventListener("open", () => {
+      clearTimeout(timeout);
+      resolve();
+    }, { once: true });
+    socket.addEventListener("error", () => {
+      clearTimeout(timeout);
+      reject(new Error("browser_cdp_connect_failed"));
+    }, { once: true });
+  });
+  socket.addEventListener("message", (event) => {
+    let message;
+    try {
+      message = JSON.parse(String(event.data));
+    } catch {
+      return;
+    }
+    if (Number.isInteger(message.id)) {
+      const operation = pending.get(message.id);
+      if (!operation) return;
+      pending.delete(message.id);
+      clearTimeout(operation.timeout);
+      if (message.error) operation.reject(new Error("browser_cdp_command_failed"));
+      else operation.resolve(message.result ?? {});
+      return;
+    }
+    for (const listener of listeners.get(message.method) ?? []) listener(message.params ?? {});
+  });
+  socket.addEventListener("close", () => {
+    for (const operation of pending.values()) {
+      clearTimeout(operation.timeout);
+      operation.reject(new Error("browser_cdp_closed"));
+    }
+    pending.clear();
+  });
+
+  return {
+    opened,
+    on(method, listener) {
+      const entries = listeners.get(method) ?? new Set();
+      entries.add(listener);
+      listeners.set(method, entries);
+      return () => entries.delete(listener);
+    },
+    send(method, params = {}) {
+      const id = ++nextId;
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error("browser_cdp_timeout"));
+        }, 15_000);
+        pending.set(id, { resolve, reject, timeout });
+        socket.send(JSON.stringify({ id, method, params }));
+      });
+    },
+    close() {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
+    },
+  };
+}
+
+async function reviewBroadcastControlsInBrowser(cookie, subject) {
+  await withStagingAdminBrowser(cookie, "fanmark-broadcast-ui-", async (cdp) => {
+    await clickAdminTab(cdp, "一括メール");
+    const expectedSubject = JSON.stringify(subject);
+    const browserReviewExpression = `(() => {
+      const subject = ${expectedSubject};
+      const cell = Array.from(document.querySelectorAll('td')).find((element) => element.textContent.trim() === subject);
+      const row = cell?.closest('tr');
+      const testSend = row?.querySelector('button[title="テスト送信"]');
+      const bulkSend = row?.querySelector('button[title="送信開始"]');
+      const bodyText = document.body?.innerText ?? "";
+      const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((item) => item.innerText.trim() === "一括メール");
+      return {
+        path: location.pathname,
+        tabSelected: tab?.getAttribute('data-state') === "active",
+        subjectVisible: Boolean(cell),
+        testSendDisabled: testSend?.disabled ?? null,
+        bulkSendDisabled: bulkSend?.disabled ?? null,
+        workerDisabledWarning: bodyText.includes("Cloudflare mode は各送信操作を既定で無効にしています。"),
+      };
+    })()`;
+    const review = await waitForBrowserValue(
+      cdp,
+      browserReviewExpression,
+      (state) => state?.subjectVisible && state.testSendDisabled !== null && state.bulkSendDisabled !== null,
+      "broadcast_draft_not_rendered",
+    );
+    const apiResult = await cdp.send("Runtime.evaluate", {
+      expression: `(async () => {
+        const response = await fetch("/api/admin/broadcast-emails", { credentials: "include" });
+        let body = {};
+        try { body = await response.json(); } catch {}
+        return {
+          apiStatus: response.status,
+          apiHasSyntheticDraft: Array.isArray(body.broadcasts) && body.broadcasts.some((draft) => draft.subject === ${expectedSubject}),
+        };
+      })()`,
+      awaitPromise: true,
+      returnByValue: true,
+    });
+    const result = { ...review, ...(apiResult.result?.value ?? {}) };
+    assert.equal(result.path, "/admin", `unexpected browser route: ${JSON.stringify(result)}`);
+    assert.equal(result.apiStatus, 200, `browser broadcast API did not return 200: ${JSON.stringify(result)}`);
+    assert.equal(result.apiHasSyntheticDraft, true, `browser broadcast API did not return the synthetic draft: ${JSON.stringify(result)}`);
+    assert.equal(result.tabSelected, true, `broadcast email tab was not selected: ${JSON.stringify(result)}`);
+    assert.equal(result.subjectVisible, true, `synthetic draft did not appear in browser history: ${JSON.stringify(result)}`);
+    assert.equal(result.testSendDisabled, true, `test-send control was not visibly disabled: ${JSON.stringify(result)}`);
+    assert.equal(result.bulkSendDisabled, true, `bulk-send control was not visibly disabled: ${JSON.stringify(result)}`);
+    assert.equal(result.workerDisabledWarning, true, `Cloudflare send-disabled notice was not visible: ${JSON.stringify(result)}`);
+  });
+  console.log("Authenticated staging browser review found the synthetic draft; both test-send and bulk-send controls were visibly disabled. No send control was clicked.");
+}
+
+async function withStagingAdminBrowser(cookie, profilePrefix, review) {
+  const chromeCandidates = [
+    process.env.FANMARK_STAGING_CHROME,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].filter(Boolean);
+  const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
+  assert.ok(chromePath, "headless Chrome is required for the authenticated browser review");
+
+  const profileDirectory = await mkdtemp(path.join(os.tmpdir(), profilePrefix));
+  const chrome = spawn(chromePath, [
+    "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+    "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
+    "--metrics-recording-only", "--no-first-run", "--no-default-browser-check",
+    `--user-data-dir=${profileDirectory}`, "--remote-debugging-port=0", "about:blank",
+  ], { stdio: "ignore" });
+  let cdp;
+  let chromeFailed = false;
+  let chromeExit;
+  const exited = new Promise((resolve) => { chromeExit = resolve; });
+  chrome.once("exit", chromeExit);
+  chrome.once("error", () => {
+    chromeFailed = true;
+    chromeExit();
+  });
+  const chromeRunning = () => !chromeFailed && chrome.exitCode === null && chrome.signalCode === null;
+
+  try {
+    const activePortPath = path.join(profileDirectory, "DevToolsActivePort");
+    const startupDeadline = Date.now() + 15_000;
+    let port;
+    while (Date.now() < startupDeadline) {
+      if (!chromeRunning()) throw new Error("headless_chrome_exited");
+      try {
+        const [value] = (await readFile(activePortPath, "utf8")).split(/\r?\n/u);
+        if (/^\d+$/u.test(value ?? "")) {
+          port = value;
+          break;
+        }
+      } catch {
+        // Chrome creates the remote-debugging endpoint after its profile starts.
+      }
+      await delay(100);
+    }
+    assert.ok(port, "Chrome DevTools did not start");
+    const targetsResponse = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(5_000) });
+    assert.equal(targetsResponse.ok, true, "Chrome target list was unavailable");
+    const targets = await targetsResponse.json();
+    const page = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+    assert.ok(page, "Chrome page target was unavailable");
+    cdp = cdpConnection(page.webSocketDebuggerUrl);
+    await cdp.opened;
+    await cdp.send("Network.enable");
+    await cdp.send("Page.enable");
+    cdp.adminApiResponses = [];
+    cdp.lifecycleApiResponses = [];
+    cdp.systemSettingsRequests = [];
+    cdp.systemSettingsApiResponses = [];
+    cdp.on("Network.requestWillBeSent", ({ request }) => {
+      if (!request?.url) return;
+      const url = new URL(request.url);
+      if (url.pathname === "/api/admin/system-settings") {
+        cdp.systemSettingsRequests.push({ method: request.method });
+      }
+    });
+    cdp.on("Network.responseReceived", ({ response }) => {
+      if (!response?.url) return;
+      const url = new URL(response.url);
+      if (/^\/api\/admin\/users\/[^/]+\/plan$/u.test(url.pathname)) {
+        cdp.adminApiResponses.push({ status: response.status, statusText: response.statusText });
+      }
+      if (url.pathname === "/api/admin/system-settings/lifecycle") {
+        cdp.lifecycleApiResponses.push({ status: response.status, statusText: response.statusText });
+      }
+      if (url.pathname === "/api/admin/system-settings") {
+        cdp.systemSettingsApiResponses.push({ status: response.status, statusText: response.statusText });
+      }
+    });
+    await cdp.send("Emulation.setDeviceMetricsOverride", {
+      width: 1280, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    const separator = cookie.indexOf("=");
+    assert.ok(separator > 0, "session cookie was malformed");
+    const cookieResult = await cdp.send("Network.setCookie", {
+      name: cookie.slice(0, separator),
+      value: cookie.slice(separator + 1),
+      url: expectedOrigin,
+      path: "/",
+      secure: true,
+      httpOnly: true,
+      sameSite: "Lax",
+    });
+    assert.equal(cookieResult.success, true, "Chrome rejected the synthetic admin session cookie");
+    await cdp.send("Page.navigate", { url: `${expectedOrigin}/admin` });
+    const deadline = Date.now() + 30_000;
+    let state = {};
+    while (Date.now() < deadline) {
+      const result = await cdp.send("Runtime.evaluate", {
+        expression: `(() => ({ path: location.pathname, hasAdminTabs: document.querySelectorAll('[role="tab"]').length > 0 }))()`,
+        returnByValue: true,
+      });
+      state = result.result?.value ?? {};
+      if (state.path === "/admin" && state.hasAdminTabs) break;
+      await delay(250);
+    }
+    assert.equal(state.path, "/admin", "synthetic admin session did not open the staging admin page");
+    assert.equal(state.hasAdminTabs, true, "admin tabs did not render");
+    return await review(cdp);
+  } finally {
+    cdp?.close();
+    if (chromeRunning()) {
+      chrome.kill("SIGTERM");
+      await Promise.race([exited, delay(2_000)]);
+    }
+    if (chromeRunning()) {
+      chrome.kill("SIGKILL");
+      await Promise.race([exited, delay(2_000)]);
+    }
+    await rm(profileDirectory, { recursive: true, force: true });
+  }
+}
+
+async function browserValue(cdp, expression) {
+  const result = await cdp.send("Runtime.evaluate", { expression, returnByValue: true });
+  if (result.exceptionDetails) throw new Error("browser_script_evaluation_failed");
+  return result.result?.value ?? null;
+}
+
+async function waitForBrowserValue(cdp, expression, predicate, failureCode, timeoutMs = 15_000) {
+  const deadline = Date.now() + timeoutMs;
+  let value = null;
+  while (Date.now() < deadline) {
+    value = await browserValue(cdp, expression);
+    if (predicate(value)) return value;
+    await delay(250);
+  }
+  throw new Error(`${failureCode}: ${JSON.stringify(value)}`);
+}
+
+async function clickBrowserTarget(cdp, expression, failureCode) {
+  const position = await browserValue(cdp, expression);
+  assert.ok(position?.width > 0 && position?.height > 0, `${failureCode}_not_clickable`);
+  assert.notEqual(position.disabled, true, `${failureCode}_disabled`);
+  assert.notEqual(position.buttonContainsHit, false, `${failureCode}_covered: ${JSON.stringify(position)}`);
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mouseMoved", x: position.x, y: position.y,
+  });
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mousePressed", x: position.x, y: position.y, button: "left", clickCount: 1,
+  });
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased", x: position.x, y: position.y, button: "left", clickCount: 1,
+  });
+  return position;
+}
+
+async function dismissStagingToastInBrowser(cdp) {
+  const dismissToastExpression = `(() => {
+    const button = document.querySelector('button[toast-close]');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`;
+  if (!await browserValue(cdp, `Boolean(document.querySelector('li[role="status"][data-state="open"]'))`)) return;
+  assert.equal(await browserValue(cdp, dismissToastExpression), true, "staging status toast could not be dismissed");
+  await waitForBrowserValue(cdp, `Boolean(document.querySelector('li[role="status"][data-state="open"]'))`, (visible) => visible === false, "staging_toast_did_not_close");
+}
+
+async function clickAdminTab(cdp, label) {
+  const labelLiteral = JSON.stringify(label);
+  await clickBrowserTarget(cdp, `(() => {
+    const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((item) => item.innerText.trim() === ${labelLiteral});
+    tab?.scrollIntoView({ block: "center" });
+    if (!tab) return null;
+    const rect = tab.getBoundingClientRect();
+    return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+  })()`, "admin_tab");
+  await waitForBrowserValue(cdp, `(() => Array.from(document.querySelectorAll('[role="tab"]')).some((tab) => tab.innerText.trim() === ${labelLiteral} && tab.getAttribute("data-state") === "active"))()`, Boolean, "admin_tab_not_selected");
+}
+
+async function reviewEmojiMasterAuditHistoryInBrowser(cookie, email, userId, audits, journalPath) {
+  assert.equal(typeof email, "string");
+  const emailLiteral = JSON.stringify(email);
+  const screenshotPath = path.join(path.dirname(journalPath), "master-audit-history.png");
+  return await withStagingAdminBrowser(cookie, "fanmark-master-audit-ui-", async (cdp) => {
+    const detailResponses = [];
+    cdp.on("Network.responseReceived", ({ requestId, response }) => {
+      if (response?.url && new URL(response.url).pathname === `/api/admin/users/${userId}`) {
+        detailResponses.push({ requestId, status: response.status });
+      }
+    });
+    await clickAdminTab(cdp, "ユーザー管理");
+    const rowExpression = `(() => {
+      const marker = Array.from(document.querySelectorAll('span')).find(item => item.textContent.trim() === ${emailLiteral});
+      const row = marker?.closest('tr');
+      if (!row) return null;
+      row.scrollIntoView({ block: "center" });
+      const rect = row.getBoundingClientRect();
+      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+    })()`;
+    await waitForBrowserValue(cdp, rowExpression, Boolean, "synthetic_admin_row_missing");
+    await clickBrowserTarget(cdp, rowExpression, "synthetic_admin_row");
+    const renderedExpression = `(() => {
+      const dialog = Array.from(document.querySelectorAll('[role="dialog"]')).find(item => item.innerText.includes(${emailLiteral}));
+      const heading = Array.from(dialog?.querySelectorAll('h3') ?? []).find(item => item.textContent.trim() === "監査ログ (最新20件)");
+      if (!heading) return null;
+      return Array.from(heading.parentElement.children[1].children).map(card => ({
+        action: card.firstElementChild.firstElementChild.textContent.trim(),
+        metadata: JSON.parse(card.children[1].textContent),
+        date: card.firstElementChild.children[1].textContent.trim(),
+      }));
+    })()`;
+    const rendered = await waitForBrowserValue(cdp, renderedExpression, value => value?.length === 20, "master_audit_history_not_rendered");
+    assert.equal(detailResponses.length, 1, "unexpected detail retry makes history readback ambiguous");
+    assert.equal(detailResponses[0].status, 200);
+    const responseBody = await cdp.send("Network.getResponseBody", { requestId: detailResponses[0].requestId });
+    const detail = JSON.parse(responseBody.base64Encoded ? Buffer.from(responseBody.body, "base64").toString("utf8") : responseBody.body);
+    assert.equal(detail.profile.userId, userId);
+    assert.deepEqual(rendered.map(({ action, metadata }) => ({ action, metadata })),
+      detail.recentAuditLogs.map(({ action, metadata }) => ({ action, metadata })), "rendered history order/metadata differs from its API response");
+    assert.ok(rendered.every(row => row.date && row.date !== "Invalid Date"));
+    const masterRows = detail.recentAuditLogs.filter(row => row.resourceType === "emoji_master");
+    assert.ok(masterRows.length >= 18, "Master audits missing from rendered combined history");
+    const expected = audits.toSorted((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id)).slice(0, masterRows.length);
+    assert.deepEqual(masterRows.map(row => ({ id: row.id, action: row.action, resourceId: row.resourceId, userId: row.userId, metadata: row.metadata })),
+      expected.map(row => ({ id: row.id, action: row.action, resourceId: row.resource_id, userId: row.user_id, metadata: JSON.parse(row.metadata) })));
+    await browserValue(cdp, `Array.from(document.querySelectorAll('[role="dialog"] h3')).find(item => item.textContent.trim() === "監査ログ (最新20件)")?.scrollIntoView({ block: "start" })`);
+    const screenshot = await cdp.send("Page.captureScreenshot", { format: "png" });
+    await writeFile(screenshotPath, Buffer.from(screenshot.data, "base64"), { mode: 0o600 });
+    console.log(JSON.stringify({ browserMasterHistory: "rendered-exact", rows: 20, masterRows: masterRows.length, screenshotPath }));
+    return { renderedRows: 20, masterRows: masterRows.length, screenshotPath };
+  });
+}
+
+async function reviewAdminUserManagementMutationsInBrowser(cookie, targetEmail, targetUserId) {
+  const emailLiteral = JSON.stringify(targetEmail);
+  const detailStateExpression = `(() => {
+    const detail = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+      Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === "ユーザー詳細"));
+    if (!detail) return { open: false };
+    const valueFor = (label) => {
+      const element = Array.from(detail.querySelectorAll('span')).find((item) => item.textContent.trim() === label);
+      return element?.parentElement?.innerText.replace(/\\s+/gu, " ").trim().split(" ").at(-1) ?? null;
+    };
+    return {
+      open: true,
+      subjectVisible: detail.innerText.includes(${emailLiteral}),
+      plan: valueFor("プラン"),
+      status: valueFor("ステータス"),
+    };
+  })()`;
+
+  await withStagingAdminBrowser(cookie, "fanmark-admin-user-ui-", async (cdp) => {
+    await clickAdminTab(cdp, "ユーザー管理");
+    const rowExpression = `(() => {
+      const email = ${emailLiteral};
+      const marker = Array.from(document.querySelectorAll('span')).find((item) => item.textContent.trim() === email);
+      const row = marker?.closest('tr');
+      if (!row) return { visible: false };
+      const rect = row.getBoundingClientRect();
+      return { visible: true, x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+    })()`;
+    const row = await waitForBrowserValue(cdp, rowExpression, (state) => state?.visible, "synthetic_user_row_missing");
+    await clickBrowserTarget(cdp, rowExpression, "synthetic_user_row");
+    assert.ok(row.visible);
+    const opened = await waitForBrowserValue(cdp, detailStateExpression, (state) => state?.open && state.subjectVisible, "synthetic_user_detail_missing");
+    assert.equal(opened.plan, "Free", "synthetic target did not start on Free");
+    assert.equal(opened.status, "有効", "synthetic target did not start active");
+
+    const planDialogHeading = "プランを変更";
+    const planDialogExpression = `(() => Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+      Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === ${JSON.stringify(planDialogHeading)})) ?? null)()`;
+    const ensureSyntheticDetail = async (plan, status) => {
+      await delay(300);
+      const current = await browserValue(cdp, detailStateExpression);
+      if (!current?.open) {
+        await waitForBrowserValue(cdp, rowExpression, (state) => state?.visible, "synthetic_user_row_missing_after_mutation");
+        await clickBrowserTarget(cdp, rowExpression, "synthetic_user_row_after_mutation");
+      }
+      return await waitForBrowserValue(cdp, detailStateExpression, (state) => state?.open && state.plan === plan && state.status === status, "synthetic_user_detail_not_refreshed");
+    };
+    const setPlanThroughUi = async (plan) => {
+      await clickBrowserTarget(cdp, `(() => {
+        const detail = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+          Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === "ユーザー詳細"));
+        const button = Array.from(detail?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "プランを変更");
+        button?.scrollIntoView({ block: "center" });
+        if (!button) return null;
+        const rect = button.getBoundingClientRect();
+        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+      })()`, "plan_change_button");
+      await waitForBrowserValue(cdp, `Boolean(${planDialogExpression})`, Boolean, "plan_dialog_not_open");
+      await clickBrowserTarget(cdp, `(() => {
+        const dialog = ${planDialogExpression};
+        const select = dialog?.querySelector('[role="combobox"]');
+        select?.scrollIntoView({ block: "center" });
+        if (!select) return null;
+        const rect = select.getBoundingClientRect();
+        const x = rect.x + rect.width / 2;
+        const y = rect.y + rect.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return { x, y, width: rect.width, height: rect.height, buttonContainsHit: Boolean(hit && select.contains(hit)), hitTag: hit?.tagName ?? null, hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 120) : null, pointerEvents: getComputedStyle(select).pointerEvents };
+      })()`, "plan_selector");
+      const planOptionExpression = `(() => {
+        const options = Array.from(document.querySelectorAll('[role="option"]'));
+        const option = options.find((item) => item.textContent.trim() === ${JSON.stringify(plan)});
+        const rect = option?.getBoundingClientRect();
+        const dialog = ${planDialogExpression};
+        const select = dialog?.querySelector('[role="combobox"]');
+        const x = rect ? rect.x + rect.width / 2 : 0;
+        const y = rect ? rect.y + rect.height / 2 : 0;
+        const hit = document.elementFromPoint(x, y);
+        return {
+          x, y,
+          width: rect?.width ?? 0,
+          height: rect?.height ?? 0,
+          buttonContainsHit: Boolean(option && hit && option.contains(hit)),
+          hitTag: hit?.tagName ?? null,
+          hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 120) : null,
+          pointerEvents: option ? getComputedStyle(option).pointerEvents : null,
+          optionTexts: options.map((item) => item.textContent.trim()),
+          dialogText: dialog?.innerText ?? null,
+          selectText: select?.innerText.trim() ?? null,
+          selectExpanded: select?.getAttribute('aria-expanded') ?? null,
+        };
+      })()`;
+      await waitForBrowserValue(cdp, planOptionExpression, (position) => position?.width > 0 && position?.height > 0, "plan_option_not_open");
+      await clickBrowserTarget(cdp, planOptionExpression, "plan_option");
+      await waitForBrowserValue(cdp, `(() => {
+        const dialog = ${planDialogExpression};
+        return dialog?.querySelector('[role="combobox"]')?.innerText.trim() ?? null;
+      })()`, (value) => value === plan, "plan_option_not_selected");
+      const planUpdateButtonExpression = `(() => {
+        const dialog = ${planDialogExpression};
+        const button = Array.from(dialog?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "プランを更新");
+        button?.scrollIntoView({ block: "center" });
+        if (!button) return null;
+        const rect = button.getBoundingClientRect();
+        const x = rect.x + rect.width / 2;
+        const y = rect.y + rect.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return {
+          x, y, width: rect.width, height: rect.height,
+          disabled: button.disabled,
+          buttonContainsHit: Boolean(hit && button.contains(hit)),
+          hitText: hit?.innerText?.trim().slice(0, 80) ?? null,
+          hitTag: hit?.tagName ?? null,
+          hitHtml: hit?.outerHTML?.slice(0, 240) ?? null,
+          buttonHtml: button.outerHTML.slice(0, 240),
+          dialogClass: dialog?.className ?? null,
+          dialogZIndex: dialog ? getComputedStyle(dialog).zIndex : null,
+          dialogPointerEvents: dialog ? getComputedStyle(dialog).pointerEvents : null,
+          hitLayers: document.elementsFromPoint(x, y).slice(0, 5).map((item) => ({
+            tag: item.tagName,
+            id: item.id || null,
+            className: typeof item.className === "string" ? item.className.slice(0, 120) : null,
+            zIndex: getComputedStyle(item).zIndex,
+            pointerEvents: getComputedStyle(item).pointerEvents,
+            text: item.innerText?.trim().slice(0, 50) ?? null,
+          })),
+        };
+      })()`;
+      const updateTarget = await clickBrowserTarget(cdp, planUpdateButtonExpression, "plan_update_button");
+      const planDialogStateExpression = `(() => {
+        const dialog = ${planDialogExpression};
+        if (!dialog) return { open: false };
+        const select = dialog.querySelector('[role="combobox"]');
+        const updateButton = Array.from(dialog.querySelectorAll('button')).find((item) => item.innerText.trim() === "プランを更新");
+        return {
+          open: true,
+          text: dialog.innerText,
+          selectedPlan: select?.innerText.trim() ?? null,
+          updateDisabled: updateButton?.disabled ?? null,
+          alerts: Array.from(document.querySelectorAll('[role="alert"], [data-sonner-toast]')).map((item) => item.innerText.trim()).filter(Boolean),
+        };
+      })()`;
+      try {
+        await waitForBrowserValue(cdp, planDialogStateExpression, (state) => state?.open === false, "plan_dialog_did_not_close");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "plan_dialog_did_not_close";
+        throw new Error(`${message}; click_target=${JSON.stringify(updateTarget)}; plan_api_responses=${JSON.stringify(cdp.adminApiResponses)}`);
+      }
+      const updated = await ensureSyntheticDetail(plan, "有効");
+      assert.equal(updated.plan, plan);
+      await dismissStagingToastInBrowser(cdp);
+    };
+
+    await setPlanThroughUi("Max");
+    await setPlanThroughUi("Free");
+
+    const alertDialogExpression = (heading) => `(() => Array.from(document.querySelectorAll('[role="alertdialog"]')).find((dialog) =>
+      Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((item) => item.textContent.trim() === ${JSON.stringify(heading)})) ?? null)()`;
+    const suspendButtonExpression = `(() => {
+      const detail = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+        Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === "ユーザー詳細"));
+      const button = Array.from(detail?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "アカウントを停止");
+      button?.scrollIntoView({ block: "center" });
+      if (!button) return null;
+      const rect = button.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const y = rect.y + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return {
+        x, y, width: rect.width, height: rect.height, disabled: button.disabled,
+        buttonContainsHit: Boolean(hit && button.contains(hit)),
+        hitTag: hit?.tagName ?? null,
+        hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 160) : null,
+        buttonPointerEvents: getComputedStyle(button).pointerEvents,
+      };
+    })()`;
+    await waitForBrowserValue(cdp, suspendButtonExpression, (position) => position?.width > 0 && position?.height > 0 && !position.disabled && position.buttonContainsHit, "suspend_button_not_interactable");
+    await clickBrowserTarget(cdp, suspendButtonExpression, "suspend_button");
+    const suspendDialog = alertDialogExpression("アカウントを停止します");
+    const alertDialogSnapshotExpression = `(() => ({
+      dialogs: Array.from(document.querySelectorAll('[role="alertdialog"]')).map((dialog) => dialog.innerText.trim()),
+      headings: Array.from(document.querySelectorAll('[role="dialog"] h2,[role="alertdialog"] h2')).map((heading) => heading.innerText.trim()),
+      detailVisible: Array.from(document.querySelectorAll('[role="dialog"] h2')).some((heading) => heading.innerText.trim() === "ユーザー詳細"),
+      statusButtons: Array.from(document.querySelectorAll('[role="dialog"] button')).map((button) => ({ text: button.innerText.trim(), disabled: button.disabled })).filter((button) => button.text),
+    }))()`;
+    await waitForBrowserValue(cdp, alertDialogSnapshotExpression, (state) => state?.dialogs?.some((text) => text.includes("アカウントを停止します")), "suspend_confirmation_missing");
+    const suspendConfirmExpression = `(() => {
+      const dialog = ${suspendDialog};
+      const button = Array.from(dialog?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "停止する");
+      if (!button) return null;
+      const rect = button.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const y = rect.y + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return { x, y, width: rect.width, height: rect.height, disabled: button.disabled, buttonContainsHit: Boolean(hit && button.contains(hit)), hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 120) : null };
+    })()`;
+    await waitForBrowserValue(cdp, suspendConfirmExpression, (position) => position?.width > 0 && position?.height > 0 && !position.disabled && position.buttonContainsHit, "suspend_confirm_not_interactable");
+    await clickBrowserTarget(cdp, suspendConfirmExpression, "suspend_confirm_button");
+    try {
+      await waitForBrowserValue(cdp, detailStateExpression, (state) => state?.status === "停止中", "suspension_not_rendered");
+    } catch (error) {
+      const [authState, auditState, browserState] = await Promise.all([
+        query(`SELECT banned FROM "user" WHERE id = ${sqlLiteral(targetUserId)}`),
+        query(`SELECT action FROM "adminUserStatusAudit" WHERE "targetUserId" = ${sqlLiteral(targetUserId)}`),
+        browserValue(cdp, `(() => ({ path: location.pathname, headings: Array.from(document.querySelectorAll('h1,h2,[role="heading"]')).map((item) => item.innerText.trim()).slice(-8), dialogs: Array.from(document.querySelectorAll('[role="dialog"],[role="alertdialog"]')).map((item) => item.innerText.trim().slice(0, 100)) }))()`),
+      ]);
+      const message = error instanceof Error ? error.message : "suspension_not_rendered";
+      throw new Error(`${message}; auth=${JSON.stringify(authState)}; status_audits=${JSON.stringify(auditState)}; browser=${JSON.stringify(browserState)}`);
+    }
+    await dismissStagingToastInBrowser(cdp);
+
+    const restoreButtonExpression = `(() => {
+      const detail = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+        Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === "ユーザー詳細"));
+      const button = Array.from(detail?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "アカウント停止を解除");
+      button?.scrollIntoView({ block: "center" });
+      if (!button) return null;
+      const rect = button.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const y = rect.y + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return {
+        x, y, width: rect.width, height: rect.height, disabled: button.disabled,
+        buttonContainsHit: Boolean(hit && button.contains(hit)),
+        hitTag: hit?.tagName ?? null,
+        hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 160) : null,
+      };
+    })()`;
+    await waitForBrowserValue(cdp, restoreButtonExpression, (position) => position?.width > 0 && position?.height > 0 && !position.disabled && position.buttonContainsHit, "restore_button_not_interactable");
+    await clickBrowserTarget(cdp, restoreButtonExpression, "restore_button");
+    const restoreDialog = alertDialogExpression("アカウント停止を解除しますか？");
+    await waitForBrowserValue(cdp, alertDialogSnapshotExpression, (state) => state?.dialogs?.some((text) => text.includes("アカウント停止を解除しますか？")), "restore_confirmation_missing");
+    const restoreConfirmExpression = `(() => {
+      const dialog = ${restoreDialog};
+      const button = Array.from(dialog?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "停止を解除する");
+      if (!button) return null;
+      const rect = button.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const y = rect.y + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return { x, y, width: rect.width, height: rect.height, disabled: button.disabled, buttonContainsHit: Boolean(hit && button.contains(hit)), hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 120) : null };
+    })()`;
+    await waitForBrowserValue(cdp, restoreConfirmExpression, (position) => position?.width > 0 && position?.height > 0 && !position.disabled && position.buttonContainsHit, "restore_confirm_not_interactable");
+    await clickBrowserTarget(cdp, restoreConfirmExpression, "restore_confirm_button");
+    let restored;
+    try {
+      await dismissStagingToastInBrowser(cdp);
+      const restoredRowExpression = `(() => {
+        const email = ${emailLiteral};
+        const marker = Array.from(document.querySelectorAll('span')).find((item) => item.textContent.trim() === email);
+        const row = marker?.closest('tr');
+        if (!row) return null;
+        const cells = Array.from(row.querySelectorAll('td')).map((cell) => cell.innerText.trim());
+        return { plan: cells[1] ?? null, status: cells[2] ?? null, text: row.innerText.trim() };
+      })()`;
+      restored = await waitForBrowserValue(
+        cdp,
+        restoredRowExpression,
+        (state) => state?.plan === "Free" && state.status?.includes("有効"),
+        "restoration_not_rendered_in_user_list",
+      );
+      assert.equal(restored.plan, "Free");
+      assert.ok(restored.status.includes("有効"));
+    } catch (error) {
+      const [authState, statusAudits, browserState] = await Promise.all([
+        query(`SELECT banned FROM "user" WHERE id = ${sqlLiteral(targetUserId)}`),
+        query(`SELECT action FROM "adminUserStatusAudit" WHERE "targetUserId" = ${sqlLiteral(targetUserId)}`),
+        browserValue(cdp, `(() => ({ path: location.pathname, headings: Array.from(document.querySelectorAll('h1,h2,[role="heading"]')).map((item) => item.innerText.trim()).slice(-8), dialogs: Array.from(document.querySelectorAll('[role="dialog"],[role="alertdialog"]')).map((item) => item.innerText.trim().slice(0, 100)), targetRow: Array.from(document.querySelectorAll('span')).find((item) => item.textContent.trim() === ${emailLiteral})?.closest('tr')?.innerText.trim() ?? null }))()`),
+      ]);
+      const message = error instanceof Error ? error.message : "restoration_not_rendered";
+      throw new Error(`${message}; auth=${JSON.stringify(authState)}; status_audits=${JSON.stringify(statusAudits)}; browser=${JSON.stringify(browserState)}`);
+    }
+  });
+
+  const [profileRows, enterpriseRows, authRows, statusAudits] = await Promise.all([
+    queryBusiness(`SELECT plan_type FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
+    query(`SELECT banned, banReason, banExpires FROM "user" WHERE id = ${sqlLiteral(targetUserId)}`),
+    query(`SELECT action FROM "adminUserStatusAudit" WHERE "targetUserId" = ${sqlLiteral(targetUserId)}`),
+  ]);
+  assert.deepEqual(profileRows, [{ plan_type: "free" }], "browser plan round-trip did not restore the synthetic profile");
+  assert.equal(Number(enterpriseRows[0]?.count), 0, "browser plan round-trip left an Enterprise override");
+  assert.deepEqual(authRows, [{ banned: 0, banReason: null, banExpires: null }], "browser status round-trip did not restore the synthetic Auth user");
+  assert.equal(statusAudits.length, 4, "API and browser suspension/restoration were not all audited");
+  assert.equal(statusAudits.filter((row) => row.action === "ADMIN_SUSPEND_USER").length, 2);
+  assert.equal(statusAudits.filter((row) => row.action === "ADMIN_RESTORE_USER").length, 2);
+  console.log("Authenticated staging browser changed the synthetic user Free→Max→Free and suspended/restored it; rendered states matched D1/Auth readback. No email or real user was involved.");
+}
+
+async function reviewLifecycleSettingsInBrowser(cookie, state) {
+  const fieldStateExpression = `(() => {
+    const input = document.querySelector('#grace-period');
+    const button = input?.parentElement?.querySelector('button');
+    if (!input || !button) return null;
+    const rect = button.getBoundingClientRect();
+    return {
+      value: input.value,
+      buttonText: button.innerText.trim(),
+      disabled: button.disabled,
+      x: rect.x + rect.width / 2,
+      y: rect.y + rect.height / 2,
+      width: rect.width,
+      height: rect.height,
+    };
+  })()`;
+  const setFieldExpression = (value) => `(() => {
+    const input = document.querySelector('#grace-period');
+    if (!input) return null;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) return null;
+    setter.call(input, ${JSON.stringify(String(value))});
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return input.value;
+  })()`;
+
+  await withStagingAdminBrowser(cookie, "fanmark-lifecycle-settings-ui-", async (cdp) => {
+    await clickAdminTab(cdp, "システム設定");
+    const initial = await waitForBrowserValue(
+      cdp,
+      fieldStateExpression,
+      (value) => value?.buttonText === "更新",
+      "lifecycle_settings_form_missing",
+    );
+    assert.equal(initial.value, String(state.originalValue), "AdminSettings did not render the staging baseline");
+    assert.equal(initial.disabled, true, "unchanged lifecycle settings should not allow an update");
+
+    const saveThroughForm = async (value, expectedApiStatus) => {
+      assert.equal(await browserValue(cdp, setFieldExpression(value)), String(value), "lifecycle input did not accept the synthetic value");
+      const ready = await waitForBrowserValue(
+        cdp,
+        fieldStateExpression,
+        (current) => current?.value === String(value) && current.disabled === false,
+        "lifecycle_update_button_not_enabled",
+      );
+      await clickBrowserTarget(cdp, fieldStateExpression, "lifecycle_update_button");
+      const deadline = Date.now() + 15_000;
+      let actual;
+      while (Date.now() < deadline) {
+        actual = await readPublicLifecycleDays();
+        if (actual === value) break;
+        await delay(250);
+      }
+      assert.equal(actual, value, "AdminSettings update did not reach the public D1-backed lifecycle setting");
+      const saved = await waitForBrowserValue(
+        cdp,
+        fieldStateExpression,
+        (current) => current?.value === String(value) && current.disabled === true && current.buttonText === "更新",
+        "lifecycle_update_not_rendered_as_saved",
+      );
+      assert.equal(saved.buttonText, "更新");
+      assert.equal(cdp.lifecycleApiResponses.at(-1)?.status, expectedApiStatus, "AdminSettings used an unexpected lifecycle API result");
+      await dismissStagingToastInBrowser(cdp);
+      return ready;
+    };
+
+    await saveThroughForm(state.temporaryValue, 200);
+    assert.equal(await readPublicLifecycleDays(), state.temporaryValue, "temporary lifecycle value was not independently readable");
+    await saveThroughForm(state.originalValue, 200);
+    assert.equal(await readPublicLifecycleDays(), state.originalValue, "AdminSettings did not restore the lifecycle baseline");
+    assert.ok(cdp.lifecycleApiResponses.length >= 2, "expected update and restore API calls from the rendered form");
+  });
+}
+
+async function reviewMaxEmojiSettingsInBrowser(cookie, state) {
+  const fieldStateExpression = `(() => {
+    const input = document.querySelector('#max-emoji-characters');
+    const button = input?.parentElement?.querySelector('button');
+    if (!input || !button) return null;
+    const rect = button.getBoundingClientRect();
+    return { value: input.value, buttonText: button.innerText.trim(), disabled: button.disabled,
+      x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+  })()`;
+  const setFieldExpression = (value) => `(() => {
+    const input = document.querySelector('#max-emoji-characters');
+    if (!input) return null;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) return null;
+    setter.call(input, ${JSON.stringify(String(value))});
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return input.value;
+  })()`;
+
+  await withStagingAdminBrowser(cookie, "fanmark-system-settings-ui-", async (cdp) => {
+    await clickAdminTab(cdp, "システム設定");
+    await waitForBrowserValue(
+      cdp,
+      `Boolean(document.querySelector('#max-emoji-characters'))`,
+      (available) => available === true,
+      "max_emoji_characters_form_missing",
+    );
+    assert.equal(await browserValue(cdp, `(() => {
+      const input = document.querySelector('#max-emoji-characters');
+      input?.scrollIntoView({ block: 'center' });
+      return Boolean(input);
+    })()`), true, "maximum emoji input was not available to scroll into view");
+    const initial = await waitForBrowserValue(
+      cdp,
+      fieldStateExpression,
+      (value) => value?.buttonText === "更新",
+      "max_emoji_characters_form_missing",
+    );
+    assert.equal(initial.value, state.originalValue, "AdminSettings did not render the D1 maximum emoji baseline");
+    assert.equal(initial.disabled, true, "unchanged maximum emoji settings should not allow an update");
+
+    const saveThroughForm = async (value) => {
+      assert.equal(await browserValue(cdp, setFieldExpression(value)), String(value), "maximum emoji input did not accept the synthetic value");
+      await waitForBrowserValue(
+        cdp,
+        fieldStateExpression,
+        (current) => current?.value === String(value) && current.disabled === false,
+        "max_emoji_characters_update_button_not_enabled",
+      );
+      await browserValue(cdp, `document.querySelector('#max-emoji-characters')?.scrollIntoView({ block: 'center' })`);
+      const priorPatchCount = cdp.systemSettingsRequests.filter((request) => request.method === "PATCH").length;
+      const priorApiCalls = cdp.systemSettingsApiResponses.length;
+      await clickBrowserTarget(cdp, fieldStateExpression, "max_emoji_characters_update_button");
+      const requestDeadline = Date.now() + 5_000;
+      while (Date.now() < requestDeadline &&
+          cdp.systemSettingsRequests.filter((request) => request.method === "PATCH").length <= priorPatchCount) {
+        await delay(100);
+      }
+      assert.ok(
+        cdp.systemSettingsRequests.filter((request) => request.method === "PATCH").length > priorPatchCount,
+        `maximum emoji save did not send PATCH; requests=${JSON.stringify(cdp.systemSettingsRequests)}`,
+      );
+      const deadline = Date.now() + 15_000;
+      let actual;
+      while (Date.now() < deadline) {
+        actual = await readSystemSettingValue(state.key);
+        if (actual === String(value)) break;
+        await delay(250);
+      }
+      assert.equal(actual, String(value), `AdminSettings maximum emoji update did not reach D1; requests=${JSON.stringify(cdp.systemSettingsRequests)} responses=${JSON.stringify(cdp.systemSettingsApiResponses)}`);
+      const saved = await waitForBrowserValue(
+        cdp,
+        fieldStateExpression,
+        (current) => current?.value === String(value) && current.disabled === true && current.buttonText === "更新",
+        "max_emoji_characters_update_not_rendered_as_saved",
+      );
+      assert.equal(saved.buttonText, "更新");
+      assert.ok(cdp.systemSettingsApiResponses.length > priorApiCalls, "maximum emoji form made no admin system settings request");
+      assert.equal(cdp.systemSettingsApiResponses.at(-1)?.status, 200, "maximum emoji form used an unexpected API result");
+      await dismissStagingToastInBrowser(cdp);
+    };
+
+    await saveThroughForm(state.temporaryValue);
+    assert.equal(await readSystemSettingValue(state.key), state.temporaryValue, "temporary maximum emoji value was not independently readable");
+    await saveThroughForm(state.originalValue);
+    assert.equal(await readSystemSettingValue(state.key), state.originalValue, "AdminSettings did not restore the maximum emoji baseline");
+  });
+}
+
+async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername, { browserReview = false } = {}) {
+  const route = "/api/admin/broadcast-emails";
+  const username = `codex-broadcast-admin-${randomBytes(6).toString("hex")}`;
+  const subject = `Synthetic staging broadcast ${randomUUID()}`;
+  const sendRequestId = randomUUID();
+  const reviewRunId = randomUUID();
+  const reviewUserId = targetUserId;
+  const timestamp = new Date().toISOString();
+  let seedAttempted = false;
+  let initialDraftIds = new Set();
+  try {
+    const baseline = await queryBusiness(`SELECT
+      (SELECT COUNT(*) FROM user_settings) AS profiles,
+      (SELECT COUNT(*) FROM broadcast_emails) AS drafts,
+      (SELECT COUNT(*) FROM broadcast_delivery_runs) AS delivery_runs,
+      (SELECT COUNT(*) FROM broadcast_delivery_recipients) AS delivery_recipients`);
+    assert.equal(Number(baseline[0]?.profiles), 1, "broadcast admin canary requires only its synthetic target profile");
+    assert.equal(Number(baseline[0]?.drafts), 0, "broadcast admin canary requires no pre-existing broadcast drafts");
+    assert.equal(Number(baseline[0]?.delivery_runs), 0, "broadcast admin canary requires an empty delivery-run baseline");
+    assert.equal(Number(baseline[0]?.delivery_recipients), 0, "broadcast admin canary requires an empty delivery-recipient baseline");
+    const targetProfile = await queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)} AND username = ${sqlLiteral(targetUsername)}`);
+    assert.equal(Number(targetProfile[0]?.count), 1, "broadcast canary target profile is missing");
+    const adminProfile = await queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)}`);
+    assert.equal(Number(adminProfile[0]?.count), 0, "synthetic broadcast administrator already has a business profile");
+    seedAttempted = true;
+    await executeBusiness(
+      `INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at) VALUES (${sqlLiteral(userId)}, ${sqlLiteral(username)}, 'Synthetic broadcast admin', NULL, 'admin', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`,
+      "synthetic broadcast administrator profile provision",
+    );
+
+    const anonymous = await request(route);
+    assertStatus(anonymous, 401, "unauthenticated broadcast list");
+
+    const initialList = await request(route, { headers: { cookie } });
+    assertStatus(initialList, 200, "MFA-protected broadcast list");
+    const initial = await initialList.json();
+    assert.ok(Array.isArray(initial.broadcasts) && Array.isArray(initial.templates));
+    assert.equal(initial.templates.length, 12, "expected the three broadcast types across four locales");
+    assert.equal(new Set(initial.templates.map((item) => `${item.email_type}/${item.language}`)).size, 12);
+    assert.ok(initial.broadcasts.every((draft) => !Object.hasOwn(draft, "created_by") && !Object.hasOwn(draft, "error_details")));
+    initialDraftIds = new Set(initial.broadcasts.map((draft) => draft.id));
+
+    const estimate = await request(`${route}/estimate`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ recipientFilter: { registered_after: "2099-01-01" } }),
+    });
+    assertStatus(estimate, 200, "broadcast recipient estimate");
+    assert.deepEqual(await estimate.json(), { count: 0 });
+
+    const create = await request(route, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        emailType: "broadcast_announcement",
+        subject,
+        bodyText: "Synthetic staging-only content; no user address or personal data.",
+        recipientFilter: { languages: ["ja"] },
+      }),
+    });
+    assertStatus(create, 201, "synthetic broadcast draft create");
+    const created = (await create.json()).broadcast;
+    assert.ok(created && /^[0-9a-f-]{36}$/iu.test(created.id));
+    assert.equal(created.subject, subject);
+    assert.equal(created.status, "draft");
+    assert.deepEqual(created.recipient_filter, { languages: ["ja"] });
+    assert.equal(Object.hasOwn(created, "created_by"), false);
+    assert.equal(initialDraftIds.has(created.id), false, "draft create reused an existing ID");
+    const draftAudit = await queryBusiness(`SELECT user_id, resource_id, metadata FROM audit_logs WHERE action = 'BROADCAST_DRAFT_CREATE' AND resource_id = ${sqlLiteral(created.id)} LIMIT 2`);
+    assert.equal(draftAudit.length, 1, "draft creation did not write exactly one audit row");
+    assert.equal(draftAudit[0].user_id, userId);
+    assert.equal(draftAudit[0].resource_id, created.id);
+    assert.deepEqual(JSON.parse(draftAudit[0].metadata), { email_type: "broadcast_announcement", recipient_filter_present: true });
+
+    const listedAgain = await request(route, { headers: { cookie } });
+    assertStatus(listedAgain, 200, "broadcast draft readback");
+    const readback = await listedAgain.json();
+    const exactDrafts = readback.broadcasts.filter((draft) => draft.id === created.id);
+    assert.equal(exactDrafts.length, 1);
+    assert.equal(exactDrafts[0].subject, subject);
+    assert.equal(exactDrafts[0].status, "draft");
+
+    if (browserReview) await reviewBroadcastControlsInBrowser(cookie, subject);
+
+    const disabledTestSend = await request(`${route}/test-send`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ broadcastId: created.id, language: "ja", requestId: randomUUID() }),
+    });
+    assertStatus(disabledTestSend, 503, "disabled broadcast test send");
+    assert.deepEqual(await disabledTestSend.json(), { error: "test_send_unavailable" });
+    const testSendAudit = await queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'BROADCAST_EMAIL_TEST_SENT' AND resource_id = ${sqlLiteral(created.id)}`);
+    assert.equal(Number(testSendAudit[0]?.count), 0, "disabled test-send route wrote a sent audit");
+
+    const bulkSend = await request(`${route}/send`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ broadcastId: created.id, requestId: sendRequestId }),
+    });
+    assertStatus(bulkSend, 503, "selector-disabled bulk broadcast send route");
+    assert.deepEqual(await bulkSend.json(), { error: "broadcast_send_unavailable" });
+    const [deliveryRuns, deliveryRecipients] = await Promise.all([
+      queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_delivery_runs WHERE broadcast_id = ${sqlLiteral(created.id)} OR (requested_by = ${sqlLiteral(userId)} AND request_id = ${sqlLiteral(sendRequestId)})`),
+      queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_delivery_recipients WHERE run_id IN (SELECT id FROM broadcast_delivery_runs WHERE broadcast_id = ${sqlLiteral(created.id)} OR (requested_by = ${sqlLiteral(userId)} AND request_id = ${sqlLiteral(sendRequestId)}))`),
+    ]);
+    assert.equal(Number(deliveryRuns[0]?.count), 0, "selector-disabled send created a delivery run");
+    assert.equal(Number(deliveryRecipients[0]?.count), 0, "selector-disabled send created delivery recipients");
+
+    await executeBusiness(
+      `INSERT INTO broadcast_delivery_runs (id, broadcast_id, request_id, requested_by, status, recipient_count, created_at) VALUES (${sqlLiteral(reviewRunId)}, ${sqlLiteral(created.id)}, ${sqlLiteral(randomUUID())}, ${sqlLiteral(userId)}, 'needs_review', 1, ${sqlLiteral(timestamp)});\n` +
+      `INSERT INTO broadcast_delivery_recipients (run_id, user_id, language, status, attempt_count, next_attempt_at, last_error_code, created_at, updated_at) VALUES (${sqlLiteral(reviewRunId)}, ${sqlLiteral(reviewUserId)}, 'ja', 'needs_review', 5, ${sqlLiteral(timestamp)}, 'attempt_limit_uncertain', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n` +
+      `UPDATE broadcast_emails SET status = 'sending', total_recipients = 1, error_details = ${sqlLiteral(JSON.stringify({ code: "needs_review", recipient: "private@example.invalid", provider_body: "synthetic-private-response" }))} WHERE id = ${sqlLiteral(created.id)} AND created_by = ${sqlLiteral(userId)};`,
+      "synthetic paused broadcast run provision",
+    );
+    const pausedList = await request(route, { headers: { cookie } });
+    assertStatus(pausedList, 200, "MFA-protected paused broadcast status");
+    const paused = (await pausedList.json()).broadcasts.find((draft) => draft.id === created.id);
+    assert.equal(paused?.status, "sending");
+    assert.equal(paused?.delivery_status, "needs_review");
+    const pausedPayload = JSON.stringify(paused);
+    assert.equal(pausedPayload.includes("private@example.invalid"), false, "paused delivery DTO exposed an address-like detail");
+    assert.equal(pausedPayload.includes("synthetic-private-response"), false, "paused delivery DTO exposed a raw provider response");
+    assert.equal(Object.hasOwn(paused ?? {}, "error_details"), false, "paused delivery DTO exposed raw error details");
+  } finally {
+    if (seedAttempted) {
+      const drafts = await queryBusiness(`SELECT id FROM broadcast_emails WHERE created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)} AND status IN ('draft', 'sending')`);
+      const draftIds = drafts.map((row) => row.id).filter((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id));
+      assert.equal(draftIds.length, drafts.length, "synthetic draft readback returned an invalid ID");
+      const draftIdSql = draftIds.length ? `(${draftIds.map(sqlLiteral).join(", ")})` : "(NULL)";
+      await executeBusiness(
+        `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND (action = 'UNAUTHORIZED_BROADCAST_EMAIL_ACCESS' OR (action = 'ADMIN_CHECK' AND resource_type = 'system' AND json_extract(metadata, '$.attempted_action') IN ('list', 'estimate_recipients', 'create_draft', 'test_send', 'send_broadcast')) OR (action IN ('BROADCAST_DRAFT_CREATE', 'BROADCAST_EMAIL_TEST_SENT', 'BROADCAST_EMAIL_SEND_QUEUED') AND resource_id IN ${draftIdSql}));\n` +
+        `DELETE FROM broadcast_emails WHERE id IN ${draftIdSql} AND created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)} AND status IN ('draft', 'sending');\n` +
+        `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)};`,
+        "synthetic broadcast admin/draft cleanup",
+      );
+      const [profileRows, draftRows, auditRows, runRows, recipientRows] = await Promise.all([
+        queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)}`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_emails WHERE created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)}`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND (action = 'UNAUTHORIZED_BROADCAST_EMAIL_ACCESS' OR (action = 'ADMIN_CHECK' AND resource_type = 'system' AND json_extract(metadata, '$.attempted_action') IN ('list', 'estimate_recipients', 'create_draft', 'test_send', 'send_broadcast')) OR (action IN ('BROADCAST_DRAFT_CREATE', 'BROADCAST_EMAIL_TEST_SENT', 'BROADCAST_EMAIL_SEND_QUEUED') AND resource_id IN ${draftIdSql}))`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_delivery_runs WHERE id = ${sqlLiteral(reviewRunId)}`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_delivery_recipients WHERE run_id = ${sqlLiteral(reviewRunId)}`),
+      ]);
+      assert.equal(Number(profileRows[0]?.count), 0, "synthetic broadcast admin profile remained in business D1");
+      assert.equal(Number(draftRows[0]?.count), 0, "synthetic broadcast draft remained in business D1");
+      assert.equal(Number(auditRows[0]?.count), 0, "synthetic broadcast audit remained in business D1");
+      assert.equal(Number(runRows[0]?.count), 0, "synthetic paused broadcast run remained in business D1");
+      assert.equal(Number(recipientRows[0]?.count), 0, "synthetic paused broadcast recipient remained in business D1");
+    }
+  }
+  console.log("Staging MFA-protected broadcast list/estimate/draft readback passed; test-send and bulk-send remained disabled; a synthetic needs_review run was shown without raw details; all synthetic rows and audits were removed.");
+}
+
+async function resetTargetCounts() {
+  return (await queryBusiness(`SELECT ${resetTables.map(table => `(SELECT count(*) FROM ${table}) AS ${table}`).join(', ')}`))[0];
+}
+
+async function assertResetBusinessEmpty() {
+  const schema = await readFile(path.join(apiDirectory, 'migrations-business/0000_business_schema_v4_staging.sql'), 'utf8');
+  const tables = [...schema.matchAll(/^CREATE TABLE "([a-z_]+)"/gmu)].map(match => match[1]);
+  assert.equal(tables.length, 40);
+  const owned = businessTablesWithoutStagingBaselines(tables, { verifiedEmailTemplateMasters: true, verifiedExtensionCouponMaster: true });
+  const total = (await queryBusiness(`SELECT ${owned.map(table => `(SELECT count(*) FROM ${table})`).join(' + ')} AS count`))[0];
+  assert.equal(Number(total.count), 0, 'reset canary requires empty source user/business tables');
+}
+
+async function resetPreservedFingerprint() {
+  const tables = ['user_settings', 'system_settings', 'notification_rules', 'notification_templates', 'fanmark_availability_rules', 'email_templates', 'extension_coupons'];
+  const rows = await Promise.all(tables.map(table => queryBusiness(`SELECT * FROM ${table} ORDER BY id`)));
+  const masters = await queryMaster(`SELECT
+    (SELECT count(*) FROM emoji_master) AS canonical_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_change_audits) AS audit_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_release_staging) AS release_rows,
+    (SELECT release_version FROM fanmark_emoji_master_active_release WHERE singleton_id = 1) AS active_version,
+    (SELECT release_version FROM fanmark_reference_master_active_release WHERE singleton_id = 1) AS reference_version`);
+  const authCounts = await query(`SELECT ${userOwnedTables.map(table => `(SELECT count(*) FROM "${table}") AS "${table}"`).join(', ')}`);
+  const items = [];
+  let offset = 0;
+  for (let pageNumber = 0; pageNumber < 16; pageNumber++) {
+    const response = await request(`/api/emoji/catalog?offset=${offset}&limit=500`);
+    assertStatus(response, 200, 'reset preserved public catalog');
+    const page = await response.json();
+    assert.equal(page.total, 3944);
+    assert.equal(page.version, masters[0].active_version);
+    items.push(...page.items);
+    offset = page.nextOffset;
+    if (offset === null || offset === undefined) break;
+  }
+  assert.equal(items.length, 3944);
+  return {
+    businessSHA256: createHash('sha256').update(JSON.stringify(rows)).digest('hex'),
+    publicSHA256: createHash('sha256').update(JSON.stringify(items)).digest('hex'),
+    masters, authCounts,
+  };
+}
+
+async function exerciseAdminDataReset(cookie, userId, journalPath, browserReview) {
+  assert.ok(journalPath);
+  assertResetCanaryEmptyCounts(await resetTargetCounts());
+  const journal = JSON.parse(await readFile(journalPath, 'utf8'));
+  const fixtureIds = Object.fromEntries(resetTables.map(table => [table, randomUUID()]));
+  const discoveryId = randomUUID();
+  const operationId = randomUUID();
+  const guards = buildResetCanaryDeleteGuards(journal.runId, fixtureIds);
+  const timestamp = new Date().toISOString().replace(/\.(\d{3})Z$/u, (_, milliseconds) => `.${milliseconds}000Z`);
+  const baseline = await resetPreservedFingerprint();
+  Object.assign(journal, { state: 'reset-prepared', fixtureIds, discoveryId, operationId, triggerNames: guards.triggerNames, preservedBaseline: baseline });
+  await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  let passed = false;
+  const fanmarkInsert = `INSERT INTO fanmarks (id, user_input_fanmark, normalized_emoji, short_id, tier_level, created_at, updated_at)
+    VALUES (${sqlLiteral(fixtureIds.fanmarks)}, '🧪', '🧪', ${sqlLiteral('reset-' + journal.runId.slice(0, 8))}, 1, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`;
+  try {
+    await executeBusiness(guards.createSql, 'install exact synthetic reset row scopes');
+    const actualGuards = await queryBusiness(`SELECT name, sql FROM sqlite_master WHERE type='trigger' AND name IN (${guards.triggerNames.map(sqlLiteral).join(', ')}) ORDER BY name`);
+    assert.deepEqual(actualGuards.map(row => row.name), [...guards.triggerNames].sort());
+    const normalizeTrigger = value => value.replace(/;\s*$/u, '').replace(/\s+/gu, ' ').trim();
+    const expectedGuardSql = guards.createSql.match(/CREATE TRIGGER[\s\S]*?END;/gu);
+    assert.equal(expectedGuardSql.length, resetTables.length);
+    for (const row of actualGuards) {
+      const expected = expectedGuardSql.find(sql => sql.startsWith(`CREATE TRIGGER ${row.name}\n`));
+      assert.ok(expected);
+      assert.equal(normalizeTrigger(row.sql), normalizeTrigger(expected));
+    }
+    let seedSql = fanmarkInsert + `\nINSERT INTO fanmark_licenses (id, fanmark_id, user_id, license_start, created_at, updated_at)
+      VALUES (${sqlLiteral(fixtureIds.fanmark_licenses)}, ${sqlLiteral(fixtureIds.fanmarks)}, ${sqlLiteral(userId)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`;
+    for (const table of resetTables.slice(0, 5)) {
+      const extra = table === 'fanmark_redirect_configs' ? ', target_url' : table === 'fanmark_password_configs' ? ', access_password' : '';
+      const value = table === 'fanmark_redirect_configs' ? 'https://example.invalid/synthetic-reset' : 'synthetic-reset-only-disabled-password';
+      seedSql += `\nINSERT INTO ${table} (id, license_id, created_at, updated_at${extra}${table === 'fanmark_password_configs' ? ', is_enabled' : ''})
+        VALUES (${sqlLiteral(fixtureIds[table])}, ${sqlLiteral(fixtureIds.fanmark_licenses)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}${extra ? ', ' + sqlLiteral(value) : ''}${table === 'fanmark_password_configs' ? ', 0' : ''});`;
+    }
+    seedSql += `\nINSERT INTO fanmark_discoveries (id, emoji_ids, normalized_emoji_ids, fanmark_id, availability_status, first_seen_at, last_seen_at)
+      VALUES (${sqlLiteral(discoveryId)}, '[]', '[]', ${sqlLiteral(fixtureIds.fanmarks)}, 'owned_by_user', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});
+      INSERT INTO fanmark_favorites (id, user_id, discovery_id, fanmark_id, normalized_emoji_ids, created_at, display_fanmark)
+      VALUES (${sqlLiteral(fixtureIds.fanmark_favorites)}, ${sqlLiteral(userId)}, ${sqlLiteral(discoveryId)}, ${sqlLiteral(fixtureIds.fanmarks)}, '[]', ${sqlLiteral(timestamp)}, '🧪');`;
+    await executeBusiness(seedSql, 'seed journaled eight-table synthetic reset fixture');
+    assert.deepEqual(await resetTargetCounts(), Object.fromEntries(resetTables.map(table => [table, 1])));
+    const route = '/api/admin/data-reset';
+    const init = { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ requestId: operationId, confirmation: 'DELETE' }) };
+    assertStatus(await request(route, { ...init, headers: { 'content-type': 'application/json' } }), 401, 'anonymous reset');
+    assertStatus(await request(route, { ...init, body: JSON.stringify({ requestId: operationId, confirmation: 'delete' }) }), 400, 'invalid reset confirmation');
+    assertStatus(await request(route, { ...init, body: JSON.stringify({ requestId: operationId, confirmation: 'DELETE', actorUserId: randomUUID() }) }), 400, 'forged reset actor');
+    const response = await request(route, init);
+    assertStatus(response, 200, 'authenticated atomic synthetic reset');
+    const result = await response.json();
+    assert.deepEqual(result, { success: true, deletedCounts: Object.fromEntries(resetTables.map(table => [table, 1])), totalDeleted: 8 });
+    assertResetCanaryEmptyCounts(await resetTargetCounts());
+    const audits = await queryBusiness(`SELECT user_id, action, resource_type, resource_id, request_id, metadata, created_at FROM audit_logs WHERE request_id=${sqlLiteral(operationId)}`);
+    assert.equal(audits.length, 1);
+    const audit = audits[0];
+    assert.equal(audit.user_id, userId); assert.equal(audit.action, 'ADMIN_DATA_RESET');
+    assert.equal(audit.resource_type, 'system'); assert.equal(audit.resource_id, null);
+    assert.match(audit.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    assert.deepEqual(JSON.parse(audit.metadata), { timestamp: audit.created_at, deletedCounts: result.deletedCounts, totalDeleted: 8, security_level: 'ADMIN_VERIFIED' });
+    assert.equal(Number((await queryBusiness(`SELECT incarnation FROM fanmark_license_incarnations WHERE license_id=${sqlLiteral(fixtureIds.fanmark_licenses)}`))[0].incarnation), 1);
+    assert.equal((await queryBusiness(`SELECT fanmark_id FROM fanmark_discoveries WHERE id=${sqlLiteral(discoveryId)}`))[0].fanmark_id, null);
+    await executeBusiness(fanmarkInsert, 'seed later synthetic row to verify committed-reset retry');
+    const replay = await request(route, init); assertStatus(replay, 200, 'reset same-ID replay');
+    assert.deepEqual(await replay.json(), result);
+    assert.equal((await resetTargetCounts()).fanmarks, 1, 'reset retry removed a later row');
+    if (browserReview) journal.browserReset = await reviewAdminDataResetInBrowser(cookie, userId, journalPath);
+    await executeFile(`DELETE FROM "adminRole" WHERE "userId"=${sqlLiteral(userId)};`, 'remove only synthetic admin role for reset denial');
+    try {
+      const denied = await request(route, init); assertStatus(denied, 403, 'authenticated non-admin reset');
+      assert.deepEqual(await denied.json(), { error: 'admin_required' });
+      const denial = await queryBusiness(`SELECT metadata, created_at FROM audit_logs WHERE user_id=${sqlLiteral(userId)} AND action='UNAUTHORIZED_DATA_RESET_ATTEMPT'`);
+      assert.equal(denial.length, 1);
+      assert.deepEqual(JSON.parse(denial[0].metadata), { timestamp: denial[0].created_at, security_level: 'CRITICAL_RISK' });
+    } finally {
+      await executeFile(`INSERT INTO "adminRole" ("userId", "role") VALUES (${sqlLiteral(userId)}, 'admin');`, 'restore only synthetic admin role');
+    }
+    assert.deepEqual(await resetPreservedFingerprint(), baseline, 'reset changed retained configuration/catalog/Auth rows');
+    passed = true;
+  } finally {
+    const cleanup = resetTables.map(table => `DELETE FROM ${table} WHERE id=${sqlLiteral(fixtureIds[table])};`).join('\n') +
+      `\nDELETE FROM fanmark_discoveries WHERE id=${sqlLiteral(discoveryId)};
+       DELETE FROM audit_logs WHERE user_id=${sqlLiteral(userId)} AND action IN ('ADMIN_DATA_RESET','UNAUTHORIZED_DATA_RESET_ATTEMPT');
+       DELETE FROM admin_data_reset_commands WHERE actor_user_id=${sqlLiteral(userId)};\n` + guards.dropSql;
+    await executeBusiness(cleanup, 'cleanup only journaled reset fixture and native scopes');
+    assertResetCanaryEmptyCounts(await resetTargetCounts());
+    assert.equal(Number((await queryBusiness(`SELECT count(*) AS count FROM admin_data_reset_commands WHERE actor_user_id=${sqlLiteral(userId)}`))[0].count), 0);
+    assert.equal(Number((await queryBusiness(`SELECT count(*) AS count FROM sqlite_master WHERE type='trigger' AND name IN (${guards.triggerNames.map(sqlLiteral).join(', ')})`))[0].count), 0);
+    assert.deepEqual(await resetPreservedFingerprint(), baseline);
+    journal.state = passed ? 'reset-verified-and-cleaned' : 'reset-failed-and-cleaned';
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
+  console.log('Staging atomic data reset, later-row retry, exact audits, retained masters/Auth and scoped cleanup passed.');
+}
+
+async function reviewAdminDataResetInBrowser(cookie, userId, journalPath) {
+  return await withStagingAdminBrowser(cookie, 'fanmark-data-reset-ui-', async cdp => {
+    let api;
+    let requestId;
+    cdp.on('Network.requestWillBeSent', ({ request }) => {
+      if (new URL(request.url).pathname === '/api/admin/data-reset' && request.method === 'POST') {
+        const body = JSON.parse(request.postData);
+        assert.equal(body.confirmation, 'DELETE');
+        requestId = body.requestId;
+      }
+    });
+    cdp.on('Network.responseReceived', ({ requestId: networkId, response }) => {
+      if (new URL(response.url).pathname === '/api/admin/data-reset') api = { networkId, status: response.status };
+    });
+    await clickAdminTab(cdp, 'データ管理');
+    const buttonPosition = text => `(() => {
+      const button = Array.from(document.querySelectorAll('button')).find(item => item.innerText.trim() === ${JSON.stringify(text)});
+      button?.scrollIntoView({block:'center'}); if (!button) return null;
+      const r=button.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height,disabled:button.disabled};
+    })()`;
+    await clickBrowserTarget(cdp, buttonPosition('ファンマークデータを削除'), 'reset_dialog_button');
+    await waitForBrowserValue(cdp, `Boolean(document.querySelector('#data-reset-confirmation'))`, Boolean, 'reset_confirmation_missing');
+    assert.equal((await browserValue(cdp, buttonPosition('削除を実行'))).disabled, true);
+    await browserValue(cdp, `(() => { const input=document.querySelector('#data-reset-confirmation'); input.focus(); return true; })()`);
+    await cdp.send('Input.insertText', { text: 'DELETE' });
+    await waitForBrowserValue(cdp, buttonPosition('削除を実行'), value => value && !value.disabled, 'reset_confirmation_did_not_enable');
+    await clickBrowserTarget(cdp, buttonPosition('削除を実行'), 'reset_confirm_submit');
+    await waitForBrowserValue(cdp, `document.body.innerText.includes('削除完了（合計: 1 件）')`, Boolean, 'reset_result_not_rendered');
+    assert.ok(api && requestId);
+    assert.equal(api.status, 200);
+    const body = JSON.parse((await cdp.send('Network.getResponseBody', { requestId: api.networkId })).body);
+    assert.deepEqual(body, { success: true, deletedCounts: Object.fromEntries(resetTables.map(table => [table, table === 'fanmarks' ? 1 : 0])), totalDeleted: 1 });
+    const receipt = await queryBusiness(`SELECT actor_user_id, result_json FROM admin_data_reset_commands WHERE request_id=${sqlLiteral(requestId)}`);
+    assert.equal(receipt[0]?.actor_user_id, userId);
+    assert.deepEqual(JSON.parse(receipt[0].result_json), body);
+    await browserValue(cdp, `(() => {
+      const result = Array.from(document.querySelectorAll('div')).find(item => item.innerText === '削除完了（合計: 1 件）');
+      result?.scrollIntoView({block:'center'}); return Boolean(result);
+    })()`);
+    const screenshotPath = path.join(path.dirname(journalPath), 'data-reset-result.png');
+    const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+    await writeFile(screenshotPath, Buffer.from(screenshot.data, 'base64'), { mode: 0o600 });
+    return { requestId, totalDeleted: 1, screenshotPath };
+  });
+}
+
+function assertStatus(response, status, operation) {
+  assert.equal(response.status, status, `${operation} returned HTTP ${response.status}; expected ${status}`);
+}
+
+async function main() {
+  const actions = requireExplicitStagingConsent();
+  await assertStagingTarget(actions);
+  await readUserOwnedCounts();
+  if (actions.notificationManualEvent) {
+    const baseline = await queryBusiness(`SELECT
+      (SELECT count(*) FROM notification_events) AS events,
+      (SELECT count(*) FROM notifications) AS notifications,
+      (SELECT count(*) FROM user_settings) AS profiles`);
+    assert.equal(Number(baseline[0]?.events), 0, "notification event staging baseline is not empty");
+    assert.equal(Number(baseline[0]?.notifications), 0, "notification delivery staging baseline is not empty");
+    assert.equal(Number(baseline[0]?.profiles), 0, "notification profile staging baseline is not empty");
+  }
+  const notificationBaseline = actions.notificationAlarmRoundtrip ? await resetPreservedFingerprint() : null;
+  console.log("Staging target and empty Auth tables verified; provisioning one synthetic identity.");
+
+  const userId = randomUUID();
+  const targetUserId = randomUUID();
+  const targetEmail = `codex-admin-target-${targetUserId}@example.invalid`;
+  const targetUsername = `codex-${targetUserId.slice(0, 8)}`;
+  const adminUsername = `codex-admin-${userId.slice(0, 8)}`;
+  const expiryLicenseId = randomUUID();
+  const expiryFanmarkId = randomUUID();
+  const expiryFanmark = `synthetic-${randomBytes(8).toString("hex")}`;
+  const expiryShortId = `c${randomBytes(12).toString("hex")}`;
+  const accountId = randomUUID();
+  const email = `codex-totp-${userId}@example.invalid`;
+  const password = `Synthetic-${randomBytes(32).toString("base64url")}!`;
+  const passwordHash = await bcrypt.hash(password, 10);
+  const timestamp = new Date().toISOString();
+  let seedAttempted = false;
+  let flowPassed = false;
+  let cleanupError = null;
+  let cookie = "";
+  const systemSettingState = { key: "", originalValue: null, temporaryValue: null };
+  const lifecycleSettingState = { originalValue: null, temporaryValue: null };
+  let emojiAuditJournalPath = null;
+  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip || actions.adminResetRoundtrip || actions.notificationManualEvent) {
+    const directory = await mkdtemp(path.join(os.tmpdir(), actions.adminResetRoundtrip ? "fanmark-admin-reset-canary-" : actions.emojiMasterAuditRoundtrip ? "fanmark-emoji-audit-canary-" : actions.notificationManualEvent ? "fanmark-notification-alarm-canary-" : "fanmark-waitlist-security-canary-"));
+    emojiAuditJournalPath = path.join(directory, "canary.json");
+    await writeFile(emojiAuditJournalPath, JSON.stringify({ state: "auth-prepared", runId: randomUUID(),
+      userId, targetUserId, accountId, targetUsername, expectedVersion: process.env.FANMARK_EXPECTED_STAGING_VERSION,
+      ...(notificationBaseline ? { notificationBaseline } : {}) }), { mode: 0o600 });
+    console.log(`Private staging recovery journal: ${emojiAuditJournalPath}`);
+  }
+
+  try {
+    seedAttempted = true;
+    await executeFile(
+      `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt") VALUES (${sqlLiteral(userId)}, 'Synthetic staging MFA', ${sqlLiteral(email)}, 1, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n` +
+      `INSERT INTO "account" ("id", "accountId", "providerId", "userId", "password", "createdAt", "updatedAt") VALUES (${sqlLiteral(accountId)}, ${sqlLiteral(userId)}, 'credential', ${sqlLiteral(userId)}, ${sqlLiteral(passwordHash)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n` +
+      `INSERT INTO "adminRole" ("userId", "role") VALUES (${sqlLiteral(userId)}, 'admin');\n` +
+      `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt") VALUES (${sqlLiteral(targetUserId)}, 'Synthetic admin target', ${sqlLiteral(targetEmail)}, 1, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n`,
+      "synthetic identity provision",
+    );
+    await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at)
+      VALUES (${sqlLiteral(targetUserId)}, ${sqlLiteral(targetUsername)}, ${sqlLiteral(targetEmail)}, NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`,
+    "synthetic admin target profile provision");
+    if (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip || actions.adminResetBrowser) {
+      await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at, requires_password_setup)
+        VALUES (${sqlLiteral(userId)}, ${sqlLiteral(adminUsername)}, 'Synthetic staging MFA', NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}, 0);`,
+      "synthetic admin browser-session profile provision");
+    }
+    console.log("Synthetic account provisioned; exercising the deployed sign-in and TOTP routes.");
+
+    const signIn = await request("/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    assertStatus(signIn, 200, "staging sign-in");
+    cookie = sessionCookie(signIn);
+    assert.ok(cookie, "sign-in did not issue the expected session cookie");
+
+    const enrollmentRequired = await request("/api/admin/session", {
+      headers: { cookie },
+    });
+    assertStatus(enrollmentRequired, 403, "admin MFA enrollment gate");
+    assert.equal((await enrollmentRequired.json()).error, "mfa_enrollment_required");
+    if (actions.notificationAlarmRoundtrip) {
+      for (const method of ["GET", "POST"]) {
+        const anonymous = await request("/api/admin/notifications/wake", { method });
+        assertStatus(anonymous, 401, "anonymous notification wake/status");
+        const denied = await request("/api/admin/notifications/wake", { method, headers: { cookie } });
+        assertStatus(denied, 403, "notification wake/status requires current-session MFA enrollment");
+        assert.equal((await denied.json()).error, "mfa_enrollment_required");
+      }
+    }
+    if (actions.adminResetRoundtrip) {
+      const deniedReset = await request("/api/admin/data-reset", {
+        method: "POST", headers: { cookie, "content-type": "application/json" },
+        body: JSON.stringify({ requestId: randomUUID(), confirmation: "DELETE" }),
+      });
+      assertStatus(deniedReset, 403, "reset requires current-session MFA enrollment");
+      assert.equal((await deniedReset.json()).error, "mfa_enrollment_required");
+      assert.equal(Number((await queryBusiness("SELECT count(*) AS count FROM admin_data_reset_commands"))[0].count), 0);
+    }
+
+    const enrollment = await request("/api/auth/two-factor/enable", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ method: "totp", password }),
+    });
+    assertStatus(enrollment, 200, "TOTP enrollment");
+    const enrollmentBody = await enrollment.json();
+    assert.equal(enrollmentBody.method, "totp");
+    assert.ok(Array.isArray(enrollmentBody.backupCodes));
+    const secret = new URL(enrollmentBody.totpURI).searchParams.get("secret");
+    assert.ok(secret, "TOTP enrollment did not return a secret");
+
+    const verification = await request("/api/auth/two-factor/verify-totp", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ code: await createTotpCode(secret) }),
+    });
+    assertStatus(verification, 200, "TOTP verification");
+    const verificationBody = await verification.json();
+    assert.equal(verificationBody.user?.id, userId);
+    assert.equal(typeof verificationBody.token, "string");
+    cookie = sessionCookie(verification);
+    assert.ok(cookie, "TOTP verification did not rotate the Better Auth session cookie");
+
+    const sessionResponse = await request("/api/auth/get-session", { headers: { cookie } });
+    assertStatus(sessionResponse, 200, "refreshed Better Auth session");
+    const sessionBody = await sessionResponse.json();
+    assert.equal(sessionBody.user?.id, userId);
+    assert.equal(typeof sessionBody.session?.id, "string");
+
+    const adminResponse = await request("/api/admin/session", { headers: { cookie } });
+    assertStatus(adminResponse, 200, "MFA-protected admin session");
+    assert.deepEqual(await adminResponse.json(), { authorized: true });
+    const assuranceRows = await query(
+      `SELECT count(*) AS "count" FROM "mfaAssurance" WHERE "userId" = ${sqlLiteral(userId)} AND "sessionId" = ${sqlLiteral(sessionBody.session.id)}`,
+    );
+    assert.equal(Number(assuranceRows[0]?.count), 1, "MFA assurance was not persisted for this session");
+    if (actions.adminResetRoundtrip) await exerciseAdminDataReset(cookie, userId, emojiAuditJournalPath, actions.adminResetBrowser);
+    if (actions.lifecycleRunReadback) await exerciseManualLifecycleRun(cookie);
+    if (actions.emojiMasterAuditRoundtrip) await exerciseEmojiMasterAudit(cookie, userId, emojiAuditJournalPath, { browserReview: actions.emojiMasterAuditBrowser, email });
+    if (actions.emojiMasterRoundtrip) {
+      await exerciseEmojiMasterDraft(cookie);
+      await exerciseNotificationMasters(cookie);
+      await exerciseAuthEmailTemplatesAdmin(cookie);
+      await exerciseAvailabilityRulesAdmin(cookie);
+      await exerciseInvitationAdmin(cookie);
+    }
+    if (actions.waitlistAdminReadback) {
+      await exerciseWaitlistAdmin(cookie, userId, { securityRoundtrip: actions.waitlistSecurityRoundtrip, journalPath: emojiAuditJournalPath });
+    }
+    if (actions.broadcastEmailReadback) {
+      await exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername, {
+        browserReview: actions.broadcastEmailBrowser,
+      });
+    }
+    if (actions.authEmailTemplateEditRoundtrip) {
+      await exerciseAuthEmailTemplatesAdmin(cookie, { editRoundtrip: true, adminUserId: userId });
+    }
+    if (actions.referenceMasterPricingReadback) {
+      await exerciseReferenceMasterPricingReadback(cookie);
+    }
+    if (actions.referenceMasterTierRoundtrip) {
+      await exerciseReferenceMasterTierRoundtrip(cookie);
+    }
+    if (actions.referenceMasterExtensionPriceRoundtrip) {
+      await exerciseReferenceMasterExtensionPriceRoundtrip(cookie);
+    }
+    if (actions.adminUserManagementReadback) {
+      await exerciseAdminUserManagementReadback(cookie, {
+        userId: targetUserId,
+        email: targetEmail,
+        username: targetUsername,
+      });
+    }
+    if (actions.adminUserPlanReadback) {
+      await exerciseAdminUserPlanReadback(cookie, { userId: targetUserId, adminUserId: userId });
+    }
+    if (actions.adminUserStatusReadback) {
+      await exerciseAdminUserStatusReadback(cookie, {
+        userId: targetUserId, email: targetEmail, adminUserId: userId,
+        expiryLicenseId, expiryFanmarkId, expiryFanmark, expiryShortId,
+      });
+    }
+    if (actions.adminUserManagementBrowser) {
+      await reviewAdminUserManagementMutationsInBrowser(cookie, targetEmail, targetUserId);
+    }
+    if (actions.systemSettingsReadback) {
+      await exerciseSystemSettingsReadback(cookie, userId, systemSettingState);
+    }
+    if (actions.lifecycleSettingsReadback) {
+      await exerciseLifecycleSettingsReadback(cookie, lifecycleSettingState);
+    }
+    if (actions.lifecycleSettingsBrowser) {
+      await reviewLifecycleSettingsInBrowser(cookie, lifecycleSettingState);
+      await reviewMaxEmojiSettingsInBrowser(cookie, systemSettingState);
+    }
+    if (actions.notificationManualEvent) {
+      if (actions.notificationAlarmRoundtrip) await waitForNotificationAlarmIdle(cookie);
+      await exerciseNotificationManualEvent(cookie, targetUserId, { alarmMode: actions.notificationAlarmRoundtrip, journalPath: emojiAuditJournalPath });
+      if (actions.notificationAlarmRoundtrip) await exerciseNotificationAlarmRecovery(cookie, targetUserId, emojiAuditJournalPath);
+    }
+    flowPassed = true;
+    console.log("Staging TOTP verification and same-session admin authorization passed.");
+  } finally {
+    if (seedAttempted) {
+      try {
+        if (actions.systemSettingsReadback) await restoreSystemSetting(cookie, systemSettingState);
+        if (actions.lifecycleSettingsReadback) await restoreLifecycleSetting(cookie, lifecycleSettingState);
+        if (actions.notificationManualEvent) {
+          const journal = JSON.parse(await readFile(emojiAuditJournalPath, "utf8"));
+          const fixtures = journal.notificationFixtures ?? [];
+          for (const fixture of fixtures) {
+            assert.equal(fixture.userId, targetUserId);
+            assert.match(fixture.payload.fanmark_id, /^[0-9a-f-]{36}$/iu);
+            const predicate = `source='admin_manual' AND event_type='favorite_fanmark_available'
+              AND json_extract(payload, '$.user_id')=${sqlLiteral(targetUserId)}
+              AND json_extract(payload, '$.fanmark_id')=${sqlLiteral(fixture.payload.fanmark_id)}`;
+            await executeBusiness(`DELETE FROM notifications WHERE event_id IN (SELECT id FROM notification_events WHERE ${predicate});
+              DELETE FROM notification_events WHERE ${predicate};`, "journaled synthetic notification-event cleanup");
+          }
+          const [eventRows, notificationRows] = await Promise.all([
+            queryBusiness("SELECT COUNT(*) AS count FROM notification_events WHERE source = 'admin_manual' AND json_extract(payload, '$.user_id') = " + sqlLiteral(targetUserId)),
+            queryBusiness("SELECT COUNT(*) AS count FROM notifications WHERE user_id = " + sqlLiteral(targetUserId)),
+          ]);
+          assert.equal(Number(eventRows[0]?.count), 0, "synthetic manual notification event remained in business D1");
+          assert.equal(Number(notificationRows[0]?.count), 0, "synthetic manual notification remained in business D1");
+          if (actions.notificationAlarmRoundtrip && fixtures.length > 0) {
+            const repair = await request("/api/admin/notifications/wake", { method: "POST", headers: { cookie } });
+            assertStatus(repair, 200, "empty queue wake cleanup");
+            await updateNotificationJournal(emojiAuditJournalPath, { cleanupIdleStatus: await waitForNotificationAlarmIdle(cookie) });
+          }
+        }
+        await executeFile(
+          `DELETE FROM "mfaAssurance" WHERE "userId" = ${sqlLiteral(userId)};\n` +
+          `DELETE FROM "adminRole" WHERE "userId" = ${sqlLiteral(userId)};\n` +
+          `DELETE FROM "twoFactor" WHERE "userId" = ${sqlLiteral(userId)};\n` +
+          `DELETE FROM "session" WHERE "userId" = ${sqlLiteral(userId)};\n` +
+          `DELETE FROM "verification" WHERE "identifier" = ${sqlLiteral(email)};\n` +
+          `DELETE FROM "account" WHERE "userId" = ${sqlLiteral(userId)};\n` +
+          `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
+          "synthetic identity cleanup",
+        );
+        // Every smoke action provisions this target identity/profile, so every
+        // action must clean it up, including read-only and emoji-only rehearsals.
+        {
+          if (actions.adminUserStatusReadback) {
+            await executeBusiness(
+              `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
+              `DELETE FROM notification_events WHERE event_type = 'license_expired' AND json_extract(payload, '$.fanmark_id') = ${sqlLiteral(expiryFanmarkId)};\n` +
+              `DELETE FROM audit_logs WHERE resource_id = ${sqlLiteral(expiryLicenseId)} AND action IN ('license_expired', 'admin_expire_license');\n` +
+              `DELETE FROM fanmark_basic_configs WHERE license_id = ${sqlLiteral(expiryLicenseId)};\n` +
+              `DELETE FROM fanmark_redirect_configs WHERE license_id = ${sqlLiteral(expiryLicenseId)};\n` +
+              `DELETE FROM fanmark_messageboard_configs WHERE license_id = ${sqlLiteral(expiryLicenseId)};\n` +
+              `DELETE FROM fanmark_password_configs WHERE license_id = ${sqlLiteral(expiryLicenseId)};\n` +
+              `DELETE FROM fanmark_licenses WHERE id = ${sqlLiteral(expiryLicenseId)} AND user_id = ${sqlLiteral(targetUserId)};\n` +
+              `DELETE FROM fanmarks WHERE id = ${sqlLiteral(expiryFanmarkId)};`,
+              "synthetic immediate-expiry cleanup",
+            );
+          }
+          await executeBusiness(
+            `DELETE FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
+            `DELETE FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}, ${sqlLiteral(userId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired');\n` +
+            (actions.systemSettingsReadback ? `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING' AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(systemSettingState.key)};\n` : "") +
+            `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
+            (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip || actions.adminResetBrowser
+              ? `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)};`
+              : ""),
+            "synthetic admin user-management cleanup",
+          );
+          await executeFile(
+            `DELETE FROM "adminUserStatusAudit" WHERE "actorUserId" = ${sqlLiteral(userId)} OR "targetUserId" = ${sqlLiteral(targetUserId)};\n` +
+            `DELETE FROM "user" WHERE "id" = ${sqlLiteral(targetUserId)} AND "email" = ${sqlLiteral(targetEmail)};`,
+            "synthetic admin target Auth cleanup",
+          );
+          const [profileRows, adminProfileRows, auditRows, authRows, statusAuditRows, settingsAuditRows] = await Promise.all([
+            queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
+            queryBusiness(actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip || actions.adminResetBrowser
+              ? `SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)}`
+              : "SELECT 0 AS count"),
+            queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}, ${sqlLiteral(userId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired')`),
+            query(`SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(targetUserId)} AND email = ${sqlLiteral(targetEmail)}`),
+            query(`SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE "actorUserId" = ${sqlLiteral(userId)} OR "targetUserId" = ${sqlLiteral(targetUserId)}`),
+            queryBusiness(actions.systemSettingsReadback
+              ? `SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING' AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(systemSettingState.key)}`
+              : "SELECT 0 AS count"),
+          ]);
+          assert.equal(Number(profileRows[0]?.count), 0, "synthetic target profile remained in business D1");
+          assert.equal(Number(adminProfileRows[0]?.count), 0, "synthetic admin browser-session profile remained in business D1");
+          assert.equal(Number(auditRows[0]?.count), 0, "synthetic admin audit rows remained in business D1");
+          assert.equal(Number(authRows[0]?.count), 0, "synthetic target identity remained in Auth D1");
+          assert.equal(Number(statusAuditRows[0]?.count), 0, "synthetic user status audit remained in Auth D1");
+          assert.equal(Number(settingsAuditRows[0]?.count), 0, "synthetic system setting audit rows remained in business D1");
+        }
+        await readUserOwnedCounts();
+        if (actions.notificationManualEvent) await updateNotificationJournal(emojiAuditJournalPath, {
+          state: flowPassed ? "notification-verified-and-cleaned" : "failed-and-cleaned", authRows: 0,
+        });
+        if (cookie) {
+          const invalidatedSession = await request("/api/auth/get-session", { headers: { cookie } });
+          assertStatus(invalidatedSession, 200, "deleted synthetic session readback");
+          assert.equal(await invalidatedSession.json(), null);
+        }
+      } catch {
+        cleanupError = new Error(`cleanup/readback failed for synthetic user ${userId}`);
+      }
+    }
+  }
+
+  if (cleanupError) throw cleanupError;
+  if (actions.notificationAlarmRoundtrip) {
+    await assertResetBusinessEmpty();
+    assert.deepEqual(await resetPreservedFingerprint(), notificationBaseline, "notification alarm canary changed retained configuration/catalog/Auth baseline");
+  }
+  if (actions.adminResetRoundtrip) await assertResetBusinessEmpty();
+  assert.ok(flowPassed, "the staging TOTP flow did not complete");
+  if (emojiAuditJournalPath) {
+    const journal = JSON.parse(await readFile(emojiAuditJournalPath, "utf8"));
+    assert.equal(journal.state, actions.adminResetRoundtrip ? "reset-verified-and-cleaned" : actions.emojiMasterAuditRoundtrip ? "master-verified-and-cleaned" : actions.notificationManualEvent ? "notification-verified-and-cleaned" : "waitlist-verified-and-cleaned");
+    await updateNotificationJournal(emojiAuditJournalPath, { state: "verified-and-cleaned", authRows: 0 });
+  }
+  console.log("Staging Better Auth sign-in, first-time TOTP enrollment, session rotation, and admin MFA authorization passed.");
+  if (actions.emojiMasterRoundtrip) {
+    console.log("Staging MFA-protected invitation-code create/list/CAS-edit/disable/delete round-trip passed and returned business D1 to zero invitation rows.");
+    console.log("Staging MFA-protected availability-rule list/CAS-edit/stale-write rejection/restore passed; all four rules remain disabled and created_by stays NULL.");
+    console.log("Staging MFA-protected notification rules/templates and payload-redacted event/delivery log reads passed without changing notification rows.");
+    console.log("Staging MFA-protected auth email-template list returned all 16 type/locale pairs; anonymous access was denied without changing D1 rows.");
+  }
+  if (actions.waitlistAdminReadback) {
+    console.log("Staging waitlist admin list/reveal required same-session MFA and the admin plan, returned only the email hash in the list, audited the explicit reveal, and removed the synthetic address/profile/audit rows.");
+  }
+  if (actions.broadcastEmailReadback) {
+    console.log("Staging broadcast email admin read/estimate/draft create-readback passed with the seeded 12 templates. Test-send and bulk-send remained selector-disabled; a synthetic needs_review run was projected without error details and all synthetic delivery/admin/profile rows were removed.");
+  }
+  if (actions.authEmailTemplateEditRoundtrip) {
+    console.log("Staging MFA-protected Japanese signup email-template edit/restore passed; anonymous and stale writes were rejected, all 16 template contents returned to baseline, and synthetic audit rows were removed. No email was sent.");
+  }
+  if (actions.referenceMasterPricingReadback) {
+    console.log("Staging MFA-protected reference-master pricing read matched the active D1 release; anonymous access was denied and both reads left the release pointer unchanged.");
+  }
+  if (actions.referenceMasterTierRoundtrip) {
+    console.log("Staging MFA-protected Tier C edit/restore passed: anonymous and stale writes were rejected, all four reference masters were read back, and the original Tier C null/perpetual value was restored. Two append-only staging release activations were recorded.");
+  }
+  if (actions.referenceMasterExtensionPriceRoundtrip) {
+    console.log("Staging MFA-protected extension-price edit/restore passed: anonymous and stale writes were rejected, the public read API returned the restored price and current release, and all master rows plus Stripe identifiers matched baseline. Two append-only staging release activations were recorded.");
+  }
+  if (actions.adminUserManagementReadback) {
+    console.log("Staging MFA-protected admin user list/detail read the synthetic cross-D1 user; anonymous access was denied and cleanup returned Auth, profile, and audit canary rows to zero.");
+  }
+  if (actions.adminUserPlanReadback) {
+    console.log("Staging MFA-protected plan mutation changed a synthetic profile to Enterprise, verified exact override D1 fields, changed it to Max and back to Free, then cleaned its audit and D1 rows.");
+  }
+  if (actions.adminUserStatusReadback) {
+    console.log("Staging MFA-protected suspension/restoration and immediate license expiry passed. Session revocation, license/config changes, lifecycle/admin audits, notification event, repeat safety, and cleanup were verified.");
+  }
+  if (actions.lifecycleRunReadback) {
+    console.log("Staging MFA-protected manual lifecycle execution returned aggregate-only zero-candidate results; Cron stayed disabled and the empty lifecycle journal was removed after exact readback.");
+  }
+  if (actions.systemSettingsReadback) {
+    console.log("Staging MFA-protected system settings read/update passed. The API exposed the exact admin projection, rejected anonymous access and a stale write, restored the original value, and cleaned the synthetic audit rows.");
+  }
+  if (actions.lifecycleSettingsReadback) {
+    console.log("Staging lifecycle settings read/update passed. Anonymous and invalid writes were rejected; the MFA-protected update was read back, restored to baseline, and the public endpoint remained no-store.");
+  }
+  if (actions.lifecycleSettingsBrowser) {
+    console.log("The rendered AdminSettings lifecycle and maximum-emoji forms updated and restored their synthetic settings through the staging Worker; D1-backed readback confirmed the baselines.");
+  }
+  if (actions.notificationManualEvent) {
+    console.log(actions.notificationAlarmRoundtrip
+      ? "Staging API-created notification wake, real alarm idle-stop, journaled interrupted-bridge recovery, future/due rescheduling and exact Japanese delivery passed; retained baselines and scoped Auth/business cleanup passed."
+      : "Staging MFA-protected manual notification-event creation passed; the deployed Cron produced one delivered Japanese in-app notification, and journaled event, notification, profile, and Auth rows were removed.");
+  }
+  console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
+  console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");
+}
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : "staging Auth smoke failed");
+  process.exitCode = 1;
+});

@@ -28,6 +28,7 @@ const source = [
   "await supabase.auth.mfa.verify({ factorId });",
   "await supabase.channel('room');",
   "await supabase.removeChannel(channel);",
+  "function subscribeToNotifications() { const channel = supabase.channel(`notifications-preview-${user.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }).subscribe(); return () => supabase.removeChannel(channel); }",
   "const unfinished = supabase.from('unfinished');",
   "const aliasRows = dataClient.from('alias_table').select('*');",
   "const unresolvedAlias = otherClient.from('other').select('*');",
@@ -35,7 +36,7 @@ const source = [
 
 const analysis = analyzeSupabaseCallsites(source, file, root);
 const calls = analysis.calls;
-assert.equal(calls.length, 12, "multiline, same-line, alias, auth, realtime, and dynamic calls should all be retained");
+assert.equal(calls.length, 14, "multiline, same-line, alias, auth, realtime, and dynamic calls should all be retained");
 assert.equal(extractSupabaseCallsites(source, file, root).length, calls.length);
 
 const tableCall = calls.find((call) => call.kind === "table");
@@ -71,9 +72,19 @@ assert.equal(calls.find((call) => call.target === "alias_table").operation, "tab
 assert.equal(calls.find((call) => call.operation === "auth.mfa.verify").target, "auth");
 assert.equal(calls.find((call) => call.operation === "realtime.channel").target, "room");
 assert.equal(calls.find((call) => call.operation === "realtime.removeChannel").target, "<unresolved>");
+const tableChannel = calls.find((call) => call.operation === "realtime.channel" && call.target === "notifications");
+assert.equal(tableChannel.expression, "`notifications-preview-${user.id}`");
+const tableChannelCleanup = calls.find((call) => call.operation === "realtime.removeChannel" && call.target === "notifications");
+assert.ok(tableChannelCleanup, "cleanup through a local alias should resolve to its statically subscribed table");
+assert.equal(tableChannelCleanup.expression, undefined);
+const shadowedChannels = analyzeSupabaseCallsites([
+  "function notifications() { const channel = supabase.channel('notifications').on('postgres_changes', { table: 'notifications' }).subscribe(); return () => supabase.removeChannel(channel); }",
+  "function profile() { const channel = supabase.channel('profile').on('postgres_changes', { table: 'user_settings' }).subscribe(); return () => supabase.removeChannel(channel); }",
+].join("\n"), file, root).calls.filter((call) => call.operation === "realtime.removeChannel");
+assert.deepEqual(shadowedChannels.map((call) => call.target), ["notifications", "user_settings"]);
 assert.equal(calls.filter((call) => call.target === "commented_out" || call.target === "inside_a_string").length, 0);
 assert.deepEqual(analysis.unsupportedAliases, [
-  { receiver: "otherClient", operation: "table.from", location: "src/Example.tsx:25" },
+  { receiver: "otherClient", operation: "table.from", location: "src/Example.tsx:26" },
 ]);
 
 console.log("inventory extraction tests passed");

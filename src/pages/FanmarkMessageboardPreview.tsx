@@ -7,6 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { supabase } from '@/integrations/supabase/client';
+import { getFanmarkSettingsBackend, getOwnerFanmarkSettings } from '@/lib/fanmark-settings-api';
 
 interface Fanmark {
   id: string;
@@ -33,7 +34,7 @@ export default function FanmarkMessageboardPreview() {
   // location state から渡されたプレビュー内容と編集状態を取得
   const locationState = location.state as {
     previewContent?: string;
-    editingState?: any;
+    editingState?: Record<string, unknown>;
   } | null;
 
   useEffect(() => {
@@ -47,6 +48,23 @@ export default function FanmarkMessageboardPreview() {
 
       setLoading(true);
       try {
+        if (getFanmarkSettingsBackend() === 'worker') {
+          const fanmarkData = await getOwnerFanmarkSettings(fanmarkId);
+          const displayFanmark = fanmarkData.display_fanmark ?? fanmarkData.user_input_fanmark;
+          setFanmark({
+            id: fanmarkData.id,
+            user_input_fanmark: fanmarkData.user_input_fanmark,
+            display_fanmark: displayFanmark,
+            emoji_ids: fanmarkData.emoji_ids,
+            fanmark: displayFanmark,
+            fanmark_name: fanmarkData.fanmark_name || displayFanmark,
+            access_type: fanmarkData.access_type,
+            text_content: fanmarkData.text_content ?? '',
+            is_password_protected: fanmarkData.is_password_protected,
+          });
+          return;
+        }
+
         // Use the same RPC function as FanmarkSettingsPage
         const { data, error } = await supabase.rpc('get_fanmark_complete_data', {
           fanmark_id_param: fanmarkId

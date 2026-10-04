@@ -1,8 +1,14 @@
-import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import {
+  createClient,
+  type SupabaseClient,
+  type User,
+} from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { hasCurrentAal2 } from "./admin-mfa.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -62,7 +68,10 @@ async function isAdminUser(
   return roles !== null;
 }
 
-export async function requireAdminContext(req: Request): Promise<AdminContext | Response> {
+export async function requireAdminContext(
+  req: Request,
+  options: { requireMfa?: boolean } = {},
+): Promise<AdminContext | Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -78,7 +87,9 @@ export async function requireAdminContext(req: Request): Promise<AdminContext | 
   }
 
   const supabase = getSupabaseServiceRoleClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+  const { data: { user }, error: authError } = await supabase.auth.getUser(
+    accessToken,
+  );
 
   if (authError || !user) {
     console.error("Admin authentication failed:", authError);
@@ -89,6 +100,14 @@ export async function requireAdminContext(req: Request): Promise<AdminContext | 
   if (!admin) {
     console.warn("Admin access denied for user:", user.id, user.email);
     return forbidden();
+  }
+
+  if (
+    options.requireMfa &&
+    !(await hasCurrentAal2(supabase.auth.mfa, accessToken))
+  ) {
+    console.warn("Admin MFA assurance denied for user:", user.id);
+    return forbidden("Multi-factor authentication required");
   }
 
   return { supabase, adminUser: user };

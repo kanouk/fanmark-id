@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
 import { supabase } from '@/integrations/supabase/client';
+import { getOwnedFanmarksBackend, loadOwnedFanmarks } from '@/lib/owned-fanmarks-api';
+import { countActiveOwnedFanmarks } from '@/lib/owned-fanmarks-plan-projection';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { RecentFanmarksScroll } from '@/components/RecentFanmarksScroll';
 import { Sparkles } from 'lucide-react';
@@ -82,12 +84,19 @@ const Index = () => {
       }
 
       try {
+        if (getOwnedFanmarksBackend() === 'worker') {
+          const items = await loadOwnedFanmarks();
+          if (isMounted) setFanmarkCount(countActiveOwnedFanmarks(items));
+          return;
+        }
+
+        const nowIso = new Date().toISOString();
         const { count, error } = await supabase
           .from('fanmark_licenses')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .eq('status', 'active')
-          .gt('license_end', new Date().toISOString());
+          .or(`license_end.is.null,license_end.gt.${nowIso}`);
 
         if (!isMounted) return;
 

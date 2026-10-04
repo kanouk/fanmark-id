@@ -1,0 +1,29 @@
+{
+  "scope": "existing synthetic staging protected favorites proof; evidence linkage only, no new remote run",
+  "status": "accepted-and-cleaned",
+  "acceptedCodeHead": "47b69c5f312749a1a24120a59ab1ce7e9775671a",
+  "ciRun": "37085997181",
+  "workerVersion": "b5a07a34-a086-4543-9569-31fa8a904def",
+  "protectedModes": [
+    "redirect",
+    "text"
+  ],
+  "syntheticAccounts": 2,
+  "storedConfigUnchanged": true,
+  "unprotectedContentPreserved": true,
+  "sourceOwnedRowsAfterCleanup": 0,
+  "authOwnedRowsAfterCleanup": 0,
+  "retainedBaselineEqual": true,
+  "unchangedReadRegion": {
+    "fromCodeHead": "47b69c5f312749a1a24120a59ab1ce7e9775671a",
+    "throughCodeHead": "ef25b5091bab752385a4af0135e263d6186da47f",
+    "region": "mapFavorite + LIST_SQL + listFavorites",
+    "sha256": "9842764fb970117864727456e075faf5c929e2b5a490cbfeb7155ef841e52256"
+  },
+  "latestNativeCI": 37125702795,
+  "sourceRPCDefinitionSha256": "bace00baac2634b29e8d5fecfb1bc9aa423cd5535213b13b3c28d7a6d39864ac",
+  "sourceRowsRead": false,
+  "realDataMoved": false,
+  "domainChanged": false,
+  "fullSourceAuthorizationApproved": false
+}

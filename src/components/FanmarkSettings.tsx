@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { getFanmarkSettingsBackend, saveOwnerFanmarkSettings } from '@/lib/fanmark-settings-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -137,6 +138,8 @@ const settingsSchema = z.object({
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
+type RestoredSettingsState = Partial<SettingsFormData> & { isEditingPassword?: boolean };
+const SETTINGS_DRAFT_TTL = 24 * 60 * 60 * 1000;
 
 export interface Fanmark {
   id: string;
@@ -161,7 +164,7 @@ interface FanmarkSettingsProps {
   onOpenChange?: (open: boolean) => void;
   onClose?: () => void;
   onSuccess?: () => void;
-  restoreEditingState?: any;
+  restoreEditingState?: RestoredSettingsState;
 }
 
 export const FanmarkSettings = ({
@@ -214,8 +217,6 @@ export const FanmarkSettings = ({
   const [redirectInputMode, setRedirectInputMode] = useState<SocialLinkInputMode>('handle');
 
   const draftStorageKey = fanmark ? `fanmark_settings_draft_${fanmark.id}` : null;
-  const DRAFT_TTL = 24 * 60 * 60 * 1000; // 24 hours
-
   // Reset form when fanmark changes or when draft needs hydration
   useEffect(() => {
     if (!fanmark || !draftStorageKey) return;
@@ -250,13 +251,24 @@ export const FanmarkSettings = ({
             form?: Partial<SettingsFormData>;
             meta?: { isEditingPassword?: boolean };
           };
-          if (!timestamp || Date.now() - timestamp <= DRAFT_TTL) {
+          if (!timestamp || Date.now() - timestamp <= SETTINGS_DRAFT_TTL) {
+            const safeCachedForm = { ...(form ?? data ?? {}) } as Partial<SettingsFormData>;
+            const containedPassword = Object.prototype.hasOwnProperty.call(safeCachedForm, 'accessPassword');
+            delete safeCachedForm.accessPassword;
             nextFormData = {
               ...nextFormData,
-              ...(form ?? data ?? {}),
+              ...safeCachedForm,
+              accessPassword: '',
             };
             if (meta && typeof meta.isEditingPassword === 'boolean') {
               initialEditing = meta.isEditingPassword;
+            }
+            if (containedPassword) {
+              sessionStorage.setItem(draftStorageKey, JSON.stringify({
+                timestamp: timestamp ?? Date.now(),
+                form: safeCachedForm,
+                meta: { isEditingPassword: initialEditing },
+              }));
             }
           } else {
             sessionStorage.removeItem(draftStorageKey);
@@ -268,9 +280,12 @@ export const FanmarkSettings = ({
     }
 
     if (restoreEditingState) {
+      const safeRestoreState = { ...restoreEditingState };
+      delete safeRestoreState.accessPassword;
       nextFormData = {
         ...nextFormData,
-        ...restoreEditingState,
+        ...safeRestoreState,
+        accessPassword: '',
       };
       if (typeof restoreEditingState.isEditingPassword === 'boolean') {
         initialEditing = restoreEditingState.isEditingPassword;
@@ -293,21 +308,20 @@ export const FanmarkSettings = ({
     setValue('is_public', nextFormData.is_public ?? false, { shouldDirty: false, shouldTouch: false, shouldValidate: false });
     setIsEditingPassword(initialEditing);
     setHydratedDraftKey(draftStorageKey);
-  }, [fanmark, draftStorageKey, reset, restoreEditingState, hydratedDraftKey, t]);
+  }, [fanmark, draftStorageKey, reset, restoreEditingState, hydratedDraftKey, setValue, t]);
 
   // Persist draft as the user edits (wait until initial hydration completes)
   useEffect(() => {
     if (!draftStorageKey || hydratedDraftKey !== draftStorageKey) return;
     const subscription = watch((values) => {
       try {
+        const safeValues = { ...values };
+        delete safeValues.accessPassword;
         sessionStorage.setItem(
           draftStorageKey,
           JSON.stringify({
             timestamp: Date.now(),
-            form: {
-              ...values,
-              accessPassword: values.accessPassword ?? '',
-            },
+            form: safeValues,
             meta: { isEditingPassword },
           })
         );
@@ -398,6 +412,29 @@ export const FanmarkSettings = ({
         ? normalizeSocialUrlForSave(data.targetUrl)
         : data.targetUrl;
 
+      const shouldProtect = data.accessType !== 'inactive' && data.isPasswordProtected;
+      const mustEnterPassword = shouldProtect && (!fanmark.is_password_protected || isEditingPassword);
+      if (mustEnterPassword && !/^\d{4}$/.test(data.accessPassword ?? '')) {
+        toast({
+          title: t('fanmarkSettings.toast.errorTitle'),
+          description: t('fanmarkSettings.validation.passwordMustBe4Digits'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (getFanmarkSettingsBackend() === 'worker') {
+        await saveOwnerFanmarkSettings(fanmark.id, {
+          fanmarkName: data.fanmarkName,
+          accessType: data.accessType,
+          ...(data.accessType === 'redirect' ? { targetUrl: normalizedTargetUrl } : {}),
+          ...(data.accessType === 'text' ? { textContent: data.textContent || '' } : {}),
+          isPasswordProtected: shouldProtect,
+          ...(shouldProtect && data.accessPassword ? { accessPassword: data.accessPassword } : {}),
+          isPublic: data.is_public,
+        });
+      } else {
+
       // Update fanmark basic config (fanmark name and access type)
       const { error: basicConfigError } = await supabase
         .from('fanmark_basic_configs')
@@ -437,8 +474,8 @@ export const FanmarkSettings = ({
       }
 
       // Handle password protection for all access types except inactive
-      if (data.accessType !== 'inactive') {
-        if (data.isPasswordProtected && data.accessPassword) {
+      if (shouldProtect) {
+        if (data.accessPassword) {
           // Enable password protection using secure function
           const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
             license_uuid: fanmark.license_id,
@@ -447,27 +484,19 @@ export const FanmarkSettings = ({
           });
           
           if (passwordError) throw passwordError;
-        } else {
-          // Disable password protection using secure function
-          const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
-            license_uuid: fanmark.license_id,
-            new_password: data.accessPassword || '0000', // Default password when disabling
-            enable_password: false
-          });
-          
-          if (passwordError) throw passwordError;
         }
       } else {
-        // For inactive access type, disable password protection entirely
+        // Use a fixed inactive placeholder and never persist a value from the password input.
         const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
           license_uuid: fanmark.license_id,
-          new_password: '0000', // Default password when disabling
+          new_password: '0000',
           enable_password: false
         });
-        
+
+        if (passwordError && data.accessType !== 'inactive') throw passwordError;
         if (passwordError) {
           // If function fails, it might be because no password config exists yet, which is fine
-          console.log('No existing password config to disable');
+          console.info('No existing password config to disable');
         }
       }
 
@@ -504,6 +533,7 @@ export const FanmarkSettings = ({
             console.error('Profile creation error:', profileError);
           }
         }
+      }
       }
 
       if (draftStorageKey) {

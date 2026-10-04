@@ -155,9 +155,11 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
                     )}
                     
                     <div className="flex gap-2 mt-2">
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={`/f/${fanmark.short_id}`}>ファンマページを開く</a>
-                      </Button>
+                      {fanmark.short_id && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={`/f/${fanmark.short_id}`}>ファンマページを開く</a>
+                        </Button>
+                      )}
                       
                       {fanmark.blocking_status === 'grace' && !fanmark.has_user_lottery_entry && (
                         <Button

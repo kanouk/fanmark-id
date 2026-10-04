@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Save, Copy, Check, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { createReferenceMasterAdminApi, ReferenceMasterAdminApiError } from "@/lib/reference-master-admin-api";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -30,6 +31,15 @@ interface FanmarkTier {
 type EnvironmentTab = 'test' | 'live';
 
 const MONTH_OPTIONS = [1, 2, 3, 6];
+const useCloudflarePricingAdmin = import.meta.env.VITE_REFERENCE_MASTER_ADMIN_BACKEND?.trim() === "d1";
+const referenceMasterAdminApi = createReferenceMasterAdminApi({
+  baseUrl: import.meta.env.VITE_FANMARK_API_BASE_URL?.trim() ||
+    (typeof window === "undefined" ? "https://invalid.example" : window.location.origin),
+});
+
+function updateErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof ReferenceMasterAdminApiError ? error.message : fallback;
+}
 
 export const AdminTierExtensionPrices = () => {
   const { toast } = useToast();
@@ -44,21 +54,36 @@ export const AdminTierExtensionPrices = () => {
   const [editedStripePricesLive, setEditedStripePricesLive] = useState<Record<string, string>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<EnvironmentTab>('test');
+  const [activeReferenceMasterRelease, setActiveReferenceMasterRelease] = useState<string | null>(null);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
+      if (useCloudflarePricingAdmin) {
+        const settings = await referenceMasterAdminApi.get();
+        const typedPrices = settings.extensionPrices as ExtensionPrice[];
+        const typedTiers = settings.tiers as FanmarkTier[];
+        setActiveReferenceMasterRelease(settings.releaseVersion);
+        setPrices(typedPrices);
+        setEditedPrices(Object.fromEntries(typedPrices.map(price => [price.id, price.price_yen])));
+        setEditedStripePrices(Object.fromEntries(typedPrices.map(price => [price.id, price.stripe_price_id || ''])));
+        setEditedStripePricesLive(Object.fromEntries(typedPrices.map(price => [price.id, price.stripe_price_id_live || ''])));
+        setTiers(typedTiers);
+        setTierEdits(Object.fromEntries(typedTiers.map(tier => [tier.id, tier.initial_license_days ?? null])));
+        return;
+      }
+      setActiveReferenceMasterRelease(null);
       const [
         { data: priceData, error: priceError },
         { data: tierData, error: tierError },
       ] = await Promise.all([
         supabase
-          .from("fanmark_tier_extension_prices" as any)
+          .from("fanmark_tier_extension_prices")
           .select("*")
           .order("tier_level", { ascending: true })
           .order("months", { ascending: true }),
         supabase
-          .from("fanmark_tiers" as any)
+          .from("fanmark_tiers")
           .select("id, tier_level, display_name, initial_license_days, is_active, description")
           .order("tier_level", { ascending: true }),
       ]);
@@ -91,17 +116,17 @@ export const AdminTierExtensionPrices = () => {
       console.error("Error fetching tier settings:", error);
       toast({
         title: "エラー",
-        description: "ティア設定の取得に失敗しました",
+        description: updateErrorMessage(error, "ティア設定の取得に失敗しました"),
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    fetchAll();
-  }, []);
+    void fetchAll();
+  }, [fetchAll]);
 
   const handlePriceChange = (id: string, value: string) => {
     const numValue = parseInt(value, 10);
@@ -116,12 +141,17 @@ export const AdminTierExtensionPrices = () => {
 
     setUpdating(true);
     try {
-      const { error } = await supabase
-        .from("fanmark_tier_extension_prices" as any)
-        .update({ price_yen: newPrice })
-        .eq("id", id);
-
-      if (error) throw error;
+      if (useCloudflarePricingAdmin) {
+        if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
+        const saved = await referenceMasterAdminApi.updateExtensionPrice(activeReferenceMasterRelease, id, { price_yen: newPrice });
+        setActiveReferenceMasterRelease(saved.releaseVersion);
+      } else {
+        const { error } = await supabase
+          .from("fanmark_tier_extension_prices")
+          .update({ price_yen: newPrice })
+          .eq("id", id);
+        if (error) throw error;
+      }
 
       toast({
         title: "更新完了",
@@ -137,7 +167,7 @@ export const AdminTierExtensionPrices = () => {
       console.error("Error updating price:", error);
       toast({
         title: "エラー",
-        description: "料金の更新に失敗しました",
+        description: updateErrorMessage(error, "料金の更新に失敗しました"),
         variant: "destructive",
       });
     } finally {
@@ -148,12 +178,17 @@ export const AdminTierExtensionPrices = () => {
   const handleToggleActive = async (id: string, currentActive: boolean) => {
     setUpdating(true);
     try {
-      const { error } = await supabase
-        .from("fanmark_tier_extension_prices" as any)
-        .update({ is_active: !currentActive })
-        .eq("id", id);
-
-      if (error) throw error;
+      if (useCloudflarePricingAdmin) {
+        if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
+        const saved = await referenceMasterAdminApi.updateExtensionPrice(activeReferenceMasterRelease, id, { is_active: !currentActive });
+        setActiveReferenceMasterRelease(saved.releaseVersion);
+      } else {
+        const { error } = await supabase
+          .from("fanmark_tier_extension_prices")
+          .update({ is_active: !currentActive })
+          .eq("id", id);
+        if (error) throw error;
+      }
 
       toast({
         title: "更新完了",
@@ -169,7 +204,7 @@ export const AdminTierExtensionPrices = () => {
       console.error("Error toggling extension price status:", error);
       toast({
         title: "エラー",
-        description: "ステータスの更新に失敗しました",
+        description: updateErrorMessage(error, "ステータスの更新に失敗しました"),
         variant: "destructive",
       });
     } finally {
@@ -221,14 +256,17 @@ export const AdminTierExtensionPrices = () => {
 
     setUpdating(true);
     try {
-      const { error } = await supabase
-        .from("fanmark_tier_extension_prices" as any)
-        .update({
-          stripe_price_id: edited || null,
-        })
-        .eq("id", id);
-
-      if (error) throw error;
+      if (useCloudflarePricingAdmin) {
+        if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
+        const saved = await referenceMasterAdminApi.updateExtensionPrice(activeReferenceMasterRelease, id, { stripe_price_id: edited || null });
+        setActiveReferenceMasterRelease(saved.releaseVersion);
+      } else {
+        const { error } = await supabase
+          .from("fanmark_tier_extension_prices")
+          .update({ stripe_price_id: edited || null })
+          .eq("id", id);
+        if (error) throw error;
+      }
 
       toast({
         title: "更新完了",
@@ -246,7 +284,7 @@ export const AdminTierExtensionPrices = () => {
       console.error("Error updating Stripe Price ID:", error);
       toast({
         title: "エラー",
-        description: "Stripe Price IDの更新に失敗しました",
+        description: updateErrorMessage(error, "Stripe Price IDの更新に失敗しました"),
         variant: "destructive",
       });
     } finally {
@@ -260,14 +298,17 @@ export const AdminTierExtensionPrices = () => {
 
     setUpdating(true);
     try {
-      const { error } = await supabase
-        .from("fanmark_tier_extension_prices" as any)
-        .update({
-          stripe_price_id_live: edited || null,
-        })
-        .eq("id", id);
-
-      if (error) throw error;
+      if (useCloudflarePricingAdmin) {
+        if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
+        const saved = await referenceMasterAdminApi.updateExtensionPrice(activeReferenceMasterRelease, id, { stripe_price_id_live: edited || null });
+        setActiveReferenceMasterRelease(saved.releaseVersion);
+      } else {
+        const { error } = await supabase
+          .from("fanmark_tier_extension_prices")
+          .update({ stripe_price_id_live: edited || null })
+          .eq("id", id);
+        if (error) throw error;
+      }
 
       toast({
         title: "更新完了",
@@ -285,7 +326,7 @@ export const AdminTierExtensionPrices = () => {
       console.error("Error updating Stripe Price ID (Live):", error);
       toast({
         title: "エラー",
-        description: "本番Stripe Price IDの更新に失敗しました",
+        description: updateErrorMessage(error, "本番Stripe Price IDの更新に失敗しました"),
         variant: "destructive",
       });
     } finally {
@@ -324,12 +365,17 @@ export const AdminTierExtensionPrices = () => {
 
     setTierUpdatingId(id);
     try {
-      const { error } = await supabase
-        .from("fanmark_tiers" as any)
-        .update({ initial_license_days: nextValue })
-        .eq("id", id);
-
-      if (error) throw error;
+      if (useCloudflarePricingAdmin) {
+        if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
+        const saved = await referenceMasterAdminApi.updateTierDays(activeReferenceMasterRelease, id, nextValue);
+        setActiveReferenceMasterRelease(saved.releaseVersion);
+      } else {
+        const { error } = await supabase
+          .from("fanmark_tiers")
+          .update({ initial_license_days: nextValue })
+          .eq("id", id);
+        if (error) throw error;
+      }
 
       toast({
         title: "更新完了",
@@ -345,7 +391,7 @@ export const AdminTierExtensionPrices = () => {
       console.error("Error updating tier initial days:", error);
       toast({
         title: "エラー",
-        description: "ティア設定の更新に失敗しました",
+        description: updateErrorMessage(error, "ティア設定の更新に失敗しました"),
         variant: "destructive",
       });
     } finally {

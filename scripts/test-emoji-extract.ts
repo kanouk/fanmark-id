@@ -1,4 +1,7 @@
-import { extractEmojiString } from '@/lib/emojiConversion';
+import { emojiCatalogEntries, emojiToId } from '../src/data/emojiCatalog.ts';
+import { extractEmojiString, installEmojiCatalog } from '../src/lib/emojiConversion.ts';
+
+installEmojiCatalog(emojiCatalogEntries, emojiToId);
 
 const samples: Array<{ label: string; input: string }> = [
   { label: 'Simple mixed ASCII + emoji', input: 'Hello🙂world🌈!' },

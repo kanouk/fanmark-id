@@ -1,5 +1,58 @@
 project_id = "ppqgtbjykitqtiaisyji"
 
+# These flags mirror the read-only deployed-function inventory collected on
+# 2026-09-28. Review handler authorization separately from gateway JWT checks.
+[functions.manual-expire-grace-licenses]
+verify_jwt = true
+
+[functions.admin-expire-license]
+verify_jwt = false
+
+[functions.admin-get-user-detail]
+verify_jwt = false
+
+[functions.admin-list-users]
+verify_jwt = false
+
+[functions.admin-toggle-user-status]
+verify_jwt = false
+
+[functions.admin-trigger-password-reset]
+verify_jwt = false
+
+[functions.admin-update-user-plan]
+verify_jwt = false
+
+[functions.bulk-return-fanmarks]
+verify_jwt = false
+
+[functions.change-subscription]
+verify_jwt = false
+
+[functions.check-email-exists]
+verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
+[functions.delete-user-account]
+verify_jwt = false
+
+[functions.extend-fanmark-license]
+verify_jwt = false
+
+[functions.record-fanmark-access]
+verify_jwt = false
+
+[functions.reset-fanmark-data]
+verify_jwt = false
+
 [functions.register-fanmark]
 verify_jwt = true
 

@@ -43,7 +43,7 @@ interface InvitationFormState extends InvitationCodeFormValues {
 export const AdminInvitationManager = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { settings, updateSetting } = useSystemSettings();
+  const { settings, error: settingsError, updateSetting } = useSystemSettings();
   const { codes, loading, error, refresh, createCode, updateCode, toggleActive, deleteCode } = useInvitationAdmin();
   const [createOpen, setCreateOpen] = useState(false);
   const [editState, setEditState] = useState<InvitationFormState | null>(null);
@@ -123,9 +123,14 @@ export const AdminInvitationManager = () => {
           </div>
           <div className="flex items-center gap-3 rounded-full border border-primary/20 bg-background px-4 py-2">
             <span className="text-sm font-medium text-muted-foreground">{t('admin.invitation.modeLabel')}</span>
-            <Switch checked={invitationModeEnabled} onCheckedChange={handleToggleMode} />
+            <Switch checked={invitationModeEnabled} disabled={Boolean(settingsError)} onCheckedChange={handleToggleMode} />
           </div>
         </CardHeader>
+        {settingsError && (
+          <CardContent className="pt-0">
+            <p role="alert" className="text-sm text-destructive">招待設定を取得できないため、招待モードは更新できません。</p>
+          </CardContent>
+        )}
         <CardContent className="flex items-center justify-between gap-4 px-6 pb-6 pt-0 text-sm text-muted-foreground">
           <div>{invitationModeEnabled ? t('admin.invitation.modeOn') : t('admin.invitation.modeOff')}</div>
           <Button variant="outline" size="sm" className="gap-2 rounded-full border-primary/20" onClick={() => refresh()}>

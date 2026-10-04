@@ -22,7 +22,24 @@ import {
 import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { bulkReturnFanmarksThroughWorker, getFanmarkReturnBackend } from '@/lib/fanmark-return-api';
+import { createStripeCustomerPortalThroughWorker, getStripeCustomerPortalBackend } from '@/lib/stripe-customer-portal-api';
+import {
+  changeStripePlanThroughWorker,
+  clearStripePlanChangeRequestId,
+  getStripePlanChangeBackend,
+  getStripePlanChangeRequestId,
+} from '@/lib/stripe-plan-change-api';
+import {
+  clearStripePlanCheckoutRequestIds,
+  createStripePlanCheckoutThroughWorker,
+  getStripePlanCheckoutBackend,
+  getStripePlanCheckoutRequestId,
+  StripePlanCheckoutApiError,
+} from '@/lib/stripe-plan-checkout-api';
 import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, Flame, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
+
+const PENDING_PLAN_CHANGE_KEY = 'fanmark.plan-change.pending-plan';
 
 interface PlanCardCopy {
   type: PlanType;
@@ -47,7 +64,7 @@ const PlanSelection = () => {
   const { profile, loading, updateProfile, refetch: refetchProfile } = useProfile();
   const { user } = useAuth();
   const { subscription_end, refetch: refetchSubscription } = useSubscription();
-  const { settings } = useSystemSettings();
+  const { settings, loading: settingsLoading, error: settingsError, refetch: refetchSettings } = useSystemSettings();
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
   const [planProcessingMode, setPlanProcessingMode] = useState<'stripe' | 'processing' | null>(null);
@@ -143,6 +160,10 @@ const PlanSelection = () => {
     }
 
     if (expectedPlan) {
+      if (getStripePlanChangeBackend() === 'worker') {
+        clearStripePlanChangeRequestId(expectedPlan as 'free' | 'creator' | 'max' | 'business');
+        try { window.sessionStorage.removeItem(PENDING_PLAN_CHANGE_KEY); } catch { /* Storage is optional. */ }
+      }
       toast({
         title: t('planSelection.downgradeSuccess'),
         description: t('planSelection.downgradeSuccessDescription', {
@@ -156,6 +177,45 @@ const PlanSelection = () => {
     setPendingPlanSync({ expectedPlan });
     setPlanSyncAttempts(0);
   }, []);
+
+  const beginWorkerPlanChange = useCallback(async (newPlan: PlanType) => {
+    const planType = newPlan as 'free' | 'creator' | 'max' | 'business';
+    setPlanProcessingMode('processing');
+    const result = await changeStripePlanThroughWorker({
+      planType,
+      requestId: getStripePlanChangeRequestId(planType),
+    });
+    if (result.requiresAction) {
+      setPlanProcessingMode('stripe');
+      try { window.sessionStorage.setItem(PENDING_PLAN_CHANGE_KEY, planType); } catch { /* Portal return remains usable without storage. */ }
+      const portal = getStripeCustomerPortalBackend() === 'worker'
+        ? await createStripeCustomerPortalThroughWorker()
+        : await (async () => {
+          const { data, error } = await supabase.functions.invoke('customer-portal');
+          if (error) throw error;
+          if (typeof data?.url !== 'string') throw new Error('customer portal URL is missing');
+          return { url: data.url as string };
+        })();
+      window.location.href = portal.url;
+      return;
+    }
+    startPlanSync(newPlan);
+  }, [startPlanSync]);
+
+  // Resume plan projection polling after a Customer Portal payment-action round trip.
+  useEffect(() => {
+    if (getStripePlanChangeBackend() !== 'worker' || pendingPlanSync) return;
+    let pendingPlan: string | null = null;
+    try { pendingPlan = window.sessionStorage.getItem(PENDING_PLAN_CHANGE_KEY); } catch { return; }
+    if (!['free', 'creator', 'max', 'business'].includes(pendingPlan ?? '')) return;
+    const expectedPlan = pendingPlan as 'free' | 'creator' | 'max' | 'business';
+    if (profile?.plan_type === expectedPlan) {
+      clearStripePlanChangeRequestId(expectedPlan);
+      try { window.sessionStorage.removeItem(PENDING_PLAN_CHANGE_KEY); } catch { /* Storage is optional. */ }
+      return;
+    }
+    startPlanSync(expectedPlan);
+  }, [pendingPlanSync, profile?.plan_type, startPlanSync]);
 
   // Handle checkout success or cancellation with auto-refresh
   useEffect(() => {
@@ -171,6 +231,7 @@ const PlanSelection = () => {
     };
 
     if (checkoutStatus === 'success') {
+      clearStripePlanCheckoutRequestIds();
       setCheckingSubscription(true);
       setPendingCheckout(true);
       setInitialPlanType((profile?.plan_type || 'free') as PlanType);
@@ -185,6 +246,7 @@ const PlanSelection = () => {
         description: t('planSelection.pleaseWait'),
       });
     } else if (checkoutStatus === 'canceled') {
+      clearStripePlanCheckoutRequestIds();
       clearQuery();
       toast({
         title: t('planSelection.checkoutCanceled'),
@@ -297,6 +359,15 @@ const PlanSelection = () => {
       // Upgrading from free to paid plan
       if (currentPlanType === 'free' && (planType === 'creator' || planType === 'business')) {
         setPlanProcessingMode('stripe');
+
+        if (getStripePlanCheckoutBackend() === 'worker') {
+          const checkout = await createStripePlanCheckoutThroughWorker({
+            planType,
+            requestId: getStripePlanCheckoutRequestId(planType),
+          });
+          window.location.href = checkout.url;
+          return;
+        }
         
         const { data, error } = await supabase.functions.invoke('create-checkout', {
           body: { plan_type: planType }
@@ -345,6 +416,10 @@ const PlanSelection = () => {
       
       if (isUpgrade) {
         // UPGRADE: Use change-subscription with proration (no warning)
+        if (getStripePlanChangeBackend() === 'worker') {
+          await beginWorkerPlanChange(planType);
+          return;
+        }
         setPlanProcessingMode('processing');
         
         const { data, error } = await supabase.functions.invoke('change-subscription', {
@@ -401,6 +476,10 @@ const PlanSelection = () => {
       }
     } catch (error) {
       console.error('Plan change error:', error);
+      if (error instanceof StripePlanCheckoutApiError &&
+          ['request_id_conflict', 'request_id_expired', 'checkout_session_not_open'].includes(error.code ?? '')) {
+        clearStripePlanCheckoutRequestIds();
+      }
       setPlanProcessingMode(null);
       toast({
         title: t('planSelection.errorTitle'),
@@ -419,6 +498,10 @@ const PlanSelection = () => {
     setPlanProcessingMode('processing');
 
     try {
+      if (getStripePlanChangeBackend() === 'worker') {
+        await beginWorkerPlanChange(downgradeInfo.newPlan);
+        return;
+      }
       const { data, error } = await supabase.functions.invoke('change-subscription', {
         body: { 
           current_plan_type: downgradeInfo.currentPlan,
@@ -474,15 +557,16 @@ const PlanSelection = () => {
 
       // Return unselected fanmarks using bulk-return-fanmarks
       if (unselectedLicenseIds.length > 0) {
-        const { error: bulkReturnError, data: bulkReturnData } = await supabase.functions.invoke<{
-          success: boolean;
-          failed?: Array<{ licenseId: string; error: string }>;
-        }>('bulk-return-fanmarks', {
-          body: { license_ids: unselectedLicenseIds },
-        });
-
-        if (bulkReturnError) {
-          throw bulkReturnError;
+        let bulkReturnData: { success: boolean; failed?: Array<{ licenseId: string; error: string }> } | null;
+        if (getFanmarkReturnBackend() === 'worker') {
+          bulkReturnData = await bulkReturnFanmarksThroughWorker(unselectedLicenseIds);
+        } else {
+          const { error: bulkReturnError, data } = await supabase.functions.invoke<{
+            success: boolean;
+            failed?: Array<{ licenseId: string; error: string }>;
+          }>('bulk-return-fanmarks', { body: { license_ids: unselectedLicenseIds } });
+          if (bulkReturnError) throw bulkReturnError;
+          bulkReturnData = data;
         }
 
         if (bulkReturnData?.failed && bulkReturnData.failed.length > 0) {
@@ -496,6 +580,11 @@ const PlanSelection = () => {
       setPlanProcessingMode('processing');
 
       const currentPlanType = profile?.plan_type as PlanType;
+
+      if (getStripePlanChangeBackend() === 'worker') {
+        await beginWorkerPlanChange(pendingPlanType);
+        return;
+      }
       
       const { data, error } = await supabase.functions.invoke('change-subscription', {
         body: { 
@@ -557,10 +646,21 @@ const PlanSelection = () => {
     }
   };
 
-  if (loading) {
+  if (loading || settingsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (settingsError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 px-4">
+        <div role="alert" className="max-w-lg rounded-3xl border border-destructive/30 bg-background/95 px-8 py-10 text-center shadow-sm">
+          <p className="text-sm text-destructive">プラン設定を取得できません。料金や上限を確認できるまで、プラン変更は利用できません。</p>
+          <Button className="mt-6 rounded-full" onClick={() => void refetchSettings()}>再読み込み</Button>
+        </div>
       </div>
     );
   }

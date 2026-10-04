@@ -19,6 +19,10 @@ import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { PasswordRequirement as PasswordRequirementType, isPasswordValid } from '@/lib/password-validation';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import type { BetterAuthCapabilities } from '@/lib/better-auth-client';
+
+const SOCIAL_PROVIDER_ORDER = ['google', 'apple', 'discord', 'github'] as const;
 
 const Auth = () => {
   const { user, session } = useAuth();
@@ -29,8 +33,39 @@ const Auth = () => {
   const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation, resendCooldown, exitAwaitingConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
-  const invitationGateActive = !settingsLoading && settings.invitation_mode;
-  const socialLoginAvailable = !settingsLoading && settings.social_login_enabled;
+  const betterAuthEnabled = isBetterAuthEnabled();
+  const [betterAuthCapabilities, setBetterAuthCapabilities] = useState<BetterAuthCapabilities | null>(null);
+
+  useEffect(() => {
+    if (!betterAuthEnabled) {
+      setBetterAuthCapabilities(null);
+      return;
+    }
+    let active = true;
+    void betterAuthClient.getCapabilities()
+      .then((capabilities) => {
+        if (active) setBetterAuthCapabilities(capabilities);
+      })
+      .catch(() => {
+        if (active) setBetterAuthCapabilities(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [betterAuthEnabled]);
+
+  const signupAvailable = betterAuthEnabled
+    ? betterAuthCapabilities?.signUp === true
+    : true;
+  const invitationGateActive = betterAuthEnabled
+    ? signupAvailable && Boolean(betterAuthCapabilities?.invitationRequired)
+    : !settingsLoading && settings.invitation_mode;
+  const betterAuthSocialProviders = betterAuthEnabled
+    ? SOCIAL_PROVIDER_ORDER.filter((provider) => betterAuthCapabilities?.socialProviders.includes(provider))
+    : undefined;
+  const socialLoginAvailable = betterAuthEnabled
+    ? (betterAuthSocialProviders?.length ?? 0) > 0
+    : !settingsLoading && settings.social_login_enabled;
   const showSocialLogin = socialLoginAvailable && !invitationGateActive;
   const [invitationValidated, setInvitationValidated] = useState(false);
   const [validatedInvitationCode, setValidatedInvitationCode] = useState<string | null>(null);
@@ -38,9 +73,13 @@ const Auth = () => {
 
   useEffect(() => {
     if (user && session) {
-      navigate('/dashboard');
+      const state = location.state as { from?: unknown } | null;
+      const from = typeof state?.from === 'string' && state.from.startsWith('/') && !state.from.startsWith('//')
+        ? state.from
+        : '/dashboard';
+      navigate(from, { replace: true });
     }
-  }, [user, session, navigate]);
+  }, [user, session, navigate, location.state]);
 
   // Check for OAuth errors in URL parameters
   useEffect(() => {
@@ -182,7 +221,7 @@ const Auth = () => {
           <div className="rounded-3xl border border-primary/20 bg-background/90 p-6 shadow-[0_22px_55px_rgba(101,195,200,0.16)] backdrop-blur md:p-10">
             <div className="space-y-8">
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur">
+                <TabsList className={`grid w-full ${signupAvailable ? 'grid-cols-2' : 'grid-cols-1'} gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur`}>
                   <TabsTrigger
                     value="login"
                     className="flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold tracking-wide transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
@@ -190,13 +229,13 @@ const Auth = () => {
                     <Users className="h-4 w-4" />
                     {t('auth.login')}
                   </TabsTrigger>
-                  <TabsTrigger
+                  {signupAvailable && <TabsTrigger
                     value="signup"
                     className="flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold tracking-wide transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
                   >
                     <Heart className="h-4 w-4" />
                     {t('auth.signUp')}
-                  </TabsTrigger>
+                  </TabsTrigger>}
                 </TabsList>
 
                 <TabsContent value="login" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
@@ -211,10 +250,12 @@ const Auth = () => {
                     signInWithApple={signInWithApple}
                     t={t}
                     socialEnabled={showSocialLogin}
+                    socialProviders={betterAuthSocialProviders}
+                    passwordResetEnabled={!betterAuthEnabled || Boolean(betterAuthCapabilities?.passwordReset)}
                   />
                 </TabsContent>
 
-                <TabsContent value="signup" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
+                {signupAvailable && <TabsContent value="signup" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
                   <div className="space-y-6">
                     {settingsLoading && (
                       <div className="rounded-2xl border border-primary/15 bg-background/95 p-6 text-center">
@@ -232,6 +273,7 @@ const Auth = () => {
                           setInvitationValidated(false);
                           setValidatedInvitationCode(null);
                         }}
+                        allowWaitlist={!betterAuthEnabled}
                       />
                     )}
                     {(!invitationGateActive || invitationValidated) && (
@@ -249,12 +291,13 @@ const Auth = () => {
                       t={t}
                       invitationRequired={invitationGateActive}
                       socialEnabled={showSocialLogin}
+                      socialProviders={betterAuthSocialProviders}
                       invitationValidated={invitationValidated}
                       validatedInvitationCode={validatedInvitationCode}
                     />
                     )}
                   </div>
-                </TabsContent>
+                </TabsContent>}
               </Tabs>
             </div>
           </div>
@@ -294,9 +337,11 @@ interface LoginFormProps {
   signInWithApple: () => void;
   t: (key: string) => string;
   socialEnabled: boolean;
+  socialProviders?: readonly string[];
+  passwordResetEnabled: boolean;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled }: LoginFormProps) => {
+const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled, socialProviders, passwordResetEnabled }: LoginFormProps) => {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   // ログイン時は最低8文字を満たしたときだけOK表示、それ以外は未入力扱いで非表示
@@ -426,11 +471,13 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
         )}
       </Button>
 
-      <div className="text-center text-sm">
-        <Link to="/forgot-password" className="text-primary underline-offset-2 transition hover:underline">
-          {t('auth.forgotPassword')}
-        </Link>
-      </div>
+      {passwordResetEnabled && (
+        <div className="text-center text-sm">
+          <Link to="/forgot-password" className="text-primary underline-offset-2 transition hover:underline">
+            {t('auth.forgotPassword')}
+          </Link>
+        </div>
+      )}
 
       {socialEnabled && (
         <>
@@ -444,7 +491,9 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
+            {socialButtons
+              .filter(({ key }) => !socialProviders || socialProviders.includes(key))
+              .map(({ key, label, Icon, onClick, disabled }) => (
               <Button
                 key={key}
                 type="button"
@@ -460,7 +509,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
                   <span className="text-center text-xs leading-snug sm:text-sm">{label}</span>
                 </span>
               </Button>
-            ))}
+              ))}
           </div>
         </>
       )}
@@ -483,6 +532,7 @@ interface SignUpFormProps {
   t: (key: string) => string;
   invitationRequired?: boolean;
   socialEnabled: boolean;
+  socialProviders?: readonly string[];
   invitationValidated?: boolean;
   validatedInvitationCode?: string | null;
 }
@@ -501,6 +551,7 @@ const SignUpForm = ({
   t,
   invitationRequired = false,
   socialEnabled,
+  socialProviders,
   invitationValidated = false,
   validatedInvitationCode,
 }: SignUpFormProps) => {
@@ -746,7 +797,9 @@ const SignUpForm = ({
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
+          {socialButtons
+            .filter(({ key }) => !socialProviders || socialProviders.includes(key))
+            .map(({ key, label, Icon, onClick, disabled }) => (
             <Button
               key={key}
               type="button"
@@ -762,7 +815,7 @@ const SignUpForm = ({
                 <span className="text-center text-xs leading-snug sm:text-sm">{label}</span>
               </span>
             </Button>
-          ))}
+            ))}
         </div>
       </>
     )}

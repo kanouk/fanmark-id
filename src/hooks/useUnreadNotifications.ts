@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getNotificationsBackend, loadOwnUnreadNotificationCount } from '@/lib/notifications-api';
 
 export const useUnreadNotifications = () => {
   const { user } = useAuth();
@@ -9,6 +10,10 @@ export const useUnreadNotifications = () => {
     queryKey: ['unread-notification-count', user?.id],
     queryFn: async () => {
       if (!user) return 0;
+
+      if (getNotificationsBackend() === 'worker') {
+        return loadOwnUnreadNotificationCount();
+      }
 
       const { data, error } = await supabase.rpc('get_unread_notification_count', {
         user_id_param: user.id

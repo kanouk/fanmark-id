@@ -1,0 +1,116 @@
+# Staging運用・有効化・復旧の手順
+
+対象は `fanmark-app-staging`、account `bfc2890741f0b3fb236e2d755b6c9adc` の
+Business/Auth/Master D1とavatar/cover/backup R2。実ユーザー移送、DNS切替、
+Supabase writer停止は最後の別工程とする。本書の作成から運用受け入れを推定しない。
+
+## 読み取りの運用確認
+
+移行worktreeのrootでNode 22.6を使用する。
+
+```sh
+node scripts/migration/staging-operations-status.mjs --read-only
+```
+
+このコマンドは固定staging configとWranglerのidentity、remoteの三つのD1 binding、
+単一100% deployment、全25 Business migrationを確認してから集計する。
+修復・provider接続・ユーザー行のexportは行わない。Cloudflare OAuth tokenは
+子プロセスの出力からメモリ内で受け取り、ログやファイルに保存しない。
+API/CLI失敗は固定codeと処理段階だけを表示する。出力にはsecret値、通知payload、
+メール、user ID、Stripe event/customer ID、ライセンスIDを含めない。
+
+exit 0はその観測時点でattentionが空、exit 2は要確認、exit 1は観測失敗。
+disabledJobsは別に表示し、処理停止を正常運用の完了と扱わない。
+時刻判定の集計はSQLiteのjuliandayによる秒単位の目安であり、ライセンス変更の
+microsecond境界や可用性判定を置き換えない。自由なSQL入力は受け付けない。
+
+| 観測 | 判断と次の操作 |
+| --- | --- |
+| app/auth healthが200以外、binding/schema/deployment不一致 | 有効化・配備を止める。最後の受け入れversion、配備履歴、対象accountを照合する。 |
+| FK違反、wake singleton欠落、ackがrequestedを超える | 自動修復しない。schemaと直前操作を確認し、復旧工程へ移す。 |
+| wakeのrequestedとackに差がある | 一時的な差の場合もある。次の観測と管理者wake statusで確認する。2分超のdue通知滞留はalarm/bridgeを調べる。 |
+| pending通知がdueから2分超、processingが10分超、failedがある | processorとDOの実行ログを確認。管理画面の同一session MFAから `GET /api/admin/notifications/wake` でstatusを読み、必要な場合だけ `POST` で保存済み世代を再開する。 |
+| expiry/finalizationのrunning runがある | 正常なページ分割の場合もある。次の実行が保存済みrunを進めるか確認する。claim、run、抽選入力を削除したり勝者を再抽選したりしない。 |
+| 90日超の完了通知がある | archive selectorとCron、partial/conflictsログを確認。履歴と元行の衝突を確認してから同じ処理を再開する。 |
+| Stripe due dispatch、期限切れlease、dead_letterがある | providerと署名receipt/dispatch状態を確認。receiptを削除して再送しない。test-onlyの接続受け入れ後に通常dispatcherを再開する。 |
+
+これは手動で実行できる監視コマンドであり、外部への通知や定期監視サービスを
+設定した証拠ではない。担当者と監視頻度は運用開始前に決める。
+
+## ジョブの有効化条件
+
+| 処理 | 周期と設定 | 再開・停止 |
+| --- | --- | --- |
+| 通知イベント | `NOTIFICATION_PROCESSOR_BACKEND=d1`、`NOTIFICATION_WAKE_BACKEND=durable-object`。pending時だけDO alarmが動き、空queueで停止する。常時毎分Cronを追加しない。 | 保存済みD1 wake世代をMFA経路から再開。generationと通知行を保持する。 |
+| 期限・grace・抽選 | `0 0 * * *` はUTC 00:00、JST 09:00。`LICENSE_EXPIRY_BACKEND=d1`、固定target incarnation/digest、`MAX_PAGES=4`。 | running runと保存済み抽選入力を再開。上限による分割は次の呼出しで進む。 |
+| 通知archive | 日次 `0 0 * * *`、`NOTIFICATION_ARCHIVE_BACKEND=d1`。既存90日cutoff、250行×最大10 batch。 | 元通知を履歴へ原子的に移す。partialなら残行と衝突を確認して再開。履歴を自動削除しない。 |
+| Stripe dispatch | 毎分Cronと`STRIPE_DISPATCH_BACKEND=d1`、test keys/署名secret、関連billing selector。 | receipt/dispatch、lease、attempt、projectionを保持して再試行。provider未設定では有効化しない。 |
+| broadcast delivery | 毎分Cron、D1 snapshot/send selector、Resend送信設定。Auth emailとは別。 | snapshot/送信履歴を保持。送信先・送信許可の受け入れ前に有効化しない。 |
+
+有効化時は同じ最終candidateでCIの両job成功、account/version/binding/schema、
+baseline、CPU/plan適合を確認し、設定を差分でレビューする。
+`scheduled-job-coverage.mjs`でrequired jobの周期が実dispatcherに到達することを確認する。
+Cron登録と伝播をcontrol planeと実行結果で確認し、selector追加だけで完了にしない。
+main expiry/archiveの定常有効化は現在準備中で、配備と実行の受け入れは未実施。隔離archiveの実Cron受け入れは
+[保存済み証拠](evidence/isolated-notification-archive-cron-2026-10-03.json)を使う。
+
+2026-10-04、契約画面の「無料プラン／現在のプラン」でWorkers Freeを確認した。
+subscriptions APIは現OAuthで403/10000、workers/account-settingsの
+`default_usage_model=standard`だけではPaid契約を判定できなかった。
+FreeのHTTP/Cron CPUは10msで、ネットワーク・DB待ち時間とは異なる。
+[公式CPU制限](https://developers.cloudflare.com/workers/platform/limits/#cpu-time)。
+その後、ユーザーがWorkers Paidを有効化した。対象accountの契約画面でPaidの
+「現在のプラン」とFreeの「ダウングレード」を確認した。
+[契約確認](evidence/workers-paid-plan-2026-10-04.json)。エージェントは購入していない。
+checked-in app configでCPU設定30,000ms、日次expiry/archive selectorを準備した。
+CI・配備・remote readback・日次実行の確認前に定常運用を完了扱いしない。
+既存の合成rehearsal guardはactive jobを拒否し続け、試験用の停止fixtureと区別する。
+Stripe/Resendは資格情報・テスト宛先が未確定のため有効化しない。R2とは別契約である。
+
+## 秘密の管理と権限
+
+| 秘密 | 用途 | 交換時の扱い |
+| --- | --- | --- |
+| `BETTER_AUTH_SECRET` | Better Authのserver secret | 現SDKの暗号化・session/MFAへの影響と再ログイン/復旧方法を確認してから交換する。単に元の値へ戻せば全状態が復旧するとは扱わない。 |
+| `VERIFIED_ACCESS_SECRET` | 閲覧password proof | 交換後は旧proofの拒否と新規検証を確認。D1のlicense incarnation/access/password世代は保持する。 |
+| `REFERENCE_MASTER_SERVICE_SECRET` | 内部マスターサービス認証 | callerと受け側を揃えて交換。旧secretで拒否、新secretで必要経路成功を確認する。 |
+| Stripe/Resend/OAuth secrets | providerごとのserver認証 | provider側とWorker側を揃える。test/liveとstaging/productionを分け、旧secretの失効も確認する。 |
+| `FANMARK_SNAPSHOT_KEY_B64` | AES-256-GCM snapshot暗号化 | Worker認証鍵とは分離する。32-byte鍵はリポジトリ外の秘密保管先へ置き、bundle headerのkeyIdに対応する旧復号鍵を保持する。新しい鍵だけでは旧bundleを開けない。 |
+
+secret値をVite変数、Git、PR、出力、通常ログへ入れない。鍵の実保管先、アクセス可能な
+担当者、交換間隔、緊急失効・復旧の担当は未確定。合成復旧用の使い捨て鍵と資源を
+削除した証拠は、本番の鍵保管・復旧担当の証拠にはならない。
+
+配備者、監視者、復旧担当の権限を分ける。監視には対象accountのWorkers/D1読み取りを
+基本とし、配備・migration・R2変更権限を与える役割を限定する。
+現在のWrangler OAuthは書込み権限を持つため、最小権限の監視用tokenとは扱わない。
+新tokenや権限変更は本書では作成していない。D1 bindingとaccountの照合は、IAMによる
+権限制限の代わりではない。
+
+## 復旧の実行順
+
+1. 障害の対象、最後の正常version/bookmark、provider receipt、Master active releaseと
+   hash、R2参照、合成か実データかを記録する。秘密と利用者データを記録へ複製しない。
+2. Worker側のwrite freezeとjob停止を対象configへ反映し、実binding/versionを確認する。
+   読み取り可否と書込み拒否を確認する。Supabase本番writer停止は今回の範囲では実行しない。
+3. 復旧先incarnationを分け、Business/Auth/Master/R2を一式で照合する。
+   Businessだけを戻してAuth、receipt、Master、画像、DO状態も戻ったと推定しない。
+4. encrypted bundleのkeyId、hash/count/型/credential descriptor、対象資源を確認し、
+   保存済みcheckpointから復旧する。row/objectの上書きを無条件に再送しない。
+5. FK、R2実GET/HEADのbytes/MIME/参照、Auth/session/MFA、保護参照、通知wakeと
+   Stripeの二重適用防止を確認する。DOのackを手動で進めて未処理を隠さない。
+6. 合成canaryと独立readbackの結果を確認し、同じcandidateで書込みとjobを再開する。
+   失敗時はfreezeを保ち、checkpointから再開する。
+
+合成一式remoteの手順・所有資源のcleanupは
+[隔離復旧](isolated-combined-recovery.md)とそのconductorにある。
+新規targetの90,726msは小さなfixtureのprovision/restore実測であり、本番RTOではない。
+RPO、停止時間目標、RTO、snapshot周期/保存期間、復旧担当は合意と最終構成での実測が
+必要。Auth credential backupと実ユーザー行の復旧は最後のデータ工程へ残す。
+
+## この工程でまだ必要なもの
+
+監視コマンド・手順の用意と、定常運用の受け入れは別である。残るのはCPU/plan判断、
+mainジョブの有効化・実行確認、provider接続、担当/最小権限/鍵保管先/保存期間/
+RPO・RTOの確定、同じ最終candidateでのPC・実スマホ・言語・旧PWAと障害復旧の通し確認。
+[COMPLETION](COMPLETION.md)の項目4・6を閉じるまで運用完了としない。

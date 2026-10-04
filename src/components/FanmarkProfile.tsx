@@ -12,6 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getPublicEmojiProfile, type PublicEmojiProfile } from '@/hooks/useEmojiProfile';
+import type { ProtectedFanmarkProfile } from '@/lib/verified-access-api';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { segmentEmojiSequence } from '@/lib/emojiConversion';
@@ -67,39 +68,57 @@ const socialPlatforms = [
 
 interface FanmarkProfileProps {
   fanmark: FanmarkData;
+  protectedProfile?: ProtectedFanmarkProfile;
 }
 
-export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
+type EmojiProfileView = Pick<PublicEmojiProfile, 'license_id' | 'display_name' | 'bio' | 'social_links' | 'theme_settings'>;
+
+export const FanmarkProfile = ({ fanmark, protectedProfile }: FanmarkProfileProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [emojiProfile, setEmojiProfile] = useState<PublicEmojiProfile | null>(null);
+  const fanmarkId = fanmark.id;
+  const accessType = fanmark.access_type;
+  const licenseId = fanmark.license_id;
+  const [emojiProfile, setEmojiProfile] = useState<EmojiProfileView | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
-      console.log('🔍 Loading fanmark profile...');
-      console.log('📋 Fanmark data:', fanmark);
-      console.log('🆔 Fanmark ID:', fanmark.id);
-      console.log('🎯 Access type:', fanmark.access_type);
+      if (protectedProfile) {
+        setEmojiProfile({
+          license_id: licenseId ?? '',
+          display_name: protectedProfile.name ?? undefined,
+          bio: protectedProfile.bio ?? undefined,
+          social_links: protectedProfile.socialLinks,
+          theme_settings: protectedProfile.themeSettings,
+        });
+        setLoading(false);
+        return;
+      }
 
-      if (fanmark.access_type !== 'profile') {
+      console.log('🔍 Loading fanmark profile...');
+      console.log('📋 Fanmark data:', { id: fanmarkId, accessType, licenseId });
+      console.log('🆔 Fanmark ID:', fanmarkId);
+      console.log('🎯 Access type:', accessType);
+
+      if (accessType !== 'profile') {
         console.log('⚠️ Fanmark access type is not profile. Skipping profile load.');
         setLoading(false);
         return;
       }
 
-      if (!fanmark.license_id) {
+      if (!licenseId) {
         console.warn('⚠️ FanmarkProfile invoked without license_id. Profile data cannot be resolved.');
         setEmojiProfile(null);
         setLoading(false);
         return;
       }
 
-      if (fanmark.id && fanmark.license_id) {
+      if (fanmarkId && licenseId) {
         try {
-          console.log('🚀 Attempting to load profile for license_id:', fanmark.license_id);
+          console.log('🚀 Attempting to load profile for license_id:', licenseId);
           const startTime = Date.now();
-          const profile = await getPublicEmojiProfile(fanmark.license_id);
+          const profile = await getPublicEmojiProfile(licenseId);
           const loadTime = Date.now() - startTime;
 
           console.log('✅ Profile loaded successfully in', loadTime, 'ms');
@@ -133,10 +152,10 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
     };
 
     loadProfile();
-  }, [fanmark.id, fanmark.access_type, fanmark.license_id]);
+  }, [fanmarkId, accessType, licenseId, protectedProfile]);
 
   // All hooks must be called before any early returns
-  const licenseMissing = fanmark.access_type === 'profile' && !fanmark.license_id;
+  const licenseMissing = accessType === 'profile' && !licenseId;
 
   const displayFanmark = useMemo(() => {
     const raw = fanmark?.fanmark ?? '';

@@ -17,6 +17,12 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 import { useAuth } from '@/hooks/useAuth';
 import { FiCompass } from 'react-icons/fi';
+import { fetchPublicFanmarkByShortId, getPublicAccessReadBackend } from '@/lib/public-access-api';
+import {
+  getVerifiedAccessBackend,
+  type ProtectedFanmarkProjection,
+} from '@/lib/verified-access-api';
+import { getFanmarkAccessAnalyticsBackend, recordFanmarkAccessWithWorker } from '@/lib/fanmark-access-analytics-api';
 
 interface FanmarkData {
   id: string;
@@ -26,12 +32,13 @@ interface FanmarkData {
   fanmark?: string;
   fanmark_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
-  target_url?: string;
-  text_content?: string;
+  target_url?: string | null;
+  text_content?: string | null;
   status: string;
   is_password_protected?: boolean;
-  license_id?: string;
+  license_id?: string | null;
   short_id?: string;
+  protected_profile?: Extract<ProtectedFanmarkProjection, { accessType: 'profile' }>['profile'];
 }
 
 export const FanmarkAccessByShortId = () => {
@@ -62,6 +69,8 @@ export const FanmarkAccessByShortId = () => {
   );
 
   useEffect(() => {
+    const controller = new AbortController();
+    let isMounted = true;
     const loadFanmark = async () => {
       if (!shortId) {
         handleFanmarkUnavailable('common.invalidFanmarkUrl', 'destructive');
@@ -71,22 +80,28 @@ export const FanmarkAccessByShortId = () => {
       try {
         console.log('🎯 Loading fanmark by short_id:', shortId);
 
-        // Use the dedicated function to get fanmark data by short_id
-        const { data, error } = await supabase
-          .rpc('get_fanmark_by_short_id', { shortid_param: shortId });
+        let fanmarkData: FanmarkData | null;
+        if (getPublicAccessReadBackend() === 'worker') {
+          fanmarkData = await fetchPublicFanmarkByShortId(shortId, { signal: controller.signal });
+        } else {
+          const { data, error } = await supabase
+            .rpc('get_fanmark_by_short_id', { shortid_param: shortId });
 
-        if (error) {
-          console.error('Database error:', error);
-          handleFanmarkUnavailable('common.failedToLoadFanmark', 'destructive');
-          return;
+          if (error) {
+            console.error('Database error:', error);
+            handleFanmarkUnavailable('common.failedToLoadFanmark', 'destructive');
+            return;
+          }
+          fanmarkData = Array.isArray(data) && data.length > 0 ? data[0] as FanmarkData : null;
         }
 
-        if (!data || (Array.isArray(data) && data.length === 0)) {
+        if (!isMounted) return;
+
+        if (!fanmarkData) {
           handleFanmarkUnavailable('common.fanmarkNotAcquiredDescription');
           return;
         }
 
-        const fanmarkData = data[0] as FanmarkData;
         const emojiIds = Array.isArray(fanmarkData.emoji_ids)
           ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
           : [];
@@ -97,6 +112,16 @@ export const FanmarkAccessByShortId = () => {
           fanmark: fanmarkData.display_fanmark,
         };
 
+        // Protected verification and lookup must use the same backend. The
+        // Worker projection intentionally redacts content until proof succeeds.
+        if (
+          resolvedFanmark.is_password_protected &&
+          getPublicAccessReadBackend() !== getVerifiedAccessBackend()
+        ) {
+          handleFanmarkUnavailable('common.failedToLoadFanmark', 'destructive');
+          return;
+        }
+
         if (!resolvedFanmark.license_id) {
           console.warn('Loaded fanmark without license_id. Profile access requires active license linkage.');
         }
@@ -105,18 +130,21 @@ export const FanmarkAccessByShortId = () => {
         const recordAccess = async () => {
           try {
             const searchParams = new URLSearchParams(window.location.search);
-            await supabase.functions.invoke('record-fanmark-access', {
-              body: {
-                fanmark_id: fanmarkData.id,
-                short_id: shortId,
-                referrer: document.referrer || null,
-                user_agent: navigator.userAgent,
-                utm_source: searchParams.get('utm_source'),
-                utm_medium: searchParams.get('utm_medium'),
-                utm_campaign: searchParams.get('utm_campaign'),
-                access_type: resolvedFanmark.access_type || null,
-              },
-            });
+            const body = {
+              fanmark_id: fanmarkData.id,
+              short_id: shortId ?? '',
+              referrer: document.referrer || null,
+              user_agent: navigator.userAgent,
+              utm_source: searchParams.get('utm_source'),
+              utm_medium: searchParams.get('utm_medium'),
+              utm_campaign: searchParams.get('utm_campaign'),
+              access_type: resolvedFanmark.access_type || null,
+            };
+            if (getFanmarkAccessAnalyticsBackend() === 'worker') {
+              await recordFanmarkAccessWithWorker(body);
+            } else {
+              await supabase.functions.invoke('record-fanmark-access', { body });
+            }
           } catch (error) {
             console.warn('Failed to record fanmark access:', error);
           }
@@ -157,13 +185,19 @@ export const FanmarkAccessByShortId = () => {
         setFanmark(resolvedFanmark);
         setLoading(false);
       } catch (err) {
+        if (!isMounted) return;
         console.error('Error loading fanmark:', err);
         handleFanmarkUnavailable('common.failedToLoadFanmark', 'destructive');
       }
     };
 
     loadFanmark();
-  }, [shortId, handleFanmarkUnavailable]);
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [shortId, handleFanmarkUnavailable, navigate, user]);
 
   // Trigger redirect/messageboard after verification
   useEffect(() => {
@@ -186,10 +220,19 @@ export const FanmarkAccessByShortId = () => {
         }, 1500); // Show messageboard loading for 1.5 seconds
       }
     }
-  }, [isPasswordVerified, fanmark]);
+  }, [isPasswordVerified, fanmark, navigate, user]);
 
   // Handle password verification success for all access types
-  const handlePasswordSuccess = () => {
+  const handlePasswordSuccess = (projection?: ProtectedFanmarkProjection) => {
+    if (projection) {
+      setFanmark((current) => current ? {
+        ...current,
+        license_id: projection.licenseId,
+        target_url: projection.accessType === 'redirect' ? projection.targetUrl : null,
+        text_content: projection.accessType === 'text' ? projection.textContent : null,
+        protected_profile: projection.accessType === 'profile' ? projection.profile : undefined,
+      } : current);
+    }
     setIsPasswordVerified(true);
   };
 
@@ -254,6 +297,7 @@ export const FanmarkAccessByShortId = () => {
     return (
       <PasswordProtection
         fanmark={fanmark}
+        selector={{ kind: 'short', shortId: shortId ?? fanmark.short_id ?? '' }}
         onSuccess={handlePasswordSuccess}
       />
     );
@@ -353,7 +397,7 @@ export const FanmarkAccessByShortId = () => {
   // Handle different access types after password verification
   switch (fanmark.access_type) {
     case 'profile':
-      return <FanmarkProfile fanmark={fanmark} />;
+      return <FanmarkProfile fanmark={fanmark} protectedProfile={fanmark.protected_profile} />;
 
     case 'text':
       return <FanmarkMessage fanmark={fanmark} />;

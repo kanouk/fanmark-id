@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { getWaitlistSignupBackend, submitWaitlistSignup } from '@/lib/waitlist-signup-api';
 import { useTranslation } from './useTranslation';
 
 export type InvitationPerks = Record<string, unknown> | string[] | null;
@@ -21,6 +23,21 @@ export function useInvitationCode() {
 
     setValidationLoading(true);
     try {
+      if (isBetterAuthEnabled()) {
+        const result = await betterAuthClient.validateInvitationCode(code.toUpperCase());
+        if (!result.isValid) {
+          return {
+            isValid: false,
+            message: result.remainingUses <= 0 ? t('invitation.codeFullyUsed') : t('invitation.invalidCode'),
+          };
+        }
+        return {
+          isValid: true,
+          message: t('invitation.validCode'),
+          perks: result.perks,
+        };
+      }
+
       // Use the secure validation function
       const { data, error } = await supabase
         .rpc('validate_invitation_code', { code_to_check: code.toUpperCase() });
@@ -52,6 +69,9 @@ export function useInvitationCode() {
   };
 
   const useCode = async (code: string): Promise<{ success: boolean; perks?: InvitationPerks; errorMessage?: string }> => {
+    if (isBetterAuthEnabled()) {
+      return { success: false, errorMessage: t('invitation.errorValidating') };
+    }
     try {
       const { data, error } = await supabase
         .rpc('use_invitation_code', { code_to_use: code.toUpperCase() });
@@ -79,6 +99,23 @@ export function useInvitationCode() {
   };
 
   const joinWaitlist = async (email: string, referralSource?: string): Promise<boolean> => {
+    let backend: 'supabase' | 'worker';
+    try {
+      backend = getWaitlistSignupBackend();
+    } catch (error) {
+      console.error('Error joining waitlist:', error);
+      return false;
+    }
+    if (backend === 'worker') {
+      try {
+        await submitWaitlistSignup(email, referralSource);
+        return true;
+      } catch (error) {
+        console.error('Error joining waitlist:', error);
+        return false;
+      }
+    }
+    if (isBetterAuthEnabled()) return false;
     try {
       const { error } = await supabase
         .from('waitlist')

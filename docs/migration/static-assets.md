@@ -1,0 +1,204 @@
+# Workers Static Assets preparation
+
+This is a local packaging proof for the phase 1 Cloudflare preparation in
+issue [#33](https://github.com/kanouk/fanmark-id/issues/33). It combines the
+existing recent fanmarks Worker with the Vite build through
+`workers/api/wrangler.static-assets.jsonc`. It does not deploy a Worker, create
+or change a Cloudflare resource, change DNS, or switch the frontend to a live
+Cloudflare origin.
+
+## Configuration
+
+The preparation config is deliberately separate from the API-only
+`workers/api/wrangler.jsonc`:
+
+```jsonc
+{
+  "main": "src/index.ts",
+  "assets": {
+    "directory": "../../dist",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/*"]
+  }
+}
+```
+
+The `dist` directory must be built from the repository root before the local
+asset tests or dry run. The package scripts check for `dist/index.html` to reject an absent build.
+They cannot detect a stale build: rebuild first when running locally. The
+application CI job runs these checks immediately after its fresh Vite build:
+
+```sh
+npm run build
+cd workers/api
+npm ci
+npm run typecheck
+npm test
+npm run test:static-assets
+npm run build:static-assets:dry-run
+```
+
+The checked-in variable values are synthetic fixtures. A staging or production
+run still needs the target Supabase URL, a public publishable or legacy anon
+key, an intentional `CORS_ALLOWED_ORIGINS` value, the target Cloudflare account
+authentication, and a reviewed deployment environment. This config does not
+claim that environment approval or protection rules are configured.
+
+Cloudflare's Static Assets binding provides the `ASSETS.fetch(request)` runtime
+API. This preparation uses `404-page` so the Worker can preserve a real 404 for
+missing non-navigation assets and explicitly fetch `/index.html` only for a
+navigation request. `run_worker_first: ["/*"]` is intentional in this local
+packaging proof: the Worker owns both that navigation decision and the API
+boundary. All asset requests therefore invoke Worker code; request usage and
+CPU limits must be measured before choosing this routing for production.
+See the [Static Assets binding documentation](https://developers.cloudflare.com/workers/static-assets/binding/),
+[Worker script routing documentation](https://developers.cloudflare.com/workers/static-assets/routing/worker-script/),
+and [SPA routing documentation](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/).
+
+## Request boundary
+
+When the `ASSETS` binding is present, `workers/api/src/index.ts` passes
+non-API requests to `ASSETS.fetch`. If that fetch is a 404 for a GET navigation
+(`Sec-Fetch-Mode: navigate` or an HTML `Accept` header), the Worker fetches the
+root `/index.html` shell. API paths are evaluated first and never pass through
+the SPA fallback:
+
+- `/api/fanmarks/recent` keeps the versioned JSON contract and Supabase adapter.
+- Unknown `/api/*` paths return the Worker's JSON `404` response.
+- `/api/auth/*` is also an API path and cannot become the React shell by
+  navigating to an unknown auth endpoint.
+- `/`, `/a/:shortId`, `/pwa`, and `/auth` receive the Vite shell. React's
+  existing router resolves `/auth` after the shell loads.
+- A missing navigation path receives the explicit SPA shell fallback. A
+  missing non-navigation asset such as `/assets/does-not-exist.js` remains a
+  non-HTML 404. A known asset such as `/favicon.ico` keeps its asset MIME type.
+
+The local static asset suite runs through the actual `cloudflare:workers`
+entrypoint with the local `ASSETS` binding. It covers the routes above, the
+missing navigation fallback, the missing non-navigation asset, the known asset
+MIME type, unknown API paths, known public API success, and a known API
+upstream failure. The failure case asserts JSON rather than HTML so a backend
+error cannot be hidden by the SPA fallback.
+
+The same package script then starts a local `wrangler dev --local` process and
+uses HTTP requests against it. That smoke test is the evidence for the outer
+Workers asset router and `run_worker_first` behavior; the Vitest entrypoint
+test alone would bypass that outer router. It does not contact a remote
+account or Supabase.
+
+## Staging PWA and offline shell check (2026-09-27)
+
+A fresh, isolated headless Chromium profile opened
+`https://fanmark-app-staging.fanmark-id.workers.dev/pwa`. The route completed
+with the app title, referenced `/manifest.webmanifest`, and loaded `/sw.js`.
+The manifest returned 200 as `application/manifest+json`, with
+`start_url: /pwa`, `display: standalone`, and two icons. The service worker
+controlled the page. Workbox held one precache containing the HTML shell,
+hashed JS/CSS, and static images/fonts; it contained no API responses.
+
+With the browser network disabled, reloading `/pwa` returned the application
+shell from precache. The app then showed its Japanese catalog-load error and
+retry action, while `/api/auth/ok` failed with a network `TypeError`. This
+confirms offline shell availability and the intended no-API-cache boundary; it
+does not establish offline catalog/search functionality. The browser profile
+was anonymous and temporary, and was removed after the check.
+
+This did not exercise the native install prompt, a real installed standalone
+launch, or an update from one deployed service-worker version to another.
+
+## Local service-worker update transition check (2026-09-28)
+
+A temporary localhost server switched from a fresh default Vite build to a
+second build while an isolated headless Chrome profile kept `/pwa` open.
+Calling `registration.update()` installed the second service worker; the app
+reloaded and changed its entry bundle from `index-byRNuhuw.js` to
+`index-DQhZep5z.js`. A `localStorage` canary survived the reload, while a
+synthetic unsaved textarea value in the current document was lost. This
+confirms the local `registerType: "autoUpdate"` transition and immediate
+reload behavior. The Vite PWA documentation warns that automatic reload can
+lose form data and recommends a prompt update flow for apps with forms
+([automatic reload guidance](https://vite-pwa-org.netlify.app/guide/auto-update)).
+
+This was a local two-build browser check, not an update between deployed
+Cloudflare Worker versions. It did not use D1, R2, an authenticated account, or
+the user's browser profile. Native install/standalone launch remains open.
+Changing from automatic reload to a user-approved update is a product behavior
+decision and was not made here.
+
+The staging manifest's `/pwa-192x192.png` and `/pwa-512x512.png` entries were
+then checked directly and both returned 404. Matching icons were derived from
+the existing `public/favicon.png`, included in the standard and staging builds,
+and verified through local asset tests and the Wrangler HTTP router. After
+deploying Worker version `cdeb759e-8e52-4b8a-9d63-6451b871c262` (100% traffic),
+live readback returned 200 for the manifest, service worker, and both PNGs;
+the images have the declared 192x192 and 512x512 dimensions and
+`image/png` content type. Browser-style navigation requests to `/pwa`, `/auth`,
+and `/plans` return the noindex SPA shell. A fresh anonymous headless Chromium
+profile then executed the deployed client: `/plans` and `/plan` redirected to
+`/auth`; `/pwa` was controlled by the active service worker, whose Workbox
+precache contained both icons. With network emulation disabled, reloading
+`/pwa` served the shell and displayed the catalog retry screen. API responses
+were not cached. The temporary browser profile was removed. This verifies only
+the anonymous protected-route redirect and offline shell; it does not establish
+authenticated application flows, offline catalog/search, native install, or
+service-worker update transitions.
+
+## Remaining parity gates
+
+The Vite build and local Workers binding do not establish production parity.
+Before any staging or production cutover, the following behavior needs an
+explicit decision and observed verification:
+
+- OGP and social previews, including whether the current `og-image.png` and
+  metadata need a request-specific or dynamic response.
+- Admin subdomain routing and the existing `useSubdomain`/`AdminApp` behavior;
+  no admin hostname, wildcard route, or account setting is inferred here.
+- Supabase Auth callback, cookie, redirect, and session behavior at the chosen
+  origin.
+- Native installation and standalone launch passed on the staging workers.dev
+  hostname in Chrome on macOS (see the acceptance below). Custom-domain
+  behavior, caching headers, and security headers still need staging review.
+- Any public routes or redirects outside the routes inspected in the current
+  Vite application.
+
+Until those gates are reviewed against a target staging origin, this remains a
+deployable local packaging proof rather than a full frontend cutover.
+
+## Deployed staging service-worker update transition (2026-09-28)
+
+`npm run test:migration:staging-pwa-update` performed a guarded update on the
+isolated `fanmark-app-staging` workers.dev hostname using temporary anonymous
+headless Chrome and a random temporary SVG included in the PWA precache. Worker
+version `f19d38cb-6708-4aa9-87f1-a58a2166337e` installed over the prior staging
+build; `/pwa` reloaded under the new controller, retained a synthetic
+`localStorage` value, discarded an unsaved DOM textarea, and included the
+temporary marker in Workbox's precache contents. The script then removed the
+marker, redeployed the ordinary staging build as
+`c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65`, and observed a second reload with the
+marker absent from the precache. Direct readback returned 404 for the removed
+asset and the service-worker script no longer referenced it.
+
+The first canary run exposed a test assumption rather than an application
+failure: Workbox keeps its cache name stable across these updates. The check now
+compares precache contents, which showed the canary asset entering and leaving
+as expected. The final browser profile, local marker, and synthetic browser
+storage were removed. This verifies the deployed `autoUpdate` transition only;
+it does not verify authenticated flows, custom-domain behavior, offline
+catalog/search, or a prompt before reload.
+
+## Native staging PWA install and standalone launch (2026-09-28)
+
+In an isolated temporary Chrome profile on macOS, the browser offered the
+install prompt for
+`https://fanmark-app-staging.fanmark-id.workers.dev/pwa`. Installing created a
+`fanmark.id` Chrome app for that staging origin. Launching the app opened the
+PWA in a standalone window with no browser address bar, and the `/pwa` search
+screen rendered. This was an anonymous local-browser check; it did not exercise
+authenticated flows or verify behavior on a custom domain, another browser, or
+another operating system.
+
+The temporary Chrome profile and the app bundle it created were moved to the
+Trash after verification. No staging resource, application data, production
+route, or domain/DNS setting was changed. This closes the staging workers.dev
+native-install/standalone-launch subgate only.

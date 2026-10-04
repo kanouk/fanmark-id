@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
+import { invokeFanmarkRegistration } from '@/lib/fanmark-registration-api';
 
 const quickRegistrationSchema = z.object({
   emojiCombination: z.string().min(1, 'Emoji combination is required'),
@@ -121,8 +122,7 @@ export const FanmarkQuickRegistration = ({
         return;
       }
 
-      const { data: result, error } = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
-        body: {
+      const registrationBody = {
           user_input_fanmark: data.emojiCombination,
           emoji_ids: emojiIds,
           normalized_emoji_ids: normalizedEmojiIds,
@@ -133,8 +133,11 @@ export const FanmarkQuickRegistration = ({
           textContent: null,
           createProfile: false,
           isTransferable: true,
-        },
-      });
+      };
+      const { data: result, error } = await invokeFanmarkRegistration(
+        registrationBody,
+        () => supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', { body: registrationBody }),
+      );
 
       if (error) throw error;
 

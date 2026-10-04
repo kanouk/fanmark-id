@@ -1,5 +1,158 @@
 # 本番読み取りの観測記録
 
+## 2026-10-03 Master emoji audit rollout (16:15 UTC)
+
+CI `37031840989` on `ff7bcb8` passed both jobs. Additive Master migration
+`0008_emoji_master_change_audits.sql` and its ledger were file-imported; all
+three native triggers exactly match checked-in SQL. Canonical rows remained
+3,944, audit/context rows were zero, and no Master migration was pending.
+Fresh staging build/dry-run deployed Worker `10f62b09-8592-449e-9040-4e396a395175`;
+latest-by-created_on readback confirmed 100%. Public/local JS SHA-256 remains
+`dd779e2f1ef10aaf7c26f7b94100d82353ae6cf91e524af7cfbd498125a6a27d`.
+Root/robots/session/catalog/languages are 200, session=null, anonymous
+admin/transfer 401 and disabled webhook 404; X-Robots-Tag remains noindex.
+
+Pinned synthetic sign-in/TOTP/session rotation/MFA, draft create/update,
+stale/spoofed-actor/delete rejection and a 100-row mixed import passed with
+102 exact per-row audits and one shared import request/time. Context was
+empty. All 3,944 public catalog rows retained digest
+`629d5da3b49720f7aa33d15f157aef65ce2f76b55e000c59919624a8340b8c23`.
+Scoped cleanup restored the Master count/audit/pointer baseline and removed
+synthetic Auth/business profiles; user-owned Auth rows are zero. MFA generation
+remains monotonic through synthetic factor changes.
+
+The first run's functional/Master checks passed but shared smoke cleanup
+omitted the mode from its target list, leaving one target Auth user/profile.
+Private-journal exact recovery removed it; all modes now clean their always
+provisioned target. A fresh full run ended verified-and-cleaned. This is
+mutation/storage acceptance, not proof the admin history UI includes Master
+audits. Source discovery/favorite linking on fanmarks INSERT is the next
+confirmed implementation gap. No real user migration, external provider
+transaction, production Supabase write or domain/DNS operation occurred.
+
+## 2026-10-03 staging audit rollout (15:36 UTC)
+
+CI run `37026002389` on `f3787d8` passed both jobs. Business staging migration
+0021 is applied with exact trigger/ledger readback and no pending migration.
+A direct synthetic coupon-command smoke passed with two individually audited
+cancellations, one usage after replay, two notification events, cleanup of
+source-table/command rows, preserved master baseline and empty Auth. The
+initial long-LIKE-pattern failure in the rehearsal was recovered using its
+private journal and fixed with exact event-key IN predicates. This is D1
+command/trigger evidence, not an imported-user or Stripe/Resend/OAuth acceptance.
+
+Fresh build/dry-run then deployed Worker `445dd523-232d-4766-aaef-2c8d175e5bc6`
+to `fanmark-app-staging.fanmark-id.workers.dev`. Latest-by-created_on readback
+confirmed 100%; the prior version was `d2330dd1-ce17-41c0-99d2-a81b242c412d`.
+HTTP root/robots/session/emoji/languages returned 200, session=null, anonymous
+admin and transfer list 401, disabled Stripe webhook 404. Public/local JS
+SHA-256 matched `dd779e2f1ef10aaf7c26f7b94100d82353ae6cf91e524af7cfbd498125a6a27d`.
+Staging remains noindex. Authenticated synthetic transfer acceptance passed:
+sign-in, issue/apply/reject/reapply/approve, exact per-entry cancellation audit,
+repeat-approval denial without duplication, and three delivered Japanese in-app
+notifications. Source-table/Auth canary rows were removed and coupon/email
+master and MFA-generation baselines preserved. The initial obsolete three-digit
+deadline assertion was corrected to the current canonical six-digit contract
+after its failed run had cleaned up.
+No real user migration, provider request, production Supabase write or domain/DNS
+operation was performed.
+
+## 2026-10-02 public schema / Edge Function readback (10:44 UTC)
+
+Using the linked project `ppqgtbjykitqtiaisyji`, `supabase db dump --linked
+--schema public` produced a schema-only artifact in a private temporary
+directory. No table rows, Auth records, Storage objects, Stripe data, or
+secret values were fetched. The private raw dump was 180,288 bytes, SHA-256
+`aac7f38c912b358019a9bb9f282813a10bcd3e20af09e929d1ec41a2705b42cd`. After
+normalizing trailing blank lines, the checked-in `supabase/remote_schema.sql`
+is 180,281 bytes, SHA-256
+`6d0a41fd4f687c51d01963c83d565fe5854dfd19878b03d102716488c2ff656c`.
+
+The live catalog has 40 tables / 406 columns, 58 functions, one view, one
+sequence, four public types, and 77 RLS policies. The prior checked-in snapshot
+had 37 tables / 367 columns, 53 functions, one view, one sequence, four types,
+and 76 policies. The identity differences match checked-in migrations: the
+three added tables (`broadcast_emails`, `email_templates`, `languages`) are in
+the January 2026 migrations; the five added functions are the three
+notification-worker helpers from `20260725044303_make_notification_cron_on_demand.sql`
+and the two `user_settings` privilege guards from
+`20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql`.
+Five policies for those tables are present; four older public/authenticated
+validation policies were removed by the July 2026 guard migration. No table,
+function, view, sequence, or type identity was otherwise added or removed.
+This reconciles object names and the current DDL snapshot; it is not row-data
+parity or proof that every SQL behavior has a Cloudflare replacement.
+
+`supabase functions list --project-ref ppqgtbjykitqtiaisyji --output json`
+returned 35 deployed Functions, all `ACTIVE`. There are 34 checked-in local
+entrypoints and no local-only names. All 34 shared names have the same
+`verify_jwt` value as `supabase/config.toml`. The sole deployed-only function
+is `manual-expire-grace-licenses` (version 14, `verify_jwt=true`). Its source
+was downloaded into a private temporary directory and reviewed; it was not
+invoked, and the deployed function was not changed.
+
+### Deployed-only function authorization review
+
+`manual-expire-grace-licenses` creates a Supabase client using the
+`SUPABASE_SERVICE_ROLE_KEY` environment value. The handler does not inspect the
+caller identity, role, or MFA assurance. It selects every row with
+`status='grace'` and `grace_expires_at < now`, changes each license to expired,
+deletes its basic/redirect/messageboard/password configs, and inserts an audit
+row. The function's gateway setting requires a valid JWT, but there is no
+administrator authorization check in the handler; the function also advertises
+wildcard CORS. Because it uses the service-role client, a valid non-admin JWT
+may reach a bulk license mutation if the gateway accepts that caller. This
+behavior was not tested by invoking the function.
+
+Per-license config deletion and audit errors are not checked before the
+function reports the license as successful, so partial cleanup is possible.
+The function returns license and fanmark identifiers in its result. The
+Cloudflare staging has separately guarded admin lifecycle and scheduled D1
+paths; exact behavioral equivalence with this manual function remains open.
+The live-only Supabase function's disposition and production mitigation remain
+open. The private downloaded source was deleted after review.
+
+| Function | State | Version | `verify_jwt` |
+| --- | --- | ---: | --- |
+| `admin-expire-license` | ACTIVE | 20 | false |
+| `admin-get-user-detail` | ACTIVE | 219 | false |
+| `admin-list-users` | ACTIVE | 221 | false |
+| `admin-toggle-user-status` | ACTIVE | 220 | false |
+| `admin-trigger-password-reset` | ACTIVE | 220 | false |
+| `admin-update-user-plan` | ACTIVE | 220 | false |
+| `apply-extension-coupon` | ACTIVE | 75 | true |
+| `apply-fanmark-lottery` | ACTIVE | 192 | true |
+| `apply-transfer-code` | ACTIVE | 106 | true |
+| `approve-transfer-request` | ACTIVE | 104 | true |
+| `bulk-return-fanmarks` | ACTIVE | 231 | false |
+| `cancel-lottery-entry` | ACTIVE | 189 | true |
+| `cancel-transfer-code` | ACTIVE | 100 | true |
+| `change-subscription` | ACTIVE | 131 | false |
+| `check-email-exists` | ACTIVE | 304 | false |
+| `check-expired-licenses` | ACTIVE | 300 | false |
+| `check-subscription` | ACTIVE | 163 | false |
+| `create-checkout` | ACTIVE | 162 | false |
+| `create-extension-checkout` | ACTIVE | 152 | true |
+| `customer-portal` | ACTIVE | 159 | false |
+| `delete-user-account` | ACTIVE | 166 | false |
+| `extend-fanmark-license` | ACTIVE | 227 | false |
+| `fanmark-ogp` | ACTIVE | 107 | false |
+| `generate-ogp-image` | ACTIVE | 100 | false |
+| `generate-transfer-code` | ACTIVE | 104 | true |
+| `handle-stripe-webhook` | ACTIVE | 172 | false |
+| `manual-expire-grace-licenses` | ACTIVE | 14 | true |
+| `process-notification-events` | ACTIVE | 209 | false |
+| `record-fanmark-access` | ACTIVE | 114 | false |
+| `register-fanmark` | ACTIVE | 316 | true |
+| `reject-transfer-request` | ACTIVE | 100 | true |
+| `reset-fanmark-data` | ACTIVE | 235 | false |
+| `return-fanmark` | ACTIVE | 299 | true |
+| `send-auth-email` | ACTIVE | 64 | false |
+| `send-broadcast-email` | ACTIVE | 36 | true |
+
+These were metadata and DDL readbacks only. No Supabase schema, Edge
+deployment, user data, R2 object, production route, or DNS setting changed.
+
 観測日時: 2026-09-20T16:18:46.451758+00:00
 親: #28、棚卸し: #30。これは移行・本番設定変更の実施記録ではない。
 
@@ -13,13 +166,26 @@
 - `default_transaction_read_only=on` を指定したカタログ問い合わせで、publicの40テーブル・77 RLS policy・58関数・144制約・36ユーザー定義triggerを確認。全40テーブルでRLS有効。生成型の45 RPCだけをDB関数の全件と扱わない。関数本体の内容は公開記録に保存せずhashで識別する。
 - GitHubの既存Environmentは `Supabase`。観測時のprotection_rulesは空。Environment指定だけで承認保護が有効とは扱わない。
 
+## 読み取り専用の容量再確認（2026-09-28 JST）
+
+Supabase CLI 2.118.0 の分離した一時project-link環境で読み取り専用集計を
+再実行した。PostgreSQL全体は27,708,563 bytes（約26.4 MiB / 27.7 MB）。
+Storage metadata上の合計は109 object、13,285,729 bytes（約12.67 MiB）で、
+サイズ未設定objectはなかった。Storage値は `storage.objects` のsize metadata
+集計であり、この再確認でobject本文を再取得・hash照合した結果ではない。
+
+これは転送容量の目安であり、凍結snapshotのexport/import時間や停止時間の
+計測ではない。公開リポジトリには合計値のみを記録し、table別件数、Auth、
+Stripe、bucket別の内訳や行の内容は含めていない。データ移行、D1/R2書込み、
+production route、domain/DNS変更は行っていない。
+
 ## 本番のみの関数について
 
 本番のみの関数は移行対応表の未解決項目とし、用途・権限制御・既存の期限処理との関係を確認する。稼働していることだけを理由に、そのまま移植または削除しない。
 
 ## 未確認
 
-本番RLS/制約/関数本体/triggerの意味と移行先への対応、cron、整合したsnapshotでの件数照合・Storage容量、AuthのID対応・ハッシュ互換・MFA、Storageキー/所有者/ハッシュ、Stripe顧客と契約対応、OAuth管理画面、DNS/TLS、Resend設定、停止時間・復旧時間目標。本番のexport/importやデータ更新は未実行。Cloudflare環境の準備と認証検証も未完了。
+本番RLS/制約/関数本体/triggerの意味と移行先への対応、cron実行先と停止/再開、整合したsnapshotでの件数照合・Storage実ファイル容量、AuthのID対応・実ユーザーhash互換・MFA移送、Storageキー/所有者/ハッシュ、Stripe顧客と契約対応、OAuth管理画面、DNS委任/TLSと実フロー、Resend設定、停止時間・復旧時間目標。本番のexport/importやデータ更新は未実行。Cloudflare環境の準備と認証検証も未完了。
 
 ## 証拠の扱い
 
@@ -29,4 +195,1992 @@
 
 read-only SQL接続では `audit_logs` のSELECT権限不足だった。別途、既存の管理権限で取得したAPI資格情報をプロセス内だけで使用し、REST HEAD + count=exactで全40テーブルの件数を取得した。レスポンス本文のデータ行は取得せず、資格情報も保存していない。件数は別々のリクエスト時点の観測であり、整合したsnapshotや最終移行照合ではない。個別件数は公開リポジトリに載せない。table-statsの値は引き続き推定値として区別する。
 
-Cloudflare CLIの既存OAuthログインを確認し、D1一覧をread-only取得した。観測時にfanmark専用D1は見つからない。新しいremote D1/Workerは作成していない。
+## ブラウザによる環境確認（2026-09-21 JST）
+
+- Supabase Settings > General は `auth.fanmark.id` を active custom domain と表示し、serving traffic と明記していた。以前のAPI取得403を「未設定」と解釈しない。この表示だけでは全OAuth callback/メールリンクの動作までは証明しない。
+- Cloudflare の fanmark.id ゾーンは、既存 Wrangler OAuth のアカウントとは別のアカウントに属していた。既存CLIで取得したD1一覧は別アカウントの一覧であり、fanmark用D1の存在確認には使えない。
+- ブラウザで確認したfanmark側account IDを明示した `wrangler d1 list --json` は authentication error 10000。対象アカウントのCLI権限が必要で、新しいremote D1/Workerは作成していない。別アカウントへ代替配備しない。
+- fanmark.id のDNS画面では apex / www / admin は同じ既存Aレコード、authは現行SupabaseプロジェクトへのCNAMEで、いずれもproxy有効。DNS変更はしていない。DNS画面内のNSレコードだけからレジストラの委任先は判定しない。
+
+
+## SQL Editorでの追加集計（2026-09-21 JST）
+
+CLIのSQL接続はauth schemaの権限が不足していたが、既存ブラウザセッションのSupabase SQL Editorでは `BEGIN READ ONLY` による集計を実行できた。認証情報・ファイル内容・ユーザー行・cron command本文は返していない。再現用SQLは `scripts/migration/auth-readiness.sql` と `scripts/migration/storage-cron-readiness.sql`。SQL Editorでそれぞれ3行と2行の集計結果を確認した。両クエリ間でsnapshotは共有しない。
+
+- パスワード形式の観測はbcrypt `$2a$10$`。これは形式・costの集計確認であり、実際のパスワードhashのexport/importやログイン検証ではない。
+- identity providerの集計にemail / Apple / Google / GitHub / Discordが存在。provider別の件数は複数連携を含み、ユーザー数と同一視しない。
+- MFA factorにはverified TOTPが存在。secretの可搬性や復旧手段は未確認。
+- Storageには `avatars` と `cover-images` のpublic bucketが存在。このSQL集計ではobject件数・metadata上の容量だけを取得した。その後、認証付きStorage APIでファイル本体を取得し、metadata size・SHA-256・取得前後の一覧一致とローカル再検証を完了した（[storage-baseline.md](storage-baseline.md)）。これは一時baselineで、確定snapshot・R2照合ではない。
+- cronは `check-expired-licenses-daily`（`0 0 * * *`、active）と `process-notification-events-every-minute`（`* * * * *`、観測時inactive）。後者はオンデマンドの有効化設計と整合するが、この瞬間のinactiveだけでワーカー不要とは判断しない。実行先・時刻設定・停止/再開は引き続き検証対象。
+
+集計の個別件数はローカルの非公開運用記録に保持し、公開リポジトリには保存しない。
+
+認証URL設定のブラウザ確認ではSite URLは `https://fanmark.id/`、redirect許可リストはfanmark.idと既存Lovableの4パターン（計5件）だった。将来のWorker preview URLを既に許可済みとは扱わない。許可リストは変更していない。
+
+Google Cloud の既存fanmark-id OAuthクライアント画面では、JavaScript originは `https://fanmark.id`、redirect URIは `https://auth.fanmark.id/auth/v1/callback` の各1件。新Better Auth callbackを既に許可済みとは扱わない。クライアントやsecretの作成/変更はしていない。
+
+Apple Developerでは既存Services ID `id.fanmark.login` にSign in with Appleが有効、Primary App IDはFanmark。Web Authenticationの登録ドメインは `auth.fanmark.id` / `fanmark.id`、Return URLは `https://auth.fanmark.id/auth/v1/callback` を確認した。既存のFanmark用Sign In Keyも一覧に存在するが、秘密鍵は取得/再発行していない。Appleも新callbackの登録と実フロー検証が必要で、現在の設定を変更していない。
+
+対象CloudflareアカウントのWorkers & Pages一覧は「No projects found」。Workersのプラン画面ではFreeが「現在のプラン」で、CPU上限は10 ms/requestと表示されていた。認証のlocal wall-clock検証ではこのCPU制限内の動作を証明できない。remote CPUを測定し、必要なプランを決めるまで認証の本番適合とは判定しない。プラン変更・課金は行っていない。
+
+Resendのfanmark.id workspaceで、送信ドメイン `fanmark.id` はVerified。メール送信や鍵の表示/変更は行っていない。Stripeについては本番/テストの配信先・API version・DB内契約との対応確認を継続する。コードの存在だけから現行Webhookが正常配信中とは扱わない。
+
+## Wrangler認証と隔離D1（2026-09-23 JST）
+
+ユーザーがCloudflare OAuth画面でAuthorizeし、`wrangler whoami`で対象アカウントとD1 write権限を確認した。対象アカウントのD1一覧は空だったため、公開絵文字マスター用の`fanmark-emoji-master-staging`をAPACに作成した。`0000` canonical schema、`0001` versioned staging、`0002` inactive activation schemaのみを適用。`0003_better_auth_core.sql`はWrangler remote SQL処理で`incomplete input`となり未適用。Node 22.6.0で検証したreleaseだけをreadyにし、Authテーブルは存在しない。remote catalog readback/hashの詳細は[emoji release記録](emoji-releases.md)。
+
+同日、`fanmark-emoji-master-staging-api`を`workers.dev` (`https://fanmark-emoji-master-staging-api.fanmark-id.workers.dev`) に配備。bindingは上記隔離D1のみ、設定したCORS originは`https://fanmark.id`。version `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`を指定した遠隔API読出しで3,944件全てを成果物と比較し、`recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`、`identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`が一致した。version省略は503、許可外originは403、非GETは405、`/api/auth/session`は404。全応答no-storeでCookieなし。Workerは公開master専用でSPA未接続、active pointer・Auth・ユーザーデータは未設定。
+
+`wrangler r2 bucket list` はCloudflare error 10042 `Please enable R2 through the Cloudflare Dashboard` で失敗。アカウントでR2をまだ有効化できておらず、bucket作成・Storage objectの転送は未実施。Supabase Storageにある`avatars` / `cover-images`の実ファイル移行はユーザーデータ段階まで保留。
+
+## R2アプリAPIのローカル検証（2026-09-23 JST）
+
+WorkerにBetter Auth session確認付きのR2 Storage APIを追加し、ローカルMiniflare D1/R2で合成アカウントを使って検証した。5テストが成功し、公開read、所有者のみdelete、認証、CORS/Origin、avatar 1 MiBとcover 2 MiB上限、画像signature、未設定backend時のfail-closedを確認。API typecheckと既存Better Auth route 5テストも成功。R2を有効化していないためCloudflare remoteにはbindingを付けず、実bucket/objectsは未作成。フロントのavatar/cover hookはBetter Auth UI/sessionが未移植のためSupabase Storageを維持。実Storage inventory/object transferはユーザーデータ移行段階まで未実施。
+
+その後、`fanmark-app-staging`をversion `c45c7085-387b-44e6-9038-b1d52382dc7f`へ更新。`wrangler d1 migrations list`は`No migrations to apply`。隔離Workerの`/api/auth/ok`と版固定catalog APIは200、rootは`X-Robots-Tag: noindex, nofollow`。`POST /api/storage/object/avatars`と`GET /api/storage/public/avatars/synthetic/object.png`はどちらも503 `storage_unavailable`。R2 bindingは含めず、bucket/object、実user/Authデータ、custom domain/DNSは変更なし。
+
+## App staging WorkerとBetter Auth API（2026-09-23 JST）
+
+`fanmark-app-staging` Worker version `b69bdc6b-7faa-4dca-b994-53251eca3fbe`を`https://fanmark-app-staging.fanmark-id.workers.dev`へ配備。上記APAC D1をbindingし、`AUTH_BACKEND=better-auth`とHTTPSの`BETTER_AUTH_URL`を設定した。32文字以上のstaging専用ランダム`BETTER_AUTH_SECRET`はCloudflare Secret Storeへ直接登録し、値は出力・保存していない。`STAGING_NO_INDEX`を有効化し、rootに`X-Robots-Tag: noindex, nofollow`、`robots.txt`に全体Disallow、`sitemap.xml`は404を確認した。
+
+`0003_better_auth_core.sql`は通常のremote `migrations apply` query経路だと`incomplete input`だが、Wrangler remote `--file` importなら適用できることをローカルD1で先に再現確認。migration SQLと標準の`d1_migrations`記録を一つのtransactional file importとして適用した。remote readbackはAuth table 8件、MFA generation trigger 6件、generation singleton 1件・generation=0、migration ledger 1件。user/account/session/verification/twoFactor/adminRole/mfaAssuranceは全て0件で、`d1 migrations list`もpendingなし。
+
+Worker APIのread-only確認: `/api/auth/ok` 200、未認証`/api/auth/get-session`は`null`、許可外Originは403、signupは403で閉じている。synthetic `example.invalid` userだけを一時投入し、正passwordでsign-in/session/logout、誤password 401を確認後にuserごと削除。最終readbackで全Auth user-owned rowsが0件。メール配信/OAuth/signupは起動しておらず、Auth UIもSupabase contextのままで切り替えていない。SPA Worker経由で固定versionのカタログ3,944件を再取得し、`recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`、`identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`を独立artifactと照合して一致。production DB、production app、OAuth provider、public hostname/DNSは変更していない。R2は引き続き未有効でbucket/objectは未作成。
+
+## 最近取得一覧の定義確認（2026-09-21 JST）
+
+読み取り専用のcatalog queryで `recent_active_fanmarks` の定義・security_invoker設定と `list_recent_fanmarks(integer)` の関数定義を確認した。active licenseとfanmarksのjoin、license側の表示・作成日時、RPCの作成日時降順・件数制限が現行条件。ユーザー行は取得していない。`scripts/migration/recent-contract-readiness.sql` はview定義と関数metadata/fingerprintを返す再現用SQLで、実行済み。詳細とD1移植時の注意は `object-map.md` / `recent-api-contract.md` に記録する。
+
+## 絵文字マスターのremote activation（2026-09-23）
+
+Better Auth schema適用後の再stage guardを実行し、4 migrations、Auth schema 8表、user-owned Auth行0、MFA generation=0を確認。canonical `emoji_master` 3,944件とready release 3,944件が一致し、staging前後のactive pointerとactivation historyは不変。続いて期待active state=`none`のremote activationを行い、release `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`をgeneration 1へ昇格。active pointerとhistoryは各1件。
+
+`https://fanmark-emoji-master-staging-api.fanmark-id.workers.dev/api/emoji/catalog`は未active時503から200になった。版なしAPIをlimit 500で8ページ取得し、3,944行、`recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`、`identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`、versionが独立成果物と一致。user/account/session/verification/twoFactor/adminRole/mfaAssuranceは0行。production app/DB、Supabase write、R2、user data、custom domain/DNSは変更なし。
+
+## R2と非ユーザー系マスターの再確認（2026-09-23 JST）
+
+Cloudflare認証後に`wrangler r2 bucket list`をread-only実行したが、error 10042 `Please enable R2 through the Cloudflare Dashboard`で失敗。R2 subscription/bucketは未有効・未作成のまま。Cloudflare公式の開始手順はR2 subscriptionをダッシュボードのcheckoutで追加するよう案内し、Standardには月次無料枠がある。R2の有効化は未実施。
+
+Supabase SQL Editorの新規タブから、`fanmark_tiers`、`languages`、`reserved_emoji_patterns`だけを明示列挙した単一read-only SELECTを実行し、各4、4、5行を確認。各表の列とPostgreSQL `numeric(10,2)`の表示精度を保つCSVを非公開の一時領域へ保存した。型付きJSON snapshot SHA-256は`5be91463bd0429cc9fc7a280892a80a922deb2dd9224325374171a4ce7bdc88e`。表ごとの原本hashはtier=`d1e407e86d72ebb4be6ab3b39c50b04da0fae3222e8b6ba3b29d1ffd17682084`、language=`faba8449e8838a8b8982000d0582ba96aab476d296bbbc4b91fa7e704aacc637`、reserved pattern=`36155076b6810d1a4a8813eb97cbc5ee0f11b3977e4ecf78d449d257b57762b2`。実データの行内容はリポジトリへ保存していない。
+
+この3表だけを対象に、`0004_reference_master_releases.sql`、exact cents変換、版付きstage/readback/activationと3つのactive viewを実装。Node 22.6.0のMiniflareで5テストが成功し、実データsnapshotから生成した版もローカルでreadbackした。`monthly_price_usd`の原本文字列は浮動小数点を通さず整数centsへ変換し、D1 viewも既存Worker repositoryが期待するcents表現を返す。
+
+追加の隔離ローカル証明として、Wrangler local D1へ`0000`–`0004`全migrationを適用し、同じsource snapshotから生成した20文のstage/activation SQLを実行。stage表・active view・各source row hash/件数を表ごとに比較し、tiers 4/4、languages 4/4、reserved patterns 5/5が全件一致、active generation 1、migration ledger 0004ありを確認した。これはlocal persistent D1での実データ整合証拠で、remote stagingへの書込み証拠ではない。
+
+リモート状態は未変更。Wranglerでは対象email/accountとD1 database一覧を確認できたが、D1 query endpointがerror 7403 `The given account is not valid or is not authorized to access this service`を返した。Cloudflare Dashboard D1 Studioからのread-only確認ではapplied migrationは`0000`–`0003`のみ。`0004`は未適用で、master release rowsとactive pointerも未作成。Supabaseの既存未保存emoji queryは変更していない。`system_settings`、Auth、ユーザー行、Storageにはアクセスしていない。
+
+## 非ユーザー参照マスターのRemote反映とapp staging更新（2026-09-23 JST）
+
+Wrangler remote D1 read/writeが利用可能になったことをread-only queryで確認し、APAC `fanmark-emoji-master-staging`へmigration `0004_reference_master_releases.sql`と標準`d1_migrations` ledgerを含む非公開SQL artifactを適用した。Cloudflare readbackで`0000`–`0004`を確認。
+
+非公開source snapshot (`5be91463bd0429cc9fc7a280892a80a922deb2dd9224325374171a4ce7bdc88e`)から、`fanmark_tiers` 4件、`languages` 4件、`reserved_emoji_patterns` 5件をready releaseとしてstageした。Remote helperが各列、件数、source hashを比較し、8 Auth schema tablesの存在、user-owned Auth rows 0、MFA generation 0、絵文字releaseのpointer/history不変を確認。続けて同releaseをgeneration 1として有効化し、active viewsもsnapshotと全列一致した。active pointer/historyは各1件。
+
+最初のpromotion後readbackは、JSON property insertion orderだけが異なる行を不一致として扱った。値は一致し、件数・release状態・activation auditも正しかった。キー順を正規化して比較する実装へ修正し、5件のMiniflare release testsとtypecheckを通した後、remote scriptをready-release再利用・generation 1維持で再実行し、active view readbackを成功させた。
+
+続けて`fanmark-app-staging`をversion `caebcf9a-236a-4e1d-a89d-8940ad461c44`へworkers.dev限定で配備。read-only HTTP確認ではroot 200 + `X-Robots-Tag: noindex, nofollow`、`robots.txt`で全体Disallow、`sitemap.xml` 404、Better Auth health 200、未認証session `null`を確認した。カタログAPIは8ページ・3,944行を返し、version `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`、records hash `84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`、identity hash `dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`が一致した。Storage public GETはR2 bindingなしで503 `storage_unavailable`となりfail closed。custom domain/DNS、user data、Supabase production writesは変更なし。
+
+## Better Auth staging UI接続（2026-09-23 JST）
+
+staging modeの認証画面を、同一workers.dev origin上のBetter Authへcookie付きHTTP接続した。ログイン後のsession refresh、server logout、stagingでのsignup/social/reset/password-setup抑止を追加。Node 22.6.0のfrontend helper 5 tests、typecheck、buildが成功し、Wrangler dry-run後に`fanmark-app-staging` version `36183ffc-bfa4-4d64-b2ff-42ea9a7392dc`をdeployした。
+
+deploy後のread-only確認でroot 200/noindex、robots全体Disallow、`/api/auth/ok` 200、cookieなしsession 200/null、catalog `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed` 200、R2 public read 503 `storage_unavailable`を確認。remote Auth user/account/session/verification/twoFactor/adminRole/mfaAssuranceは各0行。bundleにはBetter Auth endpointが入り、production Supabase URLはなく、synthetic fixture URLだけを含む。ブラウザでの資格情報を使った成功ログイン、業務API/管理認可、プロフィール・upload hookの切替は未完了。
+
+R2は引き続き未有効。Cloudflare公式開始手順はDashboard上のR2 subscription checkoutを要求する。Standardの月間無料枠はstorage 10 GB-month、Class A 1M、Class B 10Mで、egressは無料。無料枠超過分は従量課金となる（[料金](https://developers.cloudflare.com/r2/pricing/)、[開始手順](https://developers.cloudflare.com/r2/get-started/)）。checkout、支払い方法、bucket作成はこの作業では行っていない。
+
+## Versioned reference-master API deployment (2026-09-23 JST)
+
+Workers API version `3f597b51-f8b5-490c-bd0f-b2a0929de03e` was deployed to the existing `fanmark-app-staging` workers.dev URL. Wrangler dry-run showed the existing APAC D1 binding and `REFERENCE_MASTER_BACKEND=d1`; it showed no R2 binding. The deployment had no new D1 migration.
+
+Read-only HTTP verification returned 4 tiers, 4 languages, and 5 reserved patterns from release `5be91463bd0429cc9fc7a280892a80a922deb2dd9224325374171a4ce7bdc88e`, each with `Cache-Control: no-store`. Root noindex, Better Auth health, a disallowed-origin 403, and unknown-route 404 also passed. The staging frontend was rebuilt with `VITE_LANGUAGE_READ_BACKEND=worker`, the explicit staging Worker base, and `VITE_STORAGE_BACKEND=supabase`; only the language-list read moved to this Worker endpoint. No business schema, user row, Storage object, R2 subscription, production service, or public hostname changed.
+
+The deployed staging root returned 200 and referenced `/assets/index-D9g1SPCB.js`. The asset returned 200 at 2,226,607 bytes with SHA-256 `39527db73319969d89182f905da08f642a99c7a7a5bc85470addeed275dd4914`, matching the local staging build byte-for-byte. Its compiled environment values select `VITE_LANGUAGE_READ_BACKEND=worker` and retain `VITE_STORAGE_BACKEND=supabase`; the language route string is present. This verifies the static selector in the deployed bundle, not a full browser interaction or a broader app/data cutover.
+
+## App Worker admin session gate (2026-09-24 JST)
+
+After the local synthetic D1 tests and Wrangler dry-run, `fanmark-app-staging` was deployed to its existing workers.dev URL as version `73b2724e-4abd-4ab6-a0bd-8e3a66cb7760`. The deploy used the existing APAC D1 binding and made no schema migration. An unauthenticated `GET /api/admin/session` returned `401 {"error":"unauthenticated"}`. An `OPTIONS` request from the configured staging origin returned `204`, `Access-Control-Allow-Credentials: true`, and the exact allowed origin. This live check covers routing, origin/CORS configuration, and the anonymous denial only; a remotely authorized admin session was not created or tested. No Auth/business row, Storage object, R2 bucket, production service, or public domain/DNS was changed.
+
+## Existing staging D1 object-name collision (2026-09-24 JST)
+
+Read-only `sqlite_master` inspection of `fanmark-emoji-master-staging` confirmed that it already contains `emoji_master`, the Better Auth schema, and active reference-master views named `fanmark_tiers`, `languages`, and `reserved_emoji_patterns`. The source-shaped 40-table business schema includes objects with these names, while the importer and credential profile verifier require an exact target object set. Therefore this D1 cannot safely serve as the business schema/import target. No rows or secret values were queried in this inspection, and no remote schema or binding was changed.
+
+The Worker now has explicit local role selection: `FANMARK_DB` for business data, `AUTH_DB` for Better Auth, and `MASTER_DB` for emoji/reference data when `D1_TOPOLOGY=split`; missing bindings fail closed. Isolated availability fixtures use distinct local business/master D1s. At the time of this inspection the app Worker still used its previous single-D1 config; the dedicated targets and split staging deployment are recorded below.
+
+## Split D1 and R2 staging deployment (2026-09-24 JST)
+
+After confirming the account was still on Workers Free and had only the existing APAC master D1, created `fanmark-business-staging` (`d4bb0c48-f24a-491f-8693-fa393ab0b873`) and `fanmark-auth-staging` (`2116bc43-32ab-4e3e-b762-9378df88b95f`) in APAC. The business D1 remains empty. The new Auth D1 received only `0003_better_auth_core.sql` plus one `d1_migrations` ledger row using Wrangler's remote file-import path; the usual remote `migrations apply` path returned `incomplete input` and rolled back, then read-only inspection confirmed the DB still had no application tables before the file import. Final readback found 8 Auth tables, 6 MFA generation triggers, `mfaGeneration=0`, one migration record, and zero user/account/session/verification/factor/adminRole/assurance rows. The pre-existing master D1 was not modified during this split.
+
+After the user enabled R2, created empty APAC Standard buckets `fanmark-avatars-staging` and `fanmark-cover-images-staging`. Updated and deployed `fanmark-app-staging` as Worker version `2dd73277-d1db-4b4a-a7da-0a82815791de` with `D1_TOPOLOGY=split`, the three role-specific D1 bindings, both R2 bindings, and `STORAGE_BACKEND=r2`. Wrangler dry-run confirmed the binding map before deployment. Live read-only checks returned root 200/noindex, robots Disallow, auth health 200, no-cookie session `null`, anonymous admin session 401, emoji catalog 200, reference languages 200, unknown avatar/cover keys 404 (R2 binding reached), and unauthenticated upload 401.
+
+A temporary `example.invalid` Auth account was inserted only into the new Auth D1 to verify the live Storage flow. The Worker issued a session, accepted a 16-byte synthetic PNG, served the exact bytes publicly, enforced owner deletion, and returned 404 after deletion. The object was removed through the Worker API; the temporary user was deleted and final aggregate counts for all user-owned Auth tables were zero. No Supabase Storage object was read or copied. Both staging buckets are empty. Current R2 Standard allowances are 10 GB-month, 1 million Class A, 10 million Class B operations, and free egress; the one tiny synthetic upload/read/delete remained within them. Account invoice/usage dashboard was not inspected, so billing-line status is not independently confirmed. The frontend storage selector remains `supabase`; business D1 schema, real-user/Auth migration, production, and domain/DNS remain unchanged.
+
+## Supabase source-schema refresh initial attempt (superseded, 2026-09-24 JST)
+
+The global Supabase CLI profile can list the configured project, but this
+migration worktree has no local Supabase project link. A project link was
+created only in a private `/tmp` CLI directory. The subsequent schema-only
+`supabase db dump --linked --schema public` initialized the temporary
+`cli_login_postgres` role through Supabase, then failed because Docker Desktop
+was unavailable. Supabase documents this as a short-lived CLI role that expires
+within minutes; the CLI log reached the schema-dump step, but `pg_dump` never
+ran. It left only an empty 0-byte local SQL file, which was removed with the
+temporary config. No application schema or rows were read or changed. See
+[Supabase's CLI login-role note](https://supabase.com/docs/guides/troubleshooting/permission-denied-when-deleting-the-cli_login_postgres-role-808bae).
+
+At this checkpoint, the generated D1 catalog dated from 2026-09-20, so refreshing
+the source schema remained a prerequisite. This initial Docker blocker was later
+resolved; the successful refresh and current state are recorded below.
+
+## R2 confirmation and schema-refresh state at that checkpoint (superseded, 2026-09-24 JST)
+
+After the user confirmed that R2 was enabled, `wrangler r2 bucket list`
+returned `fanmark-avatars-staging` and `fanmark-cover-images-staging`.
+`wrangler deployments list --name fanmark-app-staging` showed the 100% current
+deployment at version `2dd73277-d1db-4b4a-a7da-0a82815791de`. The frontend
+storage contract suite passed 7/7 tests and the Worker D1/R2 suite passed 5/5.
+This reconfirms the staging R2 prerequisites; it does not move the frontend
+selector or user objects.
+
+At this checkpoint the first schema-refresh attempt had failed because Docker
+was unavailable. That was a point-in-time status, not a process paused for
+terminal input; the later successful refresh below supersedes it.
+
+## Successful current source-schema refresh (2026-09-24 JST)
+
+After Docker Desktop was started, `supabase db dump --linked --schema public`
+completed from a temporary Supabase CLI directory outside the repository. It
+produced a private 180,288-byte schema-only DDL file (mode `0600`, SHA-256
+`aac7f38c912b358019a9bb9f282813a10bcd3e20af09e929d1ec41a2705b42cd`). It has
+no top-level `COPY` or `INSERT` statements, so this did not export application
+rows. The refreshed public catalog reports 40 tables, one view, 58 functions,
+36 triggers, 77 RLS policies, 406 columns, 144 constraints, 139 indexes, and
+15 enum labels.
+
+The DDL was loaded into a disposable local PostgreSQL 17 container and passed
+through the schema-readiness query and D1 converter. The generated SQL parsed
+in in-memory SQLite: 40 tables and 63 indexes were present, and
+`PRAGMA foreign_key_check` returned no rows. The conversion report still has
+20 unresolved gate groups and `deployable: false`; this is a structural
+rehearsal, not approval to install the partial DDL. No business DDL was applied
+to Cloudflare; `fanmark-business-staging` remains empty. The disposable
+PostgreSQL container was stopped and removed, and private DDL/catalog/output
+artifacts remain outside the repository.
+
+Fresh CLI type generation produced a `public` TypeScript schema block matching
+the checked-in block (SHA-256
+`6253c1edcd11f95ab0fc6c66937dfc7fe03c1aaafcfa9d467a65d11e022bfb31`). Supabase
+migration-history comparison found no remote-only IDs; these three repository
+migrations remain local-only and were not part of the current remote schema:
+`20260921090000_add_stripe_receipt_foundation.sql`,
+`20260921100000_add_stripe_dispatch_leases.sql`, and
+`20260921110000_add_stripe_invoice_projection.sql`.
+
+The schema-only DDL refresh is complete; no terminal input is currently
+required. At this 2026-09-24 checkpoint, the later-added database-locale
+catalog field still needed a fresh read-only source query before it could
+inform the three regex checks. That query was completed in the 2026-09-25
+catalog refresh recorded in [schema generator](schema-generator.md); this
+historical checkpoint is not a current input blocker. The remaining gates are
+resolving semantic/operation parity and validating the synthetic business API
+before installing any schema in business staging.
+
+## Current Cloudflare staging readback after Wrangler reauthorization (2026-09-24 JST)
+
+Wrangler initially returned Cloudflare authentication error 10000 during the
+current read-only check. The existing `fanmark.id` Cloudflare account then
+reauthorized Wrangler through its OAuth consent page, and `wrangler login`
+completed successfully. This refreshed the local CLI authorization only.
+
+The subsequent account-wide D1 inventory listed the existing
+`fanmark-emoji-master-staging`, `fanmark-auth-staging`, and
+`fanmark-business-staging` databases. A remote read-only `sqlite_master` query
+against `fanmark-business-staging` returned only Cloudflare's internal
+`_cf_KV` table; no application business schema is installed. R2 inventory
+listed the two staging buckets `fanmark-avatars-staging` and
+`fanmark-cover-images-staging`.
+
+At that checkpoint the 100% app Worker deployment was version
+`af25a447-01f2-4fee-a273-21cace0522ca`. The latest staging deployment and
+read-only verification are recorded below.
+
+## Latest staging app Worker deployment (2026-09-24 JST)
+
+After the local build, API tests, CI-isolation check, and Wrangler dry-run
+passed, `fanmark-app-staging` was deployed to its existing workers.dev URL as
+version `6349616f-5634-4d53-9089-e606ca0ac9c9`. The dry-run confirmed the split
+business/Auth/master D1 bindings, both R2 buckets, Static Assets, synthetic
+Supabase configuration, and `STAGING_NO_INDEX=true`. No D1 migrations ran and
+no D1 or R2 writes were made by this deployment.
+
+Read-only HTTP checks returned root 200 with `noindex, nofollow`, robots
+`Disallow: /`, sitemap 404, Better Auth health 200, no-cookie session `null`,
+anonymous admin session 401, emoji catalog 200, and all three reference-master
+APIs 200. Unknown API paths returned 404. A direct remote `sqlite_master`
+query against `fanmark-business-staging` returned no application tables. The
+deployment does not move the frontend's default auth, public-read, verified
+access, business-data, or Storage selectors. Production app, production
+Supabase, user data, and public DNS were not changed.
+
+## Versioned tier reader in the staging admin UI (2026-09-24 JST)
+
+The Cloudflare staging build sets `VITE_REFERENCE_MASTER_READ_BACKEND=worker`
+for the extension-coupon tier projection. `AdminExtensionCoupons` reads the
+four active tier options from `GET /api/reference-masters/fanmark_tiers`. This
+call sends no cookies, requires `no-store`, validates the release-bound DTO,
+and rejects incomplete or duplicate tiers. If that read fails, the page
+disables creation of a new coupon instead of using hard-coded tier values.
+Coupon writes and editable tier-day settings remain on Supabase.
+
+After the build and dry-run, the app Worker was deployed as version
+`82ce7520-1977-470a-89fd-c875c5ef116c`. Post-deploy read-only verification
+returned root 200/noindex, the deployed JS asset 200 containing the tier route,
+and the tier API 200 with levels 1–4 and `Cache-Control: no-store`. No D1 or
+R2 write was made; no user data, production service, or public DNS changed.
+
+## Cloudflare staging admin authentication connection (2026-09-24 JST)
+
+The `cloudflare-staging` frontend mode now uses Better Auth for the admin sign-in path and `GET /api/admin/session` for the authoritative role/MFA decision. The screen handles Better Auth's TOTP sign-in challenge and first-time enrollment, including its returned recovery codes. The Worker distinguishes missing/unverified TOTP setup (`mfa_enrollment_required`) from a verified factor without valid same-session assurance (`mfa_required`). Supabase-mode admin login and MFA remain unchanged; admin CRUD and business-data authorization are separate work.
+
+Node 22.6.0 verification passed: 9 Better Auth client tests, 9 Worker Auth/D1 tests, frontend and Worker typechecks, targeted ESLint, CI-isolation check, Cloudflare staging build, and Wrangler deploy dry-run. `fanmark-app-staging` was deployed as version `161de18f-44ea-4016-9267-39688619df9b`. Read-only HTTP smoke returned root 200/noindex, the app JS 200 with the new admin-auth flow, anonymous `/api/admin/session` 401, and no-cookie `/api/auth/get-session` 200/null. A Wrangler read-only D1 migration-history query returned Cloudflare API 7403; deployment itself succeeded. The deploy uploaded Worker/assets only and made no D1/R2 writes. The remote synthetic-admin login/TOTP flow has not been exercised. No real Auth/user data, production service, or domain/DNS changed.
+
+## Better Auth TOTP session-response correction and staging redeploy (2026-09-24 JST)
+
+The installed Better Auth `verify-totp` endpoint was observed returning a
+session-shaped `{token,user}` response after first-time enrollment, while the client accepted
+only `{status:true}`. Updated the client to accept either observed response
+shape. Added a local Worker/D1 integration case that enrolls a synthetic user,
+verifies a generated TOTP, follows the rotated session cookie, and confirms
+the admin gate only opens with same-session MFA assurance.
+
+Node 22.6.0 checks passed: 10 frontend Better Auth tests, 10 Worker Auth/D1
+tests, 79 migration-data tests, 41 contracts across public/verified access,
+storage, reference-master, language, and Better Auth clients, frontend and
+Worker typechecks, targeted ESLint, and the Cloudflare staging build. The first
+full-repository ESLint invocation raced the concurrent Vite build's temporary
+config file; the changed files passed a clean targeted run. Wrangler dry-run
+confirmed split business/Auth/master D1 and both R2 bindings. `fanmark-app-staging`
+was redeployed as version `93211a35-e458-433d-aeb6-913bdbc2d507`; the deployed
+JS contains the corrected client. Read-only live checks returned root 200,
+robots `Disallow: /`, Auth health 200, anonymous session `null`, admin session
+401, emoji catalog 200, language and tier masters 200, and missing avatar and
+cover objects 404 from their bound R2 buckets. An origin-allowed anonymous
+upload returned 401. Business D1 still contains no application table (only
+Cloudflare `_cf_KV`); separate Auth reads found zero rows in user, account,
+session, verification, twoFactor, adminRole, and mfaAssurance. No D1/R2 write,
+real user data, production service, or domain/DNS change occurred. The remote
+synthetic-admin TOTP sequence and admin CRUD/business authorization remain
+unverified.
+
+## Live synthetic admin TOTP rehearsal (2026-09-24 JST)
+
+Added `workers/api/test/staging-admin-totp-smoke.mjs`, a remote test that
+refuses to run without both `--run-live-staging-write` and the exact
+`--database=fanmark-auth-staging` confirmation. It reads the checked-in staging
+Worker config and asserts the dedicated Auth D1 ID, workers.dev-only Worker,
+Better Auth mode, and no-index flag before touching remote state. It also
+requires all seven user-owned Auth tables to be empty before it starts.
+
+The test created a random `example.invalid` identity and credential directly in
+the dedicated staging Auth D1, then exercised the deployed API end to end:
+email/password sign-in, `mfa_enrollment_required`, TOTP enrollment, verification,
+rotated cookie, session refresh, and same-session `/api/admin/session`
+authorization. It read back the persisted assurance for that exact session.
+The test deleted its synthetic assurance, role, factor, session, verification,
+account, and user rows, then confirmed every user-owned Auth table was empty
+and the deleted session returned `null`. The random password, hash, TOTP secret,
+and recovery codes were not logged or retained.
+
+An independent remote read found `mfaGeneration=2`, advanced from 0 by the
+synthetic factor insert and delete. The counter is monotonic operational state
+and was intentionally not reset. The test does not cover MFA enrollment for a
+real admin, account recovery operations, or admin CRUD/business authorization.
+No business D1, R2 object, production service, or domain/DNS was changed.
+
+## Emoji master admin draft route and staging deployment (2026-09-24 JST)
+
+Added `0005_emoji_master_admin_guards.sql` to Master D1 and connected the
+Cloudflare staging `AdminEmojiMaster` screen to `/api/admin/emoji-master`.
+Every request checks Better Auth session, admin role, one current verified
+factor, and unexpired assurance bound to that same session and factor. The API
+updates only canonical `emoji_master`; ready release records remain immutable.
+CSV/JSON import preserves existing UUIDs and runs in batches of at most 100.
+Published identity changes and deletions fail closed. The UI labels changes as
+unpublished draft work and disables deletion.
+
+The staging Vite build used a fresh empty env directory and explicit synthetic
+Supabase/public Worker settings; it did not load `.env.cloudflare-staging`.
+Local verification passed 11 Worker Auth/D1 tests, 4 emoji-admin client API
+tests, the Worker suite (30 tests), 79 migration-data tests, frontend and
+Worker typechecks, targeted ESLint, and Wrangler deploy dry-run. The remote
+Master D1 had 3,944 canonical rows and active release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`; migration
+`0005` applied successfully. Readback found 3,944 active staging rows, six
+migrations, both identity triggers, and no pending migrations.
+
+`fanmark-app-staging` was deployed as version
+`1884dc0f-7419-4462-99f3-11ff77ac41b4` on its workers.dev hostname. Live
+read-only checks returned root 200, robots `Disallow: /`, Auth health 200,
+anonymous `/api/admin/session` and `/api/admin/emoji-master` 401, emoji catalog
+200 at the same active version, and language master 200. A guarded live smoke
+then used one temporary synthetic admin identity to enroll TOTP, verify the
+session, edit a protected canonical record's metadata, reject its deletion,
+restore the original metadata, and compare the active public catalog record
+before and after. Final D1 readback found canonical 3,944, active release 3,944,
+the same active version, six migrations, both guards, and no stranded smoke
+edit. All user-owned Auth tables returned to zero; `mfaGeneration=4` was
+preserved. No user-owned data, R2 objects, production app, or domain/DNS was
+changed. Other admin CRUD, business DDL/authorization, and CPU plan fit remain
+open.
+
+## Independent staging API recheck (2026-09-24 JST)
+
+Re-read the current Wrangler deployment list and confirmed that 100% traffic
+still targets app Worker version
+`1884dc0f-7419-4462-99f3-11ff77ac41b4`. Read-only HTTP requests to all three
+reference-master routes returned 200 with `Cache-Control: no-store` and the
+same release version
+`5be91463bd0429cc9fc7a280892a80a922deb2dd9224325374171a4ce7bdc88e`: 4 tiers,
+4 languages, and 5 reserved patterns. An R2 public read for a valid but absent
+synthetic key returned 404 `object_not_found`; an origin-allowed upload with no
+session returned 401 `unauthorized` before reaching the object-write path. No
+D1 or R2 write was performed. This recheck does not verify the frontend's
+browser flow or move Storage/profile data.
+
+## Exact positive-decimal constraint in generated D1 schema (2026-09-24 JST)
+
+The schema converter now translates the source
+`fanmark_lottery_entries.lottery_probability > 0` CHECK only when the source
+column is a non-null unconstrained `numeric`. The D1 CHECK validates the
+canonical decimal-text shape and positive value using string operations; it
+does not cast to REAL or round. Nullable columns and other numeric expressions
+remain gated. The exact-decimal importer gate remains blocking until the
+complete importer and weighted-selection operation use the same representation.
+
+The synthetic converter suite passed five tests, including positive values
+smaller than JavaScript floating-point range, large exact values, zero and
+negative rejection, malformed text, embedded NUL, source default, and refusal
+to translate the nullable form. The full current private schema catalog was
+regenerated without exposing its contents: 40 tables, 31 translated CHECKs,
+19 unresolved gate groups, and `deployable: false`. This was the pre-descriptor
+conversion report. Schema-conversion version 2 now adds a credential-transform
+gate; regenerate from the refreshed private catalog before treating that gate
+count as current. Its generated SQL parsed in
+SQLite with 40 tables and 63 explicit indexes; `PRAGMA foreign_key_check`
+returned no rows and `PRAGMA integrity_check` returned `ok`. The migration-data
+suite passed 80 tests, targeted ESLint and syntax checks passed, and
+`git diff --check` passed. At this pre-bootstrap checkpoint, a read-only Wrangler query against the exact
+`fanmark-business-staging` database ID returned only Cloudflare's internal
+`_cf_KV` table (`changes: 0`, `rows_written: 0`). No generated business DDL had
+yet been applied; the later structural bootstrap is documented below.
+
+## R2-backed staging Worker and extension-price schema (2026-09-25 JST)
+
+Cloudflare readback confirmed the existing APAC buckets
+`fanmark-avatars-staging` and `fanmark-cover-images-staging`. Local Miniflare
+Storage/R2 integration passed 5 tests and the app Worker dry-run showed both
+bucket bindings. Applied `0006_reference_master_extension_prices.sql` to the
+intended Master D1; its migration ledger now contains `0000`–`0006`, while the
+active reference release remains
+`5be91463bd0429cc9fc7a280892a80a922deb2dd9224325374171a4ce7bdc88e` at
+generation 1. The new extension-price view currently returns zero rows because
+its source snapshot has not yet been exported or activated.
+
+Deployed `fanmark-app-staging` as version
+`1d1bae79-5793-4341-9b1f-540a55376695` on workers.dev with both R2 bindings and
+`STORAGE_BACKEND=r2`. Read-only smoke returned Auth health 200, root 200 with
+`X-Robots-Tag: noindex, nofollow`, and a missing synthetic public object as
+404 `object_not_found`. An unauthenticated upload returned 401 `unauthorized`
+before object write. No object was uploaded, no Supabase data was copied, and
+production or domain/DNS settings were unchanged. This verifies the staging
+Worker's R2 route and binding, not profile metadata integration or object
+migration.
+
+Node 22.6.0 checks passed: reference-release integration (5), reference-master
+Worker API (3), availability against reference masters (3), R2 Worker API (5),
+Worker typecheck, and migration script syntax checks. Existing users and
+Supabase Auth/Storage data were not read or migrated in this step.
+
+Post-deploy API readback returned the existing languages route as 200 with four
+rows and the unchanged release version. The new extension-price route returns
+503 `reference_master_unavailable` while its active view has zero rows; no
+frontend selector calls it yet. This is the expected fail-closed state pending
+the source snapshot and a complete release promotion.
+
+## Local scheduled license finalization proof (2026-09-25 JST)
+
+The local source-shaped lifecycle now also finalizes overdue grace licenses
+with no pending lottery entry. It atomically removes the four access-config
+projections, advances access generation once, and writes the expiry audit,
+notification outbox event, and durable finalization journal. A delayed-cron
+integration check confirms a just-created but already-overdue grace state is
+left for the next scheduled tick. The full synthetic 40-table source-profile
+suite passed 20 checks, the lifecycle schema suite passed 9/9, the scheduler
+contract passed 8/8, and Worker typecheck, targeted ESLint, and diff checks
+passed.
+
+This was local-only work: no Cloudflare D1 schema or Cron configuration was
+changed. Pending lottery entries are deferred until lottery decision/history,
+new-license issuance, and notifications can be committed under the same
+reviewed transition. Business staging remains without application schema and
+data; no Auth/Storage user data, production service, or DNS/domain setting was
+changed during this step.
+
+## Reference master refresh and schema inventory (2026-09-25 JST)
+
+Supabase CLI `db query --linked` ran two read-only catalog queries. The first
+refreshed the private application schema metadata at 40 tables, 406 columns,
+144 constraints, 139 indexes, and 15 enum labels. The version-2 converter
+generated 40 tables but still reported 20 unresolved gate groups and
+`deployable: false`. The behavior query returned aggregate object inventory
+for one view, 58 functions, 36 non-internal public triggers, and 77 RLS
+policies. The schema-only DDL artifact contained no trigger DDL; the direct
+catalog query resolved the earlier 36-trigger inventory discrepancy. These
+queries read catalogs, not application rows.
+
+A separate read-only query selected explicit columns from only
+`fanmark_tiers`, `languages`, `reserved_emoji_patterns`, and
+`fanmark_tier_extension_prices`. Its private mode-0600 snapshot has SHA-256
+`49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`; the
+source rows are not in the repository. The snapshot has 4, 4, 5, and 16 rows
+respectively. The 16 extension-price rows are active, span tiers 1–4 and
+1/2/3/6-month terms, and have no duplicate tier/term pairs. Stripe ID strings
+passed format checks; their corresponding Stripe objects were not checked.
+
+The account/database-guarded remote helper staged the complete release in
+`fanmark-emoji-master-staging`, verified each staged table and active view
+against the private snapshot, and promoted it to generation 2. The active
+release is
+`49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`. All
+seven user-owned Auth tables remained empty and the previous emoji pointer and
+activation history were unchanged. Live HTTP reads for all four
+`/api/reference-masters/{name}` routes returned 200 with `Cache-Control:
+no-store`; the extension-price response had 16 items and omitted Stripe IDs.
+The admin editor and checkout remain on Supabase, so this is master staging and
+read-API verification rather than a frontend/payment cutover. No user rows,
+Storage objects, production service, or domain/DNS settings changed.
+
+## Business D1 structural readback (2026-09-25 JST)
+
+A fresh linked Supabase catalog query was run using the repository's
+`schema-readiness.sql` and stored privately with mode 0600. It again returned
+40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 1 view,
+58 functions, 36 non-internal triggers, and 77 RLS policies. The converter
+reproduced 20 unresolved gates: nine row-conversion groups (226 column
+locations) and eleven schema/operation groups. The strict `deployable` result
+remains false.
+
+A read-only query of `fanmark-business-staging.sqlite_schema` returned only
+Cloudflare's internal `_cf_KV` table; no application tables or business data
+are present. No schema or rows were written. Gate categories and sequencing
+limits are in [schema generator](schema-generator.md).
+
+## Current app Worker and Static Assets staging deployment (2026-09-25 JST)
+
+Node 22.6.0 rebuilt the current staging SPA and Wrangler dry-run resolved the
+split business/Auth/master D1 bindings and the two R2 staging buckets. The
+current `fanmark-app-staging` Worker was deployed to version
+`77668344-429b-43f4-81e5-0d2f8b3c74ef`; three changed static assets were
+uploaded. The Better Auth secret name is present in the Worker secret list; its
+value was not read. No D1 migration or R2 object operation was part of deploy.
+
+Live read-only HTTP checks returned root 200 with `x-robots-tag: noindex,
+nofollow`, a robots file disallowing crawlers, `/api/auth/ok` 200,
+`/api/auth/get-session` 200 with `null`, and `/api/admin/session` 401. All four
+`/api/reference-masters/{name}` endpoints returned 200, `Cache-Control:
+no-store`, and respectively 4 tiers, 4 languages, 5 reserved patterns, and
+16 extension-price rows at release
+`49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`. The
+extension-price DTO remains public-safe and excludes Stripe IDs. An
+unapproved-origin master request returned 403.
+
+SPA and PWA readback also passed: `/plans` and a synthetic `/a/:shortId`
+navigation returned the SPA with 200; `/manifest.webmanifest`, `/sw.js`,
+`/favicon.ico`, and `/favicon.png` returned 200. The generated service worker
+denies `/api/*` navigation fallback, missing JS assets return 404 rather than
+HTML, unknown API routes return JSON 404, `/sitemap.xml` stays 404, and
+`/robots.txt` contains `Disallow: /`.
+
+The deployed profile, owned-fanmark, and notification routes returned their
+bounded `503 profile_unavailable`, `503 owned_fanmarks_unavailable`, and
+`503 notifications_unavailable` responses with `no-store`; their D1 backend
+selectors are intentionally unset because business D1 still contains only
+Cloudflare's internal `_cf_KV` object. A fresh read-only Auth D1 aggregate
+returned zero rows for user, account, session, verification, two-factor,
+admin-role, and MFA-assurance tables. This deployment and smoke made no D1 or
+R2 writes, imported no user data, and changed neither production services nor
+public DNS/domain settings.
+
+Verification for this deployment passed root/Worker typechecks, CI isolation,
+the staging build, Wrangler dry-run, 86 migration-data tests, 37 focused Worker
+integration tests, and 69 frontend client tests. The SPA build still reports
+the existing large main-chunk warning. These checks do not close the 20 source
+schema/operation gates, prove Cloudflare CPU-plan fit, or constitute the full
+synthetic end-to-end application rehearsal.
+
+## Signed extension-pricing service route (2026-09-25 JST)
+
+Rebuilt the current app staging bundle and passed Wrangler deploy dry-run with
+split business/Auth/master D1 bindings and both enabled R2 buckets. Deployed
+`fanmark-app-staging` as code/assets version
+`763c798c-8e37-456b-a720-54f75be1270b`; three static assets changed. Then set
+the random staging-only `REFERENCE_MASTER_SERVICE_SECRET` as a Worker secret,
+active secret-change version `04c062e3-15a2-40d6-aef5-4cce5340879e`. The secret
+value is retained only outside the repository in a mode-0600 local file and
+Cloudflare secret storage; it was not read back or printed.
+
+The live Edge Function helper signed requests to the private route and read
+tier 2 / one month from active D1 release
+`49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`. Checkout
+mode returned a format-valid Stripe Price ID to process memory only; the
+price-only mode returned `null` for the ID. Neither call contacted Stripe.
+Public extension prices returned HTTP 200 with 16 rows and no Stripe IDs; the
+same private route rejected an unsigned request with 401. Root remained 200
+with `noindex, nofollow`, and Auth health remained 200. The Cloudflare secret
+exists, but no Supabase Edge Function secret or price/admin/frontend backend
+selector is configured, so app pricing and checkout remain on Supabase.
+
+Local validation passed: service-route unit tests 5/5, HMAC helper-to-Worker
+tests 4/4, real Miniflare D1 reference-master suite 6/6, frontend master API
+tests 7/7, frontend/Worker typechecks, targeted ESLint (one hook dependency
+warning), `check:ci`, staging build, Wrangler dry-run, and Deno checks for both
+modified Edge Functions. No D1 write/schema migration, R2 object operation,
+user data, Stripe transaction, production service, or domain/DNS state changed.
+
+## Schema converter v4 current-catalog verification (2026-09-25 JST)
+
+The latest private read-only PostgreSQL catalog was reprocessed through schema
+converter v4. Catalog counts remained 40 tables, 406 columns, 144 constraints,
+139 indexes, 15 enum labels, one view, 58 functions, 36 non-internal triggers,
+and 77 RLS policies. The source locale is `en_US.UTF-8`; consequently the three
+known regex CHECKs remain gated, since the current SQLite equivalents are
+intentionally limited to the proven `C`/`C` case. The report remains at 18
+unresolved gate groups and `deployable: false`.
+
+The v4 DDL parsed in isolated SQLite with 40 tables, 66 indexes, zero foreign
+key violations, and `integrity_check=ok`. At this pre-bootstrap checkpoint,
+the catalog, DDL, and gate report remained in `/private/tmp` with mode 0600 and
+nothing had yet been applied to business D1; see the subsequent bootstrap below.
+`npm run test:migration-data` passed 90/90 and
+`npm --prefix workers/api run test:d1-import` passed 13/13. Snapshot format
+remains version 3 and its schema-conversion identity is now version 4.
+
+## Business-staging structural schema bootstrap (2026-09-25 JST)
+
+Wrangler OAuth was refreshed for the already-authorized `fanmark.id` Cloudflare
+account after a read-only D1 request returned authentication error 10000. The
+business target was selected explicitly as `fanmark-business-staging`
+(`d4bb0c48-f24a-491f-8693-fa393ab0b873`), not the emoji-master database open in
+the browser. A read-only `sqlite_schema` query returned only `_cf_KV` before
+the write.
+
+The v4 structural SQL was placed in the business-only
+`workers/api/migrations-business` directory and applied with
+`wrangler d1 migrations apply --remote`. Local Wrangler rehearsal and remote
+application each reported all 108 statements successful. Remote readback found
+40 application tables and 66 indexes (42 total tables including `_cf_KV` and
+`d1_migrations`), no pending migration, and zero rows from
+`PRAGMA foreign_key_check`. The migration contains no INSERT, UPDATE, DELETE,
+REPLACE, or COPY statements. No Worker redeploy or frontend selector change
+occurred.
+
+This is empty-schema scaffolding only. The converter report remains
+`deployable: false` with 18 unresolved gates; behavior/security parity and all
+data-import checks remain open. No Supabase rows, Auth records, R2 objects,
+production resources, or domain/DNS settings were changed.
+
+
+## Latest app Worker and Static Assets staging deployment (2026-09-25 JST)
+
+After applying the empty 40-table/66-index business structural baseline, rebuilt
+the staging SPA with Node 22.6.0 and passed Wrangler dry-run. Deployed
+`fanmark-app-staging` to workers.dev as version
+`6258c5cb-4903-439f-a61f-49e8a6457393`; four changed Static Assets were uploaded.
+The dry-run binding map resolved `FANMARK_DB`, `AUTH_DB`, `MASTER_DB`, both R2
+buckets, and `ASSETS`.
+
+Read-only live checks returned root 200 with `x-robots-tag: noindex, nofollow`,
+`robots.txt` 200 with `Disallow: /`, `sitemap.xml` 404, and `/api/auth/ok` 200.
+All four reference-master endpoints returned 200 with `Cache-Control: no-store`
+and 4/4/5/16 rows at release
+`49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`; no Stripe
+ID fields were present. The unauthenticated profile and public fanmark routes
+returned 503 `profile_unavailable` and `public_access_unavailable`, both
+`no-store`, as their business selectors remain disabled. The deployed JS and
+CSS each returned 200 and matched local build bytes: JS SHA-256
+`f903e908a280a88f3791e3f38c41a496eafd5f1be8eab46df18b164c80a8ac9e`, CSS
+SHA-256 `d30acbd0ef54e1e4e5415f1b22ee91d0868c3b6a4e42e47a250ea5c196103cfb`.
+
+Validation passed on Node 22.6.0: migration-data 90/90; frontend/Worker
+typechecks; default Worker suite 26/26 and verified-access 9/9; dedicated
+synthetic split-D1 profile 5/5, owned-fanmarks 4/4, availability/reference
+master 3/3, scheduled expiry 8/8, and public-access client 7/7; staging build;
+Wrangler dry-run; and `git diff --check`. The Worker test configuration now
+excludes the profile integration file from the default suite so it runs with
+its split-D1 test configuration. The Vite build still reports a 2.17 MB main
+JS chunk. No database write/schema migration, R2 object operation, Supabase
+write, production change, or domain/DNS change occurred during this deploy and
+smoke. This does not establish user-data, Auth, or full application parity; the
+schema converter still reports 18 blocking groups and `deployable: false`.
+
+
+## Recent fanmarks and availability on split staging D1 (2026-09-25 JST)
+
+Added `RECENT_FANMARKS_BACKEND=d1` and `AVAILABILITY_BACKEND=d1` to the
+workers.dev-only app config. The staging SPA was built with
+`VITE_FANMARK_API_BASE_URL=https://fanmark-app-staging.fanmark-id.workers.dev`;
+the compiled JS contains that origin. Recent fanmarks now uses the business D1
+query, and availability uses the split business and master D1 bindings.
+Deployment version is `c9d51d92-3b7a-49e9-b152-b210d24a36f1`.
+
+For the recent-route canary, three synthetic fanmarks/licenses (two active,
+one grace) were inserted into `fanmark-business-staging`. The endpoint returned
+only the two active rows in descending license-created order, with expected
+license/fanmark IDs, display emoji, and short IDs; limit 1/2, `no-store`, and
+invalid limit 400 were verified. The script removed the three licenses and
+three fanmarks in `finally`; a remote readback found zero rows for those IDs,
+and subsequent total counts for `fanmarks` and `fanmark_licenses` were both
+zero. A final recent-list read returned `items: []`.
+
+A live availability POST using a canonical emoji ID from the public active
+master release returned HTTP 200, `available: true`, tier 4, numeric price,
+`no-store`, and the exact staging `Access-Control-Allow-Origin`. The frontend
+uses the Worker for both recent and availability calls; client tests prove no
+credential forwarding and no Supabase fallback after explicit selection. The
+public access, registration, and owner-write selectors remain off. All seven
+Auth user-owned tables read back zero. No persistent synthetic rows, user data,
+Supabase writes, R2 operations, production changes, or DNS/domain changes
+remain from this staging validation.
+
+
+## Public access routes on split staging D1 (2026-09-25 JST)
+
+The public-access client was built with
+`VITE_PUBLIC_ACCESS_READ_BACKEND=worker`; staging Worker config selects
+`PUBLIC_ACCESS_BACKEND=d1`. A local split-D1 test exposed that emoji
+normalization still queried `FANMARK_DB`. It now selects the master D1 role,
+while public fanmark/license/config/profile projections stay on the business
+D1. The 11-case Worker suite, Worker typecheck, and targeted ESLint passed.
+Staging build and Wrangler dry-run showed the split business/Auth/master D1
+bindings and both R2 buckets; deployment updated `fanmark-app-staging` to
+`3733c771-2903-40cd-8bdc-5a0f94412c82`.
+
+The business D1 had zero `emoji_master`, `fanmarks`, `fanmark_licenses`, and
+`fanmark_profiles` rows before the canary. Four temporary synthetic rows (one
+fanmark, license, basic config, and published profile) referenced a canonical
+emoji present only in the separate master D1. The short-ID, emoji-ID, and
+public-profile Worker routes each returned HTTP 200 with
+`Cache-Control: no-store`; the public DTO contained only the expected
+synthetic projection. The four rows were deleted, and exact-ID readback
+returned zero for all four tables. The business D1 remains schema-only and
+has zero emoji-master rows.
+
+The public read selector is active on the workers.dev staging app only. The
+password-verification selector, access analytics, owner/history details,
+production app, real data, and domain/DNS remain on their existing paths.
+No Supabase writes, R2 operations, or persistent synthetic rows resulted from
+this check. This validates the live API projection, not a browser acceptance
+pass or full production data parity.
+
+Node 22.6.0 checks passed: recent client 9, recent D1 6, availability client
+6, availability D1 8, split reference-master availability 3, frontend/Worker
+typechecks, migration-data 90, staging build, Wrangler dry-run, and the broader
+Worker/profile/owned-fanmark/scheduler suites listed in `HANDOFF.md`. This
+does not establish complete app or user-data parity.
+
+## Authenticated owner APIs on staging (2026-09-25 JST)
+
+The workers.dev app config selects `PROFILE_BACKEND`,
+`OWNED_FANMARKS_BACKEND`, `FANMARK_PROFILE_BACKEND`, `FAVORITES_BACKEND`,
+and `NOTIFICATIONS_BACKEND` as `d1`. The normal
+`build:cloudflare-staging` command now sets each matching Vite selector to
+`worker`. Wrangler dry-run resolved the business, Auth, and master D1
+databases plus both R2 buckets. Deployment updated `fanmark-app-staging` to
+version `70cb8111-2a25-4e43-8662-e59dfd8add8d`.
+
+A temporary verified Better Auth user was inserted directly into the staging
+Auth D1 using a generated password hash and signed in through the deployed
+Worker. The profile route rejected an unauthenticated request with 401. Using
+the authenticated cookie, live GET/PATCH checks passed for
+`/api/me/profile` and `/api/me/fanmarks/{id}/profile`;
+`/api/me/fanmarks` returned only the synthetic user's owned fanmark. Favorite
+add/list/remove passed using three canonical emoji IDs found only in Master
+D1. Notification list and unread count returned the temporary delivered row,
+and the read-one endpoint changed its state and reduced the unread count to
+zero. The first synthetic credential fixture used email as Better Auth
+`accountId` and received 401; its cleanup was verified before rerunning with
+`accountId` equal to the synthetic user ID.
+
+The successful canary removed the generated Auth user, credential account and
+session; business profile, config, license, fanmark and notification rows; and
+favorite/event/discovery rows. Remote exact-ID and normalized-emoji composite
+readback showed zero leftovers. Seven local client/Worker suites passed 31/31.
+The canary used no real user data and did not call Supabase writes, Stripe,
+production routes, or custom-domain/DNS. Notification generation/delivery,
+broader settings saves, full schema/operation/security parity, and production
+cutover remain unverified.
+
+## R2 image upload selector on staging (2026-09-25 JST)
+
+The repeatable `build:cloudflare-staging` command now selects
+`VITE_STORAGE_BACKEND=r2` plus the five owner API frontend selectors. The
+app Worker keeps `STORAGE_BACKEND=r2` and the two bound APAC buckets. After
+build and Wrangler dry-run, deploying the updated SPA produced app Worker
+version `3246cbf2-642f-47f2-a107-0a8a116a8f8a`.
+
+A temporary verified Better Auth account uploaded a valid 1×1 PNG through
+`POST /api/storage/object/avatars`. Public GET returned the exact uploaded
+bytes with `nosniff`; authenticated owner DELETE returned 204, and the
+subsequent public GET returned 404. The object was deleted before the Auth
+session/user were removed. D1 canary readback returned zero; the object key
+also returned 404 after cleanup. No legacy Supabase objects were copied.
+Storage Worker tests passed 5/5, client tests 7/7, Worker typecheck, staging
+build, and Wrangler dry-run passed. The production frontend remains on the
+Supabase default. Full profile metadata/settings cutover and object migration
+are not verified.
+
+## Current staging owner-settings and protected-access verification (2026-09-25 JST)
+
+The current `fanmark-app-staging` deployment is version
+`07f445cd-cedb-4d30-b40f-b3c9be24f545` at 100% on its workers.dev hostname.
+Worker settings `FANMARK_SETTINGS_BACKEND=d1` and
+`VERIFIED_ACCESS_BACKEND=d1`, with the matching staging frontend selectors, are
+active. Business D1 migration history reads `0000` through `0004`; the source
+schema and lifecycle, credential-transform, and verified-access extensions are
+present. The staging smoke preflight confirmed all 40 source business tables
+had zero rows. A read-only Auth aggregate after cleanup returned zero users,
+accounts, sessions, verifications, two-factor records, admin roles, and MFA
+assurances.
+
+The guarded `staging-owner-settings-smoke.mjs` created only a synthetic
+`example.invalid` account and business records, signed into Better Auth, and
+exercised the deployed Worker. Unauthenticated settings returned 401;
+authenticated settings GET/PATCH returned 200/200; wrong password returned
+401; correct password verification returned 204; protected content returned
+200. Runtime evidence matched the password generation and no password or hash
+was returned. Cleanup read back zero Auth users/accounts/sessions and zero
+canary fanmark, license, incarnation, runtime-evidence, proof, reservation, and
+access-audit rows. No real rows, Supabase writes, production routes, R2 objects,
+or domain/DNS settings were used or changed in this smoke.
+
+## Remote emoji master promotion/rollback rehearsal (2026-09-25 JST)
+
+The prior active emoji release was the only successfully activated release, so
+a rollback target did not yet exist. A verified staging-only 3,944-row release
+was built from that artifact with a single temporary keyword marker; every
+UUID/emoji/codepoint identity remained unchanged. The release was staged into
+`fanmark-emoji-master-staging` as `ready` without changing canonical
+`emoji_master` or the active pointer. Its guarded promotion succeeded at
+generation 2, then a guarded rollback to the previously active immutable
+artifact succeeded at generation 3. Both runners used the exact expected
+active version and read back the activation pointer/history; the account and
+database ID guards passed and Better Auth user-owned tables were empty.
+
+Readback confirms the original version
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed` is active
+at generation 3. The staging API returns HTTP 200, no-store, 3,944 rows, and
+that same version; the temporary marker is absent from its active page. The
+test release remains ready but inactive because activation history is
+immutable. Canonical master count remains 3,944. Updating
+`wrangler.emoji-staging.jsonc` to include migrations `0000` through `0006`
+resolved the activation runner's config mismatch; its remote migration check
+reports no pending migrations. The local migration-data suite passes 93/93,
+the emoji release Miniflare suite passes 7/7, CI isolation passes, and
+`git diff --check` passes. No user data, production service, or domain/DNS state
+changed.
+
+## Supabase public schema refresh and D1 return API staging canary (2026-09-25 JST)
+
+The migration worktree's Supabase CLI was authenticated but did not have a
+linked project reference. Linking that isolated worktree to `fanmark.id` needed
+no terminal response. `supabase db dump --linked --schema public` then completed
+to `/tmp/fanmark-cloudflare-latest-public-schema.sql`; the CLI reported
+"Dumping schemas" and the resulting file contains no `COPY` or `INSERT`
+statements. The dump has 40 public tables, one view, 58 functions, 77 policies,
+36 triggers, and 70 indexes. Its SHA-256 is
+`aac7f38c912b358019a9bb9f282813a10bcd3e20af09e929d1ec41a2705b42cd`.
+
+The checked-in business D1 base migration has the same 40 table names and
+column names as this live public schema. This is name-presence parity only; it
+does not establish matching types, defaults, constraints, indexes, policies,
+trigger behavior, or function behavior. No row data was dumped or written to
+Supabase. Cloudflare business D1 writes for the canary below were synthetic and
+removed after readback.
+
+The single-fanmark D1 return API is guarded by `FANMARK_RETURN_BACKEND=d1`; the
+Cloudflare staging build selects the frontend API. Worker and client tests
+pass 12/12 and 4/4, plus Worker typecheck and staging frontend build. Staging
+Worker version `83629969-f48f-4f68-beeb-7b2ef47724c6` is active at 100%. Live
+unauthenticated POST returned 401 and GET returned 405. A Better Auth synthetic
+owner's active transfer code correctly blocked return with 400; after removing
+that synthetic code, return returned 200 and moved the license to grace. Audit,
+owner-notification, and favorite-notification event payloads were read back.
+Cleanup confirmed zero synthetic fanmark, license, transfer, favorite,
+discovery, audit, event, Auth user, account, and session rows. Bulk returns and
+notification delivery remain on Supabase.
+
+## Fanmark registration D1 staging canary (2026-09-25 JST)
+
+`fanmark-app-staging` version `29dd848d-604c-4405-9bf5-58aff04a00f2` is the
+latest deployment and Wrangler readback shows its version at 100%. The
+Cloudflare staging SPA and Worker explicitly select the D1 registration route;
+normal frontend builds still default to the Supabase Edge Function.
+
+The live canary used a disposable Better Auth owner and the active emoji
+catalog's rose record. Registration returned 201 with tier 4; readback verified
+the active initial license, basic config, public profile, and audit row. A
+second request returned 409, and an unauthenticated request returned 401.
+Cleanup returned zero for the synthetic fanmark, license, basic/profile/URL/text
+config, audit, Better Auth user/account/session, and all 40 business tables.
+No user rows were copied from Supabase, and no production route or domain/DNS
+state changed. Local Worker/client suites pass 8/8 and 6/6. This is a synthetic
+staging app proof, not source-row or production parity evidence.
+
+## Lottery finalization journal schema on staging (2026-09-25 JST)
+
+Applied `0005_lottery_plan_journal_staging.sql` to the isolated
+`fanmark-business-staging` database through Wrangler's remote file-import
+path, recording the migration in the same import. Readback confirms the exact
+new journal columns (`lottery_seed`, `lottery_inputs_json`,
+`lottery_plan_json`), table and cursor-index DDL, migration-ledger entry, and an
+empty `PRAGMA foreign_key_check`. The finalization run and item tables remain
+empty; aggregate row count across all 40 source business tables is zero. No
+Worker deployment or Cron setting changed.
+
+The local source-profile finalizer now includes pending lottery entries. It
+stores and replays a durable seed/input/plan, rechecks winner capacity, and
+commits expiry, lottery entry/history, license issuance, audit/outbox, config
+cleanup, and journal effects in one guarded D1 batch. The source integration
+suite passes 25/25, selection tests 10/10, scheduled-expiry tests 8/8, and the
+Worker typecheck passes. This remains local synthetic evidence only: the new
+lottery finalizer has not been deployed or exercised as a remote canary, and
+the scheduled Cron remains disabled. No user rows or production/domain state
+changed.
+
+## One-shot grace-expiry lottery canary (2026-09-25 JST)
+
+Ran the local Worker `scheduled` event once through Wrangler's test-scheduled
+route with remote binding to the exact APAC `fanmark-business-staging` D1.
+Preflight confirmed all 40 source business tables, user-owned Auth tables, and
+lifecycle run/item/effect journals were empty. The test inserted one synthetic
+grace license and pending entry; the scheduled finalizer selected that sole
+applicant, expired the old license, issued the active winner license, and
+wrote history, durable seed/input/plan, audit, and notification events. It
+removed the four access configuration projections and retained the separate
+profile row, matching the source behavior.
+
+After cleanup, all 40 business tables and all lifecycle run/item/effect
+journals returned to zero. The retained incarnation and access-version tables
+matched their exact pre-canary snapshot; the staging incarnation registry
+contained 16 pre-existing tombstones that were preserved. No Auth identity or
+Cron trigger was created. The deployed scheduled-backend flag remains unset,
+and production, real user data, and domain/DNS were untouched.
+
+## Bulk fanmark-return canary (2026-09-25 JST)
+
+Deployed `fanmark-app-staging` version
+`186255d9-c8ec-47bf-a8e0-32b3296a6ab3` at 100% after the Wrangler dry-run
+confirmed the existing split D1 and R2 bindings. `VITE_FANMARK_RETURN_BACKEND`
+selects both single and bulk return on the staging SPA; production selectors
+remain on Supabase.
+
+The synthetic Better Auth owner sent two license IDs. The first response was
+HTTP 207 with one successful grace transition and one failure due to its active
+transfer code. After deleting that synthetic transfer code, the second request
+returned HTTP 200 and transitioned that license. Exact reads confirmed one
+audit row and one owner event per returned license. A setup attempt before this
+run hit the D1 unique normalized-emoji-key constraint on duplicate synthetic
+input; cleanup removed its fanmark, license, and Auth rows. As designed, each
+license that had been created retains its lifecycle anti-reuse tombstone.
+
+The successful canary's cleanup returned the 40 source business tables and all
+user-owned Auth tables to zero, restored the access-version table to its
+pre-canary snapshot, and confirmed the global `mfaGeneration` row was unchanged.
+It retained exactly two new synthetic license-incarnation tombstones; the
+staging registry now has 21 rows (16 pre-existing plus five canary tombstones).
+No user rows, production routes, Cron settings, or domain/DNS state changed.
+
+## Earlier app-staging deployment and read-only smoke (2026-09-25 JST)
+
+Rebuilt the Cloudflare staging SPA and deployed `fanmark-app-staging` through
+its explicit staging config. Wrangler reports version
+`3c00ac93-98bc-4888-9a8f-4dd6d6271e04` at 100%. Before deployment, remote
+migration checks with `wrangler.app-staging.jsonc` reported no pending
+migrations for business, Auth, or master D1. The deployment uploaded three
+changed static assets and did not apply D1 schema or row changes.
+
+Post-deploy GET-only checks returned `/` 200, `/api/auth/ok` 200 with
+`no-store`, `/api/emoji/catalog?limit=2` 200 with two records, and the four
+reference-master routes 200/`no-store` with 4 tiers, 4 languages, 5 reserved
+patterns, and 16 extension prices. The payloads contained no Stripe IDs. An
+unauthenticated GET to `/api/admin/session` returned 401/`no-store`. All
+three D1 roles and both R2 bindings were present in Wrangler's deployment
+readback. No authenticated identity, row mutation, R2 write, production
+resource, or custom domain/DNS setting was touched by this check.
+
+Local verification after correcting the Vitest grouping passed the root
+staging build, root typecheck, Worker typecheck, CI isolation check, Worker
+default suites (36), D1 importer (13), Worker static-assets suite (14),
+Worker/D1/application synthetic suites (250 total), migration-data suite
+(93), Stripe receipt suite (90), and `git diff --check`. D1 suites that need
+their own Miniflare bindings are excluded from the generic Worker config and
+remain covered by their dedicated configs. The staging app remains a
+workers.dev preview; this is not production acceptance. Notification event
+generation/delivery, Stripe cutover, OAuth/email, scheduled Cron, broader
+admin parity, real user-data import, and domain/DNS remain open.
+
+The phrase “latest Supabase schema retrieval waiting for terminal input” is
+not a current blocker. It referred to an older 2026-09-24 checkpoint; the
+read-only schema/catalog refresh was completed on 2026-09-25, and the current
+run does not require terminal input.
+
+## Search details API deployment (2026-09-25 JST)
+
+Deployed `fanmark-app-staging` version
+`e3d47df4-eb20-4ade-8857-398cde3aab0d` at 100% after the staging config dry-run
+showed the split business/Auth/master D1 bindings, both R2 buckets, and
+`FANMARK_SEARCH_BACKEND=d1`. The business database reported no pending
+migrations; this API adds no schema or row writes.
+
+Post-deploy read-only checks: `/` 200, `/api/auth/ok` 200/`no-store`, anonymous
+`POST /api/fanmarks/search/details` 200/`no-store` with
+`{schemaVersion:1,result:null}`, unauthenticated owner-settings GET 401/`no-store`,
+and unauthenticated `/api/admin/session` 401/`no-store`. The null is expected because business D1 has no imported
+fanmark rows. Synthetic Worker tests covered a signed-in user projection and
+confirmed that `target_url` and `text_content` do not appear in the response.
+No authenticated live row, imported user data, search-history write, R2 object,
+production route, or domain/DNS state was changed or verified by this check.
+
+The frontend selector is explicit and staging-only. `record_fanmark_search`
+still writes through Supabase until the user-data stage; this read migration
+does not claim to move that activity data. Local frontend tests passed 5/5,
+Worker default suites 30/30, and verified-access tests 10/10. Root/Worker type
+checks, Cloudflare staging build, Wrangler dry-runs, and `git diff --check`
+passed.
+
+The staging SPA now routes `FanmarkMessageboardPreview` through the existing
+owner-only settings GET when `VITE_FANMARK_SETTINGS_BACKEND=worker`; the page no
+longer directly invokes `get_fanmark_complete_data` in the Cloudflare build.
+Settings-client tests passed 5/5, app typecheck/build passed, and the staging
+deployment is version `e3d47df4-eb20-4ade-8857-398cde3aab0d`. The owner GET was
+verified as 401 without a Better Auth session. An authenticated live page read
+against a populated row is not yet proven because business D1 is empty.
+
+## Local R2 avatar and profile integration regression (2026-09-25 JST)
+
+Extended the profile D1 Miniflare fixture with isolated local avatar and cover
+R2 bindings. A synthetic Better Auth owner uploads an avatar, reads the same
+bytes publicly, stores and reads back the URL through the owner-profile API,
+gets a 400 when submitting that object under another user's path, then deletes
+the image and clears the profile URL. The final D1 profile value is null, the
+local R2 key is absent, and the public URL returns 404. The profile suite
+passes 6/6, the independent R2 API suite 5/5, and Worker typecheck passes.
+The deployed staging Worker, remote D1, and remote R2 were not modified by this
+local regression; the existing live profile and R2 canaries remain separate.
+
+## R2 avatar and profile end-to-end canary on workers.dev (2026-09-25 JST)
+
+Ran `scripts/migration/staging-r2-profile-smoke.mjs` on Node 22.6.0 against the
+explicit `fanmark-app-staging` Worker, split staging D1s, and both
+`fanmark-avatars-staging` and `fanmark-cover-images-staging` buckets. The script
+verified the Cloudflare account, Worker/config bindings, and zero rows in all
+40 source-shaped business tables before creating one synthetic `example.invalid`
+identity and profile.
+
+Unauthenticated profile read/upload returned 401. The synthetic identity read
+its profile, uploaded a valid 1×1 PNG, read back identical public bytes, saved and read
+back the same-owner R2 URL, and received 400 when trying to save that key under
+another user's path. Owner deletion returned 204; the profile URL was cleared.
+The same identity uploaded a cover image to the separate bucket, read back the
+same bytes, and deleted it as owner. Both buckets returned 404 after cleanup.
+Final remote D1 readback found zero profile/user/account/session rows. Avatar
+and cover content hashes matched (`d3c936ebdd73f46e6422d5946044c99d524554082272019ab738800318b04892`).
+The canary did not copy source objects, change production, invoke Stripe, or
+alter DNS/domain routing.
+
+## R2 cover image and owner-profile integration on staging (2026-09-25 JST)
+
+Deployed the Worker profile-image ownership guard to `fanmark-app-staging`
+version `a6b0a110-9169-4921-9cdc-60e51a521714` at 100%. Wrangler confirmed the
+business, Auth, master, avatar R2, and cover R2 bindings; no D1 migration or
+static asset update was pending. The integrated registration/lottery smoke
+created one synthetic owner and fanmark, uploaded a 1x1 PNG to the cover R2
+bucket, read identical public bytes, saved the same-owner URL through the D1
+fanmark-profile API, rejected a different owner's path and an avatar-bucket
+URL as a cover, then owner-deleted the object. The URL returned 404 after
+cleanup. All 40 source business tables and the synthetic Auth/profile rows
+returned to zero. The canary did not access real user data, invoke Stripe, or
+change production routing or domain/DNS.
+# 2026-09-25: active emoji release availability readback
+
+After deploying app Worker version `b381e0b3-7e03-41c2-a217-aeb1d5c5cf68`
+to workers.dev staging, read-only GETs returned root 200 with `noindex` and
+Better Auth health 200. The active emoji catalog endpoint returned 3,944 rows
+at version `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`.
+A public availability POST using one ID from that exact response returned
+200, tier 4, seven initial license days, and `available: true`. No business or
+master D1 writes were performed. Local stale-mirror/retired-ID behavior is
+covered by the dedicated synthetic D1 suites; this live check used the empty
+synthetic business database and does not prove populated-row parity.
+
+## Maintenance settings API deployment (2026-09-25 JST)
+
+Deployed `fanmark-app-staging` version
+`b7b208c7-68f8-4918-bfd9-b785ef66003d` at 100%. The public
+`GET /api/system/maintenance` returned 200/no-store and exactly the three
+allowlisted settings with defaults (`maintenance_mode: false`, empty message,
+null end time). An unauthenticated `PATCH /api/admin/system-settings/maintenance`
+returned 401 `unauthenticated`; a follow-up GET returned the same values. This
+proves anonymous denial and read behavior only; no setting rows were created,
+no authorized PATCH was sent, and no maintenance state was changed. Root and
+Better Auth health GETs returned 200. Staging only; no Supabase, production,
+user-data, R2 object, or DNS/domain state changed.
+
+## Lifecycle settings API deployment (2026-09-25 JST)
+
+Direct read-only Supabase REST retrieval, after confirming the URL matched the
+linked project ref, returned exactly one public `grace_period_days` row with
+value `1`. A read-only staging D1 preflight found no such row, no licenses, and
+no expiry/finalization runs. Inserted only one public D1 `system_settings`
+row with that exact value and read it back. No user data or other setting was
+copied.
+
+Deployed `fanmark-app-staging` version
+`bf951bd0-4aee-42f2-a9a7-997beffe06de` at 100%. Live anonymous
+`GET /api/system/lifecycle` returned 200/no-store and exactly
+`{grace_period_days:1}`. Anonymous `PATCH /api/admin/system-settings/lifecycle`
+returned 401 `unauthenticated`. Root returned 200 with `noindex, nofollow`,
+and Better Auth health returned 200. The public setting read needs no user
+identity; writing still requires administrator role plus session-bound MFA.
+
+A later rerun of the synthetic scheduled-event smoke updated the setting to
+14 temporarily, but the local Wrangler `--test-scheduled` connection reset
+with `ECONNRESET`. The script's `finally` cleanup restored the setting row;
+remote readback confirmed `grace_period_days=1`, zero license rows, zero
+lifecycle run/item/effect rows, and 22 retained incarnation rows. This rerun
+did not verify the scheduled event. `LICENSE_EXPIRY_BACKEND` and the Cron
+trigger remain unset. Production, real user data, R2 objects, and domain/DNS
+were unchanged.
+
+## Deployed grace-expiry lottery Cron canary (2026-09-26 JST)
+
+Ran `scripts/migration/staging-license-expiry-lottery-smoke.mjs` against the
+APAC `fanmark-business-staging` D1 using only generated owner, winner, fanmark,
+license, and lottery-entry IDs. The script temporarily changed the existing
+public `grace_period_days` value from `1` to `14`, deployed the workers.dev
+Worker with a one-minute Cron and a unique target-incarnation token, then
+waited for the scheduled event to complete. Durable readback confirmed the old
+license expired, the sole pending entry won, one active winner license was
+issued, the lottery seed/input/plan and history were saved, access config was
+removed while its profile was retained, and audit plus both notification
+events were written with no conflicts.
+
+An initial three-minute wait produced no run and was inconclusive: Cloudflare
+documents that Cron changes can take up to 15 minutes to propagate. The rerun
+allowed 17 minutes and completed. It immediately redeployed the staging
+configuration with `triggers.crons: []` and without
+`LICENSE_EXPIRY_BACKEND`, then restored the setting and removed the synthetic
+rows/journals. The script compared retained lifecycle tables to their exact
+pre-canary snapshots and verified all other business tables and Auth user
+tables empty. An independent D1 read returned one settings row at
+`grace_period_days=1`, zero fanmarks, users, licenses, notifications, audits,
+and lifecycle runs/items/effect guards. The current Worker root returned 200;
+Cloudflare Settings reports “cron トリガーが設定されていません”. Current
+version: `507c5143-0bd5-476a-b29f-22c646db1652`.
+
+This is one synthetic staging execution, not recurring activation or proof of
+populated-user behavior/production CPU fit. No Supabase user data, production
+resource, or domain/DNS state changed.
+
+## Stripe billing schema added to staging D1 (2026-09-26 JST)
+
+After the local Worker aggregate, Stripe ingress/application suites, client
+contracts, and migration-data tests passed, read-only Wrangler checks found
+`0006_stripe_webhook_ingress_staging.sql` and
+`0007_stripe_extension_application_staging.sql` pending on the exact
+`fanmark-business-staging` database. The referenced
+`fanmark_lottery_entries` table existed. Applied only those two additive
+migrations; Wrangler reported success for both.
+
+Remote readback found all six new receipt, dispatch, checkout-intent,
+application, effect, and lottery-entry tables. Counts were zero for every new
+table and for `fanmarks`, `fanmark_licenses`, and `user_settings`; query
+metadata reported `changed_db=false` and `rows_written=0`. Wrangler's next
+migration-list check returned no pending migrations. The app Worker was not
+redeployed, and its Stripe selectors, secrets, and Cron remain unset. This
+prepared empty staging schema only: no Stripe request, real user data,
+production resource, or DNS/domain setting was touched.
+
+## Public schema re-download confirmation (2026-09-26 JST)
+
+Repeated `supabase db dump --linked --schema public` against the already-linked
+production project. The first attempt stopped because Docker Desktop was not
+running; after starting it, the read-only schema dump completed without a
+password or confirmation prompt. Its SHA-256 is still
+`aac7f38c912b358019a9bb9f282813a10bcd3e20af09e929d1ec41a2705b42cd`, matching
+the 2026-09-25 public-schema artifact recorded above. The dump contains schema
+DDL only; no row export or database write occurred. The old “terminal input
+waiting” checkpoint is therefore stale, not a current blocker.
+
+On 2026-09-27 JST, the same schema-only command was repeated from the current
+migration worktree using the installed Supabase CLI with `CI=1` and `--yes`.
+It completed after “Initialising login role...” and “Dumping schemas from
+remote database...” without requesting terminal input. The mode-0600 output
+was 180,288 bytes and had the same SHA-256; this confirms the linked project's
+public DDL still matches the 2026-09-25 artifact. No application rows were
+exported and no database was written.
+
+## Deployed notification processor Cron canary (2026-09-26 JST)
+
+Deployed `fanmark-app-staging` version
+`000d54b4-8a34-4241-a2ce-45f72683581b` with
+`NOTIFICATION_PROCESSOR_BACKEND=d1` and the shared one-minute Cron. Ran
+`scripts/migration/staging-notification-processor-smoke.mjs --deployed-cron`
+against the APAC business D1 with only one synthetic event and one synthetic
+`user_settings` row. The actual workers.dev Cron processed the event, rendered
+and delivered one Japanese in-app notification, and the canary deleted the
+notification/event/settings rows. Its independent readback confirmed exact
+master and public `grace_period_days=1` baselines, unchanged protected-access
+state, and zero notification/event/settings rows. A Cloudflare tail observed a
+successful invocation of that deployed version; lifecycle and Stripe scheduled
+handlers reported disabled because their selectors remain unset.
+
+The later staging deployment `839710a3-3290-46f8-b43c-c3a1e21d89c2` preserves
+that Cron configuration. This proves one synthetic scheduled processing path,
+not migration of all notification event producers/channels or production
+recurring fit. No real user, production, or domain/DNS rows were changed.
+
+## Invitation admin API staging canary (2026-09-26 JST)
+
+Rebuilt the workers.dev SPA with `VITE_INVITATION_ADMIN_BACKEND=worker` and
+deployed Worker version `839710a3-3290-46f8-b43c-c3a1e21d89c2`. The Worker uses
+`INVITATION_ADMIN_BACKEND=d1`; the existing split business/Auth/master D1 and
+R2 bindings and the every-minute notification Cron remain configured. Wrangler
+dry-run confirmed the invitation selector and all staging bindings before the
+deploy. A read-only bucket listing returned the expected
+`fanmark-avatars-staging` and `fanmark-cover-images-staging` bucket names.
+
+Ran `workers/api/test/staging-admin-totp-smoke.mjs` with an ephemeral verified
+`example.invalid` admin identity and same-session TOTP assurance. The canary
+confirmed anonymous invitation GET returns 401, then created a unique synthetic
+code, read it from the list API, compare-and-set edited it, rejected a stale
+revision with 409, disabled it, and deleted it. An independent readback found
+zero invitation rows. The same run exercised existing emoji and notification
+master reads/round-trip and removed the synthetic Better Auth identity; all
+user-owned Auth tables read back empty. Root, auth health, and the new SPA asset
+returned 200; after cleanup the invitation admin endpoint again returned 401.
+
+Local Worker tests passed 5/5, frontend client tests 4/4, Worker and frontend
+typechecks, Cloudflare-staging build, and Wrangler dry-run. No schema migration
+was needed. Signup, invitation consumption, email, Stripe, production routing,
+real user/invitation data, and domain/DNS were not changed.
+
+## Return API to deployed notification Cron integration canary (2026-09-26 JST)
+
+Extended `scripts/migration/staging-fanmark-return-smoke.mjs` to wait for the
+currently deployed every-minute workers.dev notification Cron after the
+synthetic return API operation. The return API emitted one owner-return event
+and one favorite-availability event. Readback confirmed both reached
+`processed`, each produced exactly one `in_app` notification in `delivered`
+state with a Japanese body, and the owner/favorite payloads retained the
+synthetic fanmark details and short-id link.
+
+The smoke also retained the transfer-in-progress rejection, verified the
+active-to-grace return and audit/event effects, and then removed both
+notifications before their events, followed by the synthetic business/Auth
+rows. Exact cleanup readback was zero for the synthetic fanmark, license,
+transfer, favorites, discovery, audits, notification events, notifications,
+Auth user/account/session. No notification masters or public settings were
+changed. The smoke uses Cloudflare staging only; all generated identities and
+fanmark values are synthetic, and production/DNS and real user data were not
+accessed or changed.
+
+## All migrated in-app notification rules through deployed Cron (2026-09-26 JST)
+
+Extended `scripts/migration/staging-notification-processor-smoke.mjs` to submit
+one synthetic event for each of the 10 active in-app master rules. Read-only
+preflight confirmed each rule's active Japanese template. The currently
+deployed one-minute workers.dev Cron processed all 10 events; each produced
+exactly one `delivered` notification for the synthetic recipient, with the
+expected Japanese title/body, fanmark metadata, and zero retries.
+
+The smoke then deleted all notifications before their events and removed the
+temporary settings row. Independent post-run checks found zero synthetic
+events, notifications, preferences, or user settings; the 10/40 master data,
+public lifecycle setting, and protected-access state matched their prior
+baselines. The Cron remained enabled. This exercises the migrated in-app rules
+and processor, not email/Web Push or production recurring capacity.
+
+## Transfer API to deployed notification Cron integration canary (2026-09-26 JST)
+
+Extended `scripts/migration/staging-fanmark-transfer-smoke.mjs` to wait for the
+currently deployed workers.dev notification Cron after the synthetic
+issue/apply/reject/reapply/approve lifecycle. The API emitted one
+`transfer_requested` event for the owner and one `transfer_approved` event for
+the recipient. The canary rejects a first request, verifies the transfer code reactivates, then
+reapplies and approves it; `transfer_rejected` is delivered to the requester.
+All three events reached `processed`, and each produced exactly one `in_app`
+notification in `delivered` state with Japanese-rendered text and the intended
+synthetic user and fanmark metadata.
+
+The smoke waited up to 90 seconds, then deleted the notification rows before
+their events. It removed the synthetic fanmark, old/new licenses, transfer
+code/request, lottery/config rows, audits, user settings, Better Auth users,
+accounts, and sessions. Independent cleanup readback returned zero synthetic
+business and Auth rows and confirmed the MFA generation baseline was unchanged.
+No real user data, production resource, or domain/DNS state changed.
+
+## Staging whois details and R2 canaries (2026-09-26 JST)
+
+Wrangler dry-run resolved `FANMARK_DETAILS_BACKEND=d1`, split Business/Auth/
+Master D1 bindings, and both R2 bucket bindings. Read-only remote migration
+lists reported no migrations to apply for any of the three D1 databases. The
+staging app deployed at 100% as version
+`44d56b91-dbcf-46ce-ac9a-900431b143f9`; live readback returned SPA 200,
+`/api/auth/ok` 200/no-store, and an anonymous missing-whois response
+200/no-store with a null result.
+
+An integrated registration smoke created one synthetic owner/fanmark/license
+and lottery entry. The anonymous whois response had `history_available=false`,
+empty history, null owner name, and zero user-specific lottery state. The
+Better Auth session response contained exactly one history row and the correct
+owner/pending-lottery booleans, with no user ID or email. Cleanup reported
+zero fanmarks, licenses, lottery rows, profile/config/audit rows, user settings,
+Auth users/accounts/sessions, and all business rows after cleanup.
+
+The R2 profile canary wrote an image to both staging buckets, read back matching
+bytes, and deleted each object. The public paths returned 404 after cleanup;
+synthetic Auth and business row counts were zero. No production traffic, real
+user rows, or DNS/domain state was changed.
+
+## Availability-rule administration and registration setting on staging (2026-09-26 JST)
+
+A read-only linked-Supabase query returned the four global availability rules,
+all disabled. The staging Business D1 had none before import. The explicit
+seed copied only these four rows, preserved their rule configuration and
+timestamps, converted top-level USD amounts to integer cents, and omitted the
+source `created_by` administrator UUID. Remote readback confirmed four rows,
+all `is_available=0` and `created_by=NULL`.
+
+The public `system_settings.max_emoji_characters=5` row was also read-only
+verified in Supabase. A pre-write check confirmed it was absent in staging;
+the allowlisted insert then read back `max_emoji_characters=5` and
+`grace_period_days=1`. No other system setting was copied. The staging
+baseline checks now account for the four availability rows and these two
+public settings rather than treating them as user data.
+
+The app was deployed at 100% as version
+`00ebddee-9f63-4840-abc8-f00dfe847ff5` on the existing workers.dev origin.
+The frontend selects the MFA-protected Worker API for `AdminPatternRules`,
+and registration reads the allowlisted maximum from business D1. The live
+same-session TOTP canary read the rules, CAS-edited and restored one, rejected
+a stale revision, and confirmed all four remain disabled. The registration
+smoke rejected six distinct emoji IDs with `invalid_emoji_count`, then
+completed a synthetic registration/lottery/details flow, tested owner-bound
+R2 cover upload/read/delete, and read back zero user-owned business and Auth
+rows and no remaining object.
+
+Frontend and Worker typechecks pass; the full Worker package suite passes
+88/88, registration D1 tests 10/10, migration-data tests 93/93, rule admin
+client tests 5/5, and baseline tests 2/2. CI workflow isolation, targeted
+ESLint, staging build, and Wrangler dry-run pass. These are staging and
+synthetic-user checks only. No production routing, real user/Auth data, Stripe
+operation, or domain/DNS state changed.
+
+## OGP crawler HTML and image routes on staging (2026-09-26 JST)
+
+Deployed `fanmark-app-staging` version
+`767ff630-81c2-4b01-bf89-012fc43e8a29` with OGP handling for crawler requests
+at `/a/:shortId` and bounded SVG generation at `/api/ogp-image`. A read-only
+Googlebot request for a short ID absent from staging returned generic HTML
+200, `Cache-Control: no-store`, `Vary: user-agent`, and staging no-index; its
+fallback image URL remained on the workers.dev host. The same path with a
+normal browser User-Agent returned the Static Assets SPA (200). The SVG route
+returned 200; six-character input returned 400/no-store. Root and Better Auth
+health stayed 200. No database or R2 writes were performed.
+
+The D1 suite separately verified a synthetic public profile name is escaped,
+a password-protected profile name and bio do not appear, and the ordinary
+browser route reaches the SPA. Since the live staging D1 has no public profile
+rows, no live user/profile OGP rendering was claimed. Production OGP, user
+data, and custom-domain/DNS configuration were untouched.
+
+## Emoji-path OGP staging readback (2026-09-26 JST)
+
+Deployed `fanmark-app-staging` version
+`4988be1e-5f1b-4839-8f3f-511d0a4238f6` with crawler handling for the legacy
+emoji path. A Googlebot request to the absent `🌸` path returned generic HTML
+200 with `Cache-Control: no-store`, `Vary: user-agent`, and staging no-index.
+The canonical URL for resolved entries is `/a/:shortId`; the live D1 is empty,
+so this request verified only the generic miss. A normal browser-style
+navigation request (HTML Accept and `Sec-Fetch-Mode: navigate`) for the same
+path returned the Static Assets SPA with 200. A non-navigation request with
+`Accept: */*` remains a 404 as intended for a missing asset. No D1 row or R2
+object was written.
+
+The synthetic D1 test resolves one exact active emoji spelling, rejects
+ambiguous duplicates to generic metadata, keeps protected profile details out,
+and verifies browser navigation falls back to `index.html`. The focused public
+access suite passed 13/13; full Worker suite 88/88, both typechecks, staging
+build, targeted ESLint, CI isolation check, Wrangler dry-run, and `git diff
+--check` passed. No production OGP, user data, or domain/DNS setting changed.
+
+## Paired access-analytics staging canary (2026-09-26 JST)
+
+Deployed `fanmark-app-staging` version
+`2d23439f-359a-4e0b-8ed2-c91c523dd44f` at 100% with the paired public access
+analytics writer and owner-read APIs selected in both the staging Worker and
+SPA. The canary created a synthetic Better Auth user and business records,
+recorded one access event, sent four duplicate requests, and read the owner
+fanmark list, analytics metrics, and 30-day summary through authenticated
+endpoints. The duplicate calls did not increment the count; the daily total and
+unique visitor count were each one. Anonymous owner analytics returned 401.
+
+Cleanup removed the synthetic business and Auth rows. The smoke check confirmed
+zero business rows after cleanup and preserved the existing master/settings
+baseline. Worker integration tests passed 8/8, each frontend analytics client
+suite passed 3/3, frontend and Worker typechecks passed, and the Cloudflare
+staging build and CI checks passed. Historical Supabase analytics were not
+read or copied. This proves a synthetic workers.dev path only; populated-user
+authorization, ingress abuse controls, retention, and production CPU/plan fit
+remain open. Production and domain/DNS were unchanged.
+
+## Reference-master editor paired-cutover gate (2026-09-26 JST)
+
+The versioned D1 admin editor and its same-session MFA guard pass local client
+and Worker tests, but checkout still consumes extension prices and Stripe IDs
+from Supabase. The documented paired-cutover rule therefore keeps
+`REFERENCE_MASTER_ADMIN_BACKEND` and `VITE_REFERENCE_MASTER_ADMIN_BACKEND`
+unset on the final staging Worker/SPA. One interim deployment briefly carried
+these selectors; no authenticated request or edit was made. It was immediately
+replaced by `fanmark-app-staging` version
+`7a2a780d-3fed-476b-a84e-905fc6d29aad`, with both selectors unset. The active
+reference-master release and all source values remain unchanged.
+
+After the corrective deployment, `/` returned 200 with `X-Robots-Tag:
+noindex, nofollow`. Public master endpoints returned 200/no-store with 4 tiers,
+4 languages, 5 reserved patterns, and 16 extension prices; the gated admin
+pricing endpoint returned 503. Local admin client tests passed 6/6, reference
+master Worker/D1 tests 6/6, and same-session admin authorization tests 13/13.
+The authenticated admin editor and paired Supabase Edge checkout cutover remain
+open. No user rows, Stripe resources, production routes, or domain/DNS settings
+changed.
+
+## Conditional Better Auth email/OAuth deployment (2026-09-26 JST)
+
+After confirming there were no pending migrations on business, Auth, or master
+D1, commit `76293cc` was deployed to `fanmark-app-staging`. Wrangler reported
+Worker version `bc5ad53e-5f08-492b-81fb-8046c9be9600`; the deployment list
+shows it at 100%. The deployment retains the existing split D1/R2 bindings and
+Cron schedules. No email/OAuth selector or provider secret was added.
+
+Read-only requests returned `/api/auth/capabilities` with
+`emailVerification:false`, `passwordReset:false`, `signUp:false`, and
+`socialProviders:[]`; `/api/auth/ok` returned 200 and anonymous
+`/api/admin/session` returned 401. Synthetic email/password signup, password
+reset request, social sign-in, and Google callback requests returned 403.
+Browser-navigation requests to `/auth`, `/forgot-password`, and
+`/reset-password?token=synthetic` served the SPA with 200. No email, OAuth
+provider callback, Auth/Business D1 write, production route, or domain/DNS
+change occurred. This verifies that the new integration is present but remains
+closed by default; provider delivery and successful login are untested.
+
+## Stripe invoice projection staging schema and disabled Worker deployment (2026-09-26 JST)
+
+Applied business migration `0008` to the APAC `fanmark-business-staging`
+database (`d4bb0c48-f24a-491f-8693-fa393ab0b873`) in account
+`fanmark.id@gmail.com`. The verified migration ledger contains nine ordered
+migrations. Exact readback confirmed the two invoice projection tables and two
+indexes; invoice fence/application rows and all Stripe receipt/dispatch rows
+remain zero. The existing fanmark, license, user-settings, and subscription
+tables also contain zero rows.
+
+Deployed Worker version `68a2e0bf-3236-444c-9c7a-a46294037855` to
+`fanmark-app-staging` at 100% on workers.dev. Read-only probes returned 200 for
+the SPA root and Better Auth health; auth capabilities remain false/empty.
+`POST /api/stripe/webhook` with a synthetic empty request returned 404 because
+the Stripe backend selector is unset. Read-only D1 metadata reported
+`changed_db=false` and `rows_written=0`. Secret inventory contains no Stripe
+API or signing secret. This confirms staging schema and code deployment only;
+no Stripe API call, user data, production route, or custom domain/DNS setting
+was touched.
+
+## Auth email-template master seed and staging deployment (2026-09-26 JST)
+
+Wrangler identity matched Cloudflare account
+`bfc2890741f0b3fb236e2d755b6c9adc`. Read-only queries against
+`fanmark-business-staging` confirmed zero rows for the four allowlisted auth
+email-template types and zero rows in the checked user-owned tables. The
+checked-in 16-row seed was executed in isolated SQLite; its normalized content
+matched the pinned source digest. The seed SQL digest matched its pinned value.
+Applying the seed wrote 16 non-user master rows. The remote verifier compared
+every selected field and confirmed zero user settings, fanmarks, licenses,
+favorites, notifications, and notification events.
+
+Built and deployed Worker/Static Assets version
+`9b1f777e-76e1-4721-8408-1fd44145b4b0` to
+`https://fanmark-app-staging.fanmark-id.workers.dev`. Read-only probes returned
+200 for the root, robots, Better Auth health, and auth capabilities; anonymous
+admin-session and email-template requests returned 401. The capability
+response keeps signup, password reset, verification email, and social providers
+disabled. No email was sent; no user data, production routing, or domain/DNS
+setting changed.
+
+## Auth email-template authenticated read canary (2026-09-26 JST)
+
+Extended and ran the existing staging admin TOTP canary against the deployed
+Worker. A synthetic Better Auth admin completed sign-in, first-time TOTP
+enrollment, session rotation, and same-session MFA authorization. The
+unauthenticated email-template list returned 401; the authorized list returned
+all 16 expected type/locale pairs, and every response field matched the D1
+readback. Before/after D1 rows were identical. Existing invitation, availability,
+notification, and emoji-admin round-trips also passed. The canary removed the
+synthetic Auth identity and verified all user-owned Auth tables returned to
+zero; the MFA generation counter remained monotonic and may have advanced.
+
+## Read-only public staging smoke (2026-09-27 JST)
+
+Direct GET probes against
+`https://fanmark-app-staging.fanmark-id.workers.dev` returned HTTP 200 for
+`/` (HTML, 2,896 bytes), `/api/auth/ok` (JSON, 11 bytes),
+`/api/emoji/catalog` (JSON, 133,363 bytes), and
+`/api/fanmarks/recent?limit=1` (JSON, 30 bytes). The response bodies were not
+read or logged. This confirms public route availability only; it does not
+verify browser behavior, authenticated flows, real-row parity, or production
+routing. The probes were GET-only and changed no D1, R2, production, or
+domain/DNS state.
+
+The four public reference-master GETs also returned HTTP 200: languages
+(494 bytes), tiers (1,067 bytes), reserved patterns (858 bytes), and extension
+prices (1,097 bytes). Their bodies were not read or logged. This is live route
+availability evidence; canonical content and the edit/restore behavior are
+documented in the dedicated reference-master canary record above.
+
+## Live-only manual grace-expiry function review (2026-09-27 JST)
+
+The linked Supabase project still lists `manual-expire-grace-licenses` as
+ACTIVE, version 14, with platform JWT verification enabled. Its source was
+downloaded read-only into a permission-restricted temporary directory and
+reviewed without invoking it; no source rows were read and no repository
+function was added. The entrypoint iterates expired grace licenses, updates
+each row, then attempts configuration deletion and audit writes. Those
+per-license effects are not one transaction. The staged D1 daily lifecycle
+path covers scheduled grace finalization and lottery handling; the staged
+single-license admin route is a separate manual correction path and requires
+current-session MFA. There is no on-demand bulk Worker route, so this is not a
+full one-to-one match.
+
+No local application caller was found. Supabase invocation history and any
+external schedule/caller have not been verified. Therefore the live function
+is classified as a retirement candidate rather than a public Worker endpoint;
+keep the Supabase function unchanged until its external callers are checked in
+the final operational phase. No function call, deployment, production change,
+user-data read, or DNS/domain change occurred during this review.
+
+## Manual grace-expiry route reconciliation (2026-09-28 JST)
+
+Supabase CLI 2.118.0's read-only Functions inventory still lists
+`manual-expire-grace-licenses` as ACTIVE, version 14, with platform JWT
+verification enabled. Its deployed source was downloaded through the
+Management API into a temporary directory and reviewed without invoking the
+function or selecting application rows.
+
+The source requires a platform-accepted JWT but performs no application-level
+administrator check before constructing a service-role client. It selects
+every `grace` license with `grace_expires_at < now`, then updates each row by
+ID in a separate request. It separately deletes basic, redirect,
+messageboard, and password configuration rows and attempts a
+`MANUAL_LICENSE_EXPIRATION` audit insert; errors from those deletes and the
+audit insert are ignored. It does not perform lottery or notification
+effects, and its response/logs include per-license identifiers and results.
+These effects are not transactional and the update does not compare the
+previous status/deadline.
+
+This corrects the earlier statement above that no on-demand bulk Worker route
+exists. The staging route `POST /api/admin/license-expiry/run` now provides a
+bounded manual run through the D1 lifecycle engine and requires a Better Auth
+administrator session with same-session MFA. It reports aggregate counters
+only and uses the lifecycle transition's guarded state/effect path, including
+the applicable lottery and outbox behavior. The route is therefore a safer
+product replacement, not exact legacy-function parity. The scheduled
+Cloudflare Cron selector remains disabled independently.
+
+No local application caller was found. The reproducible
+[`manual-expiry-cron-readiness.sql`](../../scripts/migration/manual-expiry-cron-readiness.sql)
+read-only query was repeated on 2026-09-29 through Supabase CLI 2.118.0; it
+returned zero jobs whose command mentions the manual function. This rules out
+a direct `pg_cron` schedule at the time of the query, not Supabase invocations,
+indirect database callers, or external callers/schedules. Keep the live
+function unchanged until those callers are checked and a final writer-freeze/
+retirement decision is recorded. The query read no application rows and
+changed no function, deployment, or setting.
+
+## Broadcast templates read-only source and staging seed (2026-09-27 JST)
+
+Using a `BEGIN READ ONLY` Supabase query, only the three supported broadcast
+template types were selected from `public.email_templates`. The query returned
+12 active rows (four supported locales per type). Their normalized full-row
+SHA-256 is
+`770459e45e66f1c81ba58ea507b518f00c67004d289f5919d8c16c0f2c279f14`.
+The row payload remained in a permission-restricted temporary artifact and was
+not added to Git.
+
+A guarded script inserted those exact rows into the isolated
+`fanmark-business-staging` D1 database and verified every field on remote
+readback. The 16 existing auth-email templates were unchanged. A second run
+verified the same rows without writing. The query and seed did not read or
+write user rows or draft recipients and did not send email. No production,
+Worker routing, R2 object, or domain/DNS state changed. An authenticated
+broadcast-admin browser canary and delivery-provider migration remain open.
+
+## Staging search aggregate write canary (2026-09-27 JST)
+
+`fanmark-app-staging` version
+`34779025-2fdd-47f2-8ac4-37e2dde02b8b` adds the staging-selected
+`POST /api/fanmarks/search/record` route and a dedicated 120-per-60-second
+Rate Limiting binding. A synthetic five-emoji request with the exact staging
+Origin returned HTTP 200. Business-D1 readback showed one discovery with
+`search_count=1`, normalized IDs from the active emoji release, and one
+`search` event with `user_id=NULL`. The exact event row was deleted first;
+then the discovery was deleted only when it had no favorites or remaining
+events. Final readback showed zero discovery and event rows for that synthetic
+combination. No real user identity or production route was involved.
+
+The frontend defaults to Supabase outside the staging selector. Existing
+user-attributed Supabase search events were not copied. Local frontend contract
+tests passed 6/6, the Worker favorites/search D1 suite passed 6/6, both app and
+Worker typechecks passed, the staging build and Wrangler dry-run passed, and
+`test:migration-data` passed 147/147. The changed-file ESLint run had no errors
+and reported only the pre-existing missing-dependency warning in
+`useFanmarkSearch.tsx:190`.
+
+The final staging asset-only refresh is version
+`47dd045f-ae0c-4b46-8138-bdd59037f7ab`. A fresh read confirmed root 200 with
+`noindex, nofollow`, the served hashed JavaScript asset returned 200 and
+contained both the search record path and `credentials: "omit"`, and
+`/api/auth/ok` returned 200. The authenticated search-details request still
+uses credentials. This refresh issued no D1 writes; the synthetic rows from
+the earlier canary remain absent.
+
+## Emoji master source parity refresh (2026-09-27 JST)
+
+A read-only Supabase query through the authenticated Management API selected
+only `id`, `emoji`, `short_name`, `keywords`, `category`, `subcategory`,
+`codepoints`, and `sort_order` from `public.emoji_master`. The release builder
+normalized all 3,944 source rows to
+`recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`
+and `identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`.
+The independent active-release D1 read returned 3,944 rows with exact
+eight-column canonical equality and version
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`. Its
+active pointer remains generation 3/action `rollback`; Wrangler reports
+`changed_db=false` and zero rows written. No user rows or Supabase writes were
+involved.
+
+## Supabase scheduled-writer inventory refresh (2026-09-27 JST)
+
+A `BEGIN TRANSACTION READ ONLY` query against `cron.job` returned two scheduled
+jobs. Job 9, `check-expired-licenses-daily`, is active at `0 0 * * *` and its
+direct Edge Function target is `check-expired-licenses`. Job 8,
+`process-notification-events-every-minute`, is inactive at `* * * * *`. The
+reported `cron.timezone` is `GMT` (the SQL session reports `UTC`). The command
+bodies were not printed; only the direct function target and a command
+fingerprint were returned.
+
+No active job directly targets the separately deployed
+`manual-expire-grace-licenses` function. This does not exclude indirect database
+calls or external callers, which remain unverified. Re-read job IDs, active
+state, targets, and timezone immediately before any final writer freeze because
+job IDs and schedules can change. This observation did not change a schedule,
+invoke a function, or read application rows.
+
+## Lifecycle settings authenticated staging canary (2026-09-27 JST)
+
+The guarded TOTP smoke provisioned a temporary synthetic Better Auth admin in
+the isolated staging Auth D1, signed in through the deployed Workers API, and
+completed first-time TOTP enrollment/session rotation. Anonymous
+`PATCH /api/admin/system-settings/lifecycle` returned 401. The authenticated
+canary changed the public `grace_period_days` value from 1 to 2; a public
+`GET /api/system/lifecycle` read back 2 with `Cache-Control: no-store`. A
+zero-day update returned 400 and left 2 unchanged. The authenticated restore
+returned the value to 1 and the public GET read back 1. The API write and
+restore advanced the setting row's `updated_at`, which is the expected behavior
+of the current endpoint. The temporary Auth user, password account, TOTP
+factor, session, profile, and related synthetic records were removed; the smoke
+read back all user-owned Auth tables as empty. No real user data, email,
+payment, production route, lifecycle Cron execution, or DNS/domain setting was
+used. This is API authorization and data-path evidence; the AdminSettings
+browser form remains unverified.
+
+## Notification header refresh staging deployment (2026-09-27 JST)
+
+The staging build now gives the Worker-backed notification preview in
+`AppHeader` a 30-second React Query refresh interval while the browser tab is
+foregrounded; it pauses in background tabs and refreshes on focus. The
+Supabase-selected branch keeps its existing Realtime subscription. Root
+typecheck and `build:cloudflare-staging` passed, and Wrangler 4.139.0 dry-run
+listed the intended split D1, staging R2, and static-assets bindings.
+
+Worker version `65db3989-2283-41f1-8775-19cb76f13cac` is deployed at 100% to
+the existing workers.dev staging origin. A GET-only readback returned HTTP 200
+for the SPA shell, its referenced JavaScript asset, Better Auth health, and the
+public lifecycle settings endpoint. The remote JS SHA-256 exactly matched
+`dist-staging`; the lifecycle endpoint returned only the baseline
+`grace_period_days=1` with `no-store`. No D1 migration or row write, Auth
+operation, email, Stripe call, R2 object, production route, or DNS/domain
+change occurred.
+
+## Manual license-expiry route staging deployment (2026-09-27 JST)
+
+Deployed `fanmark-app-staging` version
+`28e7ca3c-f610-47a4-aea9-f876bd8c3f11` with the new same-origin
+`POST /api/admin/license-expiry/run` route and its Worker-selected frontend
+button. Wrangler's deployed variable list omitted both `LIFECYCLE_RUN_BACKEND`
+and `LICENSE_EXPIRY_BACKEND`; the remote secret-name list contained no manual
+lifecycle selector. The existing daily Cron schedule remains configured, but
+its execution selector remains absent. No scheduled or manual expiry job was
+run.
+
+Read-only HTTP verification returned root 200 with `noindex, nofollow`, and
+the served JS asset returned 200 at 2,493,527 bytes with SHA-256
+`13582571ce98753679585bef629f57ec03d96534d3095f2ec3d60de70ed97778`, exactly
+matching local `dist-staging`. The cookie-less manual-run POST returned 401
+`unauthenticated` before reaching its disabled-selector branch. No authenticated
+button click or lifecycle data write occurred. `supabase/.temp/cli-latest`
+remains an unrelated modified checkout file and was preserved.
+
+## Workers Free CPU fit sample (2026-09-27 11:09 UTC)
+
+Started `npx wrangler tail fanmark-app-staging --config
+wrangler.app-staging.jsonc --format json` from `workers/api` and sent only
+bounded staging requests. No Worker configuration or deployment changed.
+Staging Worker version was
+`4988d9d0-b4ec-44d1-9ccc-00ac501aac36`.
+
+Read-only requests returned 200/2 ms for `/api/auth/ok`, 200/2 ms for
+`/api/fanmarks/recent?limit=1`, and 200 with CPU samples of 11, 6, 5, 6, and
+6 ms for five `/api/emoji/catalog` reads. `/api/me/subscription` returned
+401/0 ms without a session. No response bodies were retained.
+
+During the guarded synthetic TOTP/admin canary, staging Tail events measured
+200/0 ms for email sign-in, 200/164 ms for first-time TOTP enable, 200/30 ms
+for TOTP verification, 200/29 ms for the empty-candidate manual lifecycle
+run, and 8–47 ms for successful administrator list/detail/plan/status/license
+operations. The canary completed sign-in, same-session MFA, list/detail,
+plan-change-and-restore, suspension/restore, immediate expiry, lifecycle
+execution, and exact cleanup. It read back all user-owned Auth tables empty;
+the only intentionally retained monotonic state was the MFA generation
+counter. The scheduled lifecycle selector and Cron execution remain disabled.
+
+Cloudflare's [published Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+list 10 ms CPU per HTTP request on Free and explain that an isolate may
+occasionally run over its configured limit, with termination if it does so
+consistently. These low-count successful samples therefore prove that the
+staging features ran, but not that recurring production traffic fits Free.
+In particular, the admin/TOTP and manual-lifecycle paths exceeded 10 ms in
+this sample. No plan change was made; production CPU fit remains a release
+gate to resolve by optimization plus a repeat measurement or by selecting a
+paid Workers plan. No production route, real user row, email, Stripe operation,
+or domain/DNS setting changed.
+
+## Fresh schema-only source refresh and converter rehearsal (2026-09-27T12:13:53Z)
+
+`CI=1 npx --yes supabase@2.118.0 db query --linked --file
+scripts/migration/schema-readiness.sql --output-format json` completed without
+requesting terminal input. The reviewed SQL runs in a read-only transaction
+and reads PostgreSQL catalogs only. The current result contains 406 columns,
+144 constraints, 139 indexes, 15 enum labels, one view, 58 functions, 36
+non-internal triggers, and 77 RLS policies. No application rows were read or
+written. Raw catalog and generated artifacts remain outside Git with mode
+`0600`.
+
+Schema-converter v4 generated 40 tables and remains `deployable: false` with
+18 blocking groups: 10 row-conversion groups affecting 227 locations and 8
+schema/operation groups affecting 101 locations. The Node 22.6.0 synthetic
+current-catalog rehearsal imported four generated rows across all 40 table
+checkpoints, reconciled the synthetic public rows, and rejected a conflicting
+replay. This wrote only to disposable local Miniflare D1; it did not write to
+Cloudflare D1 or Supabase and did not import user data.
+
+## Business staging D1 schema-only readback (2026-09-27 12:22 UTC)
+
+Exported `fanmark-business-staging` through Wrangler with `--remote --no-data`.
+The mode-0600 SQL artifact contains schema only and no `INSERT`, `REPLACE`, or
+`COPY` statements. Parsed locally, it contains 73 tables, 98 indexes, and 34
+triggers. Against the 2026-09-27 source catalog, all 40 source tables and 406
+columns are present with zero converted-type or nullability mismatches. All 66
+indexes emitted by the converter are present; the staging schema also contains
+three reviewed extra columns and 32 operational indexes. Local SQLite parsed
+the export and returned `integrity_check=ok`. Wrangler's remote migration list
+reported no migrations pending. No application rows were exported or written,
+and no remote D1 change occurred.
+
+## Anonymous search-record staging canary (2026-09-28 JST)
+
+The guarded search-record smoke verified the exact staging account and D1
+bindings, then tested CORS preflight, an invalid origin (403, no write), a
+malformed emoji ID (400), and one valid anonymous request (200, no-store).
+The three-ID synthetic aggregate and event were read back with
+`user_id IS NULL`, deleted by exact identity, and reread as zero matching rows.
+The `fanmark_events` SQLite sequence advanced by one and was not decremented.
+No historical search rows, user data, production route, or domain/DNS settings
+were changed.
+
+## Supabase Edge Function inventory and JWT-config reconciliation (2026-09-28 JST)
+
+A read-only `functions list` query through Supabase CLI 2.118.0 returned 35
+functions, all `ACTIVE`. The live list matches all 34 local Edge Function
+entrypoints and contains one live-only function, `manual-expire-grace-licenses`;
+there are no local-only slugs. The initial comparison found 16 local entries
+without an explicit JWT setting while the live function had
+`verify_jwt=false`. `supabase/config.toml` now explicitly mirrors those
+observed flags. A second live read confirmed all local JWT values match, while
+the live-only function remains separately identified. The sixteen newly
+explicit entries are:
+`admin-expire-license`, `admin-get-user-detail`, `admin-list-users`,
+`admin-toggle-user-status`, `admin-trigger-password-reset`,
+`admin-update-user-plan`, `bulk-return-fanmarks`, `change-subscription`,
+`check-email-exists`, `check-subscription`, `create-checkout`,
+`customer-portal`, `delete-user-account`, `extend-fanmark-license`,
+`record-fanmark-access`, and `reset-fanmark-data`.
+
+| Function | State | Live version | Live `verify_jwt` | Local setting |
+| --- | --- | ---: | --- | --- |
+| `admin-expire-license` | ACTIVE | 20 | `false` | false |
+| `admin-get-user-detail` | ACTIVE | 219 | `false` | false |
+| `admin-list-users` | ACTIVE | 221 | `false` | false |
+| `admin-toggle-user-status` | ACTIVE | 220 | `false` | false |
+| `admin-trigger-password-reset` | ACTIVE | 220 | `false` | false |
+| `admin-update-user-plan` | ACTIVE | 220 | `false` | false |
+| `apply-extension-coupon` | ACTIVE | 75 | `true` | true |
+| `apply-fanmark-lottery` | ACTIVE | 192 | `true` | true |
+| `apply-transfer-code` | ACTIVE | 106 | `true` | true |
+| `approve-transfer-request` | ACTIVE | 104 | `true` | true |
+| `bulk-return-fanmarks` | ACTIVE | 231 | `false` | false |
+| `cancel-lottery-entry` | ACTIVE | 189 | `true` | true |
+| `cancel-transfer-code` | ACTIVE | 100 | `true` | true |
+| `change-subscription` | ACTIVE | 131 | `false` | false |
+| `check-email-exists` | ACTIVE | 304 | `false` | false |
+| `check-expired-licenses` | ACTIVE | 300 | `false` | false |
+| `check-subscription` | ACTIVE | 163 | `false` | false |
+| `create-checkout` | ACTIVE | 162 | `false` | false |
+| `create-extension-checkout` | ACTIVE | 152 | `true` | true |
+| `customer-portal` | ACTIVE | 159 | `false` | false |
+| `delete-user-account` | ACTIVE | 166 | `false` | false |
+| `extend-fanmark-license` | ACTIVE | 227 | `false` | false |
+| `fanmark-ogp` | ACTIVE | 107 | `false` | false |
+| `generate-ogp-image` | ACTIVE | 100 | `false` | false |
+| `generate-transfer-code` | ACTIVE | 104 | `true` | true |
+| `handle-stripe-webhook` | ACTIVE | 172 | `false` | false |
+| `manual-expire-grace-licenses` | ACTIVE | 14 | `true` | prepared |
+| `process-notification-events` | ACTIVE | 209 | `false` | false |
+| `record-fanmark-access` | ACTIVE | 114 | `false` | false |
+| `register-fanmark` | ACTIVE | 316 | `true` | true |
+| `reject-transfer-request` | ACTIVE | 100 | `true` | true |
+| `reset-fanmark-data` | ACTIVE | 235 | `false` | false |
+| `return-fanmark` | ACTIVE | 299 | `true` | true |
+| `send-auth-email` | ACTIVE | 64 | `false` | false |
+| `send-broadcast-email` | ACTIVE | 36 | `true` | true |
+
+The queries read deployment metadata only. No function was invoked, remote
+configuration or deployment changed, or application row was read. The CLI's
+`entrypoint_path` values were discarded. The local TOML and generated offline
+inventory were updated to make the observed JWT settings explicit. On
+2026-10-02, a local replacement was added for the live-only bulk expiry
+function. It preserves `verify_jwt=true` and adds an application-level admin
+role plus current-session AAL2 check. The local source is prepared but not
+deployed; the active version 14 still lacks those checks. Handler-level
+authorization remains a deployment gate.
+
+## Supabase Edge Function inventory refresh (2026-09-29 JST)
+
+A read-only `CI=1 npx --no-install supabase functions list --project-ref
+<project-ref> --output json` query with the repository-installed Supabase CLI
+2.67.1 returned 35 functions, all `ACTIVE`. A local comparison found exact
+name-set coverage for all 34 checked-in entrypoints plus the same one live-only
+function, `manual-expire-grace-licenses`; all 34 local `verify_jwt` settings
+match `supabase/config.toml`, with no local-only function or JWT mismatch. The
+live-only function remains version 14 with platform JWT verification enabled.
+
+This refresh confirms deployment metadata only. It did not invoke or download
+a function, read application rows, or change Supabase/Cloudflare settings. The
+temporary JSON response was stored outside the repository and contains only
+function deployment metadata. Handler-level authorization and the live-only
+function's external callers remain separate review gates.
+
+## Cloudflare staging account access check (2026-09-28 JST)
+
+The app-staging Wrangler configuration targets the account represented by the
+currently open Dashboard URL, but the stored Wrangler OAuth profile exposes a
+different account. Read-only `wrangler d1 info fanmark-business-staging` and
+`wrangler deployments list` requests fail with Cloudflare authentication error
+10000. The Dashboard D1 Studio page renders 404 / `Unauthorized to access
+requested resource` for the staging database route. The latest lifecycle Cron
+canary's post-run Worker trigger state and synthetic-row cleanup therefore
+remain unverified. Do not infer them from public workers.dev health probes.
+No account email, credential value, user row, or production data is recorded
+here; no Cloudflare state was changed during this access check.
+
+An unauthenticated public GET check at `2026-09-28T12:13Z` returned 200 for
+`/`, `/robots.txt`, `/api/auth/ok`, and `/api/auth/get-session` (`null`), 401
+for `/api/admin/session`, and 404 for the disabled `/api/stripe/webhook`.
+`/` and `/robots.txt` return `X-Robots-Tag: noindex, nofollow`. This proves
+basic workers.dev route health only; it does not reveal the active Worker
+version, Cron triggers, or synthetic cleanup state.
+
+## Cloudflare master D1 Studio read-only checkpoint (2026-09-29 JST)
+
+The authenticated Cloudflare Dashboard D1 Studio opened the configured
+`fanmark-emoji-master-staging` database under account ID
+`bfc2890741f0b3fb236e2d755b6c9adc`. Read-only queries returned 3,944 rows in
+`emoji_master`, one row in `fanmark_emoji_master_active_release`, and active
+release version
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`. This
+matches the previously documented release pointer and count. This checkpoint
+does not re-hash every current D1 row or verify the business/Auth databases,
+Worker deployment, Cron state, or lifecycle-canary cleanup. The saved Wrangler
+CLI profile still resolves to a different account. No writes, user rows, or
+domain/DNS changes were made.
+
+Unauthenticated GET probes to the workers.dev app returned 200 for `/` and
+`/api/auth/ok`; the emoji catalog returned 200/no-store with total 3,944 and
+the same release version. The `fanmark_tiers`, `languages`, and
+`reserved_emoji_patterns` reference-master endpoints each returned 200/no-store
+with release version `ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`.
+Anonymous `/api/admin/session` returned 401, `/api/auth/get-session` returned
+`null`, and the disabled `/api/stripe/webhook` returned 404. This verifies
+current public route health and anonymous denial only; it does not verify
+authenticated business operations, Cron state, or cleanup of the earlier
+lifecycle canary.
+
+## Business D1 synthetic-canary cleanup (2026-09-29 JST)
+
+Dashboard D1 Studio read/write access to `fanmark-business-staging` was
+verified under account `bfc2890741f0b3fb236e2d755b6c9adc`. The synthetic
+lottery fixture was identified by its `🧪` fanmark marker, `canary` short ID,
+and `canaryowner` / `canarywinner` test usernames. After cleanup, ID-based
+readback returned zero for the fixture fanmark, license, user settings,
+lottery entries/history, configuration rows, access-version row, and
+incarnation row. Canary lifecycle run/item/guard counts were all zero.
+`grace_period_days` was restored to `1`; the staging database now has 0
+access-version rows and 90 retained incarnation rows.
+
+The license-delete guard requires both registry and access-version rows. After
+the first attempt correctly aborted with `lifecycle_incarnation_missing`, the
+canary incarnation was restored at its insert-time default, with a matching
+synthetic access-version row recreated to satisfy the delete guard. The
+lifecycle trigger removed that access-version row and incremented the
+incarnation during license deletion; the final synthetic incarnation row was
+then removed. The failed statement made no license change. This confirms D1
+fixture cleanup only; the deployed Worker version and active Cron triggers remain
+unverified because the Wrangler profile still points to another account and
+the Dashboard Worker-list route did not render. No user rows, production
+routes, or domain/DNS state were read or changed.
+
+## Current workers.dev public-route readback (2026-09-29 JST)
+
+At `2026-09-28T21:53Z`, unauthenticated GETs returned HTTP 200 for `/`,
+`/api/auth/ok`, `/api/emoji/catalog`, and the public reference-master routes
+for tiers, languages, reserved emoji patterns, and extension prices. The four
+reference-master endpoints returned `Cache-Control: no-store`; their response
+bodies were discarded after status/header/size checks. The emoji catalog
+response was 133,363 bytes. No authenticated endpoint, user-owned row, business
+operation, D1 write, production route, or domain/DNS setting was accessed or
+changed. These checks confirm current public route health only; they do not
+verify the active Worker version, Cron configuration, or authenticated
+operations.
+
+## Wrangler staging-account profile check (2026-09-29 JST)
+
+Read-only `wrangler auth list` still shows only `default` and
+`koan-client-room`; a fresh attempt to create the named `fanmark-staging`
+profile did not complete. `wrangler whoami` resolves the default profile to
+account ID `3ed61145d70e5e8bd639970082b79fa5`, while
+`workers/api/wrangler.app-staging.jsonc` targets
+`bfc2890741f0b3fb236e2d755b6c9adc`. Do not perform Wrangler writes through the
+default profile. No D1, R2, Worker, production, user-data, or domain/DNS state
+was changed by this check.
+
+## Current staging access and capacity recheck (2026-10-02 JST)
+
+The earlier 2026-09-29 access failure is superseded. Wrangler 4.146.0 now
+reports the active `fanmark-staging-inapp` OAuth profile and the same account
+ID configured by `workers/api/wrangler.app-staging.jsonc`. Read-only
+`wrangler d1 list` returned exactly the expected Auth, Business, and emoji
+Master staging databases. `wrangler d1 migrations list --remote` reported no
+pending migrations for `AUTH_DB`, `FANMARK_DB`, or `MASTER_DB`. Read-only R2
+inventory returned the three expected APAC staging buckets: avatars, cover
+images, and encrypted migration backups.
+
+The current `fanmark-app-staging` deployment is version
+`842554cb-9dca-4b59-b7d1-43653fa7d69f` at 100%, restored after the synthetic
+pre-write fallback rehearsal. Body-discarding public GETs returned 200 for
+`/`, `/api/auth/ok`, and `/api/emoji/catalog`; the SPA has `noindex, nofollow`,
+and API responses are `no-store`. `/api/stripe/webhook` returned 404 with its
+provider selector disabled. A read-only secret-name list contained only
+`BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+`VERIFIED_ACCESS_SECRET`; no secret values were read.
+
+At `2026-10-01T22:36:50Z`, a temporary project-link directory with mode 0700
+ran an aggregate query inside `BEGIN READ ONLY`. `pg_database_size` returned
+27,749,523 bytes (about 26.46 MiB / 27.75 MB). Aggregated Storage metadata
+returned 109 objects and 13,285,729 bytes (about 12.67 MiB), with zero missing
+or invalid size values. The query returned no object keys, bodies, Auth rows,
+or application-row values. Its private SQL and temporary link directory were
+deleted. This remains transfer-size planning evidence, not a consistent
+snapshot or downtime/RTO measurement.
+
+The offline repository inventory was regenerated from `ab2d400`; its focused
+extraction test passed 1/1. The generated report changed only its recorded
+base commit. Dynamic frontend calls and the live operation-to-Cloudflare
+replacement map are not thereby considered complete. No source or staging
+data was migrated, and no production route or domain/DNS configuration was
+changed.
+
+## Realtime cleanup alias extraction update (2026-10-02 JST)
+
+The inventory extractor now follows a direct lexical variable initialized by
+`supabase.channel(...).on('postgres_changes', { table })` to a matching
+`supabase.removeChannel(alias)` call. This resolves the five previously
+unresolved cleanup rows in the current 211-callsite offline scan; interpolated
+channel topics remain recorded as dynamic expressions. The focused extractor
+test passes 1/1 and `npm run test:migration-data` passes 198/198. This is
+repository-only evidence: arbitrary wrappers/indirect calls, operation
+ownership/data-class decisions, and reconciliation to current production
+remain open. No live data, staging settings, Worker, or domain/DNS changed.
+
+## Production unread-count RPC ACL readback (2026-10-02 JST)
+
+The linked Supabase project was verified as `fanmark.id` in `ap-northeast-1`.
+A schema-only dump of the `public` schema (no table rows) confirmed that
+`public.get_unread_notification_count(uuid)` is `SECURITY DEFINER`, sets
+`current_user_id = COALESCE(user_id_param, auth.uid())`, and does not compare a
+supplied ID with `auth.uid()`. Its live ACL grants execution to `anon`,
+`authenticated`, and `service_role`. A caller who knows a user UUID can therefore
+retrieve that user's count of unread, delivered, unexpired notifications; the
+function does not return notification content. This is a verified count-only
+privacy exposure from schema definition and privileges, not a live endpoint
+probe.
+
+The Cloudflare `GET /api/me/notifications/unread-count` path instead derives
+the owner from the Better Auth session. Treat that as an authorization
+tightening, not exact source parity. No production function, grant, application
+row, Cloudflare resource, or domain/DNS setting was changed. Consider removing
+anonymous execution or binding the Supabase function to `auth.uid()` before
+the final switch while Supabase remains the active production backend.
+
+## Local guarded source for deployed manual expiry (2026-10-02 JST)
+
+The Supabase Functions metadata remains ACTIVE version 14 with
+`verify_jwt=true`. The local repository now contains a replacement at
+`supabase/functions/manual-expire-grace-licenses/index.ts`. It requires an
+admin role and asks Supabase Auth to verify the same request token's current
+assurance level; only `aal2` proceeds. The check fails closed on API errors and
+missing assurance. The local config preserves the observed platform JWT gate.
+
+The local handler rechecks `status='grace'` and the captured expiry cutoff on
+each update, pages candidates by ID, records the acting admin, and marks
+configuration/audit failures in the response. Its writes remain separate
+requests, so it does not claim transactional parity with the D1 lifecycle
+route. There is no repository callsite, but external callers or schedules have
+not been ruled out. Production version 14 is still unguarded and unchanged;
+the new source is prepared but not deployed. No function was invoked and no
+application rows were read or written.

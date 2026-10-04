@@ -1,46 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/useToast';
-
-interface AvailabilityRule {
-  id: string;
-  rule_type: string;
-  priority: number;
-  rule_config: RuleConfig | null;
-  is_available: boolean;
-  price_usd: number | null;
-  description: string;
-}
-
-type RuleConfig = {
-  prefixes?: Record<string, number>;
-  patterns?: string[];
-  pricing?: Record<string, number>;
-};
+import type { Json } from '@/integrations/supabase/types';
+import {
+  getAvailabilityRulesAdminBackend,
+  listAvailabilityRules,
+  updateAvailabilityRule,
+  type AvailabilityRuleAdmin,
+  type AvailabilityRuleConfig,
+  type AvailabilityRuleType,
+} from '@/lib/availability-rules-admin-api';
 
 export function AdminPatternRules() {
-  const [rules, setRules] = useState<AvailabilityRule[]>([]);
+  const [rules, setRules] = useState<AvailabilityRuleAdmin[]>([]);
+  const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
+  const [savingPrices, setSavingPrices] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchRules();
-  }, []);
-
-  const fetchRules = async () => {
+  const fetchRules = useCallback(async () => {
     try {
+      if (getAvailabilityRulesAdminBackend() === 'worker') {
+        setRules(await listAvailabilityRules());
+        return;
+      }
       const { data, error } = await supabase
         .from('fanmark_availability_rules')
-        .select('*')
+        .select('id, rule_type, priority, rule_config, is_available, price_usd, description, updated_at')
         .order('priority', { ascending: true });
 
       if (error) throw error;
-      setRules((data as AvailabilityRule[]) || []);
+      type SupabaseRuleRow = {
+        id: string;
+        rule_type: string;
+        priority: number;
+        rule_config: AvailabilityRuleConfig | null;
+        is_available: boolean;
+        price_usd: number | null;
+        description: string | null;
+        updated_at: string;
+      };
+      setRules(((data ?? []) as unknown as SupabaseRuleRow[]).map((rule) => ({
+        ...rule,
+        rule_type: rule.rule_type as AvailabilityRuleType,
+        rule_config: rule.rule_config ?? {},
+        price_usd: rule.price_usd === null ? null : rule.price_usd.toFixed(2),
+      })));
     } catch (error) {
       console.error('Error fetching rules:', error);
       toast({
@@ -50,10 +59,25 @@ export function AdminPatternRules() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    void fetchRules();
+  }, [fetchRules]);
 
   const updateRuleAvailability = async (ruleId: string, isAvailable: boolean) => {
     try {
+      const rule = rules.find((candidate) => candidate.id === ruleId);
+      if (!rule) return;
+      if (getAvailabilityRulesAdminBackend() === 'worker') {
+        const updated = await updateAvailabilityRule(ruleId, {
+          isAvailable,
+          expectedUpdatedAt: rule.updated_at,
+        });
+        setRules((current) => current.map((item) => item.id === ruleId ? updated : item));
+        toast({ title: "更新完了", description: `ルールが${isAvailable ? '有効' : '無効'}になりました` });
+        return;
+      }
       const { error } = await supabase
         .from('fanmark_availability_rules')
         .update({ is_available: isAvailable })
@@ -61,8 +85,8 @@ export function AdminPatternRules() {
 
       if (error) throw error;
 
-      setRules(rules.map(rule => 
-        rule.id === ruleId ? { ...rule, is_available: isAvailable } : rule
+      setRules((current) => current.map((item) =>
+        item.id === ruleId ? { ...item, is_available: isAvailable } : item
       ));
 
       toast({
@@ -78,25 +102,40 @@ export function AdminPatternRules() {
     }
   };
 
-  const updatePrefixPrice = async (ruleId: string, emoji: string, price: number) => {
+  const updatePrefixPrice = async (ruleId: string, emoji: string, price: string) => {
+    const draftKey = `${ruleId}:${emoji}`;
+    if (price === '') {
+      setPriceDrafts((current) => { const next = { ...current }; delete next[draftKey]; return next; });
+      return;
+    }
+    if (!/^(?:0|[1-9]\d{0,7})(?:\.\d{1,2})?$/u.test(price)) {
+      toast({ title: "エラー", description: "価格は0以上、小数点以下2桁までで入力してください" });
+      setPriceDrafts((current) => { const next = { ...current }; delete next[draftKey]; return next; });
+      return;
+    }
     try {
-      const rule = rules.find(r => r.id === ruleId);
+      const rule = rules.find((candidate) => candidate.id === ruleId);
       if (!rule) return;
-
-      const config: RuleConfig = { ...(rule.rule_config ?? {}) };
-      if (!config.prefixes) config.prefixes = {};
-      config.prefixes[emoji] = price;
-
-      const { error } = await supabase
-        .from('fanmark_availability_rules')
-        .update({ rule_config: config })
-        .eq('id', ruleId);
-
-      if (error) throw error;
-
-      setRules(rules.map(r => 
-        r.id === ruleId ? { ...r, rule_config: config } : r
-      ));
+      setSavingPrices((current) => ({ ...current, [draftKey]: true }));
+      if (getAvailabilityRulesAdminBackend() === 'worker') {
+        const updated = await updateAvailabilityRule(ruleId, {
+          prefixPrice: { emoji, priceUsd: price },
+          expectedUpdatedAt: rule.updated_at,
+        });
+        setRules((current) => current.map((item) => item.id === ruleId ? updated : item));
+      } else {
+        const config: AvailabilityRuleConfig = { ...rule.rule_config };
+        config.prefixes = { ...(config.prefixes ?? {}), [emoji]: Number(price) };
+        const { error } = await supabase
+          .from('fanmark_availability_rules')
+          .update({ rule_config: config as unknown as Json })
+          .eq('id', ruleId);
+        if (error) throw error;
+        setRules((current) => current.map((item) =>
+          item.id === ruleId ? { ...item, rule_config: config } : item
+        ));
+      }
+      setPriceDrafts((current) => { const next = { ...current }; delete next[draftKey]; return next; });
 
       toast({
         title: "更新完了",
@@ -108,6 +147,8 @@ export function AdminPatternRules() {
         title: "エラー",
         description: "価格の更新に失敗しました",
       });
+    } finally {
+      setSavingPrices((current) => { const next = { ...current }; delete next[draftKey]; return next; });
     }
   };
 
@@ -157,10 +198,19 @@ export function AdminPatternRules() {
                         type="number"
                         step="0.01"
                         min="0"
-                        value={rule.rule_config?.prefixes?.[emoji] || ''}
-                        onChange={(e) => {
-                          const price = parseFloat(e.target.value) || 0;
-                          updatePrefixPrice(rule.id, emoji, price);
+                        value={Object.prototype.hasOwnProperty.call(priceDrafts, `${rule.id}:${emoji}`)
+                          ? priceDrafts[`${rule.id}:${emoji}`]
+                          : (rule.rule_config.prefixes?.[emoji] ?? '')}
+                        disabled={savingPrices[`${rule.id}:${emoji}`]}
+                        onChange={(e) => setPriceDrafts((current) => ({
+                          ...current,
+                          [`${rule.id}:${emoji}`]: e.target.value,
+                        }))}
+                        onBlur={(e) => {
+                          const draft = priceDrafts[`${rule.id}:${emoji}`];
+                          if (draft !== undefined && draft !== String(rule.rule_config.prefixes?.[emoji] ?? '')) {
+                            void updatePrefixPrice(rule.id, emoji, e.currentTarget.value);
+                          }
                         }}
                         placeholder="価格 (USD)"
                         className="w-32"
