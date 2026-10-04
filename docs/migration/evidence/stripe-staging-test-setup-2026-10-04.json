@@ -83,7 +83,7 @@
     "userDataMigrated": false,
     "productionDomainChanged": false
   },
-  "billingRuntimeDeploymentAccepted": false,
+  "billingRuntimeDeploymentAccepted": true,
   "actualStripeProviderRehearsalAccepted": false,
   "fullMigrationAccepted": false,
   "independentReadback": {
@@ -169,5 +169,6 @@
       "activeTimestamp": "2026-10-04T11:24:14.357000Z"
     },
     "fullMigrationAccepted": false
-  }
+  },
+  "billingDeploymentEvidence": "stripe-staging-billing-deployment-2026-10-04.json"
 }

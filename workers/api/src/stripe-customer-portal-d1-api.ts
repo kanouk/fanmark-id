@@ -105,6 +105,27 @@ function validatePortalUrl(value: unknown): string {
   return value;
 }
 
+async function hasRequestBodyBytes(request: Request): Promise<boolean> {
+  // Cloudflare may provide an empty stream for a bodyless POST. The portal
+  // accepts no input, so reject the first byte without buffering the upload.
+  if (!request.body) return false;
+  const reader = request.body.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return false;
+      if (value.byteLength > 0) {
+        await reader.cancel();
+        return true;
+      }
+    }
+  } catch {
+    return true;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export async function handleStripeCustomerPortalD1Request(
   request: Request,
   env: Env,
@@ -126,7 +147,7 @@ export async function handleStripeCustomerPortalD1Request(
     headers.set("allow", METHODS);
     return json({ error: "method_not_allowed" }, 405, headers);
   }
-  if (request.body) return json({ error: "invalid_request" }, 400, headers);
+  if (await hasRequestBodyBytes(request)) return json({ error: "invalid_request" }, 400, headers);
   if (env.AUTH_BACKEND?.trim() !== "better-auth") return json({ error: "server_misconfigured" }, 500, headers);
 
   let userId: string | null;

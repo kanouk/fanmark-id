@@ -1,3 +1,24 @@
+# 2026-10-04 Stripe test-only runtime配備・Webhook有効化を確認
+
+ebfbcf6/CI37199647817はアプリ・Workerの両job成功。
+Worker b79307caに6 billing selectorと毎分Stripe dispatchを配備した。
+読み取り専用監視tokenで配備version/100%、selector、Cron2件、secret14名称を
+独立確認した。匿名Checkout401・foreign Origin403・未署名Webhook400を確認。
+配備前後で人の2 user/6 account/session1、MFA、Master generation13と全履歴、
+その他bindingとwakeを保持した。専用10 event test Webhookを有効化した。
+[配備と有効化の証拠](evidence/stripe-staging-billing-deployment-2026-10-04.json)。
+
+専用の合成userで実test Checkoutの支払い成功と署名Webhook3件の保存を確認した。
+日次Cronとは別の毎分dispatchも実行され、sourceから継承したtest Price設定の
+公開flagを安全側の照合が拒否した。test Price3件だけをCASでprivateへ修正し、
+同じID・価格を保持した。自然retryによるプラン反映を確認中。
+料金PortalはCloudflareの空POST streamを非空本文と誤認して400となるため、
+EOFを許可して実データの最初のbyteを拒否する修正と回帰試験を追加した。
+同修正のCI・配備・実Portalは未受け入れ。
+合成userの認証情報を保存・公開せず、既存人のアカウントは維持する。
+実課金・本番Stripe変更・実ユーザー移送・公開domain/DNSは行っていない。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Stripeテスト接続を設定、決済runtimeのCI・配備前
 
 本人のStripeログイン後、Fanmarkのtest accountと既存test keyの接続を確認した。

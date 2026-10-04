@@ -127,6 +127,42 @@ function fakeStripe(resultUrl = "https://billing.stripe.com/p/session/synthetic"
   };
 }
 
+test("customer portal accepts an empty POST stream but refuses any input bytes before auth", async () => {
+  const fixture = await createFixture();
+  try {
+    await insertSettings(fixture.database);
+    const stripe = fakeStripe();
+    let authCalls = 0;
+    const dependencies = { resolveUser: async () => { authCalls += 1; return USER_ID; }, ...stripe };
+    const empty = new Request(`${ORIGIN}/api/billing/customer-portal`, {
+      method: "POST", headers: { origin: ORIGIN }, body: "",
+    });
+    assert.ok(empty.body);
+    const accepted = await handleStripeCustomerPortalD1Request(empty, configuredEnv(fixture.database), dependencies);
+    assert.equal(accepted.status, 200);
+    assert.equal(authCalls, 1);
+
+    for (const body of ["{}", " ", new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array());
+        controller.enqueue(new TextEncoder().encode("{}"));
+        controller.close();
+      },
+    })]) {
+      const withInput = new Request(`${ORIGIN}/api/billing/customer-portal`, {
+        method: "POST", headers: { origin: ORIGIN }, body, duplex: "half",
+      });
+      const rejected = await handleStripeCustomerPortalD1Request(withInput, configuredEnv(fixture.database), dependencies);
+      assert.equal(rejected.status, 400);
+      assert.equal((await rejected.json()).error, "invalid_request");
+      assert.equal(authCalls, 1);
+    }
+    assert.equal(stripe.calls.filter(call => call.type === "portal").length, 1);
+  } finally {
+    await fixture.miniflare.dispose();
+  }
+});
+
 test("customer portal route is disabled until selected and refuses incomplete billing readiness", async (t) => {
   const disabled = await createFixture();
   try {

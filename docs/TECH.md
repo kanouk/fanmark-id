@@ -356,3 +356,17 @@ remote:falseとし、account/routes/servicesは使わず、終了時にlocal DB 
 同一identityの競合による確定済みSQL rollbackのみ最大2回再試行する。
 通信断などcommit成否が不明な結果は内部再実行しない。native17/17とclient12/12が通過。
 CI/配備の受け入れは別途必要で、source seq_keyの3 index gateは閉じない。
+
+### 2026-10-04 Stripe staging test接続
+
+`ebfbcf6`/CI37199647817の両job成功後、`fanmark-app-staging`へ6 billing selectorと
+毎分dispatch Cronを配備した。test-only policy、既存日次Cron、MFA/通知alarmは維持する。
+19 test Price、専用10 eventの署名Webhook、test default Portalと14 secret名称を設定した。
+本番Stripe/default buildは切り替えていない。現時点の正確な配備・受入状態は
+[migration/HANDOFF.md](migration/HANDOFF.md)と配備証拠を参照する。
+
+Subscriptionのprivate test Price照合は`system_settings.is_public=0`も要求する。
+sourceから継承した公開flagを、test Price3件だけのCASでprivateへ修正した。
+Customer PortalのPOSTは入力を受け取らない。Cloudflareの空streamはEOFまで確認して
+許可し、非空本文は最初のbyteでキャンセル・拒否して、認証/Stripe呼出しに進まない。
+Origin、owner/customer対応、test-only credential選択は従来のguardを維持する。
