@@ -8,12 +8,20 @@ import test from "node:test";
 import { selectScheduledJobs } from "../../workers/api/src/scheduled-dispatch.ts";
 import { validateScheduledJobCoverage } from "./scheduled-job-coverage.mjs";
 
-const baseline = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+const deployed = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+const baseline = structuredClone(deployed);
+delete baseline.vars.LICENSE_EXPIRY_BACKEND;
+delete baseline.vars.NOTIFICATION_ARCHIVE_BACKEND;
 function config(vars, crons = ["0 0 * * *"]) {
   return { ...baseline, vars: { ...baseline.vars, ...vars }, triggers: { crons } };
 }
 
-test("current staging alarm baseline requires no notification polling or provider dispatch", () => {
+test("operational staging routes both daily jobs without provider dispatch or notification polling", () => {
+  assert.deepEqual(validateScheduledJobCoverage(deployed), [
+    { job: "license-expiry", cron: "0 0 * * *" },
+    { job: "notification-archive", cron: "0 0 * * *" },
+  ]);
+  assert.deepEqual(selectScheduledJobs("0 0 * * *", deployed.vars), ["license-expiry", "notification-archive"]);
   assert.deepEqual(validateScheduledJobCoverage(baseline), []);
 });
 

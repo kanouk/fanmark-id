@@ -133,15 +133,18 @@ test("the exact sequence-backed fanmark event bigint key stays internal to SQL",
   assert.ok(insertStatements.length > 0, "the Worker still records fanmark events through D1");
 });
 
-test("staging enables only the MFA-protected manual lifecycle API, not the scheduled lifecycle Cron", () => {
+test("Paid staging enables bounded daily lifecycle and archive while inert rehearsals refuse it", () => {
   const vars = appStagingConfig.vars ?? {};
   assert.equal(vars.LIFECYCLE_RUN_BACKEND, "d1");
   assert.equal(vars.LICENSE_EXPIRY_TARGET_INCARNATION, "fanmark-business-staging-lifecycle-v1");
   assert.equal(vars.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST, lifecycleSchemaDigest());
   assert.equal(vars.LICENSE_EXPIRY_MAX_PAGES, "4");
-  assert.equal(vars.LICENSE_EXPIRY_BACKEND, undefined, "scheduled expiry must remain disabled");
-  assert.equal(vars.NOTIFICATION_ARCHIVE_BACKEND, undefined, "notification archival must remain disabled in staging until deliberately selected");
+  assert.equal(vars.LICENSE_EXPIRY_BACKEND, "d1");
+  assert.equal(vars.NOTIFICATION_ARCHIVE_BACKEND, "d1");
+  assert.equal(vars.NOTIFICATION_ARCHIVE_CRON, "0 0 * * *");
+  assert.equal(appStagingConfig.limits.cpu_ms, 30000);
+  for (const key of ["STRIPE_DISPATCH_BACKEND", "STRIPE_WEBHOOK_BACKEND", "BROADCAST_SEND_BACKEND", "AUTH_EMAIL_BACKEND"]) assert.equal(vars[key], undefined);
   assert.equal(vars.LICENSE_EXPIRY_CRON, "0 0 * * *");
   assert.deepEqual(appStagingConfig.triggers.crons, ["0 0 * * *"]);
-  assert.equal(isStagingNotificationWakeTarget(appStagingConfig), true);
+  assert.equal(isStagingNotificationWakeTarget(appStagingConfig), false);
 });

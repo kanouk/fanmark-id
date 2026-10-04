@@ -137,3 +137,28 @@ PaidのHTTP既定は30秒で、Cronの上限は実行間隔に依存する。
 [公式CPU制限](https://developers.cloudflare.com/workers/platform/limits/#cpu-time)。
 認証等の実測をこの上限と照合し、現行契約と必要な制限を確認してから判断する。
 Paid購入・変更の許可は未取得で、R2有効化からWorkers Paid契約を推定しない。
+
+## 2026-10-04 access and plan update
+
+The human signed in to the source Supabase dashboard. The authenticated provider
+overview confirms Google/GitHub/Discord/Apple enabled; no source users or secret
+values were copied. Edge Functions secret-name inventory also found Stripe and
+Resend names. The names do not expose key values or establish sandbox/live mode.
+Actual callback, provider-console setup and controlled email delivery remain open.
+
+The human enabled Workers Paid; its current-plan selection was verified in the
+account dashboard ([evidence](evidence/workers-paid-plan-2026-10-04.json)). The
+previous Free observation and pending approval above are historical. No purchase
+was performed by the agent. Daily job activation is being prepared independently
+of provider setup, retaining notification alarms and keeping provider dispatch off.
+
+GitHub OAuth apps now support up to 10 callback URLs. Inspect the existing app
+before deciding whether to add the exact staging URL; preserve its Supabase URL.
+Do not require a separate app solely based on the former one-URL restriction.
+[GitHub current documentation](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app).
+This capability is not evidence that the account settings have been changed.
+
+The authenticated GitHub provider form displays the existing callback as
+`https://auth.fanmark.id/auth/v1/callback`. Preserve this exact custom Auth
+domain callback during staging setup; do not replace it with an assumed
+project-ref URL. The form was read only; its Save button remained disabled.

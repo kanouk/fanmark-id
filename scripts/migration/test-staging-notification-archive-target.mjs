@@ -4,7 +4,11 @@ import test from "node:test";
 
 import { isStagingNotificationArchiveTarget } from "./staging-notification-archive-target.mjs";
 
-const config = JSON.parse(await readFile(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+const deployed = JSON.parse(await readFile(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+// Rehearsals require an explicitly inert fixture; active staging remains refused.
+const config = structuredClone(deployed);
+delete config.vars.LICENSE_EXPIRY_BACKEND;
+delete config.vars.NOTIFICATION_ARCHIVE_BACKEND;
 const identity = {
   loggedIn: true,
   email: "fanmark.id@gmail.com",
@@ -12,6 +16,7 @@ const identity = {
 };
 
 test("accepts only the intended workers.dev staging Worker and split D1 bindings", () => {
+  assert.equal(isStagingNotificationArchiveTarget(deployed, identity), false);
   assert.equal(isStagingNotificationArchiveTarget(config, identity), true);
 });
 

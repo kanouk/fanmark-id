@@ -51,7 +51,7 @@ microsecond境界や可用性判定を置き換えない。自由なSQL入力は
 baseline、CPU/plan適合を確認し、設定を差分でレビューする。
 `scheduled-job-coverage.mjs`でrequired jobの周期が実dispatcherに到達することを確認する。
 Cron登録と伝播をcontrol planeと実行結果で確認し、selector追加だけで完了にしない。
-main expiry/archiveの定常有効化は未実施。隔離archiveの実Cron受け入れは
+main expiry/archiveの定常有効化は現在準備中で、配備と実行の受け入れは未実施。隔離archiveの実Cron受け入れは
 [保存済み証拠](evidence/isolated-notification-archive-cron-2026-10-03.json)を使う。
 
 2026-10-04、契約画面の「無料プラン／現在のプラン」でWorkers Freeを確認した。
@@ -59,8 +59,13 @@ subscriptions APIは現OAuthで403/10000、workers/account-settingsの
 `default_usage_model=standard`だけではPaid契約を判定できなかった。
 FreeのHTTP/Cron CPUは10msで、ネットワーク・DB待ち時間とは異なる。
 [公式CPU制限](https://developers.cloudflare.com/workers/platform/limits/#cpu-time)。
-Paidへの購入・変更は未承認。必要なCPUを満たす設定を確定するまでmainの
-期限/archiveジョブを有効化しない。プラン確認はR2有効化とは別である。
+その後、ユーザーがWorkers Paidを有効化した。対象accountの契約画面でPaidの
+「現在のプラン」とFreeの「ダウングレード」を確認した。
+[契約確認](evidence/workers-paid-plan-2026-10-04.json)。エージェントは購入していない。
+checked-in app configでCPU設定30,000ms、日次expiry/archive selectorを準備した。
+CI・配備・remote readback・日次実行の確認前に定常運用を完了扱いしない。
+既存の合成rehearsal guardはactive jobを拒否し続け、試験用の停止fixtureと区別する。
+Stripe/Resendは資格情報・テスト宛先が未確定のため有効化しない。R2とは別契約である。
 
 ## 秘密の管理と権限
 

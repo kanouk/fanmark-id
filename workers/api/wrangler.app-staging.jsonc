@@ -5,6 +5,9 @@
   "compatibility_date": "2026-09-18",
   "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
   "workers_dev": true,
+  "limits": {
+    "cpu_ms": 30000
+  },
   "assets": {
     "directory": "../../dist-staging",
     "binding": "ASSETS",
@@ -71,7 +74,10 @@
   ],
   "vars": {
     "D1_TOPOLOGY": "split",
+    "LICENSE_EXPIRY_BACKEND": "d1",
     "LICENSE_EXPIRY_CRON": "0 0 * * *",
+    "NOTIFICATION_ARCHIVE_BACKEND": "d1",
+    "NOTIFICATION_ARCHIVE_CRON": "0 0 * * *",
     "LICENSE_EXPIRY_TARGET_INCARNATION": "fanmark-business-staging-lifecycle-v1",
     "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST": "370662758a78a7f0ab01f2ee005bf082c5858065a2ed850aca373350dcef86a9",
     "LICENSE_EXPIRY_MAX_PAGES": "4",

@@ -276,6 +276,11 @@ scheduled expiryはsource-shaped D1上で期限切れgraceライセンス、抽�
 
 Cloudflare buildでは`/password-setup`をBetter Authの初回OAuthパスワード設定画面として使い、D1プロフィールのsetup flagをGateに反映する。`POST /api/me/password-setup`は本人sessionからユーザーIDを決め、Better Auth server-only password APIとbusiness D1のflagを連携する。通常のパスワード変更は現在パスワードを要求する。合成検証と非atomicなAuth/business D1再試行契約は `docs/migration/password-setup-api.md` を参照する。2026-09-27にCI成功後のstaging反映を確認し、匿名POSTの401とsetup画面の200/noindexを確認済み。OAuth資格情報が未設定のためprovider実認証は未確認。
 
+2026-10-04、ユーザーのWorkers Paid有効化と契約画面を確認後、app staging configに
+日次expiry/archive selectorとCPU設定30,000msを準備した。既存rehearsal guardは
+ジョブ有効のmainを拒否するままで、local editorはschedulerと運用selectorを除いた
+隔離configを使う。CI・配備・日次実行の受け入れは別の証拠を必要とする。
+
 ## Cloudflare stagingの運用確認
 
 Cloudflare stagingの運用確認は`docs/migration/OPERATIONS.md`と

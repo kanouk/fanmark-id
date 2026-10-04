@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { isStagingNotificationWakeTarget, stagingNotificationScheduleMode } from "./staging-notification-wake-target.mjs";
-const current = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+const deployed = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+const current = structuredClone(deployed);
+delete current.vars.LICENSE_EXPIRY_BACKEND;
+delete current.vars.NOTIFICATION_ARCHIVE_BACKEND;
 const candidate = {
   ...current,
   vars: { ...current.vars, NOTIFICATION_WAKE_BACKEND: "durable-object" },
@@ -11,6 +14,7 @@ const candidate = {
   migrations: [{ tag: "notification-wake-v1", new_sqlite_classes: ["NotificationWakeCoordinator"] }],
 };
 test("only the complete staged SQLite alarm configuration passes", () => {
+  assert.equal(isStagingNotificationWakeTarget(deployed), false);
   assert.equal(isStagingNotificationWakeTarget(current), true);
   assert.equal(isStagingNotificationWakeTarget(candidate), true);
   assert.equal(isStagingNotificationWakeTarget({ ...candidate, durable_objects: undefined }), false);

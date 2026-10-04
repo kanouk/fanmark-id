@@ -5,9 +5,14 @@ import test from "node:test";
 import { isStagingExpiryCronBaseline } from "./staging-expiry-cron-config.mjs";
 import { stagingBusinessBaselineRowCount } from "./staging-notification-master-baseline.mjs";
 
-const config = JSON.parse(await readFile(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+const deployed = JSON.parse(await readFile(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+// Rehearsals require an explicitly inert fixture; active staging remains refused.
+const config = structuredClone(deployed);
+delete config.vars.LICENSE_EXPIRY_BACKEND;
+delete config.vars.NOTIFICATION_ARCHIVE_BACKEND;
 
 test("accepts the checked-in staging notification and daily-expiry Cron baseline", () => {
+  assert.equal(isStagingExpiryCronBaseline(deployed), false);
   assert.equal(isStagingExpiryCronBaseline(config), true);
 });
 

@@ -1,3 +1,13 @@
+# 2026-10-04 Workers Paidと日次ジョブ有効化の準備
+
+ユーザーのPaid有効化後、対象accountのPaid「現在のプラン」を確認した。
+[証拠](evidence/workers-paid-plan-2026-10-04.json)。Supabase管理画面にもログイン済み。
+app staging configで日次expiry/archiveとCPU設定30,000msを準備している。
+既存のremote合成smoke guardはactive jobを拒否するままで、通常CIのfixtureを
+停止baselineと運用configへ分けた。配備・実行はまだ受け入れていない。
+Stripe/Resend/OAuth実接続、鍵管理・運用担当/保存期間/RPO-RTO、最終統合は残る。
+以下は過去のcheckpoint。
+
 # 2026-10-04 通常CIの公開参照15件と運用確認手順
 
 `f5ceed0`/CI37163953832はcompleted/success、application・Worker両job成功。
