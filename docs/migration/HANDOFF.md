@@ -1,3 +1,18 @@
+# 2026-10-04 Apple既存account連携・session失効を確認、再ログイン待ち
+
+Worker495b3ce4/runtime7e6cf76で本人の実Apple callbackがdashboardへ戻り、
+既存Google userへのApple account連携とsession所有者の一致を確認した。
+Auth user2/account6/session1、Business profile2。元のGitHub/Google identity・
+credentialとDiscord連携を保持する。通常logoutでsession0、/authの再読込も未認証。
+再ログインは開始から10分以上後にstate_mismatchで戻り、session0/account6を
+再確認した。期限切れは有力な仮説だが、cookieの具体的な失敗は取得していない。
+[実callback/logoutの証拠](evidence/apple-staging-real-auth-2026-10-04.json)。
+
+次は本人が/authのAppleボタンから開始し、続けて認証する。先にOAuthを開始して
+長時間待たない。再ログイン、新規Apple user/初回password setup、relayは未受け入れ。
+staging appで待機し、資格情報・schema・Worker配備・本番データ/DNSは変更しない。
+fdc3bf7の文書CI37193005708は両job成功。以下は過去のcheckpoint。
+
 # 2026-10-04 Apple form POST修正をstaging配備・本人パスワード入力待ち
 
 7e6cf76/CI37192167542は両job成功。保持データ/設定のguardを確認して配備し、

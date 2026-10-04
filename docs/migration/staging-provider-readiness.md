@@ -318,3 +318,22 @@ changing retained identities/master/settings. Independent app/auth health is200
 and attention is empty. [Deployment evidence](evidence/apple-form-post-deployment-2026-10-04.json).
 A fresh real flow is at human Apple password entry in tab8. Actual callback and
 new-user/first-password/logout/relogin/relay remain unaccepted.
+
+## Actual Apple existing-account callback/logout (2026-10-04)
+
+After a fresh human sign-in, version495b3ce4 reached the dashboard. Read-only
+Auth/Business receipts prove the Apple account and session owner match the
+retained Google user. Original GitHub/Google credentials and Discord linkage
+remain intact (user2/account6/session1, profiles2). Normal logout removed the
+server session; a reload of /auth still showed the login form.
+
+Repeat login returned state_mismatch after more than ten minutes at the human
+password handoff. The installed state cookie lasts300 seconds and its database
+verification lasts600 seconds; expiry is likely, but the exact cookie failure
+was not captured. Independent readback still shows session0 and unchanged
+identities. The next human retry starts from the staging Apple button and
+continues immediately, rather than waiting on an already-started OAuth flow.
+Repeat login, new Apple signup/first password and relay remain unaccepted.
+[Safe actual callback/logout evidence](evidence/apple-staging-real-auth-2026-10-04.json).
+No credential, schema, runtime deployment, source user migration or domain
+change was made during this acceptance check.
