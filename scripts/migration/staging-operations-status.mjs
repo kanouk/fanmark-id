@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BUSINESS_MIGRATION_SEQUENCE } from './business-migration-ledger.mjs';
+import { createStagingMonitorApi } from './staging-monitor-api.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const api = path.join(repo, 'workers/api');
@@ -30,21 +31,10 @@ function cli(args) {
     }));
   } catch { throw new Error('staging_operations_cli_failed'); }
 }
-async function apiRead(resource) {
-  try {
-    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/${resource}`, {
-      method: 'GET', redirect: 'error', signal: AbortSignal.timeout(30000),
-      headers: { authorization: `Bearer ${token}` },
-    });
-    assert.ok(response.ok);
-    const envelope = await response.json();
-    assert.equal(envelope.success, true);
-    return envelope.result;
-  } catch { throw new Error('staging_operations_control_plane_failed'); }
-}
-
 async function observe() {
-  assert.deepEqual(process.argv.slice(2), ['--read-only']);
+  const args = process.argv.slice(2);
+  const monitorTokenMode = args.includes('--monitor-token');
+  assert.deepEqual(args, monitorTokenMode ? ['--read-only', '--monitor-token'] : ['--read-only']);
   const config = JSON.parse(await readFile(path.join(api, 'wrangler.app-staging.jsonc'), 'utf8'));
   assert.equal(config.name, worker);
   assert.equal(config.account_id, account);
@@ -53,15 +43,23 @@ async function observe() {
   for (const [binding, id] of Object.entries(databases)) {
     assert.equal(config.d1_databases.find(row => row.binding === binding)?.database_id, id);
   }
-  stage = 'identity';
-  const identity = cli(['whoami', '--json']);
-  assert.equal(identity.email, 'fanmark.id@gmail.com');
-  assert.ok(identity.accounts.some(row => row.id === account));
-  stage = 'token';
-  token = cli(['auth', 'token', '--json']).token;
-  assert.equal(typeof token, 'string');
+  if (monitorTokenMode) {
+    stage = 'monitor_token';
+    token = process.env.FANMARK_STAGING_MONITOR_API_TOKEN;
+    assert.ok(typeof token === 'string' && token.trim().length > 0);
+  } else {
+    stage = 'identity';
+    const identity = cli(['whoami', '--json']);
+    assert.equal(identity.email, 'fanmark.id@gmail.com');
+    assert.ok(identity.accounts.some(row => row.id === account));
+    stage = 'token';
+    token = cli(['auth', 'token', '--json']).token;
+    assert.equal(typeof token, 'string');
+  }
+  const monitorApi = createStagingMonitorApi({ token });
+  if (monitorTokenMode) await monitorApi.verifyToken();
   stage = 'remote_bindings';
-  const settings = await apiRead(`workers/scripts/${worker}/settings`);
+  const settings = await monitorApi.readWorkerSettings();
   assert.ok(Array.isArray(settings.bindings));
   for (const [binding, id] of Object.entries(databases)) {
     const remote = settings.bindings.find(row => row.name === binding);
@@ -69,7 +67,7 @@ async function observe() {
     assert.equal(remote.id, id);
   }
   stage = 'deployment';
-  const deployments = await apiRead(`workers/scripts/${worker}/deployments`);
+  const deployments = await monitorApi.readWorkerDeployments();
   const latest = deployments.deployments?.[0];
   assert.ok(latest?.versions?.length === 1 && latest.versions[0].percentage === 100);
   const vars = Object.fromEntries(settings.bindings.filter(row => row.type === 'plain_text')
@@ -88,16 +86,17 @@ async function observe() {
     assert.ok(allowed, 'unexpected_staging_selector');
   }
   stage = 'schema_ledger';
-  const ledger = cli(['d1', 'execute', 'fanmark-business-staging', '--remote', '--json',
-    '--command', 'SELECT name FROM d1_migrations ORDER BY id']);
+  const ledger = monitorTokenMode ? await monitorApi.readBusinessLedger()
+    : cli(['d1', 'execute', 'fanmark-business-staging', '--remote', '--json',
+      '--command', 'SELECT name FROM d1_migrations ORDER BY id']);
   assert.equal(ledger[0]?.success, true);
   assert.deepEqual(ledger[0].results.map(row => row.name), [...BUSINESS_MIGRATION_SEQUENCE]);
   stage = 'aggregate_counts';
   const sql = (await readFile(path.join(repo, 'scripts/migration/staging-operations-status.sql'), 'utf8'))
     .replace(/^--[^\n]*$/gmu, '').trim();
   assert.ok(/^SELECT\s/iu.test(sql) && sql.endsWith(';') && !sql.slice(0, -1).includes(';'));
-  const result = cli(['d1', 'execute', 'fanmark-business-staging', '--remote', '--json',
-    '--command', sql]);
+  const result = monitorTokenMode ? await monitorApi.readBusinessCounts()
+    : cli(['d1', 'execute', 'fanmark-business-staging', '--remote', '--json', '--command', sql]);
   assert.equal(result.length, 1);
   assert.equal(result[0]?.success, true);
   assert.equal(result[0].results.length, 1);
@@ -123,6 +122,8 @@ async function observe() {
   }
   return { observedAt: new Date().toISOString(), scope: 'read-only staging aggregates; no repair/provider/data/domain action',
     account, worker, version: latest.versions[0].version_id, ledgerEntries: ledger[0].results.length,
+    credentialSource: monitorTokenMode ? 'monitor_api_token' : 'wrangler_oauth',
+    leastPrivilegeAccepted: false,
     selectors, counts, publicHealth, attention, disabledJobs,
     recurringOperationsAccepted: false, providerIntegrationAccepted: false };
 }

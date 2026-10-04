@@ -34,6 +34,36 @@ microsecond境界や可用性判定を置き換えない。自由なSQL入力は
 | 90日超の完了通知がある | archive selectorとCron、partial/conflictsログを確認。履歴と元行の衝突を確認してから同じ処理を再開する。 |
 | Stripe due dispatch、期限切れlease、dead_letterがある | providerと署名receipt/dispatch状態を確認。receiptを削除して再送しない。test-onlyの接続受け入れ後に通常dispatcherを再開する。 |
 
+### 監視専用API tokenの経路
+
+配備用Wrangler OAuthを使わない監視は、次の明示modeを使う。
+`FANMARK_STAGING_MONITOR_API_TOKEN`は秘密保管先からプロセス環境へ渡し、
+値をシェルコマンド・Git・出力へ直接書かない。
+
+```sh
+node scripts/migration/staging-operations-status.mjs --read-only --monitor-token
+```
+
+このmodeはWranglerを呼ばず、一般の`CLOUDFLARE_API_TOKEN`も参照しない。
+専用tokenの欠落・失効・API拒否時は失敗終了し、他の資格情報へ戻らない。
+Cloudflareのtoken verificationと固定accountのWorker設定・100%版・三D1 bindingを
+照合してから、Business D1のmigration名と固定集計SELECTだけを問い合わせる。
+APIのread receiptは`rows_written=0`かつ`changed_db=false`を要求する。
+資格情報をpublic app/auth healthの要求へ送らず、token IDや生のprovider errorも出さない。
+
+監視用tokenの作成時に必要な権限候補は対象accountだけの`Workers Scripts Read`と
+`D1 Read`。zone/R2/配備権限を追加しない。実際のIAM policyと対象resourceの確認、
+専用tokenでの実行は未受け入れ。tokenがactiveであることや固定要求の成功だけでは
+書込み権限がないことを証明できないため、reportの`leastPrivilegeAccepted`はfalseのまま。
+`credentialSource`で専用tokenとWrangler OAuthを区別する。
+[公式D1 queryの受理権限](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/)と
+[Worker設定API](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/script_and_version_settings/methods/get/)を参照する。
+
+`npm run test:staging-monitor-api`は実コマンドの専用modeを隔離したprovider応答で実行し、
+一般token/CLIへのfallback拒否、binding不一致時の問い合わせ停止、秘密を含む拒否応答の
+非露出、書込みreceipt拒否を検証する。通常migration CIにも含める。
+新tokenの作成・権限変更、保管先、定期実行・通知の設定はこのコード追加から推定しない。
+
 これは手動で実行できる監視コマンドであり、外部への通知や定期監視サービスを
 設定した証拠ではない。担当者と監視頻度は運用開始前に決める。
 

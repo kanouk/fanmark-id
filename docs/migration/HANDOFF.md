@@ -1,3 +1,27 @@
+# 2026-10-04 GitHub実認証の受け入れと監視専用token経路
+
+`0fb4976`/CI37180854336両job成功、Worker
+`07bf9d61-d9be-43db-875e-492ed6e2e7c5`へ100%配備済み。
+実GitHub callback/初回パスワード保存に加え、ログアウトでsession0・再読込後の未認証、
+同一GitHubの再ログインで同じuser/profile・session1・setup flag0を確認した。
+配備前後のアカウント/認証情報・Master/料金履歴・MFA世代を保持している。
+[実認証の証拠](evidence/github-staging-real-auth-2026-10-04.json)。
+本人管理の試験アカウントは保持し、旧全owned行0件canaryへ合わせて削除しない。
+最初の再読込は旧PWA moduleを使ったため、現行moduleの実行と配信bytes一致を確認して
+ログアウトを再検証した。通常HTML navigationの/auth・/dashboard・/pwaは200で、
+HTML指定のない要求の404は不具合ではなかった。
+[配備版のnavigation証拠](evidence/staging-navigation-2026-10-04.json)。
+
+本変更は配備用資格情報を使わない監視CLI経路とその回帰試験を追加する。
+`--read-only --monitor-token`は専用環境tokenを要求し、Wrangler/一般tokenへ戻らない。
+固定account/Worker/DBとread receiptを検証する。実tokenの作成・IAM policy・定期監視・
+秘密の保管/運用条件は別の受け入れ。アプリ/Worker/config/schemaは変更しないため、
+この監視tool変更のためのWorker再配備・合成canary反復は不要。
+Google callback追加・資格情報保存は具体的な本人承認待ち。
+日次自然発火（2026-10-05 09:00 JST）、他provider/email/Stripe/運用/最終統合は残る。
+既存ユーザー/Auth/Storageの実移送・公開ドメイン切替は後工程。
+以下は過去のcheckpoint。
+
 # 2026-10-04 GitHub初回登録・パスワード保存とログアウト修正
 
 `f2881a5`/CI37172900459の両job成功後、Worker
