@@ -1,3 +1,32 @@
+# 2026-10-04 定期請求失敗・初回逆順配信・復旧を確認
+
+runtimeは`87b61ef`/CI37200812928両job成功・Worker`ca971193`を維持する。
+前回記録`7118315`のCI37203735982も両job成功。専用合成ownerのStripe test契約を
+provider APIで作成し、アプリAPIでCreatorからBusinessへ変更を要求した。
+公式拒否payment methodによる実請求の402/card_declined、未払いopenを確認。
+実署名invoice.payment_failedの自然毎分処理後、D1と本人用subscription DTOに
+past_due/失敗時刻/失敗typeが反映され、プランはCreatorのままだった。
+
+最初の成功通知だけを専用test endpointのevent選択から一時保留し、初期契約作成後に
+元の10 eventへ戻した。失敗適用後も古い成功receiptが存在しないことを別processで
+確認してからStripe CLIでその実eventを初めて配送した。delivery1/appliedとなり、
+台帳は古いsource invoiceから現在の失敗invoiceを再取得してpayment_failedを維持した。
+古い成功で失敗を消さないことを独立read-only照合でも確認した。
+その後同じ未払い請求を公式成功payment methodで支払い、実署名処理後に
+Business/active・失敗時刻/typeのNULL化を独立確認した。
+
+アプリFree即時解約の署名反映後、所有test Customerだけを閉じ、全dispatch完了後に
+専用Auth/profile/契約/command/台帳/receipt/fence等を片付けた。別processで合成行0、
+元の2 user/6 account/session1、40表所有件数・Master全履歴・MFA/wakeの一致、
+app/auth200・attention空を確認した。test請求/event履歴と設定は保持する。
+[定期請求の実サービス証拠](evidence/stripe-staging-invoice-provider-2026-10-04.json)。
+
+今回はprovider API fixtureと本人用HTTP APIの検証で、同一利用者の画面全体や
+新規app Checkoutの追加証明ではない。subscription invoice payment_action_required、
+Resend、Apple/Discord新規登録/relay、日次自然発火・運用・最終統合は残る。
+コード/schema/配備の変更、実課金・実ユーザー移送・公開domain/DNS変更はない。
+六作業の完了条件はCOMPLETIONを維持する。以下は過去のcheckpoint。
+
 # 2026-10-04 Stripe実延長・カード拒否・3DS・重複単一適用を確認
 
 runtimeは引き続き`87b61ef`/CI37200812928両job成功・Worker`ca971193`。

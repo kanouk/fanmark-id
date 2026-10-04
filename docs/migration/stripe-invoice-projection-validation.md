@@ -1,5 +1,32 @@
 # Stripe invoice projection validation (#32)
 
+## Actual D1 staging invoice acceptance (2026-10-04)
+
+The current staging candidate is 87b61ef / Worker ca971193, with CI37200812928
+both jobs successful. A disposable owner used a real test provider subscription
+fixture and app plan-change API. Invoice payment with the official decline
+method returned HTTP402/card_declined. Natural signed-event dispatch projected
+past_due and invoice.payment_failed into D1 and the owner subscription DTO.
+The unconfirmed Business upgrade kept the profile at Creator.
+
+The dedicated test endpoint temporarily held only the initial success event;
+its original ten events were restored immediately after fixture creation. An
+independent read established that success receipt was absent after the newer
+failure applied. Stripe CLI then delivered this actual old event for the first
+time. It applied with delivery_count=1, reconciled the current failed invoice,
+and preserved failure. This proves initial reverse delivery, not just replay
+of an already-applied receipt. Paying that same open invoice with the official
+success method produced actual signed recovery: Business/active, failure
+time/type cleared. Separate read-only processes confirmed each phase, app Free
+cancellation, owned cleanup and exact original state preservation.
+
+See [aggregate evidence](evidence/stripe-staging-invoice-provider-2026-10-04.json).
+Provider test history/settings remain. Invoice payment_action_required, a
+same-user whole-application UI flow and full migration are still unaccepted.
+The following sections retain historical local/Postgres evidence; statements
+that staging selectors were absent describe the earlier deployment state.
+
+
 Status: offline implementation and local Edge Function wiring are complete;
 staging and production wiring remain pending. This slice adds a reusable
 projection adapter, an exact-dispatch lease claim, and a service-only SQL
@@ -156,8 +183,8 @@ request timeout, disables SDK retries, and rechecks the receipt/customer lease
 after the remote reads before applying state. It does not renew during a long
 provider call; work that may exceed the 300-second lease is rejected for retry.
 The additive D1 migration is applied only to the empty APAC staging database;
-the invoice projection code is deployed there but stays disabled because no
-Stripe selectors or secrets are configured. Production migration and reviewed
+the invoice projection code initially stayed disabled before Stripe selectors
+and secrets were configured. The current test-only D1 acceptance is recorded above. Production migration and reviewed
 live endpoint cutover remain open.
 
 The current invoice projection suite passes 28 tests under repository Node

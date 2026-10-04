@@ -1,0 +1,1189 @@
+{
+  "recordedAt": "2026-10-04T13:19:46.012Z",
+  "scope": "Dedicated disposable staging owner; actual Stripe test subscription and invoices, signed events and natural minute dispatch. Initial subscription fixture created through provider API, not app Checkout. No live funds, production data or DNS changes.",
+  "runtime": {
+    "sourceCommit": "87b61ef74e434e44396e5b5ec67fcc737c85dadf",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "ciRunId": "37200812928",
+    "ciBothJobsSuccess": true,
+    "previousDocumentationHead": "71183150d0adb867a03df83acaeaa403a93196d8",
+    "previousDocumentationCI": "37203735982",
+    "previousDocumentationCIBothJobsSuccess": true
+  },
+  "acceptance": {
+    "actualSubscriptionInvoicePaymentFailure": true,
+    "actualSignedProviderDelivery": true,
+    "naturalMinuteDispatcher": true,
+    "initialOutOfOrderDelivery": true,
+    "oldSuccessCannotClearCurrentFailure": true,
+    "actualInvoicePaymentRecovery": true,
+    "appFreeCancellation": true,
+    "ownedCustomerClosed": true,
+    "independentCleanupReadback": true,
+    "allOriginalStatePreserved": true,
+    "webhookOriginalEventSelectionRestored": true,
+    "subscriptionInvoicePaymentActionRequiredAccepted": false,
+    "sameUserWholeApplicationUIAccepted": false,
+    "actualPhoneAccepted": false,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "journey": {
+    "startedAt": "2026-10-04T13:10:05.338Z",
+    "testOnly": true,
+    "phases": [
+      {
+        "phase": "provider_owned_initial_subscription",
+        "directTestProviderFixture": true,
+        "appCheckoutAcceptance": false,
+        "initialSubscriptionStatus": "active",
+        "initialInvoicePaid": true,
+        "initialSuccessReceiptAbsent": true,
+        "initialInvoiceAmount": 1000,
+        "currency": "jpy",
+        "observedAt": "2026-10-04T13:10:31.237Z"
+      },
+      {
+        "phase": "invoice_readback",
+        "plan": "free",
+        "local": [],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": null
+        },
+        "receipts": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "received",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+            "isHeldInitialSuccess": false
+          }
+        ],
+        "ledgers": [],
+        "invoiceFailureAccepted": false,
+        "initialOutOfOrderAccepted": false,
+        "invoiceRecoveryAccepted": false,
+        "retainedHumanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T13:10:37.331Z"
+      },
+      {
+        "phase": "invoice_readback",
+        "plan": "creator",
+        "local": [
+          {
+            "status": "active",
+            "amount": 1000,
+            "payment_failure_at": null,
+            "payment_failure_type": null,
+            "next_payment_attempt": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "active",
+            "product_id": "prod_VNYUonUkUcODVH",
+            "current_period_start": "2026-10-04T13:10:28.000000Z",
+            "current_period_end": "2026-11-04T13:10:28.000000Z",
+            "amount": 1000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+            "isHeldInitialSuccess": false
+          }
+        ],
+        "ledgers": [],
+        "invoiceFailureAccepted": false,
+        "initialOutOfOrderAccepted": false,
+        "invoiceRecoveryAccepted": false,
+        "retainedHumanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T13:11:31.598Z"
+      },
+      {
+        "phase": "app_upgrade_request",
+        "plan": "business",
+        "result": {
+          "success": true,
+          "updated": false,
+          "pending": true,
+          "requires_action": true
+        },
+        "observedAt": "2026-10-04T13:11:55.172Z"
+      },
+      {
+        "phase": "actual_subscription_invoice_decline",
+        "providerHTTP402": true,
+        "errorCode": "card_declined",
+        "invoiceOpen": true,
+        "amountPaid": 0,
+        "testOnly": true,
+        "observedAt": "2026-10-04T13:11:57.976Z"
+      },
+      {
+        "phase": "invoice_readback",
+        "plan": "creator",
+        "local": [
+          {
+            "status": "active",
+            "amount": 1000,
+            "payment_failure_at": null,
+            "payment_failure_type": null,
+            "next_payment_attempt": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "active",
+            "product_id": "prod_VNYUonUkUcODVH",
+            "current_period_start": "2026-10-04T13:10:28.000000Z",
+            "current_period_end": "2026-11-04T13:10:28.000000Z",
+            "amount": 1000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "received",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_failed",
+            "status": "received",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+            "isHeldInitialSuccess": false
+          }
+        ],
+        "ledgers": [],
+        "invoiceFailureAccepted": false,
+        "initialOutOfOrderAccepted": false,
+        "invoiceRecoveryAccepted": false,
+        "retainedHumanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T13:12:12.953Z"
+      },
+      {
+        "phase": "invoice_readback",
+        "plan": "creator",
+        "local": [
+          {
+            "status": "past_due",
+            "amount": 2000,
+            "payment_failure_at": "2026-10-04T13:12:17.490000Z",
+            "payment_failure_type": "invoice.payment_failed",
+            "next_payment_attempt": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "past_due",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T13:11:53.000000Z",
+            "current_period_end": "2026-11-04T13:11:53.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": "2026-10-04T13:12:17.490000Z",
+            "next_payment_attempt": null,
+            "payment_failure_type": "invoice.payment_failed"
+          }
+        },
+        "receipts": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_failed",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+            "isHeldInitialSuccess": false
+          }
+        ],
+        "ledgers": [
+          {
+            "outcome": "payment_failed",
+            "invoiceStatus": "open",
+            "paymentIntentStatus": "requires_payment_method",
+            "status": "applied",
+            "sourceIsInitialInvoice": false,
+            "currentIsFailedInvoice": true
+          }
+        ],
+        "invoiceFailureAccepted": true,
+        "initialOutOfOrderAccepted": false,
+        "invoiceRecoveryAccepted": false,
+        "retainedHumanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T13:12:52.082Z"
+      },
+      {
+        "phase": "before_initial_reverse_delivery",
+        "oldSuccessReceiptAbsent": true,
+        "newFailureAlreadyApplied": true,
+        "observedAt": "2026-10-04T13:13:25.053Z"
+      },
+      {
+        "phase": "invoice_readback",
+        "plan": "creator",
+        "local": [
+          {
+            "status": "past_due",
+            "amount": 2000,
+            "payment_failure_at": "2026-10-04T13:12:17.490000Z",
+            "payment_failure_type": "invoice.payment_failed",
+            "next_payment_attempt": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "past_due",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T13:11:53.000000Z",
+            "current_period_end": "2026-11-04T13:11:53.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": "2026-10-04T13:12:17.490000Z",
+            "next_payment_attempt": null,
+            "payment_failure_type": "invoice.payment_failed"
+          }
+        },
+        "receipts": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_failed",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "received",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:13:25.626000Z",
+            "isHeldInitialSuccess": true
+          }
+        ],
+        "ledgers": [
+          {
+            "outcome": "payment_failed",
+            "invoiceStatus": "open",
+            "paymentIntentStatus": "requires_payment_method",
+            "status": "applied",
+            "sourceIsInitialInvoice": false,
+            "currentIsFailedInvoice": true
+          }
+        ],
+        "invoiceFailureAccepted": true,
+        "initialOutOfOrderAccepted": false,
+        "invoiceRecoveryAccepted": false,
+        "retainedHumanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T13:13:37.820Z"
+      },
+      {
+        "phase": "invoice_readback",
+        "plan": "creator",
+        "local": [
+          {
+            "status": "past_due",
+            "amount": 2000,
+            "payment_failure_at": "2026-10-04T13:14:17.053000Z",
+            "payment_failure_type": "invoice.payment_failed",
+            "next_payment_attempt": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "past_due",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T13:11:53.000000Z",
+            "current_period_end": "2026-11-04T13:11:53.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": "2026-10-04T13:14:17.053000Z",
+            "next_payment_attempt": null,
+            "payment_failure_type": "invoice.payment_failed"
+          }
+        },
+        "receipts": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_failed",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:13:25.626000Z",
+            "isHeldInitialSuccess": true
+          }
+        ],
+        "ledgers": [
+          {
+            "outcome": "payment_failed",
+            "invoiceStatus": "open",
+            "paymentIntentStatus": "requires_payment_method",
+            "status": "applied",
+            "sourceIsInitialInvoice": true,
+            "currentIsFailedInvoice": true
+          },
+          {
+            "outcome": "payment_failed",
+            "invoiceStatus": "open",
+            "paymentIntentStatus": "requires_payment_method",
+            "status": "applied",
+            "sourceIsInitialInvoice": false,
+            "currentIsFailedInvoice": true
+          }
+        ],
+        "invoiceFailureAccepted": true,
+        "initialOutOfOrderAccepted": true,
+        "invoiceRecoveryAccepted": false,
+        "retainedHumanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T13:15:24.780Z"
+      },
+      {
+        "phase": "actual_invoice_recovery_payment",
+        "paid": true,
+        "testOnly": true,
+        "amount": 1000,
+        "currency": "jpy",
+        "observedAt": "2026-10-04T13:15:53.362Z"
+      },
+      {
+        "phase": "invoice_readback",
+        "plan": "creator",
+        "local": [
+          {
+            "status": "past_due",
+            "amount": 2000,
+            "payment_failure_at": "2026-10-04T13:14:17.053000Z",
+            "payment_failure_type": "invoice.payment_failed",
+            "next_payment_attempt": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "past_due",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T13:11:53.000000Z",
+            "current_period_end": "2026-11-04T13:11:53.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": "2026-10-04T13:14:17.053000Z",
+            "next_payment_attempt": null,
+            "payment_failure_type": "invoice.payment_failed"
+          }
+        },
+        "receipts": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_failed",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:13:25.626000Z",
+            "isHeldInitialSuccess": true
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "processing",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:15:53.748000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "processing",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:15:53.752000Z",
+            "isHeldInitialSuccess": false
+          }
+        ],
+        "ledgers": [
+          {
+            "outcome": "payment_failed",
+            "invoiceStatus": "open",
+            "paymentIntentStatus": "requires_payment_method",
+            "status": "applied",
+            "sourceIsInitialInvoice": true,
+            "currentIsFailedInvoice": true
+          },
+          {
+            "outcome": "payment_failed",
+            "invoiceStatus": "open",
+            "paymentIntentStatus": "requires_payment_method",
+            "status": "applied",
+            "sourceIsInitialInvoice": false,
+            "currentIsFailedInvoice": true
+          }
+        ],
+        "invoiceFailureAccepted": true,
+        "initialOutOfOrderAccepted": true,
+        "invoiceRecoveryAccepted": false,
+        "retainedHumanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T13:16:16.555Z"
+      },
+      {
+        "phase": "invoice_readback",
+        "plan": "business",
+        "local": [
+          {
+            "status": "active",
+            "amount": 2000,
+            "payment_failure_at": null,
+            "payment_failure_type": null,
+            "next_payment_attempt": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "active",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T13:11:53.000000Z",
+            "current_period_end": "2026-11-04T13:11:53.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_failed",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:13:25.626000Z",
+            "isHeldInitialSuccess": true
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:15:53.748000Z",
+            "isHeldInitialSuccess": false
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null,
+            "firstReceivedAt": "2026-10-04T13:15:53.752000Z",
+            "isHeldInitialSuccess": false
+          }
+        ],
+        "ledgers": [
+          {
+            "outcome": "payment_failed",
+            "invoiceStatus": "open",
+            "paymentIntentStatus": "requires_payment_method",
+            "status": "applied",
+            "sourceIsInitialInvoice": true,
+            "currentIsFailedInvoice": true
+          },
+          {
+            "outcome": "payment_failed",
+            "invoiceStatus": "open",
+            "paymentIntentStatus": "requires_payment_method",
+            "status": "applied",
+            "sourceIsInitialInvoice": false,
+            "currentIsFailedInvoice": true
+          },
+          {
+            "outcome": "paid",
+            "invoiceStatus": "paid",
+            "paymentIntentStatus": "succeeded",
+            "status": "applied",
+            "sourceIsInitialInvoice": false,
+            "currentIsFailedInvoice": true
+          }
+        ],
+        "invoiceFailureAccepted": true,
+        "initialOutOfOrderAccepted": false,
+        "invoiceRecoveryAccepted": true,
+        "retainedHumanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T13:16:55.356Z"
+      },
+      {
+        "phase": "app_free_cancel",
+        "result": {
+          "success": true,
+          "updated": true,
+          "pending": true
+        },
+        "observedAt": "2026-10-04T13:17:05.233Z"
+      },
+      {
+        "phase": "owned_fixture_cleanup",
+        "fixtureRemoved": true,
+        "humanIdentitiesPreserved": true,
+        "providerTestOnly": true,
+        "providerHistoryRetained": true,
+        "receiptEvidence": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "invoice.payment_failed",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.deleted",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          }
+        ],
+        "observedAt": "2026-10-04T13:18:48.536Z"
+      }
+    ],
+    "actualHostedPaymentAccepted": false,
+    "actualSignedProviderEventAccepted": false,
+    "fullStripeRehearsalAccepted": false,
+    "actualInvoiceFailureAccepted": true,
+    "initialOutOfOrderDeliveryAccepted": true,
+    "actualInvoiceRecoveryAccepted": true
+  },
+  "independentFailure": {
+    "observedAt": "2026-10-04T13:13:15.330Z",
+    "phase": "after-failure",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorOnly": true,
+    "humanIdentitiesPreserved": true,
+    "humanAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "plan": "creator",
+    "local": [
+      {
+        "status": "past_due",
+        "amount": 2000,
+        "payment_failure_at": "2026-10-04T13:12:17.490000Z",
+        "payment_failure_type": "invoice.payment_failed",
+        "next_payment_attempt": null
+      }
+    ],
+    "receipts": [
+      {
+        "eventType": "customer.subscription.created",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "invoice.payment_failed",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": true
+      }
+    ],
+    "ledger": [
+      {
+        "outcome": "payment_failed",
+        "status": "applied",
+        "sourceIsInitialInvoice": false,
+        "currentIsFailedInvoice": true
+      }
+    ],
+    "initialSuccessReceiptAbsent": true,
+    "initialReverseDeliveryAccepted": false,
+    "ownedFixtureCleanupAccepted": false,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "independentInitialReverse": {
+    "observedAt": "2026-10-04T13:15:30.654Z",
+    "phase": "after-initial-reverse",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorOnly": true,
+    "humanIdentitiesPreserved": true,
+    "humanAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "plan": "creator",
+    "local": [
+      {
+        "status": "past_due",
+        "amount": 2000,
+        "payment_failure_at": "2026-10-04T13:14:17.053000Z",
+        "payment_failure_type": "invoice.payment_failed",
+        "next_payment_attempt": null
+      }
+    ],
+    "receipts": [
+      {
+        "eventType": "customer.subscription.created",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "invoice.payment_failed",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": true
+      },
+      {
+        "eventType": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:13:25.626000Z",
+        "isHeldInitialSuccess": true,
+        "isFailedInvoice": false
+      }
+    ],
+    "ledger": [
+      {
+        "outcome": "payment_failed",
+        "status": "applied",
+        "sourceIsInitialInvoice": true,
+        "currentIsFailedInvoice": true
+      },
+      {
+        "outcome": "payment_failed",
+        "status": "applied",
+        "sourceIsInitialInvoice": false,
+        "currentIsFailedInvoice": true
+      }
+    ],
+    "initialSuccessReceiptAbsent": false,
+    "initialReverseDeliveryAccepted": true,
+    "ownedFixtureCleanupAccepted": false,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "independentRecovery": {
+    "observedAt": "2026-10-04T13:16:40.933Z",
+    "phase": "after-recovery",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorOnly": true,
+    "humanIdentitiesPreserved": true,
+    "humanAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "plan": "business",
+    "local": [
+      {
+        "status": "active",
+        "amount": 2000,
+        "payment_failure_at": null,
+        "payment_failure_type": null,
+        "next_payment_attempt": null
+      }
+    ],
+    "receipts": [
+      {
+        "eventType": "customer.subscription.created",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "invoice.payment_failed",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": true
+      },
+      {
+        "eventType": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:13:25.626000Z",
+        "isHeldInitialSuccess": true,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:15:53.748000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:15:53.752000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": true
+      }
+    ],
+    "ledger": [
+      {
+        "outcome": "payment_failed",
+        "status": "applied",
+        "sourceIsInitialInvoice": true,
+        "currentIsFailedInvoice": true
+      },
+      {
+        "outcome": "payment_failed",
+        "status": "applied",
+        "sourceIsInitialInvoice": false,
+        "currentIsFailedInvoice": true
+      },
+      {
+        "outcome": "paid",
+        "status": "applied",
+        "sourceIsInitialInvoice": false,
+        "currentIsFailedInvoice": true
+      }
+    ],
+    "initialSuccessReceiptAbsent": false,
+    "initialReverseDeliveryAccepted": false,
+    "ownedFixtureCleanupAccepted": false,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "independentCancel": {
+    "observedAt": "2026-10-04T13:18:02.211Z",
+    "phase": "after-cancel",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorOnly": true,
+    "humanIdentitiesPreserved": true,
+    "humanAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "plan": "free",
+    "local": [
+      {
+        "status": "canceled",
+        "amount": 2000,
+        "payment_failure_at": null,
+        "payment_failure_type": null,
+        "next_payment_attempt": null
+      }
+    ],
+    "receipts": [
+      {
+        "eventType": "customer.subscription.created",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:10:31.131000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:11:55.397000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "invoice.payment_failed",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:11:58.137000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": true
+      },
+      {
+        "eventType": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:13:25.626000Z",
+        "isHeldInitialSuccess": true,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:15:53.748000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      },
+      {
+        "eventType": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:15:53.752000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": true
+      },
+      {
+        "eventType": "customer.subscription.deleted",
+        "status": "applied",
+        "deliveryCount": 1,
+        "lastErrorCode": null,
+        "firstReceivedAt": "2026-10-04T13:17:05.251000Z",
+        "isHeldInitialSuccess": false,
+        "isFailedInvoice": false
+      }
+    ],
+    "ledger": [
+      {
+        "outcome": "payment_failed",
+        "status": "applied",
+        "sourceIsInitialInvoice": true,
+        "currentIsFailedInvoice": true
+      },
+      {
+        "outcome": "payment_failed",
+        "status": "applied",
+        "sourceIsInitialInvoice": false,
+        "currentIsFailedInvoice": true
+      },
+      {
+        "outcome": "paid",
+        "status": "applied",
+        "sourceIsInitialInvoice": false,
+        "currentIsFailedInvoice": true
+      }
+    ],
+    "initialSuccessReceiptAbsent": false,
+    "initialReverseDeliveryAccepted": false,
+    "ownedFixtureCleanupAccepted": false,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "independentCleanup": {
+    "observedAt": "2026-10-04T13:19:18.572Z",
+    "phase": "after-cleanup",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorOnly": true,
+    "humanIdentitiesPreserved": true,
+    "humanAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "plan": null,
+    "local": [],
+    "receipts": [],
+    "ledger": [],
+    "initialSuccessReceiptAbsent": true,
+    "initialReverseDeliveryAccepted": false,
+    "ownedFixtureCleanupAccepted": true,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "originalStatePreservation": {
+    "observedAt": "2026-10-04T13:19:19.154Z",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorUsed": true,
+    "humanAccountAndProfilePreserved": true,
+    "authCounts": {
+      "users": 2,
+      "accounts": 6,
+      "sessions": 1
+    },
+    "allOriginalOwnedBusinessTableCountsRestored": true,
+    "masterInventoryAndAllReferenceHistoryPreserved": true,
+    "mfaAndWakePreserved": true,
+    "schemasUnchanged": true,
+    "syntheticAuthAndBusinessRemoved": true,
+    "fullMigrationAccepted": false
+  },
+  "operationsHealth": {
+    "observedAt": "2026-10-04T13:19:18.205Z",
+    "scope": "read-only staging aggregates; no repair/provider/data/domain action",
+    "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "worker": "fanmark-app-staging",
+    "version": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "ledgerEntries": 25,
+    "credentialSource": "monitor_api_token",
+    "leastPrivilegeAccepted": false,
+    "selectors": {
+      "CUTOVER_WRITE_FREEZE": "false",
+      "LICENSE_EXPIRY_BACKEND": "d1",
+      "LICENSE_EXPIRY_CRON": "0 0 * * *",
+      "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+      "NOTIFICATION_WAKE_BACKEND": "durable-object",
+      "NOTIFICATION_ARCHIVE_BACKEND": "d1",
+      "NOTIFICATION_ARCHIVE_CRON": "0 0 * * *",
+      "STRIPE_DISPATCH_BACKEND": "d1",
+      "BROADCAST_SEND_BACKEND": null
+    },
+    "counts": {
+      "foreign_key_violations": 0,
+      "wake_singletons": 1,
+      "wake_requested": 17,
+      "wake_acknowledged": 17,
+      "notification_pending": 0,
+      "notification_overdue": 0,
+      "notification_stale_processing": 0,
+      "notification_failed": 0,
+      "notification_archive_candidates": 0,
+      "expiry_open_runs": 0,
+      "finalization_open_runs": 0,
+      "finite_licenses_past_end": 0,
+      "grace_licenses_past_end": 0,
+      "stripe_dead_letters": 0,
+      "stripe_overdue": 0,
+      "stripe_expired_leases": 0
+    },
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": [],
+    "disabledJobs": [
+      "BROADCAST_SEND_BACKEND"
+    ],
+    "recurringOperationsAccepted": false,
+    "providerIntegrationAccepted": false
+  },
+  "providerUI": {
+    "observedAt": "2026-10-04T13:17:23.092419+00:00",
+    "testOnly": true,
+    "paidInvoiceVisible": true,
+    "paidAmountJPY": 1000,
+    "paymentMethod": "Visa 4242",
+    "screenshot": "/tmp/fanmark-stripe-invoice-recovery-2026-10-04.jpg",
+    "sameUserWholeApplicationUIAccepted": false
+  },
+  "limits": [
+    "The held initial paid event was absent in D1 before the new failure was applied. Its first delivery then had delivery_count=1; this is not merely replaying an already-applied receipt.",
+    "Only the dedicated test webhook temporarily omitted invoice.payment_succeeded for initial fixture creation. Its original ten events were restored before failure, reverse delivery and recovery. Other endpoints were not edited.",
+    "Initial contract and card attempts used provider APIs. App plan-change, subscription DTO and Free cancellation used the owned HTTP session. This run does not prove app Checkout or one-user whole-application UI.",
+    "Invoice payment_action_required is still unaccepted; the previous extension Checkout 3DS proof is separate.",
+    "Stripe test invoice/event history and staging settings remain. The owned Customer and synthetic Auth/Business rows were removed after cancellation and drain."
+  ]
+}
