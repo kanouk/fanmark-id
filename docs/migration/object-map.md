@@ -117,7 +117,7 @@ Source shorthand used below:
 | fanmark_password_configs | RLS; 1/3/1 | T:933; F src/components/FanmarkSettings.tsx:443,452,462; P:7-10 | D1 private table; Worker user writes through a guarded operation, Worker public verifies without exposing secrets | High: hash format, rate limits, and secret handling require a dedicated migration design |
 | fanmark_profiles | RLS; 4/3/1 | T:975; F src/hooks/useEmojiProfile.tsx:54,82,113; P:7-10 | D1 table; Worker user edits owned profile, Worker public reads only is_public projection | Medium: media URLs and profile projection must align with R2 policy |
 | fanmark_redirect_configs | RLS; 1/3/1 | T:1026; F src/components/FanmarkSettings.tsx:416; P:7-10 | D1 table; Worker user writes owned config, Worker public reads validated redirect target | Medium: URL/tel: validation and redirect abuse controls need parity tests |
-| fanmark_tier_extension_prices | RLS; 1/5/1 | T:1065; F src/components/AdminTierExtensionPrices.tsx:55,119; F src/components/ExtendLicenseDialog.tsx:84 | D1 config; Worker public reads active prices, Worker admin updates, Worker user consumes via checkout operation | Versioned D1 read/editor selectors are active on staging; synthetic MFA edit/restore returned tier-1 one-month price to ¥500. Stripe checkout stays closed until Worker webhook/dispatch configuration and test secrets exist; production defaults remain Supabase. |
+| fanmark_tier_extension_prices | RLS; 1/5/1 | T:1065; F src/components/AdminTierExtensionPrices.tsx:55,119; F src/components/ExtendLicenseDialog.tsx:84 | D1 config; Worker public reads active prices, Worker admin updates, Worker user consumes via checkout operation | Versioned D1 read/editor selectors are active on staging; synthetic MFA edit/restore returned tier-1 one-month price to ¥500. Stripe test-only checkout/webhook/dispatch are enabled on runtime87b61ef/Workerca971193. Actual extension decline/no-effect, hosted3DS success, signed application and duplicate single effect are accepted; whole-application UI remains open. Production defaults remain Supabase. |
 | fanmark_tiers | RLS; 4/2/1 | T:1101; F src/components/AdminTierExtensionPrices.tsx:60,327; P:13-17 | D1 config; Worker public reads active tier data, Worker admin updates, Worker internal classifies | Versioned D1 admin edits and availability reads are active on staging. A synthetic Tier C edit/restore confirmed `initial_license_days` returns to `null`; full integrated availability precedence and production/default parity remain open. |
 | fanmark_transfer_codes | RLS; 3/5/1 | T:1143; F src/hooks/useTransferCode.ts:49; P:24-27 | D1 transactional table; Worker user owner/recipient operations, Worker admin/internal lifecycle checks | Medium: one-code/expiry/transfer-lock invariants need D1 transaction tests |
 | fanmark_transfer_requests | RLS; 3/5/1 | T:1204; F src/hooks/useTransferCode.ts:82,121; P:24-27 | D1 transactional table; Worker user participants approve/reject, Worker internal finalizes | Medium: ownership checks and copy-on-transfer behavior need end-to-end mapping |
@@ -134,7 +134,7 @@ Source shorthand used below:
 | system_settings | RLS; 3/3/1 | T:1710; F src/hooks/useSystemSettings.tsx:59,129; P:66-71 | D1 config; Worker public reads explicitly public settings, Worker admin writes, Worker internal reads secrets only through a private path | Medium: separate public settings from private payment/operational settings before API design |
 | user_roles | RLS; 2/4/0 | T:1740; R:3006; F src/components/AdminApp.tsx:43 | Retained Business D1 role history; current server authority is Auth D1 adminRole with exact-session MFA. No public role-row API. | Source shared Edge admin/reset helpers map to central Worker authorization; plan, Business role and Auth adminRole are not interchangeable. Actual identity mapping is deferred data; bootstrap/custody remains operations. See source-policy-counterparts.md C37. |
 | user_settings | RLS; 3/5/3 | T:1764; F src/hooks/useProfile.tsx:46,72; P:44-48,81-83 | D1 private user table; Worker user reads/writes own, Worker admin reads only required fields | Medium: PII projection, account deletion, and Auth linkage need a data-classification decision |
-| user_subscriptions | RLS; 3/3/1 | T:1817; F src/hooks/useSubscription.tsx:86,170; P:73-84,453-482 | D1 billing mirror; Worker user reads own status, Worker internal webhook syncs, Worker admin reads; retain Stripe as payment system | High: webhook idempotency and source-of-truth rules are not established by local code alone |
+| user_subscriptions | RLS; 3/3/1 | T:1817; F src/hooks/useSubscription.tsx:86,170; P:73-84,453-482 | D1 billing mirror; Worker user reads own status, Worker internal webhook syncs, Worker admin reads; retain Stripe as payment system | Actual signed test Checkout/plan change/Free cancellation and natural dispatch are accepted. Real invoice decline, initial reverse delivery/current-state preservation and hosted3DS same-Invoice/PaymentIntent recovery are independently read back. Same-user whole-application UI and final operations remain open; see stripe-staging-invoice-authentication-2026-10-04.json in evidence. |
 | waitlist | RLS; 2/4/0 | T:1883; F src/hooks/useInvitationCode.tsx:83; P:44-48 | D1 private table; MFA/admin-plan hash-list and audited reveal; public waitlist submission uses the explicit Worker signup route on staging | Synthetic signup new/duplicate/cleanup and protected admin flows are accepted; no real rows imported. Email PII retention/export/deletion remain operational decisions. See waitlist-signup-api.md and source-policy-counterparts.md C40. |
 
 ## First explicit reference-data allowlist
@@ -304,11 +304,11 @@ caller/schedule review.
 | --- | --- | --- |
 | Supabase Auth and auth.uid() / auth.users | Retain an Auth provider; Worker establishes the user identity used by D1 authorization. The 11 exact business-to-Auth references are omitted as cross-DB D1 constraints and recorded as reviewed dispositions; snapshot import still preflights every non-NULL Auth UUID before business writes. Account deletion applies the source CASCADE/SET NULL/NO ACTION behavior in the Worker operation. | Frontend auth calls in src/**/*; `supabase/remote_schema.sql`; `scripts/migration/schema-convert.mjs`; `scripts/migration/d1-import.mjs`; account-deletion D1 tests. Provider, redirect, and session claims still need live verification. |
 | Storage buckets avatars, cover-images | Retain as R2 or selected object storage; Worker issues the public or signed URL boundary | src/hooks/useAvatarUpload.tsx:28,38,101; src/hooks/useCoverImageUpload.tsx:28,38,107; SQL storage refs in repository-inventory.md |
-| Stripe checkout, customer portal, and webhooks | Retain Stripe; Worker owns authenticated initiation and idempotent webhook projection into user_subscriptions | PRODUCT:73-84,453-482; D1 webhook/reconciliation and owner-bound Free-to-paid/paid-plan commands are implemented and staged behind disabled Stripe selectors; sandbox acceptance and remaining billing effects/operations remain |
+| Stripe checkout, customer portal, and webhooks | Retain Stripe; Worker owns authenticated initiation and idempotent webhook projection into user_subscriptions | PRODUCT:73-84,453-482; D1 webhook/reconciliation and owner-bound Free-to-paid/paid-plan commands are test-only enabled on runtime87b61ef/Workerca971193. Actual Checkout/Portal, plan change/Free cancellation, extension decline/3DS/duplicate, invoice decline/initial reverse/current-state preservation and invoice3DS same-intent recovery are accepted with cleanup and independent baseline preservation. Same-user whole-application UI and final integration/operations remain open; evidence is linked in COMPLETION.md. |
 | Resend/auth and broadcast email delivery | Retain delivery provider; Worker internal queue and template projection | TECH email guidance; send-auth-email, send-broadcast-email, notification pipeline |
-| pg_cron, pg_net, and Realtime channels | Worker Cron handles staging notification processing; lifecycle scheduling is deployed but its execution selector remains unset. Worker-backed notification views use foreground polling, own-profile views use same-tab events plus foreground refresh, and subscription views refresh on focus/visibility plus a 30-second foreground poll. Supabase-selected builds retain Realtime. | `supabase/config.toml:60-84`; `notifications-api.md`; `own-profile-api.md`; `HANDOFF.md`. Source scheduler shutdown/drain and production scale/latency acceptance remain for the final rehearsal/cutover. |
+| pg_cron, pg_net, and Realtime channels | The notification Durable Object handles staged queue activation/delivery/idle recovery. Stripe uses natural minute Cron. Main expiry/archive selectors and daily Cron are enabled; the 2026-10-05 09:00 JST natural run remains unverified. Worker-backed notification views use foreground polling, own-profile views use same-tab events plus foreground refresh, and subscription views refresh on focus/visibility plus a 30-second foreground poll. Supabase-selected builds retain Realtime. | `supabase/config.toml:60-84`; `notifications-api.md`; `own-profile-api.md`; `HANDOFF.md`. Source scheduler shutdown/drain and production scale/latency acceptance remain for the final rehearsal/cutover. |
 
-## Current unresolved design and acceptance gates (2026-09-27)
+## Historical design gates (2026-09-27; current acceptance below)
 
 1. `recent_active_fanmarks` and `list_recent_fanmarks` have a source-shaped D1
    query, staging Worker route, and Worker-backed SPA selector. Synthetic
@@ -343,3 +343,23 @@ caller/schedule review.
 This map is intentionally a design input. It does not claim that local
 snapshots, current policies, or the observed live metadata are sufficient to
 deploy a replacement.
+
+## Provider and scheduler evidence linkage (2026-10-04)
+
+The earlier disabled-Stripe/provider-configuration descriptions are superseded
+for the dedicated staging test configuration only. Current runtime87b61ef /
+Workerca971193 has actual signed provider and natural minute-dispatch proof for
+Checkout/Portal/plan change/Free cancellation, extension decline/3DS/duplicate,
+invoice decline/initial reverse/current-state preservation, and hosted invoice
+3DS recovery using the same Invoice/PaymentIntent. The separate owned fixtures
+were cleaned and independently checked against original Auth/Business/Master/
+MFA/wake. See [current completion requirements](COMPLETION.md) and
+[latest invoice authentication evidence](evidence/stripe-staging-invoice-authentication-2026-10-04.json).
+
+This updates the table/edge/dependency evidence linkage; it does not approve
+all58 functions,37 bindings,77 policies, external consumers or the converter.
+Main daily expiry/archive is configured, with its first natural run unverified.
+Resend remains disabled pending an approved test recipient and real connection.
+Same-user app UI, phone, provider signup branches and final operations retain
+the six completion groups. Production data/Auth/object migration and public
+DNS/source writer shutdown remain deferred.

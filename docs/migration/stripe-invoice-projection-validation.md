@@ -1,5 +1,29 @@
 # Stripe invoice projection validation (#32)
 
+## Actual D1 invoice authentication acceptance (2026-10-04)
+
+The same runtime 87b61ef / Worker ca971193 was used for a new disposable owner.
+The app requested Creator -> Business; paying the resulting open invoice with
+the official always-authenticate test method produced a real requires_action
+PaymentIntent and signed invoice.payment_failed/payment_action_required events.
+Natural minute dispatch classified the actual current InvoicePayment status,
+projected invoice.payment_action_required, and retained Creator before payment.
+
+The hosted invoice confirmed the already-attached Visa3184 test card and opened
+the official 3D Secure 2 Test Page. Completing the challenge paid the same invoice
+and PaymentIntent; no replacement card or second intent supplied the recovery.
+The paid invoice was visible at JPY1000 (proration); the monthly subscription
+projection became Business/active at JPY2000 and cleared the failure fields.
+Separate read-only processes verified waiting, recovery, app Free cancellation,
+owned cleanup and exact original Auth/Business/Master/MFA/wake preservation.
+The dedicated webhook's ten event selection was unchanged throughout.
+
+See [authentication evidence](evidence/stripe-staging-invoice-authentication-2026-10-04.json).
+The initial contract was a provider API fixture, not an additional app Checkout
+proof. A same-user whole-application UI flow, actual phone and full migration
+remain unaccepted. Test provider history and staging settings are retained.
+
+
 ## Actual D1 staging invoice acceptance (2026-10-04)
 
 The current staging candidate is 87b61ef / Worker ca971193, with CI37200812928
@@ -21,8 +45,8 @@ time/type cleared. Separate read-only processes confirmed each phase, app Free
 cancellation, owned cleanup and exact original state preservation.
 
 See [aggregate evidence](evidence/stripe-staging-invoice-provider-2026-10-04.json).
-Provider test history/settings remain. Invoice payment_action_required, a
-same-user whole-application UI flow and full migration are still unaccepted.
+Provider test history/settings remain. The additional authentication proof is
+recorded above; a same-user whole-application UI flow and full migration remain unaccepted.
 The following sections retain historical local/Postgres evidence; statements
 that staging selectors were absent describe the earlier deployment state.
 

@@ -1,3 +1,29 @@
+# 2026-10-04 定期請求の追加認証・同じPaymentIntentの復旧を確認
+
+runtimeは`87b61ef`/CI37200812928両job成功・Worker`ca971193`を維持。
+前回記録`440b124`のCI37205271256も両job成功した。新しい専用合成ownerの
+paid Creator契約をprovider APIで作り、アプリのBusiness変更APIで生じた未払い請求に
+公式always-authenticateのtest PaymentMethodを使った。実PaymentIntent requires_action、
+invoice open/支払い0と、実署名invoice.payment_failed/payment_action_requiredを確認。
+自然毎分処理後、D1/本人用DTOはpast_dueとinvoice.payment_action_requiredになり、
+未決済のプランはCreatorを保持した。別processのread-only照合も一致した。
+
+同じ請求のhosted画面で保存済みVisa3184の確認ボタンから公式3DS Test Pageを開き、
+COMPLETEを実行した。画面はJPY1,000の支払い済み表示になった。同じinvoice/
+PaymentIntentがpaid/succeededとなったことをprovider APIで確認し、自然署名処理後に
+Business/activeと失敗時刻/typeのNULL化を独立read-only processで確認した。
+アプリFree解約→署名反映後、所有test Customerを閉じ、全dispatch完了後に専用
+Auth/profile/契約/command/台帳/receipt/fence等だけを片付けた。独立確認で合成行0、
+元の2 user/6 account/session1、40表所有件数・Master全履歴・MFA/wakeが一致した。
+app/auth200・attention空。Webhookの10 event選択は変更しなかった。
+[定期請求の追加認証証拠](evidence/stripe-staging-invoice-authentication-2026-10-04.json)。
+
+初期契約はprovider API fixtureで、本人用HTTP sessionとhosted Stripe画面の検証。
+同一利用者のアプリ全画面、実スマホ、Resend、Apple/Discord新規登録/relay、
+日次自然発火・運用・最終統合とsource/converter照合は残る。実課金・実ユーザー
+移送・公開domain/DNS変更、コード/schema/再配備はない。六作業の完了条件は
+COMPLETIONを維持する。以下は過去のcheckpoint。
+
 # 2026-10-04 定期請求失敗・初回逆順配信・復旧を確認
 
 runtimeは`87b61ef`/CI37200812928両job成功・Worker`ca971193`を維持する。
