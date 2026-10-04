@@ -18,7 +18,8 @@
   },
   "triggers": {
     "crons": [
-      "0 0 * * *"
+      "0 0 * * *",
+      "* * * * *"
     ]
   },
   "ratelimits": [
@@ -127,6 +128,12 @@
     "SYSTEM_SETTINGS_BACKEND": "d1",
     "SUBSCRIPTION_BACKEND": "d1",
     "STRIPE_MODE_POLICY": "test_only",
+    "STRIPE_WEBHOOK_BACKEND": "d1",
+    "STRIPE_DISPATCH_BACKEND": "d1",
+    "STRIPE_PLAN_CHECKOUT_BACKEND": "d1",
+    "STRIPE_PLAN_CHANGE_BACKEND": "d1",
+    "STRIPE_CUSTOMER_PORTAL_BACKEND": "d1",
+    "STRIPE_EXTENSION_CHECKOUT_BACKEND": "d1",
     "VERIFIED_ACCESS_BACKEND": "d1",
     "STORAGE_BACKEND": "r2",
     "STORAGE_LEGACY_ORIGIN": "https://synthetic-source.example.invalid",

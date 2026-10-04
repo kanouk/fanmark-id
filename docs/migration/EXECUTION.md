@@ -1,3 +1,25 @@
+# 2026-10-04 Stripeテスト接続を設定、決済runtimeのCI・配備前
+
+本人のStripeログイン後、Fanmarkのtest accountと既存test keyの接続を確認した。
+従来のstaging設定のPriceはtest accountに存在せず、月額3件・延長16件のtest
+Product/Priceを作成した。API versionは既存と同じ2025-08-27.basil。stagingだけに
+STRIPE_SECRET_KEY_TEST/STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRETを保存し、
+Worker088becec/runtime7e6cf76・secret14名称となった。既存2 user/6 accountと
+MFA fingerprint、その他bindingsを保持した。10 eventの専用Webhookは無効で待機。
+
+Businessのtest Price 3設定とstripe_mode=testをCASで保存し、Masterは元版を保持して
+private test Price IDだけを差し替える派生版を作成した。最初の派生版でティア価格の
+単位変換誤りをreadbackが検出したため元版へrollbackし、物理centsを配備前に照合して
+修正版をpromoteした。最終generation13、元の価格・他マスター内容と全履歴を保持。
+料金ポータルはtest defaultを作成し、請求履歴/支払い方法更新のみを許可する。
+[設定と修正の証拠](evidence/stripe-staging-test-setup-2026-10-04.json)。
+
+次は6 billing selectorとStripe毎分dispatch Cronを含む候補のCI確認・staging配備、
+その後に専用test Webhookの有効化と実Stripe Checkout/Portal/変更/延長の確認。
+毎分通知pollingはDO selectorで選択されない。日次expiry/archiveはUTC00:00のまま。
+実課金、実ユーザー移送、公開domain/DNSは後工程。Resend宛先と別Apple/Discord
+新規登録用アカウントの回答も待つ。以下は過去のcheckpoint。
+
 # 2026-10-04 監視tokenの実D1書込み拒否・後片付けを確認
 
 2f45451/CI37195682605は両job成功。専用identity確認後、新規一時D1で

@@ -1,0 +1,173 @@
+{
+  "installation": {
+    "observedAt": "2026-10-04T11:15:39.185Z",
+    "candidateHead": "6ad9f0f8ff3bceca111ccc497099a7fea82bd9b4",
+    "ciRun": 37197346128,
+    "worker": "fanmark-app-staging",
+    "previousVersion": "495b3ce4-7733-40c5-82e6-c7d4c180d287",
+    "version": "088becec-1dca-44d0-9a2a-c1a6bc0567a7",
+    "apiVersion": "2025-08-27.basil",
+    "mode": "test_only",
+    "testPlanPriceCount": 3,
+    "testExtensionPriceCount": 16,
+    "credentialNamesInstalled": [
+      "STRIPE_SECRET_KEY_TEST",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET"
+    ],
+    "secretNameCount": 14,
+    "webhook": {
+      "url": "https://fanmark-app-staging.fanmark-id.workers.dev/api/stripe/webhook",
+      "eventCount": 10,
+      "apiVersion": "2025-08-27.basil",
+      "status": "disabled",
+      "livemode": false
+    },
+    "testPortalConfigurationCount": 0,
+    "retainedAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "existingIdentityAndMfaFingerprintPreserved": true,
+    "otherBindingsPreserved": true,
+    "workerBillingSelectorsEnabled": false,
+    "masterOrBusinessSettingsChanged": false,
+    "actualCheckoutAccepted": false,
+    "secretValuesExported": false,
+    "productionStripeChanged": false,
+    "userDataMigrated": false,
+    "productionDomainChanged": false
+  },
+  "portalConfiguration": {
+    "observedAt": "2026-10-04T11:17:43.970Z",
+    "livemode": false,
+    "isDefault": true,
+    "active": true,
+    "invoiceHistory": true,
+    "paymentMethodUpdate": true,
+    "subscriptionCancel": false,
+    "subscriptionUpdate": false,
+    "customerUpdate": false,
+    "defaultReturnUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/plans",
+    "actualPortalSessionAccepted": false,
+    "productionStripeChanged": false
+  },
+  "masterPriceActivation": {
+    "startedAt": "2026-10-04T11:24:05.288Z",
+    "originalReferenceRelease": "e44ecbeda38fe4a5c7c7adf66e2168e181da08b9033932543f991a54a868a036",
+    "rejectedOverlay": "e454043d3e4ddf05bfacf78669630fb8b8d419763b222efc4a510d2b8c98b129",
+    "rollbackApplied": true,
+    "correctedOverlayApplied": true,
+    "complete": true,
+    "rollback": {
+      "activationId": "bbc3750f-25c9-4d45-884b-f6b83d0be827",
+      "at": "2026-10-04T11:24:10.931000Z",
+      "generation": 12
+    },
+    "originalMasterRestored": true,
+    "correctedReferenceRelease": "0a0408e795b8e899abb0e12d6a977d55ff654d34d369da520f7f9b155a44b4cb",
+    "prePromotionPhysicalAmountsVerified": true,
+    "correctedActivation": {
+      "activationId": "6d243461-ae94-4515-b90a-9b7fc1813db1",
+      "at": "2026-10-04T11:24:14.357000Z",
+      "generation": 13
+    },
+    "observedAt": "2026-10-04T11:24:15.185Z",
+    "priceAmountAndOtherMasterContentPreserved": true,
+    "previousReleaseAndHistoryPreserved": true,
+    "testExtensionPriceCount": 16,
+    "testPlanPriceCount": 3,
+    "stagingStripeMode": "test",
+    "actualCheckoutAccepted": false,
+    "productionStripeChanged": false,
+    "userDataMigrated": false,
+    "productionDomainChanged": false
+  },
+  "billingRuntimeDeploymentAccepted": false,
+  "actualStripeProviderRehearsalAccepted": false,
+  "fullMigrationAccepted": false,
+  "independentReadback": {
+    "observedAt": "2026-10-04T11:25:54.405Z",
+    "readOnlyReceiptsAccepted": true,
+    "priceAndMasterChecks": {
+      "snapshots": [
+        {
+          "table": "fanmark_tiers",
+          "equal": true,
+          "differentFields": []
+        },
+        {
+          "table": "languages",
+          "equal": true,
+          "differentFields": []
+        },
+        {
+          "table": "reserved_emoji_patterns",
+          "equal": true,
+          "differentFields": []
+        },
+        {
+          "table": "fanmark_tier_extension_prices",
+          "equal": true,
+          "differentFields": []
+        }
+      ],
+      "activeVersionMatches": true,
+      "generationMatches": true,
+      "historyPreserved": true,
+      "auditMatches": true,
+      "previousExtensionMatches": true,
+      "previousExtensionKeys": [
+        "release_version",
+        "id",
+        "created_at",
+        "is_active",
+        "months",
+        "price_yen",
+        "stripe_price_id",
+        "stripe_price_id_live",
+        "tier_level",
+        "updated_at"
+      ],
+      "businessSettings": [
+        {
+          "key": "business_pricing",
+          "matchesIntended": true,
+          "timestamp": "2026-01-01 01:25:06.976128+00"
+        },
+        {
+          "key": "business_stripe_price_id",
+          "matchesIntended": true,
+          "timestamp": "2026-10-04T11:21:09.627000Z"
+        },
+        {
+          "key": "creator_stripe_price_id",
+          "matchesIntended": true,
+          "timestamp": "2026-10-04T11:21:09.627000Z"
+        },
+        {
+          "key": "max_pricing",
+          "matchesIntended": true,
+          "timestamp": "2025-12-06 12:29:23.460743+00"
+        },
+        {
+          "key": "max_stripe_price_id",
+          "matchesIntended": true,
+          "timestamp": "2026-10-04T11:21:09.627000Z"
+        },
+        {
+          "key": "premium_pricing",
+          "matchesIntended": true,
+          "timestamp": "2026-01-01 01:26:58.338424+00"
+        },
+        {
+          "key": "stripe_mode",
+          "matchesIntended": true,
+          "timestamp": "2026-10-04T11:21:09.627000Z"
+        }
+      ],
+      "activeTimestamp": "2026-10-04T11:24:14.357000Z"
+    },
+    "fullMigrationAccepted": false
+  }
+}
