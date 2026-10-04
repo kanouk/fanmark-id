@@ -2,6 +2,34 @@
 
 Date: 2026-09-25 JST
 
+## Real staging extension acceptance (2026-10-04)
+
+On runtime 87b61ef / Worker ca971193, a disposable signed-in owner registered a
+single emoji through the actual app API (Tier4/S, finite initial license). The
+one-month extension API created one test Checkout at JPY2000 and reused it for
+the identical request UUID. A hosted generic-decline test attempt left the
+license end and application/effect/audit unchanged. The same Checkout then
+completed a real test 3DS challenge; the Stripe Dashboard showed payment and
+3DS authentication success, alongside the prior decline history.
+
+The actual signed completed event was processed by the natural minute Cron.
+Independent read-only D1 evidence showed 2026-10-12 UTC -> 2026-11-12 UTC and
+one application, effect and LICENSE_EXTENDED audit. Dashboard resend produced
+delivery_count=2 with the same end and one effect. The journal-owned fixture was
+removed only after drain. Separate-process readback confirmed fixture rows0,
+original human identities2/accounts6/session1, original owned40-table counts,
+all Master history, MFA and wake preservation. Test provider history/settings
+remain. See [aggregate evidence](evidence/stripe-staging-extension-provider-2026-10-04.json).
+
+This accepts hosted one-time extension decline/3DS and duplicate delivery; it
+does not accept subscription invoice failures, initial out-of-order delivery,
+async/expired provider events, pending-lottery provider cancellation, or a
+single-user whole-application browser journey. The harness's initial Tier1
+misclassification stopped before creating Checkout; its fixture was cleaned,
+then the exact baseline was independently verified before the corrected run.
+Runtime/schema were unchanged. The overall migration remains incomplete.
+
+
 ## D1 per-entry cancellation audits (2026-10-03)
 
 The D1 billing application now writes `LOTTERY_ENTRY_STATUS_CHANGED` for each

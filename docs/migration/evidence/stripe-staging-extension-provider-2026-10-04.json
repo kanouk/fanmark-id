@@ -1,0 +1,382 @@
+{
+  "recordedAt": "2026-10-04T12:53:25.508Z",
+  "scope": "Dedicated disposable staging identity; real Stripe sandbox APIs, hosted card-decline/3DS payment, signed webhook and natural minute dispatch. No live funds or production data/domain action.",
+  "runtime": {
+    "sourceCommit": "87b61ef74e434e44396e5b5ec67fcc737c85dadf",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "ciRunId": "37200812928",
+    "ciBothJobsSuccess": true,
+    "documentationHead": "5abbd066f81ffff043f2ddf48a5e858c4f595576",
+    "documentationCI": "37202161221",
+    "documentationCIBothJobsSuccess": true
+  },
+  "acceptance": {
+    "realRegistrationAPI": true,
+    "realHostedExtensionPayment": true,
+    "extensionCheckoutIdempotency": true,
+    "cardDeclineNoExtension": true,
+    "threeDSecureChallengeAndSuccess": true,
+    "actualSignedProviderEvent": true,
+    "naturalMinuteDispatcher": true,
+    "oneMonthExtensionExactlyOnce": true,
+    "duplicateDeliverySingleEffect": true,
+    "independentCleanupReadback": true,
+    "allOriginalStatePreserved": true,
+    "subscriptionInvoicePaymentFailureAccepted": false,
+    "initialOutOfOrderDeliveryAccepted": false,
+    "sameUserWholeApplicationUIAccepted": false,
+    "actualPhoneAccepted": false,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "journey": {
+    "startedAt": "2026-10-04T12:44:08.657Z",
+    "testOnly": true,
+    "phases": [
+      {
+        "phase": "registered_through_app",
+        "tier": 4,
+        "initialLicenseEnd": "2026-10-12T00:00:00.000000Z",
+        "expectedExtendedLicenseEnd": "2026-11-12T00:00:00.000000Z",
+        "realRegistrationApiAccepted": true,
+        "observedAt": "2026-10-04T12:44:21.606Z"
+      },
+      {
+        "phase": "extension_checkout_created_by_app",
+        "amount": 2000,
+        "currency": "jpy",
+        "months": 1,
+        "tier": 4,
+        "idempotencyAccepted": true,
+        "unpaidLicenseEndUnchanged": true,
+        "observedAt": "2026-10-04T12:44:23.362Z"
+      },
+      {
+        "phase": "extension_readback",
+        "previousLicenseEnd": "2026-10-12T00:00:00.000000Z",
+        "expectedLicenseEnd": "2026-11-12T00:00:00.000000Z",
+        "license": [
+          {
+            "license_end": "2026-10-12T00:00:00.000000Z",
+            "status": "active"
+          }
+        ],
+        "intents": [
+          {
+            "status": "open",
+            "stripe_session_status": "open",
+            "stripe_payment_status": "unpaid"
+          }
+        ],
+        "applicationCount": 0,
+        "applicationStatuses": [],
+        "effects": [],
+        "auditCount": 0,
+        "receipts": [],
+        "extensionAppliedExactlyOnce": false,
+        "observedAt": "2026-10-04T12:46:15.564Z"
+      },
+      {
+        "phase": "hosted_test_extension_payment",
+        "paid": true,
+        "complete": true,
+        "amount": 2000,
+        "currency": "jpy",
+        "testOnly": true,
+        "observedAt": "2026-10-04T12:47:51.309Z"
+      },
+      {
+        "phase": "extension_readback",
+        "previousLicenseEnd": "2026-10-12T00:00:00.000000Z",
+        "expectedLicenseEnd": "2026-11-12T00:00:00.000000Z",
+        "license": [
+          {
+            "license_end": "2026-10-12T00:00:00.000000Z",
+            "status": "active"
+          }
+        ],
+        "intents": [
+          {
+            "status": "open",
+            "stripe_session_status": "open",
+            "stripe_payment_status": "unpaid"
+          }
+        ],
+        "applicationCount": 0,
+        "applicationStatuses": [],
+        "effects": [],
+        "auditCount": 0,
+        "receipts": [
+          {
+            "eventType": "checkout.session.completed",
+            "status": "received",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          }
+        ],
+        "extensionAppliedExactlyOnce": false,
+        "observedAt": "2026-10-04T12:47:52.635Z"
+      },
+      {
+        "phase": "extension_readback",
+        "previousLicenseEnd": "2026-10-12T00:00:00.000000Z",
+        "expectedLicenseEnd": "2026-11-12T00:00:00.000000Z",
+        "license": [
+          {
+            "license_end": "2026-11-12T00:00:00.000000Z",
+            "status": "active"
+          }
+        ],
+        "intents": [
+          {
+            "status": "applied",
+            "stripe_session_status": "complete",
+            "stripe_payment_status": "paid"
+          }
+        ],
+        "applicationCount": 1,
+        "applicationStatuses": [
+          "applied"
+        ],
+        "effects": [
+          {
+            "previous_license_end": "2026-10-12T00:00:00.000000Z",
+            "new_license_end": "2026-11-12T00:00:00.000000Z",
+            "cancelled_lottery_entries_count": 0
+          }
+        ],
+        "auditCount": 1,
+        "receipts": [
+          {
+            "eventType": "checkout.session.completed",
+            "status": "applied",
+            "deliveryCount": 2,
+            "lastErrorCode": null
+          }
+        ],
+        "extensionAppliedExactlyOnce": true,
+        "observedAt": "2026-10-04T12:49:39.085Z"
+      },
+      {
+        "phase": "owned_extension_fixture_cleanup",
+        "syntheticAuthBusinessAndBillingRemoved": true,
+        "providerTestHistoryRetained": true,
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T12:50:14.872Z"
+      }
+    ],
+    "actualHostedPaymentAccepted": true,
+    "actualSignedProviderEventAccepted": true,
+    "fullStripeRehearsalAccepted": false,
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "actualExtensionApplicationAccepted": true
+  },
+  "independentExtension": {
+    "observedAt": "2026-10-04T12:48:22.230Z",
+    "phase": "after-extension",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorOnly": true,
+    "humanIdentitiesPreserved": true,
+    "humanAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "previousLicenseEnd": "2026-10-12T00:00:00.000000Z",
+    "expectedLicenseEnd": "2026-11-12T00:00:00.000000Z",
+    "license": [
+      {
+        "status": "active",
+        "license_end": "2026-11-12T00:00:00.000000Z"
+      }
+    ],
+    "applicationCount": 1,
+    "effectCount": 1,
+    "auditCount": 1,
+    "receipts": [
+      {
+        "event_type": "checkout.session.completed",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null
+      }
+    ],
+    "dispatches": [
+      {
+        "status": "completed"
+      }
+    ],
+    "extensionAppliedExactlyOnce": true,
+    "duplicateSingleEffectAccepted": false,
+    "ownedFixtureCleanupAccepted": false,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "independentDuplicate": {
+    "observedAt": "2026-10-04T12:49:17.452Z",
+    "phase": "after-duplicate",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorOnly": true,
+    "humanIdentitiesPreserved": true,
+    "humanAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "previousLicenseEnd": "2026-10-12T00:00:00.000000Z",
+    "expectedLicenseEnd": "2026-11-12T00:00:00.000000Z",
+    "license": [
+      {
+        "status": "active",
+        "license_end": "2026-11-12T00:00:00.000000Z"
+      }
+    ],
+    "applicationCount": 1,
+    "effectCount": 1,
+    "auditCount": 1,
+    "receipts": [
+      {
+        "event_type": "checkout.session.completed",
+        "status": "applied",
+        "delivery_count": 2,
+        "last_error_code": null
+      }
+    ],
+    "dispatches": [
+      {
+        "status": "completed"
+      }
+    ],
+    "extensionAppliedExactlyOnce": true,
+    "duplicateSingleEffectAccepted": true,
+    "ownedFixtureCleanupAccepted": false,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "independentCleanup": {
+    "observedAt": "2026-10-04T12:50:48.126Z",
+    "phase": "after-cleanup",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorOnly": true,
+    "humanIdentitiesPreserved": true,
+    "humanAuthCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "previousLicenseEnd": "2026-10-12T00:00:00.000000Z",
+    "expectedLicenseEnd": "2026-11-12T00:00:00.000000Z",
+    "license": [],
+    "applicationCount": 0,
+    "effectCount": 0,
+    "auditCount": 0,
+    "receipts": [],
+    "dispatches": [],
+    "extensionAppliedExactlyOnce": false,
+    "duplicateSingleEffectAccepted": false,
+    "ownedFixtureCleanupAccepted": true,
+    "fullStripeProviderRehearsalAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "originalStatePreservation": {
+    "observedAt": "2026-10-04T12:50:47.765Z",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorUsed": true,
+    "humanAccountAndProfilePreserved": true,
+    "authCounts": {
+      "users": 2,
+      "accounts": 6,
+      "sessions": 1
+    },
+    "allOriginalOwnedBusinessTableCountsRestored": true,
+    "masterInventoryAndAllReferenceHistoryPreserved": true,
+    "mfaAndWakePreserved": true,
+    "schemasUnchanged": true,
+    "syntheticAuthAndBusinessRemoved": true,
+    "fullMigrationAccepted": false
+  },
+  "providerUI": {
+    "observedAt": "2026-10-04T12:49:38.100Z",
+    "testOnly": true,
+    "amountJPY": 2000,
+    "paymentSucceeded": true,
+    "threeDSecureSucceeded": true,
+    "cardDeclineHistorySeen": true,
+    "actualFundsTransferred": false,
+    "subscriptionInvoiceFailureAccepted": false,
+    "sameUserWholeApplicationUIAccepted": false
+  },
+  "declineUI": {
+    "observedAt": "2026-10-04T12:46:27.290Z",
+    "testOnly": true,
+    "cardDeclineMessageSeen": true,
+    "savedPaymentInformation": false,
+    "subscriptionInvoiceFailureAccepted": false
+  },
+  "threeDSecureChallenge": {
+    "observedAt": "2026-10-04T12:47:30.270Z",
+    "testOnly": true,
+    "threeDSecureChallengeSeen": true,
+    "realBankAuthentication": false
+  },
+  "operationsHealth": {
+    "observedAt": "2026-10-04T12:51:40.326Z",
+    "scope": "read-only staging aggregates; no repair/provider/data/domain action",
+    "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "worker": "fanmark-app-staging",
+    "version": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "ledgerEntries": 25,
+    "credentialSource": "monitor_api_token",
+    "leastPrivilegeAccepted": false,
+    "selectors": {
+      "CUTOVER_WRITE_FREEZE": "false",
+      "LICENSE_EXPIRY_BACKEND": "d1",
+      "LICENSE_EXPIRY_CRON": "0 0 * * *",
+      "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+      "NOTIFICATION_WAKE_BACKEND": "durable-object",
+      "NOTIFICATION_ARCHIVE_BACKEND": "d1",
+      "NOTIFICATION_ARCHIVE_CRON": "0 0 * * *",
+      "STRIPE_DISPATCH_BACKEND": "d1",
+      "BROADCAST_SEND_BACKEND": null
+    },
+    "counts": {
+      "foreign_key_violations": 0,
+      "wake_singletons": 1,
+      "wake_requested": 17,
+      "wake_acknowledged": 17,
+      "notification_pending": 0,
+      "notification_overdue": 0,
+      "notification_stale_processing": 0,
+      "notification_failed": 0,
+      "notification_archive_candidates": 0,
+      "expiry_open_runs": 0,
+      "finalization_open_runs": 0,
+      "finite_licenses_past_end": 0,
+      "grace_licenses_past_end": 0,
+      "stripe_dead_letters": 0,
+      "stripe_overdue": 0,
+      "stripe_expired_leases": 0
+    },
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": [],
+    "disabledJobs": [
+      "BROADCAST_SEND_BACKEND"
+    ],
+    "recurringOperationsAccepted": false,
+    "providerIntegrationAccepted": false
+  },
+  "rehearsalFailureHistory": [
+    {
+      "code": "registration_shape_invalid",
+      "cause": "Harness expected Tier 1 for a single emoji; the source-shaped registration returned Tier 4 (S). The app registration succeeded, no Checkout was created, the owned fixture was cleaned and an independent full baseline check passed before rerunning with Tier 4 / JPY 2000.",
+      "productRuntimeChanged": false,
+      "failedFixtureCleaned": true
+    }
+  ],
+  "limits": [
+    "Browser keeps the pre-existing human session; synthetic ownership/API session is separate. Hosted Stripe UI and owned HTTP API flow are accepted, not one-user whole-application UI.",
+    "Card-decline/no-extension and on-session 3DS are accepted for this one-time extension. Subscription invoice failures/payment_action_required, expired/async extension paths and initial out-of-order deliveries remain outside this real-provider proof.",
+    "No pending lottery entries were seeded; local per-entry cancellation proof is separate.",
+    "Stripe test payment/event history and staging Products/Prices/Webhook/Portal settings are retained. Owned D1/Auth fixture, intents/applications/effects/audits/receipts/dispatches were removed."
+  ]
+}

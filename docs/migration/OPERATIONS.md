@@ -115,7 +115,7 @@ FreeのHTTP/Cron CPUは10msで、ネットワーク・DB待ち時間とは異な
 checked-in app configでCPU設定30,000ms、日次expiry/archive selectorを準備した。
 CI・配備・remote readback・日次実行の確認前に定常運用を完了扱いしない。
 既存の合成rehearsal guardはactive jobを拒否し続け、試験用の停止fixtureと区別する。
-Stripeのtest key/署名secret・19料金・test default Portalは2026-10-04にstagingへ設定した。87b61ef/CI37200812928両job成功後のWorkerca971193で6 billing selector/毎分dispatchと専用test Webhookを有効化した。実test Checkout/Portal/Creator→Business→Free、重複/処理済みevent逆順再送/自然retryとdrain後の専用合成fixture cleanupを確認した。延長・失敗/3DS・初回逆順・同一利用者の画面全体は未受け入れ。Resendは資格情報・承認済みテスト宛先が未確定のため有効化しない。R2とは別契約である。
+Stripeのtest key/署名secret・19料金・test default Portalは2026-10-04にstagingへ設定した。87b61ef/CI37200812928両job成功後のWorkerca971193で6 billing selector/毎分dispatchと専用test Webhookを有効化した。実test Checkout/Portal/Creator→Business→Free、重複/処理済みevent逆順再送/自然retryとdrain後の専用合成fixture cleanupを確認した。同じWorkerで延長Checkoutの拒否時未延長・3DS成功・自然署名反映・delivery2/効果各1と独立cleanup/元状態保持を確認した。subscription invoice failure・初回逆順・同一利用者の画面全体は未受け入れ。Resendは資格情報・承認済みテスト宛先が未確定のため有効化しない。R2とは別契約である。
 
 ## 秘密の管理と権限
 

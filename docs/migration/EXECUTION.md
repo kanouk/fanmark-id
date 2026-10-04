@@ -1,3 +1,36 @@
+# 2026-10-04 Stripe実延長・カード拒否・3DS・重複単一適用を確認
+
+runtimeは引き続き`87b61ef`/CI37200812928両job成功・Worker`ca971193`。
+前回記録head`5abbd06`のCI37202161221も両job成功した。コード/schema/配備の
+追加変更はない。専用の合成Auth userで実signinし、アプリの登録APIから
+1絵文字のSティア（内部4）を取得し、同じ延長requestの2回送信で同一Checkoutを確認。
+1か月JPY2,000のStripe hosted Checkoutで公式拒否カードの失敗表示を確認し、
+その時点の期限・application/effect/auditが未変更/0であることを確認した。
+続いて公式3DSカードのchallengeを完了し、Stripe画面で成功/3DS認証成功/拒否履歴を
+確認した。実署名checkout.session.completedを自然毎分dispatchが処理し、期限が
+2026-10-12 UTCから2026-11-12 UTCへ延び、application/effect/監査各1件になった。
+同eventのStripe Dashboard再送後もdelivery2・効果各1件、期限は同じだった。
+別processのread-only monitorで延長・重複単一適用を独立確認した。
+
+fixture所有journalをmutation前に保存し、receipt/dispatch完了後に専用Auth user/
+account/session、profile、fanmark/license/config、intent/application/effect、監査、
+receipt/dispatchを片付けた。別processで合成行0、元の2 user/6 account/session1、
+元の40表の所有件数・Master全履歴・MFA/wakeの完全一致、app/auth200・attention空を
+確認した。Stripe test支払い/event履歴、19料金/Webhook/Portal設定は残す。
+[実延長と独立照合](evidence/stripe-staging-extension-provider-2026-10-04.json)。
+
+最初のharnessは1絵文字を内部Tier1と誤指定して決済前guardで停止した。アプリの
+登録は成功しており、所有fixtureのcleanup・独立baseline一致後、実Masterの
+Tier4条件で再実行した。この検証手順の失敗も証拠へ残し、runtime変更は行わない。
+
+今回の拒否/3DSは一回払いの延長Checkoutであり、subscription invoice failure/
+payment_action_requiredやasync/expired延長、未受信eventの初回逆順配信は未確認。
+Hosted Stripe UIと合成userのHTTP sessionは別で、本人のブラウザsessionを保持した。
+同一利用者のアプリ全画面・実スマホは未受け入れ。次はsubscriptionの失敗通知・
+初回逆順配信、承認済み宛先Resend、Apple/Discord新規登録、日次自然発火・運用・
+最終統合。六作業の完了条件はCOMPLETIONを維持する。実課金・本番Stripe・
+実ユーザー移送・公開domain/DNSは変更していない。以下は過去のcheckpoint。
+
 # 2026-10-04 Stripeの実test決済・Portal・プラン変更・cleanupを確認
 
 `87b61ef`/CI37200812928はアプリ・Workerの両job成功。空POST streamのPortal拒否を
