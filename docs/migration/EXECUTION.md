@@ -16,7 +16,10 @@ private test Price IDだけを差し替える派生版を作成した。最初�
 
 077c30eのCIで、日次のみ・provider無効を想定する試験fixtureが現在の設定を継承して
 失敗した。fixtureを明示的に無効化し、実staging設定のStripe test-only/毎分dispatchを
-別に照合した。inert rehearsalのtarget guardは緩めず、ローカルmigration289件は成功。
+別に照合した。0e75c88では隔離local editorのprovider無効guardもStripe設定の継承で
+拒否したため、同fixtureの6 billing selectorを明示的に除外した。local Worker/25 Business・
+4 Auth・8 Master/実cookie/browser/保存・画像・所有権の通し試験が成功した。実スマホの
+検証ではない。inert rehearsalのtarget guardは緩めず、ローカルmigration289件は成功。
 次は修正後候補のCI確認・staging配備、
 その後に専用test Webhookの有効化と実Stripe Checkout/Portal/変更/延長の確認。
 毎分通知pollingはDO selectorで選択されない。日次expiry/archiveはUTC00:00のまま。
