@@ -1,3 +1,32 @@
+# 2026-10-05 同一検証ユーザーの実購読画面を確認
+
+runtime `12fa13f` / CI37208535583両job成功・100% Worker `cc6d9da7` を維持。
+前回の記録58a066d / CI37209348857も両job成功した。Mac解除後、保持する本人IABの
+古い`/plans`は旧JSのため設定エラーが残ったが、通常reloadで新JSへ更新され、
+Free/Creator/Businessの価格0/1,000/2,000円と上限3/10/50を実画面で確認した。
+本人の有料ボタンは押していない。これは当該画面の更新で、全PWA更新の証拠ではない。
+
+別のChrome専用タブで新しい合成ownerを通常ログインし、dashboard Free/0件/上限3から
+実プラン選択→sandbox Checkoutの公式4242カード支払い→Creatorの現在プラン表示、
+実Business変更→Portalの未払い請求/保存済みtestカード確定→日割り1,000円支払い済み→
+アプリへ戻ってBusinessの現在プラン表示、Freeの警告確認→即時解約→Freeの現在表示と
+上限3、通常logout後のguest画面を確認した。自然毎分処理を待ち、D1を直接変更せず、
+支払い後の手動reloadも行っていない。provider APIと別processの読み取り専用照合は
+Business/active/2,000円、Free/canceledと一致した。正確な反映時間やtimeout toastの
+不在は測定していない。全license/延長/上限超過選択/有料退会のUI成功とは扱わない。
+
+解約通知を含む7 receiptはapplied6/ignored1・各delivery1でdrain済み。
+所有test Customerを閉じ、所有Auth/profile/契約/command/台帳等を限定cleanupした。
+独立23:01:29.999Z readbackで元の2 user/6 account/session1・40表所有件数・Master全履歴・
+MFA/wake・schemaの一致を確認した。test請求/event履歴と設定用料金を保持する。
+実課金・ユーザー移送・DNS・runtime/schema再配備はない。
+[実画面と独立照合の証拠](evidence/stripe-staging-subscription-ui-2026-10-05.json)。
+
+Chrome extensionの操作は応答せず、native操作へ切り替えた。先行v2 fixtureはCustomer/
+Checkoutを作る前にcleanup済み。六作業の完了条件はCOMPLETIONを維持し、日次自然発火、
+Resend、Apple/Discord新規登録/relay、source/converter照合と最終統合は残る。
+以下は過去のcheckpoint。
+
 # 2026-10-04 実プラン画面の設定503を修正・staging APIを確認
 
 専用合成ownerの実Chromeシークレットログインでdashboard Free/0件/上限3を確認し、
