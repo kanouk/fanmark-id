@@ -25,10 +25,21 @@ commands, external callers/schedulers or jobs added after this observation.
 Active state and a string match do not prove a successful invocation. Earlier
 function catalogs and this query are separate observations.
 
-The staging daily trigger still has its lifecycle execution selector unset;
+At the observation above, the staging daily lifecycle selector was unset;
 notifications use D1 wake state and Durable Object alarms. Recorded synthetic
 lifecycle/alarm acceptance does not close recurring activation, CPU/plan fit,
 archive invocation/retention, external-caller or full freeze/recovery gates.
 No schedule, function, deployment or user data changed. Real user-data migration
 and domain cutover remain deferred. Re-read metadata immediately before a
 separately authorized final source-writer freeze.
+
+## Current staging configuration (2026-10-05 JST)
+
+This is separate from the source metadata observation above. The current
+`wrangler.app-staging.jsonc` enables `LICENSE_EXPIRY_BACKEND=d1` and
+`NOTIFICATION_ARCHIVE_BACKEND=d1` on the daily `0 0 * * *` trigger.
+Runtime12fa13f/Workercc6d9da7 is deployed with these settings. The isolated
+archive and one-shot lifecycle proofs remain bounded acceptance; the main
+09:00 JST natural invocation has not yet been observed. See
+[completion conditions](COMPLETION.md) and [operations](OPERATIONS.md).
+No source writer was disabled or changed.

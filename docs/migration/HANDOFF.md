@@ -1,5 +1,24 @@
 # 2026-10-05 同一検証ユーザーの実購読画面を確認
 
+## Current source preparation checkpoint (2026-10-05 JST)
+
+Runtime remains12fa13f/Workercc6d9da7; documentation7a7e717 CI37242431058
+passed both jobs. No runtime was redeployed by this preparation run.
+Converterv43 with an explicit credential descriptor on the saved
+2026-10-02T14:21:25.605664+00:00 catalog retains four blocking groups:
+sequence-key input contract, functions, RLS policies and triggers. All58
+captured function hashes match the independent October3 counterpart evidence;
+this is correspondence, not semantic approval or a new source observation.
+Current25 Business/4 Auth local schemas accepted40 checkpoints/13 synthetic
+rows, committed interruption/resume, fresh-target restore69056ms, one wake
+and credential-coverage tamper refusal. Master/R2 and real Auth credentials
+are excluded; full runtime/converter/migration flags remain false.
+[Scoped evidence](evidence/schema-current-preparation-2026-10-05.json).
+Frontend Stripe/private-price mapping and current staging schedule descriptions
+now match the accepted test-only connection and enabled daily selectors.
+Resend is at the in-app login handoff; no mail or credential change occurred.
+
+
 runtime `12fa13f` / CI37208535583両job成功・100% Worker `cc6d9da7` を維持。
 前回の記録58a066d / CI37209348857も両job成功した。Mac解除後、保持する本人IABの
 古い`/plans`は旧JSのため設定エラーが残ったが、通常reloadで新JSへ更新され、

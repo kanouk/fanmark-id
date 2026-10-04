@@ -33,6 +33,34 @@ documents that regex ranges depend on the active collating sequence, so this
 probe is required instead of assuming ASCII equivalence:
 [PostgreSQL pattern matching](https://www.postgresql.org/docs/current/functions-matching.html).
 
+## Current preparation observation (2026-10-05 JST)
+
+Converter v43 was rerun with the explicit credential descriptor against the
+private catalog captured at `2026-10-02T14:21:25.605664+00:00`. This is a current
+tool run on saved metadata, not a fresh source read. It contains 40 tables,
+406 columns, 144 constraints, 139 indexes and 15 enum labels. All 58 captured
+function-definition hashes match the separate October 3 counterpart evidence.
+
+The result has four blocking groups: the three sequence-key indexes share
+`seq_key_input_contract_requires_review`; functions, RLS policies and triggers
+each retain `unsupported_catalog_scope`. Row-conversion capability has zero
+blocking groups with this descriptor. This does not approve source values,
+existing Auth credentials or a production import. Current application
+counterparts and intentional differences are documented separately in
+[source runtime](source-runtime-review.md), [source policy counterparts](source-policy-counterparts.md),
+[source trigger counterparts](source-trigger-counterparts.md) and
+[sequence-key disposition](source-sequence-key-review.md). Their manual evidence
+is not automatically consumed by the generic converter.
+
+The v4/18-group observations below are historical. The current four groups,
+`deployable=false` and `fullMigrationReconciled=false` must remain explicit;
+synthetic target recovery is a separate bounded proof. The same run completed
+all40 checkpoints for13 synthetic rows under25 Business/4 Auth migrations,
+resumed a committed interruption, restored a fresh local target in69056ms,
+retained one notification wake generation and rejected a tampered credential
+coverage. This run excludes Master/R2 and is not a production RTO. See
+[current preparation evidence](evidence/schema-current-preparation-2026-10-05.json).
+
 ## Run locally
 
 Keep the catalog and generated files in a private directory. The CLI writes
