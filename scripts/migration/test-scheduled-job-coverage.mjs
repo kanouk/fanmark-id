@@ -12,16 +12,21 @@ const deployed = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app
 const baseline = structuredClone(deployed);
 delete baseline.vars.LICENSE_EXPIRY_BACKEND;
 delete baseline.vars.NOTIFICATION_ARCHIVE_BACKEND;
+delete baseline.vars.STRIPE_DISPATCH_BACKEND;
+delete baseline.vars.BROADCAST_SEND_BACKEND;
 function config(vars, crons = ["0 0 * * *"]) {
   return { ...baseline, vars: { ...baseline.vars, ...vars }, triggers: { crons } };
 }
 
-test("operational staging routes both daily jobs without provider dispatch or notification polling", () => {
+test("operational staging routes daily jobs and test Stripe dispatch without notification polling", () => {
   assert.deepEqual(validateScheduledJobCoverage(deployed), [
     { job: "license-expiry", cron: "0 0 * * *" },
     { job: "notification-archive", cron: "0 0 * * *" },
+    { job: "stripe-webhook-dispatch", cron: "* * * * *" },
   ]);
   assert.deepEqual(selectScheduledJobs("0 0 * * *", deployed.vars), ["license-expiry", "notification-archive"]);
+  assert.deepEqual(selectScheduledJobs("* * * * *", deployed.vars), ["stripe-webhook-dispatch"]);
+  assert.equal(deployed.vars.STRIPE_MODE_POLICY, "test_only");
   assert.deepEqual(validateScheduledJobCoverage(baseline), []);
 });
 
