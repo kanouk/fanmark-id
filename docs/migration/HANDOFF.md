@@ -1,3 +1,35 @@
+# 2026-10-04 Stripeの実test決済・Portal・プラン変更・cleanupを確認
+
+`87b61ef`/CI37200812928はアプリ・Workerの両job成功。空POST streamのPortal拒否を
+修正してWorker `ca971193`へ配備し、4 provider/secret14名称・Cron2件と元の人の
+account/profile、Master/MFA/wakeを保持した。Portal回帰7件と型確認も成功。
+
+アプリAPIから専用合成userのtest Checkoutを作成し、同request再試行で同sessionを
+確認した。Stripe公式4242 test cardで支払いを完了し、実署名Webhookと自然毎分Cronで
+Creator ¥1,000が反映された。Business変更では追加確定が必要となり、修正後Portalに
+「テスト環境」・未処理請求を表示し、公式テストカードによる支払い確定を行って、
+Business ¥2,000/activeへの反映を確認した。アプリAPIからFree変更を要求し、
+実subscription.deletedの自然処理でFree/canceledへ反映された。
+
+古い作成eventをStripe Dashboardから再送し、delivery3・application1を独立確認した。
+Business反映後の古いevent再送でもCreatorへ戻らなかった。これは処理済みeventの
+逆順再送であり、未受信eventの初回逆順配信は未受け入れ。private flag修正前に保留した
+subscription/invoiceが自然retryで成功し、最終全7 receipt/dispatchは正常に完了した。
+
+保存済み所有journalだけを使い、解約・drain後に専用test Customer、合成Auth user/
+account/session・Business profile/commands/projection/receipts/fenceを片付けた。
+別processのread-only monitorで合成行0と元の2 user/6 account/session1、元の40表の
+所有行件数、Master全履歴、MFA/wakeが一致することを確認した。Stripe側のtest
+請求書/支払い/event履歴と設定用19料金・Webhook/Portalは保持する。
+[実サービス検証と独立readback](evidence/stripe-staging-real-provider-2026-10-04.json)。
+
+Hosted Checkout/Portalのブラウザと、合成userのHTTP sessionは別であり、既存人の
+ブラウザsessionは保持した。同一利用者によるアプリ画面全体の受入とは区別する。
+次は実延長Checkout、支払い失敗/3DS、初回逆順配信、承認済み宛先Resend、
+Apple/Discord新規登録、日次自然発火・運用・最終統合。全移行は未完了。
+実課金・本番Stripe・実ユーザー移送・公開domain/DNSは変更していない。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Stripe test-only runtime配備・Webhook有効化を確認
 
 ebfbcf6/CI37199647817はアプリ・Workerの両job成功。
@@ -15,7 +47,7 @@ Worker b79307caに6 billing selectorと毎分Stripe dispatchを配備した。
 料金PortalはCloudflareの空POST streamを非空本文と誤認して400となるため、
 EOFを許可して実データの最初のbyteを拒否する修正と回帰試験を追加した。
 同修正のCI・配備・実Portalは未受け入れ。
-合成userの認証情報を保存・公開せず、既存人のアカウントは維持する。
+合成userのpassword/cookieをファイル・ログへ保存せず、既存人のアカウントは維持する。
 実課金・本番Stripe変更・実ユーザー移送・公開domain/DNSは行っていない。
 以下は過去のcheckpoint。
 

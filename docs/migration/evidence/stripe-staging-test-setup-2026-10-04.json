@@ -170,5 +170,6 @@
     },
     "fullMigrationAccepted": false
   },
-  "billingDeploymentEvidence": "stripe-staging-billing-deployment-2026-10-04.json"
+  "billingDeploymentEvidence": "stripe-staging-billing-deployment-2026-10-04.json",
+  "partialRealProviderEvidence": "stripe-staging-real-provider-2026-10-04.json"
 }

@@ -53,7 +53,10 @@ entitlement change was performed by these tests.
 
 The staging frontend selects the Worker client. Business migration
 `0013_stripe_plan_change_commands.sql` adds only the command table and indexes;
-it carries no user data. The server selector and Stripe secrets remain unset,
-so staging cannot initiate a plan change until Stripe sandbox configuration
-and integrated acceptance are completed. Production routing, user-data
+it carries no user data. The test-only server selectors and credentials were enabled on 2026-10-04.
+An owned synthetic user completed Creator Checkout, Business payment confirmation
+through Customer Portal, and immediate Free cancellation with signed webhook
+projection and independently verified cleanup. Extension payments, failure/3DS,
+first-delivery reordering, and the final same-user browser flow remain unaccepted.
+See `evidence/stripe-staging-real-provider-2026-10-04.json`. Production routing, user-data
 migration, and domain/DNS are unchanged.
