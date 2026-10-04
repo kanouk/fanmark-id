@@ -276,6 +276,15 @@ scheduled expiryはsource-shaped D1上で期限切れgraceライセンス、抽�
 
 Cloudflare buildでは`/password-setup`をBetter Authの初回OAuthパスワード設定画面として使い、D1プロフィールのsetup flagをGateに反映する。`POST /api/me/password-setup`は本人sessionからユーザーIDを決め、Better Auth server-only password APIとbusiness D1のflagを連携する。通常のパスワード変更は現在パスワードを要求する。合成検証と非atomicなAuth/business D1再試行契約は `docs/migration/password-setup-api.md` を参照する。2026-09-27にCI成功後のstaging反映を確認し、匿名POSTの401とsetup画面の200/noindexを確認済み。OAuth資格情報が未設定のためprovider実認証は未確認。
 
+## Cloudflare stagingの運用確認
+
+Cloudflare stagingの運用確認は`docs/migration/OPERATIONS.md`と
+`scripts/migration/staging-operations-status.mjs`にまとめる。後者は固定accountと
+三D1 binding、deploymentとBusiness migrationを確認してから、固定SQLの集計と
+app/`/api/auth/ok`の応答を読む。自由なSQLやsecret値・通知payload・利用者IDを出力せず、
+job有効化・修復・provider操作は行わない。selector停止と観測失敗を区別し、
+監視コマンドの成功から定常運用の受け入れを推定しない。
+
 ## 移行元のruntime接続先の確認
 
 `schema-readiness.sql`はpublicテーブルのtriggerを取得する。公開関数がAuth等の別schemaへ

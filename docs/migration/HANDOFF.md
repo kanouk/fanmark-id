@@ -1,3 +1,30 @@
+# 2026-10-04 通常CIの公開参照15件と運用確認手順
+
+`f5ceed0`/CI37163953832はcompleted/success、application・Worker両job成功。
+Worker logで00:12:08.8189911Zに専用public-access15/15の実行・成功を確認した。
+runtime/schema差分はなく、受入済みcode0e86688/Workerbddc0dadを再配備していない。
+PR #41の本文を最終実装・受け入れ・残件へ整理し、draftを維持する。
+
+[運用手順](OPERATIONS.md)と`staging-operations-status.mjs --read-only`を用意した。
+固定account/identity/remote三D1 binding/単一100% version/全25 migrationを確認したうえで、
+値を含まない集計とapp/auth healthを観測する。00:29:17.839Zの実行はexit0。
+appと`/api/auth/ok`が200、FK0、wake17/17、通知滞留/失敗・expiry/finalization open run・
+Stripe滞留/dead-letterが0だった。[証拠](evidence/staging-operations-observation-2026-10-04.json)。
+remoteのexpiry/archive/Stripe/broadcast send selectorは未設定。観測成功は定常運用の完了ではない。
+
+準備中、Wranglerのremote --fileがSELECTの結果ではなくimport要約を返すため、
+固定SELECTだけを--commandで実行するよう修正した。--file試行のprovider要約は
+rows written0で、業務行を書き換えるSQLはなかった。auth probeも既存契約の`/api/auth/ok`へ
+合わせた。準備時の404を実アプリの認証障害として扱わない。
+
+対象accountの契約画面でWorkers Free（現在のプラン）を確認した。
+subscriptions APIは403/10000、account settingsのusage model standardだけでは契約を
+判定できなかった。Paid変更の許可を依頼済みで、購入はしていない。
+provider設定場所/テスト送信、main日次有効化/CPU適合、担当/最小権限/鍵保管先/保存期間/
+RPO・RTO、同じ最終candidateでPC・実スマホ・言語・旧PWA/provider/job/recoveryが残る。
+実ユーザー/Auth/Storage移送、DNS、Supabase本番writer停止は行っていない。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Tier C公開・保護参照のstaging受け入れ
 
 code0e86688/CI37130360266のapplication・Worker両job成功。Workerbddc0dadへ反映し、

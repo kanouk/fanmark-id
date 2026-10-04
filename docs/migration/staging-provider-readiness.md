@@ -122,6 +122,12 @@ credential名があるかだけを確認した。値は表示・保存せず、�
 
 ## Workersプラン判断の根拠
 
+2026-10-04、ログイン中の対象accountのWorkersプラン画面で、Freeの「現在のプラン」を
+確認した。現Wrangler OAuthのsubscriptions APIは403/10000、account settingsは
+200でdefault_usage_model=standardだった。後者だけでは契約を判定できない。
+Paidへの変更許可は入力待ちで、購入・変更はしていない。
+[運用手順と観測](OPERATIONS.md)に、停止中のselector、監視・再開・秘密管理の残件を記録した。
+
 2026-10-03に公式資料を確認した。Workers Paidはアカウントごと月額最低$5、
 含まれるWorkerリクエスト/CPU枠を超えれば従量課金となる。他製品を含む総額を
 $5と保証するものではない。[公式料金](https://developers.cloudflare.com/workers/platform/pricing/)。

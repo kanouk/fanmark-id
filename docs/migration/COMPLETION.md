@@ -40,6 +40,19 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
+2026-10-04、`f5ceed0`/CI37163953832のapplication・Worker両jobが成功し、
+通常CIへ追加したpublic-access15件の実行・成功をlogで確認した。
+runtimeは受入済みcode0e86688/Workerbddc0dadのままで、再配備は不要。
+
+項目4の[運用手順](OPERATIONS.md)と読み取り監視コマンドを用意した。
+実stagingの00:29:17.839Z観測で固定account/三D1 binding/100% version/25 migration、
+appと`/api/auth/ok`の200、FK0、wake17/17、通知滞留・失敗/期限open run/Stripe滞留0を
+確認。[証拠](evidence/staging-operations-observation-2026-10-04.json)。
+remote selectorのexpiry/archive/Stripe/broadcast sendは未設定であり、定常運用の完了ではない。
+契約画面でWorkers Freeを確認した。subscriptions APIの403とusage modelのstandardを
+Paidの根拠にはしない。Paid変更の判断を依頼済みで、購入はしていない。
+監視担当、鍵保管先/交換、保存期間、RPO/RTO、main日次有効化と最終統合は未完了。
+
 2026-10-04、Tier Cの公開/保護参照をcode0e86688/CI37130360266両job成功、
 Workerbddc0dadで受け入れた。合成2 accountの無期限short/emoji一致、本人settingsでの
 password設定、locked投影の秘匿、誤password拒否、正しいemoji proof/内容取得、
