@@ -1,5 +1,16 @@
 # Source authorization catalog review
 
+## Current source refresh (2026-10-05 JST)
+
+The read-only ACL observation2026-10-04T23:39:28.055776+00:00 retains the
+fingerprint,40 RLS tables,77 policies and58 functions below. The policy
+appendix matches all77 identities, commands, roles and expression hashes across
+40 table counterparts. All37 trigger identities/function/hash prefixes and
+58 function hashes also match the separate live runtime/schema observations.
+See [fresh source metadata](evidence/source-current-readonly-refresh-2026-10-05.json). These independent observations read no application/Auth rows;
+whole authorization/runtime semantics and converter approval remain false.
+
+
 This is a read-only source inventory for the remaining authorization review.
 It does not approve the complete RLS-to-Worker migration. D1 authorization must
 be enforced by each server route and transaction; PostgreSQL grants and RLS

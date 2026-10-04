@@ -1,5 +1,18 @@
 # Source runtime bindings review
 
+## Current source refresh (2026-10-05 JST)
+
+The metadata-only runtime observation at2026-10-04T23:39:31.1247+00:00
+retains58 functions/37 registered bindings and the fingerprint below. A separate
+ACL observation23:39:28.055776 and full schema observation23:40:15.748033
+retain their prior fingerprints and every captured schema section, including
+the regex range probe. All58 function hashes,77 policy identities/commands/roles/
+expression hashes and37 trigger identities/function/hash prefixes match their
+current manual counterpart indexes. See [fresh source metadata](evidence/source-current-readonly-refresh-2026-10-05.json). This confirms source drift
+absence at these observations; it does not consume manual semantic approvals
+or change fullRuntimeReconciled/authorizationReconciled/converterDeployable=false.
+
+
 Scheduled writers are separately observed by a metadata-only read-only query;
 see [source scheduled writers](source-scheduled-writers.md). Trigger bindings,
 ordinary-function privileges, current Cron state and invocation history are

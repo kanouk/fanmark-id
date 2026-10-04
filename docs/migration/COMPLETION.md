@@ -40,6 +40,15 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
+2026-10-05 08:39–08:40 JSTの最新source metadataで、40表/406列/144制約/139index、
+58関数/37binding/77policy、locale/regex probeとsource Cron設定の前回一致を確認した。
+現行手動対応表の58関数hash・77policyのidentity/command/role/hash・37bindingの
+identity/function/hash prefixも一致した。[最新source照合](evidence/source-current-readonly-refresh-2026-10-05.json)。
+これはsource行の移送や全意味論の受け入れではなく、converterの4 blocking groupsと
+全体false gateは維持する。Chromeのnative操作接続は初期化失敗、in-appは使用可能。
+中断したv4 UI fixtureは登録/決済前に削除し、独立readbackで元の2/6/1とMaster/MFA/wakeを保持した。
+Resendログイン、画面操作接続の復旧、次の日次自然発火・運用と最終統合は残る。
+
 2026-10-04の実Chrome Freeログイン後に`/plans`の設定503を発見し、private Stripe価格IDを
 公開設定読取から除外する修正を`12fa13f`/CI37208535583両job成功後に配備した。
 現在の100% Workerは`cc6d9da7-b81b-45fe-b0be-6c0978570232`。公開設定は200/exact11/価格IDなし、

@@ -61,6 +61,15 @@ retained one notification wake generation and rejected a tampered credential
 coverage. This run excludes Master/R2 and is not a production RTO. See
 [current preparation evidence](evidence/schema-current-preparation-2026-10-05.json).
 
+## Fresh source drift check (2026-10-05 JST)
+
+The new full source catalog captured23:40:15.748033+00:00 retains all
+sections and the same fingerprint as the saved catalog used above. Current
+v43 conversion has the same four blocking groups. Runtime/ACL/scheduler
+observations are separate read-only transactions;58 function,77 policy and
+37 binding manual index identities match. See [fresh source metadata](evidence/source-current-readonly-refresh-2026-10-05.json). The unchanged importer
+was not rerun; its bounded acceptance and the full false gates remain.
+
 ## Run locally
 
 Keep the catalog and generated files in a private directory. The CLI writes
@@ -148,7 +157,7 @@ source type. This keeps order-sensitive sequence lookups indexable without
 recreating PostgreSQL's MD5 helper in SQLite; the theoretical MD5-collision
 boundary differs and is documented in `schema-conversion.md`.
 
-## What the latest catalog run produces
+## Historical catalog output before later converter revisions
 
 The private catalog was refreshed on 2026-09-27 from a read-only Supabase
 catalog query and contains 40 tables, 406 columns, 144

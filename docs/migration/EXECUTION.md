@@ -1,5 +1,25 @@
 # 2026-10-05 同一検証ユーザーの実購読画面を確認
 
+## Fresh source and browser checkpoint (2026-10-05 JST)
+
+Runtime12fa13f/Workercc6d9da7 is unchanged; documentationfe49343/CI37243719919
+passed both jobs. Source metadata was read in four read-only transactions at
+23:39–23:40 UTC: all schema sections/locale/regex probe,58 functions,37 bindings,
+77 policies and both source Cron definitions/states match the prior records.
+The current manual58/77/37 indexes also match identities and hashes exactly.
+[source evidence](evidence/source-current-readonly-refresh-2026-10-05.json).
+Converterv43 retains four groups and full runtime/authorization/converter flags
+stay false. The unchanged13-row synthetic import was not repeated.
+The freshv4 license UI fixture was created but native Chrome CUA initialization
+failed before registration/payment; the child exited and exact journal cleanup
+succeeded. Independent23:33:34.203Z readback preserved original2 users/6 accounts/
+1 session, all owned Business counts, Master history, MFA/wake and schemas.
+Mac console was unlocked. IAB2/Resend23 is responsive at/login; native Chrome
+returns initialize timeout. Native reconnection and Resend login remain pending.
+Never replay cleaned billing journalsv1–v4. Main09:00 JST natural daily firing,
+operations decisions and remaining UI/provider/final integration stay open.
+
+
 ## Current source preparation checkpoint (2026-10-05 JST)
 
 Runtime remains12fa13f/Workercc6d9da7; documentation7a7e717 CI37242431058

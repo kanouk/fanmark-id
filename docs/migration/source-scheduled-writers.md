@@ -1,5 +1,15 @@
 # Source scheduled-writer metadata
 
+## Current source scheduler refresh (2026-10-05 JST)
+
+Observation2026-10-04T23:39:28.09197+00:00 retains the two rows below:
+notification polling inactive, daily expiry active, UTC/GMT schedules and both
+command hashes unchanged. See [fresh source metadata](evidence/source-current-readonly-refresh-2026-10-05.json). No raw command, credential or application/
+Auth row was read into the report; command mentions still do not prove successful
+invocation or exclude external/indirect callers. Source writer freeze remains
+a separately authorized final cutover step.
+
+
 `scripts/migration/source-scheduled-writers.sql` runs one read-only transaction
 with a ten-second timeout against the verified linked source project. It reads
 `cron.job` operational metadata, no application/Auth rows. It excludes raw

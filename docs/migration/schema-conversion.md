@@ -1,5 +1,21 @@
 # PostgreSQL to D1 schema conversion boundary
 
+## Current source catalog (2026-10-05 JST)
+
+A fresh linked-project metadata-only observation at
+2026-10-04T23:40:15.748033+00:00 matches every section of the prior October2
+catalog:40 tables/406 columns/144 constraints/139 indexes/15 enum labels,
+view/function/public-trigger/policy definitions, locale and Unicode regex probe.
+The fingerprint remains977e826cddfa69e755e6850c322e6faa8f48f434394db2887b86694156ea6271.
+The independent full runtime query also retains the Auth-table binding, for37
+registered bindings in total. Converterv43 with the explicit credential
+descriptor retains four blocking groups and deployable=false; its exact
+current result is in [fresh source metadata](evidence/source-current-readonly-refresh-2026-10-05.json). No source row was exported or target schema applied.
+The unchanged fingerprint connects the bounded13-row current-schema synthetic
+import proof; it does not expand that proof to every populated source table or
+real Auth credentials. Older version/count observations below are historical.
+
+
 Parent issues: [#34](https://github.com/kanouk/fanmark-id/issues/34) and
 [#35](https://github.com/kanouk/fanmark-id/issues/35).
 
