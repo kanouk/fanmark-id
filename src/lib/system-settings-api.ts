@@ -16,17 +16,17 @@ export const SYSTEM_SETTINGS_PUBLIC_KEYS = [
   "max_pricing",
   "business_pricing",
   "max_emoji_characters",
+  "stripe_mode",
+] as const;
+
+export const SYSTEM_SETTINGS_ADMIN_KEYS = [
+  ...SYSTEM_SETTINGS_PUBLIC_KEYS,
   "creator_stripe_price_id",
   "max_stripe_price_id",
   "business_stripe_price_id",
   "creator_stripe_price_id_live",
   "max_stripe_price_id_live",
   "business_stripe_price_id_live",
-  "stripe_mode",
-] as const;
-
-export const SYSTEM_SETTINGS_ADMIN_KEYS = [
-  ...SYSTEM_SETTINGS_PUBLIC_KEYS,
   "enterprise_fanmarks_limit",
   "enterprise_pricing",
 ] as const;

@@ -14,7 +14,15 @@ const publicUrl = "https://api.example.test/api/system/settings";
 const adminUrl = "https://api.example.test/api/admin/system-settings";
 const now = new Date("2026-09-27T03:04:05.000Z");
 const privateKeys = new Set(["enterprise_fanmarks_limit", "enterprise_pricing"]);
-const adminKeys = [...SYSTEM_SETTING_PUBLIC_KEYS, ...privateKeys];
+const priceKeys = [
+  "creator_stripe_price_id",
+  "max_stripe_price_id",
+  "business_stripe_price_id",
+  "creator_stripe_price_id_live",
+  "max_stripe_price_id_live",
+  "business_stripe_price_id_live",
+];
+const adminKeys = [...SYSTEM_SETTING_PUBLIC_KEYS, ...priceKeys, ...privateKeys];
 
 const allowAdmin: SystemSettingsAdminAuthorizer = async () => ({ userId: "synthetic-admin", sessionId: "synthetic-session" });
 const denyAdmin: SystemSettingsAdminAuthorizer = async (_request, headers) =>
@@ -45,7 +53,7 @@ async function insertSettings(keys: readonly string[] = adminKeys): Promise<void
     `40000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
     key,
     settingValue(key),
-    privateKeys.has(key) ? 0 : 1,
+    privateKeys.has(key) || priceKeys.includes(key) ? 0 : 1,
     now.toISOString(),
     now.toISOString(),
   ));
@@ -85,6 +93,37 @@ describe("D1 system settings API", () => {
     expect(Object.keys(payload.settings).sort()).toEqual([...SYSTEM_SETTING_PUBLIC_KEYS].sort());
     expect(payload.settings).not.toHaveProperty("enterprise_fanmarks_limit");
     expect(payload.settings).not.toHaveProperty("enterprise_pricing");
+  });
+
+  it("keeps legacy public Price IDs out of public responses and accepts private test IDs", async () => {
+    if (!database) throw new Error("FANMARK_DB binding is unavailable");
+    await insertSettings();
+    await database.prepare("UPDATE system_settings SET is_public = 1 WHERE setting_key LIKE '%_stripe_price_id_live'").run();
+    const response = await request(publicUrl);
+    expect(response.status).toBe(200);
+    const payload = await response.json() as { settings: Record<string, string> };
+    expect(Object.keys(payload.settings).sort()).toEqual([...SYSTEM_SETTING_PUBLIC_KEYS].sort());
+    for (const key of priceKeys) expect(payload.settings).not.toHaveProperty(key);
+    expect((await request(adminUrl)).status).toBe(200);
+
+    await database.prepare("DELETE FROM system_settings WHERE setting_key = 'creator_stripe_price_id'").run();
+    expect((await request(publicUrl)).status).toBe(200);
+    expect((await request(adminUrl)).status).toBe(503);
+  });
+
+  it("updates private Price IDs without depending on their legacy visibility", async () => {
+    if (!database) throw new Error("FANMARK_DB binding is unavailable");
+    await insertSettings();
+    for (const visibility of [0, 1]) {
+      await database.prepare("UPDATE system_settings SET is_public = ?, setting_value = 'price_synthetic' WHERE setting_key = 'creator_stripe_price_id'").bind(visibility).run();
+      const response = await request(adminUrl, {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "creator_stripe_price_id", value: "price_updated", expectedValue: "price_synthetic" }),
+      });
+      expect(response.status).toBe(200);
+      expect(await database.prepare("SELECT setting_value, is_public FROM system_settings WHERE setting_key = 'creator_stripe_price_id'").first())
+        .toEqual({ setting_value: "price_updated", is_public: 0 });
+    }
   });
 
   it("requires MFA-protected admin authorization before returning private settings", async () => {

@@ -42,6 +42,7 @@ test("accepts the exact public and admin setting projections", async () => {
     null,
     { schemaVersion: 2, settings: publicSettings },
     { schemaVersion: 1, settings: { ...publicSettings, enterprise_pricing: "hidden" } },
+    { schemaVersion: 1, settings: { ...publicSettings, creator_stripe_price_id: "price_private" } },
     { schemaVersion: 1, settings: { ...publicSettings, free_fanmarks_limit: 5 } },
   ]) {
     await assert.rejects(fetchSystemSettingsFromWorker({

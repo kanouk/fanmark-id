@@ -21,9 +21,12 @@ pinned canonical SHA-256
 
 ## API behavior
 
-- `GET /api/system/settings` returns the exact 17-key public projection.
+- `GET /api/system/settings` returns the exact 11-key public projection: plan
+  display prices/limits, invitation/social-login flags, maximum emoji count, and
+  Stripe mode. It never includes any of the six test/live Stripe Price IDs.
 - `GET /api/admin/system-settings` returns those public keys plus the two
-  private Enterprise values, after Better Auth admin-role and current-session
+  private Enterprise values and six test/live Stripe Price IDs (19 keys total),
+  after Better Auth admin-role and current-session
   MFA authorization.
 - `PATCH /api/admin/system-settings` accepts one editable key, a new value,
   and its expected current value. It rejects stale edits, validates value
@@ -31,7 +34,7 @@ pinned canonical SHA-256
   value. The audit stores the key, not old/new values.
 
 All responses are `no-store`; API errors fail closed. Public access does not
-include the two private Enterprise values. The plan UI waits for settings and
+include the two private Enterprise values or Stripe Price IDs. The plan UI waits for settings and
 shows an error/retry instead of presenting fallback pricing when the Worker
 cannot load them.
 
@@ -40,9 +43,21 @@ the same audited administrator API. Its input is limited to integers from 1 to
 1,000,000 and is disabled when the setting projection cannot be loaded.
 Invitation mode already has its editor in `AdminInvitationManager`.
 
-`stripe_mode` and Price IDs are configuration only. This slice does not enable
+The original 2026-09-27 settings slice treated Price IDs as public configuration.
+The 2026-10-04 test-only provider setup made test IDs private, which exposed a
+visibility mismatch and caused the actual `/plans` page to fail with HTTP 503.
+The fixed public projection does not query Price IDs; missing or invalid private
+configuration cannot hide valid public prices/limits. Admin reads still validate
+the full projection and require MFA. Historical Price ID rows may carry either
+visibility flag; neither flag can expose them through this API. Audited Price ID
+updates normalize the changed row to `is_public=0`. Enterprise visibility checks
+remain strict. No source or Master history is rewritten.
+
+`stripe_mode` and Price IDs are configuration only. The original settings slice did not enable
 Stripe checkout, subscription mutation, webhook processing, or a live payment.
-No production selector or route was changed.
+Current test-only provider acceptance is documented separately in
+`stripe-invoice-provider-validation.md` and `HANDOFF.md`. No production selector
+or route was changed.
 
 ## Staging AdminSettings editor (2026-10-02)
 

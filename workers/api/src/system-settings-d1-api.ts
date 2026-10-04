@@ -18,17 +18,18 @@ export const SYSTEM_SETTING_PUBLIC_KEYS = [
   "max_pricing",
   "business_pricing",
   "max_emoji_characters",
+  "stripe_mode",
+] as const;
+
+const PRIVATE_SETTING_KEYS = ["enterprise_fanmarks_limit", "enterprise_pricing"] as const;
+const ADMIN_SETTING_KEYS = [...SYSTEM_SETTING_PUBLIC_KEYS,
   "creator_stripe_price_id",
   "max_stripe_price_id",
   "business_stripe_price_id",
   "creator_stripe_price_id_live",
   "max_stripe_price_id_live",
   "business_stripe_price_id_live",
-  "stripe_mode",
-] as const;
-
-const PRIVATE_SETTING_KEYS = ["enterprise_fanmarks_limit", "enterprise_pricing"] as const;
-const ADMIN_SETTING_KEYS = [...SYSTEM_SETTING_PUBLIC_KEYS, ...PRIVATE_SETTING_KEYS] as const;
+  ...PRIVATE_SETTING_KEYS] as const;
 const EDITABLE_SETTING_KEYS = new Set<string>([
   "invitation_mode",
   "free_fanmarks_limit",
@@ -157,7 +158,9 @@ async function readSettings(db: D1Database, includePrivate: boolean): Promise<Re
         fail("system_settings_unavailable");
       }
       const expectedPublic = !PRIVATE_SETTING_KEY_SET.has(row.setting_key);
-      if ((Number(row.is_public) === 1) !== expectedPublic || ![0, 1].includes(Number(row.is_public))) {
+      // Price IDs are admin-only regardless of legacy source visibility flags.
+      if ((!PRICE_ID_SETTING_KEYS.has(row.setting_key) && (Number(row.is_public) === 1) !== expectedPublic) ||
+          ![0, 1].includes(Number(row.is_public))) {
         fail("system_settings_unavailable");
       }
       seen.add(row.setting_key);
@@ -276,9 +279,12 @@ export async function handleSystemSettingsRequest(
     const auditId = crypto.randomUUID();
     const results = await db.batch([
       db.prepare(`
-        UPDATE system_settings SET setting_value = ?, updated_at = ?
-        WHERE setting_key = ? AND setting_value = ? AND is_public = ?
-      `).bind(update.value, now, update.key, update.expectedValue, PRIVATE_SETTING_KEY_SET.has(update.key) ? 0 : 1),
+        UPDATE system_settings SET setting_value = ?, updated_at = ?, is_public = ?
+        WHERE setting_key = ? AND setting_value = ? AND is_public IN (?, ?)
+      `).bind(update.value, now,
+        PRIVATE_SETTING_KEY_SET.has(update.key) || PRICE_ID_SETTING_KEYS.has(update.key) ? 0 : 1,
+        update.key, update.expectedValue, PRIVATE_SETTING_KEY_SET.has(update.key) ? 0 : 1,
+        PRIVATE_SETTING_KEY_SET.has(update.key) || PRICE_ID_SETTING_KEYS.has(update.key) ? 0 : 1),
       db.prepare(`
         INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
         SELECT ?, ?, 'ADMIN_UPDATE_SYSTEM_SETTING', 'system_setting', ?, ?, ? WHERE changes() = 1
