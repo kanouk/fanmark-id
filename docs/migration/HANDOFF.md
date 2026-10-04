@@ -1,3 +1,23 @@
+# 2026-10-04 Discord callback・既存資格情報保存、本人ログイン待ち
+
+本人の具体的な承認後、移行元と一致する既存Discordアプリへstaging callbackを追加・
+保存し、再読込で本番`https://auth.fanmark.id/auth/v1/callback`と両方の存在を確認した。
+既存Client ID/SecretをSupabaseから読み、FIFOとWrangler stdinでapp stagingへ保存した。
+移行元provider設定のSaveとsecret再発行は行っていない。秘密値は出力/Git/通常ファイルへ
+保存せず、private FIFOはinstaller終了後に削除した。
+Workerは100% `fa4ef348-c19c-4c33-87b5-2183db983cfd`、runtime codeは`0fb4976`。
+設定を保存したcandidate `b08deeb`はCI37186918306両job成功。アプリ/schema再配備はない。
+保存前後の本人管理GitHub/Google account、Masterと参照履歴、MFA/wake、その他binding/
+CPU limitsの一致を確認した。secretは9名称、capabilitiesはDiscord/GitHub/Google。
+[値を含まないDiscord設定証拠](evidence/discord-staging-credential-installation-2026-10-04.json)。
+Google sessionを通常ログアウトし、stagingのDiscordボタンから実認証を開始した。
+Discord側の本人ログイン画面（tab8）で入力待ち。実callback/provisioning/初回設定と
+logout/reloginは未受け入れ。試験アカウントは保持し、旧全owned行0件canaryは使わない。
+Google/GitHubの実認証受け入れは完了。残りはDiscord実認証、Apple、Stripe sandbox、
+承認済み宛先のResend、日次自然発火、運用と最終統合。
+既存ユーザー/Auth/Storageの実移送・公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Google初回パスワード保存・失効・再ログインを受け入れ
 
 本人のパスワード保存後、credential作成とsetup flag0、dashboard到達を確認した。

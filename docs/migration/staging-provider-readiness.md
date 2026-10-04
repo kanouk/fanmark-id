@@ -225,3 +225,22 @@ identity and existing redirects are reviewed, obtain specific approval immediate
 before expanding its staging access and saving the credentials. Keep the existing
 production callback. Apple Services ID/domain/return configuration must also be
 reviewed before its callback is added.
+
+## Discord credentials/callback installed (2026-10-04)
+
+After specific human approval, the existing app matching the source client ID
+kept its production callback and saved the staging callback. Both survived a
+console reload. Its existing credential pair was transferred from Supabase via
+private FIFO and Wrangler stdin into `fanmark-app-staging`, without source Save
+or secret rotation. Version `fa4ef348-c19c-4c33-87b5-2183db983cfd` has 100% traffic;
+runtime code remains `0fb4976`. The settings candidate `b08deeb` passed both CI
+jobs (37186918306). Accounts, master/reference history, MFA/wake, other bindings
+and CPU limits matched before/after. Nine secret names are present; capabilities
+expose Discord/GitHub/Google. Values were not exported; the FIFO was removed.
+[Installation evidence](evidence/discord-staging-credential-installation-2026-10-04.json).
+
+After ordinary Google logout, the staging Discord button started the real flow.
+Discord shows its own sign-in form in tab8, requiring human credential entry.
+Actual Discord callback, provisioning, first password and logout/relogin are
+not accepted yet. Keep both controlled accounts and the existing production
+callback. Apple and email/billing remain closed pending separate preparation.
