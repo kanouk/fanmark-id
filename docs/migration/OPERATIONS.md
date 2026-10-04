@@ -51,7 +51,9 @@ microsecond境界や可用性判定を置き換えない。自由なSQL入力は
 baseline、CPU/plan適合を確認し、設定を差分でレビューする。
 `scheduled-job-coverage.mjs`でrequired jobの周期が実dispatcherに到達することを確認する。
 Cron登録と伝播をcontrol planeと実行結果で確認し、selector追加だけで完了にしない。
-main expiry/archiveの定常有効化は現在準備中で、配備と実行の受け入れは未実施。隔離archiveの実Cron受け入れは
+main expiry/archiveは2026-10-04に配備し、remote selector・CPU・Cron登録を確認した。
+[配備証拠](evidence/staging-daily-job-activation-2026-10-04.json)。
+mainの自然発火・処理結果は未受け入れ。隔離archiveの実Cron受け入れは
 [保存済み証拠](evidence/isolated-notification-archive-cron-2026-10-03.json)を使う。
 
 2026-10-04、契約画面の「無料プラン／現在のプラン」でWorkers Freeを確認した。

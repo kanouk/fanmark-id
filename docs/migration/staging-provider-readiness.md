@@ -162,3 +162,23 @@ The authenticated GitHub provider form displays the existing callback as
 `https://auth.fanmark.id/auth/v1/callback`. Preserve this exact custom Auth
 domain callback during staging setup; do not replace it with an assumed
 project-ref URL. The form was read only; its Save button remained disabled.
+
+
+## GitHub staging credentials installed (2026-10-04)
+
+The human registered a separate staging OAuth application with the callback
+`https://fanmark-app-staging.fanmark-id.workers.dev/api/auth/callback/github`.
+The existing Supabase callback and source application were not changed.
+The human supplied its credentials, installed via Wrangler stdin as
+`GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` in `fanmark-app-staging`.
+No values were printed, written to a local credential file, or committed.
+The three existing Worker secrets were retained. See the
+[value-free installation receipt](evidence/github-staging-credential-installation-2026-10-04.json).
+
+This change prepares `AUTH_SOCIAL_BACKEND=better-auth` in the checked-in staging
+configuration. Only providers with complete secret pairs become available;
+Google/Discord/Apple credentials and email/billing selectors remain absent.
+The isolated local editor removes the social selector and has no live credentials.
+Installation does not prove provider connectivity. CI, selector deployment,
+actual GitHub callback/session/provisioning and first-password setup remain
+separate acceptance steps.

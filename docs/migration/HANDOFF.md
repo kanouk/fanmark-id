@@ -1,3 +1,21 @@
+# 2026-10-04 日次ジョブ配備とGitHub接続の準備
+
+`b80fefc`/CI37168103288はapplication・Worker両jobが成功し、Worker
+`62052d66-41af-4595-ba15-ec042d3f7fce`へ100%配備した。独立readbackがCPU30,000ms、
+日次expiry/archiveとCron `0 0 * * *`、マスター3,944/公開行7,888・料金/履歴の保持を確認。
+app/auth200、FK0、wake17/17、滞留/失敗/open run0。
+[配備証拠](evidence/staging-daily-job-activation-2026-10-04.json)。
+mainの日次自然発火は未確認で、次回は2026-10-05 09:00 JST。
+
+ユーザーがstaging専用GitHub OAuthアプリを登録した。本人提供のClient ID/Secretを
+Wranglerのstdinから対象Worker secretsへ保存し、既存3secretを保持した。
+secret保存後のversionは`e5569745-1236-4937-bcc6-f3177b02b1c9`。
+[値を含まない証拠](evidence/github-staging-credential-installation-2026-10-04.json)。
+本変更では`AUTH_SOCIAL_BACKEND=better-auth`を準備する。資格情報はconfig/Viteへ入れず、
+local editor fixtureはprovider selectorを除く。CI・selector配備・実GitHub callback/session・
+初回password setupは未受け入れ。既存Supabase callback、実ユーザー移送、DNSは変更しない。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Workers Paidと日次ジョブ有効化の準備
 
 ユーザーのPaid有効化後、対象accountのPaid「現在のプラン」を確認した。

@@ -143,6 +143,10 @@ test("Paid staging enables bounded daily lifecycle and archive while inert rehea
   assert.equal(vars.NOTIFICATION_ARCHIVE_BACKEND, "d1");
   assert.equal(vars.NOTIFICATION_ARCHIVE_CRON, "0 0 * * *");
   assert.equal(appStagingConfig.limits.cpu_ms, 30000);
+  assert.equal(vars.AUTH_SOCIAL_BACKEND, "better-auth");
+  assert.equal(vars.AUTH_SOCIAL_PROVISIONING_BACKEND, "d1");
+  assert.ok(!Object.keys(vars).some(key => /_OAUTH_CLIENT_(?:ID|SECRET)$/u.test(key)),
+    "provider credentials belong in Worker secrets, not checked-in vars");
   for (const key of ["STRIPE_DISPATCH_BACKEND", "STRIPE_WEBHOOK_BACKEND", "BROADCAST_SEND_BACKEND", "AUTH_EMAIL_BACKEND"]) assert.equal(vars[key], undefined);
   assert.equal(vars.LICENSE_EXPIRY_CRON, "0 0 * * *");
   assert.deepEqual(appStagingConfig.triggers.crons, ["0 0 * * *"]);

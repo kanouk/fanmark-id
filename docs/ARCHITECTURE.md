@@ -299,3 +299,13 @@ job有効化・修復・provider操作は行わない。selector停止と観測�
 別schemaのactive依存として保持する。接続追加・definition変更・scope欠落は再レビューを
 要求する。runtime受け入れやconverterのdeployable gateを自動で完了にしない。
 詳細は[接続先レビュー](migration/source-runtime-review.md)。
+
+
+## GitHub stagingの接続準備（2026-10-04）
+
+staging専用GitHub OAuthアプリの資格情報をWorker secretsへ保存した。
+`AUTH_SOCIAL_BACKEND=better-auth`をapp configで選択する変更を準備し、
+完全なsecret pairのあるproviderだけを公開する既存実装を使う。資格情報はViteや
+checked-in varsへ入れない。local editor fixtureはsocial selectorを除いた隔離環境を使う。
+本変更のCI/配備と実GitHub callback/session/provisioningの受け入れは別工程。
+[接続状況](migration/staging-provider-readiness.md)を参照する。

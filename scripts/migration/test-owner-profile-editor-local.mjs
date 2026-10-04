@@ -27,8 +27,8 @@ const port=await new Promise((resolve,reject)=>{const server=createServer();serv
 const origin=`https://127.0.0.1:${port}`;
 const config=JSON.parse(await readFile(path.join(api,'wrangler.app-staging.jsonc'),'utf8'));
 delete config.account_id;delete config.triggers;
-// This isolated editor test has no scheduler and must not inherit operational jobs.
-delete config.vars.LICENSE_EXPIRY_BACKEND;delete config.vars.NOTIFICATION_ARCHIVE_BACKEND;
+// This isolated editor test has no scheduler or provider credentials.
+delete config.vars.LICENSE_EXPIRY_BACKEND;delete config.vars.NOTIFICATION_ARCHIVE_BACKEND;delete config.vars.AUTH_SOCIAL_BACKEND;
 config.name='fanmark-local-editor-compose';
 config.main=path.join(api,'src/index.ts');
 config.assets.directory=path.join(temp,'assets');
