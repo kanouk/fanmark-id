@@ -52,8 +52,10 @@ APIのread receiptは`rows_written=0`かつ`changed_db=false`を要求する。
 資格情報をpublic app/auth healthの要求へ送らず、token IDや生のprovider errorも出さない。
 
 監視用tokenの作成時に必要な権限候補は対象accountだけの`Workers Scripts Read`と
-`D1 Read`。zone/R2/配備権限を追加しない。実際のIAM policyと対象resourceの確認、
-専用tokenでの実行は未受け入れ。tokenがactiveであることや固定要求の成功だけでは
+`D1 Read`。zone/R2/配備権限を追加しない。2026-10-04に本人承認後、二つのRead権限と対象account限定・
+有効期限2026-11-04を確認して発行し、Macキーチェーンへ保管、readback後の専用CLIを
+実行してexit0・attention空を確認した。[証拠](evidence/dedicated-staging-monitor-credential-2026-10-04.json)。
+ゼロ行UPDATEは変更0で成功したが、非ゼロ書込みの許可/拒否は証明しない。tokenがactiveであることや固定要求の成功だけでは
 書込み権限がないことを証明できないため、reportの`leastPrivilegeAccepted`はfalseのまま。
 `credentialSource`で専用tokenとWrangler OAuthを区別する。
 [公式D1 queryの受理権限](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/)と
@@ -116,7 +118,7 @@ secret値をVite変数、Git、PR、出力、通常ログへ入れない。鍵�
 配備者、監視者、復旧担当の権限を分ける。監視には対象accountのWorkers/D1読み取りを
 基本とし、配備・migration・R2変更権限を与える役割を限定する。
 現在のWrangler OAuthは書込み権限を持つため、最小権限の監視用tokenとは扱わない。
-新tokenや権限変更は本書では作成していない。D1 bindingとaccountの照合は、IAMによる
+2026-10-04の監視tokenは上記の限定scopeで発行・保管済み。D1 bindingとaccountの照合は、IAMによる
 権限制限の代わりではない。
 
 ## 復旧の実行順

@@ -15,8 +15,12 @@ reload remains unauthenticated; repeat GitHub login returns to the dashboard
 with session1, the same user/profile and password-setup flag0. The controlled
 staging account is retained. No existing user migration or domain change occurred.
 [Safe actual evidence](evidence/github-staging-real-auth-2026-10-04.json).
-Google's existing production callback is preserved; adding the staging callback
-and storing its credentials is awaiting the human's specific approval.
+Google's existing production callback is preserved. With the human's specific
+approval, its staging callback and existing credentials were saved; version
+8bb6b4d9-a9e1-42c4-8963-6348e05d05ce exposes GitHub and Google. Account, master,
+MFA/wake and other binding readbacks matched before/after. Actual Google login
+is at its name/photo/email sharing consent, awaiting separate action-time approval.
+[Installation evidence](evidence/google-staging-credential-installation-2026-10-04.json).
 Old zero-owned-row canaries must refuse this retained account; use an isolated
 fixture or a reviewed narrow baseline, never delete the human test account.
 

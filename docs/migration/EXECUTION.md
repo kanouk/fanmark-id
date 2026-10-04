@@ -1,3 +1,32 @@
+# 2026-10-04 Google設定保存・資格情報移送と監視tokenの実接続
+
+本人の具体的な承認後、既存Google OAuth clientへstaging callbackを追加・保存し、
+本番`https://auth.fanmark.id/auth/v1/callback`を保持した。既存secretはSupabaseの
+Google設定から読み取り、値をファイル/ログ/Gitへ入れずFIFOとWrangler stdinから
+`fanmark-app-staging`の`GOOGLE_OAUTH_CLIENT_ID/SECRET`へ保存した。
+移行元のprovider設定とsecretは変更・再発行していない。
+保存による100% Worker版は`8bb6b4d9-a9e1-42c4-8963-6348e05d05ce`。
+アプリruntime codeは受入済み`0fb4976`、監視tool candidateは`6e527b5`で
+CI37183202677の両job成功。アプリ/Worker/schemaの再配備はしていない。
+設定前後の同じ試験アカウント/認証情報・Master/料金履歴・MFA・wake・その他bindingを
+照合し保持を確認した。capabilitiesはGitHubとGoogleだけを公開する。
+[値を含まないGoogle設定証拠](evidence/google-staging-credential-installation-2026-10-04.json)。
+Googleの実認証はアカウント選択後の名前/写真/メール共有の個別承認待ちで、未受け入れ。
+Google検証開始前にGitHub sessionを通常ログアウトした。試験アカウントを削除しない。
+
+監視tokenは対象accountだけのWorkers Scripts Read/D1 Read、有効期限2026-11-04で
+発行し、Macキーチェーンへ保存した。既存entryを置き換えず、値はFIFO/プロセス
+stdin・環境だけで渡した。キーチェーンreadback後の専用CLIはexit0、attentionは空。
+[監視資格情報の証拠](evidence/dedicated-staging-monitor-credential-2026-10-04.json)。
+IAM作成画面の対象/二つのRead権限は確認済み。ゼロ行UPDATEは変更0で成功したため、
+実書込み拒否の証拠にはならず、reportのleastPrivilegeAcceptedはfalseを保持する。
+定期監視・鍵運用全体の受け入れも別条件。
+
+次はGoogleの実callback/初回設定、Discord/Apple、Stripe sandbox、承認済み宛先の
+Resend、日次自然発火（2026-10-05 09:00 JST）、運用条件と最終統合。
+既存ユーザー/Auth/Storageの実移送と公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
 # 2026-10-04 GitHub実認証の受け入れと監視専用token経路
 
 `0fb4976`/CI37180854336両job成功、Worker
