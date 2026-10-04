@@ -337,3 +337,15 @@ Repeat login, new Apple signup/first password and relay remain unaccepted.
 [Safe actual callback/logout evidence](evidence/apple-staging-real-auth-2026-10-04.json).
 No credential, schema, runtime deployment, source user migration or domain
 change was made during this acceptance check.
+
+## Actual Apple same-account relogin accepted (2026-10-04)
+
+A fresh human retry reached the dashboard at10:30 UTC. Dedicated read-only
+deployment metadata confirms the same 100% version495b3ce4. Auth/Business
+receipts show the same Apple account, retained Google user/profile and session1
+(user2/account6, profiles2). Original GitHub/Google credentials and Discord
+linkage are preserved. Actual callback, normal logout/session0, unauthenticated
+reload and repeat same-account login are accepted. The earlier state_mismatch
+remains historical evidence; it was not bypassed by weakening state checks.
+[Consolidated actual evidence](evidence/apple-staging-real-auth-2026-10-04.json).
+This linked-account flow does not accept new Apple signup/first password or relay.

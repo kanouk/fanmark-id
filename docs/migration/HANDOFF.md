@@ -1,3 +1,17 @@
+# 2026-10-04 Apple既存account連携・session失効・再ログインを確認
+
+本人の新しいApple認証でdashboardへ復帰し、最初のcallbackと同じApple account・
+Google user・Business profileへの対応とsession1を独立readbackで確認した。
+Auth user2/account6/session1、Business profile2。元GitHub/Google credentialと
+Discord連携を保持する。通常logout/session0・/auth再読込時の未認証も確認済み。
+Worker495b3ce4/runtime7e6cf76は不変で、今回コード・資格情報・schemaは変更しない。
+[実callback/logout/reloginの証拠](evidence/apple-staging-real-auth-2026-10-04.json)。
+
+この実フローは既存Google userへの連携であり、Apple新規user/初回password setup
+とrelayは未受け入れ。Discord新規登録も残る。次はこれらとStripe sandbox、
+承認済みテスト宛先Resend、自然Cron・運用・最終統合。実ユーザーデータ移送と
+公開domain/DNS切替は後工程。以下は過去のcheckpoint。
+
 # 2026-10-04 Apple既存account連携・session失効を確認、再ログイン待ち
 
 Worker495b3ce4/runtime7e6cf76で本人の実Apple callbackがdashboardへ戻り、
