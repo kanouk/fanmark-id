@@ -1,3 +1,18 @@
+# 2026-10-04 Google初回パスワード保存・失効・再ログインを受け入れ
+
+本人のパスワード保存後、credential作成とsetup flag0、dashboard到達を確認した。
+通常ログアウトでAuth session0となり、ページ再読込後も未認証だった。同じGoogleで
+再ログインし、同じuser/profile/accountを保持してsession1・dashboardへ戻ることを
+実ブラウザとremote readbackで確認した。パスワード値/hashは取得していない。
+[Google実認証の証拠](evidence/google-staging-real-auth-2026-10-04.json)。
+GitHubとGoogleの本人管理staging user2/account4・Business profile2を保持する。
+元のGitHub identity/credentialのdigestは一致し、旧全owned行0件canaryは使わない。
+Workerは`8bb6b4d9-a9e1-42c4-8963-6348e05d05ce`、runtime codeは`0fb4976`。
+直前HEAD `6bc760b`のCI37185439067は両job成功。今回コード修正・再配備は行っていない。
+次はDiscord/Apple、Stripe sandbox、承認済み宛先のResend、日次自然発火、運用と最終統合。
+既存ユーザー/Auth/Storageの実移送・公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Google設定保存・資格情報移送と監視tokenの実接続
 
 本人の具体的な承認後、既存Google OAuth clientへstaging callbackを追加・保存し、

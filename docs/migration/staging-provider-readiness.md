@@ -18,8 +18,18 @@ staging account is retained. No existing user migration or domain change occurre
 Google's existing production callback is preserved. With the human's specific
 approval, its staging callback and existing credentials were saved; version
 8bb6b4d9-a9e1-42c4-8963-6348e05d05ce exposes GitHub and Google. Account, master,
-MFA/wake and other binding readbacks matched before/after. Actual Google login
-is at its name/photo/email sharing consent, awaiting separate action-time approval.
+MFA/wake and other binding readbacks matched before/after. After the human's
+attempt returned an error, a fresh same-account/scope Google login succeeded:
+actual subject, completed provisioning, session1 and password-setup flag1 were
+read back. The first error code was cleared; a 600-second state expiry remains
+a hypothesis. The distinct controlled Google account and original GitHub
+identity/credential are retained (user2/account3/session1, business profile2).
+The human's first-password save cleared the setup flag and created the credential
+account. Logout removed the server session; a reload stayed unauthenticated.
+Repeat Google login returned to the dashboard with the same user/profile/accounts
+and session1 (user2/account4, business profile2). Both controlled accounts remain.
+[Full actual Google acceptance](evidence/google-staging-real-auth-2026-10-04.json).
+[Actual callback evidence](evidence/google-staging-real-callback-2026-10-04.json).
 [Installation evidence](evidence/google-staging-credential-installation-2026-10-04.json).
 Old zero-owned-row canaries must refuse this retained account; use an isolated
 fixture or a reviewed narrow baseline, never delete the human test account.
@@ -201,3 +211,17 @@ The isolated local editor removes the social selector and has no live credential
 Installation does not prove provider connectivity. CI, selector deployment,
 actual GitHub callback/session/provisioning and first-password setup remain
 separate acceptance steps.
+
+## Next Discord/Apple console preparation (2026-10-04)
+
+The authenticated source Supabase provider list showed Discord and Apple enabled.
+Their existing client/secret fields and production callback are present; neither
+source provider was saved, changed or rotated. Existing settings are not evidence
+that either provider currently accepts the staging callback. The Discord Developer
+Portal was opened at `https://discord.com/developers/applications` and shows Log In.
+The human must sign in with the account that manages the existing fanmark.id app.
+No Discord/Apple callback or staging credential has been written. After target-app
+identity and existing redirects are reviewed, obtain specific approval immediately
+before expanding its staging access and saving the credentials. Keep the existing
+production callback. Apple Services ID/domain/return configuration must also be
+reviewed before its callback is added.

@@ -1,3 +1,35 @@
+# 2026-10-04 Google初回パスワード保存・失効・再ログインを受け入れ
+
+本人のパスワード保存後、credential作成とsetup flag0、dashboard到達を確認した。
+通常ログアウトでAuth session0となり、ページ再読込後も未認証だった。同じGoogleで
+再ログインし、同じuser/profile/accountを保持してsession1・dashboardへ戻ることを
+実ブラウザとremote readbackで確認した。パスワード値/hashは取得していない。
+[Google実認証の証拠](evidence/google-staging-real-auth-2026-10-04.json)。
+GitHubとGoogleの本人管理staging user2/account4・Business profile2を保持する。
+元のGitHub identity/credentialのdigestは一致し、旧全owned行0件canaryは使わない。
+Workerは`8bb6b4d9-a9e1-42c4-8963-6348e05d05ce`、runtime codeは`0fb4976`。
+直前HEAD `6bc760b`のCI37185439067は両job成功。今回コード修正・再配備は行っていない。
+次はDiscord/Apple、Stripe sandbox、承認済み宛先のResend、日次自然発火、運用と最終統合。
+既存ユーザー/Auth/Storageの実移送・公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Google実callback成功・初回パスワード入力待ち
+
+本人のGoogleログインがエラーで戻った後、新しい認証開始から同じaccount/共有範囲で
+再試行し、`/password-setup`へ到達した。認証stateは600秒で期限切れになるため、
+承認待ちによる期限切れと整合する。ただし最初のerror codeは画面で消去されており、
+原因は断定しない。認証の期限・cookie検証を緩和していない。
+実Google subject一致、provisioning完了、session1、setup flag1をremote readbackで確認。
+Googleは既存GitHub試験アカウントとは別の本人管理staging accountとして作られた。
+Auth user2/account3/session1・Business profile2を保持し、元のGitHub user/profileと
+credentialのidentity digestは一致した。パスワード値/hashは取得していない。
+[Google実callback証拠](evidence/google-staging-real-callback-2026-10-04.json)。
+現在は本人による初回パスワード入力・保存待ち。保存後のdashboard/sessionと
+Googleログアウト・同一account再ログインは未受け入れ。
+HEAD `6bc760b` のCI37185439067は両job成功。Workerは引き続き`8bb6b4d9`で、
+今回コード修正・再配備は行っていない。旧全owned行0件canaryは使わない。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Google設定保存・資格情報移送と監視tokenの実接続
 
 本人の具体的な承認後、既存Google OAuth clientへstaging callbackを追加・保存し、
