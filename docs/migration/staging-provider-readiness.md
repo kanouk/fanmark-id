@@ -301,3 +301,20 @@ before/after. The independent read-only monitor reported no attention items.
 [Installation evidence](evidence/apple-staging-credential-installation-2026-10-04.json).
 Ordinary logout then opened staging `/auth` for human Apple sign-in. Actual Apple
 callback, signup/linkage, password setup, relay and logout/relogin remain unaccepted.
+
+## Apple form POST gateway repair deployed (2026-10-04)
+
+The first real Apple return stopped at `forbidden_origin`. Earlier synthetic
+callbacks used the application Origin instead of Apple's cross-site form POST.
+The corrected native proof omits the state cookie on POST and restores it on
+SDK GET redirect. Original code reproduced 403; the repair accepts only the
+exact Apple callback, POST, Apple Origin and form media type. Global trusted
+origins/CORS remain unchanged; business policy/schema and SDK state checks remain.
+OAuth66/Auth48, types and changed-file lint passed, followed by both CI37192167542
+jobs for code 7e6cf76. The guarded deployment produced 100% version
+`495b3ce4-7733-40c5-82e6-c7d4c180d287`. Remote synthetic form POST returned302;
+invalid state/missing cookie and non-callback Apple Origin were denied without
+changing retained identities/master/settings. Independent app/auth health is200
+and attention is empty. [Deployment evidence](evidence/apple-form-post-deployment-2026-10-04.json).
+A fresh real flow is at human Apple password entry in tab8. Actual callback and
+new-user/first-password/logout/relogin/relay remain unaccepted.

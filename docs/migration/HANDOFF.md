@@ -1,3 +1,19 @@
+# 2026-10-04 Apple form POST修正をstaging配備・本人パスワード入力待ち
+
+7e6cf76/CI37192167542は両job成功。保持データ/設定のguardを確認して配備し、
+100% Worker `495b3ce4-7733-40c5-82e6-c7d4c180d287`でApple由来form POSTの302、
+redirect先で不正state/cookieなしの拒否、Apple Originで他の認証操作の403を確認した。
+secret11名称・他binding/limits、GitHub/Google user2/account5（Discord連携含む）/
+session0とMaster/参照履歴・MFA/wakeの一致を配備前後と合成probe後に確認した。
+DB schema/資格情報は変更していない。独立監視はapp/auth200・attentionなし。
+[配備とremote probeの証拠](evidence/apple-form-post-deployment-2026-10-04.json)。
+
+新しいstaging開始から既に承認済みの同じApple app/scopesへ進み、本人の
+Apple Accountパスワード入力画面（tab8）に到達した。パスワードは入力していない。
+実Apple callback/provisioning/初回設定/logout/reloginはまだ未受け入れ。
+次は本人サインイン後の実callback/session確認。古いcallbackを再送しない。
+ユーザーデータ実移送/DNS切替は後工程。以下は過去のcheckpoint。
+
 # 2026-10-04 Apple callback origin拒否を再現・限定修正、配備前
 
 本人のApple認証がcallback画面の`forbidden_origin`で停止した。
