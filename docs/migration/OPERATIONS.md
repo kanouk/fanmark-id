@@ -56,7 +56,7 @@ APIのread receiptは`rows_written=0`かつ`changed_db=false`を要求する。
 有効期限2026-11-04を確認して発行し、Macキーチェーンへ保管、readback後の専用CLIを
 実行してexit0・attention空を確認した。[証拠](evidence/dedicated-staging-monitor-credential-2026-10-04.json)。
 ゼロ行UPDATEは変更0で成功したが、非ゼロ書込みの許可/拒否は証明しない。tokenがactiveであることや固定要求の成功だけでは
-書込み権限がないことを証明できないため、reportの`leastPrivilegeAccepted`はfalseのまま。
+書込み権限がないことを証明できないため、その時点のreportの`leastPrivilegeAccepted`はfalseだった。下記の独立した非ゼロINSERT検証でD1書込み拒否を追加確認した。
 `credentialSource`で専用tokenとWrangler OAuthを区別する。
 [公式D1 queryの受理権限](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/)と
 [Worker設定API](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/script_and_version_settings/methods/get/)を参照する。
@@ -68,6 +68,22 @@ APIのread receiptは`rows_written=0`かつ`changed_db=false`を要求する。
 
 これは手動で実行できる監視コマンドであり、外部への通知や定期監視サービスを
 設定した証拠ではない。担当者と監視頻度は運用開始前に決める。
+
+
+### 監視tokenの実D1書込み拒否を確認（2026-10-04）
+
+CI37195682605/2f45451の両job成功後、専用Wrangler identityを確認し、新しく作成した
+使い捨てD1だけを対象に監視tokenの権限を試した。SELECTは成功したが、1行を追加する
+正当なINSERTはHTTP400/code7500の認可拒否となり、行は保存されなかった。
+同じINSERTを配備用権限で実行すると1行保存でき、SQL自体の問題を除外した。
+これは先行のゼロ行UPDATEと異なり、実際の書込み拒否の証拠である。
+
+一時D1はUUID/name/作成時刻の一致を確認して削除した。別processの独立readbackで
+元の3 D1 inventoryとの完全一致と一時D1の不在を確認した。Worker495b3ce4、設定、
+保持GitHub/Google/Discord/Apple identityとsessionは不変で、アプリDBへ書込みprobeを
+送っていない。[値を含まない実検証証拠](evidence/staging-monitor-write-denial-2026-10-04.json)。
+二つのRead権限の設定・専用token保管・実読取り・D1 INSERT拒否は確認済み。
+定期監視、担当、秘密更新、保存期間、RPO/RTO、最終運用の受け入れは別に残る。
 
 ## ジョブの有効化条件
 

@@ -1,3 +1,18 @@
+# 2026-10-04 監視tokenの実D1書込み拒否・後片付けを確認
+
+2f45451/CI37195682605は両job成功。専用identity確認後、新規一時D1で
+監視tokenのSELECT成功、1行INSERTの認可拒否・保存0、同一INSERTの配備権限
+positive control成功を確認した。UUID/name/作成時刻を照合して所有D1だけを削除し、
+別processの独立readbackで元の3 D1 inventoryの完全一致とprobe D1不在を確認した。
+Worker495b3ce4、設定、保持4 provider identityとsessionは不変。
+[書込み拒否の実証拠](evidence/staging-monitor-write-denial-2026-10-04.json)。
+
+先行ゼロ行UPDATEの限界を、実際の非ゼロ書込み拒否で補った。定期監視と秘密更新/
+復旧運用の全体完了は推定しない。Stripeのin-appログイン画面tab17を開き本人の
+ログイン待ち。Resendテスト宛先と別Apple/Discord新規登録用アカウントを確認中。
+これらを待つ間もsource/運用/最終統合の残項目を進める。実ユーザーデータ移送と
+公開domain/DNSは後工程。以下は過去のcheckpoint。
+
 # 2026-10-04 Apple既存account連携・session失効・再ログインを確認
 
 本人の新しいApple認証でdashboardへ復帰し、最初のcallbackと同じApple account・
