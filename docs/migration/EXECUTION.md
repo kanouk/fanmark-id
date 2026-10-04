@@ -1,3 +1,37 @@
+# 2026-10-04 Apple staging callback・有効な資格情報を保存
+
+本人の追加保存許可後、既存Services IDへstaging domain/callbackを保存し、設定を
+開き直して本番domain/callbackとの併存とFanmark Primary App ID保持を確認した。
+Vaultの既存Fanmark用.p8とApple Keyの対応、source JWTの署名一致を検証した。
+source secretは期限切れだったため再利用せず、同じ鍵で90日有効なJWTをメモリ内生成。
+source設定/secretは変更せず、秘密鍵再発行と鍵本体のuploadも行っていない。
+JWTは標準入力だけでstaging Workerへ保存し、値を出力・Git・通常ファイルへ保存しない。
+有効期限は2027-01-02T09:08:25Z（JST 18:08）。それ以前の更新が必要で、
+更新運用・実Apple認証・relay/初回設定・logout/reloginは未受け入れ。
+
+HEAD a3dbb5c/CI37189226939両job成功のcandidateでsecret設定のみを更新した。
+Workerは100% `4bc50d76-ec1d-4565-af73-b9199e79bfa9`、runtime codeは`0fb4976`。
+GitHub/Google user2・Discord連携を含むaccount5・session1とBusiness profile2、
+Master/参照履歴・MFA/wake・他binding/CPU limitsの保存前後一致を確認した。
+secret11名称、capabilitiesはApple/Discord/GitHub/Google。独立監視はattentionなし。
+[値を含まないApple設定証拠](evidence/apple-staging-credential-installation-2026-10-04.json)。
+その後、通常logoutでApple実認証を始めるためstaging /authを開いた。
+既存試験identityは保持し、本番ユーザー移送・DNS切替はしていない。
+次は本人のApple認証、Discord新規登録、Stripe sandbox、承認済み宛先Resend、
+自然Cron・運用・最終統合。以下は過去のcheckpoint。
+
+# 2026-10-04 Apple同意後の設定準備・既存secret期限切れ
+
+本人のApple契約同意後、Identifiersへのアクセスを確認した。既存Services IDと
+source Client IDの一致、Fanmark Primary App ID、本番domain/callbackを確認した。
+staging domain/return URLは追加フォームへ入力済みだが保存前で、具体的な承認待ち。
+source secretのJWT payloadを秘密値の出力なしで読み、subject/audience一致と
+`exp=2026-05-25T22:39:40Z`を確認した。署名/Apple側の検証は未実施。
+期限切れsecretは保存せず、source設定もSaveせず閉じ、秘密値の保持を解除した。
+repo/Downloadsに`.p8`は見つからず、既存鍵の場所を本人へ確認中。
+remote設定保存・再配備・本番切替は行っていない。詳細はHANDOFF最新checkpoint。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Discord既存account連携・失効・再ログインを受け入れ
 
 最初の本人認証は`state_mismatch`で/authへ戻った。直近の失敗URLからerror codeだけを

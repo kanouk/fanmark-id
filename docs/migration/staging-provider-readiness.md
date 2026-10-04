@@ -258,8 +258,46 @@ the same user/profile/account with session1 (user2/account5/business profile2).
 This does not accept a new Discord-user creation or first-password flow: both
 remain separate actual-provider conditions rather than inferred from linkage.
 
-Apple Developer is already authenticated, but requires acceptance of an updated
-Program License Agreement before access to Certificates, Identifiers & Profiles.
-The agreement review is open for human decision in tab16; no Agree click,
-callback write, secret reveal/installation, membership purchase or renewal was
-performed. The source Apple provider settings were read only and never saved.
+## Apple preparation after human agreement acceptance (2026-10-04)
+
+After the human accepted the updated Program License Agreement, access to
+Certificates, Identifiers & Profiles succeeded. The existing Fanmark Web Login
+Services ID matches the source Client ID and retains the Fanmark Primary App ID,
+domains `auth.fanmark.id` / `fanmark.id`, and the production return URL.
+The staging domain and Apple return URL above are entered in the additional-URL
+form but not saved; specific callback-save approval is pending.
+
+The source secret was read without exposing its value. Its decoded JWT payload
+matches the Services ID and Apple audience, but its `exp` is
+`2026-05-25T22:39:40Z`, already in the past. Signature/Apple validation was not
+performed. Do not install this expired secret. The source panel was closed
+without Save and the in-memory secret was cleared. A `.p8` filename search in
+the repo and Downloads found no key; ask the human for the existing key location.
+No callback, staging credential, key rotation, membership purchase, renewal or
+production cutover was performed.
+
+## Apple callback and refreshed staging credential installed (2026-10-04)
+
+The human authorized the additional domain/callback save. Reopening the existing
+Services ID confirmed both production and staging URLs and the original Fanmark
+Primary App ID. The existing Vault key matches the active Fanmark Apple Key and
+verifies the old source JWT signature. The key was not reissued or uploaded.
+A new ES256 client secret was signed locally in memory with a 90-day lifetime,
+then sent only through Wrangler stdin to staging. Source configuration/secret
+were not changed. The expired source secret was not installed.
+
+The credential expires at `2027-01-02T09:08:25Z` and requires renewal beforehand.
+Follow [Apple client-secret documentation](https://developer.apple.com/documentation/accountorganizationaldatasharing/creating-a-client-secret)
+using the same reviewed team/Services ID/key, check the intended Wrangler account
+and current candidate, and preserve existing accounts/master/other bindings on
+renewal. Renewal operations are not yet accepted; no automation was created.
+
+CI37189226939 passed both jobs for candidate a3dbb5c. Secret-only version
+`4bc50d76-ec1d-4565-af73-b9199e79bfa9` retains runtime code 0fb4976 and has 100%
+traffic. Secret names total 11; capabilities list Apple/Discord/GitHub/Google.
+The retained two users/five accounts/one session, original password identities,
+Discord linkage, master history, MFA/wake, other bindings and CPU limits matched
+before/after. The independent read-only monitor reported no attention items.
+[Installation evidence](evidence/apple-staging-credential-installation-2026-10-04.json).
+Ordinary logout then opened staging `/auth` for human Apple sign-in. Actual Apple
+callback, signup/linkage, password setup, relay and logout/relogin remain unaccepted.
