@@ -244,3 +244,22 @@ Discord shows its own sign-in form in tab8, requiring human credential entry.
 Actual Discord callback, provisioning, first password and logout/relogin are
 not accepted yet. Keep both controlled accounts and the existing production
 callback. Apple and email/billing remain closed pending separate preparation.
+
+## Actual Discord existing-account flow (2026-10-04)
+
+The human's first return failed with `state_mismatch`; expiry is a hypothesis,
+not a proven cause. A fresh flow with the same app and previously granted
+`identify email` scopes reached the dashboard. Discord linked to the retained
+Google user. Server session ownership matched the Discord account; original
+Google/GitHub identities and credential accounts were preserved. Logout removed
+the session, reload stayed unauthenticated and repeat Discord login returned to
+the same user/profile/account with session1 (user2/account5/business profile2).
+[Actual flow evidence](evidence/discord-staging-real-auth-2026-10-04.json).
+This does not accept a new Discord-user creation or first-password flow: both
+remain separate actual-provider conditions rather than inferred from linkage.
+
+Apple Developer is already authenticated, but requires acceptance of an updated
+Program License Agreement before access to Certificates, Identifiers & Profiles.
+The agreement review is open for human decision in tab16; no Agree click,
+callback write, secret reveal/installation, membership purchase or renewal was
+performed. The source Apple provider settings were read only and never saved.

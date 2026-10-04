@@ -1,0 +1,47 @@
+{
+  "observedAt": "2026-10-04T08:25:18.873Z",
+  "worker": "fanmark-app-staging",
+  "version": "fa4ef348-c19c-4c33-87b5-2183db983cfd",
+  "runtimeCodeHead": "0fb4976d98baee0b41eecb610beb33f5feee7f22",
+  "discordActualCallbackAccepted": true,
+  "discordAccountSessionOwnerMatched": true,
+  "accountDisposition": "linked_existing_google_user",
+  "originalProvisioningProvider": "google",
+  "discordNewUserProvisioningAccepted": false,
+  "passwordSetupRequired": false,
+  "credentialAccountExists": true,
+  "sessionCount": 1,
+  "retainedGithubAndGoogleIdentitiesPreserved": true,
+  "sameDiscordIdentityAsCallback": true,
+  "authCounts": {
+    "users": 2,
+    "accounts": 5,
+    "sessions": 1
+  },
+  "businessProfiles": 2,
+  "passwordValuesOrHashesRead": false,
+  "identifiersEmailsTokensExported": false,
+  "readOnlyReceiptsAccepted": true,
+  "existingUserDataMigrated": false,
+  "productionDomainChanged": false,
+  "initialError": {
+    "code": "state_mismatch",
+    "expiryHypothesis": true,
+    "freshRetrySucceeded": true
+  },
+  "realLogoutAccepted": true,
+  "loggedOutSessionCount": 0,
+  "reloadRemainedUnauthenticated": true,
+  "repeatDiscordLoginAccepted": true,
+  "controlledTestAccountsRetained": true,
+  "newDiscordFirstPasswordSetupAccepted": false,
+  "newSignupRehearsalStillRequired": true,
+  "sameAccessScopes": "identify email",
+  "previousAccessAlreadyGranted": true,
+  "observations": {
+    "callback": "2026-10-04T08:22:37.364Z",
+    "logout": "2026-10-04T08:23:54.946Z",
+    "relogin": "2026-10-04T08:25:18.873Z"
+  },
+  "fullMigrationAccepted": false
+}

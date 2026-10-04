@@ -1,3 +1,27 @@
+# 2026-10-04 Discord既存account連携・失効・再ログインを受け入れ
+
+最初の本人認証は`state_mismatch`で/authへ戻った。直近の失敗URLからerror codeだけを
+確認した。期限切れは可能性の一つであり断定しない。新しい開始から同じapp・既に
+許可済みのidentify/email範囲で再認証すると、dashboardへ戻った。
+実Discord accountのsession所有者は既存Googleユーザーと一致し、元のGoogle/GitHub
+user/profile・credentialを保持している。Auth user2/account5/session1、Business profile2。
+通常ログアウトでsession0、再読込後も未認証、同じDiscordの再ログインで同じidentityと
+session1・dashboard復帰をremote readbackとブラウザで確認した。
+[Discord実認証証拠](evidence/discord-staging-real-auth-2026-10-04.json)。
+この実認証は既存Googleユーザーへのaccount連携であり、Discord新規user作成と
+初回password setupは通っていない。新規登録経路の実受け入れは未完了として保持する。
+試験identity/credentialは削除せず、旧owned行0件canaryは使わない。
+Worker `fa4ef348`/runtime code `0fb4976` は不変。直前HEAD `19e953d`の
+CI37188231327は両job成功。今回コード修正・再配備は行っていない。
+
+Appleの既存source client設定を読み取り、provider Save/secret revealはしていない。
+Apple Developerにはログイン済みだが、最新Program License Agreementへの同意前は
+Certificates, Identifiers & Profilesへ入れない。契約レビューをtab16で開き、同意ボタンは
+押していない。本人の契約確認/同意待ちで、Apple callback/資格情報は未保存。
+次はApple設定、Discord新規登録、Stripe sandbox、承認済み宛先のResend、日次自然発火、
+運用と最終統合。既存ユーザー/Auth/Storageの実移送・公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
 # 2026-10-04 Discord callback・既存資格情報保存、本人ログイン待ち
 
 本人の具体的な承認後、移行元と一致する既存Discordアプリへstaging callbackを追加・
