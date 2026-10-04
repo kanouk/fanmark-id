@@ -23,7 +23,7 @@
   - ヒーロー下の最近取得表示: `src/components/RecentFanmarksScroll.tsx` + `src/lib/recent-fanmarks.ts` → `VITE_FANMARK_API_BASE_URL` が設定されたビルドでは公開recent Worker API、未設定では公開用 RPC `list_recent_fanmarks`（トップ表示は新しい順に20件を要求、API/RPC上限は50件）。Worker 選択時の失敗は RPC にフォールバックしない。未ログインでも表示するため、閲覧者のRLSが適用される `recent_active_fanmarks` ビューを直接参照しない。
   - 絵文字ID変換: `src/lib/emojiConversion.ts`。Worker selectorのビルドはD1の有効releaseを起動時に取得し、取得完了前に画面を描画しない。
 - `/auth`: 認証/サインアップ/パスワードリセット: `src/pages/Auth.tsx`
-  - OAuthのgatewayは`workers/api/src/index.ts`、provider設定とBusiness D1 policy読取りは`workers/api/src/auth-social.mjs`。capabilities/start/callbackは`social_login_enabled=true`かつ`invitation_mode=false`を毎回確認する。設定欠落・不正値・DB障害ではOAuthを閉じ、email readinessやAuth instance cacheから独立して判定する。新規OAuthユーザーのBusiness provisioningは`workers/api/src/oauth-signup-provisioning.mjs`に実装し、Auth migration0009と`AUTH_SOCIAL_PROVISIONING_BACKEND=d1`で選択する。server-only markerとprovider識別子によりcross-D1途中失敗を復旧し、profile保存・停止状態確認後だけsessionを発行する。native合成検証とstaging schema/selector適用・合成session guard検証は済んでいる。実provider受け入れは未完了。契約は`docs/migration/oauth-signup-provisioning.md`。
+  - OAuthのgatewayは`workers/api/src/index.ts`、provider設定とBusiness D1 policy読取りは`workers/api/src/auth-social.mjs`。capabilities/start/callbackは`social_login_enabled=true`かつ`invitation_mode=false`を毎回確認する。設定欠落・不正値・DB障害ではOAuthを閉じ、email readinessやAuth instance cacheから独立して判定する。新規OAuthユーザーのBusiness provisioningは`workers/api/src/oauth-signup-provisioning.mjs`に実装し、Auth migration0009と`AUTH_SOCIAL_PROVISIONING_BACKEND=d1`で選択する。server-only markerとprovider識別子によりcross-D1途中失敗を復旧し、profile保存・停止状態確認後だけsessionを発行する。native合成検証とstaging schema/selector適用・合成session guard検証は済んでいる。GitHubの実callback・初回パスワード保存は確認済みで、他providerと実ログアウト・再ログインは未完了。契約は`docs/migration/oauth-signup-provisioning.md`。
   - Workerの認証設定は`workers/api/src/better-auth.mjs`。`advanced.database.generateId="uuid"`で新規レコードのIDをUUIDにする。既存Auth IDは保持し、招待signup Coordinatorから同じユーザーIDでBusinessプロフィールを作成する。
 - `/forgot-password`: `ForgotPassword.tsx`
 - `/reset-password`: `ResetPassword.tsx`
@@ -307,5 +307,9 @@ staging専用GitHub OAuthアプリの資格情報をWorker secretsへ保存し�
 `AUTH_SOCIAL_BACKEND=better-auth`をapp configで選択する変更を準備し、
 完全なsecret pairのあるproviderだけを公開する既存実装を使う。資格情報はViteや
 checked-in varsへ入れない。local editor fixtureはsocial selectorを除いた隔離環境を使う。
-本変更のCI/配備と実GitHub callback/session/provisioningの受け入れは別工程。
+`f2881a5`の両CI成功・配備後、実GitHub callback/session/provisioningと本人による初回パスワード保存を確認した。
+ログアウトは`src/lib/better-auth-client.ts`がJSONの空objectを送り、`src/hooks/useAuth.tsx`は
+失効成功後にローカル状態を消す。失敗は`AppHeader.tsx`の既存エラー表示へ伝える。
+`workers/api/test/auth-d1.test.ts`はfrontend clientから実Worker/D1へ空stream付きPOSTを渡し、
+media-type拒否の再現とsession失効を確認する。修正の配備と実ブラウザ再ログインは別工程。
 [接続状況](migration/staging-provider-readiness.md)を参照する。

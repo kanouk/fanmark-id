@@ -165,8 +165,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     try {
       setSigningOut(true);
+      if (betterAuthEnabled) {
+        // Keep the authenticated UI until the server confirms revocation.
+        await betterAuthClient.signOut();
+      }
       
-      // Clear local state first
+      // Clear local state after Better Auth revocation succeeds.
       setUser(null);
       setSession(null);
       setEmailConfirmed(false);
@@ -179,9 +183,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.warn('Failed to clear localStorage:', e);
       }
       
-      if (betterAuthEnabled) {
-        await betterAuthClient.signOut();
-      } else {
+      if (!betterAuthEnabled) {
         // Attempt Supabase logout (may fail if session is already invalid)
         const { error } = await supabase.auth.signOut();
         if (error) {
@@ -191,6 +193,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     } catch (error) {
       console.error('Error during logout:', error);
+      if (betterAuthEnabled) throw error;
     } finally {
       setSigningOut(false);
     }

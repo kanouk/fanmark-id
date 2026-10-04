@@ -374,7 +374,8 @@ export const createBetterAuthClient = ({ baseUrl, fetchImpl = fetch }: BetterAut
         method: 'POST',
         credentials: 'include',
         cache: 'no-store',
-        headers: { accept: 'application/json' },
+        headers: { accept: 'application/json', 'content-type': 'application/json' },
+        body: JSON.stringify({}),
       });
       if (!response.ok) throw responseError(response.status, await readJson(response));
     },

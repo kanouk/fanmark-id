@@ -10,6 +10,7 @@ import referenceMasterSchemaSql from "../migrations/0004_reference_master_releas
 import emojiChangeAuditSchemaSql from "../migrations/0008_emoji_master_change_audits.sql?raw";
 import emojiAdminGuardsSchemaSql from "../migrations/0005_emoji_master_admin_guards.sql?raw";
 import { handleRequest } from "../src";
+import { createBetterAuthClient } from "../../../src/lib/better-auth-client";
 import { createEmojiMasterAdminD1Repository } from "../src/emoji-master-admin-d1-repository";
 import type { Env } from "../src/repository";
 import { checkedInSqlStatements } from "./schema-statements";
@@ -401,6 +402,35 @@ beforeAll(async () => {
 beforeEach(resetFixture);
 
 describe("Better Auth through the application Worker", () => {
+  it("revokes the real D1 session when the frontend client signs out", async () => {
+    const { cookie } = await signInAndGetSession();
+    expect(await sessionCount(verifiedUserId)).toBe(1);
+    let signOutResponse: Response | undefined;
+    const client = createBetterAuthClient({
+      baseUrl: apiBase,
+      fetchImpl: async (input, init) => {
+        const headers = new Headers(init?.headers);
+        headers.set("Origin", appOrigin);
+        headers.set("Cookie", cookie);
+        // Network delivery can expose an empty POST body as a stream. A null
+        // in-process body bypasses Better Call's media-type validation.
+        signOutResponse = await handleRequest(new Request(String(input), {
+          ...init, headers, body: init?.body ?? new Uint8Array(0),
+        }), runtimeEnv);
+        return signOutResponse;
+      },
+    });
+
+    await client.signOut();
+
+    expect(signOutResponse?.status).toBe(200);
+    expect(signOutResponse?.headers.get("set-cookie")).toContain("Max-Age=0");
+    expect(await sessionCount(verifiedUserId)).toBe(0);
+    const staleSession = await authRequest("/get-session", { headers: { cookie } });
+    expect(staleSession.status).toBe(200);
+    expect(await staleSession.json()).toBeNull();
+  });
+
   it("serves the public auth health check without constructing an auth session", async () => {
     const response = await authRequest("/ok");
 

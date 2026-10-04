@@ -5,7 +5,21 @@ It does not authorize real billing, real email delivery, production provider
 configuration changes or the deferred user-data/domain cutover. Local SDK
 tests and present secret names do not prove a working provider connection.
 
-## Observed boundary
+## Current GitHub acceptance (2026-10-04)
+
+The GitHub-only candidate `f2881a5` passed both CI jobs and is deployed as
+`22628cfe-22a6-4047-991f-20a16244d916`. Actual callback/provisioning/session and
+the human's first-password save are accepted; the password-setup flag is clear.
+The controlled staging test account is retained. Its real logout exposed a
+415 media-type error, so revocation and repeat GitHub login remain pending
+until the frontend JSON logout correction is deployed and checked.
+[Safe evidence](evidence/github-staging-first-password-2026-10-04.json).
+Google's existing production callback is preserved; adding the staging callback
+and storing its credentials is awaiting the human's specific approval.
+Old zero-owned-row canaries must refuse this retained account; use an isolated
+fixture or a reviewed narrow baseline, never delete the human test account.
+
+## Earlier observed boundary
 
 Read-only inventory at `2026-10-02T22:50:13.212Z` verified the dedicated Wrangler
 identity `fanmark.id@gmail.com`, account `bfc2890741f0b3fb236e2d755b6c9adc` and

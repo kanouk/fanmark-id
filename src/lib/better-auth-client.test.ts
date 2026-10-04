@@ -179,7 +179,7 @@ test('Better Auth errors retain HTTP status for safe UI handling', async () => {
   );
 });
 
-test('Better Auth sign-out revokes the server cookie session', async () => {
+test('Better Auth sign-out sends a JSON request with session cookies', async () => {
   let request: { url: string; init?: RequestInit } | undefined;
   const client = createBetterAuthClient({
     baseUrl: 'https://fanmark-app-staging.example.workers.dev',
@@ -195,6 +195,8 @@ test('Better Auth sign-out revokes the server cookie session', async () => {
   assert.equal(request?.init?.method, 'POST');
   assert.equal(request?.init?.credentials, 'include');
   assert.equal(request?.init?.cache, 'no-store');
+  assert.equal(new Headers(request?.init?.headers).get('content-type'), 'application/json');
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), {});
 });
 
 test('an empty Better Auth session remains unauthenticated', async () => {

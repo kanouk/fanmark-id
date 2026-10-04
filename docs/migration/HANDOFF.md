@@ -1,3 +1,26 @@
+# 2026-10-04 GitHub初回登録・パスワード保存とログアウト修正
+
+`f2881a5`/CI37172900459の両job成功後、Worker
+`22628cfe-22a6-4047-991f-20a16244d916`で実GitHub callbackとsessionを確認した。
+本人のGitHub識別子に対応するAuthユーザー・Businessプロフィールは各1件で、
+provisioningは完了。本人が初回パスワードを保存し、credential accountの作成と
+`requires_password_setup=0`、dashboard到達を確認した。
+[資格情報を含まない証拠](evidence/github-staging-first-password-2026-10-04.json)。
+
+実ログアウトはContent-Type欠落で拒否され、sessionが残った。今回の修正は
+JSONの空objectを送信し、失効成功後だけローカル認証状態を消す。
+失敗はヘッダーの既存エラー表示へ伝え、成功表示・guest遷移を行わない。
+frontend clientから実Worker/D1を通す回帰試験は、空streamを伴うPOSTで
+修正前の415を再現し、修正後のcookie失効・session削除・旧cookie拒否を確認する。
+この修正のCI/配備と、実ブラウザのログアウト・同一GitHub再ログインはまだ未受け入れ。
+
+この本人管理のstaging試験アカウントは保持する。旧canaryの全owned行0件guardは
+適用できないため、無断で緩和・cleanupせず、限定baseline照合または隔離環境を使う。
+Google callback追加・資格情報保存は本人の具体的な承認待ち。
+日次自然発火（次回2026-10-05 09:00 JST）、残りprovider/email/Stripe/運用/最終統合は未完了。
+既存ユーザーの移送・公開ドメイン切替は後工程。
+以下は過去のcheckpoint。
+
 # 2026-10-04 日次ジョブ配備とGitHub接続の準備
 
 `b80fefc`/CI37168103288はapplication・Worker両jobが成功し、Worker
