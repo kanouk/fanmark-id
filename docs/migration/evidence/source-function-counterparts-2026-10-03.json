@@ -475,7 +475,7 @@
         "location": "T:1976; F FanmarkAccess.tsx; source hashc98679a9",
         "actor": "Worker public",
         "boundaryAndEvidence": "Public access by emoji path; explicit frontend read selector uses the reviewed public projection",
-        "remainingBoundary": "Staging anonymous reads and guarded locked-content verification are selected. Local candidate corrects source's finite-only eligibility to include indefinite Tier C across public read/verify/proof/content; native public15/registration26/protected13 pass. Candidate CI/deploy acceptance is pending. Production/default routing and historical analytics remain on Supabase. See public-access-contract.md."
+        "remainingBoundary": "Staging anonymous reads and guarded locked-content verification are selected. Accepted0e86688/CI37130360266/Workerbddc0dad corrects source's finite-only eligibility to include indefinite Tier C across public read/verify/proof/content; native public15/registration26/protected13 pass. Remote public2/owner settings/locked redaction/verify/protected/replay/grace/expiry and cleanup/independent readback passed. Dedicated public15 now joins ordinary CI; its earlier proof was local. Production/default routing and historical analytics remain on Supabase. See public-access-contract.md."
       },
       "counterpartSemanticApprovalInferred": false
     },
@@ -508,7 +508,7 @@
         "location": "T:1992; F FanmarkAccessByShortId.tsx, useFanmarkByShortId.ts",
         "actor": "Worker public",
         "boundaryAndEvidence": "Public short-id access and QR lookup use the same opt-in projection; OGP remains separate",
-        "remainingBoundary": "Medium: local D1 projection tests pass; Worker mode declines locked content; owner/history fields use the separately staged details endpoint"
+        "remainingBoundary": "Anonymous projection stays locked on protected records; the separate selector-bound proof API opens content after verification.0e86688/Workerbddc0dad real NULL-end short/emoji correspondence, protected emoji proof and cross-selector refusal passed. Owner/history use the separate details endpoint; actual source rows/default routing remain deferred."
       },
       "counterpartSemanticApprovalInferred": false
     },
@@ -1932,12 +1932,11 @@
       "counterpartSemanticApprovalInferred": false
     }
   ],
-  "pendingPublicAccessCandidate": {
-    "status": "locally-tested-awaiting-ci-and-staging",
-    "sourceHash": "c98679a9e059a20f5824e008fcd4012e6f5af10965f3d087c545040c33bbcdef",
-    "intentionalDifference": "NULL-end Tier C included in public emoji lookup, verification, atomic proof finalization and protected content",
-    "publicTestsPassed": 15,
-    "registrationTestsPassed": 26,
-    "protectedTestsPassed": 13
+  "publicAccessCorrectionAcceptance": {
+    "status": "verified-and-cleaned",
+    "codeHead": "0e866880f508d1d934df8e5199bf46ca3024eab0",
+    "ciRun": 37130360266,
+    "workerVersion": "bddc0dad-e996-4930-bf1d-97aacc6065b7",
+    "evidence": "tier-c-public-access-2026-10-04.json"
   }
 }

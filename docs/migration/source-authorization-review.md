@@ -40,7 +40,11 @@ particular, the inventory found that selected-release DTOs exposed inactive
 pattern/price members. The current candidate now verifies the whole release
 before filtering Tier/pattern/price rows to active members, retaining admin
 and stored inactive rows. Local API9/client8/release6/typechecks/lint pass;
-CI/deployed acceptance remains pending. Historical-owner analytics and
+The price deactivate/restore contract was subsequently accepted atcbb90c7 /
+CI37105400187 / Workere0a4b16e, with public15/admin16 and restored public16;
+Tier/pattern native coverage is separate from remote price mutation. Independent
+0e86688 readback preserves those contents and history. See
+[reference master](reference-master-data.md). Historical-owner analytics and
 external consumers still differ; these are named semantic decisions rather
 than an unexamined 77-policy backlog.
 
@@ -144,7 +148,9 @@ Historical checks when the earlier focused evidence was added: authorization rep
 `test:migration-data` 266/266 (skip 0), native `test:notifications-d1` 16/16,
 Worker typecheck, changed-file ESLint and workflow isolation pass. At that earlier checkpoint, D1 Free daily
 read exhaustion prevented a new remote editor preflight; these local checks do
-not substitute for the pending deployed editor acceptance.
+not establish the later deployed editor acceptance by themselves. The subsequent
+6a1870a/Worker51db2c90 image/editor acceptance is recorded separately in
+[storage image evidence](evidence/storage-image-projection-2026-10-03.json).
 The notifications suite is now included in `test:api-contracts-d1`, and therefore
 the Worker's `npm test`/Cloudflare validation CI, rather than remaining a manual
 focused command only.

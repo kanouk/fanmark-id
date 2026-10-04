@@ -42,7 +42,7 @@
     "test:fanmark-profile-d1": "vitest run --config vitest.fanmark-profile.config.mjs",
     "test:fanmark-details-d1": "vitest run --config vitest.fanmark-details.config.mjs",
     "test:fanmark-access-analytics-d1": "vitest run --config vitest.fanmark-access-analytics.config.mjs",
-    "test:api-contracts-d1": "npm run test:emoji-catalog:d1 && npm run test:profile-d1 && npm run test:notifications-d1 && npm run test:favorites-d1 && npm run test:fanmark-search-d1 && npm run test:fanmark-registration-d1 && npm run test:fanmark-lottery-d1 && npm run test:fanmark-profile-d1 && npm run test:fanmark-details-d1 && npm run test:fanmark-settings-d1 && npm run test:fanmark-transfer-d1 && npm run test:maintenance-settings-d1 && npm run test:reference-master-api && npm run test:reference-master-service && npm run test:fanmark-access-analytics-d1",
+    "test:api-contracts-d1": "npm run test:emoji-catalog:d1 && npm run test:public-access:d1 && npm run test:profile-d1 && npm run test:notifications-d1 && npm run test:favorites-d1 && npm run test:fanmark-search-d1 && npm run test:fanmark-registration-d1 && npm run test:fanmark-lottery-d1 && npm run test:fanmark-profile-d1 && npm run test:fanmark-details-d1 && npm run test:fanmark-settings-d1 && npm run test:fanmark-transfer-d1 && npm run test:maintenance-settings-d1 && npm run test:reference-master-api && npm run test:reference-master-service && npm run test:fanmark-access-analytics-d1",
     "test:fanmark-settings-d1": "vitest run --config vitest.fanmark-settings.config.mjs",
     "test:fanmark-registration-d1": "vitest run --config vitest.fanmark-registration.config.mjs",
     "test:fanmark-lottery-d1": "vitest run --config vitest.fanmark-lottery.config.mjs",

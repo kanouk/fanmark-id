@@ -40,13 +40,16 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 
 ## 現在の直近作業
 
-2026-10-03の公開参照照合で、Tier CのNULL-endを絵文字参照だけから除外する
-source由来の条件を確認し、Workerを無期限という仕様へ修正した。local公開参照15件、
-取得26件、保護参照13件、Worker typecheckは成功。取得からshort/emoji両参照まで同じ投影を確認し、
-有限/無期限の複数ライセンスは曖昧として拒否する。パスワード認証・proof発行・保護内容の
-取得もNULL-end条件を揃え、比較中のライセンス追加とproofの別selector利用を拒否する。
-CI・staging受入は未実行で、
-項目2は未完了。[契約差と検証](public-access-contract.md)。
+2026-10-04、Tier Cの公開/保護参照をcode0e86688/CI37130360266両job成功、
+Workerbddc0dadで受け入れた。合成2 accountの無期限short/emoji一致、本人settingsでの
+password設定、locked投影の秘匿、誤password拒否、正しいemoji proof/内容取得、
+別selector拒否、grace失効・有限期限拒否が成功。合成行を削除し、独立00:01:53.330Z
+readbackで業務/Auth非マスター行0、Master/料金/履歴保持・reference世代10/new activation0・
+wake17/17・MFA世代保持を確認。[証拠](evidence/tier-c-public-access-2026-10-04.json)。
+local public15/registration26/protected13成功。0e CIはregistration26/protected13を実行。
+専用public15が通常CIから漏れていたので、test:api-contracts-d1へ追加した。
+このCI補強はruntime変更ではなく、受入済みruntimeの同じremote試験を再実行しない。
+項目2全体とprovider/定常運用/最終統合は未完了。
 
 画像参照の差を閉じた。`6a1870a`/CI37118191381両job成功後、実stagingの
 Worker51db2c90へ反映し、合成画像の編集・公開表示、変更なし保存、既存key削除を

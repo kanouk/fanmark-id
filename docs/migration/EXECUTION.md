@@ -1,3 +1,20 @@
+# 2026-10-04 Tier C公開・保護参照のstaging受け入れ
+
+code0e86688/CI37130360266のapplication・Worker両job成功。Workerbddc0dadへ反映し、
+合成2 accountの無期限short/emoji投影一致、本人settings/password設定、locked秘匿、
+誤password拒否、正しいemoji proof/保護内容、別selector拒否、grace失効、有限期限拒否を
+実APIで確認した。journal ilxWGNはverified-and-cleaned。独立00:01:53.330Z readbackで
+Business/Auth非マスター行0、Master7888/料金/履歴保持・reference世代10/new activation0・
+wake17/17とMFA世代保持を確認。[証拠](evidence/tier-c-public-access-2026-10-04.json)。
+public15/registration26/protected13はlocal成功。0e CIにはregistration26/protected13が入り、
+専用public15は漏れていたので通常test:api-contracts-d1へ追加した。次HEADでCIを確認する。
+runtime/schema差分はなく、同じstaging試験を再実行しない。
+
+前の自動turnはモデル容量エラーで停止していた。起動済みcanaryはexit0で完走しており、
+そのプロセスを再起動していない。provider設定場所の入力待ちと、main定常ジョブ/
+Workers plan/鍵管理/運用RTO/最終PC・スマホ・言語・PWA統合が残る。
+実ユーザーデータ/Auth/Storageの実移送・ドメインは未実行。以下は過去のcheckpoint。
+
 # 2026-10-03 Tier C公開・保護参照の修正candidate
 
 無期限のactiveライセンスをemoji参照から除外するsource由来の条件を、PRODUCTに合わせて

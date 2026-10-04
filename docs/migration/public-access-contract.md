@@ -9,7 +9,7 @@ deleted and all four involved business tables read back zero. This did not
 copy production rows, change production traffic, or modify the existing
 Supabase RPCs.
 
-### Tier C correction (2026-10-03, local candidate)
+### Tier C correction (2026-10-04, accepted staging runtime)
 
 The Worker emoji lookup now accepts an active license with a NULL end date,
 as required by PRODUCT's indefinite Tier C. The captured source
@@ -29,8 +29,21 @@ and confirm newly acquired S/A/C licenses return identical anonymous short-ID
 and emoji projections. Protected-access tests pass 13/13, including NULL-end
 verification/read, selector replay refusal, ambiguity after proof issuance, and
 an indefinite license arriving during password comparison. Worker typecheck
-passes. This candidate still needs CI
-and staging acceptance; the deployed Worker is not claimed to contain it.
+passes. Code `0e86688` / CI37130360266 (both jobs successful) is deployed as
+Worker `bddc0dad-e996-4930-bf1d-97aacc6065b7`. The live synthetic canary verified
+two indefinite short/emoji projections, real owner settings/password setup,
+locked-field redaction, wrong-password refusal, successful emoji proof/content,
+short-route proof replay refusal, grace invalidation and finite emoji expiry.
+Cleanup and independent `2026-10-04T00:01:53.330Z` readback preserve the retained
+Master/history/price data, wake17/17 and MFA generation; non-master Business/Auth
+rows are zero. [Evidence](evidence/tier-c-public-access-2026-10-04.json).
+
+The0e CI runs registration26 (including public projection) and protected13.
+Its ordinary command omitted the dedicated public15 suite despite that suite
+passing locally. The follow-up adds `test:public-access:d1` to
+`test:api-contracts-d1`, which normal Worker CI executes. Runtime schemas and
+source rows are unchanged; this command addition does not require redeploying
+the already accepted runtime.
 
 ## Implemented read routes
 

@@ -19,14 +19,17 @@ This closes the single-browser visual path only; it does not prove other
 browsers, imported credential compatibility, recurring CPU fit, or production
 origin behavior.
 
-The 2026-10-03 local candidate corrects the emoji route's finite-only source
+The 2026-10-04 accepted staging runtime corrects the emoji route's finite-only source
 condition: active indefinite Tier C is eligible during resolution, atomic proof
 issuance and protected content reads. The single eligible license requirement
 remains. Native tests verify an indefinite license can be opened only with its
 emoji proof, reject replay on a short-ID route, invalidate reads after a finite
 license makes selection ambiguous, and refuse proof issuance when an indefinite
 license appears during comparison. This is a PRODUCT correction to the target;
-source RPCs remain unchanged. Remote candidate acceptance is pending.
+source RPCs remain unchanged. Code0e86688/CI37130360266 and Workerbddc0dad
+passed real synthetic owner settings/password setup, emoji verification and
+protected content, selector replay refusal and grace invalidation. Cleanup and
+independent readback passed; see [evidence](evidence/tier-c-public-access-2026-10-04.json).
 
 `workers/api/src/verified-access.mjs` implements the gated routes.
 `scripts/migration/verified-access-schema.mjs` generates, applies, and reads
