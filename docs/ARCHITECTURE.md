@@ -322,3 +322,4 @@ read receiptの書込み0/changed_db=falseを検証する。実tokenのIAM polic
 専用試験は`test-staging-monitor-api.mjs`で通常migration CIにも含める。
 
 Cloudflare stagingの認証メールは`AUTH_EMAIL_BACKEND=resend`、検証済み送信元とWorker secretの`RESEND_API_KEY`で選択する。メール登録のプロフィール作成には`INVITATION_SIGNUP_BACKEND=d1`も必要で、メール確認前のログインを拒否する。設定・配信・リンクの実受け入れは`docs/migration/HANDOFF.md`で追跡し、productionのSupabase経路と一斉送信を変更しない。
+認証gatewayは選択したD1テンプレート設定・業務DB binding・topologyをBetter Authの送信callbackへ渡し、テンプレート接続設定が変わった際は認証instanceのcacheを作り直す。無効なテンプレートを既定文面で補わない。

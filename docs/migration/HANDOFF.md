@@ -23,6 +23,14 @@ remote capability/readback, actual receipt/link/password flows and exact fixture
 cleanup are still required. Credential custody alone is not mail acceptance.
 Production Supabase, user exports/imports and DNS remain outside this work.
 
+A gateway inspection found that `createApplicationAuth` omitted the selected
+D1 email-template backend, topology and Business binding when constructing
+Better Auth. The prepared fix forwards them and includes template selection
+in the cached auth-instance configuration. Real local D1 callback regressions
+cover verification and recovery copy, cache invalidation and inactive-template
+refusal without fallback to static copy. This code change must pass CI before
+staging deployment; the earlier secret-only version is not the runtime candidate.
+
 
 ## Current candidate remote recovery (2026-10-05 JST)
 

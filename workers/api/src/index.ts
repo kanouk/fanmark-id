@@ -355,6 +355,8 @@ interface ConfiguredAuth {
   url: string;
   trustedOrigins: string[];
   emailBackend: string;
+  emailTemplateBackend: string;
+  d1Topology: string;
   userStatusBackend: string;
   resendApiKey: string;
   resendFromEmail: string;
@@ -368,6 +370,8 @@ interface CachedApplicationAuth {
   url: string;
   trustedOrigins: string[];
   emailBackend: string;
+  emailTemplateBackend: string;
+  d1Topology: string;
   userStatusBackend: string;
   resendApiKey: string;
   resendFromEmail: string;
@@ -417,6 +421,8 @@ function configuredAuth(env: Env): ConfiguredAuth | null {
       url: base.origin,
       trustedOrigins: [...origins],
       emailBackend: env.AUTH_EMAIL_BACKEND?.trim() ?? "",
+      emailTemplateBackend: env.AUTH_EMAIL_TEMPLATE_BACKEND?.trim() ?? "",
+      d1Topology: env.D1_TOPOLOGY?.trim() ?? "",
       userStatusBackend: env.AUTH_USER_STATUS_BACKEND?.trim() ?? "",
       resendApiKey: env.RESEND_API_KEY?.trim() ?? "",
       resendFromEmail: env.RESEND_FROM_EMAIL?.trim() ?? "",
@@ -436,6 +442,8 @@ function createApplicationAuth(
   const sameTrustedOrigins = cached?.trustedOrigins.length === config.trustedOrigins.length &&
     cached.trustedOrigins.every((origin, index) => origin === config.trustedOrigins[index]);
   const sameEmailConfiguration = cached?.emailBackend === config.emailBackend &&
+    cached.emailTemplateBackend === config.emailTemplateBackend &&
+    cached.d1Topology === config.d1Topology &&
     cached.resendApiKey === config.resendApiKey &&
     cached.resendFromEmail === config.resendFromEmail;
   const sameUserStatusConfiguration = cached?.userStatusBackend === config.userStatusBackend;
@@ -464,6 +472,9 @@ function createApplicationAuth(
       BETTER_AUTH_SECRET: config.secret,
       BETTER_AUTH_URL: config.url,
       AUTH_EMAIL_BACKEND: config.emailBackend,
+      AUTH_EMAIL_TEMPLATE_BACKEND: config.emailTemplateBackend,
+      D1_TOPOLOGY: config.d1Topology,
+      FANMARK_DB: config.businessDatabase,
       AUTH_USER_STATUS_BACKEND: config.userStatusBackend,
       RESEND_API_KEY: config.resendApiKey,
       RESEND_FROM_EMAIL: config.resendFromEmail,
@@ -497,6 +508,8 @@ function createApplicationAuth(
       url: config.url,
       trustedOrigins: [...config.trustedOrigins],
       emailBackend: config.emailBackend,
+      emailTemplateBackend: config.emailTemplateBackend,
+      d1Topology: config.d1Topology,
       userStatusBackend: config.userStatusBackend,
       resendApiKey: config.resendApiKey,
       resendFromEmail: config.resendFromEmail,

@@ -640,6 +640,50 @@ describe("Better Auth through the application Worker", () => {
   });
 
   it.each([
+    ["/send-verification-email", "signup", unverifiedEmail],
+    ["/request-password-reset", "recovery", verifiedEmail],
+  ])("uses selected D1 copy through the actual %s callback and invalidates cached template configuration", async (route, emailType, email) => {
+    const emailEnv: Partial<Env> = {
+      AUTH_EMAIL_BACKEND: "resend",
+      AUTH_EMAIL_TEMPLATE_BACKEND: "",
+      RESEND_API_KEY: "synthetic-resend-api-key-012345",
+      RESEND_FROM_EMAIL: "Fanmark <auth@example.test>",
+    };
+    const body = route === "/send-verification-email"
+      ? { email, callbackURL: `${apiBase}/` }
+      : { email, redirectTo: `${apiBase}/reset-password` };
+    const sent: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://api.resend.com/emails");
+      sent.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return Response.json({ id: "synthetic-resend-message" });
+    });
+    try {
+      expect((await authRequest(route, jsonBody(body), emailEnv)).status).toBe(200);
+      expect(sent).toHaveLength(1);
+      const now = new Date().toISOString();
+      await businessDatabase!.prepare(`INSERT INTO email_templates
+        (email_type, language, subject, body_text, button_text, is_active, created_at, updated_at)
+        VALUES (?, 'ja', ?, 'D1 <確認>&本文', 'D1アクション', 1, ?, ?)
+        ON CONFLICT(email_type, language) DO UPDATE SET subject=excluded.subject,
+          body_text=excluded.body_text, button_text=excluded.button_text, is_active=1`)
+        .bind(emailType, `D1 ${emailType}`, now, now).run();
+      const d1Env = { ...emailEnv, AUTH_EMAIL_TEMPLATE_BACKEND: "d1", D1_TOPOLOGY: "split" };
+      expect((await authRequest(route, jsonBody(body), d1Env)).status).toBe(200);
+      expect(sent).toHaveLength(2);
+      expect(sent[1]).toMatchObject({ to: [email], subject: `D1 ${emailType}` });
+      expect(String(sent[1]?.html)).toContain("D1 &lt;確認&gt;&amp;本文");
+      expect(String(sent[1]?.text)).toContain("D1アクション");
+      await businessDatabase!.prepare("UPDATE email_templates SET is_active=0 WHERE email_type=? AND language='ja'")
+        .bind(emailType).run();
+      await authRequest(route, jsonBody(body), d1Env);
+      expect(sent).toHaveLength(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
     ["social_login_enabled", "false"],
     ["invitation_mode", "true"],
   ])("enforces the OAuth policy when %s=%s without email readiness", async (key, value) => {
