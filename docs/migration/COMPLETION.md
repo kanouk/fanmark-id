@@ -35,8 +35,13 @@ observer6448be6のCI37323113576は両job成功。画面操作接続が回復し�
 実sandbox Checkoutを送信した。Stripe paid/completeと、自然署名dispatchによる
 application/effect/audit各1件・11月13日のactive licenseを別processで照合した。
 元3/7/2・profile/Master/MFAと元匿名履歴は保持。現在の匿名検索は4候補/7event。
-決済後にMacがロックされ、戻り画面・UI logout・所有fixture cleanupは未受け入れ。
-合成owner/license/intentは確認のため保持している。paid Checkoutは再実行しない。
+10月6日に復元したSafariで11月13日のactive表示とUI logoutを確認した。
+一時journalは失われたためexact合成owner/決済台帳から所有関係を再構成し、
+対象Business/Auth行を削除した。独立read-only processで元3/7/2・Master全24表・
+profile/MFA/template/wake・匿名履歴4/7保持・FK0を確認した。
+中断なしのCheckout復帰時刻とUI単独のexact session失効は未確認のまま。
+[復元表示と所有cleanup](evidence/staging-extension-restored-ui-cleanup-2026-10-06.json)。
+paid Checkoutは再実行していない。
 [延長決済のみの証拠](evidence/staging-extension-ui-payment-only-2026-10-05.json)。
 checked-inの有効なパターンルールにも登録拒否/追加課金の効果がないことを
 [呼び出し元の制御フロー](source-availability-rule-review.md)で照合した。

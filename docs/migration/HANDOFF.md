@@ -1,5 +1,42 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Restored extension dashboard and exact owned cleanup (2026-10-06 JST)
+
+Native Safari renders the exact synthetic extension owner's dashboard with S-tier
+🧫 active through2026/11/13 (38 days), matching the previously applied D1 result.
+This is a restored-window readback; uninterrupted Checkout-return timing remains
+unobserved. UI logout shows the signed-out root. One session for that exact
+synthetic owner still existed, so exact session revocation by UI alone is not
+accepted; that session is included in owned cleanup.
+
+Earlier exec handles/processes and `/tmp` journals are no longer available. Their
+cause is unconfirmed. The exact synthetic address visible in Safari, applied
+intent/application/effect/receipt relationships and prior committed payment proof
+reconstructed ownership; the original journal bytes were not recovered.
+A new private plan in `~/.codex/fanmark-migration-private` captured scoped rows,
+24 Master table counts/full-content hashes, retained Auth/profile/MFA and anonymous
+history before cleanup. Only those exact synthetic Business/Auth rows were
+removed. A separate read-only process confirmed their absence, unchanged3/7/2
+retained Auth, Master/profile/MFA/template/wake state, history4/7 with only the
+owned fanmark pointer unlinked, FK0 and unchanged100% Worker b3a770b3.
+No provider call, paid Checkout replay, new fixture, runtime deploy or DNS change.
+[Recovered UI and cleanup evidence](evidence/staging-extension-restored-ui-cleanup-2026-10-06.json).
+The human-created mail-test account and sessions remain retained.
+
+CI37334325467 for f11abdd passed both jobs. Read-only operations at23:01 UTC had
+attention[], FK0, wake17/17 and no overdue/failed queues. The proven-stopped daily
+observer was restarted once; session29527 reports tail_started and stores its
+journal in the persistent private directory. It watches unchanged b3a770b3 for
+2026-10-06 09:00 JST, with09:04 deadline. Do not restart a silent live observer or
+deploy during this observation. Natural daily acceptance remains pending.
+
+The exact Japanese one-recipient announcement test is prepared in
+[rehearsal instructions](staging-broadcast-rehearsal.md). Separate explicit send
+permission is requested because the previously authorized address was for Auth
+confirmation/reset mail. No broadcast send/activation has occurred. Operations
+owner/retention/RPO-RTO policy remains unapproved. Earlier entries below are
+historical checkpoints; their old process IDs and `/tmp` paths are not live.
+
 ## Deployed source Edge bodies verified (2026-10-06 JST)
 
 All35 ACTIVE source functions were read-only downloaded separately with stable
