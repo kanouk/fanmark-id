@@ -1,4 +1,37 @@
-# 2026-10-05 同一検証ユーザーの実購読画面を確認
+# 2026-10-05 現行候補での隔離一式復旧を確認
+
+## Current candidate remote recovery (2026-10-05 JST)
+
+Candidate4c2a8c5/CI37246478014 passed both jobs and the combined local step.
+Only documentation differs from deployed runtime12fa13f/Workercc6d9da7.
+The explicit conductor restored the same40-table/15-row synthetic bundle into
+fresh25 Business/4 Auth/8 Master schemas and two split R2 buckets, then restored
+it into a second physical target/incarnation. Both accepted source hash/count,
+Master/asset equality, real app Storage GET/HEAD, FK and single-wake checks;
+primary committed-credential interruption/resume also passed. Fresh provision/
+restore took96988ms; this is not a production RTO. The Master fixture contains
+3 emojis/4 tiers and is not a backup of the full deployed Master dataset.
+Both owned target groups were cleaned. Independent00:25:38.639Z metadata reads
+found the original3 D1/3 R2/2 Worker inventory unchanged and all owned targets
+absent. Independent00:25:34.927Z app readback retained original2 users/6 accounts/
+1 session, Master history, MFA/wake/schema and anonymous search2/5 counts.
+No real user/Auth export, DNS, main runtime/selector/secret change occurred.
+Auth remains a seeded synthetic dependency user, not credential recovery.
+[Current bounded proof](evidence/isolated-combined-recovery-2026-10-05.json).
+Private journal:/tmp/fanmark-combined-remote-4c32Hd/journal.json; session34294
+exited0. Do not replay this cleaned journal. Main archive natural invocation,
+whole-app/provider/mobile/PWA acceptance and operations decisions remain open.
+
+The next license UI helperv5 is prepared but not run: native Chrome reconnection
+is still required, followed by a fresh read-only preflight. Search events are
+always anonymous, so no ownership inference or DELETE of discoveries/events
+is allowed. The helper refuses a preexisting fixture emoji sequence, unlinks
+only the journal-owned fanmark pointer, and retains anonymous history. A
+transaction guard refuses foreign/null-owner licenses, favorites via discovery
+and conflicting discovery identities;9 local SQLite cases pass, including
+rollback and source-equivalent sequence matching across case/whitespace/NULLs. This is helper preparation, not actual D1/UI acceptance. Private
+helper:/tmp/fanmark-stripe-license-ui-rehearsal-2026-10-05-v5.mjs. No v5 fixture
+or provider asset exists. Never replay cleanedv1–v4 journals.
 
 ## Fresh source and browser checkpoint (2026-10-05 JST)
 

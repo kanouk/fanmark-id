@@ -100,9 +100,31 @@ physical inventories after import/replay. Source DB URLs still name the
 synthetic Supabase origin; deriving the corresponding Storage API path for
 this readback does not prove profile URL conversion or rendered browser use.
 
-## Current proof
+## Current candidate remote recovery (2026-10-05 JST)
 
-The latest accepted execution is candidate2cbf4e0/CI37115000097 (both jobs
+Candidate4c2a8c5/CI37246478014 passed both jobs and the combined local step.
+Only documentation differs from deployed runtime12fa13f/Workercc6d9da7.
+The explicit conductor restored the same40-table/15-row synthetic bundle into
+fresh25 Business/4 Auth/8 Master schemas and two split R2 buckets, then restored
+it into a second physical target/incarnation. Both accepted source hash/count,
+Master/asset equality, real app Storage GET/HEAD, FK and single-wake checks;
+primary committed-credential interruption/resume also passed. Fresh provision/
+restore took96988ms; this is not a production RTO. The Master fixture contains
+3 emojis/4 tiers and is not a backup of the full deployed Master dataset.
+Both owned target groups were cleaned. Independent00:25:38.639Z metadata reads
+found the original3 D1/3 R2/2 Worker inventory unchanged and all owned targets
+absent. Independent00:25:34.927Z app readback retained original2 users/6 accounts/
+1 session, Master history, MFA/wake/schema and anonymous search2/5 counts.
+No real user/Auth export, DNS, main runtime/selector/secret change occurred.
+Auth remains a seeded synthetic dependency user, not credential recovery.
+[Current bounded proof](evidence/isolated-combined-recovery-2026-10-05.json).
+Private journal:/tmp/fanmark-combined-remote-4c32Hd/journal.json; session34294
+exited0. Do not replay this cleaned journal. Main archive natural invocation,
+whole-app/provider/mobile/PWA acceptance and operations decisions remain open.
+
+## Historical proof (2026-10-03)
+
+The accepted execution was candidate2cbf4e0/CI37115000097 (both jobs
 successful), private journal `/tmp/fanmark-combined-remote-KjkWWK/journal.json`.
 Session28956 exited0. The two separately owned target groups accepted40 tables/
 15 rows across9 nonempty tables, one fixed Auth dependency user, Master and two

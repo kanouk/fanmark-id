@@ -160,13 +160,16 @@ secret値をVite変数、Git、PR、出力、通常ログへ入れない。鍵�
 
 合成一式remoteの手順・所有資源のcleanupは
 [隔離復旧](isolated-combined-recovery.md)とそのconductorにある。
-新規targetの90,726msは小さなfixtureのprovision/restore実測であり、本番RTOではない。
+旧candidateの90,726msと、現行4c2a8c5/CI37246478014での96,988msは小さなfixtureの
+provision/restore実測であり、本番RTOではない。現行候補の二つの復旧先はcleanupと
+独立した3 D1/3 R2/2 Worker inventory一致まで確認済み。
+[現行候補の復旧証拠](evidence/isolated-combined-recovery-2026-10-05.json)。
 RPO、停止時間目標、RTO、snapshot周期/保存期間、復旧担当は合意と最終構成での実測が
 必要。Auth credential backupと実ユーザー行の復旧は最後のデータ工程へ残す。
 
 ## この工程でまだ必要なもの
 
-監視コマンド・手順の用意と、定常運用の受け入れは別である。残るのはCPU/plan判断、
-mainジョブの有効化・実行確認、provider接続、担当/最小権限/鍵保管先/保存期間/
+監視コマンド・手順の用意と、定常運用の受け入れは別である。残るのはデータ量に対するCPU適合、
+main archiveの自然実行確認、provider残件、担当/権限運用/鍵保管先/保存期間/
 RPO・RTOの確定、同じ最終candidateでのPC・実スマホ・言語・旧PWAと障害復旧の通し確認。
 [COMPLETION](COMPLETION.md)の項目4・6を閉じるまで運用完了としない。
