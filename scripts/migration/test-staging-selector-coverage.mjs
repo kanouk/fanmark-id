@@ -147,7 +147,12 @@ test("Paid staging enables bounded daily lifecycle and archive while inert rehea
   assert.equal(vars.AUTH_SOCIAL_PROVISIONING_BACKEND, "d1");
   assert.ok(!Object.keys(vars).some(key => /_OAUTH_CLIENT_(?:ID|SECRET)$/u.test(key)),
     "provider credentials belong in Worker secrets, not checked-in vars");
-  for (const key of ["BROADCAST_SEND_BACKEND", "AUTH_EMAIL_BACKEND"]) assert.equal(vars[key], undefined);
+  for (const key of ["BROADCAST_SEND_BACKEND", "BROADCAST_TEST_SEND_BACKEND", "RESEND_API_KEY", "BROADCAST_TEST_RECIPIENT"]) {
+    assert.equal(vars[key], undefined, "delivery credentials and test recipients remain outside checked-in configuration");
+  }
+  assert.equal(vars.AUTH_EMAIL_BACKEND, "resend");
+  assert.equal(vars.RESEND_FROM_EMAIL, "fanmark.id staging <no-reply@fanmark.id>");
+  assert.equal(vars.INVITATION_SIGNUP_BACKEND, "d1");
   for (const key of ["STRIPE_DISPATCH_BACKEND", "STRIPE_WEBHOOK_BACKEND", "STRIPE_PLAN_CHECKOUT_BACKEND",
     "STRIPE_PLAN_CHANGE_BACKEND", "STRIPE_CUSTOMER_PORTAL_BACKEND", "STRIPE_EXTENSION_CHECKOUT_BACKEND"]) {
     assert.equal(vars[key], "d1");

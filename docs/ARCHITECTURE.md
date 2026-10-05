@@ -320,3 +320,5 @@ media-type拒否の再現とsession失効を確認する。`0fb4976`/CI371808543
 fallbackせず、active token・固定Worker/三D1・100%版を確認してから固定集計SELECTを送る。
 read receiptの書込み0/changed_db=falseを検証する。実tokenのIAM policy・定期運用は別工程。
 専用試験は`test-staging-monitor-api.mjs`で通常migration CIにも含める。
+
+Cloudflare stagingの認証メールは`AUTH_EMAIL_BACKEND=resend`、検証済み送信元とWorker secretの`RESEND_API_KEY`で選択する。メール登録のプロフィール作成には`INVITATION_SIGNUP_BACKEND=d1`も必要で、メール確認前のログインを拒否する。設定・配信・リンクの実受け入れは`docs/migration/HANDOFF.md`で追跡し、productionのSupabase経路と一斉送信を変更しない。

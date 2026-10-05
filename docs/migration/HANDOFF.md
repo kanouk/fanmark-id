@@ -1,5 +1,29 @@
 # 2026-10-05 現行候補での隔離一式復旧を確認
 
+## Resend staging connection preparation (2026-10-05 JST)
+
+The user approved a sending-only API key scoped to the already verified
+`fanmark.id` domain and storage in Mac Keychain and the staging Worker.
+The provider key was created, Keychain readback matched, and undeployed Worker
+version `31772686-a6cf-4e40-9094-e79d9be9c2d6` contains `RESEND_API_KEY` as a
+secret binding alongside the existing 14 secret names. Current live version
+`cc6d9da7-b81b-45fe-b0be-6c0978570232` was independently unchanged; no email was
+sent. The secret-only candidate adds `assets.html_handling=auto-trailing-slash`,
+which is the documented default; it was not deployed. Native Chrome connection
+and Resend login are restored. The user subsequently supplied and approved a
+private test mailbox for verification and password-reset tests; its address is
+kept outside the repository.
+
+The checked-in staging configuration now prepares `AUTH_EMAIL_BACKEND=resend`,
+`RESEND_FROM_EMAIL=fanmark.id staging <no-reply@fanmark.id>`, and
+`INVITATION_SIGNUP_BACKEND=d1`. The editor's isolated local fixture explicitly
+removes these selectors and still has no provider credentials. Bulk broadcast
+and broadcast-test delivery remain disabled. CI, a guarded staging deployment,
+remote capability/readback, actual receipt/link/password flows and exact fixture
+cleanup are still required. Credential custody alone is not mail acceptance.
+Production Supabase, user exports/imports and DNS remain outside this work.
+
+
 ## Current candidate remote recovery (2026-10-05 JST)
 
 Candidate4c2a8c5/CI37246478014 passed both jobs and the combined local step.
