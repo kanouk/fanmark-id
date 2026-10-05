@@ -1,5 +1,32 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Recovery route repaired and actual mail-link form reached (2026-10-05 JST)
+
+The delivered recovery URL correctly points to `/reset-password`, and its
+unconsumed verification record was still valid. The app router had retained an
+old Better Auth condition that sent both recovery pages to `/auth`. Runtime
+`0ed4213ac55620ec45b4d59fcc173005cb1e1de3` removes that condition, preserving
+the existing capabilities/token checks in the recovery pages. Application
+and Worker CI37298341592 both passed; local typecheck, focused lint and all15
+auth-client tests passed. Worker `b3a770b3-8735-4b31-abdd-f4fca99e05cd` is at100%.
+Both deployed JS/CSS bytes match the isolated `dist-staging` build. An initial
+readback mistakenly compared the unrelated `dist` directory; the mismatch was
+resolved read-only against the configured output, without another deployment.
+The auth gateway script, other bindings/Crons, original account identity digest,
+Master/MFA/wake/anonymous search and the approved new mail-test account are kept.
+
+The existing browser loaded the previous JS bundle initially. A normal reload
+loaded the matching new bundle. Reopening the same delivered, still-valid mail
+link now displays the Japanese new-password and confirmation fields. The IAB
+tab is visible and marked for human continuation; both fields were blank and
+no new password was entered/submitted by the agent. The preexisting IAB human
+session was not logged out or replaced. This is the rendered reset form check,
+not reset completion, relogin, all-client PWA-update or full migration acceptance.
+[Scoped route and asset evidence](evidence/staging-password-recovery-route-fix-2026-10-05.json).
+The recipient/URL token remain in private custody only. Do not replay a token
+already consumed by a subsequent human reset. Preserve the approved test
+account until its remaining password/session flow is checked.
+
 ## Verification signup accepted; reset-email delivery confirmed (2026-10-05 JST)
 
 On runtime00fc6e7/Worker92413959, the approved recipient completed native signup
