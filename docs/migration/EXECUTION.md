@@ -7631,3 +7631,34 @@ permission is requested because the previously authorized address was for Auth
 confirmation/reset mail. No broadcast send/activation has occurred. Operations
 owner/retention/RPO-RTO policy remains unapproved. Earlier entries below are
 historical checkpoints; their old process IDs and `/tmp` paths are not live.
+
+## 2026-10-06 JST: profile, redirect and inactive UI
+
+A fresh disposable credential/Free profile was seeded; the actual Worker register
+API acquired S-tier 🪁 with a profile, then revoked its setup API session. This is
+fixture setup, not proof of normal signup/email verification. Native Safari then
+signed in and navigated dashboard -> settings -> profile edit. Display name,
+Japanese biography and Website link saved, and the actual public browser rendered
+them. The public browser retained a different human identity; separate cookie-free
+HTTP reads independently proved anonymous access to exactly the saved content.
+
+The actual settings UI hid the profile. Its reopened checkbox remained off,
+the public page displayed the private-profile message and anonymous profile API
+returned404. Republishing preserved the saved contents. URL redirect saved to
+an example URL; settings reopen and anonymous API matched, and the actual public
+browser navigated to that exact URL. Inactive mode saved, dashboard displayed
+なにもしない, public page displayed 準備中, and anonymous API returned inactive
+with no redirect/text content. No telephone-device launch or protected-password
+UI is accepted by this proof. No deployment or provider call was needed.
+
+Native UI logout changed the exact synthetic owner's current sessions1 ->0 in
+read-only D1. Only its journal-owned profile/license/fanmark/access-stat/audit/Auth
+rows were removed. Independent read-only verification preserved existing3/7/2,
+all24 Master table digests, retained profiles/MFA/templates/wake and anonymous
+history4/7 with FK0. The human mail-test account remains retained.
+[Scoped UI and cleanup evidence](evidence/staging-profile-redirect-inactive-ui-2026-10-06.json).
+CI37387435939 for e27eff3 succeeded in both jobs. Worker remains b3a770b3 at100%.
+Daily observer29527 remains live/connected for09:00 JST; its result and broadcast
+send authorization are still pending. Next functional UI work is transfer/return
+and plan-capacity/deletion, followed by the existing final integration gates.
+Earlier entries below are historical checkpoints.

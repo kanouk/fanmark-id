@@ -46,6 +46,12 @@ paid Checkoutは再実行していない。
 checked-inの有効なパターンルールにも登録拒否/追加課金の効果がないことを
 [呼び出し元の制御フロー](source-availability-rule-review.md)で照合した。
 無条件の全source/外部caller/不正な履歴JSONの受け入れには換算しない。
+10月6日に合成credential/Free accountでプロフィール編集・公開内容、非公開化・再公開、
+URL転送の保存/再読込/実browser遷移、inactiveの保存/一覧/準備中表示を確認した。
+匿名APIも各状態と一致し、実UI logoutでexact session1→0を確認した。
+所有fixture削除後の独立read-only照合で元3/7/2・全24 Master表・profile/MFA/template/wake・
+匿名履歴4/7・FK0を保持した。電話実機起動と保護password UIはこの証拠に含めない。
+[プロフィール・転送・inactive UI](evidence/staging-profile-redirect-inactive-ui-2026-10-06.json)。
 六項目は引き続き未完了で、ユーザーデータ/DNS工程を前倒ししない。
 下の過去の観測値は上記の最新チェックポイントに読み替える。
 
