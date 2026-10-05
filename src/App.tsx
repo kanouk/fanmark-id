@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TranslationProvider } from "@/hooks/useTranslation";
 import { useSubdomain } from "@/hooks/useSubdomain";
@@ -43,7 +43,6 @@ import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayPr
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import MaintenanceGate from "@/components/MaintenanceGate";
-import { isBetterAuthEnabled } from "@/lib/auth-backend";
 
 const queryClient = new QueryClient();
 
@@ -64,8 +63,8 @@ const MainApp = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
-                  <Route path="/forgot-password" element={isBetterAuthEnabled() ? <Navigate to="/auth" replace /> : <ForgotPassword />} />
-                  <Route path="/reset-password" element={isBetterAuthEnabled() ? <Navigate to="/auth" replace /> : <ResetPassword />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/password-setup" element={<ProtectedRoute><PasswordSetup /></ProtectedRoute>} />

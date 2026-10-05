@@ -85,6 +85,7 @@ Cloudflareの画像移行では、取り込み済み画像を選択したR2配�
 - Cloudflare経路の新規認証IDはUUIDで生成し、業務・課金APIのID契約に合わせる。既存IDを変更せず、ユーザーデータの実移送は別工程で扱う。
 - Cloudflareの新規OAuth登録は明示的な有効化と必要な認証schemaを要求する。本人のSNS識別子と紐付いたプロフィールの保存を確認してからログインを完了し、初回パスワード設定を要求する。途中失敗は同じSNSアカウントによる再試行で復旧し、別アカウントへの紐付けや既存プロフィールの上書きを拒否する。stagingへのschema・処理の配備と合成検証は済んでいる。GitHubはstagingで実callback・初回パスワード保存・session失効と再ログインを確認した。Googleも本人承認後のstaging callback・既存資格情報保存に続き、実callback・初回パスワード保存・session失効と同一account再ログインを確認した。Discordは実callbackによる既存Googleユーザーへの連携・session失効と同一account再ログインを確認した。Discord新規user作成・初回設定はこの連携では通っておらず未受け入れ。Appleも既存本番設定を保持してstaging callbackとVaultの既存鍵で更新した資格情報を保存し、認証開始を公開した。実Apple callbackで既存Googleユーザーへの連携、session失効、同一accountへの再ログインを確認した。Apple新規登録/初回設定、relayは未受け入れ。資格情報がないproviderはSNS登録を開かない。
 - Cloudflareのログアウトはサーバーのsession失効に成功してから画面の認証状態を解除する。失敗時は認証状態を保持し、成功通知やguest画面への遷移を行わずエラーを表示する。
+- Cloudflareのパスワード再設定はログイン前に利用できる。送信設定が有効な場合に再設定メールを要求し、メールのtokenを使う再設定画面で新しいパスワードを保存する。tokenの期限・有効性は認証APIで検証し、tokenなしでは再設定メールの要求画面へ戻す。
 - 確認メール: Supabase Auth の Confirm email は ON。メール/パスワード登録のみ確認メールを送信し、OAuth ユーザーは `send-auth-email` で `signup` および `password_changed_notification` をスキップする（provider≠email の場合）。
 - 多言語: 日本語/英語の翻訳バンドルを用意し、ヘッダーで切替可能。
 

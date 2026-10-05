@@ -28,6 +28,7 @@
   - Workerの認証設定は`workers/api/src/better-auth.mjs`。`advanced.database.generateId="uuid"`で新規レコードのIDをUUIDにする。既存Auth IDは保持し、招待signup Coordinatorから同じユーザーIDでBusinessプロフィールを作成する。
 - `/forgot-password`: `ForgotPassword.tsx`
 - `/reset-password`: `ResetPassword.tsx`
+  - 両recovery routeは認証backendにかかわらず画面へ到達させる。Worker選択時の送信可否は`ForgotPassword.tsx`のcapabilitiesで確認し、`usePasswordReset.tsx`はメールから渡されたtokenでBetter Authの再設定APIを呼ぶ。未ログインでも有効tokenによる再設定を許可し、tokenなしでは`/forgot-password`へ戻す。アプリのrouteで一律に`/auth`へ転送しない。
 - `/profile`: ユーザー設定: `Profile.tsx` + `UserProfileForm.tsx`
   - `VITE_PROFILE_BACKEND=worker`の明示時はBetter Auth本人sessionで`GET/PATCH /api/me/profile`を使い、表示名・R2 avatar URL・優先言語だけを更新する。`GET /api/me/username-availability`も本人sessionのIDで除外対象を決めてbusiness D1を照会する。plan、Stripe顧客ID、招待コード、password setup状態はWorker APIの書込み対象外。workers.dev stagingでは選択済みで、productionの既定はSupabase。
   - アカウント削除は`VITE_ACCOUNT_DELETION_BACKEND=worker`と`ACCOUNT_DELETION_BACKEND=d1`の両方を明示したstaging経路で`POST /api/me/account/delete`を使う。Workerが本人sessionと現在パスワードを検証し、billing・ライセンス・business D1の削除契約を処理してから`workers/api/src/account-deletion-auth.ts`でAuth D1のユーザーと関連認証行を同じbatch内で削除する。`account-deletion-d1-api.ts`は取消/退会監査と必要な削除・履歴保持をbusiness batch内で検証し、SDK sign-outのcookieは認証削除後に返す。Better Authの直接`/api/auth/delete-user`経路は閉じたまま。productionの既定は既存Supabase Edge Function。
