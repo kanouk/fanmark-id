@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "scope": "Main staging natural lifecycle ledger and read-only preservation; daily handler/archive outcome not accepted.",
+  "runtimeHead": "12fa13f3c99712f7cae9b814d8fd1a9813b48108",
+  "workerVersion": "cc6d9da7-b81b-45fe-b0be-6c0978570232",
+  "workerPercentage": 100,
+  "testedDocumentationHead": "674d0dd2aba1a48e6c839e724b79c50241ca34cd",
+  "documentationCI": 37245109681,
+  "documentationCIBothJobsSuccess": true,
+  "scheduledControlPlane": {
+    "observedAt": "2026-10-05T00:03:50.398Z",
+    "schedules": [
+      {
+        "cron": "* * * * *",
+        "created_on": "2026-10-04T11:53:46.476043Z",
+        "modified_on": "2026-10-04T14:25:51.871131Z"
+      },
+      {
+        "cron": "0 0 * * *",
+        "created_on": "2026-09-28T07:41:31.838429Z",
+        "modified_on": "2026-10-04T14:25:51.871131Z"
+      }
+    ]
+  },
+  "naturalLifecycleLedger": {
+    "observedAt": "2026-10-05T00:05:55.474Z",
+    "workerVersion": "cc6d9da7-b81b-45fe-b0be-6c0978570232",
+    "readOnlyMonitorUsed": true,
+    "rowsWritten": 0,
+    "changedDatabase": false,
+    "runs": [
+      {
+        "job": "expiry",
+        "captured_now": "2026-10-05T00:00:15.000000Z",
+        "status": "completed",
+        "candidate_count": 0,
+        "processed_count": 0,
+        "conflict_count": 0,
+        "completed_at": "2026-10-05T00:00:15.000000Z"
+      },
+      {
+        "job": "grace-finalization",
+        "captured_now": "2026-10-05T00:00:15.000000Z",
+        "status": "completed",
+        "candidate_count": 0,
+        "processed_count": 0,
+        "conflict_count": 0,
+        "completed_at": "2026-10-05T00:00:15.000000Z"
+      }
+    ],
+    "ledgerAccepted": true,
+    "archiveInvocationProvedByLedger": false
+  },
+  "tailObservation": {
+    "startedAt": "2026-10-04T23:50:13.211Z",
+    "finishedAt": "2026-10-05T00:04:01.416Z",
+    "connected": true,
+    "accepted": false,
+    "acceptedDailyEvents": 0,
+    "filterDefect": "Exact 00:00:00 scheduledTime rejected actual 00:00:15; raw events were discarded and cannot be reconstructed.",
+    "dailyArchiveResultRecovered": false
+  },
+  "boundedMinuteDiagnostic": {
+    "startedAt": "2026-10-05T00:04:55.042Z",
+    "finishedAt": "2026-10-05T00:08:01.023Z",
+    "events": [
+      {
+        "cron": "* * * * *",
+        "scheduledTime": "2026-10-05T00:05:15.000Z",
+        "outcome": "ok",
+        "exceptionCount": 0,
+        "logCount": 1
+      },
+      {
+        "cron": "* * * * *",
+        "scheduledTime": "2026-10-05T00:06:15.000Z",
+        "outcome": "ok",
+        "exceptionCount": 0,
+        "logCount": 1
+      },
+      {
+        "cron": "* * * * *",
+        "scheduledTime": "2026-10-05T00:07:15.000Z",
+        "outcome": "ok",
+        "exceptionCount": 0,
+        "logCount": 1
+      }
+    ]
+  },
+  "preservation": {
+    "observedAt": "2026-10-05T00:07:32.800Z",
+    "authCounts": {
+      "users": 2,
+      "accounts": 6,
+      "sessions": 1
+    },
+    "humanAccountAndProfilePreserved": true,
+    "remainingOriginalCountsPreserved": true,
+    "masterInventoryAndAllReferenceHistoryPreserved": true,
+    "mfaAndWakePreserved": true,
+    "schemasUnchanged": true,
+    "newSearchActivityCounts": {
+      "fanmark_discoveries": 2,
+      "fanmark_events": 5
+    },
+    "newSearchActivity": [
+      {
+        "event_type": "search",
+        "count": 5,
+        "first_created_at": "2026-10-04T23:41:27.089000Z",
+        "last_created_at": "2026-10-04T23:42:04.035000Z",
+        "anonymous": 5,
+        "retained_profile_actor": null
+      }
+    ],
+    "newSearchActivityOwnershipAccepted": false
+  },
+  "newSearchActivityDeleted": false,
+  "allBusinessCountsUnchanged": false,
+  "operationalHealth": {
+    "observedAt": "2026-10-05T00:03:34.529Z",
+    "attention": [],
+    "publicAppStatus": 200,
+    "authStatus": 200,
+    "foreignKeyViolations": 0,
+    "wakeRequested": 17,
+    "wakeAcknowledged": 17,
+    "archiveCandidates": 0,
+    "expiryOpenRuns": 0,
+    "finalizationOpenRuns": 0,
+    "stripeOverdue": 0,
+    "stripeDeadLetters": 0
+  },
+  "manualJobInvocation": false,
+  "runtimeRedeployed": false,
+  "credentialsOrSelectorsChanged": false,
+  "sourceOrRealAuthExported": false,
+  "dnsChanged": false,
+  "naturalLifecycleLedgerAccepted": true,
+  "naturalDailyHandlerAccepted": false,
+  "naturalMainArchiveAccepted": false,
+  "populatedLicenseProcessingInferred": false,
+  "recurringOperationsAccepted": false,
+  "fullMigrationAccepted": false,
+  "nextNaturalObservation": "Match daily cron and the UTC 00:00 minute; retain sanitized outcome/job summaries without requiring scheduledTime seconds=00. Archive still needs a future natural observation."
+}

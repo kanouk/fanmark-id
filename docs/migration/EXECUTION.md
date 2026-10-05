@@ -2,7 +2,7 @@
 
 ## Fresh source and browser checkpoint (2026-10-05 JST)
 
-Runtime12fa13f/Workercc6d9da7 is unchanged; documentationfe49343/CI37243719919
+Runtime12fa13f/Workercc6d9da7 is unchanged; documentation674d0dd/CI37245109681
 passed both jobs. Source metadata was read in four read-only transactions at
 23:39–23:40 UTC: all schema sections/locale/regex probe,58 functions,37 bindings,
 77 policies and both source Cron definitions/states match the prior records.
@@ -16,8 +16,15 @@ succeeded. Independent23:33:34.203Z readback preserved original2 users/6 account
 1 session, all owned Business counts, Master history, MFA/wake and schemas.
 Mac console was unlocked. IAB2/Resend23 is responsive at/login; native Chrome
 returns initialize timeout. Native reconnection and Resend login remain pending.
-Never replay cleaned billing journalsv1–v4. Main09:00 JST natural daily firing,
-operations decisions and remaining UI/provider/final integration stay open.
+Never replay cleaned billing journalsv1–v4. The main natural lifecycle ledger now
+shows expiry/grace completed at00:00:15 UTC with zero candidates/conflicts.
+An exact-second observer filter discarded the daily tail result, so main archive
+and complete handler outcome remain unaccepted; minute invocations were ok.
+Independent00:07:32Z reads retain2/6/1, Master/MFA/wake/schema and other counts.
+Anonymous search activity added2 discoveries/5 search events at23:41–23:42 UTC;
+provenance is unknown and rows were preserved. Do not require these tables empty
+or delete unknown activity. [Scoped daily proof](evidence/main-natural-lifecycle-ledger-2026-10-05.json).
+Operations decisions and remaining UI/provider/final integration stay open.
 
 
 ## Current source preparation checkpoint (2026-10-05 JST)

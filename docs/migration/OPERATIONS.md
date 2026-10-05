@@ -101,7 +101,13 @@ baseline、CPU/plan適合を確認し、設定を差分でレビューする。
 Cron登録と伝播をcontrol planeと実行結果で確認し、selector追加だけで完了にしない。
 main expiry/archiveは2026-10-04に配備し、remote selector・CPU・Cron登録を確認した。
 [配備証拠](evidence/staging-daily-job-activation-2026-10-04.json)。
-mainの自然発火・処理結果は未受け入れ。隔離archiveの実Cron受け入れは
+2026-10-05のmain expiry/graceはUTC00:00:15の完了台帳を専用Read tokenで確認した。
+両phaseは対象0/処理0/競合0で、データのある期限処理の証拠は別の合成検証に限る。
+監視helperの00:00:00完全一致が日次ログを捨てたため、archiveとhandler全体の結果は未受け入れ。
+次の自然実行ではcronとUTC00:00のminuteを照合し、秒が00とは仮定しない。
+再配備・手動ジョブ呼出しは行わず、毎分handlerのokと元の2/6/1・Master/MFA/wake保持を
+独立確認した。匿名検索2候補/5eventは所有者不明のまま保持する。
+[限定した日次証拠](evidence/main-natural-lifecycle-ledger-2026-10-05.json)。隔離archiveの実Cron受け入れは
 [保存済み証拠](evidence/isolated-notification-archive-cron-2026-10-03.json)を使う。
 
 2026-10-04、契約画面の「無料プラン／現在のプラン」でWorkers Freeを確認した。
