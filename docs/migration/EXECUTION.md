@@ -1,5 +1,31 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Verification signup accepted; reset-email delivery confirmed (2026-10-05 JST)
+
+On runtime00fc6e7/Worker92413959, the approved recipient completed native signup
+and reported receiving/opening the confirmation mail. Read-only D1 inspection
+confirmed one new credential account, the exact UUID/command-owned completed
+signup attempt and Free profile, and `emailVerified=true`. The mail's callback
+returns to the staging root `/`; reaching that guest page does not mean failure
+or establish an authenticated session. The verification URL/token is not
+recorded in repository evidence and was not replayed by the agent.
+
+The app password-reset request returned200/statustrue for that exact verified
+user. Resend's `fanmark-app-staging` key-filtered Sending view lists both the
+Japanese confirmation and recovery emails as Delivered. This accepts provider
+delivery and the user's reported confirmation receipt/link, not completion of
+the password-reset/relogin flow. Reset receipt, human password entry, subsequent
+login/session behavior and exact test-account cleanup remain pending.
+[Scoped delivery and verification evidence](evidence/resend-staging-verification-delivery-2026-10-05.json).
+
+An independent read-only baseline excluded only the exact journal-owned signup
+user/profile/accounts/sessions and preserved the original2 users/6 accounts/
+1 session identity digest, all Master history, MFA/wake and anonymous search2/5.
+Keep the new approved test account until its remaining flow is checked; do not
+run helpers that assume the total Auth count is still2/6/1. No production user
+export/import, payment, DNS or runtime deployment occurred in this mail test.
+The earlier configuration snapshot below records the pre-email observation.
+
 ## Resend staging configuration deployed (2026-10-05 JST)
 
 Runtime `00fc6e7c2d01cdd5ec3174e2216f401b560db383` passed both jobs of
