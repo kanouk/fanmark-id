@@ -1,5 +1,25 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Email/password login after human reset accepted (2026-10-05 JST)
+
+The user logged in through the dedicated Safari private window. The app renders
+`/dashboard` and its user menu displays the approved test recipient. Read-only
+Auth D1 inspection confirms one active session for the exact journal-owned
+user, created after reset completion; the account is credential-only and its
+email remains verified. The consumed reset verification record is absent.
+No password/hash/session-token values were read. This accepts the functional
+signup, confirmation, password-reset and subsequent email/password login path.
+
+An independent baseline excluding only that exact test user/profile/accounts/
+sessions preserves the original2 users/6 accounts/1 session identity digest,
+Master history, MFA/wake and anonymous search. The approved test account and
+its new session remain retained; cleanup is pending. The IAB original Google
+session was not replaced. Full mail-test closure and migration acceptance are
+still open. No runtime deploy, production-user migration or DNS change occurred.
+[Scoped login evidence](evidence/staging-email-password-login-2026-10-05.json).
+Earlier observations below are historical checkpoints.
+
+
 ## Human password reset completed; email/password login pending (2026-10-05 JST)
 
 The user submitted the new password. Read-only Auth D1 inspection confirmed
