@@ -8,6 +8,7 @@ delete current.vars.LICENSE_EXPIRY_BACKEND;
 delete current.vars.NOTIFICATION_ARCHIVE_BACKEND;
 delete current.vars.STRIPE_DISPATCH_BACKEND;
 delete current.vars.STRIPE_WEBHOOK_BACKEND;
+delete current.vars.AUTH_EMAIL_BACKEND;
 current.triggers.crons = ["0 0 * * *"];
 const candidate = {
   ...current,
