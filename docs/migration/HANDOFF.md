@@ -1,5 +1,24 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Human password reset completed; email/password login pending (2026-10-05 JST)
+
+The user submitted the new password. Read-only Auth D1 inspection confirmed
+that the exact approved test user's credential `updatedAt` advanced and its
+reset verification record was consumed. `emailVerified` remains true; password
+and hash values were not read. The test user still has zero sessions, so this
+accepts password reset only. The IAB root page retains the preexisting human
+Google session and is not evidence of test-user login. An independent baseline
+excluding only the exact approved mail-test account preserved the original
+2 users/6 accounts/1 session, Master history, MFA/wake and anonymous search.
+
+Chrome was no longer available for the isolated login check. A Safari private
+window now shows the staging login form with the approved test email filled
+and password blank. Human login with the newly chosen password, exact session
+readback and test-account cleanup remain pending. Do not replay the consumed
+reset token. No runtime deployment or production data/domain change was needed.
+[Scoped reset completion evidence](evidence/staging-email-password-reset-completion-2026-10-05.json).
+
+
 ## Recovery route repaired and actual mail-link form reached (2026-10-05 JST)
 
 The delivered recovery URL correctly points to `/reset-password`, and its
