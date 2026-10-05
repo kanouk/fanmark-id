@@ -85,6 +85,32 @@ CI37195682605/2f45451の両job成功後、専用Wrangler identityを確認し、
 二つのRead権限の設定・専用token保管・実読取り・D1 INSERT拒否は確認済み。
 定期監視、担当、秘密更新、保存期間、RPO/RTO、最終運用の受け入れは別に残る。
 
+## main日次Cronの読み取り専用監視
+
+`staging-daily-observation.mjs`は固定app configからWranglerのidentityと指定した100% Worker
+version、expiry/archiveのselector・周期を確認し、既存Workerのtailを読む。
+Cronを手動実行したり、再配備したり、D1へ書き込んだりしない。次のUTC日付と
+現在の配備versionを指定し、最大24時間先の日次実行をUTC00:04まで観測する。
+
+```sh
+node scripts/migration/staging-daily-observation.mjs --utc-date 2026-10-06 --version b3a770b3-8735-4b31-abdd-f4fca99e05cd --output /tmp/fanmark-main-daily-observation-2026-10-06.json
+```
+
+この日付/versionは今回の監視例で、次回は実際の配備と対象日を指定する。
+日次Cronと日付・UTC00:00の分を照合し、秒は固定しない。expiry/graceとarchiveの
+両結果、競合0・残り0、handler outcome=ok・例外0を確認した時だけ受け入れる。
+片方だけの完了、同じjobの重複結果、部分完了やCPU超過では完了にしない。
+ログから出力するのは許可したstatusと非負整数の集計だけで、通知payload・URL・
+token・ID・例外本文を保存しない。受信前は未受け入れで、待機プロセスの生存と
+観測結果を分ける。専用監視tokenをMacキーチェーンから読むが、tail自体は現在の
+Wrangler OAuthを用いる。OAuthによるtailを最小権限の定期監視とは扱わない。今回のCLI照合では旧named
+profile `fanmark-staging-inapp` は未認証で、app configの現在のOAuthは指定の
+fanmark.id@gmail.com/accountと一致した。identityが異なる場合は開始前に拒否する。
+
+回帰検証は`node --test scripts/migration/test-staging-daily-observation.mjs`。
+通常のmigration-data/CIにも含め、秒ずれ・異なるCron/日付/Worker・部分結果・
+機密値の除外と分割JSON受信を確認する。単体検証の合格は自然発火の証拠ではない。
+
 ## ジョブの有効化条件
 
 | 処理 | 周期と設定 | 再開・停止 |
