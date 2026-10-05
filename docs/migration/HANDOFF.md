@@ -1,5 +1,39 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Native transfer UI and independent cleanup accepted (2026-10-06 JST)
+
+After the user's explicit approval of the displayed transfer disclaimer, two
+synthetic Free identities completed native Safari issue -> recipient apply ->
+sender approval -> recipient re-login. The sender shows expired/active count0;
+the recipient shows S-tier 🪁, active1/3,7 days through2026/10/13 and inactive.
+Read-only D1 confirms completed code/approved request, old expired and new active
+licenses, the new inactive basic config and exact30-day transfer lock. Two
+transfer events reached processed and their in-app notifications delivered.
+The reissue dialog was viewed and cancelled; UI enforcement of the lock was
+not tested. Former profile/password settings were not seeded in this fixture.
+
+Both native sessions were signed out; exact synthetic session count is0. The
+cleanup helper's first ordering attempted to remove incarnation before license;
+the D1 batch rolled back and read-only scoped snapshots remained identical.
+Corrected cleanup removed only the journal-owned Business/Auth rows. Separate
+least-privilege readback preserved existing3 users/7 accounts/2 sessions, retained
+profiles/MFA, all24 Master table hashes, templates, anonymous history4/7 and FK0.
+Wake legitimately advanced17 ->19 and remains19/19; it was never reset.
+No provider send, paid Checkout or runtime deployment was performed.
+[Bounded UI and cleanup evidence](evidence/staging-transfer-ui-2026-10-06.json).
+
+The sender dashboard also rendered in JA/EN/KO/ID with matching license data,
+then returned to Japanese. This is dashboard smoke, not all translated flows or
+actual mobile-device acceptance. The current frontend callsite map now reflects
+configured Auth Resend delivery and accepted verification/reset/login, while
+keeping broadcast, administrator-initiated reset and invitation-gated signup
+acceptance separate. Runtime remains0ed4213/Worker b3a770b3 at100%.
+CI37388658554 for f7707b7 succeeded in both jobs. Daily observer29527 remains
+connected for09:00 JST; broadcast message permission and operational policy
+approval remain pending. Next UI work includes return/lottery/coupon, plan-limit
+selection and paid deletion, followed by the same final integration gates.
+Older process IDs and configuration statements below are historical.
+
 ## Profile visibility, URL redirect and inactive UI accepted (2026-10-06 JST)
 
 A fresh disposable credential/Free profile was seeded; the actual Worker register

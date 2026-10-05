@@ -52,6 +52,15 @@ URL転送の保存/再読込/実browser遷移、inactiveの保存/一覧/準備�
 所有fixture削除後の独立read-only照合で元3/7/2・全24 Master表・profile/MFA/template/wake・
 匿名履歴4/7・FK0を保持した。電話実機起動と保護password UIはこの証拠に含めない。
 [プロフィール・転送・inactive UI](evidence/staging-profile-redirect-inactive-ui-2026-10-06.json)。
+10月6日に本人の免責事項同意後、合成2 accountで実Safariの移管コード発行→受取申請→
+所有者承認→受取側再loginを確認した。旧所有者0/3・失効、新所有者1/3・7日・inactiveと、
+D1の旧/新license・新basic config・30日lockが一致。通知2件も自然処理でin-app配信済み。
+UI logoutで合成session0、所有fixture cleanupと別read-only照合後に元3/7/2・
+全24 Master表・profile/MFA/template・匿名履歴4/7・FK0を保持した。
+wake17→19/19は正当な通知処理として保持。JA/EN/KO/IDはdashboard表示のみ確認し、
+lockのUI拒否・全言語の通し操作・実スマホの受け入れへ拡張しない。
+[移管UIと独立cleanup](evidence/staging-transfer-ui-2026-10-06.json)。
+f7707b7のCI37388658554は両job成功。
 六項目は引き続き未完了で、ユーザーデータ/DNS工程を前倒ししない。
 下の過去の観測値は上記の最新チェックポイントに読み替える。
 
