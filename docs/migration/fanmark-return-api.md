@@ -11,9 +11,12 @@ The transition writes `status = grace`, `license_end = now`,
 `is_returned = true`, and clears `excluded_at`. A missing or invalid grace
 setting keeps the source helper's one-day fallback. Audit and notification
 events are best effort, as in the checked-in Supabase return helper; favorite
-notifications are enqueued for other users who saved the fanmark. Event
-generation is implemented here, but notification delivery is still handled by
-the Supabase worker/Cron flow.
+notifications are enqueued for other users who saved the fanmark. The staging
+Worker writes owner/favorite notification events to Business D1;
+the notification Durable Object processes configured immediate in-app rules.
+The native return UI follow-up below confirms one delivered owner notification.
+External-channel delivery remains separately gated. Default Supabase builds
+retain their source notification processor.
 
 The frontend keeps the existing Supabase default and selects these APIs only
 with `VITE_FANMARK_RETURN_BACKEND=worker`. The Cloudflare staging build sets
@@ -39,3 +42,14 @@ rows in the 40 source business tables and user-owned Auth tables; lifecycle
 access-version state and the singleton MFA generation were unchanged. License
 incarnation tombstones are deliberately retained to prevent identifier reuse.
 Production and real user data were not used.
+
+
+## Native staging UI follow-up (2026-10-06 JST)
+
+Actual Safari return was accepted with disposable synthetic identities
+and read-only D1 comparison. Exact owned cleanup and a separate least-privilege
+process preserved human Auth3/7/2, all24 Master table hashes, existing coupon
+definitions, profiles/MFA/templates, anonymous search history5/8 and FK0.
+[UI and cleanup evidence](evidence/staging-coupon-return-lottery-ui-2026-10-06.json).
+This does not prove imported-user parity, winner selection or actual-phone use.
+Earlier zero-Auth/global-empty cleanup descriptions are historical canaries.

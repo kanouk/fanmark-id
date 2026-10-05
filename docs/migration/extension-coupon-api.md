@@ -109,3 +109,14 @@ The target guard pins account, Worker and both D1 bindings; source-backed master
 rows must retain their verified baseline. The synthetic cleanup journal is kept
 outside the repository in a private temporary directory. No provider, production
 Supabase, real user import or domain operation occurs.
+
+
+## Native staging UI follow-up (2026-10-06 JST)
+
+Actual Safari coupon redemption was accepted with disposable synthetic identities
+and read-only D1 comparison. Exact owned cleanup and a separate least-privilege
+process preserved human Auth3/7/2, all24 Master table hashes, existing coupon
+definitions, profiles/MFA/templates, anonymous search history5/8 and FK0.
+[UI and cleanup evidence](evidence/staging-coupon-return-lottery-ui-2026-10-06.json).
+This does not prove imported-user parity, winner selection or actual-phone use.
+Earlier zero-Auth/global-empty cleanup descriptions are historical canaries.

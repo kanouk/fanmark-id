@@ -1,5 +1,34 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Native coupon, return and lottery-entry UI accepted (2026-10-06 JST)
+
+Two synthetic Free identities and one disposable coupon were prepared. Native
+Safari coupon redemption extends S-tier 🪁 from2026/10/13 to2026/11/13 (38 days);
+read-only D1 confirms exactly one completed command and one usage. The first
+fixture code exceeded the existing20-character UI limit; the unused synthetic
+code was shortened before redemption. No source-backed coupon was consumed.
+The same actual UI returned the license, showing active count0/3 and a grace
+countdown; D1 confirms grace/is_returned and a future grace deadline.
+
+The other synthetic identity opened details -> search and applied to the same
+fanmark's lottery. UI shows one applicant and a cancel button; D1 confirms its
+pending entry. UI cancellation returns to zero applicants/apply button and D1
+shows the same entry cancelled with user_request. This proves entry operations,
+not winner drawing/award/finalization. Native logout leaves zero synthetic
+sessions. The owner-return and lottery-application events processed, with one
+in-app owner-return notification delivered; wake advances19 ->21/21 and stays
+there. No provider call, payment or runtime deployment occurred.
+
+Only journal-owned coupon/usage/command, license/config/entry/audit/notification,
+Business profile and Auth rows were removed. Independent least-privilege readback
+preserves human Auth3/7/2, retained profiles/MFA, all24 Master table hashes,
+four existing coupon definitions, templates and FK0. Actual search added one
+candidate/event: anonymous history is now5/8 and is retained, with only the
+owned fanmark pointer unlinked. [Scoped UI and cleanup proof](evidence/staging-coupon-return-lottery-ui-2026-10-06.json).
+Daily observer29527 remains live for09:00 JST; CI37390439255 for692208d passed both jobs. Next functional UI work is populated plan-limit selection and paid
+account deletion, with provider/new-signup/phone/PWA/operations gates retained.
+Earlier checkpoint counts and process IDs below are historical.
+
 ## Native transfer UI and independent cleanup accepted (2026-10-06 JST)
 
 After the user's explicit approval of the displayed transfer disclaimer, two

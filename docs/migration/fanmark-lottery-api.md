@@ -102,3 +102,14 @@ entry status, audit and notification effects with replay guards. See
 [`lottery-selection.md`](lottery-selection.md) and the lifecycle contracts for
 its own acceptance; this API suite does not establish recurring lifecycle,
 archive/retention, real provider or imported-user acceptance.
+
+
+## Native staging UI follow-up (2026-10-06 JST)
+
+Actual Safari lottery application/cancellation was accepted with disposable synthetic identities
+and read-only D1 comparison. Exact owned cleanup and a separate least-privilege
+process preserved human Auth3/7/2, all24 Master table hashes, existing coupon
+definitions, profiles/MFA/templates, anonymous search history5/8 and FK0.
+[UI and cleanup evidence](evidence/staging-coupon-return-lottery-ui-2026-10-06.json).
+This does not prove imported-user parity, winner selection or actual-phone use.
+Earlier zero-Auth/global-empty cleanup descriptions are historical canaries.

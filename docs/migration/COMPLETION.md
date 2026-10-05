@@ -61,6 +61,13 @@ wake17→19/19は正当な通知処理として保持。JA/EN/KO/IDはdashboard�
 lockのUI拒否・全言語の通し操作・実スマホの受け入れへ拡張しない。
 [移管UIと独立cleanup](evidence/staging-transfer-ui-2026-10-06.json)。
 f7707b7のCI37388658554は両job成功。
+さらに合成クーポンで実UIの1か月延長（10/13→11/13）とD1の処理/usage各1、
+同じ所有者の返却/猶予表示、別合成accountの抽選申込→取消/人数1→0とD1の同一entry
+pending→cancelledを確認した。抽選実行/当選をこのUI証拠から推定しない。
+UI logoutで合成session0、所有fixture cleanup後の別read-only照合で元3/7/2・
+全24 Master表・既存クーポン4定義・profile/MFA/template・FK0を保持。
+今回の実検索で匿名履歴は5候補/8eventとなり、その全履歴を保持した。wakeは21/21。
+[クーポン・返却・抽選申込UI](evidence/staging-coupon-return-lottery-ui-2026-10-06.json)。
 六項目は引き続き未完了で、ユーザーデータ/DNS工程を前倒ししない。
 下の過去の観測値は上記の最新チェックポイントに読み替える。
 
