@@ -22,8 +22,15 @@ wake17/17、期限/graceの期限超過とarchive対象は0。Master履歴と元
 
 日次Cronの秒ずれを許容し、両jobとhandlerを照合する読み取り専用observerを用意した。
 自然発火は10月6日09:00 JSTの受信・最終version照合まで未受け入れ。
-画面操作接続は再度タイムアウトし、次のlicense/settings UI用fixtureは未作成。
-接続回復後、最新3/7/2と保護状態を照合してから独立合成ownerで進める。
+observer6448be6のCI37323113576は両job成功。画面操作接続が回復し、
+独立したSafari通常windowの合成Free ownerで検索・Sティア取得・設定への遷移、
+伝言板/名前の保存・一覧1/3と7日の表示・設定再読込・公開本文表示を確認した。
+未保存下書きは同じtabのreloadで復元し、公開APIには保存前の本文が残ることと、
+復元後の保存で更新されることを匿名で照合した。UI logoutと所有fixture cleanup後、
+別processで既存3/7/2・プロフィール・Master履歴/MFA/wake17/17・FK0を確認した。
+匿名検索は削除せず3候補/6eventを保持し、削除した合成fanmarkへのpointerだけ解除した。
+これは取得/伝言板/設定/下書きの限定UI受け入れで、延長・上限・有料退会等は残る。
+[画面と独立照合](evidence/staging-acquisition-settings-ui-2026-10-05.json)。
 六項目は引き続き未完了で、ユーザーデータ/DNS工程を前倒ししない。
 下の過去の観測値は上記の最新チェックポイントに読み替える。
 

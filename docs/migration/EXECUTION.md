@@ -1,5 +1,35 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Acquisition/settings/text UI and independent cleanup accepted (2026-10-05 JST)
+
+Browser connectivity recovered. The retained IAB Google account reaches the
+staging dashboard. A separate Safari normal window was confirmed signed out
+before using a new synthetic Free owner; the retained human sessions were not
+replaced. Actual UI search/availability, acquisition of one S-tier emoji,
+settings navigation, text/name save, dashboard 1/3 and seven-day license display,
+settings reopen, and public text rendering passed. An anonymous API read without
+cookies matched the saved text. A changed unsaved draft survived same-tab reload
+while the public API still returned the prior saved text; saving that restored
+draft updated the public API. UI logout completed.
+
+The journal-owned synthetic Auth user/accounts/sessions, business profile,
+license/settings and fanmark were removed. A separate read-only process verified
+their absence, unchanged retained3 users/7 accounts/2 sessions, profiles, Master
+release/reference history, MFA and FK0. Anonymous discovery/event history was
+retained at3/6; only the pointer to the removed journal-owned fanmark was unlinked.
+No anonymous actor ownership was inferred. Notification/Stripe backlog/failure
+counts remain0 and wake remains17/17. The human-created mail test account remains.
+No billing/provider operation, runtime deploy, real-user migration or DNS change
+occurred. This accepts the bounded acquisition/text/settings/draft UI path;
+other access types, extension/over-limit/paid-deletion UI and final integration
+remain open. [Scoped UI evidence](evidence/staging-acquisition-settings-ui-2026-10-05.json).
+
+Observer6448be6 CI37323113576 completed successfully in both jobs. The existing
+read-only daily observer remains connected for2026-10-06 09:00 JST; natural
+expiry/grace/archive acceptance awaits the invocation and final version check.
+Runtime remains0ed4213 / Worker b3a770b3-8735-4b31-abdd-f4fca99e05cd at100%.
+Earlier entries below are historical checkpoints.
+
 ## Email/password login after human reset accepted (2026-10-05 JST)
 
 The user logged in through the dedicated Safari private window. The app renders
