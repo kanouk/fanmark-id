@@ -31,6 +31,16 @@ observer6448be6のCI37323113576は両job成功。画面操作接続が回復し�
 匿名検索は削除せず3候補/6eventを保持し、削除した合成fanmarkへのpointerだけ解除した。
 これは取得/伝言板/設定/下書きの限定UI受け入れで、延長・上限・有料退会等は残る。
 [画面と独立照合](evidence/staging-acquisition-settings-ui-2026-10-05.json)。
+続く独立合成ownerの延長画面で1か月JPY2,000/10月13日→11月13日を確認し、
+実sandbox Checkoutを送信した。Stripe paid/completeと、自然署名dispatchによる
+application/effect/audit各1件・11月13日のactive licenseを別processで照合した。
+元3/7/2・profile/Master/MFAと元匿名履歴は保持。現在の匿名検索は4候補/7event。
+決済後にMacがロックされ、戻り画面・UI logout・所有fixture cleanupは未受け入れ。
+合成owner/license/intentは確認のため保持している。paid Checkoutは再実行しない。
+[延長決済のみの証拠](evidence/staging-extension-ui-payment-only-2026-10-05.json)。
+checked-inの有効なパターンルールにも登録拒否/追加課金の効果がないことを
+[呼び出し元の制御フロー](source-availability-rule-review.md)で照合した。
+無条件の全source/外部caller/不正な履歴JSONの受け入れには換算しない。
 六項目は引き続き未完了で、ユーザーデータ/DNS工程を前倒ししない。
 下の過去の観測値は上記の最新チェックポイントに読み替える。
 

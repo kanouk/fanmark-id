@@ -1,5 +1,39 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Extension UI payment submitted; return UI requires Mac unlock (2026-10-05 JST)
+
+The retained3/7/2 identity/session baseline and Worker b3a770b3 at100% were
+freshly checked. A new synthetic Free owner in an independent signed-out Safari
+normal window acquired one S-tier emoji through the actual app. The extension
+dialog showed1 month / JPY2,000 and2026/10/13 ->2026/11/13. Its actual sandbox
+Checkout was submitted using Stripe's documented test-card values.
+
+Provider readback confirms test-only payment complete/paid for the exact owned
+checkout. Natural signed dispatch applied one application, one effect and one
+LICENSE_EXTENDED audit; the license is active through2026-11-13. A separate
+read-only process verified the exact ledger relationships, original retained
+identity/session digests, profiles, Master/reference history, MFA and FK0.
+Existing anonymous history3/6 is preserved; the current history is4/7.
+[Payment-only evidence](evidence/staging-extension-ui-payment-only-2026-10-05.json).
+
+The Mac locked after payment submission. The return dashboard/date and UI logout
+are not yet observed, and the journal-owned synthetic account/license/intent
+remain for that verification. Do not replay the paid checkout, create another
+fixture or declare whole extension UI/cleanup accepted. On unlock, inspect the
+current Safari window and compare its date with the already-applied D1 result;
+then remove only the journal-owned fixture and run independent cleanup readback.
+Current helper session28440 is the active extension coordinator;
+`/tmp/fanmark-stripe-license-ui-journal-2026-10-05-v7.json` is its private journal.
+The helper consumed and removed its private Stripe key input file; credentials
+are not in Git, Vite or normal logs. No runtime redeploy/user-data/DNS change.
+
+The docs-only d2e9b39 CI37326499893 completed successfully in both jobs. The
+[source rule-table review](source-availability-rule-review.md) also resolves the
+checked-in valid-configuration caller: enabled rules still return availability
+true and calculated price/payment are unused. No speculative enforcement or
+whole-source gate approval is introduced.
+Earlier entries below are historical checkpoints.
+
 ## Acquisition/settings/text UI and independent cleanup accepted (2026-10-05 JST)
 
 Browser connectivity recovered. The retained IAB Google account reaches the

@@ -135,7 +135,7 @@ Target: MFA bounded rules read/PATCH; no current Worker availability consumer.
 
 Implementation: [availability-rules-admin-d1-api.ts](../../workers/api/src/availability-rules-admin-d1-api.ts), [availability-d1-repository.ts](../../workers/api/src/availability-d1-repository.ts). Contracts: [availability-rules-admin-api.md](availability-rules-admin-api.md), [availability-contract.md](availability-contract.md). Coverage: [availability-rules-admin-d1.test.ts](../../workers/api/test/availability-rules-admin-d1.test.ts), [availability-d1.test.ts](../../workers/api/test/availability-d1.test.ts).
 
-Difference or remaining condition: No generic public rule-row API. Existing disabled configuration has no effect on source registration; Worker availability does not read this table. Future pricing/blocking behavior requires an explicit product rule.
+Difference or remaining condition: No generic public rule-row API. The [checked-in current consumer review](source-availability-rule-review.md) establishes no blocking/payment effect for valid enabled or disabled source configurations; Worker availability/registration preserve that outcome. Deployed source Edge bodies, malformed historical JSON and external consumers remain outside that bounded proof. Future pricing/blocking behavior requires an explicit product rule.
 
 ### C11: fanmark_basic_configs (1 policies)
 

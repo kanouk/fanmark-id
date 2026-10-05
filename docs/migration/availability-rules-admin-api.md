@@ -62,6 +62,11 @@ disabled. The Cloudflare staging feature therefore migrates the protected
 admin editor and configuration state, not runtime pricing/blocking semantics.
 Any decision to add those semantics needs an explicit product rule and a
 separate integration test before routing registration through it.
+The [current consumer review](source-availability-rule-review.md) also confirms
+that a valid enabled rule cannot reject registration through the checked-in
+helper: the returned availability is still true and calculated price/payment
+is unused. Deployed Edge bodies, malformed historical JSON and external
+consumers are not accepted by that static review.
 
 User data, production routes, Stripe operations, and domain/DNS state are
 outside this slice.
