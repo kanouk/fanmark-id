@@ -1,5 +1,22 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Deployed source Edge bodies verified (2026-10-06 JST)
+
+All35 ACTIVE source functions were read-only downloaded separately with stable
+before/after metadata.31 entrypoints and24 complete extracted bundles match the
+checkout; four prepared entrypoints and two shared-helper paths differ across
+61 file occurrences. Registration316 and its helpers match, binding the valid-
+configuration rule consumer review to deployed source. Broadcast36's older
+helper uses user_roles admin without current MFA; target Auth adminRole/exact-
+session MFA plus Business admin plan is an explicit authorization change.
+Billing3/local receipt/pricing preparations and manual expiry14 remain distinct
+from deployed source. [Source bodies and dispositions](source-edge-bodies-review.md).
+No source function invocation, source mutation, user-row read, provider send,
+runtime deployment or DNS change occurred. SQL/RLS/trigger/external-caller and
+whole migration acceptance remain false. Preflightddf881a CI37332214832 passed
+both jobs. Extension return UI/owned cleanup remain Mac-unlock pending; daily
+observer57805 still watches the unchanged b3a770b3 for2026-10-06 09:00 JST.
+
 ## Broadcast configuration and master/queue readback (2026-10-06 JST)
 
 The read-only preflight against Worker b3a770b3 at100% confirmed the shared

@@ -35,6 +35,16 @@ production has the same handler, endpoint configuration, or data.
 
 ## Required invariants
 
+The2026-10-06 JST read-only download now identifies the exact live source:
+`create-extension-checkout`152, `extend-fanmark-license`227 and
+`handle-stripe-webhook`172 differ from their checked-in preparations. The live
+checkout has no new durable intent/request contract, direct extension reads
+Supabase prices, and the live webhook retains legacy business writes/customer
+lookup. Do not infer the receipt-first/fenced local Supabase design is deployed.
+Cloudflare's separately accepted test-only provider/D1 flows have their own
+evidence in COMPLETION; real source takeover/data/domain remains deferred.
+[Source body hashes and dispositions](source-edge-bodies-review.md).
+
 1. Verify the raw request body and Stripe-Signature before inserting a receipt
    or changing any application row. An invalid signature leaves no durable
    application record.

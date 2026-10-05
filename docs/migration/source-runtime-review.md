@@ -1,5 +1,11 @@
 # Source runtime bindings review
 
+The separate [2026-10-06 Edge-body readback](source-edge-bodies-review.md) now
+downloads all35 identified ACTIVE bundles with stable before/after metadata:
+31 matching entrypoints, four differing prepared entrypoints and61 extracted
+file occurrences. This is deployed code evidence, separate from the58 SQL
+functions/37 bindings below; it does not approve their whole runtime semantics.
+
 ## Current source refresh (2026-10-05 JST)
 
 The metadata-only runtime observation at2026-10-04T23:39:31.1247+00:00

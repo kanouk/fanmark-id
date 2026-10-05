@@ -1,9 +1,11 @@
 # Availability-rule table and the current registration caller
 
 This review resolves the rule-table behavior of the checked-in current
-application. It does not change registration, prices or configuration and does
-not claim that the deployed Supabase Edge body or arbitrary external callers
-were read. File hashes and the separate captured SQL-reference scan are in
+application. The 2026-10-06 JST read-only download now confirms deployed
+`register-fanmark` version316 and both bundled shared files exactly match the
+reviewed checkout; see [deployed source bodies](source-edge-bodies-review.md).
+It does not change registration, prices or configuration or establish arbitrary
+external callers. File hashes and the separate captured SQL-reference scan are in
 [the bounded review](evidence/source-availability-rule-consumer-review-2026-10-05.json).
 
 ## Source control flow

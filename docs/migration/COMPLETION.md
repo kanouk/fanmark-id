@@ -61,6 +61,13 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 実送信、署名配送・retry/retentionは残る。移行元通知processorも即時in-app以外はpendingに
 するため、別consumerの不在を断定せず、移行を理由に未確認の新規配信機能を追加しない。
 
+2026-10-06 JSTに本番Edge35件を個別downloadし、前後のversion/name/status/JWT metadata一致と
+61 file occurrenceを照合した。31 entrypointはcheckoutと同一、課金準備3件と手動失効1件は
+差分を分類した。登録version316のルール消費分析は本番bodyへ結び付いた。告知の
+旧admin helperはroleのみで、targetのMFA/admin planは明示した認可変更として扱う。
+[本番Edge bodyと差分](source-edge-bodies-review.md)。SQL/RLS/trigger全体や外部callerの
+受け入れは推定せず、六項目は引き続きopen。
+
 ## 完了までに閉じる六つの作業
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |

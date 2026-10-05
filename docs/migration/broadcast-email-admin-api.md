@@ -10,6 +10,14 @@ selected by `BROADCAST_EMAIL_BACKEND=d1` and the staging frontend by
 `VITE_BROADCAST_EMAIL_BACKEND=worker`; production/default builds still use
 Supabase.
 
+The2026-10-06 JST download confirmed the actual source sender version36 matches
+the checkout entrypoint, but its shared administrator helper is older. The
+source validates the bearer user and `user_roles.role=admin` without current
+MFA; the Worker requires Auth adminRole/exact-session verified MFA and Business
+admin plan. Its server-fixed test recipient also replaces the source's caller-
+selected `testEmail`. These are explicit authorization/recipient changes rather
+than identical source behavior. [Source and helper proof](source-edge-bodies-review.md).
+
 The browser bulk-send control is default-off in Cloudflare mode and requires
 `VITE_BROADCAST_SEND_BACKEND=worker` in `cloudflare-staging` mode. The migration
 worktree adds a separate send-start endpoint,
