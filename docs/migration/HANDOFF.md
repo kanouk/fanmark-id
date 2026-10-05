@@ -1,35 +1,39 @@
-# 2026-10-05 現行候補での隔離一式復旧を確認
+# 2026-10-05 認証メール設定をstagingへ配備
 
-## Resend staging connection preparation (2026-10-05 JST)
+## Resend staging configuration deployed (2026-10-05 JST)
 
-The user approved a sending-only API key scoped to the already verified
-`fanmark.id` domain and storage in Mac Keychain and the staging Worker.
-The provider key was created, Keychain readback matched, and undeployed Worker
-version `31772686-a6cf-4e40-9094-e79d9be9c2d6` contains `RESEND_API_KEY` as a
-secret binding alongside the existing 14 secret names. Current live version
-`cc6d9da7-b81b-45fe-b0be-6c0978570232` was independently unchanged; no email was
-sent. The secret-only candidate adds `assets.html_handling=auto-trailing-slash`,
-which is the documented default; it was not deployed. Native Chrome connection
-and Resend login are restored. The user subsequently supplied and approved a
-private test mailbox for verification and password-reset tests; its address is
-kept outside the repository.
+Runtime `00fc6e7c2d01cdd5ec3174e2216f401b560db383` passed both jobs of
+CI37285576515 and is deployed as Worker
+`92413959-b8ea-4b62-a841-011acaa0304c` at 100% (09:04:22 UTC).
+The user-approved sending-only key is restricted to the already verified
+`fanmark.id` domain and was saved/read back in Mac Keychain and the Worker.
+The approved private test mailbox is kept outside the repository.
+`AUTH_EMAIL_BACKEND=resend`, the staging sender, and
+`INVITATION_SIGNUP_BACKEND=d1` are active. Remote capabilities and the native
+Japanese auth screen expose signup, verification and password reset.
+Bulk broadcast and broadcast-test delivery remain disabled.
 
-The checked-in staging configuration now prepares `AUTH_EMAIL_BACKEND=resend`,
-`RESEND_FROM_EMAIL=fanmark.id staging <no-reply@fanmark.id>`, and
-`INVITATION_SIGNUP_BACKEND=d1`. The editor's isolated local fixture explicitly
-removes these selectors and still has no provider credentials. Bulk broadcast
-and broadcast-test delivery remain disabled. CI, a guarded staging deployment,
-remote capability/readback, actual receipt/link/password flows and exact fixture
-cleanup are still required. Credential custody alone is not mail acceptance.
-Production Supabase, user exports/imports and DNS remain outside this work.
+The gateway now forwards the selected D1 email-template backend, topology and
+Business binding into Better Auth and includes them in its cache identity.
+All 50 Auth D1 regressions and 289 migration-boundary tests passed. Verification
+and recovery use the selected D1 copy; inactive templates fail without static
+fallback. The post-deploy readback preserves the original 2 users/6 accounts/
+1 session, all Master history, MFA/wake, anonymous discoveries2/events5,
+16 exact auth-template contents, other bindings and both Cron schedules.
+The earlier secret-only candidate was not deployed. A terminated deploy
+process had uploaded and verified the runtime candidate but had not switched
+traffic; read-only reconciliation confirmed the old live version before a
+guarded deploy of the existing candidate, without another upload.
+[Configuration and preservation evidence](evidence/resend-staging-configuration-2026-10-05.json).
 
-A gateway inspection found that `createApplicationAuth` omitted the selected
-D1 email-template backend, topology and Business binding when constructing
-Better Auth. The prepared fix forwards them and includes template selection
-in the cached auth-instance configuration. Real local D1 callback regressions
-cover verification and recovery copy, cache invalidation and inactive-template
-refusal without fallback to static copy. This code change must pass CI before
-staging deployment; the earlier secret-only version is not the runtime candidate.
+No email has been sent yet. Actual receipt, verification link, password reset,
+relogin and exact fixture cleanup remain unaccepted. Chrome's existing
+Fanmark mail-test tab is prepared with the approved address and blank password
+fields. The user must enter, confirm and submit the new password themselves.
+Credential custody and enabled capabilities do not establish mail acceptance.
+Production Supabase, real user migration and DNS remain outside this work.
+Earlier checkpoints below describe their observation times and do not override
+this runtime/configuration checkpoint.
 
 
 ## Current candidate remote recovery (2026-10-05 JST)
