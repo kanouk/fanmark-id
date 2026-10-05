@@ -53,6 +53,14 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 実ユーザーでしか証明できない行同一性・既存provider主体との対応は、最後の
 データ工程の条件として明示する。合成検証の合格から推定して完了にしない。
 
+2026-10-06 JSTの読み取り専用照合では、共通Resend key/fromと認証メール設定は有効、
+告知bulk/test-send・固定宛先・告知署名secretは未設定。28 template contentは基準一致、
+告知関連6集計とpending email/Web Pushは0件だった。
+[告知の限定readback](evidence/staging-broadcast-readonly-preflight-2026-10-06.json)。
+認証メールの成功から告知provider受け入れを推定しない。宛先限定の告知検証準備と
+実送信、署名配送・retry/retentionは残る。移行元通知processorも即時in-app以外はpendingに
+するため、別consumerの不在を断定せず、移行を理由に未確認の新規配信機能を追加しない。
+
 ## 完了までに閉じる六つの作業
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |

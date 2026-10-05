@@ -1,5 +1,19 @@
 # Auth email templates on Cloudflare staging
 
+## Current acceptance (2026-10-06 JST)
+
+Worker `b3a770b3-8735-4b31-abdd-f4fca99e05cd` selects
+`AUTH_EMAIL_BACKEND=resend` and `AUTH_EMAIL_TEMPLATE_BACKEND=d1` with the
+server Resend key/from configured. The specified recipient completed real
+signup, verification, password reset, and login with the changed password;
+see [the email/password login evidence](evidence/staging-email-password-login-2026-10-05.json).
+The retained mail test account/session has not been cleaned up.
+The latest read-only master projection matches all 16 Auth and 12 broadcast
+templates' content baselines. Broadcast/test-send selectors, its fixed
+recipient, and webhook signing secret remain unset; no broadcast send is
+accepted. See [the configuration and aggregate readback](evidence/staging-broadcast-readonly-preflight-2026-10-06.json).
+The September checkpoints below describe their historical disabled state.
+
 The migration moves only the 16 rows for the existing `signup`, `recovery`,
 `magiclink`, and `email_change` templates in `en`, `ja`, `ko`, and `id`. The
 source query is allowlisted to those fields and types; it reads no accounts,

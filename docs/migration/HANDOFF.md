@@ -1,5 +1,37 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Broadcast configuration and master/queue readback (2026-10-06 JST)
+
+The read-only preflight against Worker b3a770b3 at100% confirmed the shared
+Resend key/from and Auth Resend/D1 selectors are configured. Bulk/test-send
+selectors, the fixed recipient and broadcast signing secret remain absent.
+All16 Auth and12 broadcast template content baselines match; drafts/runs/
+recipients/suppressions/webhook events/test-send audits and pending email/
+Web Push notifications are0. No provider send, D1 write or runtime deploy was
+performed. [Bounded evidence](evidence/staging-broadcast-readonly-preflight-2026-10-06.json).
+
+The reusable `scripts/migration/staging-broadcast-preflight.mjs` requires
+`--read-only` and an explicit `--expected-version=<UUID>`, verifies identified
+app-config Wrangler OAuth/account and split D1 bindings, validates read receipts,
+and exports only configuration-presence flags, template baseline state and
+aggregate counts. It does not use the least-privilege monitor credential.
+September statements that Resend itself was unconfigured are historical;
+broadcast provider acceptance remains open independently of accepted Auth mail.
+A fixed-recipient rehearsal still needs its exact draft/owned cleanup journal
+prepared and explicit message/address authorization before any send.
+
+Source notification processing delivers immediate in-app notifications only;
+other channels and delayed notifications remain pending in both source and
+target. The checked-in sender search found no separate delivery implementation,
+but does not prove external/deployed consumers absent. Do not add speculative
+email/Web Push delivery as an assumed migration requirement.
+
+Docs5776d6a CI37329575605 succeeded in both jobs. The extension payment helper
+session28440 and daily observer57805 remain alive; Mac unlock/actual returned
+UI and owned cleanup, and the2026-10-06 09:00 JST natural daily result are still
+pending. Do not replay the paid Checkout or redeploy the watched Worker.
+Earlier entries below are historical checkpoints.
+
 ## Extension UI payment submitted; return UI requires Mac unlock (2026-10-05 JST)
 
 The retained3/7/2 identity/session baseline and Worker b3a770b3 at100% were

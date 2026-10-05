@@ -33,14 +33,17 @@ backend selectors.
 
 Resend delivery and the signed webhook route are implemented in the migration
 worktree and included in the deployed staging Worker bundle. The staging
-selectors and provider secrets remain unset, so neither path has been exercised
-remotely or verified against Resend. The dispatcher uses bounded batches,
+bulk/test-send selectors, fixed test recipient, and broadcast signing secret
+remain unset, so neither broadcast delivery path has been verified against
+Resend. The shared Resend key/from are configured for the separately accepted
+Auth verification/reset mails. The dispatcher uses bounded batches,
 leases and retries, a stable provider idempotency key, and a keyed payload fingerprint; a changed Auth email or
 payload after an uncertain attempt pauses the recipient for review. Signed
 webhook events are deduplicated and retain only message ID, event type, bounce
 class, and time. Permanent bounces and complaints suppress the matching Auth
 ID; transient bounces do not. These paths have synthetic Miniflare tests. Keep
-their runtime selectors and secrets unset. A separate, default-off test-send route is
+their send selectors off until the bounded provider rehearsal is prepared and
+authorized. A separate, default-off test-send route is
 implemented for drafts: it requires the explicit
 `BROADCAST_TEST_SEND_BACKEND=resend` selector, a server-configured single
 `BROADCAST_TEST_RECIPIENT`, and the Resend key/from settings. The caller cannot

@@ -10,11 +10,15 @@ row. Its current implementation performs the whole delivery in one request and
 does not provide durable per-recipient retry state.
 
 Cloudflare staging has MFA-gated draft, template, recipient-count, and
-fixed-recipient test-send paths. The local migration worktree now also includes
-the default-off durable bulk queue, Resend dispatcher, and signed webhook
-handler. They have synthetic D1/API coverage but are not deployed or verified
-against Resend. No provider secrets or send selectors are enabled, and no email
-has been sent as part of this implementation work.
+fixed-recipient test-send paths, plus the default-off durable bulk queue,
+Resend dispatcher, and signed webhook handler in the deployed Worker bundle.
+They have synthetic D1/API coverage; broadcast delivery has not been verified
+against Resend. The 2026-10-06 JST read-only preflight confirmed that the shared
+Resend key/from and Auth email selectors are configured, while bulk/test-send
+selectors, the fixed test recipient, and the broadcast webhook signing secret
+are absent. Auth verification/reset email acceptance does not establish
+broadcast acceptance. No broadcast email or real audience snapshot has run.
+See [the bounded live readback](evidence/staging-broadcast-readonly-preflight-2026-10-06.json).
 
 ## Data and delivery boundary
 
@@ -49,9 +53,9 @@ has been sent as part of this implementation work.
 The snapshot and delivery functions are selected by the registered
 `* * * * *` Cron only when both `BROADCAST_EMAIL_BACKEND=d1` and
 `BROADCAST_SEND_BACKEND=d1` are configured. Draft editing alone needs no
-delivery scheduler. The current daily-only notification alarm baseline keeps
-bulk send disabled; a future activation must register the minute trigger and
-reconcile the existing baseline/secrets guards. `npm run check:cloudflare-schedules`
+delivery scheduler. Staging already registers the minute trigger for Stripe,
+but keeps bulk send disabled with the missing broadcast selector. Activation
+must reconcile the existing baseline/secrets guards. `npm run check:cloudflare-schedules`
 rejects a missing trigger or missing draft backend in the base config. The
 notification processor continues to use its Durable Object and is not
 selected by this minute Cron. Remote schedule delivery, Resend acceptance,
@@ -103,6 +107,29 @@ bounce categories, and signed webhook verification in its
 [webhook verification guide](https://resend.com/changelog/managing-webhooks-via-api).
 
 ## Configuration and activation
+
+Reproduce the read-only preflight against an explicitly identified deployment:
+
+```sh
+node scripts/migration/staging-broadcast-preflight.mjs --read-only --expected-version=b3a770b3-8735-4b31-abdd-f4fca99e05cd
+```
+
+This command uses the identified app-config Wrangler OAuth credential, not the
+least-privilege monitor token. It reads the fixed staging Worker and Business
+D1 only, verifies SELECT receipts (`rows_written=0`, `changed_db=false`), checks
+the 16 Auth / 12 broadcast template content baselines, and emits allowlisted
+configuration-presence flags and queue counts. It never prints credentials,
+template bodies, addresses, or raw provider responses and cannot activate/send.
+The current readback found zero drafts, runs, recipients, suppressions, webhook
+events, test-send audits, and pending email/Web Push notifications.
+
+The first provider rehearsal should use the separate fixed-recipient test-send
+route, one synthetic MFA-authorized draft, and an explicitly approved address
+and message. Prepare the exact content and cleanup journal before requesting
+send authorization. Verify provider acceptance and audit, then remove only the
+journal-owned fixture. This does not close durable bulk dispatch, signature,
+bounce/suppression, retry, or retention-policy gates. Keep the main Worker
+version unchanged while its natural daily observation is in progress.
 
 Bulk delivery remains fail-closed unless all of these are explicitly selected:
 
