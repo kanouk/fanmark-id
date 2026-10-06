@@ -341,6 +341,10 @@ public event-triggerのmetadataを取得する。source function本文を含むr
 保存し、`source-runtime-review.mjs --catalog ... --output ...`で本文のないreportへ変換する。
 exact SHA/type/security metadataと登録接続先を検証し、publicだけのscope・Auth依存欠落・
 source driftを成功扱いしない。CLIは入力/出力のaliasを拒否し、mode 0600でatomic renameする。
+任意の`--counterparts docs/migration/evidence/source-function-counterparts-2026-10-03.json`で
+完全な手動traceを照合できる。fingerprintとsignature/hash/type/security/volatility/binding数を
+一致させ、本文はhashだけにする。mappedFunctionCountはpending semantic reviewと区別し、
+converter gateを外さない。trace/output aliasも拒否する。
 `test-source-runtime-review.mjs`はmigration-data CIにも含む。最新の接続先と4つのunbound
 trigger関数の扱いは[接続先レビュー](migration/source-runtime-review.md)を参照する。
 

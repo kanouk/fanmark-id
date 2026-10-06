@@ -1,4 +1,30 @@
-## Latest unit: complete saved bundle recovered in two real D1/R2 targets (2026-10-06 JST)
+## Latest unit: optional manual counterpart linkage with fresh source metadata (2026-10-06 JST)
+
+source-runtime-review.mjs accepts --counterparts and links every source signature/
+definition/result/language/security/volatility/binding count to the complete manual
+trace. Stale fingerprint or attributes, missing/duplicate/incomplete/oversized
+rows, approval-bearing traces and trace/output aliases are refused. Report stores
+only correspondence hashes.13 focused tests and eslint passed; frontend semantic
+map checks2/2 passed after correcting stale broadcast delivery prose.
+
+Fresh catalog-only04:15:10.854785Z from fixed projectppqgtbjykitqtiaisyji retains
+58 functions/37 bindings/four unbound trigger definitions and prior fingerprint.
+CLI with the historical complete trace links58/58 with missing0.54 pending
+semantic reviews, fullRuntimeReconciled=false and converterDeployable=false
+are preserved. The correspondence's historical feature acceptance dates are
+not updated by source hash agreement. No stored function invoked, user/Auth
+row read, main deployment or source write performed.
+[Bounded proof](evidence/source-runtime-counterpart-linkage-2026-10-06.json).
+Private query and linked report:
+`/Users/kanouk/.codex/fanmark-migration-private/source-runtime-counterpart-refresh-2026-10-06`.
+Raw definitions stay private0600; reports do not expose source bodies or prose.
+
+Mac remains locked by current CUA observation; existing unlock question was
+not duplicated. Remaining runtime/provider/operations/phone/final requirements
+are unchanged. Real-user data/domain remain deferred and no further email is
+approved. Full saved-file D1/R2 recovery below is already accepted; do not replay it.
+
+## Prior unit: complete saved bundle recovered in two real D1/R2 targets (2026-10-06 JST)
 
 Exact candidate dcb0127/CI37410960675 passed both jobs before creation. The same
 v2 archive recovered full Master25/12254/98, synthetic Auth9/16/30 and Business

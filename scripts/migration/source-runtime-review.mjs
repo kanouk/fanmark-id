@@ -112,9 +112,47 @@ export function reviewSourceRuntime(catalog) {
   };
 }
 
+/** Link reviewed metadata without turning a correspondence into semantic approval. */
+export function linkSourceRuntimeCounterparts(report, trace) {
+  if (report?.schemaVersion !== 1 || report.fullRuntimeReconciled !== false || report.deployable !== false ||
+      trace?.schemaVersion !== 1 || trace.fullRuntimeReconciled !== false || trace.converterDeployable !== false ||
+      trace.runtimeFingerprint !== report.runtimeFingerprint || !Array.isArray(trace.functions) ||
+      trace.functionsCount !== trace.functions.length || trace.functions.length !== report.functions.length) {
+    fail("source_runtime_counterpart_scope_mismatch");
+  }
+  const entries = new Map();
+  for (const fn of trace.functions) {
+    if (!text(fn.name) || typeof fn.identityArguments !== "string") fail("source_runtime_counterpart_invalid");
+    const key = JSON.stringify([fn.name, fn.identityArguments]);
+    if (entries.has(key)) fail("source_runtime_counterpart_duplicate");
+    const counterpart = fn.counterpart;
+    if (fn.counterpartSemanticApprovalInferred !== false || !counterpart || ["location", "actor", "boundaryAndEvidence", "remainingBoundary"].some(name =>
+        !text(counterpart[name]) || counterpart[name].length > 16000)) fail("source_runtime_counterpart_invalid");
+    entries.set(key, fn);
+  }
+  const functions = report.functions.map(fn => {
+    const counterpart = entries.get(JSON.stringify([fn.name, fn.identityArguments]));
+    if (!counterpart || ["result", "definitionSha256", "language", "securityDefiner", "volatility", "bindingCount"]
+      .some(name => counterpart[name] !== fn[name])) fail("source_runtime_counterpart_definition_mismatch");
+    // Keep prose/source constants out of the metadata report; hash only the four
+    // documented fields, never arbitrary extra fields supplied in a trace.
+    const content = Object.fromEntries(["location", "actor", "boundaryAndEvidence", "remainingBoundary"]
+      .map(name => [name, counterpart.counterpart[name]]));
+    return { ...fn, counterpart: { identityAndDefinitionMatched: true, correspondenceSha256: hash(JSON.stringify(content)),
+      semanticApprovalInferred: false } };
+  });
+  return { ...report, functions, counterpartTrace: {
+    functionCount: functions.length, missingFunctionCount: 0,
+    traceSha256: hash(JSON.stringify(functions.map(fn => [fn.name, fn.identityArguments, fn.counterpart.correspondenceSha256]))),
+    semanticApprovalInferred: false,
+    boundary: "Exact source identity, definition, attributes and binding count matched to manual correspondence; feature/provider/operational acceptance and converter gates remain separate.",
+  } };
+}
+
 async function main() {
   const args = process.argv.slice(2);
-  if (args.length !== 4 || args[0] !== "--catalog" || args[2] !== "--output") fail("source_runtime_usage_requires_catalog_and_output");
+  if (![4, 6].includes(args.length) || args[0] !== "--catalog" || args[2] !== "--output" ||
+      (args.length === 6 && args[4] !== "--counterparts")) fail("source_runtime_usage_requires_catalog_and_output");
   const input = path.resolve(args[1]), output = path.resolve(args[3]);
   const inputReal = await realpath(input);
   const outputReal = await realpath(output).catch(error => {
@@ -129,13 +167,20 @@ async function main() {
     catalog = raw.rows[0].jsonb_build_object;
     if (typeof catalog === "string") catalog = JSON.parse(catalog);
   }
-  const report = reviewSourceRuntime(catalog);
+  let report = reviewSourceRuntime(catalog);
+  if (args.length === 6) {
+    const tracePath = path.resolve(args[5]);
+    if (await realpath(tracePath) === outputReal || (await stat(tracePath)).size > 2 * 1024 * 1024) {
+      fail("source_runtime_paths_or_size_invalid");
+    }
+    report = linkSourceRuntimeCounterparts(report, JSON.parse(await readFile(tracePath, "utf8")));
+  }
   const temporary = `${output}.pending-${randomUUID()}`;
   try {
     await writeFile(temporary, JSON.stringify(report, null, 2) + "\n", { mode: 0o600, flag: "wx" });
     await rename(temporary, output);
   } finally { await unlink(temporary).catch(() => {}); }
-  console.log(JSON.stringify({ observedAt: report.observedAt, ...report.counts, fullRuntimeReconciled: false, deployable: false }));
+  console.log(JSON.stringify({ observedAt: report.observedAt, ...report.counts, ...(report.counterpartTrace ? { mappedFunctionCount: report.counterpartTrace.functionCount } : {}), fullRuntimeReconciled: false, deployable: false }));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

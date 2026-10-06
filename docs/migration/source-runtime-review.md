@@ -6,6 +6,32 @@ downloads all35 identified ACTIVE bundles with stable before/after metadata:
 file occurrences. This is deployed code evidence, separate from the58 SQL
 functions/37 bindings below; it does not approve their whole runtime semantics.
 
+## Optional manual trace linkage and fresh source observation (2026-10-06 JST)
+
+`source-runtime-review.mjs` now accepts `--counterparts` with the bounded manual
+function trace. It requires the exact runtime fingerprint and every function's
+signature, definition hash, language/result, security/volatility attributes and
+binding count. Missing/duplicate functions, stale metadata, oversized/incomplete
+correspondence and automatic semantic-approval claims are refused. Only hashes
+of the four correspondence fields enter the private report; source bodies and
+manual prose are not copied. Input/output and trace/output aliases are refused.
+
+The new metadata-only source observation04:15:10.854785Z retains58 functions,
+37 bindings, four reviewed unbound trigger definitions and the prior runtime
+fingerprint. All58 manual rows match with zero missing correspondence. The13
+focused tests and eslint pass. `mappedFunctionCount=58` is distinct from the
+unchanged54 pending semantic reviews; neither fullRuntimeReconciled nor
+converterDeployable becomes true. This trace links the historical manual
+correspondence, whose feature acceptance dates are not refreshed by a hash match.
+No application/Auth rows were read, stored function invoked, or state changed.
+[Bounded linkage proof](evidence/source-runtime-counterpart-linkage-2026-10-06.json).
+
+```sh
+node scripts/migration/source-runtime-review.mjs --catalog "$TASK_PRIVATE_RUNTIME_QUERY" \
+  --output "$TASK_PRIVATE_LINKED_REPORT" \
+  --counterparts docs/migration/evidence/source-function-counterparts-2026-10-03.json
+```
+
 ## Current source refresh (2026-10-05 JST)
 
 The metadata-only runtime observation at2026-10-04T23:39:31.1247+00:00

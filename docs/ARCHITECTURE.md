@@ -306,7 +306,9 @@ job有効化・修復・provider操作は行わない。selector停止と観測�
 関数本文を出力せずfingerprintと接続先を記録し、exact source definitionかつ全schemaで
 接続のない4つのtrigger関数を分類する。Authの`on_auth_user_created -> handle_new_user`は
 別schemaのactive依存として保持する。接続追加・definition変更・scope欠落は再レビューを
-要求する。runtime受け入れやconverterのdeployable gateを自動で完了にしない。
+要求する。任意の`--counterparts`で手動対応表の全関数identity/hash/属性/接続数を照合し、
+欠落・重複・古い定義を拒否する。対応表の本文は複製せずhashを記録する。
+runtime受け入れやconverterのdeployable gateを自動で完了にしない。
 詳細は[接続先レビュー](migration/source-runtime-review.md)。
 
 

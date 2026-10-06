@@ -1,3 +1,14 @@
+## 2026-10-06：最新sourceメタデータと手動対応表を機械照合
+
+`source-runtime-review.mjs --counterparts`を追加。最新04:15:10.854785Zのcatalogで
+58関数のsignature/hash/型/権限属性/接続数が手動traceと一致し、欠落0。
+37 bindings/fingerprintも維持した。定義変更・欠落・重複・過剰approval・aliasの拒否を
+含む13 focused試験とeslintが通過。frontend対応表の古い告知送信記述を修正し、
+211 callerのcurrent AST/一意mapping2件も通過した。
+54 semantic pendingとconverter gateは外さず、本文/trace proseはreportへ複製しない。
+source/user/Auth行移送・stored function呼出・main配備は0。
+[限定証拠](evidence/source-runtime-counterpart-linkage-2026-10-06.json)。
+
 ## 保存ファイルから実D1・R2へ一式復旧を受け入れ（2026-10-06 JST）
 
 候補dcb0127のCI37410960675は両job成功。同じ保存bundle v2から別incarnationの

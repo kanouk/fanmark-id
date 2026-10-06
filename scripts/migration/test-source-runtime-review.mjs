@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
-import { reviewSourceRuntime } from "./source-runtime-review.mjs";
+import { reviewSourceRuntime, linkSourceRuntimeCounterparts } from "./source-runtime-review.mjs";
 
 const display = JSON.parse(await readFile(new URL("./fixtures/source-runtime-inactive-display-name.json", import.meta.url), "utf8"));
 const privateMarker = "private-function-body-must-not-appear-in-report";
@@ -98,5 +98,74 @@ test("CLI writes a private value-free report and rejects input/output aliases wi
     assert.equal(refused.status, 1);
     assert.match(refused.stderr, /source_runtime_paths_or_size_invalid/u);
     assert.equal(await readFile(input, "utf8"), bytes);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+
+function traceFor(report) {
+  return { schemaVersion: 1, runtimeFingerprint: report.runtimeFingerprint,
+    functionsCount: report.functions.length, fullRuntimeReconciled: false, converterDeployable: false,
+    functions: report.functions.map(fn => ({ ...fn, counterpartSemanticApprovalInferred: false,
+      counterpart: { location: "docs/migration/object-map.md", actor: "named application path",
+        boundaryAndEvidence: "documented correspondence " + privateMarker, remainingBoundary: "provider and operations remain" } })) };
+}
+
+test("manual correspondence is linked without accepting pending semantics or exposing its prose", () => {
+  const report = reviewSourceRuntime(catalog()), linked = linkSourceRuntimeCounterparts(report, traceFor(report));
+  assert.equal(linked.counterpartTrace.functionCount, 2);
+  assert.equal(linked.counterpartTrace.missingFunctionCount, 0);
+  assert.deepEqual(linked.counts, report.counts);
+  assert.equal(linked.functions[0].disposition, report.functions[0].disposition);
+  assert.ok(linked.functions.every(fn => fn.counterpart.identityAndDefinitionMatched && !fn.counterpart.semanticApprovalInferred));
+  assert.equal(linked.fullRuntimeReconciled, false); assert.equal(linked.deployable, false);
+  assert.ok(!JSON.stringify(linked).includes(privateMarker));
+  const reordered = traceFor(report); reordered.functions.reverse();
+  assert.deepEqual(linkSourceRuntimeCounterparts(report, reordered), linked);
+});
+
+test("changed definitions, overloads, attributes or bindings cannot inherit a manual counterpart", () => {
+  const report = reviewSourceRuntime(catalog());
+  for (const [name, value] of [["definitionSha256", "0".repeat(64)], ["identityArguments", "candidate text"],
+    ["result", "text"], ["language", "sql"], ["securityDefiner", false], ["volatility", "i"], ["bindingCount", 99]]) {
+    const trace = traceFor(report); trace.functions[0][name] = value;
+    assert.throws(() => linkSourceRuntimeCounterparts(report, trace), /source_runtime_counterpart_definition_mismatch/u, name);
+  }
+  const changed = catalog(); changed.trigger_bindings[0].enabled = "D";
+  assert.throws(() => linkSourceRuntimeCounterparts(reviewSourceRuntime(changed), traceFor(report)), /source_runtime_counterpart_scope_mismatch/u);
+});
+
+test("incomplete, duplicate, unbounded or approval-bearing counterpart traces fail closed", () => {
+  const report = reviewSourceRuntime(catalog());
+  for (const mutate of [t => t.functions.pop(), t => t.functions.push(t.functions[0]),
+    t => t.fullRuntimeReconciled = true, t => t.converterDeployable = true, t => t.functionsCount = 99]) {
+    const trace = traceFor(report); mutate(trace);
+    assert.throws(() => linkSourceRuntimeCounterparts(report, trace), /source_runtime_counterpart_scope_mismatch/u);
+  }
+  const duplicate = traceFor(report); duplicate.functions[1] = duplicate.functions[0];
+  assert.throws(() => linkSourceRuntimeCounterparts(report, duplicate), /source_runtime_counterpart_duplicate/u);
+  for (const mutate of [t => t.functions[0].counterpart.remainingBoundary = "",
+    t => t.functions[0].counterpart.location = "a".repeat(16001), t => t.functions[0].counterpartSemanticApprovalInferred = true]) {
+    const trace = traceFor(report); mutate(trace);
+    assert.throws(() => linkSourceRuntimeCounterparts(report, trace), /source_runtime_counterpart_invalid/u);
+  }
+});
+
+test("CLI consumes the optional trace and refuses its output alias without overwriting it", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "fanmark-source-link-test-"));
+  try {
+    const input = path.join(dir, "source.json"), tracePath = path.join(dir, "trace.json"), output = path.join(dir, "review.json");
+    const traceBytes = JSON.stringify(traceFor(reviewSourceRuntime(catalog())));
+    await writeFile(input, JSON.stringify(catalog()), { mode: 0o600 });
+    await writeFile(tracePath, traceBytes, { mode: 0o600 });
+    const script = fileURLToPath(new URL("./source-runtime-review.mjs", import.meta.url));
+    const run = destination => spawnSync(process.execPath, [script, "--catalog", input, "--output", destination,
+      "--counterparts", tracePath], { encoding: "utf8" });
+    assert.equal(run(output).status, 0);
+    assert.equal((await stat(output)).mode & 0o777, 0o600);
+    const linked = JSON.parse(await readFile(output, "utf8")); assert.equal(linked.counterpartTrace.functionCount, 2);
+    assert.ok(!JSON.stringify(linked).includes(privateMarker));
+    const refused = run(tracePath); assert.equal(refused.status, 1);
+    assert.match(refused.stderr, /source_runtime_paths_or_size_invalid/u);
+    assert.equal(await readFile(tracePath, "utf8"), traceBytes);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

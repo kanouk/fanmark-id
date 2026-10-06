@@ -396,8 +396,10 @@ Creator、Portal支払い確定→Business、アプリFree即時解約→署名�
 旧PWA更新・provider/ジョブ/復旧の統合は残る。
 
 source照合は58関数/37binding/77policy/40表/211 frontend callsiteの対応を結び付けた。
-classifierの54 pendingは手動counterpartの受け入れを取り込んでいない数で、54件の
-未実装を意味しない。一方、fullRuntimeReconciled/converterDeployableはfalseを保持し、
+classifierの54 pendingはsemantic acceptanceを自動で進めない数で、54件の
+未実装を意味しない。任意の手動trace入力は04:15:10.854785Zの最新runtime catalogに対し
+全58 signature/hash/属性/接続数を照合し、mappedFunctionCount=58/欠落0を記録した。
+[実sourceとの対応表照合](evidence/source-runtime-counterpart-linkage-2026-10-06.json)。一方、fullRuntimeReconciled/converterDeployableはfalseを保持し、
 未説明差や実データでしか確認できない事項を完了扱いにしない。
 [現行converterと合成取り込み](evidence/schema-current-preparation-2026-10-05.json)では、保存済みsource metadataに対するv43の4 blocking groupsと現行targetのlocal復旧を確認した。最新source readや全converterの受け入れには換算しない。
 [source runtime](source-runtime-review.md)、[source authorization](source-authorization-review.md)、

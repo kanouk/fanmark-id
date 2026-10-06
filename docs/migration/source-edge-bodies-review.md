@@ -55,10 +55,12 @@ but the downloaded helper has no current-session MFA check.
 The Worker deliberately requires the server-managed Auth admin role, exact-session
 verified MFA, and the Business admin plan. Its fixed-recipient test route also
 refuses a caller-selected address, whereas the legacy sender accepts `testEmail`.
-These are documented authorization/recipient-boundary changes, not identical
-source behavior. Durable bulk dispatch, real Resend acceptance and its signed
-delivery/retry/retention remain unaccepted; Auth verification/reset success does
-not close them. See [broadcast contract](broadcast-email-admin-api.md).
+These are documented authorization/recipient-boundary changes. A later explicitly
+approved fixed-recipient API test was Delivered and matched to its D1 audit;
+[bounded acceptance](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json).
+Actual test-send UI, bulk dispatch, signed delivery/retry and retention remain
+unaccepted. Auth verification/reset success does not close them. See
+[broadcast contract](broadcast-email-admin-api.md).
 
 ## Reproduce without changing the source
 
