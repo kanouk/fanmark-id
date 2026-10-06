@@ -24,18 +24,34 @@ function navigate(path: string): Promise<Response> {
 }
 
 describe("local Workers Static Assets routing", () => {
-  it.each(["/", "/a/example-short-id", "/pwa", "/auth"])(
+  it.each(["/", "/a/example-short-id", "/pwa", "/auth", "/plans?checkout=success"])(
     "serves the SPA shell for navigation %s",
     async (path) => {
       const response = await navigate(path);
 
       expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
       expect(response.headers.get("content-type")).toMatch(/text\/html/i);
       expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
       expect(await response.text()).toContain('<div id="root"></div>');
     },
     15_000,
   );
+
+  it("serves the precached index directly without an HTML canonical redirect", async () => {
+    const response = await request("/index.html", { redirect: "manual" });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(await response.text()).toContain('<div id="root"></div>');
+  });
+
+  it.each(["GET", "HEAD"])("serves the root document for a plain %s request", async (method) => {
+    const response = await request("/", { method, redirect: "manual" });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("content-type")).toMatch(/text\/html/i);
+    if (method === "HEAD") expect(await response.text()).toBe("");
+  });
 
   it("blocks indexing and the production sitemap on staging", async () => {
     const robots = await request("/robots.txt");

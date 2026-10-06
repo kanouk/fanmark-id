@@ -999,15 +999,18 @@ async function fetchStaticAsset(request: Request, assets: Fetcher): Promise<Resp
     request.method === "GET" &&
     (request.headers.get("Sec-Fetch-Mode") === "navigate" ||
       request.headers.get("Accept")?.includes("text/html") === true);
+  const isRootDocument =
+    new URL(request.url).pathname === "/" &&
+    (request.method === "GET" || request.method === "HEAD");
   if (
     response.status === 404 &&
-    isNavigation
+    (isNavigation || isRootDocument)
   ) {
-    // Keep SPA fallback limited to browser navigations. A missing script,
+    // Keep fallback limited to navigations and the explicit root document. A missing script,
     // stylesheet, or other asset must remain a real non-HTML 404.
     return assets.fetch(
       new Request(new URL("/index.html", request.url), {
-        method: "GET",
+        method: request.method,
         headers: request.headers,
       }),
     );

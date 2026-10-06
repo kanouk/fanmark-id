@@ -1,4 +1,69 @@
-## Latest unit: バックアップ運用と受け入れ済み復旧の区別（2026-10-06 JST）
+## Latest unit: Safariのテスト決済復帰エラー修正・CI/配備待ち（2026-10-06 JST）
+
+同じ合成account/Checkoutに公開test cardでsandbox申込を行い、Business D1でCreator/active
+subscription1件を確認した。戻り先SafariはService Workerのredirect応答でページを開けず、
+通常reload/二度目の申込で隠していない。元Worker d437の/index.html=307→/を独立観測し、
+redirectを自動追跡していた旧HTTP smokeの穴を修正した。修正前の実Wranglerは307≠200で失敗。
+
+両Assets configのhtml_handling=noneとroot GET/HEADの明示HTML fallbackを追加。
+route/queryを保ち、API/欠落script境界は維持する。stagingだけstatic cache v2へ更新し、
+既存Safariの旧HTML cacheを使い回さない。default buildのcache namespaceは変更しない。
+修正後の実Assets binding19/19・outer Wrangler HTTP smoke、両typecheck・focused lint、
+CIと同じ空env/合成値のstaging build・生成PWA cache境界を通過。JSは既存UQpaFrj8のまま。
+[修正と限定証拠](evidence/safari-static-shell-redirect-regression-2026-10-06.json)。
+
+現時点では新候補CI/配備/同じSafariの復旧は未受け入れ。有料退会も未実行。
+private paid-deletion journalはnative_test_checkout_submitted_waiting_readback。
+同じtest customer/subscription/Tier C/profile/合成sessionを保持し、再seed/再Checkoutをしない。
+次はexact候補CI成功→元全表hash/設定/secret保持guard→staging配備→直接HTML/新SW照合→
+同じSafariの更新・戻り先query/Creator画面確認→退会review→exact-owned cleanup/独立照合。
+実ユーザーの移送、domain/DNS、本番Stripeと追加認証/告知mailは対象外。
+
+## Prior checkpoint: 有料退会UI向けCheckout準備（2026-10-06 JST）
+
+Worker d437と全既存Business/Auth/Master表hashを保持し、合成account1件を作成。
+実signin/register APIで無期限Tier Cの🧴🧬🧿🛰️とprofileを1件作成し、準備sessionを失効。
+別のSafari private windowで本人用とは別の合成accountに実ログインし、保有1/3・C/無期限を確認。
+プラン画面のCreator変更から、実配備APIが作成したStripe sandbox Checkoutへ進んだ。
+対象acct_1SFjhvJk0VCfiKUpのlivemode=falseをStripeのread-only WebMCPで確認した。
+
+公開テストカード4242、expiry12/30、CVC123、合成名だけを入力し、情報保存はoff。
+¥1,000/月の「申し込む」は未クリック。申込・実subscription/署名反映・有料退会は未受け入れ。
+D1の同じuserのtest customer/checkout command各1、status=session_created、plan=freeと
+subscription0をread-onlyで照合。全既存表hash/FK0とWorker versionを保持した。
+この節はテスト申込前の初期checkpoint。後続のsandbox申込結果は最新unitを参照。
+[準備の限定証拠](evidence/staging-paid-deletion-checkout-preparation-2026-10-06.json)。
+
+private journalは`/Users/kanouk/.codex/fanmark-migration-private/paid-deletion-native-2026-10-06/journal.json`。
+state=waiting_for_human_test_checkout_submission。所有fixture/合成session/Stripe test customerと
+Checkoutは保持している。本人操作前にcleanupせず、prepare/capture runnerを再実行しない。
+次は同じCheckoutの本人申込後に同じcustomer/subscription/署名receipt・Creator投影を確認し、
+有料退会画面を用意して不可逆削除/解約の本人操作へ渡す。その後Tier C返却/設定削除/監査/
+全Auth cascade・cookie失効とexact-owned cleanup/独立保持照合を行う。
+コード/配備/設定/秘密更新/実userdata/DNS変更0。文書・証拠は未commit/未push。
+
+## Prior unit: 新規管理者MFA登録の実Safari受け入れ（2026-10-06 JST）
+
+Worker d437を保持し、使い捨ての合成管理者1件だけを作成した。
+Safariのprivate windowで実ログイン後、本人が認証アプリの設定と6桁コードの確認を完了。
+実管理ダッシュボードと、Auth D1のtwoFactorEnabled=1・verified factor1件・現在generationの
+同一session/factorに紐付く期限内MFA assurance1件を照合した。factor登録をAPIで代替していない。
+先に用意したprivate windowが閉じられていたため、同じaccountで開き直した。
+
+UI logout後、認証済みsession/assuranceの失効を確認し、receiptで所有を確認した
+合成Auth/Business行だけを削除。開き直す前の残存sessionも同じ合成userのcascadeで削除した。
+別のread-only processで所有行0、全既存Business/Auth/Master表hash保持とFK0を照合。
+MFA generation242→243→244を保持し、巻き戻していない。private passwordはcleanup後に除去した。
+Worker/runtime/設定/secret変更0、追加mail0、実userdata移送0、domain/DNS変更0。
+[限定証拠](evidence/staging-admin-mfa-enrollment-native-2026-10-06.json)。
+
+新規MFA登録UIのこの残件は受け入れ済み。有料退会UI、Apple/Discord新規登録・relay、
+実スマホ/最終統合、外部callerと運用採用の未回答は保持する。六項目全体は未完了。
+最新配備sourceは既存d437、候補cc87e8fのCI37424652271は両job成功。
+今回の変更は証拠・文書だけ。旧MFA challenge/mail証拠のuiEnrollmentAccepted=falseは当時の範囲。
+完了済みprivate journal/runnerを再実行せず、同じ試験を目的なく繰り返さない。
+
+## Prior unit: バックアップ運用と受け入れ済み復旧の区別（2026-10-06 JST）
 
 リポジトリのsource exporter/encryption/R2 canary/importerと保存一式復旧証拠を監査した。
 [backup-operations.md](backup-operations.md)に用途・二つの保存形式と残る運用条件を整理。

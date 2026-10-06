@@ -256,6 +256,13 @@
 
 ## Cloudflare移行準備
 
+Static AssetsのSPA配信は`workers/api/src/index.ts`の`fetchStaticAsset`が担当する。
+app stagingとlocal preparationは`html_handling=none`を指定し、`/index.html`を直接返す。
+通常navigationとroot GET/HEADだけにHTML fallbackを適用し、route/queryを保持する。
+APIと欠落assetはHTMLへ変換しない。`vite.config.ts`のstaging専用static cache v2は
+旧redirect経由のHTML cacheを退役させる。実Safariで見つかった復帰エラーと検証範囲は
+`docs/migration/static-assets.md`を参照する。
+
 移行の段階・優先順・再開手順は `docs/migration/EXECUTION.md`、コード側の棚卸しは `docs/migration/repository-inventory.md`、本番の読み取り結果は `docs/migration/live-observations.md`。`scripts/migration/inventory.mjs` でコード側の棚卸しを再生成できる。
 
 `experiments/cloudflare-auth/` と `experiments/cloudflare-d1-concurrency/` は合成データで動く独立したWorkers/D1検証用。Better Authの共通認証実装は `workers/api/src/better-auth.mjs` にあり、実験Workerの `/admin/protected` MFA認可検証は引き続き独立している。通常Workerは明示的な認証設定がある場合だけ `/api/auth/*` を処理する。移行worktreeにはResendの確認/再設定メールとGoogle/GitHub/Discord/Apple OAuthを実装したが、Cloudflareの設定・資格情報がそろうまでcapabilityが無効となる。招待コードの検証、Auth D1 marker、business D1の予約/消費、profile finalizationをつなぐsignup Coordinatorは実装し、schema migrationとWorkerをstagingへ配備した。Resend資格情報・招待設定・明示selectorが未設定なのでsignupは引き続き閉じ、social signupもBetter Auth側で無効にする。これは現行Supabaseバックエンドや認可済み業務APIを置き換えたものではない。再現コマンドと限界は `docs/migration/invitation-signup-api.md` を参照する。

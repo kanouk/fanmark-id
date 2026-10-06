@@ -45,6 +45,9 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        // Retire staging's HTML cache populated through /index.html redirects.
+        // A fresh namespace lets existing Safari clients fetch the direct shell.
+        ...(mode === "cloudflare-staging" ? { cacheId: "fanmark-staging-static-v2" } : {}),
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // API responses may contain account state. Only static build assets

@@ -87,6 +87,7 @@ async function assertHtmlNavigation(baseUrl, path) {
   const response = await fetchBounded(
     `${baseUrl}${path}`,
     {
+      redirect: "manual",
       headers: {
         Accept: "text/html",
         "Sec-Fetch-Mode": "navigate",
@@ -96,6 +97,7 @@ async function assertHtmlNavigation(baseUrl, path) {
   );
   const body = await response.text();
   assert.equal(response.status, 200, `${path} should serve the SPA shell`);
+  assert.equal(response.headers.get("location"), null, `${path} must preserve the navigation URL`);
   assert.match(response.headers.get("content-type") ?? "", /text\/html/i);
   assert.match(body, /<div id="root"><\/div>/);
 }
@@ -154,9 +156,14 @@ for (const stream of [processHandle.stdout, processHandle.stderr]) {
 try {
   await waitForServer(baseUrl, processHandle, output, spawnState);
 
-  for (const path of ["/", "/a/example-short-id", "/pwa", "/auth"]) {
+  for (const path of ["/", "/a/example-short-id", "/pwa", "/auth", "/plans?checkout=success"]) {
     await assertHtmlNavigation(baseUrl, path);
   }
+
+  const precacheShell = await fetchBounded(`${baseUrl}/index.html`, { redirect: "manual" }, ASSERTION_TIMEOUT_MS);
+  assert.equal(precacheShell.status, 200, "the service worker must precache a direct HTML response");
+  assert.equal(precacheShell.headers.get("location"), null);
+  assert.match(await precacheShell.text(), /<div id="root"><\/div>/);
 
   const missingAsset = await fetchBounded(
     `${baseUrl}/assets/does-not-exist.js`,

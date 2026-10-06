@@ -18,6 +18,7 @@ The preparation config is deliberately separate from the API-only
   "assets": {
     "directory": "../../dist",
     "binding": "ASSETS",
+    "html_handling": "none",
     "not_found_handling": "404-page",
     "run_worker_first": ["/*"]
   }
@@ -61,7 +62,10 @@ and [SPA routing documentation](https://developers.cloudflare.com/workers/static
 When the `ASSETS` binding is present, `workers/api/src/index.ts` passes
 non-API requests to `ASSETS.fetch`. If that fetch is a 404 for a GET navigation
 (`Sec-Fetch-Mode: navigate` or an HTML `Accept` header), the Worker fetches the
-root `/index.html` shell. API paths are evaluated first and never pass through
+root `/index.html` shell. Plain GET/HEAD requests to `/` also receive that
+document. `html_handling: "none"` makes the explicit HTML asset return directly,
+so the fallback preserves the requested route and query instead of redirecting
+to `/`. API paths are evaluated first and never pass through
 the SPA fallback:
 
 - `/api/fanmarks/recent` keeps the versioned JSON contract and Supabase adapter.
@@ -86,6 +90,24 @@ uses HTTP requests against it. That smoke test is the evidence for the outer
 Workers asset router and `run_worker_first` behavior; the Vitest entrypoint
 test alone would bypass that outer router. It does not contact a remote
 account or Supabase.
+
+## Safari checkout return regression (2026-10-06 JST)
+
+The actual sandbox Checkout completed and the synthetic account became Creator
+with an active test subscription. Returning to staging in Safari failed with
+`Response served by service worker has redirections`. Independent HTTP readback
+found `/index.html` returned307 to `/`; the previous HTTP smoke followed that
+redirect and could not detect it. The corrected smoke uses manual redirects,
+checks direct precache HTML200, and includes `/plans?checkout=success`.
+
+Both Static Assets configurations now disable HTML canonical redirects. The
+Worker preserves plain root GET/HEAD responses while keeping missing scripts404
+and API routing separate. The staging PWA uses a new `fanmark-staging-static-v2`
+cache namespace so an existing Safari client fetches the corrected shell rather
+than retaining an older cached response. The default build's cache namespace
+is unchanged. Local19/19 and the outer Wrangler HTTP smoke passed. Current
+candidate CI, deployment, and the same Safari client's recovery remain required;
+this is not remote acceptance or completed paid-account deletion.
 
 ## Staging PWA and offline shell check (2026-09-27)
 
