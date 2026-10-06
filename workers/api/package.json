@@ -71,7 +71,7 @@
     "test:business-runtime-import": "node --test ../../scripts/migration/test-business-runtime-import.mjs",
     "test:combined-recovery": "node --experimental-strip-types --test ../../scripts/migration/test-combined-recovery.mjs",
     "test:isolated-remote-r2": "node --check ../../scripts/migration/run-isolated-combined-recovery.mjs && node --experimental-strip-types --test ../../scripts/migration/test-isolated-remote-r2.mjs",
-    "test:isolated-remote-d1": "node --check ../../scripts/migration/probe-isolated-remote-d1.mjs && node --test ../../scripts/migration/test-isolated-remote-d1.mjs",
+    "test:isolated-remote-d1": "node --check ../../scripts/migration/probe-isolated-remote-d1.mjs && node --test ../../scripts/migration/test-isolated-remote-d1.mjs ../../scripts/migration/test-d1-rest-trigger-sql.mjs",
     "test:auth-recovery:d1": "vitest run --config vitest.auth-recovery.config.mjs"
   },
   "devDependencies": {

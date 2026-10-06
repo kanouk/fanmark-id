@@ -89,6 +89,12 @@ Masterのrelease・avatar/coverの分離R2を同じbundleへ含めた復旧は`n
 隔離D1向けのREST prepared/batch transportは`isolated-remote-d1.mjs`、専用native試験は
 `test:isolated-remote-d1`。作成receiptのUUID/名前/時刻/incarnationと実metadataを照合し、
 明示remote mode・全runtime profile・Auth resolverを必須にする。完全remote復旧は未受け入れ。
+Masterの全スキーマ復旧で、実D1 REST `/query` が小文字`begin`のtriggerを拒否する
+問題を確認した。`scripts/migration/d1-rest-trigger-sql.mjs`は、SQLiteで検証済みの
+単一CREATE TRIGGER定義に明示適用し、引用符・comment・literalを保持してbodyの
+`BEGIN`だけを大文字へ補正する。一般のtransportやsource schemaは変更しない。
+`test:isolated-remote-d1`にliteral保持とnative trigger作用の回帰試験を含める。
+source/target schema照合は、この明示したキーワード補正だけを許す。
 分離R2は`split-r2-import-transport.mjs`でlogical bucket/keyとphysical keyを対応付け、
 combined復旧で実Storage GET/HEADとbytes/MIME/sizeを検証する。
 

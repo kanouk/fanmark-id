@@ -1,3 +1,15 @@
+## Latest unit: isolated REST trigger preparation (2026-10-06 JST)
+
+Full remote Master restore reached rows but failed at the final trigger batch.
+A schema-only remote probe established the lowercase `begin` REST splitter bug:
+original/semicolon forms failed, uppercase body BEGIN succeeded, and all58
+triggers/all98 schema objects then matched that explicit correction. Owned D1 was
+deleted; separate RO process verified all Business/Auth/Master hashes, FK0,
+Worker8cbe1e5f and original three-DB inventory unchanged. New opt-in helper
+`d1-rest-trigger-sql.mjs` preserves all other SQL bytes, with12/12 native/transport
+regressions. Full corrected remote data restore remains open; no runtime deploy.
+See full-master-recovery.md and evidence/d1-rest-trigger-casing-2026-10-06.json.
+
 # 2026-10-05 認証メール設定をstagingへ配備
 
 ## Synthetic full Auth snapshot and actual login recovery accepted locally (2026-10-06 JST)

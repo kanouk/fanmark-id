@@ -1,0 +1,56 @@
+{
+  "observedAt": "2026-10-06T02:36:41.169Z",
+  "scope": "Isolated remote schema-only trigger casing diagnosis; no source row insertion",
+  "sourceHead": "c430c64f00168f40b1e72f29efba2943f081a792",
+  "ciRun": "37402677646",
+  "workerVersion": "8cbe1e5f-5e55-4a82-a853-65ec96051db2",
+  "failingTrigger": "mfa_generation_factor_delete",
+  "probe": [
+    {
+      "variant": "raw",
+      "sha256": "7483adcba3720e605f9c1481537be030147e3d5f85db1aaad46a940b6a3e7808",
+      "accepted": false,
+      "error": "remote_api_request_failed"
+    },
+    {
+      "variant": "semicolon",
+      "sha256": "55efd8589a69f12ed3e2e3a76f52030475c63f028e69306c94be709338fd510a",
+      "accepted": false,
+      "error": "remote_api_request_failed"
+    },
+    {
+      "variant": "uppercase_BEGIN",
+      "sha256": "484d162798853dbbfca16ce55d760100b349bc2dcaaebe0d5566b7616f47f012",
+      "accepted": true
+    },
+    {
+      "variant": "uppercase_BEGIN_END",
+      "sha256": "fe43ddcfd7e44928ecae7d4c0f6ef3c68ee81d523816eaa2c7ffd2cc677dff60",
+      "accepted": true
+    }
+  ],
+  "allTriggersAcceptedWithUppercaseBegin": true,
+  "triggerCount": 58,
+  "schemaObjectCount": 98,
+  "sourceSchemaUnchanged": true,
+  "ownedDatabaseDeletedAndOriginalInventoryRestored": true,
+  "fullDatasetRemoteRecoveryAccepted": false,
+  "providerIssue": "https://github.com/cloudflare/workers-sdk/issues/15314",
+  "helperSha256": "d1961029a28aa54cda0e994cc9f9c570cd871e0050f2d67b68936c8a7f286e69",
+  "testSha256": "f2dd8716af71f95b1b32c632191022f93045aed4560ac72771b84e32cc6e1997",
+  "independentReadOnlyPreservation": {
+    "observedAt": "2026-10-06T02:39:13.986Z",
+    "allBusinessAuthMasterTableHashesPreserved": true,
+    "foreignKeyViolations": 0,
+    "workerVersionUnchanged": true,
+    "ownedTargetAbsent": true,
+    "originalDatabaseInventoryPreserved": true,
+    "remoteWrites": 0
+  },
+  "localRegression": {
+    "tests": 12,
+    "passed": 12,
+    "failed": 0,
+    "includesExistingIsolatedTransportTests": true
+  }
+}

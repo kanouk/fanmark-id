@@ -69,3 +69,28 @@ A separate read-only process confirmed every source table count/hash and the
 Worker version unchanged. Remote writes are zero. These are local proof timings;
 neither is a production RTO. The encrypted archive and one-off key remain private.
 [Hashes, counts and explicit boundaries](evidence/full-staging-master-local-recovery-2026-10-06.json).
+
+
+## Remote trigger diagnosis (2026-10-06 JST)
+
+Two isolated full-data restore attempts reached the trigger batch and failed;
+appending an outer semicolon did not resolve the REST failure. Both owned targets
+were deleted and the original inventory restored. A subsequent schema-only
+probe established that the retained `mfa_generation_factor_delete` definition
+fails unchanged or with a semicolon, but succeeds when only its body `begin`
+becomes `BEGIN`. All 58 triggers then applied, with all 98 schema objects matching
+that explicit keyword correction. No source rows were inserted in this probe.
+
+This matches the reported [D1 REST splitter issue](https://github.com/cloudflare/workers-sdk/issues/15314).
+`scripts/migration/d1-rest-trigger-sql.mjs` provides opt-in preparation of already
+validated single trigger definitions. It preserves quoted identifiers, literals,
+comments and every other byte; it rejects unsupported/ambiguous input. Arbitrary
+SQL in the REST transport stays unchanged. Source schema/archive bytes remain
+unchanged. Target schema verification must expect this exact keyword correction
+and cannot claim byte-identical raw trigger SQL.
+
+The native regression proves preserved trigger effects/literals; the schema-only
+remote probe establishes the actual REST workaround. Full remote data recovery
+is still unaccepted pending a complete corrected run, all-row and application
+readback, owned-resource cleanup and separate source preservation verification.
+[Bounded diagnosis](evidence/d1-rest-trigger-casing-2026-10-06.json).

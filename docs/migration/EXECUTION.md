@@ -8004,3 +8004,15 @@ SQLite247ms/workerd93691ms are local proof timings, not production RTO. Stable r
 All4 Auth migrations/9 nonempty tables are restored through an AES-GCM serialized in-memory envelope to a second local D1, with actual SDK-created bcrypt credentials/TOTP/encrypted backup codes/session/assurance and suspension/verification state. Exact schema/all columns/FK0 and unchanged source pass; actual Worker requests accept login with the original password/TOTP and backup-code login/replay refusal and deny wrong/unverified/suspended logins. Wrong archive/schema/SDK keys/tamper/occupied target refuse before writes. Native1/1, Worker typecheck, targeted lint and workflow isolation passed. New command joins normal Auth/Worker CI. Prior825c642/CI37401455459 is confirmed successful in both jobs and predates this new test.
 
 No real credential export, Supabase read, remote write/deploy/secret/domain change occurred. In-memory JSON proof does not establish durable Auth key/archive custody, remote restore, production session revocation policy or full combined recovery. Current runtime stays8cbe1e5f. See synthetic-auth-recovery.md and evidence/synthetic-auth-local-recovery-2026-10-06.json. Mac remains locked; existing manual unlock request is pending.
+
+
+### 2026-10-06: Full Master remote trigger diagnosis
+
+Full isolated remote restore attempts failed at CREATE TRIGGER after all12254 rows
+were written; no full remote acceptance was claimed. Both targets were cleaned.
+A schema-only positive/negative probe identified lowercase body `begin` as the
+REST failure; semicolon alone failed, uppercase BEGIN succeeded. All58 triggers
+and98 schema objects matched that explicit keyword correction. Owned cleanup and
+independent source data/Worker/inventory preservation passed. Added an opt-in SQL
+preparation helper;12/12 native/transport regressions, focused lint and workflow
+isolation passed. Pending corrected full remote restore, no runtime deployment.
