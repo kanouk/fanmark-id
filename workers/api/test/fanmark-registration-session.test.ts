@@ -113,7 +113,7 @@ beforeAll(async () => {
   if (!business || !auth || !master) throw new Error("Registration split D1 bindings unavailable");
   const businessMigrations = inject("registrationBusinessMigrations");
   const masterMigrations = inject("registrationMasterMigrations");
-  expect(businessMigrations).toHaveLength(26);
+  expect(businessMigrations).toHaveLength(27);
   expect(masterMigrations).toHaveLength(8);
   for (const migration of businessMigrations) await apply(business, migration.sql);
   for (const sql of [authSchema, authSignup, authSuspension, authOAuthSignup]) await apply(auth, sql);

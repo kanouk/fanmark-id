@@ -335,3 +335,5 @@ Cloudflare stagingの認証メールは`AUTH_EMAIL_BACKEND=resend`、検証済�
 認証gatewayは選択したD1テンプレート設定・業務DB binding・topologyをBetter Authの送信callbackへ渡し、テンプレート接続設定が変わった際は認証instanceのcacheを作り直す。無効なテンプレートを既定文面で補わない。
 
 告知メールのイベント順序修正はBusiness追加`0025_broadcast_delivery_terminal_outcomes.sql`と`broadcast_delivery_effective_events` viewに置く。webhook挿入・provider ID照合は同じ有効イベントを選び、苦情/恒久bounceを後着成功で消さず、suppressionがある場合だけ他の未送信行を停止する。`broadcast-email-delivery-d1.ts`は完了済みrunも配信結果に合わせて再集計する。詳細・検証境界は`docs/migration/broadcast-email-delivery-design.md`。
+
+Business追加`0026_broadcast_delivery_provider_time.sql`は告知Webhookにnullable `provider_created_at`を追加し、effective viewを発生日時順へ更新する。`broadcast-email-webhook-d1.ts`は署名body root日時を必須検証し、UTC offsetと全小数桁を保持する。署名時刻/受信日時/メール作成日時を混同しない。既存NULL時刻を推定補完せず、苦情/恒久bounceの優先は維持する。詳細は告知配送設計書。

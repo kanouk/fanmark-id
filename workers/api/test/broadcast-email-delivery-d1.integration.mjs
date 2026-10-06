@@ -64,6 +64,104 @@ const USER_C = "00000000-0000-4000-8000-000000000006";
 const NOW = "2026-09-27T12:00:00.000000Z";
 const ADMIN = "00000000-0000-4000-8000-000000000008";
 
+for (const beforeAck of [false, true]) {
+  for (const newerFailure of [false, true]) {
+    for (const reverseArrival of [false, true]) {
+      test(`provider chronology beforeAck=${beforeAck} newerFailure=${newerFailure} reverseArrival=${reverseArrival}`, async () => {
+        const fixture = await createFixture();
+        const { database } = fixture;
+        const bytes = Buffer.from("synthetic-provider-chronology-secret");
+        const env = { BROADCAST_EMAIL_BACKEND: "d1", BROADCAST_SEND_BACKEND: "d1", D1_TOPOLOGY: "split",
+          FANMARK_DB: database, BROADCAST_WEBHOOK_SIGNING_SECRET: `whsec_${bytes.toString("base64")}` };
+        try {
+          await database.batch([
+            database.prepare(`INSERT INTO broadcast_emails (id,subject,body_text,email_type,status,created_at,updated_at)
+              VALUES (?, 'Synthetic', 'Synthetic', 'broadcast_announcement', 'sending', ?, ?)`)
+              .bind(BROADCAST, NOW, NOW),
+            database.prepare(`INSERT INTO broadcast_delivery_runs (id,broadcast_id,request_id,requested_by,status,created_at)
+              VALUES (?, ?, 'synthetic-chronology', ?, 'sending', ?)`)
+              .bind(RUN, BROADCAST, ADMIN, NOW),
+            database.prepare(`INSERT INTO broadcast_delivery_recipients
+              (run_id,user_id,language,status,next_attempt_at,provider_email_id,lease_token,created_at,updated_at)
+              VALUES (?, ?, 'ja', ?, ?, ?, 'synthetic-lease', ?, ?)`)
+              .bind(RUN, USER_A, beforeAck ? "sending" : "sent", NOW,
+                beforeAck ? null : "synthetic-chronology", NOW, NOW),
+          ]);
+          const earlier = [newerFailure ? "email.delivered" : "email.failed", "2026-09-27T12:00:01.123456+00:00", "chronology-earlier"];
+          const later = [newerFailure ? "email.failed" : "email.delivered", "2026-09-27T21:00:01.123456001+09:00", "chronology-later"];
+          let receipt = 100;
+          const send = async ([type, occurredAt, id]) => {
+            const clock = new Date(Date.parse(NOW) + receipt++ * 1000);
+            const timestamp = String(Math.floor(clock.getTime() / 1000));
+            // Nested created_at is the email creation time, not the event time.
+            const body = JSON.stringify({ type, created_at: occurredAt,
+              data: { email_id: "synthetic-chronology", created_at: "2027-01-01T00:00:00.000Z" } });
+            const signature = createHmac("sha256", bytes).update(`${id}.${timestamp}.${body}`).digest("base64");
+            const response = await handleBroadcastEmailWebhookRequest(new Request(`https://app.example.test${BROADCAST_EMAIL_WEBHOOK_PATH}`, {
+              method: "POST", body, headers: { "svix-id": id, "svix-timestamp": timestamp, "svix-signature": `v1,${signature}` },
+            }), env, () => clock);
+            assert.equal(response.status, 200);
+          };
+          for (const value of reverseArrival ? [later, earlier] : [earlier, later]) await send(value);
+          if (beforeAck) await database.prepare(`UPDATE broadcast_delivery_recipients SET provider_email_id = 'synthetic-chronology'
+            WHERE run_id = ? AND user_id = ?`).bind(RUN, USER_A).run();
+          await send(earlier); // A valid replay of the old event must not change the latest result.
+          assert.deepEqual(await database.prepare(`SELECT status,last_error_code,lease_token FROM broadcast_delivery_recipients
+            WHERE run_id = ? AND user_id = ?`).bind(RUN, USER_A).first(),
+          { status: newerFailure ? "failed" : "delivered", last_error_code: newerFailure ? "provider_failed" : null, lease_token: null });
+          assert.deepEqual(await database.prepare(`SELECT sent_count,failed_count FROM broadcast_emails WHERE id = ?`)
+            .bind(BROADCAST).first(), { sent_count: newerFailure ? 0 : 1, failed_count: newerFailure ? 1 : 0 });
+          assert.equal((await database.prepare("SELECT COUNT(*) AS n FROM broadcast_delivery_webhook_events").first()).n, 2);
+          assert.deepEqual((await database.prepare(`SELECT provider_created_at FROM broadcast_delivery_webhook_events
+            ORDER BY id`).all()).results, [
+            { provider_created_at: "2026-09-27T12:00:01.123456Z" },
+            { provider_created_at: "2026-09-27T12:00:01.123456001Z" },
+          ]);
+          assert.equal((await database.prepare("SELECT COUNT(*) AS n FROM broadcast_delivery_suppressions").first()).n, 0);
+        } finally { await fixture.miniflare.dispose(); }
+      });
+    }
+  }
+}
+
+test("provider timestamps validate calendar/offset/precision and persist only canonical event time", async () => {
+  const fixture = await createFixture();
+  const bytes = Buffer.from("synthetic-provider-timestamp-secret");
+  const env = { BROADCAST_EMAIL_BACKEND: "d1", BROADCAST_SEND_BACKEND: "d1", D1_TOPOLOGY: "split",
+    FANMARK_DB: fixture.database, BROADCAST_WEBHOOK_SIGNING_SECRET: `whsec_${bytes.toString("base64")}` };
+  let count = 0;
+  const send = async (value, status) => {
+    const id = `timestamp-${count++}`, timestamp = String(Math.floor(Date.parse(NOW) / 1000));
+    const body = JSON.stringify({ type: "email.delivered", created_at: value,
+      data: { email_id: "synthetic-timestamp", created_at: NOW } });
+    const signature = createHmac("sha256", bytes).update(`${id}.${timestamp}.${body}`).digest("base64");
+    const response = await handleBroadcastEmailWebhookRequest(new Request(`https://app.example.test${BROADCAST_EMAIL_WEBHOOK_PATH}`, {
+      method: "POST", body, headers: { "svix-id": id, "svix-timestamp": timestamp, "svix-signature": `v1,${signature}` },
+    }), env, () => new Date(NOW));
+    assert.equal(response.status, status);
+    return id;
+  };
+  try {
+    for (const value of [undefined, null, 1, [], "", "invalid", "2026-02-29T12:00:00.000Z",
+      "0000-01-01T00:00:00.000Z", "2026-09-27T24:00:00Z",
+      "2026-09-27T12:00:00+24:00", "2026-09-27T12:00:00-00:00", "2026-09-27T12:00:00+01:60"]) {
+      await send(value, 400);
+    }
+    assert.equal((await fixture.database.prepare("SELECT COUNT(*) AS n FROM broadcast_delivery_webhook_events").first()).n, 0);
+    for (const [input, expected] of [
+      ["2026-09-27T12:00:00Z", "2026-09-27T12:00:00.000000Z"],
+      ["2026-09-27T12:00:00.1234567Z", "2026-09-27T12:00:00.1234567Z"],
+      ["2026-09-27T12:00:00.1+00:00", "2026-09-27T12:00:00.100000Z"],
+      ["2026-09-27T16:30:00.123456+04:30", "2026-09-27T12:00:00.123456Z"],
+      ["2026-09-27T07:30:00.999999-04:30", "2026-09-27T12:00:00.999999Z"],
+    ]) {
+      const id = await send(input, 200);
+      assert.deepEqual(await fixture.database.prepare(`SELECT created_at,provider_created_at FROM broadcast_delivery_webhook_events WHERE id = ?`)
+        .bind(id).first(), { created_at: NOW, provider_created_at: expected });
+    }
+  } finally { await fixture.miniflare.dispose(); }
+});
+
 for (const [eventType, bounceType, expectedStatus, expectedError] of [
   ["email.bounced", "Permanent", "bounced", "provider_bounced"],
   ["email.complained", null, "suppressed", "provider_complaint"],
@@ -79,7 +177,7 @@ for (const [eventType, bounceType, expectedStatus, expectedError] of [
       const sendEvent = async (type, id, seconds, bounce = null) => {
         const clock = new Date(Date.parse(NOW) + seconds * 1000);
         const timestamp = String(Math.floor(clock.getTime() / 1000));
-        const body = JSON.stringify({ type, data: { email_id: "synthetic-terminal-message",
+        const body = JSON.stringify({ type, created_at: clock.toISOString(), data: { email_id: "synthetic-terminal-message",
           ...(bounce ? { bounce: { type: bounce } } : {}) } });
         const signature = createHmac("sha256", secretBytes).update(`${id}.${timestamp}.${body}`).digest("base64");
         const response = await handleBroadcastEmailWebhookRequest(new Request(`https://app.example.test${BROADCAST_EMAIL_WEBHOOK_PATH}`, {

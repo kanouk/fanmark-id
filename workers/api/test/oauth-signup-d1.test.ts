@@ -169,7 +169,7 @@ async function pendingUser() {
 
 beforeAll(async () => {
   const migrations = inject("businessOAuthMigrations");
-  expect(migrations).toHaveLength(26);
+  expect(migrations).toHaveLength(27);
   for (const migration of migrations) {
     await businessDb.batch(checkedInSqlStatements(migration.sql).map(sql => businessDb.prepare(sql)));
   }

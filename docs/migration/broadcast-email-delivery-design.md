@@ -21,9 +21,18 @@ acceptance. See [the fixed-message evidence](evidence/staging-admin-mfa-broadcas
 The additional Business migration `0025_broadcast_delivery_terminal_outcomes.sql`
 fixes event ordering in both webhook insertion and provider-ID attachment. A
 complaint takes precedence over a permanent bounce; either takes precedence over
-subsequent delivery/failure events for that provider message. Other outcomes use
-receipt time and event ID, so transient failures can recover and clear the error
-code. No provider occurrence-time ordering is inferred. Only an actual suppression
+subsequent delivery/failure events for that provider message. Migration0025 originally used receipt time for other outcomes. Additional
+0026 stores the signed payload root `created_at` separately and orders those
+outcomes by provider occurrence time, with event ID as a deterministic tie-breaker.
+The nested `data.created_at` is the email creation time and is not used for event
+ordering. UTC offset/calendar validation retains all fractional digits, including
+precision beyond milliseconds and microseconds. Sorting uses normalized fractional
+text rather than floating-point dates, so fractional prefixes/trailing zeros do not
+reverse chronological order. A newer transient recovery can clear an older failure;
+a late older failure cannot erase the recovery. Missing/invalid root timestamps
+are rejected without writes. Existing receipts retain NULL occurrence time, with
+receipt time only as an explicitly unknown-history fallback; no time is invented.
+See the [Resend delivered payload](https://resend.com/docs/webhooks/emails/delivered). Only an actual suppression
 cancels another pending/inflight recipient. The effective-event view stores no
 additional payload or address. Applying the migration does not rewrite historical
 rows or send mail; older inconsistent records require explicit reconciliation.
@@ -221,3 +230,5 @@ rows at zero. This does not verify provider-backed delivery; visual browser
 review remains open because the host Mac was locked.
 
 2026-10-06 acceptance: candidate eeb4f6a passed both jobs in CI 37414547662. The full 26-migration Business schema matched in an owned remote D1; eight signed HTTP scenarios and invalid/duplicate events passed through the actual isolated Worker handler. The owned D1 and Worker were deleted and original resources/data preserved. Staging now uses Worker b3ce17ce-cd56-464c-8694-2215dce51b39 and ledger26, with bulk/test sending still disabled. See [bounded ordering and deployment evidence](evidence/broadcast-terminal-outcomes-2026-10-06.json). This does not accept delivery from Resend or the send UI/bulk/retention.
+
+Additional0026 local verification is in progress; its main staging deployment and remote acceptance are not yet claimed. The0025/26-migration proof above remains historical.

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-06",
+  "scope": "broadcast provider chronology independent of arrival and ACK order",
+  "preFix": {
+    "businessMigrationCount": 26,
+    "chronologyCases": 8,
+    "wrongStatusCases": 4
+  },
+  "postFix": {
+    "businessMigrationCount": 27,
+    "fullRuntimeBroadcastTests": 22,
+    "passed": 22,
+    "businessAuthImportTests": 1,
+    "passedImport": 1,
+    "monitorTests": 5,
+    "passedMonitor": 5,
+    "typecheck": "passed",
+    "eslint": "passed"
+  },
+  "cases": [
+    "delivered versus failed: each latest outcome with both arrival orders before/after provider ACK",
+    "timezone normalization retains fractional digits beyond microseconds and fractional prefixes",
+    "root event creation time differs from nested email creation time",
+    "missing, invalid calendar, unknown offset and invalid offset timestamps make no writes",
+    "older duplicate event cannot erase the newest outcome",
+    "complaint/permanent-bounce priority, lease release and current campaign totals remain correct"
+  ],
+  "timestampSource": "signed payload root created_at",
+  "receivedTimeStoredSeparately": true,
+  "existingUnknownOccurrenceTimeNotBackfilled": true,
+  "noSourceOrAuthRowsRead": true,
+  "sourceSHA256": {
+    "workers/api/src/broadcast-email-webhook-d1.ts": "fed543527eab18d9dc3cae642e6a4e36a5ba1b7a7162677983962f94bf3322e6",
+    "workers/api/migrations-business/0026_broadcast_delivery_provider_time.sql": "f31b217f13fc18afb2216c12dbe5ee99cee69cd3683c5287284f0064528a7ab5",
+    "workers/api/test/broadcast-email-delivery-d1.integration.mjs": "4c745fb6356e3c04de586ab207104eade450505feb136a4f4870433618766337"
+  },
+  "mainStagingMigrationApplied": false,
+  "remoteSyntheticAccepted": false,
+  "resendServiceDeliveryAccepted": false,
+  "additionalEmailsSent": 0,
+  "references": [
+    "https://resend.com/docs/webhooks/emails/delivered",
+    "https://resend.com/docs/webhooks/emails/failed"
+  ]
+}

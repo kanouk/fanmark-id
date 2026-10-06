@@ -11,7 +11,7 @@ test("current Business/Auth schemas import, resume and reconcile a synthetic sna
     fileURLToPath(new URL("./fixtures/business-import-structure.json", import.meta.url)),
     { canonicalBusinessSchema: true },
   );
-  assert.equal(result.businessMigrationCount, 26);
+  assert.equal(result.businessMigrationCount, 27);
   assert.equal(result.authMigrationCount, 4);
   assert.equal(result.tableCount, 40);
   assert.equal(result.sourceRowCount, 13);

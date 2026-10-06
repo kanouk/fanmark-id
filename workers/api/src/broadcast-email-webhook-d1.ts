@@ -1,6 +1,6 @@
 import { reconcileBroadcastDeliveryRun } from "./broadcast-email-delivery-d1.ts";
 import { selectD1Database, type Env } from "./repository.ts";
-import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
+import { assertUtcMicrosecondTimestamp, toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 export const BROADCAST_EMAIL_WEBHOOK_PATH = "/api/webhooks/resend/broadcast-delivery";
 const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
@@ -19,6 +19,7 @@ type WebhookEvent = {
   emailId: string;
   eventType: string;
   bounceType: "Permanent" | "Transient" | "Undetermined" | null;
+  providerCreatedAt: string;
 };
 
 function json(body: Record<string, unknown>, status: number): Response {
@@ -109,6 +110,23 @@ function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Keep event chronology separate from signed-at and email-creation timestamps. */
+function providerTimestamp(value: unknown): string {
+  if (typeof value !== "string") throw new RangeError("invalid_provider_timestamp");
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$/u.exec(value);
+  if (!match) throw new RangeError("invalid_provider_timestamp");
+  const [, wall, fraction = "", zone] = match;
+  // Validate the wall clock before Date can normalize impossible calendar days.
+  assertUtcMicrosecondTimestamp(`${wall}.${fraction.slice(0, 6).padEnd(6, "0")}Z`);
+  if (zone !== "Z" && (Number(zone.slice(1, 3)) > 23 || Number(zone.slice(4)) > 59 || zone === "-00:00")) {
+    throw new RangeError("invalid_provider_timestamp");
+  }
+  const seconds = new Date(`${wall}.000${zone}`).toISOString().slice(0, 19);
+  assertUtcMicrosecondTimestamp(`${seconds}.000000Z`);
+  // Date converts only whole seconds; retain every provider fractional digit.
+  return `${seconds}.${fraction.padEnd(6, "0")}Z`;
+}
+
 function parseEvent(body: Uint8Array, eventId: string): WebhookEvent | null {
   try {
     const parsed: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(body));
@@ -120,7 +138,7 @@ function parseEvent(body: Uint8Array, eventId: string): WebhookEvent | null {
       const value = parsed.data.bounce.type;
       if (value === "Permanent" || value === "Transient" || value === "Undetermined") bounceType = value;
     }
-    return { eventId, emailId, eventType: parsed.type, bounceType };
+    return { eventId, emailId, eventType: parsed.type, bounceType, providerCreatedAt: providerTimestamp(parsed.created_at) };
   } catch {
     return null;
   }
@@ -163,9 +181,9 @@ export async function handleBroadcastEmailWebhookRequest(
   const now = toUtcMicrosecondTimestamp(clock());
   try {
     await businessDb.prepare(`INSERT INTO broadcast_delivery_webhook_events
-      (id, provider_email_id, event_type, bounce_type, created_at)
-      VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING`)
-      .bind(event.eventId, event.emailId, event.eventType, event.bounceType, now).run();
+      (id, provider_email_id, event_type, bounce_type, created_at, provider_created_at)
+      VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING`)
+      .bind(event.eventId, event.emailId, event.eventType, event.bounceType, now, event.providerCreatedAt).run();
     const recipient = await businessDb.prepare(`SELECT run_id FROM broadcast_delivery_recipients
       WHERE provider_email_id = ? LIMIT 1`).bind(event.emailId).first<{ run_id?: unknown }>();
     if (typeof recipient?.run_id === "string") {

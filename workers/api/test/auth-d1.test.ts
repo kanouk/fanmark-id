@@ -366,7 +366,7 @@ async function createSyntheticIdToken(
 beforeAll(async () => {
   if (!businessDatabase) throw new Error("FANMARK_DB binding is unavailable");
   const businessMigrations = inject("businessAuthMigrations");
-  expect(businessMigrations).toHaveLength(26);
+  expect(businessMigrations).toHaveLength(27);
   for (const migration of businessMigrations) {
     await businessDatabase.batch(
       checkedInSqlStatements(migration.sql).map(statement => businessDatabase.prepare(statement)),
