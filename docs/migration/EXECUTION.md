@@ -7935,3 +7935,34 @@ Daily observer29527 remains live/connected for09:00 JST; its result and broadcas
 send authorization are still pending. Next functional UI work is transfer/return
 and plan-capacity/deletion, followed by the existing final integration gates.
 Earlier entries below are historical checkpoints.
+
+## Native admin MFA and one approved broadcast delivery accepted (2026-10-06 JST)
+
+A disposable staging administrator was provisioned with an existing TOTP factor
+through the real API. Native Safari required a six-digit challenge after password
+sign-in; password-only and wrong-code states had zero owned sessions/assurances.
+The wrong code showed a rejection. A correct code opened the management dashboard,
+and D1 matched one assurance to the exact user, session and factor. Native logout
+revoked both. This unit does not establish new-factor enrollment UI acceptance.
+
+After explicit human permission for one exact recipient, subject and body, native
+UI created the matching Japanese draft. Only the server fixed-recipient test-send
+selector was temporarily activated. One MFA-authenticated deployed API request sent
+one email; Resend Delivered, the approved content and D1's minimized message-ID audit
+matched. Bulk, signed webhook and frontend send selectors remained disabled. Test-send
+UI, full bulk delivery, signed webhook, retry and retention remain unaccepted.
+
+Initial version b3a770b3 was restored via rollback, but script settings still retained
+the temporary selector/recipient. Canonical config was therefore redeployed and
+independently checked: current100% version is0d9803af-84c8-4e2f-bd9b-dbb418b2555d;
+runtime source remains0ed4213. Test-send/bulk selectors, fixed recipient and broadcast
+signing secret are absent; all28 template contents match. Do not treat deployment
+version rollback alone as evidence that mutable settings were restored.
+
+Owned Auth/Business/draft/audit fixtures and plaintext test credentials were removed.
+A separate read-only process preserved Auth3/7/2 and every other Auth/Business/Master
+full-table hash, with FK0. MFA generation240→242 was retained, never rewound. Resend's
+single sent-message history is retained. CI37398046903 at a26ce6e passed both jobs.
+[Bounded acceptance](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json).
+Source/authorization reconciliation, paid deletion, provider new-signup/relay,
+operations adoption and final phone/PWA/language integration remain open.

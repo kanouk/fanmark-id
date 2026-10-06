@@ -1,7 +1,9 @@
 # 宛先限定のステージング告知メール検証
 
 2026-10-06 JST。認証メールとは別の送信許可を得るための具体的な検証内容。
-本書の準備は送信許可ではなく、まだproviderへ送信していない。
+具体的な宛先・件名・本文の確認に対する本人の「はい。もちろん良いです。」を送信許可として実行した。
+指定先1通のResend DeliveredとD1監査を照合し、所有fixture cleanupと独立readbackを受け入れた。
+送信UI・bulk・署名配送は今回の範囲外。[結果と境界](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json)。
 
 ## 送信内容
 
@@ -18,7 +20,7 @@ Cloudflareステージング環境の告知メール送信テストです。
 
 ## 実行と終了条件
 
-1. 09:00 JSTの自然日次observerが終了してから候補を変更する。現在の監視中versionは維持する。
+1. 09:00 JSTの自然日次observerが終了してから候補を変更する。このobserverは終了済み。
 2. 正確な合成管理者・MFA・Business admin plan、draft/request UUID、保持するデータのbaselineをprivate journalに記録する。既存ユーザーを管理者に変更しない。
 3. 送信許可後、serverの固定宛先とtest-send selectorだけを選ぶ。bulk selectorは無効のまま。
 4. 同じcandidateで管理者MFAによるdraft作成・日本語test-sendを1回実行する。APIは呼出側の宛先指定を受け付けず、provider idempotency keyを固定する。
@@ -28,3 +30,5 @@ Cloudflareステージング環境の告知メール送信テストです。
 
 現行コードのテスト経路は、exact-session MFA、D1 admin plan、draft状態、固定宛先、HTML escapeとprovider idempotencyを要求する。
 [API契約](broadcast-email-admin-api.md)と[配送設計](broadcast-email-delivery-design.md)を参照。
+
+復元では旧versionへのrollbackだけでscript設定の不在を推定しない。今回、test-send設定が残ったため通常設定を再配備し、deployment/versionとsettingsの両方を確認した。

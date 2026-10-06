@@ -1,10 +1,34 @@
 # ユーザーデータ・ドメイン移行前の完了判定
 
-2026-10-05 JST。親Issue #28と#30–#37の現行本文、現在の実装・受け入れ記録を
+2026-10-06 JST。親Issue #28と#30–#37の現行本文、現在の実装・受け入れ記録を
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
-## 最新チェックポイント（2026-10-05 JST）
+## 管理者MFAと宛先限定の告知配信（2026-10-06 JST）
+
+専用の合成管理者にAPIで登録したTOTPを使い、実Safariの管理画面で既存factorの
+challengeを確認した。パスワードだけではsession/assuranceは0件、誤コードは画面で
+拒否され、正コードで管理画面が開いた。同じuser/session/factorのassurance1件をD1で
+照合し、実UI logout後はsession/assuranceとも0件。今回の証拠は新規TOTP登録UIの
+受け入れには使わない。
+
+本人の宛先・件名・本文を特定した1通の送信許可後、同じ管理画面で正確な日本語の
+告知下書きを作成した。固定宛先のtest-sendだけを一時的に有効化し、別の正規MFA
+sessionから配備済みAPIへ1回送信した。ResendのDeliveredと正確な宛先・件名・本文、
+D1の最小監査1件/message IDが一致した。bulk selector/署名secretと送信UIは無効のまま。
+送信UI・一括配送・署名Webhook・retry/retention全体を受け入れたとは扱わない。
+
+rollbackで旧versionへ戻しても管理APIのtest-send設定が残ったため、通常設定を
+再配備した。現在の100% Workerは`0d9803af-84c8-4e2f-bd9b-dbb418b2555d`、runtime sourceは
+`0ed4213`のまま。独立readbackでbulk/test-send selector・固定宛先・署名secretの不在と
+28 templateの内容一致を確認した。合成Auth/Business/draft/audit行と一時資格情報を
+削除後、別read-only processで元Auth3/7/2、全Masterと他のAuth/Business表の全行hash、
+FK0を保持した。MFA generation240→242は正当な変更として保持し、巻き戻していない。
+[画面・1通の配信・独立cleanup](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json)。
+a26ce6eのCI37398046903は両job成功。過去のversion/「告知未送信」/MFA未確認の記述は
+その時点の記録として読む。今回の全体六項目は未完了。
+
+## 以前のチェックポイント（2026-10-05 JST）
 
 現行runtime `0ed4213` / CI37298341592両job成功 / 100% Worker
 `b3a770b3-8735-4b31-abdd-f4fca99e05cd`。指定先で実登録・確認受信・
@@ -89,8 +113,8 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 告知bulk/test-send・固定宛先・告知署名secretは未設定。28 template contentは基準一致、
 告知関連6集計とpending email/Web Pushは0件だった。
 [告知の限定readback](evidence/staging-broadcast-readonly-preflight-2026-10-06.json)。
-認証メールの成功から告知provider受け入れを推定しない。宛先限定の告知検証準備と
-実送信、署名配送・retry/retentionは残る。移行元通知processorも即時in-app以外はpendingに
+このreadbackは1通検証前の記録。宛先限定test-sendの実配信は上記で受け入れた。
+署名配送・retry/retention全体は残る。移行元通知processorも即時in-app以外はpendingに
 するため、別consumerの不在を断定せず、移行を理由に未確認の新規配信機能を追加しない。
 
 2026-10-06 JSTに本番Edge35件を個別downloadし、前後のversion/name/status/JWT metadata一致と
@@ -143,7 +167,7 @@ cleanup後に別read-only processで元Auth3/7/2・全Master24表・profile/MFA/
 wake23→29/29を維持。Worker/config/main Cronは変更せず、local devと検証tabは終了。
 [抽選結果の実画面とcleanup](evidence/staging-lottery-result-native-ui-2026-10-06.json)。
 a36b94aのCI37395116307は両job成功。抽選結果UIのこの限定経路は受け入れ済み。
-六項目全体・有料退会・管理者MFA・最終統合は未完了のまま。
+六項目全体・有料退会・管理者MFA登録UIを含む最終統合は未完了のまま。
 
 2026-10-06 JST、frontendの現行ASTは211呼出だが、認証/profile/resetの16参照行が
 古い対応表から移動していた。資料同士だけのCI照合を、現行ASTの位置・操作・対象・
