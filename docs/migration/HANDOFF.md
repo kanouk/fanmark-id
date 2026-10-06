@@ -1,4 +1,18 @@
-## Latest unit: 旧PWAから現行frontendへのローカル更新確認（2026-10-06 JST）
+## Latest unit: バックアップ運用と受け入れ済み復旧の区別（2026-10-06 JST）
+
+リポジトリのsource exporter/encryption/R2 canary/importerと保存一式復旧証拠を監査した。
+[backup-operations.md](backup-operations.md)に用途・二つの保存形式と残る運用条件を整理。
+snapshot-export-design.mdの「credential writer未実装」、d1-import.mdの「remote一式未受け入れ」、
+full-master-recovery.mdの「combined未完了」という現在の状態と食い違う説明を修正した。
+historical証拠/未説明gate/運用未採用を成功へ書き換えない。
+
+定期Cloudflare collector/scheduler/off-host/retention/運用鍵とAuth失効方針は未採用。
+専用R2への合成往復canaryを運用ジョブと扱わず、private一式復旧runnerを再実行しない。
+既存の運用条件・外部caller・本人操作の質問は回答待ち。追加mailは許可されていない。
+今回の変更は文書だけ。新規test/remote資源/main変更/メール/userdata/DNS変更は0。
+PWA文書候補45e5a56のCI37423580863は両job成功を照合済み。今回の文書更新でruntime sourceは変更しない。
+
+## Prior unit: 旧PWAから現行frontendへのローカル更新確認（2026-10-06 JST）
 
 旧source c077fbfと候補5d616cb（CI37421614544両job成功）を同じ使い捨てlocalhost URLで配信した。
 旧Supabase clientのURL/keyだけを合成のローカル入力へ置換し、旧SW設定を保持。

@@ -8133,3 +8133,14 @@ mainは既存version d437のGET readbackのみ。DB/配備/secret/メール/user
 [限定ブラウザー証拠](evidence/pwa-legacy-update-local-2026-10-06.json)。
 これはローカルの旧→現行PWA protocol確認であり、実ユーザーのインストール済みPWA、
 実スマホ/standalone、全言語/全フローの最終確認は未受け入れ。六項目全体は未完了。
+
+## バックアップ運用と受け入れ済み復旧の文書監査（2026-10-06 JST）
+
+source exporter/encryption/R2 canary/importerと現行27の保存一式復旧証拠を照合。
+snapshot-export-design.mdの専門credential writer未実装、d1-import.mdのremote一式未確認、
+full-master-recovery.mdのcombined未完了という古い現在形の説明を修正した。
+[backup-operations.md](backup-operations.md)へsource snapshotのbundle v1と一式復旧v2の区別、
+one-off合成受け入れと定期collector/scheduler/off-host/retention/運用鍵/失効方針の未採用を記録。
+受け入れ済み試験・historical証拠・converter gateの状態を変更していない。
+今回の変更は文書だけ。新規test/remote資源/main変更/追加メール/実userdata/DNS変更は0。
+既存の運用条件/外部caller/本人操作の質問は回答待ちで、重複して質問していない。

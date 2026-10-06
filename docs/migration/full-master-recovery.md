@@ -51,9 +51,13 @@ Agree the operator, key custody/recovery access, schedule, retention and off-hos
 storage; implement an atomic production snapshot method and adopt a production restore
 procedure. The isolated full-Master remote rehearsal below and the subsequent
 [complete synthetic Auth saved-file/real-D1 recovery](synthetic-auth-recovery.md)
-are accepted. Operational Auth key/revocation policy and final combined
-Master/Auth/Business/R2 integration remain separate requirements. Local restore timings do not establish
-production RPO or RTO, and this proof does not complete the migration.
+are accepted. The subsequent [current 27 Business combined saved-file recovery](full-combined-recovery.md)
+also accepts Master/Auth/Business/R2 restoration and actual application reads
+in two isolated real targets. Operational Auth key/revocation policy, scheduled
+off-host backup and final deployment acceptance remain open; their current
+boundaries are in [backup operations](backup-operations.md). Local restore
+timings do not establish production RPO or RTO, and this proof does not
+complete the migration.
 
 ## Accepted local rehearsal (2026-10-06 JST)
 
@@ -128,6 +132,7 @@ cleaned. [Full bounded remote proof](evidence/full-staging-master-remote-recover
 
 The private v3 journal is completed and must not be replayed. Scheduled/off-host
 backup, durable operator/key custody/retention/RPO-RTO, operational Auth
-revocation policy and final combined recovery remain open. The subsequent full
+revocation policy and final deployment acceptance remain open. Combined
+saved-file recovery was subsequently accepted as linked above. The subsequent full
 synthetic Auth remote recovery is accepted in [its own proof](evidence/synthetic-auth-file-remote-recovery-2026-10-06.json). This closes only the isolated
 full staging Master remote-restore requirement, not the six-package migration.

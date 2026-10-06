@@ -1,5 +1,13 @@
 # D1 importer and isolated recovery transport
 
+Current saved-file acceptance is the [27 Business/4 Auth full recovery](evidence/full-combined-file-remote-recovery-v27-2026-10-06.json):
+two separately owned real D1/R2 targets restored the saved full Master,
+synthetic Auth credentials, all 40 Business streams and two linked images,
+with actual SDK/application checks and independent cleanup. This is distinct
+from the smaller historical fixture below. Live user migration, operational
+backup adoption and the remaining final acceptance are open; see
+[backup operations](backup-operations.md).
+
 The importer accepts an explicitly injected D1-compatible binding and a
 verified PostgreSQL snapshot. Local rehearsal and the complete isolated remote
 synthetic fixture recovery are accepted: candidate2cbf4e0/CI37115000097 restored
@@ -68,14 +76,14 @@ must be resolved from that journal before starting a new run. Invocation:
 node scripts/migration/probe-isolated-remote-d1.mjs <tested-40-character-head> <successful-CI-run>
 ```
 
-The [complete resource-owning conductor](isolated-combined-recovery.md) is
-now prepared with the shared synthetic fixture and explicit HTTP R2 transport.
-Local HTTP R2/native6 and shared combined regression pass. Its exact candidate
-CI and live execution are still required; no full remote snapshot result is
-accepted yet. That execution must cover all25 Business/4 Auth and8 Master migrations, same-bundle
-restore/replay into a second incarnation, R2/API delivery and independent
-reconciliation/cleanup. Chunked schema initialization on a newly owned target
-must finish before the importer verifies its full DDL and writes snapshot rows.
+The [resource-owning conductor](isolated-combined-recovery.md) has accepted
+shared-fixture remote execution, including same-bundle recovery into a second
+incarnation, explicit HTTP R2 transport, application delivery and independent
+reconciliation/cleanup. The subsequent [full saved-file recovery](full-combined-recovery.md)
+covers all 27 Business/4 Auth migrations and the full Master dataset. These
+are separate recorded executions; completed journals must not be replayed.
+Chunked schema initialization on a newly owned target must finish before the
+importer verifies its full DDL and writes snapshot rows.
 
 `destinationId` identifies the logical destination. A newly created isolated
 target must receive a fresh cryptographic incarnation from

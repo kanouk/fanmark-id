@@ -1,11 +1,13 @@
 # Consistent PostgreSQL source snapshot design
 
-This document defines the next read-only export unit for issue [#35](https://github.com/kanouk/fanmark-id/issues/35).
-It is a design for a complete public-table snapshot, not an export that has
-been run. The existing row bridge exports one table projection at a time and
-the Storage tool exports objects with a before/after inventory check. Neither
-one proves a database-wide snapshot or consistency between PostgreSQL,
-Supabase Auth, and Storage.
+This document describes the implemented read-only PostgreSQL public-table
+export contract for issue [#35](https://github.com/kanouk/fanmark-id/issues/35).
+Its transaction, encrypted-file and importer contracts have synthetic tests;
+no live user-data export is accepted. The row bridge exports one table
+projection at a time and the Storage tool checks before/after inventories.
+Those separate operations do not establish consistency between PostgreSQL,
+Supabase Auth and Storage. Operational backup readiness and the distinct
+Cloudflare recovery bundle are tracked in [backup operations](backup-operations.md).
 
 The implementation must keep the source connection in one PostgreSQL
 `REPEATABLE READ, READ ONLY` transaction from catalog validation through the
@@ -160,9 +162,14 @@ moved.
 The same canonical descriptor is passed into schema conversion and row
 validation. The schema report labels only `fanmark_password_configs.access_password`
 as `credential-to-bcrypt`; missing policy is a blocking codec, never ordinary
-text. The importer still rejects credential-bearing snapshots before target
-writes until the transformed INSERT and its checkpoint/coverage transaction
-are integrated.
+text. Credential-bearing snapshots require the exact `expectedTargetProfile`;
+without it the importer rejects them before target writes. The specialized
+writer is implemented: bcrypt conversion, artifact/coverage, checkpoint and
+stale-state guards commit in one D1 batch, with independent readback and
+acknowledgement-unknown resume. Inactive-license credentials receive explicit
+deferred coverage rather than a target credential row. See the current
+[credential transform boundary](d1-import.md#credential-transform-boundary).
+Synthetic acceptance does not authorize or establish live credential migration.
 
 The exact gate values come from `schema-convert.mjs`; they are not suppressed
 by a successful source export. A source snapshot may be complete while

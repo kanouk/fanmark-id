@@ -310,6 +310,10 @@ userdata移送を開始していない。[準備と範囲](evidence/deferred-ide
 
 ## 完了までに閉じる六つの作業
 
+バックアップ運用について、受け入れ済みのsource暗号化/R2 canary/現行schemaの一式復旧と、
+未採用の担当・鍵・off-host定期保存・retention・RPO/RTO・Auth失効方針を
+[運用監査](backup-operations.md)に分けた。合成復旧の再試験を運用採用の代わりにしない。
+
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |
 | --- | --- | --- | --- |
 | 1. 移行元・移行先・呼び出し元の照合 | 40表、58関数、37登録trigger、77policyのcatalogと211箇所のfrontend対応表があり、77policy全件のidentity/hash→40表の現行経路・実装・検証への対応表を作成済み。分類reportは全体照合未完了のまま。sequence keyの3候補indexは現行writer/importの契約を照合し、空/NULL配列等の残る差を最後のデータ工程の条件へ明記した。任意外部consumerとfull converterのgateは保持する。 | 各object/actionについて、source定義hash、権限、実行経路、targetまたは不使用の根拠、契約差、対応する検証を結び付ける。未実装の現行経路・未説明の差を残さない。実データでしか判断できない事項はデータ工程へ明示的に移す。 | #30, #33, #34 |
