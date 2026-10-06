@@ -49,7 +49,17 @@ remained redacted. Independent read-only cleanup verification preserved existing
 Auth, Master, anonymous history and pre-existing rate/attempt state.
 [Bounded native UI evidence](evidence/staging-protected-text-native-ui-2026-10-06.json).
 This does not replace API selector isolation, imported password compatibility,
-protected profile/redirect or actual phone-device acceptance.
+actual phone-device acceptance.
+
+The same runtime separately accepted native protected-profile rendering and
+protected redirect after an access-mode change. The native viewer was another
+signed-in synthetic user; a Better Auth session did not bypass the gate.
+Password generation stayed unchanged, access generation advanced, and the reload
+required a fresh short proof. Cookie-free short/emoji projections stayed locked
+and protected public-profile returned404. Two short proofs and owned cleanup
+were independently confirmed. This does not accept a distinct profile-selector
+UI flow.
+[Profile/redirect native evidence](evidence/staging-protected-profile-redirect-native-ui-2026-10-06.json).
 
 ## Decision
 

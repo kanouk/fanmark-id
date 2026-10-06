@@ -60,3 +60,17 @@ projection and independently verified cleanup. Extension payments, failure/3DS,
 first-delivery reordering, and the final same-user browser flow remain unaccepted.
 See `evidence/stripe-staging-real-provider-2026-10-04.json`. Production routing, user-data
 migration, and domain/DNS are unchanged.
+
+## Populated downgrade UI follow-up (2026-10-06 JST)
+
+Native Safari completed the actual test Creator→Free flow with five owned
+fanmarks: exact three selection, fourth-selection denial, confirmation, two
+returns, canceled subscription, signed Free projection and dashboard3/3.
+The natural Free webhook saw three remaining active licenses and made zero
+additional returns. Independent reads matched three active/two grace licenses
+to the native selection. UI logout, drained owned cleanup and independent
+Auth3/7/2/Master24/unowned scoped rows/FK0 readback passed. Wake23/23 was retained.
+Stripe's canceled test customer and invoice/payment history remain.
+[Bounded populated UI proof](evidence/staging-populated-plan-limit-native-ui-2026-10-06.json).
+Paid-account deletion, imported-user parity and actual-phone acceptance remain
+separate. Earlier pending whole-UI statements above are historical checkpoints.

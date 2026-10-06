@@ -109,6 +109,28 @@ short-selector proof2で一致する。別emoji-selectorのUI認証やprotected 
 [保護伝言板の実画面とcleanup](evidence/staging-protected-text-native-ui-2026-10-06.json)。
 7988123のCI37391902928は両job成功。六項目の全体判定はopenのまま。
 
+2026-10-06 JST、合成ownerの保護プロフィールで、別の合成ユーザーのSafariから認証画面と
+正しい番号でのexact名前/本文表示を確認した。同一licenseを保護URL転送に切り替えると
+access世代が進み、再読込時は認証画面へ戻り、正しい番号で設定先へ実転送された。
+Cookieなしのshort/emoji APIは内容を隠し、保護public-profileは404。native proofはshort2件で、
+別profile-selectorのUIは未確認。所有cleanupと独立readbackで全Master24表・元profile/MFA/
+template/wake・匿名履歴5/8・既存アクセス状態・FK0を保持。Auth4/8/3は元human3/7/2と、
+次の上限検証用合成account1/1/1を含む。
+[保護プロフィール・転送の実画面](evidence/staging-protected-profile-redirect-native-ui-2026-10-06.json)。
+da15074のCI37392979553は両job成功。全体の六項目はopenのまま。
+
+2026-10-06 JST、本人承認後に合成accountの単一Creator sandbox申込（JPY1,000/月）を確定。
+自然署名反映と再読込後のCreator表示を確認し、実APIで5件取得してFreeへ変更した。
+実Safariの5候補/3件選択上限/最終確認/3件保持・2件返却と、Freeの3/3表示を確認。
+独立D1照合で同じ選択のactive3/grace2・Free・canceled test subscription・submitted commandと
+一致した。自然署名receipt4件がterminalとなり、請求の初期retryは自然attempt2で完了。
+FreeのWebhookはactive3件/追加返却0でUI返却を重複していない。logout/所有cleanup後の
+独立read-only照合で元Auth3/7/2・全Master24表・profile/MFA/template・全scoped未所有行hash・
+匿名履歴5/8・FK0を保持し、wake21→23/23を戻していない。Stripe側の解約済みtest customerと
+過去請求は保持。paid退会・Checkout復帰の無中断自動pollingは未受け入れ。
+[上限超過選択とFreeへの変更](evidence/staging-populated-plan-limit-native-ui-2026-10-06.json)。
+全体の六項目はopenのまま。旧上限選択未確認の記述は過去のcheckpoint。
+
 ## 完了までに閉じる六つの作業
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |

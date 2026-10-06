@@ -1,5 +1,72 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Populated Free downgrade native UI accepted (2026-10-06 JST)
+
+After human approval of the prepared sandbox form, native Safari submitted the
+single Creator test Checkout (JPY1,000/month, save-information unchecked).
+Signed natural dispatch updated the exact synthetic profile to Creator. The
+return page initially retained Free while dispatch was pending; authoritative
+reload then showed Creator. This is not proof of uninterrupted automatic
+Checkout-return polling.
+
+Five S-tier fanmarks were registered via the actual owner API. Native `/plans`
+showed all five, required three selections for Free, and prevented a fourth
+selection. Final confirmation returned the excluded two and submitted actual
+test subscription cancellation. The Free dashboard showed3/3, the selected
+three active and the excluded two returning. Independent D1 reads confirmed
+Free, canceled subscription, one submitted test change command, three active
+and two returned grace licenses matching the exact selection. The signed Free
+reconciliation batch saw three active licenses and returned zero additional
+licenses; it did not duplicate the UI returns. Four real signed receipts all
+reached terminal states. The invoice's initial reconciliation retry completed
+naturally on attempt2; no manual replay or plan override was used.
+
+UI logout revoked the synthetic session. Owned Auth/Business, notification and
+billing ledger rows were removed after drain. Separate least-privilege readback
+verified Auth3/7/2, all24 Master table hashes, existing profiles/MFA/templates,
+all unowned scoped Business hashes, anonymous history5/8 and FK0. Notification
+wake advanced21→23/23 and was preserved. Stripe retains the canceled test
+customer/subscription and historical invoice/payment artifacts; no live charge
+or live account was touched. This does not accept paid-account deletion UI.
+[Populated downgrade and independent cleanup](evidence/staging-populated-plan-limit-native-ui-2026-10-06.json).
+
+The separate protected-profile/redirect fixture was already cleaned while this
+capacity account was retained (Auth4/8/3 at that earlier checkpoint). Both are
+now gone from staging D1. Runtime remains0ed4213 / Workerb3a770b3 at100%.
+Paid deletion, lottery results, admin MFA, provider new-signup/relay and final
+source/operations/recovery/phone/PWA/language integration remain open.
+Older statements below listing populated plan-limit selection as pending are
+historical checkpoints.
+
+## Native protected-profile and redirect UI accepted (2026-10-06 JST)
+
+The actual owner settings/profile APIs configured one disposable protected
+profile. Native Safari showed the password gate and rendered the exact synthetic
+Japanese name/bio after the correct code. The native viewer was the separate
+capacity fixture, not the owner or an anonymous session; signing in did not
+bypass the fanmark password. The owner API then changed the same license to a
+protected redirect without resetting the password. Password generation remained
+the same and access generation advanced. A reload showed the gate again, and
+correct entry reached the exact configured URL in the actual browser.
+
+Two successful short-selector proofs/attempts were independently observed.
+Cookie-free short/emoji reads remained locked with no profile name, bio or target
+URL; the standalone public-profile route correctly returned 404 for the protected
+profile. This is not native acceptance of a distinct profile-selector proof.
+Journal-owned Business/Auth/password/proof/attempt and unshared rate rows were
+removed. Separate least-privilege readback verified absence and unchanged
+Master24/profile/MFA/templates/wake/anonymous5/8/pre-existing access state/FK0.
+Retained Auth4/8/3 comprises original human3/7/2 plus the independent capacity
+fixture1/1/1; its session and Checkout were preserved for the next UI check.
+[Native profile/redirect and cleanup proof](evidence/staging-protected-profile-redirect-native-ui-2026-10-06.json).
+
+CI37392979553 for da15074 passed both jobs. Runtime remains0ed4213 / Worker
+b3a770b3 at100%. Populated plan-limit selection, paid deletion, lottery results,
+admin MFA and provider/operations/source/recovery/final integration remain open.
+Older statements below that still list protected-profile/redirect as pending
+are historical checkpoints. Real-user data migration and domain cutover remain
+deferred.
+
 ## Native protected-text UI accepted (2026-10-06 JST)
 
 A disposable verified credential/Free profile was seeded, and the actual register
