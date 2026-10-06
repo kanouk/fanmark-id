@@ -1,3 +1,20 @@
+## 招待コードのnative発行・切替・削除を確認（2026-10-07 JST）
+
+現行Worker471faabeで専用合成管理者の既存TOTPを検証し、Safariから未使用コード
+1件を発行。使用上限1回・無期限・JSON特典がD1と一致し、有効→無効→有効→無効の
+各更新日時が進んだ。再取得した一覧も一致し、全体の招待モードは保持した。
+本人が確認画面から完全削除し、成功toast・再取得後の空一覧・exact D1行の不在を確認。
+
+UI logoutでsession/assuranceを失効後、所有settings/Auth user各1件とcascade、空waitlist
+監査2行、通常signinに残ったMFA challenge/attempts2行をexact ID/metadataで除去。
+独立read-only processで既存全表hash・Auth3/7/2・Master25表・FK0・Worker不変を確認。
+正当なMFA世代+2は保持し、合成資格情報と入力ファイルを除去済み。再seed/再削除は不要。
+[限定証拠](evidence/staging-invitation-create-toggle-native-2026-10-07.json)。
+
+日本語の削除ボタンに欠けていたcommon.deleteを追加し、staging build成功、未配備。
+この管理画面の発行/編集/切替/削除は確認済み。招待必須でのsignup/消費、provider/mail/
+運用/最終統合は残件。追加mail・source write・実ユーザー移送・DNS変更は0、全体は未完了。
+
 ## Auth保存ファイルのサイズ制限を保存・読込で統一（2026-10-07 JST）
 
 共通Auth復旧処理はopenだけ暗号文32 MiB上限があり、sealは読込できないサイズの
