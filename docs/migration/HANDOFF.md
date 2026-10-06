@@ -1,5 +1,30 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Catalog failure no longer blocks update registration (2026-10-06 JST)
+
+The actual main.tsx startup awaited the catalog before registering its Service
+Worker. Catalog rejection or a stalled request therefore never reached explicit
+registration/update checking. Codeb26055e starts registration after the root check,
+before catalog loading, while retaining success-only React rendering and retry/error
+without another catalog/backend fallback. The actual TSX entrypoint regression
+failed3 of5 before the fix and passes5/5 afterwards; ordinary application CI now runs
+it. Typecheck, targeted lint, staging build, generated PWA cache boundaries, workflow
+isolation and current caller-map2/2 passed.
+
+Current100% staging Worker is8cbe1e5f-5e55-4a82-a853-65ec96051db2. HTML, main JS,
+service worker and legacy-cache cleanup script match the local build byte hashes.
+Canonical vars match; broadcast selectors/recipient stay absent. /index.html's normal
+307 canonical redirect was resolved by reading /, without repeating deployment.
+A separate read-only credential verified unchanged full Auth/Business/Master table
+hashes, retained3/7/2 and FK0. Backend source is unchanged; frontend startup changed.
+[Regression and deployed artifact proof](evidence/startup-update-registration-2026-10-06.json).
+
+Native UI is pending manual Mac unlock. Real existing-client service-worker transition,
+cache retirement and final phone/PWA acceptance remain unproven. Do not invoke the old
+raw-CDP staging PWA helper for GUI automation under the current CUA-only policy. Use the
+known CUA surface after unlock; API/file proof does not replace browser acceptance.
+
+
 ## Native admin MFA and one approved broadcast delivery accepted (2026-10-06 JST)
 
 A disposable staging administrator was provisioned with an existing TOTP factor

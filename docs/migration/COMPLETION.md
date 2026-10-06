@@ -4,6 +4,26 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## カタログ障害時の更新確認を修正（2026-10-06 JST）
+
+`src/main.tsx`はカタログ取得後にService Workerを登録していたため、取得が失敗・停滞
+すると登録・更新確認に到達しなかった。root確認後、取得前に更新確認を開始するよう
+修正した。React本体は選択カタログの成功後にのみ描画し、失敗時のエラー/再試行と
+別backendへ戻らない契約を保持する。実TSX entrypointを実行する回帰テストは修正前
+2成功/3失敗、修正後5成功。通常CIに追加し、typecheck/対象lint/staging build/生成PWA
+cache境界/現在のcaller map2件も成功した。
+
+コードb26055eを100% Worker`8cbe1e5f-5e55-4a82-a853-65ec96051db2`へ通常設定で配備した。
+配信HTML・main JS・sw.js・旧cache退役scriptのbytes/hashが同じbuildと一致し、全canonical
+varsと告知send selector/固定宛先の不在を確認した。`/index.html`は正常な307 `/`への転送
+だったため、読取対象をcanonical `/`へ直して照合を完了した。配備は繰り返していない。
+別read-only照合で全Auth/Business/Master表の全行hashと元Auth3/7/2・FK0を保持した。
+[回帰と配信readback](evidence/startup-update-registration-2026-10-06.json)。
+
+実画面はMacのロック解除待ち。callback/UI実操作、既存端末の旧PWA更新・cache退役は
+今回のNode回帰/HTTP照合から受け入れない。前のversionを現在の稼働versionとして使わない。
+六項目全体は引き続き未完了。
+
 ## 管理者MFAと宛先限定の告知配信（2026-10-06 JST）
 
 専用の合成管理者にAPIで登録したTOTPを使い、実Safariの管理画面で既存factorの
