@@ -10,7 +10,7 @@ selected by `BROADCAST_EMAIL_BACKEND=d1` and the staging frontend by
 `VITE_BROADCAST_EMAIL_BACKEND=worker`; production/default builds still use
 Supabase.
 
-The2026-10-06 JST download confirmed the actual source sender version36 matches
+The 2026-10-06 JST download confirmed the actual source sender version36 matches
 the checkout entrypoint, but its shared administrator helper is older. The
 source validates the bearer user and `user_roles.role=admin` without current
 MFA; the Worker requires Auth adminRole/exact-session verified MFA and Business
@@ -42,8 +42,10 @@ backend selectors.
 Resend delivery and the signed webhook route are implemented in the migration
 worktree and included in the deployed staging Worker bundle. The staging
 bulk/test-send selectors, fixed test recipient, and broadcast signing secret
-remain unset, so neither broadcast delivery path has been verified against
-Resend. The shared Resend key/from are configured for the separately accepted
+remain unset after cleanup. On 2026-10-06, one explicitly approved fixed-recipient
+API test was Delivered by Resend and matched to its minimized D1 audit. The
+actual test-send UI, bulk dispatch and signed provider delivery remain separate
+acceptance items. See [bounded delivery evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json). The shared Resend key/from are configured for the separately accepted
 Auth verification/reset mails. The dispatcher uses bounded batches,
 leases and retries, a stable provider idempotency key, and a keyed payload fingerprint; a changed Auth email or
 payload after an uncertain attempt pauses the recipient for review. Signed
@@ -68,7 +70,13 @@ The UI keeps the same provider idempotency key while a failed test-send dialog
 remains open, so retrying after an uncertain provider response reuses the same
 request identity.
 
-The test-send code has only been checked with an injected provider mock. The
+## Earlier deployment checkpoint (2026-09-28 JST)
+
+The following records the earlier configuration before the accepted
+2026-10-06 fixed-recipient API delivery. Its missing credentials and unsent
+message describe that checkpoint, not the current Auth mail configuration.
+
+At that checkpoint, test-send had only an injected provider mock. The
 send-start API canary ran on Worker version
 `4cf9657f-bee3-42bb-aa89-802e9ed0aa89`; after the temporary write-freeze
 and Stripe receipt-continuity rehearsals, the ordinary staging config was
