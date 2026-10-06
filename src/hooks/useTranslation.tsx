@@ -54,6 +54,7 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    document.documentElement.lang = language;
     try {
       localStorage.setItem('fanmark-language', language);
     } catch (error) {

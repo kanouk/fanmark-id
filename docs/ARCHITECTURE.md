@@ -83,6 +83,7 @@
 ## ディレクトリ・依存のヒント
 - フロント: React + React Router + React Query + Tailwind + shadcn/ui。`components/ui` に集約したスタイルを利用。テーマ切替は `next-themes`（client）で実装。
 - 型: `src/integrations/supabase/types.ts` は Supabase 型の単一ソース。RPC 追加時は更新必須。
+- 表示言語: `src/hooks/useTranslation.tsx`の`TranslationProvider`は選択した`ja/en/ko/id`を翻訳・ブラウザー内の保存値・`document.documentElement.lang`へ同期する。`LanguageToggle`は表示言語を切り替え、アカウントの優先言語保存は別の`usePreferredLanguage`経路で行う。
 - 状態: キャッシュは React Query、フォームは React Hook Form + Zod。トーストは `sonner`。
 - 画像/アップロード: productionはSupabase Storageを使い、`useAvatarUpload` / `useCoverImageUpload` はstagingで`VITE_STORAGE_BACKEND=r2`を選ぶとWorker Storage APIへ送る。本人プロフィールの`GET/PATCH /api/me/profile`もstaging buildで`VITE_PROFILE_BACKEND=worker`を選び、表示名・R2 avatar URL・優先言語をBetter Auth session経由で読む/更新する。R2 uploadとprofile更新の連結はlocal D1/R2 integration testとworkers.dev staging canaryで確認済み。実ユーザーデータ/既存objectは未移行で、production selectorはSupabaseのまま。
   - 取り込み済み画像のURL対応は`workers/api/src/storage-image-url.mjs`でAPIのread DTOに適用する。移行元/配信先originを明示し、D1/snapshotの元URLと、変更なし保存時の参照を保持する。詳しくは[画像URLの対応](migration/storage-image-url-mapping.md)。
