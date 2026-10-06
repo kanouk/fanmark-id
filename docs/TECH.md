@@ -1,5 +1,10 @@
 # fanmark.id TECH.md
 
+全一式復旧の専用Workerは`isolated-recovery-combined-worker.mjs`、native入口試験は
+`npm --prefix workers/api run test:isolated-combined-recovery`。実Auth/Business/R2の
+接続と全経路のprivate gateを確認し、通常Worker CIに含める。全Masterを含む保存file
+復旧とremote受け入れは[別の測定工程](migration/full-combined-recovery.md)で確認する。
+
 ## スタックとランタイム
 - フロント: Vite + React 18 + TypeScript, React Router, React Query, Tailwind CSS, shadcn/ui (Radix UI), Zod + React Hook Form, Sonner (toast), Lucide。
 - バックエンド: Supabase (PostgreSQL, Auth, Storage, Edge Functions, pg_cron, Realtime)。

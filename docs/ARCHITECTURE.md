@@ -1,5 +1,10 @@
 # fanmark.id ARCHITECTURE.md
 
+全Master・合成Auth・業務・R2一式復旧の専用入口は
+`scripts/migration/isolated-recovery-combined-worker.mjs`。
+実アプリrouterを使用し、通常staging Workerとは別の所有targetへ限定する。
+構成と受け入れ条件は[全一式復旧](migration/full-combined-recovery.md)。
+
 ## リポジトリ構造
 - `src/`
   - `pages/`: 画面エントリ (`Index`, `Auth`, `Dashboard`, `PlanSelection`, `Profile`, `Favorites`, 各プレビュー/設定/詳細ページ、Admin系)。

@@ -1,0 +1,49 @@
+# 全Master・合成Auth・業務・画像の一式復旧
+
+全Masterと全合成Authの個別実D1復旧は受け入れ済み。この工程では同じ保存bundle
+から全ストアを戻し、本人認証、業務所有者、カタログidentity、画像参照が同じ
+アプリ構成でつながるか確認する。既存DB、実ユーザー/Auth/Storage、DNSは移送しない。
+
+## 保存bundle
+
+- Masterは保存済みの全25表/12,254行/98定義を保持。旧Auth行は空のまま。
+- Authは元の全9非空表/3合成user/4 account/14行を保持し、業務fixtureの固定ownerに
+  対応する合成credential user/accountを2行追加する。全4 user/5 account/16行。
+  元password hash、TOTP暗号文、backup code、session/assurance、generation、
+  停止/確認状態と監査を変更しない。実provider tokenは含まない。
+- 業務は現行schemaの40表/15合成行。fixtureの3 emoji UUIDだけを全Masterの同じ
+  絵文字のUUIDへ揃えて新規source-shaped snapshotを生成。実データidentityの修復を
+  証明しない。manifest/catalog/schema-report/40 streamの正確な保存bytesを含める。
+  復旧時に再exportして新しいrun IDへ置き換えない。
+- 分離avatar/cover用の合成PNG2件と正確なStorage manifest/statusを保持。
+
+全体をAES-GCMで保存し、元archive hash、schema/manifest hashと合成SDK鍵identityを
+AADに含める。archiveとone-off鍵/test資格情報は別private directoryへ保管する。
+これは運用鍵保管/交換、off-host保存/retention、担当/RPO-RTOの採用ではない。
+元sessionの保持は隔離した完全性試験だけで、本番再開の失効方針は別に残る。
+
+## 専用Workerと検証
+
+`isolated-recovery-combined-worker.mjs`は新規所有3 D1/2 bucket、recovery名、split
+topology、token/incarnationを要求する。画像readを含む全経路をprivate gateで保護。
+既存Authのlogin/challenge/logout、本人profile/所有一覧、カタログ/参照MasterのGET、
+画像GET/HEADと固定2画像のrecovery transportだけを許可する。signup、新MFA登録、
+業務書込、退会、汎用SQLは閉じる。transportの認証headerを除去して実routerへ委譲し、
+本人sessionを置き換えない。main Workerへbinding/routeを追加しない。
+
+`npm --prefix workers/api run test:isolated-combined-recovery`はnative5件でprivate gate、
+全resource identity、書込拒否、実SDK signin→本人Business read→logout、別R2 bucketの
+実アプリ画像GET/HEADを確認し、通常Worker CIへ含める。小さい試験から全bundleの
+復旧を推定しない。全bundleのローカル復旧は現在検証中。
+
+保存bytesを再読込してから別incarnationの2 targetへ戻す。Master/Authの全定義/列hash/
+FK、業務40表のsource stream/credential変換とcommit後中断再開、R2のreplay/bytes/MIME/
+key、単一wakeを照合する。実routerから全3944 catalog、保存Authのpassword/TOTP/
+backup code/停止拒否、業務ownerのprofile/所有一覧と画像参照GET/HEADを確認する。
+
+remoteはexact候補CI両job・account・main全表hash/Worker/inventoryを照合した後、
+新規所有3 D1/2 bucket/Workerだけへ実行する。receipt、binding UUID/作成時刻/secret名/
+100% versionを照合し、未知の書込ACKを再送しない。exact receiptで所有資源を削除後、
+別read-only processで元inventory/全表hash/Workerと一時資源の不在を確認する。
+実D1/R2一式復旧は未実行。converterの4 blocking group/deployable=falseは保持する。
+one-off測定は本番RTOや全移行完了に拡張しない。実端末/provider/運用・最終確認は残る。
