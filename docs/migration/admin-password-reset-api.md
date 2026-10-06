@@ -23,6 +23,17 @@ target ID, reason, and timestamp, but no email or reset credential.
 Local tests inject a synthetic delivery callback and verify authorization,
 payload validation, successful request projection, missing-provider behavior,
 and retained audit evidence after a provider failure. They do not send email.
-The staging control is available only when the staging selectors are enabled;
-actual delivery remains closed until Resend secrets are set through Cloudflare
-Worker secrets. Production/default routing remains on Supabase.
+The staging control is available only when the staging selectors are enabled.
+At the 2026-10-06 checkpoint, staging Worker
+`471faabe-3aff-4312-ba22-cd326dc821e1` has the Resend selector and secret binding,
+and advertises password-reset capability. The earlier missing-secret state is
+historical; configuration readiness does not prove this administrator action
+sent an email. See the [configuration evidence](evidence/staging-invitation-capabilities-current-2026-10-06.json).
+
+The ordinary signup/verification/reset/login email flow has separate accepted
+evidence. Sending one additional reset email from the administrator UI to the
+approved staging recipient is awaiting specific consent, together with one
+broadcast test email. Neither email has been sent for this pending check. The
+administrator action, its attempted audit, provider delivery, and the recipient's
+reset screen must be checked together before accepting this route's real email
+integration. Production/default routing remains on Supabase.
