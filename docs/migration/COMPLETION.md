@@ -153,6 +153,16 @@ a36b94aのCI37395116307は両job成功。抽選結果UIのこの限定経路は�
 これは静的に抽出したcallerの証拠接続で、未知の間接alias/外部caller/全source意味論を
 完了とはしない。runtime/DB/deployは変更せず、六項目は引き続きopen。
 
+2026-10-06 JST、最後の実データ工程向けに`identity-readiness.sql`を準備した。
+3つのunique index対象に加え、同じ厳格な配列importerを持つevent表もshape検査する。
+空/NULL/NULL要素/多次元/配列位置の問題とcanonical重複・追加display一意性を件数のみで
+返す。favoriteの別ownerとeventの反復は拒否せず、履歴の順序/反復/6個以上の長さを保つ。
+同じSQLをPostgreSQLの合成VALUESだけで実行し、正常8行と問題16行の集計・停止を確認。
+実importerでも全4表の保持/拒否を確認しfocused13件・lint成功。実テーブル版は未実行で、
+userdata移送を開始していない。[準備と範囲](evidence/deferred-identity-preflight-preparation-2026-10-06.json)。
+5ba5f5fのCI37396865202は両job成功。52790bfのCI37396416191は後続更新によりcancelled。
+4つのgeneric converter groupと全source意味論・運用・最終統合は未完了のまま。
+
 ## 完了までに閉じる六つの作業
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |

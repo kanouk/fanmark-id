@@ -1,5 +1,37 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Deferred identity preflight prepared (2026-10-06 JST)
+
+The remaining sequence-key gate now has an executable aggregate-only source
+preflight, `scripts/migration/identity-readiness.sql`. It is prepared for the
+final user-data stage and has not read actual source rows. All four strict
+identity-array importer tables are included: fanmarks, discoveries, favorites
+and events. Canonical duplicates block only the three unique identities;
+favorites include their owner, events preserve repeated identities. The query
+also checks the additional fanmark display-identity unique constraint. NULL,
+empty, NULL-element, dimension and lower-bound blockers are counted rather
+than repaired, merged, trimmed or skipped.
+
+The same SQL classifier ran on PostgreSQL with only typed synthetic VALUES:
+valid8 rows admitted, blocked16 rows rejected with the exact expected aggregate
+counts. Order, repetitions, historical length6, different favorite owners and
+repeated event history remain valid. The actual importer tests confirm these
+retentions and shape refusals on all four tables. Oracle/importer13 cases and
+lint pass; normal migration CI now pins the literal observations to current
+SQL hashes. No stored application function, real user row, Cloudflare config,
+Worker deployment or domain was changed.
+[Deferred preparation and bounds](evidence/deferred-identity-preflight-preparation-2026-10-06.json).
+
+Caller-map5ba5f5f / CI37396865202 completed successfully in both jobs. Its
+superseded lottery-doc52790bf / CI37396416191 was canceled, not accepted as a
+completed CI run; the runtime remains0ed4213 / Workerb3a770b3 at100%.
+The generic converter's four groups remain explicit: the identity input/data
+policy and uncopied SQL functions/RLS/triggers. This preflight does not claim
+whole-source semantic approval or start the deferred real-data migration.
+Broadcast's exact one-recipient/message approval question is pending; no send
+selector has been enabled. Native paid deletion/admin MFA, provider new-signup/
+relay, operational adoption and final integration remain open.
+
 ## Current frontend caller map bound to source (2026-10-06 JST)
 
 The old mapping test compared two static documents. Current AST extraction

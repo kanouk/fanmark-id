@@ -76,3 +76,47 @@ NULL/empty rejection and the converter's deliberately retained mismatch gate.
 [Registration](fanmark-registration-api.md) passes26/26 locally, including5
 new full-schema/real-session cases. The generic converter gate and
 deployable=false remain; this does not waive historical import prerequisites.
+
+## Deferred import identity preflight (2026-10-06 JST)
+
+`scripts/migration/identity-readiness.sql` now makes the later data gate
+executable. It is a read-only aggregate check for fanmarks, discoveries,
+favorites and events. The fourth table has the same strict array importer even
+though it has no sequence-identity unique index. The check reports only counts
+of NULL/empty/NULL-element arrays, unsupported dimensions/lower bounds,
+canonical duplicates for the three unique identities, and duplicate
+fanmarks.normalized_emoji values required by the additional target constraint.
+Favorite duplicate groups include the source owner; identical identities for
+different owners are preserved. Event repetition is never classified as a
+uniqueness conflict. Categories select the first shape blocker for each row.
+
+Both positive8-row and blocked16-row literal fixtures ran on PostgreSQL using
+the exact same classifier/aggregation SQL. No source table or stored application
+function was read/invoked: the oracle generator replaced only the source CTE
+with typed synthetic VALUES, refused remaining public-schema references and
+required BEGIN READ ONLY. Repetitions, reversed order and historical six-ID
+sequences are admitted; invalid shape, same-owner canonical identity duplicates
+and display conflicts stop import. The existing importer tests now explicitly
+confirm NULL/lower-bound/dimension rejection and preserved repetition/order/
+length on all four tables. Focused oracle/importer13 tests pass.
+[Literal observations and SQL hashes](../../scripts/migration/fixtures/identity-readiness-oracle-2026-10-06.json).
+
+Reproduce only synthetic proof before the user-data stage:
+
+```sh
+node scripts/migration/identity-readiness-oracle.mjs --scenario valid > "$TASK_PRIVATE_VALID_SQL"
+node scripts/migration/identity-readiness-oracle.mjs --scenario blocked > "$TASK_PRIVATE_BLOCKED_SQL"
+CI=1 npx --yes supabase@2.118.0 db query --linked --file "$TASK_PRIVATE_VALID_SQL" --workdir "$TASK_PRIVATE_LINK_DIRECTORY" --output-format json --yes > "$TASK_PRIVATE_VALID_RESULT"
+CI=1 npx --yes supabase@2.118.0 db query --linked --file "$TASK_PRIVATE_BLOCKED_SQL" --workdir "$TASK_PRIVATE_LINK_DIRECTORY" --output-format json --yes > "$TASK_PRIVATE_BLOCKED_RESULT"
+node --test scripts/migration/test-identity-readiness.mjs scripts/migration/test-row-conversion.mjs
+```
+
+Use a verified project link, umask077 and a0700 private directory. CI pins the
+observations to the current query/oracle SQL hashes; changed SQL requires fresh
+literal observations. The real-table identity-readiness.sql is prepared for
+the final user-data stage and has not been executed. A true identity result
+would cover only these checks, not row parity, Auth/role mapping, foreign keys,
+image references, generic converter acceptance or external consumers. No
+identity is trimmed/repaired/merged or skipped. The generic converter's four
+blocking groups remain; source functions/RLS/triggers need their separate
+Worker correspondence.

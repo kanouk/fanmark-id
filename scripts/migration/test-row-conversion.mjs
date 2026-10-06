@@ -388,6 +388,27 @@ test("sequence-key UUID arrays reject empty arrays and NULL elements before impo
     empty.values.normalized_emoji_ids = "[]";
     empty.arrayMetadata.normalized_emoji_ids = { isNull: false, ndims: 0, lowerBound: null };
     assert.throws(() => convertRowEnvelope(input, table, empty), (error) => error.code === "invalid_sequence_uuid_array");
+
+    const nullArray = structuredClone(base);
+    nullArray.values.normalized_emoji_ids = null;
+    nullArray.arrayMetadata.normalized_emoji_ids = { isNull: true, ndims: null, lowerBound: null };
+    assert.throws(() => convertRowEnvelope(input, table, nullArray), (error) => error.code === "null_forbidden");
+
+    const shifted = structuredClone(base);
+    shifted.arrayMetadata.normalized_emoji_ids.lowerBound = 0;
+    assert.throws(() => convertRowEnvelope(input, table, shifted), (error) => error.code === "array_shape_unsupported");
+
+    const multidimensional = structuredClone(base);
+    multidimensional.arrayMetadata.normalized_emoji_ids.ndims = 2;
+    assert.throws(() => convertRowEnvelope(input, table, multidimensional), (error) => error.code === "array_shape_unsupported");
+
+    // Historical valid identities are not limited to the UI's five choices.
+    // Repetition and order are identity data, not duplicate cleanup candidates.
+    for (const admitted of [[ids[0], ids[0]], Array(6).fill(ids[0]), [...ids].reverse()]) {
+      const row = structuredClone(base);
+      row.values.normalized_emoji_ids = JSON.stringify(admitted);
+      assert.equal(convertRowEnvelope(input, table, row).bindings[1], JSON.stringify(admitted));
+    }
   }
 });
 

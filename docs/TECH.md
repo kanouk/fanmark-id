@@ -381,3 +381,12 @@ Origin、owner/customer対応、test-only credential選択は従来のguardを�
 一致だけでは合格にしない。抽出自体のfixtureは`test-inventory.mjs`で確認する。
 このscannerの標準receiver/importの範囲を、全プログラムのdataflowや外部callerの
 不在へ拡張しない。対応表は`docs/migration/frontend-callsite-map.md`。
+
+## 最後のデータ工程のID事前チェック
+
+`identity-readiness.sql`は4表の配列形状と3表の一意性・fanmarksの表示identity制約を
+件数だけで確認する。実テーブルを読む版は最後のユーザーデータ工程用で、未実行。
+`identity-readiness-oracle.mjs --scenario valid|blocked`は同じSQLの入力CTEだけを
+合成値へ置き換え、実データを読まずPostgreSQLで検証できる。通常migration CIには
+`test-identity-readiness.mjs`のSQL証拠hash/集計結果と、実importerの拒否・保持チェックを
+含める。範囲と再現手順は[migration/source-sequence-key-review.md](migration/source-sequence-key-review.md)。
