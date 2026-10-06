@@ -435,6 +435,8 @@ Business追加`0026_broadcast_delivery_provider_time.sql`は告知Webhookにnull
 空targetへの単一batch復旧を提供する。schema hash/SDK鍵identityと明示session policyを
 照合し、失効方式を選ぶ場合はsession/MFA assurance/verificationを取り込まない。
 失効後も元のcredential/factor/role/停止監査/generationを保持する。
+保存と読込はGCM tag 16 bytesを含む暗号文32 MiB上限を共用し、保存時は暗号化と
+JSON byte array展開の前にUTF-8サイズを確認する。超過時は平文bufferを消去して拒否する。
 `npm --prefix workers/api run test:auth-recovery:d1`はこの共通実装で実SDKの認証、
 rollback、commit後ACK喪失/再実行拒否を検証する。運用policyの採用や定期/off-host
 collector有効化は含まない。詳細は[Auth復旧](migration/synthetic-auth-recovery.md)。

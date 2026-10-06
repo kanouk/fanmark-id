@@ -4,6 +4,19 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## Auth保存ファイルのサイズ制限を保存・読込で統一（2026-10-07 JST）
+
+共通Auth復旧処理はopenだけ暗号文32 MiB上限があり、sealは読込できないサイズの
+ファイルを作成できた。GCM tag16 bytesを含む同じ上限をseal/openで共用し、sealは
+暗号化・JSON byte array展開の前にUTF-8サイズを確認、平文bufferを消去して拒否する。
+Node WebCryptoの合成確認ではUnicode超過とtagによる1 byte超過を暗号化呼出0で拒否し、
+小さいUnicode snapshotのseal/openが一致。native D1/SDK既存統合1 case・型/lint/diffも成功。
+[サイズ制限の限定証拠](evidence/auth-recovery-size-boundary-2026-10-07.json)。
+
+Macの実ロックをComputer Useが検出し、招待管理のnative作成/切替/削除は解除待ち。
+新しいfixture/remote row mutation/追加mail/設定変更は0。前候補d986a72の
+CI37485153008はアプリ/Worker両job成功。運用採用・全体の六項目は未完了。
+
 ## Auth復旧を共通処理へ移し、明示失効方式を合成検証（2026-10-07 JST）
 
 `auth-d1-recovery.ts`へ9表のcapture/AES-256-GCM/空target復旧を切り出し、既存の

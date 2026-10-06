@@ -150,6 +150,13 @@ v2 remains a separate format. Nine Auth tables are read in one D1 batch with
 schema/FK checks and a 20,000-row-per-table ceiling that rejects truncation.
 This single-store read is not an atomic snapshot of the three D1 stores and R2.
 
+Seal and open share a 32 MiB ciphertext ceiling, including the 16-byte GCM tag.
+Seal checks the serialized UTF-8 plaintext size before encryption and JSON byte
+array expansion, wipes that buffer and refuses an oversized archive with
+`auth_recovery_archive_too_large`. It cannot report success for a file that the
+reader would reject solely for size. This is a format ceiling, not a guarantee
+that every archive below it fits a particular runtime's memory limit.
+
 Restore requires the trusted expected schema hash, matching SDK key and an
 explicit `sessionPolicy`. `isolated-preserve` additionally requires
 `isolatedFidelity: true`. `revoke-local-sessions-and-challenges` restores no

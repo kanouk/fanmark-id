@@ -12,6 +12,8 @@ export const AUTH_RECOVERY_SCHEMA_SQL = `SELECT type,name,tbl_name,sql FROM sqli
     AND type IN ('table','index','view','trigger') ORDER BY type,name`;
 const HASH = /^[0-9a-f]{64}$/u;
 const MAX_ROWS_PER_TABLE = 20_000;
+const MAX_CIPHERTEXT_BYTES = 32 * 1024 * 1024;
+const GCM_TAG_BYTES = 16;
 const TARGET_SCHEMA_SQL = AUTH_RECOVERY_SCHEMA_SQL.replace(" AND name <> 'd1_migrations'", "");
 
 function fail(code: string): never { throw new Error(`auth_recovery_${code}`); }
@@ -89,6 +91,11 @@ export async function sealAuthRecoverySnapshot(snapshot: AuthRecoverySnapshot, k
   const nonce = crypto.getRandomValues(new Uint8Array(12));
   const archive = { nonce: [...nonce], ciphertext: [] as number[], schemaHash: snapshot.schemaHash, authKeyId: snapshot.authKeyId };
   const plaintext = new TextEncoder().encode(JSON.stringify(snapshot));
+  // Refuse an archive the reader cannot open, before encryption or expansion into a JSON byte array.
+  if (plaintext.byteLength + GCM_TAG_BYTES > MAX_CIPHERTEXT_BYTES) {
+    plaintext.fill(0);
+    fail("archive_too_large");
+  }
   try { archive.ciphertext = [...new Uint8Array(await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce, additionalData: associatedData(archive) }, key, plaintext))]; }
   catch { fail("encryption_failed"); }
@@ -102,7 +109,7 @@ export async function openAuthRecoverySnapshot(archive: AuthRecoveryArchive, key
   if (!archive || archive.schemaHash !== expectedSchemaHash || !HASH.test(expectedSchemaHash)) fail("schema_mismatch");
   if (archive.authKeyId !== await authRecoveryDigest(["better-auth-recovery-key-v1", secret(authSecret)])) fail("server_key_mismatch");
   if (!Array.isArray(archive.nonce) || archive.nonce.length !== 12 || !Array.isArray(archive.ciphertext) ||
-      archive.ciphertext.length < 16 || archive.ciphertext.length > 32 * 1024 * 1024 ||
+      archive.ciphertext.length < GCM_TAG_BYTES || archive.ciphertext.length > MAX_CIPHERTEXT_BYTES ||
       archive.nonce.some(v => !Number.isInteger(v) || v < 0 || v > 255) ||
       archive.ciphertext.some(v => !Number.isInteger(v) || v < 0 || v > 255)) fail("archive_invalid");
   let plaintext: ArrayBuffer;
