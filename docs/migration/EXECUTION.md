@@ -8111,3 +8111,25 @@ main DB書込・配備/secret変更・追加メール・実ユーザー移送・
 これは現在のschemaでの合成一式復旧の受け入れであり、source converterの4 blocking groups、
 運用鍵/off-host/retention/失効方針の採用、本人操作と実スマホ・provider・最終統合の六項目は残る。
 以前の25 Businessの証拠は当時の結果として保持し、書き換えない。
+
+## 旧PWAから現行frontendへのローカル更新確認（2026-10-06 JST）
+
+旧source c077fbfと候補5d616cb（CI37421614544両job成功）を同じ使い捨てlocalhost URLで配信した。
+旧Supabase clientのURL/keyだけを合成のローカル入力へ置換し、旧SW設定を保持。
+現行335 sourceファイルは変更0、旧231ファイルはこのclientだけ変更1。
+Vite/PWA/Workbox/Reactの旧・現行lockと実installed versionは一致する。
+現在のcatalog3944だけを読み、Auth/業務APIは合成応答/拒否として実サービスへ転送しない。
+旧API cacheはfixture UIで合成値を入れたもので、Supabase network requestの結果ではない。
+状態表示probeをReact root外へ挿入し、CUAの実in-app browserで操作/DOM確認した。
+
+旧SWのactive/control/旧main precacheとsupabase-cacheを確認後、同じ登録へのupdateで
+自動reloadし、現行mainとprecacheへ更新した。supabase-cacheは削除され、無関係な
+合成cacheと保存済み合成設定は保持。未保存DOM入力はreloadで失われた。
+現行画面はfixtureのmaintenance API欠落時に停止表示した。合成の正常設定DTOを
+追加し、通常reload後に現行/pwa検索画面を確認。製品の安全側の制御は変更しない。
+fixture SW登録/cache/owned設定キーを削除し、所有tabと二つのserver processを終了した。
+mainは既存version d437のGET readbackのみ。DB/配備/secret/メール/userdata/DNS変更は0。
+
+[限定ブラウザー証拠](evidence/pwa-legacy-update-local-2026-10-06.json)。
+これはローカルの旧→現行PWA protocol確認であり、実ユーザーのインストール済みPWA、
+実スマホ/standalone、全言語/全フローの最終確認は未受け入れ。六項目全体は未完了。

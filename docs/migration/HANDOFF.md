@@ -1,4 +1,32 @@
-## Latest unit: 現行27 Businessでの保存bundle一式復旧（2026-10-06 JST）
+## Latest unit: 旧PWAから現行frontendへのローカル更新確認（2026-10-06 JST）
+
+旧source c077fbfと候補5d616cb（CI37421614544両job成功）を同じ使い捨てlocalhost URLで配信した。
+旧Supabase clientのURL/keyだけを合成のローカル入力へ置換し、旧SW設定を保持。
+現行335 sourceファイルは変更0、旧231ファイルはこのclientだけ変更1。
+Vite/PWA/Workbox/Reactの旧・現行lockと実installed versionは一致する。
+現在のcatalog3944だけを読み、Auth/業務APIは合成応答/拒否として実サービスへ転送しない。
+旧API cacheはfixture UIで合成値を入れたもので、Supabase network requestの結果ではない。
+状態表示probeをReact root外へ挿入し、CUAの実in-app browserで操作/DOM確認した。
+
+旧SWのactive/control/旧main precacheとsupabase-cacheを確認後、同じ登録へのupdateで
+自動reloadし、現行mainとprecacheへ更新した。supabase-cacheは削除され、無関係な
+合成cacheと保存済み合成設定は保持。未保存DOM入力はreloadで失われた。
+現行画面はfixtureのmaintenance API欠落時に停止表示した。合成の正常設定DTOを
+追加し、通常reload後に現行/pwa検索画面を確認。製品の安全側の制御は変更しない。
+fixture SW登録/cache/owned設定キーを削除し、所有tabと二つのserver processを終了した。
+mainは既存version d437のGET readbackのみ。DB/配備/secret/メール/userdata/DNS変更は0。
+
+[限定ブラウザー証拠](evidence/pwa-legacy-update-local-2026-10-06.json)。
+これはローカルの旧→現行PWA protocol確認であり、実ユーザーのインストール済みPWA、
+実スマホ/standalone、全言語/全フローの最終確認は未受け入れ。六項目全体は未完了。
+
+完了済みprivate proof/画像:
+`/Users/kanouk/.codex/fanmark-migration-private/pwa-legacy-update-2026-10-06`。
+setup/build/server/proof runnerを再実行しない。所有tab7/両serverと登録/cacheは整理済み。
+MacロックをCUAで再確認。既存の本人操作/運用条件/外部callerの質問は回答待ち。
+追加mailは許可されていない。次は未完了六項目を確認し、同じ合格試験を目的なく再実行しない。
+
+## Prior unit: 現行27 Businessでの保存bundle一式復旧（2026-10-06 JST）
 
 コード候補5e037d0/CI37418737512両job成功版と、文書だけ異なる022a0d4を照合した。
 文書候補022a0d4のCI37420051154も両job成功。
