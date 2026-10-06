@@ -1,3 +1,15 @@
+## 登録・メール設定の古い未設定記述を補正（2026-10-06 JST）
+
+現行Worker471faabeのread-only設定metadataと`GET /api/auth/capabilities`を照合した。
+D1 signup、Resend、D1メールtemplateとResend secret bindingがあり、signUp/
+emailVerification/passwordReset=true、invitationRequired=false、4 providerを公開する。
+招待関連文書の「資格情報/selector未設定で登録閉鎖」は初期checkpointの記録だった。
+現在の設定と既存の実メール受け入れへ結び直し、再設定待ちとして扱わない。
+[現在の限定証拠](evidence/staging-invitation-capabilities-current-2026-10-06.json)。
+
+今回の登録/コード検証/追加mail・設定変更は0。広告されたcapabilityを新規provider
+登録や招待必須での実消費の証拠に拡張せず、その残件と全体未完了は保持する。
+
 ## 手動通知作成から受信・既読までを実Safariで受け入れ（2026-10-06 JST）
 
 現行Worker `471faabe-3aff-4312-ba22-cd326dc821e1`を保持し、専用合成管理者の
