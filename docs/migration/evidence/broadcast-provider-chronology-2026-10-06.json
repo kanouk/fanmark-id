@@ -29,18 +29,234 @@
   "timestampSource": "signed payload root created_at",
   "receivedTimeStoredSeparately": true,
   "existingUnknownOccurrenceTimeNotBackfilled": true,
-  "noSourceOrAuthRowsRead": true,
   "sourceSHA256": {
     "workers/api/src/broadcast-email-webhook-d1.ts": "fed543527eab18d9dc3cae642e6a4e36a5ba1b7a7162677983962f94bf3322e6",
     "workers/api/migrations-business/0026_broadcast_delivery_provider_time.sql": "f31b217f13fc18afb2216c12dbe5ee99cee69cd3683c5287284f0064528a7ab5",
     "workers/api/test/broadcast-email-delivery-d1.integration.mjs": "4c745fb6356e3c04de586ab207104eade450505feb136a4f4870433618766337"
   },
-  "mainStagingMigrationApplied": false,
-  "remoteSyntheticAccepted": false,
+  "mainStagingMigrationApplied": true,
+  "remoteSyntheticAccepted": true,
   "resendServiceDeliveryAccepted": false,
   "additionalEmailsSent": 0,
   "references": [
     "https://resend.com/docs/webhooks/emails/delivered",
     "https://resend.com/docs/webhooks/emails/failed"
+  ],
+  "noSupabaseSourceRowsRead": true,
+  "syntheticOnlyEventData": true,
+  "preservationReadbackUsesReadOnlyCredential": true,
+  "candidate": "a5a2b75fe48906bf99f2f7947b6c5fd119c5bc18",
+  "ci": {
+    "runId": "37416934627",
+    "bothJobs": "success"
+  },
+  "remote": {
+    "completedAt": "2026-10-06T05:18:25.729Z",
+    "terminalCases": [
+      {
+        "type": "email.bounced",
+        "bounce": "Permanent",
+        "beforeAck": false,
+        "recipientStatus": "bounced",
+        "futureStatus": "suppressed",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.bounced",
+        "bounce": "Permanent",
+        "beforeAck": true,
+        "recipientStatus": "bounced",
+        "futureStatus": "suppressed",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.complained",
+        "bounce": null,
+        "beforeAck": false,
+        "recipientStatus": "suppressed",
+        "futureStatus": "suppressed",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.complained",
+        "bounce": null,
+        "beforeAck": true,
+        "recipientStatus": "suppressed",
+        "futureStatus": "suppressed",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.bounced",
+        "bounce": "Transient",
+        "beforeAck": false,
+        "recipientStatus": "delivered",
+        "futureStatus": "pending",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.bounced",
+        "bounce": "Transient",
+        "beforeAck": true,
+        "recipientStatus": "delivered",
+        "futureStatus": "pending",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.failed",
+        "bounce": null,
+        "beforeAck": false,
+        "recipientStatus": "delivered",
+        "futureStatus": "pending",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.failed",
+        "bounce": null,
+        "beforeAck": true,
+        "recipientStatus": "delivered",
+        "futureStatus": "pending",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      }
+    ],
+    "chronologyCases": [
+      {
+        "beforeAck": false,
+        "newerFailure": false,
+        "reverseArrival": false,
+        "exactProviderTimeRetained": true,
+        "latestOutcomeMatched": true,
+        "duplicateSingleReceipt": true,
+        "countsMatched": true
+      },
+      {
+        "beforeAck": false,
+        "newerFailure": false,
+        "reverseArrival": true,
+        "exactProviderTimeRetained": true,
+        "latestOutcomeMatched": true,
+        "duplicateSingleReceipt": true,
+        "countsMatched": true
+      },
+      {
+        "beforeAck": false,
+        "newerFailure": true,
+        "reverseArrival": false,
+        "exactProviderTimeRetained": true,
+        "latestOutcomeMatched": true,
+        "duplicateSingleReceipt": true,
+        "countsMatched": true
+      },
+      {
+        "beforeAck": false,
+        "newerFailure": true,
+        "reverseArrival": true,
+        "exactProviderTimeRetained": true,
+        "latestOutcomeMatched": true,
+        "duplicateSingleReceipt": true,
+        "countsMatched": true
+      },
+      {
+        "beforeAck": true,
+        "newerFailure": false,
+        "reverseArrival": false,
+        "exactProviderTimeRetained": true,
+        "latestOutcomeMatched": true,
+        "duplicateSingleReceipt": true,
+        "countsMatched": true
+      },
+      {
+        "beforeAck": true,
+        "newerFailure": false,
+        "reverseArrival": true,
+        "exactProviderTimeRetained": true,
+        "latestOutcomeMatched": true,
+        "duplicateSingleReceipt": true,
+        "countsMatched": true
+      },
+      {
+        "beforeAck": true,
+        "newerFailure": true,
+        "reverseArrival": false,
+        "exactProviderTimeRetained": true,
+        "latestOutcomeMatched": true,
+        "duplicateSingleReceipt": true,
+        "countsMatched": true
+      },
+      {
+        "beforeAck": true,
+        "newerFailure": true,
+        "reverseArrival": true,
+        "exactProviderTimeRetained": true,
+        "latestOutcomeMatched": true,
+        "duplicateSingleReceipt": true,
+        "countsMatched": true
+      }
+    ],
+    "appliedMigrationCount": 27,
+    "runtimeSchemaFingerprint": "08eee8691ef7b8491da5d6b36e23a54361e0114522006c373d236bc095d6dc76",
+    "exactSchemaMatched": true,
+    "exactBindingsVerified": true,
+    "invalidEventsWroteNothing": true,
+    "invalidProviderTimeWroteNothing": true,
+    "minimizedMetadataOnly": true,
+    "foreignKeyViolations": 0,
+    "originalInventoryRestored": true,
+    "ownedD1AndWorkerRemoved": true,
+    "originalStagingVersionAndAllTableHashesRetained": true,
+    "nativePrivateWorkerGuardsPassed": true,
+    "providerCredentialsAbsent": true
+  },
+  "independentReadback": {
+    "verifiedAt": "2026-10-06T05:19:24.987Z",
+    "separateProcess": true,
+    "mainDataCredential": "read-only monitor",
+    "inventoryCredential": "verified canonical Wrangler OAuth GET-only",
+    "originalInventoryRestored": true,
+    "allOwnedResourcesAbsent": true,
+    "mainAllTablesMatchedPostMigrationBaseline": true,
+    "onlyIntendedLedgerRowChanged": true,
+    "exactNewDefinitionsAndRetainedOtherSchemaMatched": true,
+    "version": "0605e4ed-38d2-4e09-967e-3c3f3c99910d",
+    "businessMigrationCount": 27,
+    "broadcastDisabled": true,
+    "existingSecretsRetained": true
+  },
+  "staging": {
+    "completedAt": "2026-10-06T05:19:11.304Z",
+    "previousVersion": "b3ce17ce-cd56-464c-8694-2215dce51b39",
+    "version": "0605e4ed-38d2-4e09-967e-3c3f3c99910d",
+    "businessMigrationCount": 27,
+    "changedSchemaObjects": 2,
+    "exactTwoDefinitionsMatched": true,
+    "onlyIntendedLedgerRowChanged": true,
+    "retainedDataHashesMatched": true,
+    "foreignKeyViolations": 0,
+    "existingSecretsRetained": true,
+    "canonicalVarsAndStoresMatched": true,
+    "exactPublicAssetsMatched": 4,
+    "broadcastSendingStillDisabled": true
+  },
+  "limits": [
+    "Synthetic signed HTTP events verify the application, not delivery from Resend",
+    "Bulk send UI, real signed service delivery and provider retry/retention remain open",
+    "Historical combined remote recovery retains its 25-Business schema provenance",
+    "Unknown historical provider occurrence times are not backfilled",
+    "No additional mail, real-user migration, domain cutover or production billing"
   ]
 }
