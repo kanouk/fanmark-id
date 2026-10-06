@@ -43,13 +43,17 @@ No schedule, function, deployment or user data changed. Real user-data migration
 and domain cutover remain deferred. Re-read metadata immediately before a
 separately authorized final source-writer freeze.
 
-## Current staging configuration (2026-10-05 JST)
+## Current staging configuration (2026-10-06 JST)
 
 This is separate from the source metadata observation above. The current
 `wrangler.app-staging.jsonc` enables `LICENSE_EXPIRY_BACKEND=d1` and
 `NOTIFICATION_ARCHIVE_BACKEND=d1` on the daily `0 0 * * *` trigger.
-Runtime12fa13f/Workercc6d9da7 is deployed with these settings. The isolated
-archive and one-shot lifecycle proofs remain bounded acceptance; the main
-09:00 JST natural invocation has not yet been observed. See
+Current Worker471faabe retains these settings and the separate every-minute
+Stripe dispatch trigger. The main 2026-10-06 09:00:57 JST natural expiry/grace/
+archive completed with zero eligible rows, exceptions, conflicts or remaining
+items on then-current Workerb3a770b3. This does not prove nonempty main archive
+processing or recurring fit on every later candidate. Isolated nonempty
+archive and one-shot lifecycle proofs remain separate. See
+[bounded natural invocation](evidence/staging-natural-daily-2026-10-06.json),
 [completion conditions](COMPLETION.md) and [operations](OPERATIONS.md).
 No source writer was disabled or changed.

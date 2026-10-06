@@ -4,6 +4,27 @@
 
 通知画面とヘッダーの受信箱 read path、および個別/一括既読操作を、明示的に選択できるCloudflare Worker + business D1 APIとして用意する。D1上の通知イベント処理も別selectorで実装し、合成イベントのstaging検証後、workers.dev stagingで有効にした。未移行のイベント生成元、および他のメール/Web Push送信処理の有無と呼出し経路は引き続き照合対象とする。下記のsource processor確認だけで、サービス全体の配信経路が揃ったとは扱わない。
 
+## 4言語のアプリ内通知を実Safariで受け入れ（2026-10-06 JST）
+
+現在のWorker `471faabe-3aff-4312-ba22-cd326dc821e1`（runtime bdc23da）を保持し、専用合成account1件に
+JA/EN/KO/IDの通知を各1件配信。payload.languageを与えず本人profileの優先言語を
+APIで変更し、D1 pending INSERTと通常sign-outのpostcommit wakeから実processorへ通した。
+各event processed・in-app delivered・正確なtitle/body・literalの## API 契約とJSONB object表記が一致。
+同じSafariのreload後は画面の言語も一致し、本文表示・個別既読・read_via=appを確認した。
+一覧はbodyを表示する仕様で、titleは保存payloadの照合である。
+
+UI logout後、所有する通知4/event4/rule1/template4/settings1/Auth account1/user1を除去。
+独立read-only processで既存全表の全row hash、Auth3/7/2、Master25表、FK0を保持。
+wake世代の正当な+4とack一致を残し、世代は巻き戻さず、合成passwordを除去した。
+最初のprepare引数はimported旧runnerの既存journal guardでexit1となったが、
+旧runnerはmutation前に停止し、目的fixtureは準備済み。別processで保持を再確認し、
+引数はseed-ownedへ変更した。再seed・完了runner再実行は不要。
+[限定証拠](evidence/staging-notification-locales-native-2026-10-06.json)。
+
+配備/secret変更、追加mail、本番Stripe、実ユーザー移送、DNS変更は0。
+曖昧な複数channel・import codec/任意精度・外部caller、他event発生元と外部配信、
+実スマホ/standalone・全言語/全フローの最終確認は引き続き別条件。全体移行は未完了。
+
 ## API 契約
 
 - `GET /api/me/notifications?limit=1..50`: 本人の通知を `triggered_at DESC, id ASC` で返す。応答は画面用の `id, payload, read_at, triggered_at, priority, channel` に限定する。

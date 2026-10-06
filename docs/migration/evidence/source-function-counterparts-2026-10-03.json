@@ -1564,7 +1564,7 @@
         "location": "T:2199; M:1628; F E:process-notification-events",
         "actor": "Worker internal",
         "boundaryAndEvidence": "Source STABLE/definer helper (730aaec7), target internal template renderer",
-        "remainingBoundary": "Source literal-only PostgreSQL oracle7 cases exposed/fixed JSONB text/key order, decimal formatting and dollar replacement; target uses source channel-unfiltered lookup. Four locales/override/fallback covered in native notifications53/53. Ambiguous multi-channel rows, original import codecs, callers and remote acceptance remain open; see notifications-api.md."
+        "remainingBoundary": "Source literal-only PostgreSQL oracle7 cases exposed/fixed JSONB text/key order, decimal formatting and dollar replacement; target uses source channel-unfiltered lookup. Native notifications53/53 cover four locales/override/fallback. On 2026-10-06 Worker471faabe, four stored preferred-language in-app deliveries, literal dollar/object rendering, Safari body/UI locale and individual read were accepted with exact-owned cleanup/independent preservation. Ambiguous multi-channel rows, imported codecs/precision, payload override remote tests and external callers remain open; see notifications-api.md and staging-notification-locales-native-2026-10-06.json."
       },
       "counterpartSemanticApprovalInferred": false
     },
@@ -1938,5 +1938,6 @@
     "ciRun": 37130360266,
     "workerVersion": "bddc0dad-e996-4930-bf1d-97aacc6065b7",
     "evidence": "tier-c-public-access-2026-10-04.json"
-  }
+  },
+  "counterpartEvidenceUpdatedAt": "2026-10-06T13:14:31.624Z"
 }

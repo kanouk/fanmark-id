@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "scope": "Four preferred-language in-app notifications, actual staging processor and Safari individual read; synthetic account only",
+  "worker": "fanmark-app-staging",
+  "workerVersion": "471faabe-3aff-4312-ba22-cd326dc821e1",
+  "runtimeHead": "bdc23da03136d9ae7ad3e509f23ebceb71b0d522",
+  "runtimeCI": {
+    "id": 37456809494,
+    "bothJobsSuccessful": true
+  },
+  "startedAt": "2026-10-06T13:03:28.660000Z",
+  "finishedAt": "2026-10-06T13:14:31.624Z",
+  "fixtures": {
+    "syntheticUsers": 1,
+    "credentialAccounts": 1,
+    "rules": 1,
+    "templates": 4,
+    "events": 4,
+    "notifications": 4
+  },
+  "processing": {
+    "eventSeed": "Exact-owned D1 INSERT with source=batch; custom synthetic rule/template. Not business-event-creation UI acceptance.",
+    "wake": "Canonical pending INSERT outbox trigger plus ordinary own session sign-out postcommit flush; actual deployed Worker processing",
+    "manualScheduledInvocation": false,
+    "localProcessorUsed": false,
+    "manualStatusTerminalization": false,
+    "payloadLanguageOverrideAbsent": true,
+    "preferredLanguageSetThroughOwnProfileApi": true,
+    "emailOrWebpushNotifications": 0
+  },
+  "languages": [
+    {
+      "language": "ja",
+      "eventProcessed": true,
+      "inAppDelivered": true,
+      "exactLocalizedTitleAndBodyPersisted": true,
+      "nativeBodyObserved": true,
+      "nativePreferredLanguageUiObserved": true,
+      "literalDollarAndJsonbObjectTextPreserved": true,
+      "nativeIndividualReadAccepted": true,
+      "readVia": "app",
+      "readAt": "2026-10-06T13:09:31.195000Z",
+      "screenshotSha256": "846e4ba50a18cc8df1dec67f1e244ff7f7036150ad3af955a0e21acf7715c80b"
+    },
+    {
+      "language": "en",
+      "eventProcessed": true,
+      "inAppDelivered": true,
+      "exactLocalizedTitleAndBodyPersisted": true,
+      "nativeBodyObserved": true,
+      "nativePreferredLanguageUiObserved": true,
+      "literalDollarAndJsonbObjectTextPreserved": true,
+      "nativeIndividualReadAccepted": true,
+      "readVia": "app",
+      "readAt": "2026-10-06T13:10:28.138000Z",
+      "screenshotSha256": "dd63240fd8c51b1ca772a7f3c1ae9906794eedbefe4e7dbfbe6bb8d4ff3ab955"
+    },
+    {
+      "language": "ko",
+      "eventProcessed": true,
+      "inAppDelivered": true,
+      "exactLocalizedTitleAndBodyPersisted": true,
+      "nativeBodyObserved": true,
+      "nativePreferredLanguageUiObserved": true,
+      "literalDollarAndJsonbObjectTextPreserved": true,
+      "nativeIndividualReadAccepted": true,
+      "readVia": "app",
+      "readAt": "2026-10-06T13:11:35.804000Z",
+      "screenshotSha256": "e430363272ba2da2d5a6b1ad6300adfecb8d487444a91874f5de2d02de5df3ee"
+    },
+    {
+      "language": "id",
+      "eventProcessed": true,
+      "inAppDelivered": true,
+      "exactLocalizedTitleAndBodyPersisted": true,
+      "nativeBodyObserved": true,
+      "nativePreferredLanguageUiObserved": true,
+      "literalDollarAndJsonbObjectTextPreserved": true,
+      "nativeIndividualReadAccepted": true,
+      "readVia": "app",
+      "readAt": "2026-10-06T13:13:00.232000Z",
+      "screenshotSha256": "7edd60065cafe66388c9920f1b87dcbcc455472806015738eef29911e25d8800"
+    }
+  ],
+  "nativeUi": {
+    "browser": "Safari private window",
+    "sameWindowReused": true,
+    "notificationListRenders": "body, with title only as fallback; titles validated in stored payload, not claimed visible beside body",
+    "languageButtonsAndWindowTitleMatchedAfterReload": true,
+    "individualReadVia": "app",
+    "logoutAccepted": true,
+    "passwordSaveDeclined": true,
+    "initialAxPasswordInputFailed": "AX setValue did not populate React state. Pasting the same existing password succeeded; no new credential created by UI.",
+    "allReadScreenshotSha256": "d691b30f7fbf2971756da178b1037d18b7d106a86b1dd09bf306367af1fe1d74"
+  },
+  "preparationRunner": {
+    "initialExitCode": 1,
+    "legacyImportedPrepareGuardRefusedBeforeMutation": true,
+    "intendedFixtureWasPrepared": true,
+    "argumentRenamed": "seed-owned",
+    "separatePreparationReadbackPassed": true
+  },
+  "cleanup": {
+    "exactOwnedRowsDeleted": {
+      "notifications": 4,
+      "notification_events": 4,
+      "notification_rules": 1,
+      "notification_templates": 4,
+      "user_settings": 1,
+      "account": 1,
+      "user": 1
+    },
+    "allPreexistingTableRowHashesPreserved": true,
+    "foreignKeyViolations": 0,
+    "authBaseline": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "masterTableCount": 25,
+    "notificationWakeGenerationIncrement": 4,
+    "notificationWakeAcknowledged": true,
+    "wakeAndMfaGenerationNotRewound": true,
+    "workerVersionUnchanged": true,
+    "syntheticPasswordRemoved": true,
+    "independentReadOnlyProcessAt": "2026-10-06T13:14:31.624Z"
+  },
+  "runtimeRedeployed": false,
+  "secretsChanged": false,
+  "sourceWrites": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "additionalEmails": 0,
+  "fullMigrationAccepted": false,
+  "remainingBoundary": "Ambiguous multi-channel source selection, payload-language override remote tests, imported codecs/arbitrary precision values, all event producers, email/webpush senders and external callers remain separate. This is not all-language/all-flow final integration, physical-phone or installed-PWA acceptance.",
+  "counterpartLinkage": {
+    "cachedSourceObservedAt": "2026-10-06T04:15:10.854785+00:00",
+    "freshSourceReadPerformed": false,
+    "runtimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+    "counts": {
+      "functions": 58,
+      "triggerBindings": 37,
+      "externalTriggerBindings": 1,
+      "eventTriggerBindings": 0,
+      "reviewedUnboundTriggerDefinitions": 4,
+      "pendingFunctionReviews": 54
+    },
+    "counterpartTrace": {
+      "functionCount": 58,
+      "missingFunctionCount": 0,
+      "traceSha256": "c87c719edd65c4ebbcb2ee487f5727a67144c59b51f8e39bdd1a971032e9f8a4",
+      "semanticApprovalInferred": false,
+      "boundary": "Exact source identity, definition, attributes and binding count matched to manual correspondence; feature/provider/operational acceptance and converter gates remain separate."
+    },
+    "manualTraceSha256": "79e1fdddd98c298d8d83b380737425714be0772f81c8f2b2c256633c59c0f419",
+    "focusedTestsPassed": 13,
+    "focusedTestsFailed": 0,
+    "converterDeployable": false
+  }
+}
