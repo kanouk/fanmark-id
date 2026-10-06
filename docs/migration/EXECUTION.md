@@ -7990,3 +7990,10 @@ Native UI is pending manual Mac unlock. Real existing-client service-worker tran
 cache retirement and final phone/PWA acceptance remain unproven. Do not invoke the old
 raw-CDP staging PWA helper for GUI automation under the current CUA-only policy. Use the
 known CUA surface after unlock; API/file proof does not replace browser acceptance.
+
+
+## Full staging Master encrypted local recovery (2026-10-06 JST)
+
+Read-only Master capture includes all24 application tables plus d1_migrations, 12,254 rows and98 schema objects. AES-256-GCM saved archive decryption and isolated SQLite/Miniflare-workerd restoration match every schema object, full table hash/count and FK0; tampered ciphertext is rejected before restoration. Actual app readers return3944 active emoji records and four reference masters (4/4/5/16 public rows). Separate-process read-only source readback matches all tables and unchanged Worker8cbe1e5f, with zero remote writes. Legacy Master Auth tables were checked empty; separate Auth D1 credentials and Supabase rows were not exported.
+
+SQLite247ms/workerd93691ms are local proof timings, not production RTO. Stable repeated reads are not an atomic production snapshot. Remote full-Master recovery, scheduled/off-host encryption, operator/key custody/retention/RPO-RTO, real Auth credential backup and final combined recovery remain open. See full-master-recovery.md and evidence/full-staging-master-local-recovery-2026-10-06.json. Private archive/key remain outside Git; no completed proof runner or send command should be replayed.

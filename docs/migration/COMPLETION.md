@@ -4,6 +4,20 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 全ステージングMasterの暗号化・ローカル復旧（2026-10-06 JST）
+
+これまでの一式復旧は絵文字3件のMaster fixtureだった。今回はread-only監視credentialで
+全Master24アプリ表＋移行台帳の12,254行を取得し、暗号化したファイルから隔離SQLiteと
+Miniflare/workerd D1へ復旧した。98 schema object、全表count/hash、FK0が一致し、
+改変ciphertextは復旧前に拒否した。実アプリrepositoryでactive絵文字3944と4種の参照
+Master（Tier4/language4/pattern5/price16）を取得した。別processのsource照合も一致、
+remote writeは0。旧Master Auth表は空を確認し、別Auth D1の資格情報を読み出していない。
+[全Master復旧](full-master-recovery.md)・[限定証拠](evidence/full-staging-master-local-recovery-2026-10-06.json)。
+
+これは全Masterの限定ローカル復旧証拠で、atomic本番snapshot・remote復旧・定期保存・
+鍵保管/担当・retention/RPO/RTOの採用、実Auth資格情報復旧、最終一式統合は未完了。
+複数回readの一致をatomic snapshotと呼ばない。六項目全体は未完了のまま。
+
 ## カタログ障害時の更新確認を修正（2026-10-06 JST）
 
 `src/main.tsx`はカタログ取得後にService Workerを登録していたため、取得が失敗・停滞

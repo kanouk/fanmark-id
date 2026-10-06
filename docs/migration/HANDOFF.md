@@ -1,5 +1,32 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Full staging Master encrypted local recovery accepted (2026-10-06 JST)
+
+Read-only export captured all24 application Master tables plus the migration
+ledger:12,254 rows,3,944 canonical emojis,7,888 staged release records and98 schema
+objects. Decryption/restoration to isolated SQLite and Miniflare/workerd D1 matched
+every table count/hash, schema object and FK0. Tampered ciphertext was rejected.
+The actual app repositories read all3,944 active emojis and allfour reference
+masters (tiers4/languages4/active patterns5/active prices16). Separate-process
+read-only source readback matched every table and unchanged current Worker8cbe1e5f.
+No remote writes or Supabase reads occurred; retained legacy Master Auth tables
+were checked empty. Separate Auth D1 credentials were not exported.
+
+[Full Master recovery procedure](full-master-recovery.md) and
+[public bounded proof](evidence/full-staging-master-local-recovery-2026-10-06.json).
+Private archive/report/local SQLite are in
+`/Users/kanouk/.codex/fanmark-migration-private/full-master-recovery-2026-10-06-v2`;
+the one-off key is a separate private file outside that directory. Do not publish
+or attach either raw contents or keys. Do not rerun the completed proof runners:
+their exclusive-create guards deliberately refuse overwrites. Workerd was disposed.
+
+These stable multiple reads are not an atomic operational snapshot. Local restore
+timings247ms/93691ms are not production RTO. Remote full-Master recovery, Auth
+credential recovery, scheduled encrypted off-host backups, key custody/operator/
+retention/RPO-RTO and final combined integration remain open. Mac remains locked;
+the existing manual unlock question remains pending. No additional email permission
+was consumed and no additional message sent.
+
 ## Catalog failure no longer blocks update registration (2026-10-06 JST)
 
 The actual main.tsx startup awaited the catalog before registering its Service

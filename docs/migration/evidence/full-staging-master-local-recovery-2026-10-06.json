@@ -1,0 +1,174 @@
+{
+  "observedAt": "2026-10-06T01:47:53.237Z",
+  "scope": "Full staging Master readonly export and encrypted archive restoration to isolated local SQLite; not operational backup adoption or remote D1 recovery",
+  "workerVersion": "8cbe1e5f-5e55-4a82-a853-65ec96051db2",
+  "tables": {
+    "account": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "adminRole": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "d1_migrations": {
+      "count": 9,
+      "sha256": "bdee36b4ffe015b0335c0099716993ea4313bf7b9ecbeb4b6228d5c728c729c4"
+    },
+    "emoji_master": {
+      "count": 3944,
+      "sha256": "c3a77660ed836a138dc42b735b3d82bad8c83d3816c6f3c46ccbf823883905f4"
+    },
+    "fanmark_emoji_master_active_release": {
+      "count": 1,
+      "sha256": "fe43868d5eb773e1bbf08a503fbd97114ff60171b685e9fcf15dfcedec93ff0e"
+    },
+    "fanmark_emoji_master_change_audits": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "fanmark_emoji_master_mutation_context": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "fanmark_emoji_master_release_activations": {
+      "count": 3,
+      "sha256": "c5b3e4756ee20829333754e7985ad38a3005dc4fb8ba9db28f21419b0f5f44cf"
+    },
+    "fanmark_emoji_master_release_imports": {
+      "count": 3,
+      "sha256": "fc3ce2f40caf8a685a19a04dad6f0adab258bd979ee8ab4f4ee715e2816c3e46"
+    },
+    "fanmark_emoji_master_release_staging": {
+      "count": 7888,
+      "sha256": "53a443a6cea7dfdd0af698d2292533d97701400ce6efe54f49c660b3c545ddd2"
+    },
+    "fanmark_extension_price_release_rows": {
+      "count": 176,
+      "sha256": "6711d86b123176ce4a984c064918c1865435ee08bd43f59c30154f0bc1155aaf"
+    },
+    "fanmark_language_release_rows": {
+      "count": 48,
+      "sha256": "c7554f7a1fa85c6826f66e0ba94fe9eae9989ef79bb95855e95d04d047307e27"
+    },
+    "fanmark_reference_master_active_release": {
+      "count": 1,
+      "sha256": "f0e6a503a9e2ce4a4d0fc5843f88438760470fa361bc44520d3720ebc98520a4"
+    },
+    "fanmark_reference_master_extension_price_manifests": {
+      "count": 11,
+      "sha256": "060550953e23922395a67120f5118bb56808f802d66add432aa18028396094ba"
+    },
+    "fanmark_reference_master_release_activations": {
+      "count": 13,
+      "sha256": "222b7e13b9f6c446df387e6790daf8ed96f0bb58299955ba3a017881b8f82e77"
+    },
+    "fanmark_reference_master_release_tables": {
+      "count": 36,
+      "sha256": "fadcd0c345b2c43f0951bb6a5bd7da01d85ebf9a2d3cc3b8f836206d613ebb68"
+    },
+    "fanmark_reference_master_releases": {
+      "count": 12,
+      "sha256": "cb12e3269c2298cc15e5eba19cbb03c146eb5474003f87122dcb4572c0bf61e0"
+    },
+    "fanmark_reserved_emoji_pattern_release_rows": {
+      "count": 60,
+      "sha256": "cd4188aca48c0c5f8d082aeb6508b7c3732f1646e975991a00e01eeedaa598d5"
+    },
+    "fanmark_tier_release_rows": {
+      "count": 48,
+      "sha256": "90a960df260fa4e9ec207873531ff35c20f115a8c9fb75db5772a531bbe051ec"
+    },
+    "mfaAssurance": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "mfaGeneration": {
+      "count": 1,
+      "sha256": "f4b421ab75405370079c1309dc74f885e8a94fe38eb5b11ce3d388ccea4f6d9f"
+    },
+    "session": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "twoFactor": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "user": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "verification": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  },
+  "tableCount": 25,
+  "schemaObjectCount": 98,
+  "schemaSha256": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+  "totalRows": 12254,
+  "algorithm": "aes-256-gcm",
+  "archiveSha256": "94f9ab1dbd4e5e0c85ef2e3f8f6ab03a05cfb8b58e32bc4a844b266856a1d567",
+  "archiveBytes": 4741713,
+  "plaintextBytes": 4741713,
+  "decryptedBytesMatched": true,
+  "tamperRejectedBeforeRestore": true,
+  "localRestoreMs": 247,
+  "sqliteVersion": "3.53.4",
+  "restoredEveryTableHashMatched": true,
+  "restoredSchemaObjectsMatched": true,
+  "foreignKeyViolations": 0,
+  "sourceStableAcrossThreeReads": true,
+  "readonlyMonitorCredential": true,
+  "remoteWrites": 0,
+  "localTargetOnly": true,
+  "legacyMasterAuthTablesEmpty": true,
+  "userAuthRowsExported": false,
+  "sourceSupabaseRead": false,
+  "operationalSnapshotConsistencyClaim": false,
+  "remoteD1RecoveryAccepted": false,
+  "scheduledBackupAccepted": false,
+  "operationalKeyCustodyAccepted": false,
+  "productionRtoAccepted": false,
+  "fullMigrationAccepted": false,
+  "nativeWorkerdLocalRestoreAccepted": true,
+  "nativeWorkerdRestoreMs": 93691,
+  "nativeAllTableHashesMatched": true,
+  "nativeSchemaObjectsMatched": true,
+  "applicationEmojiCount": 3944,
+  "applicationReferenceCounts": {
+    "fanmark_tiers": 4,
+    "languages": 4,
+    "reserved_emoji_patterns": 5,
+    "fanmark_tier_extension_prices": 16
+  },
+  "schemaVersion": 1,
+  "applicationTableCount": 24,
+  "migrationLedgerIncluded": true,
+  "independentProcessSourceReadback": {
+    "observedAt": "2026-10-06T01:50:33.897Z",
+    "allTableHashesMatch": true,
+    "tableCount": 25,
+    "workerVersion": "8cbe1e5f-5e55-4a82-a853-65ec96051db2",
+    "foreignKeyViolations": 0,
+    "remoteWrites": 0
+  },
+  "proofRunnerHashes": {
+    "exportAndSqlite": "0696ca46d8f9d4223b49279477162ebc5df9b0189089da2fcfc32f855cc586ba",
+    "nativeWorkerd": "6aef1fce393ccc32eb3f83b264574863e0ff518c7939229686b177fbe9446429"
+  },
+  "actualApplicationReaderHashes": {
+    "emoji": "32a6fb0f9f6f3f4b1fed7b9672bdf14c89de676f2fa278e990b79587f58bb744",
+    "reference": "5763a12c7b36a23ffd04bd5d04c548101a030ac889b8c636c82224a6b7593454",
+    "topology": "d9819d15f97507eb0823b77821e57f1a52c3cd822276898599f10f3159b47b91"
+  },
+  "rawRowsOrKeysIncluded": false,
+  "codeHead": "e79b87e470a7bb19dd7def8e7d5a9fdbb59c3136",
+  "runtimeValidation": {
+    "head": "e79b87e470a7bb19dd7def8e7d5a9fdbb59c3136",
+    "run": 37400421773,
+    "application": "success",
+    "worker": "success"
+  }
+}

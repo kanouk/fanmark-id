@@ -1,0 +1,71 @@
+# Full staging Master recovery proof
+
+## Scope
+
+This rehearsal exports the current staging Master database with the account-bound
+read-only monitoring credential. It covers all 24 application tables, including
+release history, canonical emoji records, reference releases and retained empty
+legacy Auth tables, plus the `d1_migrations` ledger. It reads no Supabase rows and
+does not change remote D1, Worker configuration, R2 or domains.
+
+The retained legacy `user`, `account`, `session`, `verification`, `twoFactor`,
+`adminRole` and `mfaAssurance` tables are checked empty before export. Master
+`mfaGeneration` is system bookkeeping and is preserved. This rehearsal does not
+back up the separate Auth D1 or its real credentials.
+
+## Procedure and boundaries
+
+1. Verify the exact staging account, Master database and 100% Worker version.
+2. Read every non-provider schema object and all table rows using validated
+   identifiers and a bounded row count. Provider `_cf_*` and SQLite internal
+   objects are excluded; retain the application migration ledger.
+3. Compare full schema and every table's count/hash before and after capture.
+   Stop if anything changes or any foreign-key check fails. Multiple reads are
+   a stability check, not an atomic production snapshot guarantee.
+4. Seal the schema and rows in one AES-256-GCM archive with authenticated format
+   metadata. Store archive and the one-off proof key in separate private files.
+   Decrypt the saved bytes, compare plaintext hash and reject a tampered archive
+   before any restore operation.
+5. Restore only to a newly created local database. Create tables, insert explicit
+   captured columns within a deferred-constraint transaction, then restore
+   indexes/views/triggers. Installing write triggers after rows avoids replaying
+   business effects during restore. Reopen the target and compare every schema
+   object, row count/hash and foreign keys.
+6. Repeat restoration in an isolated Miniflare/workerd D1 target and exercise
+   the actual application emoji and reference-master repositories. This remains
+   local; it is not remote D1 provisioning or remote recovery acceptance.
+7. Use a separate process and the read-only credential to confirm unchanged
+   remote Master counts/hashes, foreign keys and current Worker version.
+
+Raw data, restored database, encrypted archive and proof key stay outside Git in
+0700 directories/0600 files. Public evidence contains only hashes/counts, timings
+and acceptance boundaries. The one-off local key is not adopted operational key
+custody, an off-host backup or scheduled retention. Do not publish or attach raw
+archive contents or keys to the PR.
+
+## Remaining operational requirements
+
+Agree the operator, key custody/recovery access, schedule, retention and off-host
+storage; implement an atomic production snapshot method and a remote restore
+procedure. Auth credential recovery and final combined Master/Auth/Business/R2
+integration remain separate requirements. Local restore timings do not establish
+production RPO or RTO, and this proof does not complete the migration.
+
+## Accepted local rehearsal (2026-10-06 JST)
+
+At staging Worker `8cbe1e5f-5e55-4a82-a853-65ec96051db2`, all 25 tables contain
+12,254 rows in total, including 3,944 canonical emoji records and 7,888 staged
+release records. All 98 non-provider schema objects and every table count/hash
+match after decryption and restoration. Foreign-key violations are zero.
+Tampered ciphertext is rejected before restoration.
+
+Local SQLite restoration/reopen verification took 247ms. Isolated Miniflare/
+workerd restoration and actual application reads took 93,691ms. The actual emoji
+repository reads all 3,944 active records; the reference repository reads 4 tiers,
+4 languages, 5 active reserved patterns and 16 active extension prices. Inactive
+rows and release history remain present in the restored tables.
+
+A separate read-only process confirmed every source table count/hash and the
+Worker version unchanged. Remote writes are zero. These are local proof timings;
+neither is a production RTO. The encrypted archive and one-off key remain private.
+[Hashes, counts and explicit boundaries](evidence/full-staging-master-local-recovery-2026-10-06.json).
