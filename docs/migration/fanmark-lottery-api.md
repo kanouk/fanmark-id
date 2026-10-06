@@ -113,3 +113,16 @@ definitions, profiles/MFA/templates, anonymous search history5/8 and FK0.
 [UI and cleanup evidence](evidence/staging-coupon-return-lottery-ui-2026-10-06.json).
 This does not prove imported-user parity, winner selection or actual-phone use.
 Earlier zero-Auth/global-empty cleanup descriptions are historical canaries.
+
+
+## Native lottery results (2026-10-06 JST)
+
+Actual register/return/two-apply APIs and one local current-Worker scheduled
+invocation with remote staging D1 produced one winner, one loser, a persisted
+two-entry history/seed and one new active license. Native Safari confirmed the
+winner's 1/3 dashboard and expiry notice, the loser's 0/3 and two-applicant
+notice, mark-read persistence and logout. Independent scoped cleanup preserved
+Auth3/7/2, all24 Master hashes, original lifecycle/access rows and anonymous5/8;
+FK0 and notification wake29/29 were retained. The deployed Worker/main Cron
+were unchanged; this is not natural deployed Cron processing with candidates.
+[Bounded result UI evidence](evidence/staging-lottery-result-native-ui-2026-10-06.json).

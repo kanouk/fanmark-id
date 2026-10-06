@@ -77,3 +77,16 @@ It requires the authenticated
 Cloudflare account and exact staging bindings; it refuses to seed unless the
 business source tables and lifecycle journals satisfy their empty-state
 preflight, then checks cleanup in `finally`.
+
+
+## Native lottery results (2026-10-06 JST)
+
+Actual register/return/two-apply APIs and one local current-Worker scheduled
+invocation with remote staging D1 produced one winner, one loser, a persisted
+two-entry history/seed and one new active license. Native Safari confirmed the
+winner's 1/3 dashboard and expiry notice, the loser's 0/3 and two-applicant
+notice, mark-read persistence and logout. Independent scoped cleanup preserved
+Auth3/7/2, all24 Master hashes, original lifecycle/access rows and anonymous5/8;
+FK0 and notification wake29/29 were retained. The deployed Worker/main Cron
+were unchanged; this is not natural deployed Cron processing with candidates.
+[Bounded result UI evidence](evidence/staging-lottery-result-native-ui-2026-10-06.json).

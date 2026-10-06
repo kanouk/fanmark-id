@@ -131,6 +131,20 @@ FreeのWebhookはactive3件/追加返却0でUI返却を重複していない。l
 [上限超過選択とFreeへの変更](evidence/staging-populated-plan-limit-native-ui-2026-10-06.json)。
 全体の六項目はopenのまま。旧上限選択未確認の記述は過去のcheckpoint。
 
+2026-10-06 JST、合成3 accountの実登録→返却→2人の抽選申込APIからfixtureを作成し、
+所有licenseの締切だけを前倒しした。現行配備sourceと一致するloopback Wranglerの
+scheduled handlerをremote staging D1に対して1回実行し、候補1/競合0・旧license失効・
+当選1/落選1・2人の履歴/seedと新active license1を確認した。main自然Cronの有データ
+受け入れとは分ける。実配備Auth POSTから通知DOが起動し、outbox6件処理/通知4件配信。
+実Safariの当選側1/3と🧷有効、落選側0/3、期限付き当選通知/応募総数2の落選通知、
+当選通知の既読保存と両者logoutを確認した。所有fixture/3 Auth account/一回実行台帳の
+cleanup後に別read-only processで元Auth3/7/2・全Master24表・profile/MFA/template・
+匿名履歴5/8・元lifecycle/access状態・未所有scoped行hash/FK0を保持した。
+wake23→29/29を維持。Worker/config/main Cronは変更せず、local devと検証tabは終了。
+[抽選結果の実画面とcleanup](evidence/staging-lottery-result-native-ui-2026-10-06.json)。
+a36b94aのCI37395116307は両job成功。抽選結果UIのこの限定経路は受け入れ済み。
+六項目全体・有料退会・管理者MFA・最終統合は未完了のまま。
+
 ## 完了までに閉じる六つの作業
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |

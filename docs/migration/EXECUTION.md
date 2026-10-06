@@ -1,5 +1,41 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Native lottery results accepted (2026-10-06 JST)
+
+Three disposable credential users were created in staging. Actual authenticated
+registration, single return and two lottery application APIs produced the
+fixture. Only its grace deadline/license end was advanced. One loopback
+Wrangler `dev --test-scheduled` request executed the current deployed source
+with remote staging D1 bindings; archive and notification wake were disabled
+in that local invocation. The deployed Worker, its configuration and daily
+Cron were not changed. This is an actual Worker execution with remote D1,
+not a naturally triggered deployed Cron with candidates.
+
+The grace finalizer completed one candidate with no conflict, persisted its
+seed/input/selection and two-entry history, expired the old license, marked one
+entry won/one lost, and issued one active winner license. An actual deployed
+Auth POST woke the existing notification DO; all six owned outbox events were
+processed and four in-app notifications delivered, without fabricated result
+rows or manual notification dispatch.
+
+Native Safari showed the winner's active 🧷/1 of 3 and the loser’s empty/0 of 3
+dashboards. Notifications showed the winner's 2026/10/14 09:00 JST expiry and
+the loser’s two-applicant result. The winner's mark-read operation persisted
+`read_via=app`; both UI logouts left zero owned sessions. After scoped cleanup,
+independent read-only verification preserved human Auth3/7/2, all24 Master table
+hashes, original profiles/MFA/templates, anonymous history5/8, pre-existing
+lifecycle and protected-access rows, all unowned scoped hashes and FK0.
+Notification wake23→29/29 was retained. The local dev process and agent-created
+native tab were closed. No payment/provider calls were made for this test.
+[Result UI and independent cleanup](evidence/staging-lottery-result-native-ui-2026-10-06.json).
+
+Runtime remains0ed4213 / Workerb3a770b3 at100%. The preceding documentation
+commit a36b94a has CI37395116307 success in both jobs. This evidence closes
+native lottery-result display for the synthetic path. Paid deletion, native
+admin MFA, provider new-signup/relay, broadcast approval and final
+source/operations/recovery/phone/PWA/language integration remain open.
+Older lottery-result pending statements below are historical checkpoints.
+
 ## Populated Free downgrade native UI accepted (2026-10-06 JST)
 
 After human approval of the prepared sandbox form, native Safari submitted the
