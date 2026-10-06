@@ -1,3 +1,20 @@
+## 無効な招待コードのnative編集を確認（2026-10-06 JST）
+
+現行Worker471faabeで専用合成管理者の既存TOTP/MFAを確認し、Safariの招待管理から
+専用の無効コード1件を編集した。使用可能回数10→1と検証用JSONメモを保存し、
+更新toast・D1の正確な値・再読み込み後の一覧・開き直したフォームが一致した。
+コード文字列・未使用0件・無期限・無効状態、全体の招待モードは保持した。
+発行/有効化/招待signup/メール送信は実行していない。
+
+UI logout後、所有するcode/settings/Auth user各1件とcascadeを除去。招待画面が
+同時に空のwaitlistを読むことで生じた管理監査2件も、本人UUIDとaction/resource/
+timestamp/metadataをpinしてexact IDだけ除去した。別read-only processで既存全表
+hash・Auth3/7/2・Master25表・FK0・Worker不変を確認。正当なMFA世代+2は保持し、
+合成資格情報と入力ファイルを除去済み。[限定証拠](evidence/staging-invitation-edit-native-2026-10-06.json)。
+
+招待管理の編集操作を受け入れた。発行/有効化/削除、招待必須でのsignup/消費と
+他の管理画面・provider/運用採用/実端末/最終統合は別の条件。全体は未完了。
+
 # 招待コード管理のD1 API
 
 ## 2026-10-06の現在地
