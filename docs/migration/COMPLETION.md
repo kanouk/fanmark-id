@@ -4,6 +4,19 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 全Masterの暗号化ファイルから実D1へ復旧（2026-10-06 JST）
+
+補正コード801dc78のCI37405218853は両job成功。保存済みAES-GCMファイルを新規の
+隔離D1へ復旧し、25表/12,254行の全件hashと98 schema object（旧MFA trigger6個の
+body BEGIN大文字化だけを明示許容）、FK0が一致。実アプリreaderで絵文字3944と
+4種の参照Masterを取得した。復旧・target照合27161ms。一時D1を削除し、別の
+read-only processで元の3 DB inventory・全Business/Auth/Master表hash・Worker8cを
+保持した。[実D1復旧の限定証拠](evidence/full-staging-master-remote-recovery-2026-10-06.json)。
+
+全Masterのremote復旧を未実行扱いに戻さない。atomic本番snapshot、定期/off-host保存、
+運用鍵/担当/retention/RPO-RTO、全Auth remote復旧・最終一式統合は残る。
+この単位の成功を六項目全体の完了と扱わない。Macのロック解除依頼は返答待ち。
+
 ## 合成Auth資格情報の暗号化・ローカル復旧（2026-10-06 JST）
 
 全4 Auth migrationの9表を、合成3 user/4 account、SDKで登録したTOTP/暗号化backup code、
@@ -31,7 +44,7 @@ Master（Tier4/language4/pattern5/price16）を取得した。別processのsourc
 remote writeは0。旧Master Auth表は空を確認し、別Auth D1の資格情報を読み出していない。
 [全Master復旧](full-master-recovery.md)・[限定証拠](evidence/full-staging-master-local-recovery-2026-10-06.json)。
 
-これは全Masterの限定ローカル復旧証拠で、atomic本番snapshot・remote復旧・定期保存・
+これは全Masterの限定ローカル復旧証拠で、atomic本番snapshot・定期保存・
 鍵保管/担当・retention/RPO/RTOの採用、実Auth資格情報復旧、最終一式統合は未完了。
 複数回readの一致をatomic snapshotと呼ばない。六項目全体は未完了のまま。
 

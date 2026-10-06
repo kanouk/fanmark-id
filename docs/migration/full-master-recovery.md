@@ -6,7 +6,9 @@ This rehearsal exports the current staging Master database with the account-boun
 read-only monitoring credential. It covers all 24 application tables, including
 release history, canonical emoji records, reference releases and retained empty
 legacy Auth tables, plus the `d1_migrations` ledger. It reads no Supabase rows and
-does not change remote D1, Worker configuration, R2 or domains.
+does not change existing remote D1, Worker configuration, R2 or domains. The
+remote rehearsal below creates, writes and then deletes one explicitly owned
+isolated D1 only.
 
 The retained legacy `user`, `account`, `session`, `verification`, `twoFactor`,
 `adminRole` and `mfaAssurance` tables are checked empty before export. Master
@@ -46,8 +48,8 @@ archive contents or keys to the PR.
 ## Remaining operational requirements
 
 Agree the operator, key custody/recovery access, schedule, retention and off-host
-storage; implement an atomic production snapshot method and a remote restore
-procedure. Auth credential recovery and final combined Master/Auth/Business/R2
+storage; implement an atomic production snapshot method and adopt a production restore
+procedure. The isolated full-Master remote rehearsal below is accepted; Auth credential recovery and final combined Master/Auth/Business/R2
 integration remain separate requirements. Local restore timings do not establish
 production RPO or RTO, and this proof does not complete the migration.
 
@@ -90,7 +92,39 @@ unchanged. Target schema verification must expect this exact keyword correction
 and cannot claim byte-identical raw trigger SQL.
 
 The native regression proves preserved trigger effects/literals; the schema-only
-remote probe establishes the actual REST workaround. Full remote data recovery
-is still unaccepted pending a complete corrected run, all-row and application
-readback, owned-resource cleanup and separate source preservation verification.
+remote probe establishes the actual REST workaround. At this diagnosis checkpoint, full remote data recovery was still unaccepted.
+The corrected complete run below subsequently passed all-row/application readback,
+owned-resource cleanup and separate source preservation verification.
 [Bounded diagnosis](evidence/d1-rest-trigger-casing-2026-10-06.json).
+
+
+## Accepted isolated full remote rehearsal (2026-10-06 JST)
+
+After both CI jobs passed at `801dc784226e41828d0f7c3a6bcc56615b18783b`
+([run37405218853](https://github.com/kanouk/fanmark-id/actions/runs/37405218853)),
+the unchanged saved AES-GCM archive was decrypted and restored into one newly
+created account-bound, receipt-pinned D1. All25 tables/12,254 rows matched their
+source counts and hashes; all98 schema objects matched with the sole body-BEGIN
+case correction on six retained legacy MFA triggers. Raw source schema and the
+archive were unchanged. FK violations were zero. Source schema SHA256 is
+`32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56`;
+restored schema SHA256 after that correction is
+`3ca374efa733a5c6db5e71918bae25e259bdc1b4a7b1b2d3d96dda1e6fba2240`.
+
+The actual application readers returned all3,944 active emojis and tiers4,
+languages4, active patterns5 and active extension prices16. Restore plus target
+verification took27,161ms after target/schema preflight; it excludes account/CI
+preflight, resource creation, final deletion and operator recovery work. This is
+a rehearsal measurement, not a production RTO or atomic-source snapshot proof.
+
+The owned target was deleted by exact receipt identity. A separate read-only
+process at02:52:38.154Z confirmed the original three-DB inventory and all Business,
+Auth and Master table hashes unchanged, FK0 and unchanged Worker8cbe1e5f. No
+existing DB writes, Worker deployment, R2 or DNS changes occurred. Separate Auth
+credentials were not exported or restored. All prior failed targets were also
+cleaned. [Full bounded remote proof](evidence/full-staging-master-remote-recovery-2026-10-06.json).
+
+The private v3 journal is completed and must not be replayed. Scheduled/off-host
+backup, durable operator/key custody/retention/RPO-RTO, full synthetic Auth remote
+recovery and final combined recovery remain open. This closes only the isolated
+full staging Master remote-restore requirement, not the six-package migration.

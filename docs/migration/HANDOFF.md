@@ -1,3 +1,20 @@
+## Latest unit: full saved Master archive recovered into real isolated D1 (2026-10-06 JST)
+
+Code801dc78 / CI37405218853 both jobs successful. Corrected v3 run restored the
+saved AES-GCM archive into an exact-receipt-owned D1:25 tables/12254 rows/all table
+hashes/FK0 and98 objects matched after only six explicit body BEGIN corrections.
+Actual app readers returned3944 emojis and reference4/4/5/16. Restore/target
+verification27161ms. Target deleted; independent02:52:38.154Z RO readback preserved
+all Business/Auth/Master hashes, original3-DB inventory and Worker8cbe1e5f.
+No source/Supabase user migration, existing DB writes or runtime/R2/DNS change.
+See full-master-recovery.md and evidence/full-staging-master-remote-recovery-2026-10-06.json.
+
+Private v3 directory `full-master-remote-recovery-2026-10-06-v3` is completed;
+do not replay the runner or recreate deleted targets. Remote full Master proof is
+accepted. Atomic operational snapshot, off-host/durable key custody/retention,
+owner/RPO-RTO, full Auth remote/combined recovery and the other package conditions
+remain open. Mac unlock request is pending; six-package goal remains active.
+
 ## Latest unit: isolated REST trigger preparation (2026-10-06 JST)
 
 Full remote Master restore reached rows but failed at the final trigger batch.

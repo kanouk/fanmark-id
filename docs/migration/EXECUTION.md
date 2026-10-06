@@ -8016,3 +8016,16 @@ and98 schema objects matched that explicit keyword correction. Owned cleanup and
 independent source data/Worker/inventory preservation passed. Added an opt-in SQL
 preparation helper;12/12 native/transport regressions, focused lint and workflow
 isolation passed. Pending corrected full remote restore, no runtime deployment.
+
+
+### 2026-10-06: Full saved Master archive recovered into isolated real D1
+
+Code801dc78/CI37405218853 both successful. Corrected v3 restored all25 tables/
+12254 rows from unchanged saved AES-GCM bytes; all counts/hashes/FK0 and98 schema
+objects matched after only six body BEGIN corrections. Actual app readers read
+3944 emojis and reference4/4/5/16. Restore/target verification27161ms. Exact owned
+D1 deletion succeeded; independent02:52:38.154Z readback preserved all three main
+DB hashes/inventory and Worker8cbe1e5f. No existing DB writes/runtime/R2/DNS changes.
+Remote full Master is accepted only within full-master-recovery.md; operational
+snapshot/key custody/off-host/retention/RPO-RTO/Auth remote/combined and six-package
+completion remain open. Earlier failed/semicolon attempts were cleaned, not accepted.

@@ -92,5 +92,12 @@
   "productionSessionRevocationPolicyAccepted": false,
   "remoteAuthRecoveryAccepted": false,
   "supabaseAuthMigrationAccepted": false,
-  "fullMigrationAccepted": false
+  "fullMigrationAccepted": false,
+  "ciIncludingNewRecoveryTest": {
+    "head": "c430c64f00168f40b1e72f29efba2943f081a792",
+    "run": 37402677646,
+    "application": "success",
+    "worker": "success",
+    "newRecoveryTestIncluded": true
+  }
 }

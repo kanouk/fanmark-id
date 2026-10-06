@@ -55,7 +55,7 @@ Target: MFA campaign list/create/update and controlled delivery actions; interna
 
 Implementation: [broadcast-email-admin-d1-api.ts](../../workers/api/src/broadcast-email-admin-d1-api.ts), [broadcast-email-delivery-d1.ts](../../workers/api/src/broadcast-email-delivery-d1.ts). Contracts: [broadcast-email-admin-api.md](broadcast-email-admin-api.md), [broadcast-email-delivery-design.md](broadcast-email-delivery-design.md). Coverage: [broadcast-email-admin-d1.test.ts](../../workers/api/test/broadcast-email-admin-d1.test.ts), [broadcast-email-delivery-d1.integration.mjs](../../workers/api/test/broadcast-email-delivery-d1.integration.mjs).
 
-Difference or remaining condition: Source broad ALL becomes bounded campaign commands; real Resend delivery remains pending.
+Difference or remaining condition: Source broad ALL becomes bounded campaign commands. The approved fixed-recipient test-send API was accepted with native draft creation, Resend Delivered and matching D1 audit; see [the bounded delivery evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json). Send UI, bulk, signed delivery/retry and retention remain unaccepted.
 
 ### C03: email_templates (2 policies)
 
@@ -425,7 +425,7 @@ Target: Session own minimal read DTO; signed Stripe projection/command paths onl
 
 Implementation: [subscription-d1-api.ts](../../workers/api/src/subscription-d1-api.ts), [stripe-subscription-reconciliation-d1.ts](../../workers/api/src/stripe-subscription-reconciliation-d1.ts). Contracts: [stripe-plan-change-api.md](stripe-plan-change-api.md), [stripe-invoice-projection-validation.md](stripe-invoice-projection-validation.md). Coverage: [subscription-d1-api.test.mjs](../../workers/api/test/subscription-d1-api.test.mjs), [stripe-subscription-reconciliation-d1.integration.mjs](../../workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs).
 
-Difference or remaining condition: No arbitrary subscription-row mutation/general admin row-reader. Signature, livemode and account identity checks replace service-role ingress; real sandbox remains pending.
+Difference or remaining condition: No arbitrary subscription-row mutation/general admin row-reader. Signature, livemode and account identity checks replace service-role ingress. Actual sandbox Checkout/Portal, signed projection, duplicate/out-of-order/retry and refusal/3DS recovery are accepted within [the provider evidence](evidence/stripe-staging-real-provider-2026-10-04.json) and [the same-user subscription UI](evidence/stripe-staging-subscription-ui-2026-10-05.json). Paid deletion and final integrated UI remain unaccepted.
 
 ### C40: waitlist (2 policies)
 

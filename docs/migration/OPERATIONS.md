@@ -206,3 +206,15 @@ RPO、停止時間目標、RTO、snapshot周期/保存期間、復旧担当は�
 main archiveの自然実行確認、provider残件、担当/権限運用/鍵保管先/保存期間/
 RPO・RTOの確定、同じ最終candidateでのPC・実スマホ・言語・旧PWAと障害復旧の通し確認。
 [COMPLETION](COMPLETION.md)の項目4・6を閉じるまで運用完了としない。
+
+
+## 全Masterの保存済み暗号化ファイルによる隔離実D1復旧（2026-10-06 JST）
+
+全25表/12,254行/98 schema objectを実D1へ復旧し、全表hash、FK0、実アプリreaderの
+3944絵文字と4種の参照Masterを確認した。D1 RESTの小文字begin拒否は、旧MFA6 trigger
+だけのbody BEGIN大文字化で対応し、source/archiveは保持する。復旧とtarget照合27161ms
+はproduction RTOではない。一時DB削除後の独立read-only照合で全主DB hash、元inventory、
+Worker8cを保持した。[手順と範囲](full-master-recovery.md)・
+[実D1の限定証拠](evidence/full-staging-master-remote-recovery-2026-10-06.json)。
+定期/off-host保存、atomic source snapshot、運用鍵/担当/retention/RPO-RTO、全Auth
+remote復旧・最終一式復旧は別の未完了条件である。完了journalを再実行しない。
