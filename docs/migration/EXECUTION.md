@@ -8249,3 +8249,31 @@ Worker typecheckとfocused lintを通過。CI・staging修正配備・同じ解�
 exact-owned cleanup/独立保持照合はこのcheckpointでは未受け入れ。
 [実退会と修正の限定証拠](evidence/paid-deletion-cancellation-regression-2026-10-06.json)。
 実ユーザー移送・DNS/domain・本番Stripe・追加mailを行っておらず、全体移行は未完了。
+
+## 有料退会の実Safari・実解約通知・後片付けを受け入れ（2026-10-06 JST）
+
+専用合成accountの最終削除を本人許可後に一度だけ実行し、Stripe test購読の即時解約/200、
+Auth関連行0、業務profile/購読0、無期限Tier Cのgrace返却/所有者NULL、退会監査1件を照合。
+設定2行はgrace期間中に保持する仕様で、同じSafariの/dashboardは/authへ戻った。
+同じSafariの通常reload/既存Checkout成功URL/Creator表示も受け入れた。
+Macロック中のPWA自動更新・実スマホ/standalone更新は未証明。
+
+退会後の署名解約通知が削除済み設定を要求する不具合を修正した候補bdc23daは、
+CI37456809494の両job成功後、Worker 471faabe-3aff-4312-ba22-cd326dc821e1へ100%配備。
+関連Webhook79/79（購読22）、typecheck/lint成功。秘密/設定/全公開asset6件を保持した。
+専用通知のavailable_atだけを一度早め、試行回数・generation・terminal状態は変更せず、
+実毎分Cronによる同じ署名通知のignored/completed・errorなし・fence解放を確認した。
+退会監査/過去applied同一購読/Stripe現在canceled・有効購読0の厳格一致を要求し、
+本人projectionを再作成しない。これは運用者による待ち時間短縮を含む受け入れである。
+
+所有する3監査/4receiptと関連台帳/command/fence/ファンマ/設定だけを後片付けした。
+別のread-only credentialによる全表照合で既存全row hash、Auth3/7/2、Master25表、FK0を保持。
+再利用防止のlicense incarnation tombstoneは+1で残し、既存MFA/wake世代は巻き戻さない。
+private journalはverified_and_cleaned。削除済み合成passwordとui-credentialsを除去。
+再seed/再Checkout/再Delete/完了runner再実行は不要。
+[受け入れの限定証拠](evidence/staging-native-paid-deletion-accepted-2026-10-06.json)。
+
+有料退会のこの経路は完了。六項目全体はopenで、source/外部caller/4 converter group、
+Apple・Discord新規/relay、告知UI/実通知/bulk、運用条件、同じ最終candidateの実スマホ・
+対応言語・旧PWA・障害復旧の通し確認が残る。実ユーザー移送とDNS/domainは最後の別工程。
+本番Stripe、追加mail、実ユーザー移送、DNS変更は0。全体移行は未完了。

@@ -87,3 +87,12 @@ the receipt ignored, dispatch completed, and releases the owned fence without
 restoring a user projection. Missing/changed proof or suppressed writes fail closed.
 Related webhook tests pass 79/79, including 22 subscription tests; staging
 deployment, real receipt completion and fixture cleanup are pending at this checkpoint.
+
+The dedicated native paid fixture is now accepted through actual test Stripe
+cancellation, the fixed runtime's scheduled receipt completion and exact-owned
+cleanup. The operator advanced only that retry's available_at once; attempts,
+generation and terminal states were not manually reset. Independent read-only
+verification preserved every preexisting row, Auth3/7/2, Master25 tables and FK0,
+with the owned anti-reuse license tombstone retained. This accepts the dedicated
+staging test path, not production deletion or migration completion.
+See [bounded evidence](evidence/staging-native-paid-deletion-accepted-2026-10-06.json).
