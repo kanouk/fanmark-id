@@ -221,6 +221,8 @@ Authは合成依存userのseed。source URL変換/ブラウザ・全source gate/
 
 ## PWA と移行時のキャッシュ
 
+`src/main.tsx`はroot要素を確認後、絵文字カタログを待つ前にService Workerを登録する。カタログ取得の遅延・失敗時も更新を確認できるようにし、React本体は選択したカタログ取得後にのみ描画する。失敗時のエラーと再試行、別backendへ戻らない契約を保持する。`npm run test:app-startup`は実entrypointの遅延・失敗・成功・Service Worker非対応・root不在を確認し、通常CIで実行する。これは実端末の旧PWA更新・cache退役の受け入れとは分ける。
+
 Service Workerはビルド済み静的ファイルだけをprecacheする。SupabaseおよびWorker APIの応答はruntime cacheへ保存せず、`/api` 配下のnavigationへSPA HTMLを返さない。新しいService Workerのactivateで旧`supabase-cache`を削除し、過去のAPI応答が残らないようにする。静的precacheや他の名前のcacheは削除しない。既存端末への反映は配備後にService Workerが更新・activateした時点であり、ローカルビルドだけでは既存cacheの削除を確認したことにならない。
 
 取得可能判定のWorker接続は `VITE_FANMARK_API_BASE_URL`、Worker側のD1選択は独立した `AVAILABILITY_BACKEND=d1` と `FANMARK_DB` を使う。未設定は既存Supabase RPC。フロント検証は `npm run test:availability`、Worker検証は `workers/api` の `npm test` と `npm run test:availability:d1`。

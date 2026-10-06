@@ -64,6 +64,9 @@ jobs:
       - name: Test admin return URL behavior
         run: npm run test:admin-auth-url
 
+      - name: Test startup update checks during catalog failure
+        run: npm run test:app-startup
+
       - name: Type check application
         run: npm run typecheck
 

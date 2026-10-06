@@ -51,6 +51,12 @@ async function loadSelectedEmojiCatalog(): Promise<void> {
 
 async function startApplication(): Promise<void> {
   if (!rootElement) return;
+
+  // Update checks must also run when catalog startup stalls or fails.
+  if ("serviceWorker" in navigator) {
+    registerSW({ immediate: true });
+  }
+
   if (import.meta.env.VITE_EMOJI_CATALOG_BACKEND?.trim()) {
     rootElement.textContent = "絵文字カタログを読み込んでいます…";
   }
@@ -60,10 +66,6 @@ async function startApplication(): Promise<void> {
   } catch {
     showCatalogStartupError();
     return;
-  }
-
-  if ("serviceWorker" in navigator) {
-    registerSW({ immediate: true });
   }
 
   createRoot(rootElement).render(

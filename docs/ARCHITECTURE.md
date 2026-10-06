@@ -15,7 +15,7 @@
 - `workers/api/src/notification-template-values.ts`: 通知描画でsource PostgreSQLのJSONB key順・文字列表記・数値表記を保つ。`notifications-scheduled.ts`から利用し、literal-only source oracle SQLと合成fixtureで検証する。
 - `workers/api/src/discovery-mutations.ts`: 検索記録とお気に入り追加/削除の共有Business D1処理。状態の競合確認、完全な行状態とevent receiptのcommit前確認、失敗時rollback、整数の件数更新を行う。
 - `workers/api/src/utc-timestamp.mjs` / `utc-timestamp.ts`: WorkerのD1書込み向けにUTCミリ秒/マイクロ秒文字列を固定幅のマイクロ秒形式へ正規化し、時間幅の加算でもサブミリ秒部分を保持する共通実装とTypeScript向け再エクスポート。
-- `src/lib/emojiConversion.ts`: 絵文字の同期変換インデックスを保持する。起動時に`main.tsx`が`VITE_EMOJI_CATALOG_BACKEND=worker`を選ぶと、`VITE_FANMARK_API_BASE_URL`の公開read-only Worker APIから版を固定して全ページ取得し、Reactを描画する前にインデックスを差し替える。未設定時は生成済みカタログを遅延読込する。Worker選択時の読込失敗は起動エラーとして扱い、Supabaseや静的版へ戻らない。
+- `src/lib/emojiConversion.ts`: 絵文字の同期変換インデックスを保持する。起動時に`main.tsx`が`VITE_EMOJI_CATALOG_BACKEND=worker`を選ぶと、`VITE_FANMARK_API_BASE_URL`の公開read-only Worker APIから版を固定して全ページ取得し、Reactを描画する前にインデックスを差し替える。未設定時は生成済みカタログを遅延読込する。Worker選択時の読込失敗は起動エラーとして扱い、Supabaseや静的版へ戻らない。 `src/main.tsx`はカタログ取得前にService Worker登録・更新確認を開始し、取得遅延・失敗から更新確認を独立させる。起動の5ケースは`scripts/test-app-startup.mjs`で実entrypointを実行し、通常のCloudflare application CIで確認する。
 - `public/`: アセット。`generate-ogp-image` のテンプレート画像等。
 
 ## 画面とモジュールのマッピング

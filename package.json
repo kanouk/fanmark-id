@@ -11,6 +11,7 @@
     "check:ci": "node scripts/check-supabase-workflow.mjs",
     "check:cloudflare-schedules": "node --experimental-strip-types scripts/migration/scheduled-job-coverage.mjs",
     "lint": "eslint .",
+    "test:app-startup": "node --test scripts/test-app-startup.mjs",
     "test:recent": "node --experimental-strip-types --test src/lib/recent-fanmarks.test.ts",
     "test:owned-fanmarks-plan-projection": "node --experimental-strip-types --test src/lib/owned-fanmarks-plan-projection.test.ts",
     "test:public-access": "node --experimental-strip-types --test src/lib/public-access-api.test.ts",
