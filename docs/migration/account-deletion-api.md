@@ -71,3 +71,19 @@ false 200 in both late-customer/late-subscription cases.
 - Journal `fanmark-account-deletion-audit-15KPFs/canary.json` ends verified-and-cleaned: seven synthetic Auth identities and source Business fixtures removed, both-store FK0, exact Business/Auth trigger and baseline-creator restoration, cookies invalidated. Independent readback at2026-10-03T03:29:23.044Z confirms Worker4a at100%, source-owned Business/Auth0, ledger25, retained Master canonical3944/release7888/pointers/history, MFA generation236, three secret names and wake17:17. No schema DDL, real provider operation, user-data migration or DNS change ran. Private evidence: `/tmp/fanmark-account-deletion-388044b-staging-acceptance.json`.
 - Historical simple deletion smoke used staging version `e64d6cd4-1cb0-4592-a4a2-276a648adf06`; it does not accept the new guarded candidate. A disposable synthetic Better Auth account signed in and deleted through the workers.dev API; exact remote readback showed zero Auth user/account/session rows and zero account-owned business rows. The deletion audit was verified, then the exact synthetic audit row was removed. No Stripe call or email ran.
 - This does not prove imported Supabase credential compatibility, real Stripe acceptance for populated billing accounts, concurrent-transfer recovery under load, or production deletion. Production remains on Supabase until the separately planned final cutover.
+
+## Signed cancellation after deletion (2026-10-06)
+
+The actual Safari paid-test deletion reached guest state and removed its Auth
+identity/accounts/sessions and business profile/subscription. Stripe confirmed
+the exact test subscription canceled; the unlimited Tier C license was returned
+to grace with no owner. Configurations remain during grace until expiry.
+
+Its signed cancellation exposed a missing-mapping retry after user_settings was
+deleted. Subscription reconciliation now accepts only an exact valid DELETE_ACCOUNT
+audit plus a previously applied subscription for the same user/customer/mode,
+with Stripe currently canceled and no active subscriptions. It atomically marks
+the receipt ignored, dispatch completed, and releases the owned fence without
+restoring a user projection. Missing/changed proof or suppressed writes fail closed.
+Related webhook tests pass 79/79, including 22 subscription tests; staging
+deployment, real receipt completion and fixture cleanup are pending at this checkpoint.

@@ -1,4 +1,44 @@
-## Latest unit: Safariのテスト決済復帰エラー修正・CI/配備待ち（2026-10-06 JST）
+## 有料退会の実Safari確認・解約通知の修正（2026-10-06 JST）
+
+Mac解除後、同じSafari private windowで通常reloadと既存Checkout成功URLの表示が成功し、
+Creatorを確認した。queryはアプリの既存処理が消費した。解除中のPWA自動更新は未証明。
+本人の明示許可後、専用合成アカウントの最終削除を一度だけ実行した。
+Stripe test購読の即時解約と200応答、guest画面、本人Auth関連行0、業務profile/購読0、
+無期限Tier Cのgrace返却・所有者NULL、退会監査1件、FK0を照合した。
+graceでは設定2行を保持し、expiredで削除する仕様に一致する（即時削除を要求しない）。
+
+実customer.subscription.deleted通知が、削除済みuser_settingsを要求して再試行になる
+不具合を発見した。退会監査の厳格な一致・過去の同一customer/subscription/modeのapplied記録・
+Stripe現在canceled/有効購読0を確認した場合だけ、projectionを再作成せずignored/completedとする。
+監査/所有関係/fenceを同じtransactionで再確認し、通知・dispatch・fence解放の欠落はrollbackする。
+既存通知をSQLで完了扱いにせず、fixed runtimeの自然dispatchで確認する。
+
+旧コードでは追加regressionが失敗。修正後の関連Webhook79/79（購読22件を含む）、
+Worker typecheckとfocused lintを通過。CI・staging修正配備・同じ解約通知の完了・
+exact-owned cleanup/独立保持照合はこのcheckpointでは未受け入れ。
+[実退会と修正の限定証拠](evidence/paid-deletion-cancellation-regression-2026-10-06.json)。
+実ユーザー移送・DNS/domain・本番Stripe・追加mailを行っておらず、全体移行は未完了。
+
+## Prior unit: Safari復帰修正のstaging配備完了・Mac解除待ち（2026-10-06 JST）
+
+候補ac0ac670405a766f0eebcc9d122d97b1ce1407c8のCI37452793228は両job成功。
+Worker d71e54b5-dc6f-4b0b-b92e-bf75b698d8e4へ100%配備し、root/index/checkout成功routeの
+直接200・Locationなし、root HEAD、欠落script404、公開asset6件のbytes/hashを照合した。
+既存bindings/秘密設定/全Business・Auth・Master表hashは配備前後で保持し、broadcastはdisabled。
+
+同じ合成paid fixtureのCreator/active test subscriptionに加え、Stripe管理画面の有効表示を確認。
+customer.subscription.createdとinvoice.payment_succeededはapplied、checkout.session.completedは
+契約どおりignored、errorなし。receipt3/dispatch3と適用ledger/購読projectionを同じcustomer/subscriptionへ
+pinした。別read-only processでfixture以外の全既存表hash保持・FK0を照合した。
+[配備と限定証拠](evidence/safari-static-shell-staging-deployment-2026-10-06.json)。
+
+同じSafariの通常reloadを試す直前、CUAはMac lockedを返し操作を実行できなかった。
+Mac解除をユーザーへ依頼済み。同じprivate window、合成session/paid subscription/Tier C/profileを保持する。
+同じSafariの復帰・戻り先query/Creator UI、有料退会、exact-owned cleanupは未受け入れ。
+再seed/再Checkout/再配備せず、解除後は現在のSafari windowから続ける。
+実userdata移送・domain/DNS・本番Stripe・追加mailは実行していない。全体移行は未完了。
+
+## Prior unit: Safariのテスト決済復帰エラー修正・CI/配備待ち（2026-10-06 JST）
 
 同じ合成account/Checkoutに公開test cardでsandbox申込を行い、Business D1でCreator/active
 subscription1件を確認した。戻り先SafariはService Workerのredirect応答でページを開けず、

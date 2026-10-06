@@ -1,6 +1,7 @@
 import { PINNED_STRIPE_API_VERSION } from "../../../supabase/functions/_shared/stripe-invoice-projection/index.ts";
 import { StripeWebhookD1ApplicationError } from "./stripe-webhook-d1-application.ts";
 import type { StripeWebhookD1Claim } from "./stripe-webhook-d1-dispatch.ts";
+import { ignoreStripeWebhookDispatchInD1 } from "./stripe-webhook-d1-dispatch.ts";
 import { addUtcMilliseconds, normalizeUtcMicrosecondTimestamp, toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const FENCE_LEASE_SECONDS = 300;
@@ -50,7 +51,7 @@ export interface StripeSubscriptionApiClient {
 }
 
 export interface StripeSubscriptionD1ReconciliationResult {
-  status: "applied" | "retryable" | "stale";
+  status: "applied" | "ignored" | "retryable" | "stale";
   code: string;
   applicationId?: string;
   effectivePlanType?: PlanType | "free";
@@ -313,7 +314,8 @@ async function loadCustomerUser(args: {
   provider: StripeSubscriptionReconciliationProvider;
   customerId: string;
   livemode: boolean;
-}): Promise<{ userId: string; needsCustomerLink: boolean }> {
+  subscriptionId: string;
+}): Promise<{ userId: string; needsCustomerLink: boolean; deletionAudit?: { id: string; metadata: string; createdAt: string } }> {
   const customer = asRecord(await args.provider.retrieveCustomer(args.customerId));
   if (!customer || customer.deleted === true || idFrom(customer.id, "subscription_customer_invalid") !== args.customerId) {
     throw new StripeWebhookD1ApplicationError("subscription_customer_unavailable");
@@ -340,6 +342,28 @@ async function loadCustomerUser(args: {
   const userRows = readSettingsRows(await args.database.prepare(`
     SELECT user_id, stripe_customer_id FROM user_settings WHERE user_id = ? LIMIT 2
   `).bind(userId).all<{ user_id: unknown; stripe_customer_id: unknown }>());
+  if (userRows.length === 0 && metadataUserId === userId) {
+    const audits = readSettingsRows(await args.database.prepare(`
+      SELECT id, metadata, created_at, request_id FROM audit_logs
+      WHERE user_id = ? AND action = 'DELETE_ACCOUNT' AND resource_type = 'user' AND resource_id = ? LIMIT 2
+    `).bind(userId, userId).all<{ id: unknown; metadata: unknown; created_at: unknown; request_id: unknown }>());
+    const audit = audits.length === 1 ? audits[0] : null;
+    let metadata: SubscriptionRecord | null = null;
+    try { metadata = typeof audit?.metadata === "string" ? asRecord(JSON.parse(audit.metadata)) : null; } catch { /* fail closed below */ }
+    const previous = await args.database.prepare(`
+      SELECT id FROM stripe_subscription_applications
+      WHERE local_user_id = ? AND stripe_customer_id = ? AND stripe_subscription_id = ?
+        AND livemode = ? AND status = 'applied' LIMIT 1
+    `).bind(userId, args.customerId, args.subscriptionId, args.livemode ? 1 : 0).first();
+    if (previous && audit && typeof audit.id === "string" && UUID_RE.test(audit.id) &&
+        typeof audit.created_at === "string" && Number.isFinite(Date.parse(audit.created_at)) &&
+        audit.request_id === null && metadata && Object.keys(metadata).length === 2 &&
+        metadata.deletion_method === "user_initiated" && metadata.deleted_at === audit.created_at) {
+      return { userId, needsCustomerLink: false, deletionAudit: {
+        id: audit.id, metadata: audit.metadata as string, createdAt: audit.created_at,
+      } };
+    }
+  }
   if (userRows.length !== 1 || requireUuid(userRows[0].user_id, "subscription_customer_mapping_invalid") !== userId) {
     throw new StripeWebhookD1ApplicationError("subscription_customer_mapping_review_required");
   }
@@ -764,6 +788,7 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
         provider: args.provider,
         customerId,
         livemode: args.claim.livemode,
+        subscriptionId,
       }),
       args.provider.retrieveSubscription(subscriptionId),
       args.provider.listActiveSubscriptions(customerId),
@@ -804,6 +829,55 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
       args.getNow?.() ?? toUtcMicrosecondTimestamp(new Date()),
       "subscription_timestamp_invalid",
     );
+    if (localMapping.deletionAudit) {
+      // Only a previously applied, now canceled subscription for a recorded
+      // deleted account can finish without recreating its business projection.
+      if (args.claim.eventType !== "customer.subscription.deleted" || current.status !== "canceled" || activeRecords.length !== 0) {
+        throw new StripeWebhookD1ApplicationError("subscription_deleted_account_review_required");
+      }
+      const audit = localMapping.deletionAudit;
+      const unchanged = `
+        NOT EXISTS (SELECT 1 FROM user_settings WHERE user_id = ? OR stripe_customer_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM user_subscriptions WHERE user_id = ? OR stripe_customer_id = ?)
+        AND (SELECT count(*) FROM audit_logs WHERE user_id = ? AND action = 'DELETE_ACCOUNT'
+          AND resource_type = 'user' AND resource_id = ?) = 1
+        AND EXISTS (SELECT 1 FROM audit_logs WHERE id = ? AND user_id = ? AND resource_id = ?
+          AND action = 'DELETE_ACCOUNT' AND resource_type = 'user' AND request_id IS NULL
+          AND metadata = ? AND created_at = ?)
+        AND EXISTS (SELECT 1 FROM stripe_subscription_applications WHERE local_user_id = ?
+          AND stripe_customer_id = ? AND stripe_subscription_id = ? AND livemode = ? AND status = 'applied')`;
+      const checks = [localMapping.userId, customerId, localMapping.userId, customerId,
+        localMapping.userId, localMapping.userId, audit.id, localMapping.userId, localMapping.userId,
+        audit.metadata, audit.createdAt, localMapping.userId, customerId, subscriptionId, args.claim.livemode ? 1 : 0];
+      const result = await ignoreStripeWebhookDispatchInD1({
+        database: args.database, identity: args.claim, now,
+        transactionChecks: {
+          before: [args.database.prepare(`SELECT CASE WHEN ${unchanged}
+            AND EXISTS (SELECT 1 FROM stripe_sync_fences WHERE livemode = ? AND stripe_customer_id = ?
+              AND owner_token = ? AND generation = ? AND lease_until > ?)
+            THEN 1 ELSE json('subscription_deleted_account_changed') END AS verified`)
+            .bind(...checks, args.claim.livemode ? 1 : 0, customerId, fence.token, fence.generation, now)],
+          after: [
+            args.database.prepare(`UPDATE stripe_sync_fences
+              SET owner_token = NULL, lease_until = NULL, last_reconciled_at = ?, last_error_code = NULL, updated_at = ?
+              WHERE livemode = ? AND stripe_customer_id = ? AND owner_token = ? AND generation = ?
+                AND EXISTS (SELECT 1 FROM stripe_webhook_receipts WHERE id = ? AND status = 'ignored')
+                AND EXISTS (SELECT 1 FROM stripe_webhook_dispatches WHERE id = ? AND status = 'completed')`)
+              .bind(now, now, args.claim.livemode ? 1 : 0, customerId, fence.token, fence.generation, args.claim.receiptId, args.claim.dispatchId),
+            args.database.prepare(`SELECT CASE WHEN ${unchanged}
+              AND EXISTS (SELECT 1 FROM stripe_webhook_receipts WHERE id = ? AND status = 'ignored' AND terminal_at = ?)
+              AND EXISTS (SELECT 1 FROM stripe_webhook_dispatches WHERE id = ? AND status = 'completed' AND completed_at = ?)
+              AND EXISTS (SELECT 1 FROM stripe_sync_fences WHERE livemode = ? AND stripe_customer_id = ?
+                AND owner_token IS NULL AND lease_until IS NULL AND generation = ?)
+              THEN 1 ELSE json('subscription_deleted_account_completion_incomplete') END AS verified`)
+              .bind(...checks, args.claim.receiptId, now, args.claim.dispatchId, now, args.claim.livemode ? 1 : 0, customerId, fence.generation),
+          ],
+        },
+      });
+      released = true;
+      return result ? { status: "ignored", code: "subscription_deleted_account_cancellation" }
+        : { status: "stale", code: "subscription_dispatch_lease_lost" };
+    }
     const freeReturnPolicy = transitionsToFree ? await loadFreeReturnPolicy(args.database, now) : null;
     const applicationId = requireUuid((args.createId ?? (() => crypto.randomUUID()))(), "subscription_application_id_invalid");
     const guardId = `subscription-guard:${applicationId}`;

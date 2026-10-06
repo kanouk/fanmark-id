@@ -171,6 +171,7 @@ export async function dispatchStripeWebhookBatchInD1(args: {
           provider: args.subscriptionProvider,
         });
         if (result.status === "applied") summary.applied += 1;
+        else if (result.status === "ignored") summary.ignored += 1;
         else if (result.status === "retryable") summary.retryable += 1;
         else summary.leaseLost += 1;
         continue;

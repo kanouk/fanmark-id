@@ -439,6 +439,7 @@ export async function ignoreStripeWebhookDispatchInD1(args: {
   database: D1Database;
   identity: StripeWebhookD1LeaseIdentity;
   now?: string;
+  transactionChecks?: { before: D1PreparedStatement[]; after: D1PreparedStatement[] };
 }): Promise<StripeWebhookD1LeaseResult | null> {
   const receiptId = requireUuid(args.identity.receiptId, "invalid_receipt_id");
   const dispatchId = requireUuid(args.identity.dispatchId, "invalid_dispatch_id");
@@ -447,6 +448,7 @@ export async function ignoreStripeWebhookDispatchInD1(args: {
   const livemode = requireMode(args.identity.livemode);
   const now = timestamp(args.now);
   const results = await args.database.batch([
+    ...(args.transactionChecks?.before ?? []),
     args.database.prepare(`
       UPDATE stripe_webhook_dispatches
       SET status = 'completed', claimed_at = NULL, lease_until = NULL, lease_token = NULL,
@@ -475,9 +477,11 @@ export async function ignoreStripeWebhookDispatchInD1(args: {
         )
       RETURNING id
     `).bind(now, now, receiptId, livemode, dispatchId, claimGeneration, now, now),
+    ...(args.transactionChecks?.after ?? []),
   ]);
-  if (results[0]?.meta?.changes !== 1) return null;
-  if (results[1]?.meta?.changes !== 1) {
+  const offset = args.transactionChecks?.before.length ?? 0;
+  if (results[offset]?.meta?.changes !== 1) return null;
+  if (results[offset + 1]?.meta?.changes !== 1) {
     throw new StripeWebhookD1DispatchError("ignore_state_not_atomic");
   }
   const row = await args.database.prepare(`

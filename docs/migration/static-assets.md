@@ -105,9 +105,13 @@ Worker preserves plain root GET/HEAD responses while keeping missing scripts404
 and API routing separate. The staging PWA uses a new `fanmark-staging-static-v2`
 cache namespace so an existing Safari client fetches the corrected shell rather
 than retaining an older cached response. The default build's cache namespace
-is unchanged. Local19/19 and the outer Wrangler HTTP smoke passed. Current
-candidate CI, deployment, and the same Safari client's recovery remain required;
-this is not remote acceptance or completed paid-account deletion.
+is unchanged. Local19/19 and the outer Wrangler HTTP smoke passed. Candidate `ac0ac670` CI
+`37452793228` passed both jobs and staging version `d71e54b5` serves direct
+HTML200 with matching asset bytes and retained D1/settings. After unlock, the
+same Safari private window reloaded successfully and displayed Creator through
+the existing Checkout success URL. The app consumed its query normally. Automatic
+PWA update while locked is not proven. Paid deletion and its asynchronous
+cancellation acceptance are recorded separately in the migration HANDOFF.
 
 ## Staging PWA and offline shell check (2026-09-27)
 

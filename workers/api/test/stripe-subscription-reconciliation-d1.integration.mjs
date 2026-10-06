@@ -101,16 +101,21 @@ function nextUuid() {
   return `00000000-0000-4000-8000-${String(uuidCounter++).padStart(12, "0")}`;
 }
 
+const statementSql = new WeakMap();
+
 function checkedDatabase(database) {
   return {
     prepare(sql) {
       const statement = database.prepare(sql);
+      statementSql.set(statement, sql);
       return new Proxy(statement, {
         get(target, property) {
           if (property === "bind") {
             return (...values) => {
               assert.equal(values.length, (sql.match(/\?/gu) ?? []).length, `SQL bind mismatch: ${sql.slice(0, 180)}`);
-              return target.bind(...values);
+              const bound = target.bind(...values);
+              statementSql.set(bound, sql);
+              return bound;
             };
           }
           const value = Reflect.get(target, property, target);
@@ -778,4 +783,124 @@ test("subscription ownership conflict aborts the full D1 application batch", asy
   } finally {
     await miniflare.dispose();
   }
+});
+
+async function seedDeletedPaidAccount(database, { audit = true } = {}) {
+  await seedConfiguration(database);
+  const current = subscriptionSnapshot();
+  await applyStripeSubscriptionReceiptInD1({
+    database: checkedDatabase(database),
+    claim: await claimEvent(database, subscriptionEvent({ type: "customer.subscription.created" })),
+    now: NOW, getNow: () => NOW, provider: provider({ current }),
+    createId: nextUuid, createFenceToken: nextUuid,
+  });
+  await database.prepare("DELETE FROM user_subscriptions WHERE user_id = ?").bind(USER_ID).run();
+  await database.prepare("DELETE FROM user_settings WHERE user_id = ?").bind(USER_ID).run();
+  if (audit) {
+    const at = "2026-09-26T05:06:07.000000Z";
+    await database.prepare(`INSERT INTO audit_logs
+      (id,user_id,action,resource_type,resource_id,metadata,created_at)
+      VALUES (?,?,'DELETE_ACCOUNT','user',?,?,?)`)
+      .bind(nextUuid(), USER_ID, USER_ID, JSON.stringify({ deletion_method: "user_initiated", deleted_at: at }), at).run();
+  }
+}
+
+test("deleted paid account cancellation completes without restoring its profile or subscription", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedDeletedPaidAccount(database);
+    const current = subscriptionSnapshot({ status: "canceled" });
+    const event = subscriptionEvent({ eventId: "evt_synthetic_deleted_account", type: "customer.subscription.deleted", subscription: current });
+    await acceptEvent(database, event);
+    const result = await dispatchStripeWebhookBatchInD1({
+      database: checkedDatabase(database), livemode: false, now: NOW, getNow: () => NOW,
+      subscriptionProvider: provider({ current, active: [] }),
+      createLeaseToken: nextUuid,
+    });
+    assert.equal(result.ignored, 1);
+    assert.equal(result.retryable, 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM user_settings"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM user_subscriptions"), 0);
+    assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts WHERE stripe_event_id = ?", [event.id]), "ignored");
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM stripe_sync_fences WHERE owner_token IS NOT NULL OR lease_until IS NOT NULL"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM stripe_subscription_applications"), 1);
+  } finally { await miniflare.dispose(); }
+});
+
+for (const scenario of ["missing-audit", "invalid-audit", "unproven-subscription", "still-active", "another-active-subscription"]) {
+  test(`deleted-account cancellation refuses ${scenario}`, async () => {
+    const { miniflare, database } = await createDatabase();
+    try {
+      await seedDeletedPaidAccount(database, { audit: scenario !== "missing-audit" });
+      if (scenario === "invalid-audit") await database.prepare("UPDATE audit_logs SET metadata = '{}' WHERE action = 'DELETE_ACCOUNT'").run();
+      if (scenario === "unproven-subscription") await database.prepare("UPDATE stripe_subscription_applications SET stripe_subscription_id = 'sub_unrelated'").run();
+      const current = subscriptionSnapshot({ status: scenario === "still-active" ? "active" : "canceled" });
+      const active = scenario === "still-active" ? [current]
+        : scenario === "another-active-subscription" ? [subscriptionSnapshot({ subscriptionId: "sub_still_active" })] : [];
+      const event = subscriptionEvent({ eventId: `evt_deleted_${scenario.replaceAll("-", "_")}`, type: "customer.subscription.deleted", subscription: current });
+      await acceptEvent(database, event);
+      const result = await dispatchStripeWebhookBatchInD1({
+        database: checkedDatabase(database), livemode: false, now: NOW, getNow: () => NOW,
+        subscriptionProvider: provider({ current, active }), createLeaseToken: nextUuid,
+      });
+      assert.equal(result.ignored, 0);
+      assert.equal(result.retryable, 1);
+      assert.equal(await scalar(database, "SELECT count(*) AS value FROM user_settings"), 0);
+      assert.equal(await scalar(database, "SELECT count(*) AS value FROM user_subscriptions"), 0);
+      assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts WHERE stripe_event_id = ?", [event.id]), "retryable");
+    } finally { await miniflare.dispose(); }
+  });
+}
+
+test("deleted-account completion rolls back if its verified deletion audit changes before the batch", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedDeletedPaidAccount(database);
+    const current = subscriptionSnapshot({ status: "canceled" });
+    const event = subscriptionEvent({ eventId: "evt_deleted_audit_race", type: "customer.subscription.deleted", subscription: current });
+    await acceptEvent(database, event);
+    const guarded = checkedDatabase(database);
+    let faultApplied = false;
+    const result = await dispatchStripeWebhookBatchInD1({
+      database: { ...guarded, async batch(statements) {
+        if (!faultApplied && statements.some(statement => statementSql.get(statement)?.includes("subscription_deleted_account_changed"))) {
+          faultApplied = true;
+          await database.prepare("UPDATE audit_logs SET metadata = '{}' WHERE action = 'DELETE_ACCOUNT'").run();
+        }
+        return database.batch(statements);
+      } },
+      livemode: false, now: NOW, getNow: () => NOW,
+      subscriptionProvider: provider({ current, active: [] }), createLeaseToken: nextUuid,
+    });
+    assert.equal(faultApplied, true);
+    assert.equal(result.ignored, 0);
+    assert.equal(result.retryable, 1);
+    assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts WHERE stripe_event_id = ?", [event.id]), "retryable");
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM stripe_sync_fences WHERE owner_token IS NOT NULL"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM user_settings"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM user_subscriptions"), 0);
+  } finally { await miniflare.dispose(); }
+});
+
+test("deleted-account completion rolls back when the receipt terminal update is suppressed", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedDeletedPaidAccount(database);
+    const current = subscriptionSnapshot({ status: "canceled" });
+    const event = subscriptionEvent({ eventId: "evt_deleted_receipt_suppressed", type: "customer.subscription.deleted", subscription: current });
+    await acceptEvent(database, event);
+    await database.prepare(`CREATE TRIGGER suppress_deleted_receipt BEFORE UPDATE ON stripe_webhook_receipts
+      WHEN NEW.status = 'ignored' BEGIN SELECT RAISE(IGNORE); END`).run();
+    const result = await dispatchStripeWebhookBatchInD1({
+      database: checkedDatabase(database), livemode: false, now: NOW, getNow: () => NOW,
+      subscriptionProvider: provider({ current, active: [] }), createLeaseToken: nextUuid,
+    });
+    assert.equal(result.ignored, 0);
+    assert.equal(result.retryable, 1);
+    assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts WHERE stripe_event_id = ?", [event.id]), "retryable");
+    assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_dispatches WHERE stripe_event_id = ?", [event.id]), "retryable");
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM stripe_sync_fences WHERE owner_token IS NOT NULL"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM user_settings"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS value FROM user_subscriptions"), 0);
+  } finally { await miniflare.dispose(); }
 });
