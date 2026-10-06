@@ -67,3 +67,45 @@ The test config uses only dummy local database IDs and fixture credentials. The
 command joins the normal Worker's `test:auth:d1`/`npm test` chain and is excluded
 from the default fixture configuration so it cannot silently run against a
 different schema. No deployed runtime changes accompany this test addition.
+
+
+## Saved-file recovery and isolated Worker preparation (2026-10-06 JST)
+
+The subsequent private rehearsal writes the complete synthetic source's nine
+nonempty tables/14 rows and30 schema objects into an AES-256-GCM file. Its
+schema identity and matching SDK-secret identity are authenticated metadata.
+Archive bytes, one-off archive key and synthetic SDK/test credentials are mode0600
+in private mode0700 directories, with keys separate from the archive directory.
+The original source runtime is disposed before saved bytes are reopened.
+
+The saved-file proof restores all columns/objects/hashes and FK0 into a distinct
+native D1 in one45-statement batch; existing targets are refused before writes.
+Wrong archive/SDK keys, schema and damaged bytes are rejected before target SQL.
+The restored original session works, logout revokes it and its assurance, and
+fresh original-password/TOTP login, backup-code consumption/replay refusal and
+wrong-password/unverified/suspended refusal use the actual Worker router/SDK.
+The saved archive remains unchanged. This proves local file persistence and
+reopening, not adopted operational key custody or off-host retention.
+[Bounded file proof](evidence/synthetic-auth-file-local-recovery-2026-10-06.json).
+
+`isolated-recovery-auth-worker.mjs` is a temporary synthetic-recovery entrypoint.
+Its exact recovery-name/incarnation/token gates precede a small method/path
+allowlist. It strips recovery transport headers before calling the actual
+application router. Signup, factor enrollment, account deletion and generic SQL
+are closed. No recovery binding/route is added to the main staging Worker.
+`test:isolated-auth-recovery` covers private gates, exact identity and real SDK
+password login/cookies/logout; five native checks pass and join normal Worker CI.
+
+A remote rehearsal must first verify both CI jobs at the exact candidate, the
+fanmark account and main baseline. Create one new exact-receipt-owned Auth D1 and
+one temporary guarded Worker, verify its database UUID/name, secrets' names,
+incarnation, origin and100% version before application requests, then restore
+only the saved synthetic snapshot. Verify every row/definition and SDK behavior,
+delete owned resources by exact receipts and independently recheck the original
+inventory/main DB hashes/Worker. Unknown write ACKs must not be automatically
+retried. The real remote run is still pending at this preparation checkpoint.
+
+Saved isolated sessions are kept only to prove snapshot fidelity; expired MFA
+assurance must remain refused. No production session revival or live generation
+rewind is authorized. Operational revocation/incarnation policy, real credential
+backup, providers, phone enrollment and final combined recovery remain open.

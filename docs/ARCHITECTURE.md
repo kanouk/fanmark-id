@@ -12,6 +12,7 @@
 - `supabase/functions/`: Edge Functions 群。主要なものは下記参照。
 - `supabase/migrations/`: DB マイグレーション（Supabase CLI 生成形式）。
 - `scripts/migration/`: Cloudflare移行用のschema変換・snapshot・照合ツール。`credential-import-projection.mjs` は原本の6列を検証し、通常の5列と非公開のcredential入力を分離する。`emoji-master-release-stage.mjs` は検証済み絵文字releaseをD1のprivate stagingへ保存し、`emoji-master-release-activate.mjs` はreadback・identity continuityの検証後に版ポインタを切り替える。どちらも公開中の`emoji_master`は変更しない。
+- `scripts/migration/isolated-recovery-auth-worker.mjs`: 合成認証復旧だけに使う一時Worker。private token/incarnationと限定method/pathを検証した後に実アプリrouterを呼び、通常のstaging構成には追加しない。
 - `scripts/migration/d1-rest-trigger-sql.mjs`: 隔離Master復旧向けの明示SQL補正。D1 RESTで拒否された小文字`begin`だけを引用符/commentを保って大文字化し、任意SQLのtransportは変更しない。
 - `workers/api/src/notification-template-values.ts`: 通知描画でsource PostgreSQLのJSONB key順・文字列表記・数値表記を保つ。`notifications-scheduled.ts`から利用し、literal-only source oracle SQLと合成fixtureで検証する。
 - `workers/api/src/discovery-mutations.ts`: 検索記録とお気に入り追加/削除の共有Business D1処理。状態の競合確認、完全な行状態とevent receiptのcommit前確認、失敗時rollback、整数の件数更新を行う。

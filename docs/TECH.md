@@ -85,6 +85,11 @@ session/同一factor assurance・停止状態を含めて別local D1へ復旧す
 往復、schema/SDK鍵の照合、既存target拒否と実Worker経由の再ログインを確認する。
 通常`test:auth:d1`/Worker CIへ含める。実credential exportやdurable鍵保管の証拠ではない。
 鍵依存とsession復旧方針の範囲は[合成Auth復旧](migration/synthetic-auth-recovery.md)。
+保存ファイルからの合成Auth復旧では全9非空表/14行/30 schema objectをAES-GCMで保存し、
+元ランタイム終了後に別native D1へ復元して実SDK login/TOTP/backup code/停止拒否を確認した。
+隔離Auth用entrypointは`isolated-recovery-auth-worker.mjs`、通常CIの
+`test:isolated-auth-recovery`はtoken/incarnationと小さなallowlist、実signin/logoutを確認する。
+main Workerへbinding/routeを追加せず、実remote資源は候補CI/所有receiptを照合して作成する。
 Masterのrelease・avatar/coverの分離R2を同じbundleへ含めた復旧は`npm run test:combined-recovery`。importer codec v5はprofile等の世代writerを認証情報より先に取り込み、v4の途中runを継続しない。合成データ限定で、画像URLのブラウザ配信・remote復旧時間は別に確認する。
 隔離D1向けのREST prepared/batch transportは`isolated-remote-d1.mjs`、専用native試験は
 `test:isolated-remote-d1`。作成receiptのUUID/名前/時刻/incarnationと実metadataを照合し、
