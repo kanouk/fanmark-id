@@ -1,4 +1,44 @@
-## Latest unit: complete saved synthetic Auth file recovered into real D1 and Worker (2026-10-06 JST)
+## Latest unit: full combined saved-file recovery accepted in two local native targets (2026-10-06 JST)
+
+Codee381075b48e50a32a5862793f7c89f72daf2917b adds a temporary guarded full-bundle
+Worker with five passing native checks and normal CI coverage. CI37410033281 is
+confirmed completed/success in both jobs. No remote combined resources have
+been created yet. Previous docs dab139b/CI37409008426 completed both successfully.
+
+Saved full bundle v2 recovered into two distinct local native incarnations: full
+Master25 tables/12254 rows/98 definitions, Auth9 nonempty tables/16 rows/30
+definitions, Business40 source tables/15 rows, two linked PNGs. Original three-user
+Auth fixture is preserved; a fourth synthetic credential owner joins Business.
+Business fixture's3 emoji IDs match actual full-Master IDs. Exact saved manifest/
+catalog/schema-report/40 streams are retained, never regenerated with a new run ID.
+All Master/Auth definition/column hashes and FK0, Business source streams and
+primary committed-credential interruption/resume, R2 import/replay/GET/HEAD/bytes/
+MIME/keys, full3944 catalog and single wake1/0 passed. Actual SDK original-session/
+unexpired assurance/logout/TOTP/backup replay/suspension checks and exact Business
+owner signin/profile/all3 owned fanmarks/linked images/logout passed in each target.
+Durations108759ms/105409ms include restoration/application checks, not production
+RTO. Both native runtimes disposed; source archive unchanged. Independent03:46:28Z
+RO process preserved all original archives/three-user Auth rows, main all-table
+hashes/FK0, Auth3/7/2 and Worker8c. No cloud resources created.
+[Procedure](full-combined-recovery.md) and [bounded proof](evidence/full-combined-file-native-recovery-2026-10-06.json).
+
+Private completed source:
+`/Users/kanouk/.codex/fanmark-migration-private/full-combined-file-recovery-2026-10-06-v2`
+contains archive/keys (separate directories), reports/source.json and completed
+reports/native-v3/journal.json + independent-readback.json. Do not replay exclusive
+source preparation/native runners. Reuse archive/full.aesgcm for remote. Private
+`full-combined-file-fixture.mjs` exports reopen/openMaster; use pinned Node22.6.0
+with --experimental-strip-types and a saved entrypoint. Current facade uses the
+saved Auth control.origin; its old individual-rehearsal Worker was deleted.
+
+First local attempt stopped at the storage importer's report_outside_export guard;
+native-v3 uses the required report inside reopened-storage-v3. The first prepared
+v1 envelope omitted exact business files; completed v2 contains all44 files.
+Neither attempt created cloud resources. Mac unlock request remains pending.
+Remote full-bundle recovery, operational keys/retention/revocation, providers/UI/
+phone and the six-package completion remain open. No additional email permission.
+
+## Prior unit: complete saved synthetic Auth file recovered into real D1 and Worker (2026-10-06 JST)
 
 Code159f5c1 / CI37407917794 both jobs successful. Saved v3 AES-GCM archive was
 reopened after its original runtime was disposed and restored into one newly

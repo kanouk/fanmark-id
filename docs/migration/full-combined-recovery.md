@@ -34,7 +34,7 @@ topology、token/incarnationを要求する。画像readを含む全経路をpri
 `npm --prefix workers/api run test:isolated-combined-recovery`はnative5件でprivate gate、
 全resource identity、書込拒否、実SDK signin→本人Business read→logout、別R2 bucketの
 実アプリ画像GET/HEADを確認し、通常Worker CIへ含める。小さい試験から全bundleの
-復旧を推定しない。全bundleのローカル復旧は現在検証中。
+復旧を推定しない。全bundleのローカル復旧は下記で受け入れた。
 
 保存bytesを再読込してから別incarnationの2 targetへ戻す。Master/Authの全定義/列hash/
 FK、業務40表のsource stream/credential変換とcommit後中断再開、R2のreplay/bytes/MIME/
@@ -47,3 +47,23 @@ remoteはexact候補CI両job・account・main全表hash/Worker/inventoryを照�
 別read-only processで元inventory/全表hash/Workerと一時資源の不在を確認する。
 実D1/R2一式復旧は未実行。converterの4 blocking group/deployable=falseは保持する。
 one-off測定は本番RTOや全移行完了に拡張しない。実端末/provider/運用・最終確認は残る。
+
+## 保存ファイルから2つのnative targetへ一式復旧（2026-10-06 JST）
+
+e381075の専用入口を使用し、保存済みのbundle v2を再読込して別incarnationの
+2 local native D1/R2へ復旧した。全Master25表/12,254行/98定義、合成Auth9表/16行/
+30定義の全列/hash/FKが一致。業務40表/15行のsource stream、credential変換と
+primaryのcommit後中断/再開、R22件のimport/replay/bytes/MIME/key、単一wake1/0を
+確認した。業務snapshotはarchiveの正確なmanifestと40 streamを復元し、再exportしない。
+
+実routerの全3944 catalogと業務emoji UUIDの対応、保存Authのsession/期限内assurance→
+logout/旧cookie拒否、元password/TOTP、backup消費/再利用拒否、未確認/停止拒否と、
+別の合成業務ownerの実signin→profile/全3所有一覧→avatar/cover GET/HEAD→logoutが
+同じ構成で通過した。one-off計測108759ms/105409msは本番RTOではない。
+鍵/改変はtarget前に拒否し、archiveを保持、2 runtimeを終了した。
+
+独立03:46:28.205Zのread-only照合で元Master/Auth archive、元3合成userの行、
+main全Business/Auth/Master表hashとAuth3/7/2/FK0・Worker8cを保持した。
+remote資源作成/既存DB書込/実ユーザー移送/DNS変更は0。
+[限定native証拠](evidence/full-combined-file-native-recovery-2026-10-06.json)。
+e381075のCI37410033281は両job成功。実D1/R2一式復旧、運用鍵/失効方針と最終六項目は未完了。

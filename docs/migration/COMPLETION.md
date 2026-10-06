@@ -4,6 +4,24 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 全Master・合成Auth・業務・画像の保存ファイルを一式local復旧（2026-10-06 JST）
+
+e381075の専用Workerのnative5件が通り、通常CIへ追加した。同じAES-GCM保存bundleの
+全Master25表/12,254行/98定義・合成Auth9表/16行/30定義、業務40表/15行・PNG2件を
+2つの別incarnationのnative D1/R2へ復旧。Master/Authの全定義/列hash/FK0、業務source
+stream/credential変換とcommit後中断再開、R2 replay/bytes/MIME/key、単一wake1/0が一致。
+実routerから全3944 catalogと業務emoji対応、保存Authのpassword/TOTP/backup再利用拒否/
+停止拒否、業務ownerのsignin/profile/3所有一覧/画像GET/HEAD/logoutを確認した。
+元の3合成user/4 account/14 Auth行を保持し、業務ownerの合成user/account2行を追加した
+fixtureであり、実ユーザーidentity移送を受け入れたとは扱わない。保存manifestと40 streamは
+正確なbytesから復元し再exportしない。所要108759ms/105409msは本番RTOではない。
+
+独立read-only照合で元archiveとmain全表hash・Auth3/7/2・FK0・Worker8cを保持。
+remote write/資源作成/実ユーザー移送/DNS変更は0。
+[限定native証拠](evidence/full-combined-file-native-recovery-2026-10-06.json)。
+CI37410033281は両job成功。実D1/R2一式復旧、運用採用/失効方針と
+残る全UI/provider/実端末・六項目は未完了。Mac解除は返答待ち。
+
 ## 合成Authの保存ファイルから実D1と専用Workerへ復旧（2026-10-06 JST）
 
 159f5c1のCI37407917794は両job成功。元runtime終了後のAES-GCM保存ファイルを

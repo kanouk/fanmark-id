@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-06T03:42:40.972Z",
+  "scope": "complete saved staging Master plus complete synthetic Auth, current synthetic Business and two linked images restored to two independent native local D1/R2 targets",
+  "codeCandidate": "e381075b48e50a32a5862793f7c89f72daf2917b",
+  "ci": {
+    "run": "37410033281",
+    "observedAt": "2026-10-06T03:51:32.468746+00:00",
+    "statusAtObservation": "completed",
+    "conclusionAtObservation": "success",
+    "jobs": [
+      {
+        "name": "Validate Cloudflare Worker API",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Validate Cloudflare staging application",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "archive": {
+    "format": "fanmark-full-combined-recovery-v2",
+    "sha256": "72f63a2c8e3fd932aba1b623d3df9c7784360c34ce194d04a2c24ac59e70ff11",
+    "savedFileReopened": true,
+    "exactBusinessManifestCatalogSchemaReportAnd40StreamsRetained": true,
+    "archiveKeysAndSyntheticSdkCredentialsPrivateAndSeparate": true,
+    "sourceArchiveUnchanged": true,
+    "wrongArchiveKeySdkSecretAndTamperRefusedBeforeTargets": true
+  },
+  "source": {
+    "masterTables": 25,
+    "masterRows": 12254,
+    "masterSchemaObjects": 98,
+    "authTables": 9,
+    "authRows": 16,
+    "authUsers": 4,
+    "authAccounts": 5,
+    "originalThreeUserAuthRowsPreserved": true,
+    "oneAdditionalSyntheticCredentialOwner": true,
+    "businessTables": 40,
+    "businessRows": 15,
+    "syntheticBusinessEmojiIdsMatchedFullMaster": true,
+    "r2Objects": 2
+  },
+  "targets": [
+    {
+      "phase": "primary",
+      "targetIncarnation": "2da93c3f-4093-4ddc-af76-b9029a2cc512",
+      "accepted": true,
+      "masterAllDefinitionAndTableHashesMatched": true,
+      "authAllDefinitionAndTableHashesMatchedBeforeBehavior": true,
+      "authSchemaObjects": 30,
+      "businessAll40SourceStreamsMatched": true,
+      "credentialCommitInterruptionAndResumeVerified": true,
+      "r2ImportAndReplayComplete": true,
+      "savedSessionWorked": true,
+      "savedAssuranceExpiryRespected": true,
+      "savedAssuranceWasExpired": false,
+      "logoutRevokedSavedSessionAndAssurance": true,
+      "staleCookieRefused": true,
+      "restoredPasswordAndTotpLogin": true,
+      "wrongPasswordUnverifiedAndSuspendedRefused": true,
+      "backupCodeLoginAndReplayRefusal": true,
+      "backupCodeAloneDoesNotGrantAdminAssurance": true,
+      "foreignKeyViolations": 0,
+      "ownerProfileAndOwnedFanmarksRead": true,
+      "actualApplicationImageGetHeadVerified": true,
+      "applicationEmojiCount": 3944,
+      "wakeRequested": 1,
+      "wakeAcknowledged": 0,
+      "restoreAndApplicationVerificationMs": 108759
+    },
+    {
+      "phase": "restored",
+      "targetIncarnation": "110d0bad-c491-481b-9958-954e051feb34",
+      "accepted": true,
+      "masterAllDefinitionAndTableHashesMatched": true,
+      "authAllDefinitionAndTableHashesMatchedBeforeBehavior": true,
+      "authSchemaObjects": 30,
+      "businessAll40SourceStreamsMatched": true,
+      "credentialCommitInterruptionAndResumeVerified": false,
+      "r2ImportAndReplayComplete": true,
+      "savedSessionWorked": true,
+      "savedAssuranceExpiryRespected": true,
+      "savedAssuranceWasExpired": false,
+      "logoutRevokedSavedSessionAndAssurance": true,
+      "staleCookieRefused": true,
+      "restoredPasswordAndTotpLogin": true,
+      "wrongPasswordUnverifiedAndSuspendedRefused": true,
+      "backupCodeLoginAndReplayRefusal": true,
+      "backupCodeAloneDoesNotGrantAdminAssurance": true,
+      "foreignKeyViolations": 0,
+      "ownerProfileAndOwnedFanmarksRead": true,
+      "actualApplicationImageGetHeadVerified": true,
+      "applicationEmojiCount": 3944,
+      "wakeRequested": 1,
+      "wakeAcknowledged": 0,
+      "restoreAndApplicationVerificationMs": 105409
+    }
+  ],
+  "wrapper": {
+    "file": "scripts/migration/isolated-recovery-combined-worker.mjs",
+    "sha256": "332eddf9a16622c0800bd83f1cd4568d15d6d11974c8583978e35a4b7c2f6b95",
+    "nativeChecksPassed": 5,
+    "nativeChecksFailed": 0,
+    "allRoutesIncludingImagesRequirePrivateRecoveryGate": true,
+    "signupEnrollmentBusinessMutationDeletionGenericSqlClosed": true
+  },
+  "independentReadback": {
+    "observedAt": "2026-10-06T03:46:28.205Z",
+    "originalMasterAndAuthArchivesUnchanged": true,
+    "originalSyntheticAuthRowsPreservedInBundle": true,
+    "mainAllBusinessAuthMasterHashesAndCountsUnchanged": true,
+    "mainAuthUsers": 3,
+    "mainAuthAccounts": 7,
+    "mainAuthSessions": 2,
+    "mainForeignKeyViolations": 0,
+    "mainWorkerVersion": "8cbe1e5f-5e55-4a82-a853-65ec96051db2",
+    "credential": "independent read-only Keychain monitor",
+    "remoteResourcesCreated": false
+  },
+  "limits": {
+    "remoteCombinedRecoveryAccepted": false,
+    "remoteResourcesCreated": false,
+    "sourceConverterDeployable": false,
+    "sourceConverterFullMigrationReconciled": false,
+    "operationalKeyCustodyAccepted": false,
+    "offHostRetentionAccepted": false,
+    "productionSessionRevocationPolicyAccepted": false,
+    "productionRtoAccepted": false,
+    "actualUserMigrationPerformed": false,
+    "domainCutoverPerformed": false,
+    "fullMigrationAccepted": false
+  }
+}
