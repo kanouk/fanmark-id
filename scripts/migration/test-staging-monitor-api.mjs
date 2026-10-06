@@ -116,7 +116,7 @@ test('the actual monitor command reads a fixed deployment and aggregate health w
   assert.equal(report.credentialSource, 'monitor_api_token');
   assert.equal(report.leastPrivilegeAccepted, false);
   assert.equal(report.version, 'synthetic-worker-version');
-  assert.equal(report.ledgerEntries, 25);
+  assert.equal(report.ledgerEntries, 26);
   assert.deepEqual(report.attention, []);
   assert.equal(result.requests.filter(row => row.path.endsWith('/query')).length, 2);
 });
