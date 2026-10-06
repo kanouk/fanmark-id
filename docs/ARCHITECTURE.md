@@ -333,3 +333,5 @@ read receiptの書込み0/changed_db=falseを検証する。実tokenのIAM polic
 
 Cloudflare stagingの認証メールは`AUTH_EMAIL_BACKEND=resend`、検証済み送信元とWorker secretの`RESEND_API_KEY`で選択する。メール登録のプロフィール作成には`INVITATION_SIGNUP_BACKEND=d1`も必要で、メール確認前のログインを拒否する。設定・配信・リンクの実受け入れは`docs/migration/HANDOFF.md`で追跡し、productionのSupabase経路と一斉送信を変更しない。
 認証gatewayは選択したD1テンプレート設定・業務DB binding・topologyをBetter Authの送信callbackへ渡し、テンプレート接続設定が変わった際は認証instanceのcacheを作り直す。無効なテンプレートを既定文面で補わない。
+
+告知メールのイベント順序修正はBusiness追加`0025_broadcast_delivery_terminal_outcomes.sql`と`broadcast_delivery_effective_events` viewに置く。webhook挿入・provider ID照合は同じ有効イベントを選び、苦情/恒久bounceを後着成功で消さず、suppressionがある場合だけ他の未送信行を停止する。`broadcast-email-delivery-d1.ts`は完了済みrunも配信結果に合わせて再集計する。詳細・検証境界は`docs/migration/broadcast-email-delivery-design.md`。

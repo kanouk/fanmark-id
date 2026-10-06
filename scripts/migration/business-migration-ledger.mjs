@@ -29,6 +29,7 @@ export const BUSINESS_MIGRATION_SEQUENCE = Object.freeze([
   "0022_fanmark_discovery_link.sql",
   "0023_admin_data_reset.sql",
   "0024_notification_worker_wake.sql",
+  "0025_broadcast_delivery_terminal_outcomes.sql",
 ]);
 
 export function isBusinessMigrationLedgerPrefix(ledger) {

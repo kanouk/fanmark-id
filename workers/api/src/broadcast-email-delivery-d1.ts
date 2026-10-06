@@ -570,7 +570,7 @@ export async function reconcileBroadcastDeliveryRun(
   const results = await businessDb.batch([
     businessDb.prepare(`UPDATE broadcast_delivery_runs
       SET status = ?, completed_at = COALESCE(?, completed_at)
-      WHERE id = ? AND status IN ('sending', 'needs_review')`)
+      WHERE id = ? AND status IN ('sending', 'needs_review', 'completed', 'failed')`)
       .bind(status, completedAt, runId),
     businessDb.prepare(`UPDATE broadcast_emails
       SET status = ?, total_recipients = ?, sent_count = ?, failed_count = ?,

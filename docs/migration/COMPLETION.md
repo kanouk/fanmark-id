@@ -406,3 +406,5 @@ classifierの54 pendingはsemantic acceptanceを自動で進めない数で、54
 [object map](object-map.md)、[frontend callsites](frontend-callsite-map.md)、
 [trigger counterparts](source-trigger-counterparts.md)、[policy counterparts](source-policy-counterparts.md)を参照する。
 過去の失敗/修正・個別受け入れは[HANDOFF](HANDOFF.md)と[EXECUTION](EXECUTION.md)へ残す。
+
+2026-10-06 告知配送の順序不具合: 現行25 Businessで恒久bounce/苦情の後着成功上書き、通常イベントによる別未送信行の停止、完了runの集計未更新を調べ、5件の失敗を再現。追加0025と再集計修正後、全26 Businessを使う13配送テストと現行Business/Auth import 1件、typecheck/eslintを通過。[限定証拠](evidence/broadcast-terminal-outcomes-2026-10-06.json)。実D1/Workerでの合成イベント処理・main staging適用は未完了。Resend実署名配送、bulk/送信UI/retentionは未受け入れ。過去の全結合復旧は25 Businessの証拠として保持する。

@@ -98,7 +98,7 @@ beforeAll(async () => {
     await authDatabase.batch(checkedInSqlStatements(sql).map((statement) => authDatabase.prepare(statement)));
   }
   const migrations = inject("businessProfileMigrations");
-  expect(migrations).toHaveLength(25);
+  expect(migrations).toHaveLength(26);
   for (const migration of migrations) {
     await businessDatabase.batch(checkedInSqlStatements(migration.sql).map((statement) => businessDatabase.prepare(statement)));
   }

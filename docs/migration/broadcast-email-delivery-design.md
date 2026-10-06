@@ -12,13 +12,30 @@ does not provide durable per-recipient retry state.
 Cloudflare staging has MFA-gated draft, template, recipient-count, and
 fixed-recipient test-send paths, plus the default-off durable bulk queue,
 Resend dispatcher, and signed webhook handler in the deployed Worker bundle.
-They have synthetic D1/API coverage; broadcast delivery has not been verified
-against Resend. The 2026-10-06 JST read-only preflight confirmed that the shared
-Resend key/from and Auth email selectors are configured, while bulk/test-send
-selectors, the fixed test recipient, and the broadcast webhook signing secret
-are absent. Auth verification/reset email acceptance does not establish
-broadcast acceptance. No broadcast email or real audience snapshot has run.
-See [the bounded live readback](evidence/staging-broadcast-readonly-preflight-2026-10-06.json).
+The fixed-recipient test-send API delivered the one explicitly approved message
+on 2026-10-06; the send UI and bulk delivery remain unaccepted. Bulk/test-send
+selectors, the fixed test recipient, and the webhook signing secret were removed
+after cleanup. Auth verification/reset email acceptance is separate from broadcast
+acceptance. See [the fixed-message evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json).
+
+The additional Business migration `0025_broadcast_delivery_terminal_outcomes.sql`
+fixes event ordering in both webhook insertion and provider-ID attachment. A
+complaint takes precedence over a permanent bounce; either takes precedence over
+subsequent delivery/failure events for that provider message. Other outcomes use
+receipt time and event ID, so transient failures can recover and clear the error
+code. No provider occurrence-time ordering is inferred. Only an actual suppression
+cancels another pending/inflight recipient. The effective-event view stores no
+additional payload or address. Applying the migration does not rewrite historical
+rows or send mail; older inconsistent records require explicit reconciliation.
+
+Reconciliation also refreshes previously completed/failed run and campaign counts
+when a later event changes the result. Snapshotting/cancelled runs remain untouched.
+The original `BROADCAST_EMAIL_SENT` audit remains immutable and unique per run; it
+records the first send-completion snapshot, while current delivery totals live on
+the campaign and recipients. The full-runtime regression cases failed on all five
+checks before the fix and pass afterward, alongside signature, duplicate,
+snapshot-resume, idempotent retry and review-pause tests. Remote synthetic handling
+and delivery by Resend are distinct acceptance conditions.
 
 ## Data and delivery boundary
 

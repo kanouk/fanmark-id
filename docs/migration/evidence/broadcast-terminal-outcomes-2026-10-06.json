@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-06",
+  "scope": "broadcast event ordering and completed-run reconciliation",
+  "preFix": {
+    "businessMigrationCount": 25,
+    "regressionCases": 5,
+    "failed": 5
+  },
+  "postFix": {
+    "businessMigrationCount": 26,
+    "fullRuntimeBroadcastTests": 13,
+    "passed": 13,
+    "currentBusinessAuthImportTests": 1,
+    "passedImport": 1,
+    "typecheck": "passed",
+    "eslint": "passed"
+  },
+  "cases": [
+    "permanent bounce and complaint preserve status after late delivery, before and after provider ACK",
+    "only actual suppression cancels future pending recipients",
+    "transient delivery recovery clears error and refreshes completed/failed campaign counts",
+    "signed raw-body validation and duplicate receipt",
+    "snapshot ACK recovery and same-payload idempotent retry",
+    "changed payload and expired idempotency window pause without another send"
+  ],
+  "sourceSHA256": {
+    "workers/api/src/broadcast-email-delivery-d1.ts": "413bc19eb586e20d08fc46f3d4ba1ae406c07b667834dc719815e1ff0f7019a4",
+    "workers/api/migrations-business/0025_broadcast_delivery_terminal_outcomes.sql": "f9f55e8299c85cd428d1e43f8096176a09e4859bec00fc6af8ae85676c200219",
+    "workers/api/test/broadcast-email-delivery-d1.integration.mjs": "1203797551d2a4266f419ba37c5a98bde14fdef7bb7b8ec19b762912d6a97261"
+  },
+  "remoteSyntheticAccepted": false,
+  "resendWebhookDeliveryAccepted": false,
+  "bulkSendAccepted": false,
+  "additionalEmailsSent": 0,
+  "mainStagingMigrationApplied": false
+}

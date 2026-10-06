@@ -2,16 +2,13 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { promises as fs } from "node:fs";
+import { createHmac } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { applyBusinessRuntimeMigrations } from "../../../scripts/migration/business-runtime-import-schema.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
-const migrationPaths = [
-  "workers/api/migrations-business/0000_business_schema_v4_staging.sql",
-  "workers/api/migrations-business/0016_broadcast_email_delivery.sql",
-];
 const { handleBroadcastEmailAdminRequest } = await import(pathToFileURL(
   path.join(repoRoot, "workers/api/src/broadcast-email-admin-d1-api.ts"),
 ).href);
@@ -21,44 +18,12 @@ const { snapshotBroadcastEmailDeliveryPage } = await import(pathToFileURL(
 const { dispatchBroadcastEmailDeliveryBatch } = await import(pathToFileURL(
   path.join(repoRoot, "workers/api/src/broadcast-email-delivery-d1.ts"),
 ).href);
+const { reconcileBroadcastDeliveryRun } = await import(pathToFileURL(
+  path.join(repoRoot, "workers/api/src/broadcast-email-delivery-d1.ts"),
+).href);
 const { handleBroadcastEmailWebhookRequest, BROADCAST_EMAIL_WEBHOOK_PATH } = await import(pathToFileURL(
   path.join(repoRoot, "workers/api/src/broadcast-email-webhook-d1.ts"),
 ).href);
-
-function splitSql(sql) {
-  const source = sql.replace(/^--.*(?:\r?\n|$)/gmu, "");
-  const statements = [];
-  let start = 0;
-  let singleQuoted = false;
-  let doubleQuoted = false;
-  for (let index = 0; index < source.length; index += 1) {
-    const character = source[index];
-    const next = source[index + 1];
-    if (character === "'" && !doubleQuoted) {
-      if (singleQuoted && next === "'") index += 1;
-      else singleQuoted = !singleQuoted;
-      continue;
-    }
-    if (character === '"' && !singleQuoted) {
-      if (doubleQuoted && next === '"') index += 1;
-      else doubleQuoted = !doubleQuoted;
-      continue;
-    }
-    if (character !== ";" || singleQuoted || doubleQuoted) continue;
-    const candidate = source.slice(start, index).trim();
-    const isTrigger = /^create\s+trigger\b/iu.test(candidate);
-    if (isTrigger) {
-      const cases = candidate.match(/\bCASE\b/giu)?.length ?? 0;
-      const ends = candidate.match(/\bEND\b/giu)?.length ?? 0;
-      if (ends < cases + 1) continue;
-    }
-    if (candidate) statements.push(candidate);
-    start = index + 1;
-  }
-  const remainder = source.slice(start).trim();
-  if (remainder) statements.push(remainder);
-  return statements;
-}
 
 async function createFixture() {
   const { Miniflare } = await import(pathToFileURL(miniflarePath).href);
@@ -82,13 +47,7 @@ async function createFixture() {
   const database = await miniflare.getD1Database("BUSINESS_DB");
   const authDatabase = await miniflare.getD1Database("AUTH_DB");
   try {
-    for (const migration of migrationPaths) {
-      const sql = await fs.readFile(path.join(repoRoot, migration), "utf8");
-      for (const statement of splitSql(sql)) {
-        const result = await database.prepare(statement).run();
-        assert.equal(result.success, true, `${migration}: ${statement.slice(0, 120)}`);
-      }
-    }
+    await applyBusinessRuntimeMigrations(database);
     return { miniflare, database, authDatabase };
   } catch (error) {
     await miniflare.dispose();
@@ -104,6 +63,112 @@ const USER_B = "00000000-0000-4000-8000-000000000005";
 const USER_C = "00000000-0000-4000-8000-000000000006";
 const NOW = "2026-09-27T12:00:00.000000Z";
 const ADMIN = "00000000-0000-4000-8000-000000000008";
+
+for (const [eventType, bounceType, expectedStatus, expectedError] of [
+  ["email.bounced", "Permanent", "bounced", "provider_bounced"],
+  ["email.complained", null, "suppressed", "provider_complaint"],
+]) {
+  for (const beforeAck of [false, true]) {
+    test(`full runtime preserves ${eventType}/${bounceType} beforeAck=${beforeAck} after late delivery and reconciles completed sends`, async () => {
+      const fixture = await createFixture();
+      const { database } = fixture;
+      const secretBytes = Buffer.from("synthetic-full-schema-webhook-secret");
+      const env = { BROADCAST_EMAIL_BACKEND: "d1", BROADCAST_SEND_BACKEND: "d1",
+        BROADCAST_WEBHOOK_SIGNING_SECRET: `whsec_${secretBytes.toString("base64")}`,
+        D1_TOPOLOGY: "split", FANMARK_DB: database };
+      const sendEvent = async (type, id, seconds, bounce = null) => {
+        const clock = new Date(Date.parse(NOW) + seconds * 1000);
+        const timestamp = String(Math.floor(clock.getTime() / 1000));
+        const body = JSON.stringify({ type, data: { email_id: "synthetic-terminal-message",
+          ...(bounce ? { bounce: { type: bounce } } : {}) } });
+        const signature = createHmac("sha256", secretBytes).update(`${id}.${timestamp}.${body}`).digest("base64");
+        const response = await handleBroadcastEmailWebhookRequest(new Request(`https://app.example.test${BROADCAST_EMAIL_WEBHOOK_PATH}`, {
+          method: "POST", headers: { "svix-id": id, "svix-timestamp": timestamp, "svix-signature": `v1,${signature}` }, body,
+        }), env, () => clock);
+        assert.equal(response.status, 200);
+      };
+      try {
+        await database.batch([
+          database.prepare(`INSERT INTO broadcast_emails (id, subject, body_text, email_type, status, created_at, updated_at)
+            VALUES (?, 'Synthetic', 'Synthetic', 'broadcast_announcement', 'sending', ?, ?),
+              (?, 'Synthetic future', 'Synthetic', 'broadcast_announcement', 'sending', ?, ?)`)
+            .bind(BROADCAST, NOW, NOW, SECOND_RUN, NOW, NOW),
+          database.prepare(`INSERT INTO broadcast_delivery_runs (id, broadcast_id, request_id, requested_by, status, created_at)
+            VALUES (?, ?, 'synthetic-current-request', ?, 'sending', ?),
+              (?, ?, 'synthetic-future-request', ?, 'sending', ?)`)
+            .bind(RUN, BROADCAST, ADMIN, NOW, SECOND_RUN, SECOND_RUN, ADMIN, NOW),
+          database.prepare(`INSERT INTO broadcast_delivery_recipients
+            (run_id, user_id, language, status, next_attempt_at, provider_email_id, lease_token, created_at, updated_at)
+            VALUES (?, ?, 'ja', ?, ?, ?, 'synthetic-lease', ?, ?),
+              (?, ?, 'ja', 'pending', ?, NULL, NULL, ?, ?)`)
+            .bind(RUN, USER_A, beforeAck ? "sending" : "sent", NOW, beforeAck ? null : "synthetic-terminal-message", NOW, NOW,
+              SECOND_RUN, USER_A, NOW, NOW, NOW),
+        ]);
+        if (!beforeAck) {
+          assert.deepEqual(await reconcileBroadcastDeliveryRun(database, RUN, NOW), { status: "completed", sent: 1, failed: 0 });
+        }
+        await sendEvent(eventType, "terminal-event", 1, bounceType);
+        await sendEvent("email.delivered", "late-delivery", 2);
+        if (beforeAck) {
+          await database.prepare(`UPDATE broadcast_delivery_recipients SET status = 'sent', provider_email_id = ?
+            WHERE run_id = ? AND user_id = ?`).bind("synthetic-terminal-message", RUN, USER_A).run();
+        }
+        await reconcileBroadcastDeliveryRun(database, RUN, "2026-09-27T12:00:03.000000Z");
+        await sendEvent("email.delivered", "late-delivery", 2);
+        assert.deepEqual(await database.prepare(`SELECT status, last_error_code, lease_token FROM broadcast_delivery_recipients
+          WHERE run_id = ? AND user_id = ?`).bind(RUN, USER_A).first(),
+        { status: expectedStatus, last_error_code: expectedError, lease_token: null });
+        assert.equal((await database.prepare(`SELECT status FROM broadcast_delivery_recipients WHERE run_id = ?`)
+          .bind(SECOND_RUN).first()).status, "suppressed");
+        assert.equal((await database.prepare("SELECT COUNT(*) AS n FROM broadcast_delivery_suppressions").first()).n, 1);
+        assert.deepEqual(await database.prepare(`SELECT status, sent_count, failed_count FROM broadcast_emails WHERE id = ?`)
+          .bind(BROADCAST).first(), { status: "failed", sent_count: 0, failed_count: 1 });
+        assert.equal((await database.prepare(`SELECT COUNT(*) AS n FROM audit_logs WHERE id = ?`)
+          .bind(`broadcast-delivery/${RUN}`).first()).n, 1);
+        assert.equal((await database.prepare("SELECT COUNT(*) AS n FROM broadcast_delivery_webhook_events").first()).n, 2);
+        assert.deepEqual((await database.prepare("PRAGMA foreign_key_check").all()).results, []);
+      } finally { await fixture.miniflare.dispose(); }
+    });
+  }
+}
+
+test("full runtime delivery and transient recovery leave future unsuppressed work pending", async () => {
+  const fixture = await createFixture();
+  const { database } = fixture;
+  try {
+    await database.batch([
+      database.prepare(`INSERT INTO broadcast_emails (id, subject, body_text, email_type, status, created_at, updated_at)
+        VALUES (?, 'Synthetic', 'Synthetic', 'broadcast_announcement', 'sending', ?, ?),
+          (?, 'Synthetic future', 'Synthetic', 'broadcast_announcement', 'sending', ?, ?)`)
+        .bind(BROADCAST, NOW, NOW, SECOND_RUN, NOW, NOW),
+      database.prepare(`INSERT INTO broadcast_delivery_runs (id, broadcast_id, request_id, requested_by, status, created_at)
+        VALUES (?, ?, 'synthetic-recovery', ?, 'sending', ?),
+          (?, ?, 'synthetic-future', ?, 'sending', ?)`)
+        .bind(RUN, BROADCAST, ADMIN, NOW, SECOND_RUN, SECOND_RUN, ADMIN, NOW),
+      database.prepare(`INSERT INTO broadcast_delivery_recipients
+        (run_id, user_id, language, status, next_attempt_at, provider_email_id, created_at, updated_at)
+        VALUES (?, ?, 'ja', 'sent', ?, 'synthetic-recovery', ?, ?),
+          (?, ?, 'ja', 'pending', ?, NULL, ?, ?)`)
+        .bind(RUN, USER_A, NOW, NOW, NOW, SECOND_RUN, USER_A, NOW, NOW, NOW),
+    ]);
+    assert.deepEqual(await reconcileBroadcastDeliveryRun(database, RUN, NOW), { status: "completed", sent: 1, failed: 0 });
+    for (const [id, type, bounce] of [["transient", "email.bounced", "Transient"], ["delivered", "email.delivered", null]]) {
+      await database.prepare(`INSERT INTO broadcast_delivery_webhook_events (id, provider_email_id, event_type, bounce_type, created_at)
+        VALUES (?, 'synthetic-recovery', ?, ?, ?)`).bind(id, type, bounce,
+        type === "email.delivered" ? "2026-09-27T12:00:02.000000Z" : NOW).run();
+      await reconcileBroadcastDeliveryRun(database, RUN, NOW);
+      assert.deepEqual(await database.prepare(`SELECT status, sent_count, failed_count FROM broadcast_emails WHERE id = ?`)
+        .bind(BROADCAST).first(), type === "email.delivered"
+        ? { status: "completed", sent_count: 1, failed_count: 0 }
+        : { status: "failed", sent_count: 0, failed_count: 1 });
+    }
+    assert.deepEqual(await database.prepare(`SELECT status, last_error_code FROM broadcast_delivery_recipients WHERE run_id = ? AND user_id = ?`)
+      .bind(RUN, USER_A).first(), { status: "delivered", last_error_code: null });
+    assert.equal((await database.prepare("SELECT COUNT(*) AS n FROM broadcast_delivery_suppressions").first()).n, 0);
+    assert.equal((await database.prepare(`SELECT status FROM broadcast_delivery_recipients WHERE run_id = ? AND user_id = ?`)
+      .bind(SECOND_RUN, USER_A).first()).status, "pending");
+  } finally { await fixture.miniflare.dispose(); }
+});
 
 test("applies durable delivery schema without persisting addresses and propagates only permanent suppressions", async () => {
   const fixture = await createFixture();
