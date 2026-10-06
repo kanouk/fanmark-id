@@ -50,13 +50,82 @@
     "eslintWarning": "react-refresh/only-export-components",
     "stagingBuild": "passed"
   },
-  "mainStagingApplied": false,
-  "postFixBrowserVerified": false,
+  "mainStagingApplied": true,
+  "postFixBrowserVerified": true,
   "additionalEmails": 0,
   "fullMigrationAccepted": false,
   "limits": [
     "Only a language metadata fix; full four-locale application flows are separate",
     "Mac native UI locked; DOM observation is not a physical phone acceptance",
     "No user-data migration, account mutation, domain cutover or billing"
-  ]
+  ],
+  "candidate": "5e037d0edf4a52391628dc572c323a3fb58bdba7",
+  "ci": {
+    "runId": "37418737512",
+    "bothJobs": "success"
+  },
+  "configuredStagingBuild": {
+    "sameFixedEnvironmentAsCI": true,
+    "workstationModeFilesExcluded": true,
+    "localPreview": "Not accepted: the missing API base was corrected, then the staging-only CORS origin rejected local access. Owned preview and local tabs closed."
+  },
+  "postFixBrowser": {
+    "verifiedAt": "2026-10-06T05:42:39.324Z",
+    "head": "5e037d0edf4a52391628dc572c323a3fb58bdba7",
+    "surface": "existing in-app browser tab4; actual language menu and rendered DOM",
+    "ordinaryReloadUsed": true,
+    "previousScript": "/assets/index-BA9IR3kA.js",
+    "script": "/assets/index-UQpaFrj8.js",
+    "locales": [
+      {
+        "selected": "ja",
+        "htmlLang": "ja",
+        "heading": "絵文字でつくるあなただけのアドレス"
+      },
+      {
+        "selected": "en",
+        "htmlLang": "en",
+        "heading": "Create your own address with emoji"
+      },
+      {
+        "selected": "ko",
+        "htmlLang": "ko",
+        "heading": "이모지로 만드는 나만의 주소"
+      },
+      {
+        "selected": "id",
+        "htmlLang": "id",
+        "heading": "Buat alamatmu sendiri dengan emoji"
+      }
+    ],
+    "languageRestored": "ja",
+    "ownedPreviewAndTabsClosed": true,
+    "humanDashboardTabRetained": true,
+    "accountMutationsPerformed": 0,
+    "additionalEmails": 0,
+    "physicalPhoneAccepted": false
+  },
+  "staging": {
+    "completedAt": "2026-10-06T05:41:27.894Z",
+    "previousVersion": "0605e4ed-38d2-4e09-967e-3c3f3c99910d",
+    "version": "d4375d19-5024-4bf6-9cd7-1e5d399ce7b5",
+    "businessMigrationCount": 27,
+    "acceptedWorkerRuntimeRetained": true,
+    "canonicalConfigAndExistingSecretsRetained": true,
+    "exactPublicAssetHashesMatched": 4,
+    "broadcastDisabled": true,
+    "allTableHashesRetained": true
+  },
+  "independentReadback": {
+    "verifiedAt": "2026-10-06T05:43:48.783Z",
+    "separateProcess": true,
+    "credential": "read-only monitor",
+    "version": "d4375d19-5024-4bf6-9cd7-1e5d399ce7b5",
+    "allTableHashesRetained": true,
+    "foreignKeyViolations": 0,
+    "businessMigrationCount": 27,
+    "canonicalVarsD1R2AndDOClassMatched": true,
+    "existingSecretNamesRetained": true,
+    "broadcastSendingDisabled": true
+  }
 }
