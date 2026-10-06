@@ -1,3 +1,22 @@
+## 保存ファイルから実D1・R2へ一式復旧を受け入れ（2026-10-06 JST）
+
+候補dcb0127のCI37410960675は両job成功。同じ保存bundle v2から別incarnationの
+2組の新規3 D1・2 R2・専用Workerへ、全Master25表/12,254行/98定義、合成Auth9表/
+16行/30定義、業務40表/15行、PNG2件を復旧した。全定義/列hash/FK0、正確な保存
+manifest/40 stream、credential commit後の中断再開、R2 import/replay/bytes/MIME/keyが一致。
+実routerで3944絵文字と参照Master4/4/5/16、元session/期限内assurance/logout、
+password/TOTP/backup消費・再利用拒否/停止拒否、本人profile/3所有一覧/画像GET・HEADを確認。
+所要145407ms/105809msは復元・アプリ確認のone-off値で、本番RTOではない。
+
+2組の所有資源をexact receiptで削除。独立04:06:55.383Zの照合で元D1/R2/Worker一覧、
+main全表hash/count/FK0、Auth3 user/7 account/2 sessionとWorker8cを保持した。
+D1/Workerはread-only監視credential、R2一覧は固定accountを確認したOAuthでGETのみ。
+既存DB書込・main配備/secret変更・追加メール・実ユーザー移送・DNS変更は0。[実D1/R2の一式復旧証拠](evidence/full-combined-file-remote-recovery-2026-10-06.json)。
+
+これは合成Auth/業務の復旧受け入れ。運用鍵/交換・off-host/retention・本番失効方針、
+source converterの4 blocking groups/deployable=false、残るUI/provider/実端末・六項目の
+完了条件は保持する。Mac解除の既存質問は返答待ち。
+
 # 2026-10-05 認証メール設定をstagingへ配備
 
 ## Saved complete synthetic Auth real-D1 recovery accepted (2026-10-06 JST)

@@ -12,7 +12,7 @@ Supabase writer停止は最後の別工程とする。本書の作成から運�
 一致するSDK secretも必要であり、snapshot鍵とSDK鍵の別保管・交換、off-host保存、
 retention、担当/RPO-RTOの採用はこのone-off試験から推定しない。元sessionを保持した
 隔離試験は本番session/verification/assuranceを復活させる運用方針ではない。
-本番再開前の失効/incarnation方針と最終一式復旧は残る。
+保存bundleの一式実D1/R2復旧は下記で受け入れた。本番再開前の失効/incarnation方針は残る。
 
 ## 読み取りの運用確認
 
@@ -226,5 +226,24 @@ RPO・RTOの確定、同じ最終candidateでのPC・実スマホ・言語・旧
 はproduction RTOではない。一時DB削除後の独立read-only照合で全主DB hash、元inventory、
 Worker8cを保持した。[手順と範囲](full-master-recovery.md)・
 [実D1の限定証拠](evidence/full-staging-master-remote-recovery-2026-10-06.json)。
-定期/off-host保存、atomic source snapshot、運用鍵/担当/retention/RPO-RTO、全Auth
-remote復旧・最終一式復旧は別の未完了条件である。完了journalを再実行しない。
+定期/off-host保存、atomic source snapshot、運用鍵/担当/retention/RPO-RTOは別の未完了条件である。全合成Authと保存bundle一式の
+remote復旧は後続工程で受け入れた。完了journalを再実行しない。
+
+## 保存ファイルから実D1・R2へ一式復旧を受け入れ（2026-10-06 JST）
+
+候補dcb0127のCI37410960675は両job成功。同じ保存bundle v2から別incarnationの
+2組の新規3 D1・2 R2・専用Workerへ、全Master25表/12,254行/98定義、合成Auth9表/
+16行/30定義、業務40表/15行、PNG2件を復旧した。全定義/列hash/FK0、正確な保存
+manifest/40 stream、credential commit後の中断再開、R2 import/replay/bytes/MIME/keyが一致。
+実routerで3944絵文字と参照Master4/4/5/16、元session/期限内assurance/logout、
+password/TOTP/backup消費・再利用拒否/停止拒否、本人profile/3所有一覧/画像GET・HEADを確認。
+所要145407ms/105809msは復元・アプリ確認のone-off値で、本番RTOではない。
+
+2組の所有資源をexact receiptで削除。独立04:06:55.383Zの照合で元D1/R2/Worker一覧、
+main全表hash/count/FK0、Auth3 user/7 account/2 sessionとWorker8cを保持した。
+D1/Workerはread-only監視credential、R2一覧は固定accountを確認したOAuthでGETのみ。
+既存DB書込・main配備/secret変更・追加メール・実ユーザー移送・DNS変更は0。[実D1/R2の一式復旧証拠](evidence/full-combined-file-remote-recovery-2026-10-06.json)。
+
+これは合成Auth/業務の復旧受け入れ。運用鍵/交換・off-host/retention・本番失効方針、
+source converterの4 blocking groups/deployable=false、残るUI/provider/実端末・六項目の
+完了条件は保持する。Mac解除の既存質問は返答待ち。

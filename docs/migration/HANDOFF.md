@@ -1,4 +1,28 @@
-## Latest unit: full combined saved-file recovery accepted in two local native targets (2026-10-06 JST)
+## Latest unit: complete saved bundle recovered in two real D1/R2 targets (2026-10-06 JST)
+
+Exact candidate dcb0127/CI37410960675 passed both jobs before creation. The same
+v2 archive recovered full Master25/12254/98, synthetic Auth9/16/30 and Business
+40/15 plus two PNGs into two distinct owned3 D1/2 R2/Worker incarnations.
+All hashes/definitions/FK, saved40 streams, committed-credential interruption/
+resume, R2 replay and actual SDK/application checks passed. Original session/
+unexpired assurance/password/TOTP/backup replay/suspension and owner profile/
+all3 fanmarks/linked image GET/HEAD, catalog3944/reference4/4/5/16 passed.
+Durations145407ms/105809ms include restoration/application checks, not production RTO.
+Exact receipts deleted both resource sets. Independent04:06:55.383Z preserved
+original D1/R2/Worker inventory, main all-table hashes/FK0/Auth3/7/2 and Worker8c.
+Main D1/Worker used RO monitor; R2 inventory used verified canonical OAuth GET only.
+No main writes/deploy/secret changes, real-user migration, DNS or extra email.
+[Bounded proof](evidence/full-combined-file-remote-recovery-2026-10-06.json).
+
+Completed private journal and independent-readback.json:
+`/Users/kanouk/.codex/fanmark-migration-private/full-combined-remote-recovery-2026-10-06`.
+Do not replay completed exclusive runners or recreate deleted resources.
+Source v2 archive remains unchanged. Remaining six-package conditions include
+converter4 groups, operational custody/offhost/retention/revocation adoption,
+providers/UI/actual phone and final review. Mac unlock question stays pending.
+No additional email permission; real user data and domain remain deferred.
+
+## Prior unit: full combined saved-file recovery accepted in two local native targets (2026-10-06 JST)
 
 Codee381075b48e50a32a5862793f7c89f72daf2917b adds a temporary guarded full-bundle
 Worker with five passing native checks and normal CI coverage. CI37410033281 is
