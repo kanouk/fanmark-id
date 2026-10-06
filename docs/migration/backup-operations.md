@@ -17,6 +17,18 @@
 詳細は[source export](snapshot-export-design.md)、[D1 importer](d1-import.md)、
 [全一式復旧](full-combined-recovery.md)と[現行27の限定証拠](evidence/full-combined-file-remote-recovery-v27-2026-10-06.json)。
 
+## Auth復旧の共通処理（2026-10-06）
+
+`workers/api/src/auth-d1-recovery.ts`を追加し、test内だけにあったcapture/暗号化/復旧を
+共通処理へ移した。復旧は空targetと明示session policyを要求する。隔離した完全性検証
+だけで旧sessionを保持でき、選択した失効方式ではsession/MFA assurance/verificationを
+戻さず、credential・factor・role・停止監査・generationを保持する。実D1のrollback、
+commit後ACK喪失時のtarget保持/再実行拒否と実SDKの新規password/TOTP loginを
+ローカル合成検証で確認した。[実装と検証範囲](synthetic-auth-recovery.md)。
+
+これは採用可能な共通primitiveであり、本番失効方針の採用やcollector/schedulerの
+有効化ではない。全ストアの一貫したcapture・運用鍵・off-host保存・retentionは残る。
+
 ## 運用にするために残っていること
 
 | 残件 | 必要な結果 | 現在の状態 |

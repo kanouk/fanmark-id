@@ -1,3 +1,20 @@
+## Auth復旧を共通処理へ移し、明示失効方式を合成検証（2026-10-07 JST）
+
+`auth-d1-recovery.ts`へ9表のcapture/AES-256-GCM/空target復旧を切り出し、既存の
+native試験から共通処理を使用。明示session policyを要求し、選択した失効方式では
+session/MFA assurance/verificationを戻さず、他のcredential/factor/role/停止監査/
+generationを保持する。旧cookie/管理MFA拒否と実SDKの新規password/TOTPを確認。
+不正列の実transaction rollback、migration ledgerだけのtarget拒否、実commit後に
+応答を失ったtargetの保持/盲目的な再実行拒否も確認した。native統合1 case・型/lint/
+workflow isolation成功。これは運用policy採用・定期/off-host collector有効化ではない。
+[限定証拠](evidence/auth-recovery-shared-local-2026-10-07.json)。
+
+source対応表は現在の登録/Resendと既存Google/GitHub・メール受け入れへ補正。
+8旧ordinary RPCのbounded direct caller不在を記録したが、外部利用は未確認のまま。
+全58 metadata/linkageと13試験は一致し、54分類pending/full-runtime/converter=falseを保持。
+追加mailは新たな2通の許可待ち。今回のremote write/実ユーザーexport/移送・DNSは0。
+全体の六項目は未完了。担当/鍵/off-host/retention/失効方針の既存質問は回答待ち。
+
 ## 無効な招待コードのnative編集を確認（2026-10-06 JST）
 
 現行Worker471faabeで専用合成管理者の既存TOTP/MFAを確認し、Safariの招待管理から

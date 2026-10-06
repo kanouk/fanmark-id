@@ -838,7 +838,7 @@
         "location": "M:1079; enabled auth.users binding in all-schema catalog",
         "actor": "Worker internal / retain Auth provisioning behavior",
         "boundaryAndEvidence": "Credential signup coordinator uses server-derived private username/display defaults, Free plan, captured language, reserved invitation and setup=false; selected OAuth candidate uses private provider-subject markers and setup=true",
-        "remainingBoundary": "Literal source expressions and full25 Business/Auth core/0007/0008 signup15/15 cover credential defaults, retry/capacity and forged metadata. Native OAuth54/54 adds core/0009 and covers all four new-user callbacks/initial setup, cross-D1 commit/ACK recovery, conflicts, suspension and state/schema guards. Source metadata access is intentionally narrower in the target. Code47b69c5/Auth0009/backend selection are deployed; five seeded session-guard cases and the real browser editor/favorites canary pass with owned0 after cleanup. Remote SDK new-user/new-OAuth-credential creation, real provider new-user/linking/initial setup and external callers remain open; do not clear the whole Auth trigger. See `source-signup-provisioning.md` and `oauth-signup-provisioning.md`."
+        "remainingBoundary": "Literal source expressions and full25 Business/Auth core/0007/0008 signup15/15 cover credential defaults, retry/capacity and forged metadata. Native OAuth54/54 adds core/0009 and covers all four new-user callbacks/initial setup, cross-D1 commit/ACK recovery, conflicts, suspension and state/schema guards. Target deliberately narrows caller metadata. Actual credential email registration/verification/reset/login and Google/GitHub first callback/provisioning/human initial-password/logout/relogin are accepted in their dated receipts. Apple/Discord actual callbacks linked the existing Google account; new-user/initial-settings/Apple relay remain unaccepted. Controlled staging accounts remain retained; external callers, role custody and final integration remain open. See source-signup-provisioning.md, oauth-signup-provisioning.md, staging-email-password-login-2026-10-05.json, google-staging-real-auth-2026-10-04.json and github-staging-real-auth-2026-10-04.json."
       },
       "counterpartSemanticApprovalInferred": false
     },
@@ -1825,10 +1825,10 @@
       "bindingCount": 0,
       "sourceReviewDisposition": "runtime_review_required",
       "counterpart": {
-        "location": "T:2229; F useAuthForm.tsx:165, useInvitationCode.tsx:56",
+        "location": "T:2229; F useAuthForm.tsx:193, useInvitationCode.tsx:77",
         "actor": "Worker public/user",
         "boundaryAndEvidence": "Signup coordinator reserves capacity and consumes it with profile/command completion",
-        "remainingBoundary": "Full25 Business/Auth core/0007/0008 native15 cases cover depleted invites, last-slot races, email failure/retry, duplicate privacy and lost-ACK/browser reload recovery. Schema/trigger deployment is verified; signup stays closed until Resend and mode configuration, so live email/provider signup is not accepted. See invitation-signup-api.md."
+        "remainingBoundary": "Full25 Business/Auth core/0007/0008 native15 cases cover depleted invites, last-slot races, email failure/retry, duplicate privacy and lost-ACK/browser reload recovery. Current Worker471faabe has D1 signup/Resend configured; the 2026-10-06 capability GET confirms signUp=true and invitationRequired=false. Actual credential registration/verification/reset/login was accepted separately, not invitation-required consumption. Native inactive-code administration editing is also separate from consumption. Invitation-required signup, external callers and final integration remain open. See invitation-signup-api.md and staging-invitation-capabilities-current-2026-10-06.json."
       },
       "counterpartSemanticApprovalInferred": false
     },
@@ -1891,10 +1891,10 @@
       "bindingCount": 0,
       "sourceReviewDisposition": "runtime_review_required",
       "counterpart": {
-        "location": "T:2237; F useAuthForm.tsx:126, useInvitationCode.tsx:25",
+        "location": "T:2237; F useAuthForm.tsx:154, useInvitationCode.tsx:43",
         "actor": "Worker public",
         "boundaryAndEvidence": "Pre-auth invitation validity DTO for the selected signup coordinator",
-        "remainingBoundary": "Implemented validation exposes the bounded signup contract rather than raw invitation/config rows. Native15 signup cases cover invalid/depleted invitation and capacity behavior; actual provider/email-backed signup remains gated. See invitation-signup-api.md."
+        "remainingBoundary": "Implemented validation exposes the bounded signup contract rather than raw invitation/config rows. Native15 signup cases cover invalid/depleted invitation and capacity behavior. Current D1/Resend signup is configured and the existing actual credential email flow is accepted; invitation-required live consumption remains unaccepted. Real Google/GitHub new-user provisioning is accepted separately; Apple/Discord new-user provisioning and external/direct callers remain open. See invitation-signup-api.md."
       },
       "counterpartSemanticApprovalInferred": false
     },
@@ -1939,5 +1939,6 @@
     "workerVersion": "bddc0dad-e996-4930-bf1d-97aacc6065b7",
     "evidence": "tier-c-public-access-2026-10-04.json"
   },
-  "counterpartEvidenceUpdatedAt": "2026-10-06T13:14:31.624Z"
+  "counterpartEvidenceUpdatedAt": "2026-10-06T14:43:14.753Z",
+  "currentSignupReadinessEvidence": "staging-invitation-capabilities-current-2026-10-06.json"
 }

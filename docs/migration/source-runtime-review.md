@@ -239,3 +239,31 @@ This closes a stale-evidence gap, not whole-program dataflow or full58-function/
 converter blocking groups, provider/operational/final integration gates remain.
 Runtime remains0ed4213 / Workerb3a770b3 at100%. Lottery-result UI52790bf is
 pushed; its CI37396416191 was still running at this checkpoint.
+
+## Bounded legacy consumer follow-up (2026-10-06 JST)
+
+A current-checkout scan of211 frontend and264 Supabase calls in50 checked-in
+Edge/shared TypeScript files found no direct literal RPC calls to these eight
+ordinary source functions: `count_fanmark_emoji_units`,
+`generate_safe_display_name`, `get_fanmark_ownership_status`,
+`get_public_fanmark_profile`, `has_role`, `is_fanmark_licensed`,
+`search_fanmarks_with_lottery`, and `toggle_fanmark_favorite`. Positive extraction
+controls find two frontend invitation-validation calls and Edge notification
+RPC calls. This is checked-in code, not a new deployed35-body observation.
+[eight exact signatures/hashes and bounded callers](evidence/source-legacy-callers-current-2026-10-06.json).
+
+The saved04:15:10.854785Z catalog still records an ordinary EXECUTE grant for
+all eight. `generate_safe_display_name` is also mentioned by the exact unbound
+`validate_display_name` definition. That unbound trigger is no evidence of an
+active provisioning caller. The scan does not exclude computed aliases, indirect
+SQL, wrappers, external clients or later source changes; none of the ordinary
+functions is classified inactive or retired. The existing external-consumer
+question remains pending. Current application alternatives are recorded in
+object-map and the helper-specific reviews.
+
+The three signup/provisioning counterpart rows now link the already accepted
+credential-email and Google/GitHub first-user receipts, while retaining actual
+invitation-required consumption and Apple/Discord new-user/relay requirements.
+The obsolete absence of Resend/signup/provider configuration is not a current
+blocker. Exact source definitions and classifier54/full-runtime/converter flags
+remain unchanged. Historical feature acceptance dates are not refreshed.

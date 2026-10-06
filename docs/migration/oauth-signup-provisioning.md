@@ -6,9 +6,17 @@ keeps provider `disableSignUp=true`. The checked-in staging configuration select
 this backend and adds Auth0009 to the Auth-only migration allowlist. Code47b69c5
 passed both CI37085997181 jobs and was deployed as b5a07a34 at100%. Auth0009 was
 guarded/applied/read back before deployment, with six marker columns, four unique
-indexes, owned Auth0, FK0 and unchanged MFA generation. Real provider keys,
-remote new-user acceptance and the complete migration remain open. Unconfigured
-capabilities list no providers and all four start/callback entries remain403.
+indexes, owned Auth0, FK0 and unchanged MFA generation. At that initial checkpoint real provider keys and remote new-user acceptance
+were still open; unconfigured capabilities listed no providers. Current staging
+configures all four providers. Actual Google/GitHub first-user provisioning and
+human password setup/logout/relogin are accepted in their dated receipts;
+Apple/Discord callbacks linked an existing Google user, so their new-user flows
+and Apple relay remain unaccepted. Credential email signup/reset/login also has
+its separate accepted proof. The complete migration is still unfinished. See
+[Google](evidence/google-staging-real-auth-2026-10-04.json),
+[GitHub](evidence/github-staging-real-auth-2026-10-04.json),
+[credential email](evidence/staging-email-password-login-2026-10-05.json), and
+[current capability](evidence/staging-invitation-capabilities-current-2026-10-06.json).
 
 ## Creation and identity
 

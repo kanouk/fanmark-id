@@ -21,6 +21,16 @@
       "binding": "RECOVERY_AUTH_DB",
       "database_name": "fanmark-auth-recovery-target-local-fixture",
       "database_id": "00000000-0000-0000-0000-000000000141"
+    },
+    {
+      "binding": "REVOKED_AUTH_DB",
+      "database_name": "fanmark-auth-recovery-revoked-local-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000142"
+    },
+    {
+      "binding": "ACK_AUTH_DB",
+      "database_name": "fanmark-auth-recovery-lost-ack-local-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000143"
     }
   ]
 }

@@ -139,3 +139,35 @@ This closes complete synthetic Auth saved-file/real-D1/login recovery. Operation
 custody/rotation/off-host retention, production revocation/incarnation policy and
 final combined recovery remain open. Keep actual user transfer in the deferred
 stage. Do not revive old production sessions by following the fidelity rehearsal.
+
+## Shared recovery implementation and explicit session policy (2026-10-06 JST)
+
+`workers/api/src/auth-d1-recovery.ts` now supplies capture, AES-256-GCM seal/open
+and empty-target restore. The native rehearsal imports this implementation
+instead of maintaining its own restore/encryption functions. The accepted
+`synthetic-auth-recovery-v1` authenticated envelope is retained; combined bundle
+v2 remains a separate format. Nine Auth tables are read in one D1 batch with
+schema/FK checks and a 20,000-row-per-table ceiling that rejects truncation.
+This single-store read is not an atomic snapshot of the three D1 stores and R2.
+
+Restore requires the trusted expected schema hash, matching SDK key and an
+explicit `sessionPolicy`. `isolated-preserve` additionally requires
+`isolatedFidelity: true`. `revoke-local-sessions-and-challenges` restores no
+`session`, `mfaAssurance` or `verification` rows, while keeping credentials,
+factors, roles, suspension audit and generation intact. This is an available
+policy choice, not adoption of a production recovery policy. Provider-token
+revocation and cross-store incarnation/coordinator behavior remain separate.
+An existing target, including a migration-ledger-only target, is refused.
+
+The native test now uses three independent empty target bindings: exact fidelity,
+local-session/challenge revocation, and committed-write/lost-ACK. It verifies
+stale cookies/admin assurance refusal, fresh password/TOTP login, credential
+preservation, actual transaction rollback on an invalid inserted column, and
+no blind replay after a real commit whose response was lost. Wrong keys/schema,
+tamper, weaker AES keys and missing/non-isolated preservation policies are
+refused. The source is unchanged. The existing native suite (one integrated
+case), Worker typecheck, focused eslint and workflow-isolation check pass.
+
+No route, collector, scheduled backup, secret/configuration or remote resource
+is added or activated. Durable key custody, off-host retention, operational
+policy adoption and full combined recovery under that policy remain unfinished.

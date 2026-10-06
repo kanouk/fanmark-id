@@ -4,6 +4,9 @@ import { beforeAll, expect, inject, it } from "vitest";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 import { checkedInSqlStatements } from "./schema-statements";
+import { AUTH_RECOVERY_TABLES, AUTH_RECOVERY_SCHEMA_SQL, captureAuthRecoverySnapshot,
+  sealAuthRecoverySnapshot, openAuthRecoverySnapshot, restoreAuthRecoverySnapshot, authRecoveryDigest,
+  type AuthRecoverySnapshot as Snapshot, type AuthRecoveryArchive as Archive } from "../src/auth-d1-recovery";
 
 declare module "vitest" {
   export interface ProvidedContext {
@@ -14,7 +17,7 @@ declare module "vitest" {
 // This is an isolated synthetic rehearsal, not a production backup utility.
 // It deliberately keeps saved sessions to prove complete snapshot fidelity.
 // Production session revocation/incarnation policy requires separate acceptance.
-const runtime = env as unknown as Env & { RECOVERY_AUTH_DB: D1Database };
+const runtime = env as unknown as Env & { RECOVERY_AUTH_DB: D1Database; REVOKED_AUTH_DB: D1Database; ACK_AUTH_DB: D1Database };
 const source = runtime.AUTH_DB!;
 const target = runtime.RECOVERY_AUTH_DB;
 const origin = "https://app.example.test";
@@ -24,95 +27,17 @@ const bannedId = "a0000000-0000-4000-8000-000000000002";
 const unverifiedId = "a0000000-0000-4000-8000-000000000003";
 const email = "synthetic-auth-recovery@example.invalid";
 const password = "Synthetic-Auth-Recovery-Only!2026";
-const tableNames = ["account", "adminRole", "adminUserStatusAudit", "mfaAssurance",
-  "mfaGeneration", "session", "twoFactor", "user", "verification"].sort();
-type Row = Record<string, string | number | null>;
-type SchemaObject = { type: string; name: string; tbl_name: string; sql: string };
-type Snapshot = { schema: SchemaObject[]; tables: Record<string, Row[]>;
-  schemaHash: string; rowsHash: string; authKeyId: string };
-type Archive = { nonce: number[]; ciphertext: number[]; schemaHash: string; authKeyId: string };
-const schemaSql = `SELECT type,name,tbl_name,sql FROM sqlite_master
-  WHERE name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name <> 'd1_migrations'
-    AND type IN ('table','index','view','trigger') ORDER BY type,name`;
-
-async function digest(value: unknown): Promise<string> {
-  const bytes = new TextEncoder().encode(JSON.stringify(value));
-  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
-    byte => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function capture(database: D1Database): Promise<Snapshot> {
-  const schema = (await database.prepare(schemaSql).all<SchemaObject>()).results;
-  expect(schema.filter(o => o.type === "table").map(o => o.name).sort()).toEqual(tableNames);
-  const tables: Record<string, Row[]> = {};
-  for (const name of tableNames) {
-    tables[name] = (await database.prepare(`SELECT * FROM "${name}"`).all<Row>()).results;
-  }
-  expect((await database.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
-  return { schema, tables, schemaHash: await digest(schema), rowsHash: await digest(tables),
-    authKeyId: await digest(["better-auth-recovery-key-v1", runtime.BETTER_AUTH_SECRET]) };
-}
-
-function associatedData(archive: Pick<Archive, "schemaHash" | "authKeyId">): Uint8Array {
-  return new TextEncoder().encode(JSON.stringify({ format: "synthetic-auth-recovery-v1",
-    schemaHash: archive.schemaHash, authKeyId: archive.authKeyId }));
-}
-
-async function seal(snapshot: Snapshot, key: CryptoKey): Promise<Archive> {
-  const nonce = crypto.getRandomValues(new Uint8Array(12));
-  const archive = { nonce: [...nonce], ciphertext: [] as number[],
-    schemaHash: snapshot.schemaHash, authKeyId: snapshot.authKeyId };
-  const plaintext = new TextEncoder().encode(JSON.stringify(snapshot));
-  archive.ciphertext = [...new Uint8Array(await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: nonce, additionalData: associatedData(archive) }, key, plaintext,
-  ))];
-  plaintext.fill(0);
-  return archive;
-}
-
-async function open(archive: Archive, key: CryptoKey, expectedSchema: string,
-  authSecret = runtime.BETTER_AUTH_SECRET): Promise<Snapshot> {
-  if (archive.schemaHash !== expectedSchema) throw new Error("auth_recovery_schema_mismatch");
-  if (archive.authKeyId !== await digest(["better-auth-recovery-key-v1", authSecret])) {
-    throw new Error("auth_recovery_server_key_mismatch");
-  }
-  let plaintext: ArrayBuffer;
-  try {
-    plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(archive.nonce),
-      additionalData: associatedData(archive) }, key, new Uint8Array(archive.ciphertext));
-  } catch { throw new Error("auth_recovery_decryption_failed"); }
-  const snapshot = JSON.parse(new TextDecoder().decode(plaintext)) as Snapshot;
-  new Uint8Array(plaintext).fill(0);
-  expect(await digest(snapshot.schema)).toBe(expectedSchema);
-  expect(await digest(snapshot.tables)).toBe(snapshot.rowsHash);
-  expect(snapshot.authKeyId).toBe(archive.authKeyId);
-  return snapshot;
-}
-
-async function restore(database: D1Database, snapshot: Snapshot): Promise<void> {
-  if ((await database.prepare(schemaSql).all()).results.length !== 0) {
-    throw new Error("auth_recovery_target_not_empty");
-  }
-  const statements = [database.prepare("PRAGMA defer_foreign_keys=ON")];
-  for (const object of snapshot.schema.filter(o => o.type === "table")) {
-    statements.push(database.prepare(object.sql));
-  }
-  for (const name of tableNames) {
-    for (const row of snapshot.tables[name]) {
-      const columns = Object.keys(row);
-      for (const column of columns) expect(column).toMatch(/^\w+$/u);
-      statements.push(database.prepare(`INSERT INTO "${name}" (${columns.map(c => `"${c}"`).join(",")})
-        VALUES (${columns.map(() => "?").join(",")})`).bind(...columns.map(c => row[c])));
-    }
-  }
-  // Restore triggers after data, so factor import cannot advance generation or
-  // delete the captured same-session assurance. No source generation is reset.
-  for (const object of snapshot.schema.filter(o => o.type !== "table")) {
-    statements.push(database.prepare(object.sql));
-  }
-  expect((await database.batch(statements)).every(r => r.success)).toBe(true);
-  expect(await capture(database)).toEqual(snapshot);
-}
+const tableNames = AUTH_RECOVERY_TABLES;
+const schemaSql = AUTH_RECOVERY_SCHEMA_SQL;
+const capture = (database: D1Database) => captureAuthRecoverySnapshot(database, runtime.BETTER_AUTH_SECRET!);
+const seal = (snapshot: Snapshot, key: CryptoKey) =>
+  sealAuthRecoverySnapshot(snapshot, key, snapshot.schemaHash, runtime.BETTER_AUTH_SECRET!);
+const open = (archive: Archive, key: CryptoKey, expectedSchema: string, authSecret = runtime.BETTER_AUTH_SECRET) =>
+  openAuthRecoverySnapshot(archive, key, expectedSchema, authSecret!);
+const restore = (database: D1Database, snapshot: Snapshot) => restoreAuthRecoverySnapshot(database, snapshot, {
+  expectedSchemaHash: snapshot.schemaHash, authSecret: runtime.BETTER_AUTH_SECRET!,
+  sessionPolicy: "isolated-preserve", isolatedFidelity: true,
+});
 
 function mergeCookies(previous: string, response: Response): string {
   const jar = new Map(previous.split("; ").filter(Boolean).map(x => [x.split("=", 1)[0], x]));
@@ -197,6 +122,8 @@ it("restores an encrypted complete Auth snapshot and proves password, factor, se
   expect(snapshot.tables.twoFactor[0].secret).not.toBe(secret);
   expect(String(snapshot.tables.twoFactor[0].backupCodes)).not.toContain(enrolled.backupCodes[0]);
   const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  const weakKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 128 }, false, ["encrypt", "decrypt"]);
+  await expect(seal(snapshot, weakKey)).rejects.toThrow("auth_recovery_archive_key_invalid");
   const archive = await seal(snapshot, key);
   expect(JSON.stringify(archive)).not.toContain(passwordHash);
   const serialized = JSON.stringify(archive);
@@ -206,7 +133,7 @@ it("restores an encrypted complete Auth snapshot and proves password, factor, se
   const wrongKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
   await expect(open(archive, wrongKey, snapshot.schemaHash)).rejects.toThrow("auth_recovery_decryption_failed");
   await expect(open(archive, key, "wrong-schema")).rejects.toThrow("auth_recovery_schema_mismatch");
-  await expect(open(archive, key, snapshot.schemaHash, "different-server-secret")).rejects.toThrow("auth_recovery_server_key_mismatch");
+  await expect(open(archive, key, snapshot.schemaHash, "different-server-secret-for-synthetic-recovery-only")).rejects.toThrow("auth_recovery_server_key_mismatch");
   const tampered = structuredClone(archive); tampered.ciphertext[10] ^= 1;
   await expect(open(tampered, key, snapshot.schemaHash)).rejects.toThrow("auth_recovery_decryption_failed");
   expect((await target.prepare(schemaSql).all()).results).toEqual([]);
@@ -248,6 +175,74 @@ it("restores an encrypted complete Auth snapshot and proves password, factor, se
   const retryLogin = await request(target, "/api/auth/sign-in/email", "", { email, password });
   const replay = await request(target, "/api/auth/two-factor/verify-backup-code", mergeCookies("", retryLogin), { code: enrolled.backupCodes[0] });
   expect(replay.status).toBe(401);
+  const revoked = runtime.REVOKED_AUTH_DB;
+  // Refuse missing policy or preservation outside isolated fidelity before target SQL.
+  await expect(restoreAuthRecoverySnapshot(revoked, recovered, {
+    expectedSchemaHash: snapshot.schemaHash, authSecret: runtime.BETTER_AUTH_SECRET!,
+    // @ts-expect-error unconfigured JavaScript caller must not adopt a default policy.
+    sessionPolicy: undefined,
+  })).rejects.toThrow("auth_recovery_session_policy_required");
+  await expect(restoreAuthRecoverySnapshot(revoked, recovered, {
+    expectedSchemaHash: snapshot.schemaHash, authSecret: runtime.BETTER_AUTH_SECRET!, sessionPolicy: "isolated-preserve",
+  })).rejects.toThrow("auth_recovery_session_policy_required");
+  expect((await revoked.prepare(schemaSql).all()).results).toEqual([]);
+
+  // A bad inserted column exercises real transaction rollback of tables and rows.
+  const invalid = structuredClone(recovered);
+  invalid.tables.user[0].nonexistent_recovery_column = "synthetic";
+  invalid.rowsHash = await authRecoveryDigest(invalid.tables);
+  await expect(restoreAuthRecoverySnapshot(revoked, invalid, {
+    expectedSchemaHash: snapshot.schemaHash, authSecret: runtime.BETTER_AUTH_SECRET!,
+    sessionPolicy: "revoke-local-sessions-and-challenges",
+  })).rejects.toThrow("auth_recovery_restore_failed");
+  expect((await revoked.prepare(schemaSql).all()).results).toEqual([]);
+
+  const revokedSnapshot = await restoreAuthRecoverySnapshot(revoked, recovered, {
+    expectedSchemaHash: snapshot.schemaHash, authSecret: runtime.BETTER_AUTH_SECRET!,
+    sessionPolicy: "revoke-local-sessions-and-challenges",
+  });
+  for (const table of ["session", "mfaAssurance", "verification"]) expect(revokedSnapshot.tables[table]).toEqual([]);
+  for (const table of tableNames.filter(name => !["session", "mfaAssurance", "verification"].includes(name))) {
+    expect(revokedSnapshot.tables[table]).toEqual(snapshot.tables[table]);
+  }
+  expect(await (await request(revoked, "/api/auth/get-session", cookie)).json()).toBeNull();
+  expect((await request(revoked, "/api/admin/session", cookie)).status).toBe(401);
+  const fresh = await request(revoked, "/api/auth/sign-in/email", "", { email, password });
+  expect(fresh.status).toBe(200);
+  expect((await fresh.clone().json() as { twoFactorRedirect: boolean }).twoFactorRedirect).toBe(true);
+  const freshTotp = await request(revoked, "/api/auth/two-factor/verify-totp", mergeCookies("", fresh), { code: await totp(secret) });
+  expect(freshTotp.status).toBe(200);
+  const freshCookie = mergeCookies(mergeCookies("", fresh), freshTotp);
+  expect((await request(revoked, "/api/admin/session", freshCookie)).status).toBe(200);
+  expect((await request(revoked, "/api/auth/sign-out", freshCookie, {})).status).toBe(200);
+  expect((await revoked.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
+  // Lost acknowledgement: commit once, then throw; preserve the written target and refuse blind replay.
+  const ackTarget = runtime.ACK_AUTH_DB;
+  await ackTarget.prepare("CREATE TABLE d1_migrations(id INTEGER PRIMARY KEY, name TEXT)").run();
+  const ackOptions = { expectedSchemaHash: snapshot.schemaHash, authSecret: runtime.BETTER_AUTH_SECRET!,
+    sessionPolicy: "revoke-local-sessions-and-challenges" as const };
+  await expect(restoreAuthRecoverySnapshot(ackTarget, recovered, ackOptions)).rejects.toThrow("auth_recovery_target_not_empty");
+  expect((await ackTarget.prepare("SELECT name FROM sqlite_master WHERE name='d1_migrations'").all()).results).toHaveLength(1);
+  await ackTarget.prepare("DROP TABLE d1_migrations").run();
+  let committedBatches = 0;
+  const lostAckTarget = new Proxy(ackTarget, {
+    get(database, property) {
+      if (property === "batch") return async (statements: D1PreparedStatement[]) => {
+        await database.batch(statements); committedBatches += 1;
+        throw new Error("synthetic-lost-ack-after-real-commit");
+      };
+      const value = Reflect.get(database, property);
+      return typeof value === "function" ? value.bind(database) : value;
+    },
+  });
+  await expect(restoreAuthRecoverySnapshot(lostAckTarget, recovered, ackOptions)).rejects.toThrow("auth_recovery_restore_failed");
+  expect(committedBatches).toBe(1);
+  expect(await capture(ackTarget)).toEqual(revokedSnapshot);
+  await expect(restoreAuthRecoverySnapshot(ackTarget, recovered, ackOptions)).rejects.toThrow("auth_recovery_target_not_empty");
+  expect(await capture(ackTarget)).toEqual(revokedSnapshot);
+  expect(snapshot.tables.session).toHaveLength(1);
+  expect(snapshot.tables.mfaAssurance).toHaveLength(1);
+  expect(snapshot.tables.verification).toHaveLength(1);
   expect(await capture(source)).toEqual(snapshot);
   expect((await target.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
   console.info(JSON.stringify({ proof: "synthetic-auth-encrypted-recovery",
@@ -258,5 +253,7 @@ it("restores an encrypted complete Auth snapshot and proves password, factor, se
     exactSnapshotRestored: true, passwordAndTotpRelogin: true,
     backupCodeLoginAndReplayRefusal: true, wrongKeysAndTamperRefused: true,
     existingTargetRefused: true, originalSourceUnchanged: true, remoteWrites: 0,
+    explicitSessionPolicyRequired: true, restoredLocalSessionsAndChallengesRevoked: true,
+    preservedCredentialsAfterRevocationPermitFreshTotp: true, actualD1RestoreRollback: true, lostAckPreservedAndBlindReplayRefused: true,
   }));
 }, 60_000);
