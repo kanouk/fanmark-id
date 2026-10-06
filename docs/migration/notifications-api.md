@@ -244,6 +244,29 @@ UI入力ファイルと操作セッション内の認証情報も除去済み。
 運用採用と実端末/最終統合は別の残件。配備/secret変更、追加mail、実ユーザー移送、
 DNS変更は0。六項目全体は未完了。
 
+## 手動通知作成から受信・既読までを実Safariで受け入れ（2026-10-06 JST）
+
+現行Worker `471faabe-3aff-4312-ba22-cd326dc821e1`を保持し、専用合成管理者の
+既存TOTP/MFAで通知管理へ入り、手動送信画面から`license_grace_started`を一度だけ作成。
+宛先は本人の合成UUID、配信ruleは既存のin-app/遅延0の1件で、masterは変更しない。
+入力pasteの競合報告後は、画面のJSON全体が準備したpayloadと一致することを確認して
+送信した。nativeの作成toastとexact event receipt、source=admin_manualを照合した。
+
+通常POSTのpostcommit wakeから実processorが約2秒後にevent processed/in-app deliveredを
+記録した。保存title/body/summary/metadataが一致し、手動wake/定期処理呼出/状態変更は0。
+イベントログはprocessed、配信ログはUIの更新ボタンで本人の短縮ID/in_app/deliveredを確認。
+同じSafariの通知メニュー・受信一覧は本文と日時を表示し、個別既読/read_via=appも一致した。
+これは手動の合成イベントであり、実ライセンス期限切れの発生証拠には使わない。
+
+UI logout後、所有する通知/event/settings/Auth user各1件とAuth cascadeを除去。
+別のread-only processで既存全表row hash、Auth3/7/2、Master25表、FK0を保持した。
+正当なMFA世代+2とwake世代+1/ack一致は残し、世代を巻き戻さない。合成password/TOTP、
+入力ファイルと操作セッション内の認証情報も除去済み。再seed/再submit/再runnerは不要。
+[限定証拠](evidence/staging-notification-manual-native-2026-10-06.json)。
+
+配備/secret変更、追加mail、実ユーザー移送、DNS変更は0。他の管理画面、実provider新規登録、
+外部配信、運用採用と実端末/最終統合は残る。六項目全体は未完了。
+
 ## グローバルマスターデータ
 
 2026-09-26にSupabaseから読み取り専用で通知ルール10件と有効な翻訳テンプレート40件を取得した。ルール・テンプレートのchannelはすべて`in_app`で、テンプレートはen/id/ja/koが各10件。ルールの`created_by`はSupabase AuthユーザーIDを参照するためエクスポートから除外した。ユーザー設定、通知イベント、生成済み通知は対象外。
