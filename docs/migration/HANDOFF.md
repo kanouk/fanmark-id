@@ -1,5 +1,30 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Main natural daily expiry/grace/archive accepted (2026-10-06 JST)
+
+The existing observer29527 completed successfully; it was not restarted or
+manually triggered. It received the real `0 0 * * *` invocation scheduled at
+2026-10-06T00:00:57Z (09:00:57 JST). Handler outcome is ok with zero exceptions;
+expiry and grace finalization are completed with candidates/processed/conflicts0,
+and notification archive is completed with archived/remaining/conflicts0.
+The completion version check confirms Worker b3a770b3 remains100%.
+
+A separate least-privilege read-only query confirms the exact captured time in
+both completed lifecycle D1 ledgers, and the registered daily schedule. This
+closes main natural-handler acceptance for an empty eligible set; it does not
+prove nonempty archive payload retention or replace the prior isolated populated
+archive test. No deployment, source/user migration or DNS change occurred.
+[Main daily invocation and independent readback](evidence/staging-natural-daily-2026-10-06.json).
+The observer has exit0/one accepted event and is now terminal; do not resume it.
+
+Coupon/return/lottery-entry UI evidence is pushed as bbee951 after two transient
+GitHub server failures; no force push or ref rewrite was used. CI37390439255 for
+692208d passed both jobs. Operational owner/retention/RPO-RTO policy, broadcast
+send permission, populated plan-limit/paid-deletion/protected-password UI,
+new social-provider signup/relay and final phone/PWA/language integration remain
+separate open work. Earlier daily-pending and live-process statements are
+historical checkpoints.
+
 ## Native coupon, return and lottery-entry UI accepted (2026-10-06 JST)
 
 Two synthetic Free identities and one disposable coupon were prepared. Native
