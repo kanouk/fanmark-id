@@ -1,5 +1,37 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Native protected-text UI accepted (2026-10-06 JST)
+
+A disposable verified credential/Free profile was seeded, and the actual register
+and owner-settings APIs configured protected text on S-tier 🧷. The setup session
+was revoked before native Safari accessed the short-ID page without a Better Auth
+session. A wrong four-digit entry kept the message hidden and cleared the input;
+a correct entry rendered the exact synthetic Japanese message.
+
+The actual emoji URL resolves and redirects to `/a/:shortId` before password
+entry. It showed the password gate again and the correct entry rendered the same
+message. D1 contains one failure, two successes and two **short-selector** proofs.
+This proves both user entry paths, not separate emoji-selector verification or
+proof isolation. Cookie-free short-ID and emoji API reads remained locked with
+null text. The earlier API selector-binding evidence remains separate.
+
+Journal-owned Business/Auth rows, password config/runtime evidence, proofs,
+reservations/audits and two unshared synthetic rate buckets were removed. A
+separate least-privilege read-only process verified absence, retained Auth 3/7/2,
+all 24 Master hashes against the prior baseline, profiles/MFA/templates/wake,
+anonymous history 5/8 and FK 0. The pre-existing audit, reservation and rate bucket
+were unchanged; no shared requester bucket was reset. No provider or payment
+call, deployment, source-user migration or domain change occurred.
+[Native UI and independent cleanup proof](evidence/staging-protected-text-native-ui-2026-10-06.json).
+
+CI 37391902928 for 7988123 passed both jobs. Runtime remains 0ed4213 / Worker
+b3a770b3 at 100%. Main natural daily observation is complete; do not restart it.
+Next functional UI gates include populated plan-limit selection and paid deletion,
+lottery results and protected profile/redirect behavior. Provider new signup,
+phone/PWA/language integration and operations/source/recovery gates remain open.
+Older pending-Cron and protected-text statements below are historical checkpoints.
+
+
 ## Main natural daily expiry/grace/archive accepted (2026-10-06 JST)
 
 The existing observer29527 completed successfully; it was not restarted or

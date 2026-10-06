@@ -40,6 +40,17 @@ the route both on a focused fixture and on a synthetic row in the latest
 new synthetic hash; it is not a live password-format preflight for migrated
 users or Cloudflare CPU-fit evidence.
 
+On 2026-10-06, native Safari accepted wrong-entry rejection/input reset and
+correct-entry display of synthetic protected text on the current staging runtime.
+Entering through the emoji URL redirects to `/a/:shortId`, then uses the same
+short-selector verification flow. The observed two successes therefore created
+two short proofs, not an emoji proof. Cookie-free short and emoji public reads
+remained redacted. Independent read-only cleanup verification preserved existing
+Auth, Master, anonymous history and pre-existing rate/attempt state.
+[Bounded native UI evidence](evidence/staging-protected-text-native-ui-2026-10-06.json).
+This does not replace API selector isolation, imported password compatibility,
+protected profile/redirect or actual phone-device acceptance.
+
 ## Decision
 
 Password verification is an anonymous, fanmark-scoped operation. It does not

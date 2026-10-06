@@ -100,6 +100,15 @@ Workersのアプリ/API、分離D1、R2、認証、定常ジョブ、非ユー�
 [本番Edge bodyと差分](source-edge-bodies-review.md)。SQL/RLS/trigger全体や外部callerの
 受け入れは推定せず、六項目は引き続きopen。
 
+2026-10-06 JST、実Safariで保護された伝言板の誤入力拒否・入力欄リセット・正しい番号での
+本文表示を確認した。絵文字URLも短いIDへ転送後に同じ認証画面で開いた。D1は失敗1、成功2、
+short-selector proof2で一致する。別emoji-selectorのUI認証やprotected profile/redirectは
+今回の証拠に含めない。Cookieなしのshort/emoji APIは引き続き本文を隠す。
+所有fixture cleanup後の独立read-only照合で、元Auth3/7/2・全24 Master表・匿名履歴5/8・
+既存アクセス監査/予約/制限bucket・profile/MFA/template/wakeを保持し、FK0。
+[保護伝言板の実画面とcleanup](evidence/staging-protected-text-native-ui-2026-10-06.json)。
+7988123のCI37391902928は両job成功。六項目の全体判定はopenのまま。
+
 ## 完了までに閉じる六つの作業
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |
