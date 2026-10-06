@@ -86,3 +86,28 @@ D1/Workerはread-only監視credential、R2一覧は固定accountを確認したO
 これは合成Auth/業務の復旧受け入れ。運用鍵/交換・off-host/retention・本番失効方針、
 source converterの4 blocking groups/deployable=false、残るUI/provider/実端末・六項目の
 完了条件は保持する。Mac解除の既存質問は返答待ち。
+
+## 現行27 Businessでの保存bundle一式復旧（2026-10-06 JST）
+
+コード候補5e037d0/CI37418737512両job成功版と、文書だけ異なる022a0d4を照合した。
+文書候補022a0d4のCI37420051154も両job成功。
+同じ暗号化保存bundle v2から、別incarnationの2組の新規3 D1/2 R2/専用Workerへ
+全Master25表/12,254行/98定義、合成Auth9表/16行/30定義、業務40表/15行とPNG2件を復旧。
+各Business targetの全27 migrationとschema定義が現行runtime profileへ一致した。
+全Master/Auth列hash・定義/FK0、正確な保存40 stream、credential commit後中断再開、
+R2 replay/画像bytes、実SDKのsession/password/TOTP/backup/停止拒否、本人profile/3所有一覧、
+画像GET・HEAD、catalog3944/参照Master4/4/5/16、単一wake1/0を確認した。
+所要132917/310412msはone-off値で、本番RTOではない。2組目は同名Worker再作成後のprivate
+identity確認に失敗したため、正確な所有資源/version/bindingを再照合し、同じ一時Workerの
+recovery gateだけを同じ権限で更新して再開した。初回HTTP応答/根本原因は未記録のため断定しない。
+2組目の所要時間にはD1作成開始から、この再開とアプリ確認までを含む。
+初回失敗と再開記録を保持し、スキーマ/データ復旧をやり直していない。
+
+全所有資源をexact receiptで削除。独立2026-10-06T06:01:29.711Zの読み取りで
+元D1/R2/Worker inventory、main全表hash/count/FK0、Auth3/7/2とWorkerd437を保持した。
+main DB書込・配備/secret変更・追加メール・実ユーザー移送・DNS変更は0。
+[現行27の限定復旧証拠](evidence/full-combined-file-remote-recovery-v27-2026-10-06.json)。
+
+これは現在のschemaでの合成一式復旧の受け入れであり、source converterの4 blocking groups、
+運用鍵/off-host/retention/失効方針の採用、本人操作と実スマホ・provider・最終統合の六項目は残る。
+以前の25 Businessの証拠は当時の結果として保持し、書き換えない。
