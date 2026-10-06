@@ -4,6 +4,23 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 合成Auth資格情報の暗号化・ローカル復旧（2026-10-06 JST）
+
+全4 Auth migrationの9表を、合成3 user/4 account、SDKで登録したTOTP/暗号化backup code、
+bcrypt password、session/同じfactor assurance・停止/確認状態・verification markerを
+含めてAES-GCMのJSON往復後に別local D1へ復旧した。全9表は非空で、全schema/全列と
+FK0が一致。実Workerで復旧sessionのMFA→logout/失効、元のpasswordで再ログイン→既存TOTP、
+backup code login/再利用拒否、誤password/未確認email/停止user拒否を確認した。
+鍵/schema/暗号文の不一致と既存targetはSQL前に拒否し、元のsourceを保持した。
+native1/1・typecheck/lint/CI isolation成功。通常WorkerのAuth試験へ追加した。
+[合成Auth復旧](synthetic-auth-recovery.md)・[限定証拠](evidence/synthetic-auth-local-recovery-2026-10-06.json)。
+
+現SDKのTOTP/backup codeは一致する`BETTER_AUTH_SECRET`も必要。合成SDK鍵とmemory中の
+暗号化鍵の試験は実鍵の保管/交換/復旧を受け入れる証拠ではない。memory中のJSON往復を
+durable file/remote backupと呼ばず、保持した旧sessionを本番で再有効化する方針へ
+拡張しない。実Authユーザー移送は未実行。runtime/Worker/secret/domain変更は0。
+六項目全体・最終一式復旧は未完了のまま。
+
 ## 全ステージングMasterの暗号化・ローカル復旧（2026-10-06 JST）
 
 これまでの一式復旧は絵文字3件のMaster fixtureだった。今回はread-only監視credentialで

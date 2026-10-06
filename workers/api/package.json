@@ -15,7 +15,7 @@
     "test:availability:reference-master": "vitest run --config vitest.availability-reference-master.config.mjs",
     "test:public-access:d1": "vitest run --config vitest.public-access-d1.config.mjs",
     "test:emoji-catalog:d1": "vitest run --config vitest.emoji-catalog-d1.config.mjs",
-    "test:auth:d1": "vitest run --config vitest.auth-d1.config.mjs",
+    "test:auth:d1": "vitest run --config vitest.auth-d1.config.mjs && npm run test:auth-recovery:d1",
     "test:auth-email": "node --test test/auth-email.test.mjs",
     "test:auth-social": "node --test test/auth-social.test.mjs",
     "test:staging-admin-totp": "node test/staging-admin-totp-smoke.mjs",
@@ -71,7 +71,8 @@
     "test:business-runtime-import": "node --test ../../scripts/migration/test-business-runtime-import.mjs",
     "test:combined-recovery": "node --experimental-strip-types --test ../../scripts/migration/test-combined-recovery.mjs",
     "test:isolated-remote-r2": "node --check ../../scripts/migration/run-isolated-combined-recovery.mjs && node --experimental-strip-types --test ../../scripts/migration/test-isolated-remote-r2.mjs",
-    "test:isolated-remote-d1": "node --check ../../scripts/migration/probe-isolated-remote-d1.mjs && node --test ../../scripts/migration/test-isolated-remote-d1.mjs"
+    "test:isolated-remote-d1": "node --check ../../scripts/migration/probe-isolated-remote-d1.mjs && node --test ../../scripts/migration/test-isolated-remote-d1.mjs",
+    "test:auth-recovery:d1": "vitest run --config vitest.auth-recovery.config.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.1.13",

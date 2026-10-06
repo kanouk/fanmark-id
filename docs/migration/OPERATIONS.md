@@ -163,6 +163,13 @@ secret値をVite変数、Git、PR、出力、通常ログへ入れない。鍵�
 担当者、交換間隔、緊急失効・復旧の担当は未確定。合成復旧用の使い捨て鍵と資源を
 削除した証拠は、本番の鍵保管・復旧担当の証拠にはならない。
 
+全4 migrationの合成Auth復旧では、SDKで登録したTOTP/暗号化backup codeとbcrypt
+password、session/同一factor assuranceを別local D1へ復旧し、実Workerの再ログインを
+確認する。現SDKのTOTPとbackup codeはserver secretに依存するため、snapshot暗号化鍵
+だけでなく一致する`BETTER_AUTH_SECRET`の保管・復旧も必要。詳細と合成/運用の境界は
+[合成Auth復旧](synthetic-auth-recovery.md)。sessionを保持した合成証拠から、本番復旧時に
+旧sessionを再有効化する方針は決めない。実鍵保管・失効/incarnation方針は未確定。
+
 配備者、監視者、復旧担当の権限を分ける。監視には対象accountのWorkers/D1読み取りを
 基本とし、配備・migration・R2変更権限を与える役割を限定する。
 現在のWrangler OAuthは書込み権限を持つため、最小権限の監視用tokenとは扱わない。

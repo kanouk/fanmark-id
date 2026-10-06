@@ -1,5 +1,34 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Synthetic full Auth snapshot and actual login recovery accepted locally (2026-10-06 JST)
+
+The new `npm --prefix workers/api run test:auth-recovery:d1` applies all4 current
+Auth migrations and makes every one of9 tables nonempty. Three synthetic users/
+four accounts include real bcrypt hashes, a linked synthetic Google token record,
+SDK-enrolled TOTP/encrypted backup codes, session/exact-factor assurance, generation,
+role, suspension audit and verification marker. AES-GCM JSON serialization/decryption
+then restores to a distinct local D1. All schema objects/full row columns and FK0
+match; original source stays unchanged. Indexes/triggers are restored after data
+in the single deferred-constraint batch to avoid replaying factor mutation effects.
+
+Actual Worker requests verify restored-session MFA/logout/stale-cookie refusal,
+fresh login with the original password and TOTP, backup-code login/consumption/replay refusal, and wrong
+password/unverified/suspended refusals. Backup-code login alone correctly does not
+grant the current TOTP-bound admin assurance. Wrong archive key/schema/SDK secret/
+modified ciphertext and existing target are refused before relevant writes.
+Native1/1, Worker typecheck, targeted lint and workflow isolation passed. The test
+joins normal `test:auth:d1`/`npm test`; default config excludes its separate fixture.
+[Procedure/boundaries](synthetic-auth-recovery.md) and
+[bounded proof](evidence/synthetic-auth-local-recovery-2026-10-06.json).
+
+This is a memory-envelope/local-D1 proof. Real secret custody, durable encrypted
+Auth backup, remote restore, production session/verification revocation/incarnation
+policy and final combined recovery remain open. Neither real Auth credentials nor
+Supabase rows were read. Runtime remains Worker8cbe1e5f; no deploy/secrets/domains
+changed. Mac remains locked and the existing human unlock request remains pending.
+Prior825c642/CI37401455459 is now confirmed successful in both jobs; it predates
+this new Auth recovery test, which must retain its own current CI result.
+
 ## Full staging Master encrypted local recovery accepted (2026-10-06 JST)
 
 Read-only export captured all24 application Master tables plus the migration

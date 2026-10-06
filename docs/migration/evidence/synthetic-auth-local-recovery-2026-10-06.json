@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-06T02:07:10.801Z",
+  "scope": "Synthetic complete Auth snapshot AES-GCM JSON round trip and independent local D1 restore through actual Worker/Better Auth; not real credential export or durable operational backup",
+  "preparedFromHead": "825c642d12f076620fe1f01897299038327c2f79",
+  "command": "npm --prefix workers/api run test:auth-recovery:d1",
+  "testFile": "workers/api/test/auth-recovery-d1.test.ts",
+  "testSha256": "0c7a0a8eb206b30e87971db6f5d3ba68641fbcd20882497868cdbb0ccc8e0685",
+  "configSha256": "235f1c3d97d2f38f72a4f338b65a430cc95f32cbf0df113f73d48c4a12228ef3",
+  "localConfigSha256": "4a446e9b418b35d56b16d3f3047f73a17d6c33eb7a53835d01e6a0dd0c28f10d",
+  "authMigrations": [
+    {
+      "name": "0003_better_auth_core.sql",
+      "sha256": "ad51865fe63cb14623b43216c11773a198be91d25b999907184bf4d73f88fb1f"
+    },
+    {
+      "name": "0007_auth_signup_command.sql",
+      "sha256": "c82b96294d9a5d3fdff9ed4dc8f42bbdc2255ac95c23cce76e4284340e66a42a"
+    },
+    {
+      "name": "0008_auth_user_suspension.sql",
+      "sha256": "a7e37902d160569ba2df19035007cf664a865c6b588ea34e04734a4245d74a09"
+    },
+    {
+      "name": "0009_auth_oauth_signup.sql",
+      "sha256": "0d404cd3fc7cc715ddda7f47f7c27686fe43e6cd86bf47fc983417a9dacde2db"
+    }
+  ],
+  "tables": [
+    "account",
+    "adminRole",
+    "adminUserStatusAudit",
+    "mfaAssurance",
+    "mfaGeneration",
+    "session",
+    "twoFactor",
+    "user",
+    "verification"
+  ],
+  "allNineTablesNonempty": true,
+  "fixtureUsers": 3,
+  "fixtureAccounts": 4,
+  "realSdkEnrolledFactors": 1,
+  "capturedSessions": 1,
+  "capturedAssurances": 1,
+  "localTest": {
+    "passed": 1,
+    "failed": 0,
+    "durationSeconds": 7.99,
+    "testDurationMs": 862
+  },
+  "localChecks": {
+    "workerTypecheck": true,
+    "targetedLint": true,
+    "workflowIsolation": true
+  },
+  "algorithm": "aes-256-gcm",
+  "serializedCiphertextRoundTrip": true,
+  "actualWorkerRouterAndSdk": true,
+  "completeSchemaAndAllRowColumnsMatched": true,
+  "wrongArchiveKeyRefused": true,
+  "wrongSchemaRefused": true,
+  "wrongSdkSecretRefusedBeforeSql": true,
+  "tamperedCiphertextRefusedBeforeSql": true,
+  "existingTargetRefusedWithoutMutation": true,
+  "restoredPasswordAndTotpRelogin": true,
+  "restoredIsolatedSessionAndAssuranceWorked": true,
+  "logoutRevokedRestoredSessionAndAssurance": true,
+  "staleCookieRefusedAfterLogout": true,
+  "restoredBackupCodeLogin": true,
+  "usedBackupCodeReplayRefused": true,
+  "backupCodeAloneDoesNotGrantAdminAssurance": true,
+  "wrongPasswordUnverifiedAndSuspendedRefused": true,
+  "linkedIdentityAndTokenFieldsPreserved": true,
+  "sourceSnapshotUnchanged": true,
+  "foreignKeyViolations": 0,
+  "normalWorkerCiCommandIncluded": true,
+  "priorCandidateCI": {
+    "head": "825c642d12f076620fe1f01897299038327c2f79",
+    "run": 37401455459,
+    "application": "success",
+    "worker": "success",
+    "newRecoveryTestIncluded": false
+  },
+  "realUserAuthRowsRead": false,
+  "sourceSupabaseRead": false,
+  "remoteCredentialsRead": false,
+  "remoteWrites": 0,
+  "runtimeDeployed": false,
+  "inMemoryEnvelopeOnly": true,
+  "durableArchiveKeyCustodyAccepted": false,
+  "productionSessionRevocationPolicyAccepted": false,
+  "remoteAuthRecoveryAccepted": false,
+  "supabaseAuthMigrationAccepted": false,
+  "fullMigrationAccepted": false
+}
