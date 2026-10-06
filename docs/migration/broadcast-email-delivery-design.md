@@ -219,3 +219,5 @@ marker and provider response, while bulk and test send remain selector-disabled
 503s. Cleanup and independent D1 readbacks found all affected Auth and business
 rows at zero. This does not verify provider-backed delivery; visual browser
 review remains open because the host Mac was locked.
+
+2026-10-06 acceptance: candidate eeb4f6a passed both jobs in CI 37414547662. The full 26-migration Business schema matched in an owned remote D1; eight signed HTTP scenarios and invalid/duplicate events passed through the actual isolated Worker handler. The owned D1 and Worker were deleted and original resources/data preserved. Staging now uses Worker b3ce17ce-cd56-464c-8694-2215dce51b39 and ledger26, with bulk/test sending still disabled. See [bounded ordering and deployment evidence](evidence/broadcast-terminal-outcomes-2026-10-06.json). This does not accept delivery from Resend or the send UI/bulk/retention.
