@@ -222,6 +222,28 @@ identity/binding/scheduleが異なる場合、またはindexがない場合は�
 - Worker/frontend typecheckは成功。2026-09-26のdeployment `938f880d-f3db-46d5-9634-60612e4e2814` に対し、合成管理者のBetter Authサインイン、TOTP enrollment/verification、同一sessionのMFA認可後にrules/templatesを10件/40件読み、event/delivery logsも読み取った。通知ログDTOにpayloadがなく、user IDは8文字へ短縮される。匿名GETは401。master行と通知行は読み取りのみで変更なし。合成Auth行は削除後0件、MFA generation singletonは単調増加状態を保持した。
 - このスモークは合成Auth identityと絵文字draftのround-tripを使う。絵文字draftは元の値に復元し、active releaseは変更していない。2026-09-27には別の明示フラグ付きTOTP smokeで、空のevent/delivery/profile baselineを確認後、MFA認可された手動イベントPOSTを1件実行した。workers.devのCronが合成宛先向け日本語in-app通知を1件生成し、通知・イベント・profile・Auth行を削除して各baselineが0件へ戻った。再現コマンドは `node workers/api/test/staging-admin-totp-smoke.mjs --run-live-staging-write --database=fanmark-auth-staging --notification-manual-event`。絵文字draftとactive releaseは変更せず、実ユーザー行、production、domain/DNSは対象外。
 
+## 通知管理のルール切替・テンプレート編集を実Safariで受け入れ（2026-10-06 JST）
+
+現行Worker `471faabe-3aff-4312-ba22-cd326dc821e1`を保持し、専用合成管理者1件の
+既存TOTPを`/admin`で検証。同一session/factorのMFA assuranceをD1で確認した。
+`AdminNotificationManager`から専用rule1件を有効→無効へ切り替え、各`updated_at`が
+進んだ。専用日本語in-app template1件のtitle/body/summary/activeを保存し、D1の
+正確な値と、UIの「更新」後に再表示した編集フォームの全入力値が一致した。
+本文の絵文字・`{{fanmark_name}}`・literal `$&`も保持した。
+
+初回の通常signinで残った合成MFA challenge/attempts2行をfixtureが除外しておらず、
+保持チェックは一度失敗した。SDKの識別子/value/同じ期限/作成日時で所有を確定し、
+exact2 IDだけをpinして再照合した。全verification行を除外する緩和は行っていない。
+UI logout後、専用rule/template/settings各1件とAuth user/所有cascade・上記2行を除去。
+独立read-only processで既存全表row hash、Auth3/7/2、Master25表、FK0を保持した。
+MFA世代の正当な+2は残し、wake世代とWorker versionは不変。合成password/TOTP secret、
+UI入力ファイルと操作セッション内の認証情報も除去済み。再seed/再runnerは不要。
+[限定証拠](evidence/staging-notification-admin-native-2026-10-06.json)。
+
+この管理画面の編集操作は受け入れ済み。通知送信UI・他の管理画面、provider新規登録、
+運用採用と実端末/最終統合は別の残件。配備/secret変更、追加mail、実ユーザー移送、
+DNS変更は0。六項目全体は未完了。
+
 ## グローバルマスターデータ
 
 2026-09-26にSupabaseから読み取り専用で通知ルール10件と有効な翻訳テンプレート40件を取得した。ルール・テンプレートのchannelはすべて`in_app`で、テンプレートはen/id/ja/koが各10件。ルールの`created_by`はSupabase AuthユーザーIDを参照するためエクスポートから除外した。ユーザー設定、通知イベント、生成済み通知は対象外。
