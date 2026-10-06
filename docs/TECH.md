@@ -372,3 +372,12 @@ sourceから継承した公開flagを、test Price3件だけのCASでprivateへ�
 Customer PortalのPOSTは入力を受け取らない。Cloudflareの空streamはEOFまで確認して
 許可し、非空本文は最初のbyteでキャンセル・拒否して、認証/Stripe呼出しに進まない。
 Origin、owner/customer対応、test-only credential選択は従来のguardを維持する。
+
+## 現行frontend呼び出しと移行対応表の照合
+
+`node --test scripts/migration/test-frontend-callsite-mapping.mjs`は、
+`inventory.mjs`で現行`src`をAST抽出し、対応表の行番号・操作・対象・動的式を照合する。
+一致後に全呼び出しが意味対応へ各1件だけ接続していることを検証する。静的資料同士の
+一致だけでは合格にしない。抽出自体のfixtureは`test-inventory.mjs`で確認する。
+このscannerの標準receiver/importの範囲を、全プログラムのdataflowや外部callerの
+不在へ拡張しない。対応表は`docs/migration/frontend-callsite-map.md`。

@@ -1,5 +1,23 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Current frontend caller map bound to source (2026-10-06 JST)
+
+The old mapping test compared two static documents. Current AST extraction
+still yields211 calls, but16 auth/profile/reset call locations had moved while
+the documents passed that test. A new comparison rejected these stale rows;
+the frontend table and semantic references now match current locations, kinds,
+targets, operations and dynamic expressions. All211 have exactly one semantic
+entry, with zero operation/target/expression drift. Focused mapping2/2 and the
+existing inventory extraction fixture suite pass. Ordinary migration CI runs
+both checks; no runtime/API/schema/configuration was changed or deployed.
+[Current bounded caller proof](evidence/current-frontend-callsite-refresh-2026-10-06.json).
+
+This closes a stale-evidence gap, not whole-program dataflow or full58-function/
+77-policy semantic acceptance. Existing accepted paths are retained; the four
+converter blocking groups, provider/operational/final integration gates remain.
+Runtime remains0ed4213 / Workerb3a770b3 at100%. Lottery-result UI52790bf is
+pushed; its CI37396416191 was still running at this checkpoint.
+
 ## Native lottery results accepted (2026-10-06 JST)
 
 Three disposable credential users were created in staging. Actual authenticated

@@ -145,6 +145,14 @@ wake23→29/29を維持。Worker/config/main Cronは変更せず、local devと�
 a36b94aのCI37395116307は両job成功。抽選結果UIのこの限定経路は受け入れ済み。
 六項目全体・有料退会・管理者MFA・最終統合は未完了のまま。
 
+2026-10-06 JST、frontendの現行ASTは211呼出だが、認証/profile/resetの16参照行が
+古い対応表から移動していた。資料同士だけのCI照合を、現行ASTの位置・操作・対象・
+動的式の照合へ拡張し、古い資料での失敗を確認してから全211の対応表を更新した。
+操作・対象・動的式の差は0、意味対応は全件各1、focused mapping2/2・抽出fixture suite成功。
+[現行callerへの接続](evidence/current-frontend-callsite-refresh-2026-10-06.json)。
+これは静的に抽出したcallerの証拠接続で、未知の間接alias/外部caller/全source意味論を
+完了とはしない。runtime/DB/deployは変更せず、六項目は引き続きopen。
+
 ## 完了までに閉じる六つの作業
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |
