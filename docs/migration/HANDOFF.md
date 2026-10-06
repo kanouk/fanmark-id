@@ -1,4 +1,33 @@
-## Latest unit: saved synthetic Auth file recovered locally; guarded remote entrypoint prepared (2026-10-06 JST)
+## Latest unit: complete saved synthetic Auth file recovered into real D1 and Worker (2026-10-06 JST)
+
+Code159f5c1 / CI37407917794 both jobs successful. Saved v3 AES-GCM archive was
+reopened after its original runtime was disposed and restored into one newly
+created isolated D1. All9 nonempty tables/14 rows/30 schema objects/full columns
+and hashes matched with FK0 and no SQL normalization. Restore/full target hash
+verification1144ms, excluding creation/deploy/SDK behavior/cleanup/operator work.
+An existing target was refused before writes. The guarded temporary Worker used
+the actual application router and matching synthetic SDK secret. Exact D1 UUID,
+origin/incarnation/bindings/secret names and100% version were verified first.
+
+The saved session/then-unexpired same-factor assurance worked; logout revoked
+session/assurance and stale cookie. Original password/TOTP login and backup-code
+consumption/replay refusal passed; backup code alone did not authorize admin.
+Wrong password, unverified email and suspended user were refused. Signup/factor
+enrollment/deletion/generic SQL remained closed. Archive bytes stayed unchanged.
+Both owned resources were deleted by exact receipts. Independent03:24:35.917Z
+read-only process matched original D1/Worker inventory, all main Business/Auth/
+Master table hashes/FK0, original Auth3/7/2 and Worker8cbe1e5f unchanged.
+[Bounded remote proof](evidence/synthetic-auth-file-remote-recovery-2026-10-06.json).
+
+Private completed journal/readback:
+`/Users/kanouk/.codex/fanmark-migration-private/synthetic-auth-file-remote-recovery-2026-10-06`.
+Do not replay exclusive-create runners or recreate deleted targets. Archive/keys
+remain private in source v3; no real Auth export, existing DB write, main Worker
+configuration, R2, DNS or additional email operation occurred. Real operational
+key custody/off-host retention/revocation policy, final combined recovery and
+the other six-package conditions remain open. Mac unlock request is still pending.
+
+## Prior preparation: saved synthetic Auth file and guarded entrypoint (2026-10-06 JST)
 
 All9 nonempty Auth tables/14 rows/30 objects were saved with AES-GCM, source
 runtime disposed, then decrypted/recovered into a new native D1.45-statement
@@ -11,7 +40,7 @@ See synthetic-auth-recovery.md and evidence/synthetic-auth-file-local-recovery-2
 Private source v3 preparation/local-file-proof completed; do not replay them.
 Archive/keys are separate private subdirectories under
 `/Users/kanouk/.codex/fanmark-migration-private/synthetic-auth-file-recovery-2026-10-06-v3`.
-Use the saved files for the first isolated remote run after exact-candidate CI.
+The isolated remote run above used these saved files after exact-candidate CI.
 Earlier stdin-launched local preparations stalled before application DB creation;
 owned processes were cancelled, no cloud resource or archive was created. Use a
 saved entrypoint file and pinned Node22.6.0 for native Miniflare preparation.
@@ -32,7 +61,7 @@ See full-master-recovery.md and evidence/full-staging-master-remote-recovery-202
 Private v3 directory `full-master-remote-recovery-2026-10-06-v3` is completed;
 do not replay the runner or recreate deleted targets. Remote full Master proof is
 accepted. Atomic operational snapshot, off-host/durable key custody/retention,
-owner/RPO-RTO, full Auth remote/combined recovery and the other package conditions
+owner/RPO-RTO, operational Auth revocation/combined recovery and the other package conditions
 remain open. Mac unlock request is pending; six-package goal remains active.
 
 ## Latest unit: isolated REST trigger preparation (2026-10-06 JST)

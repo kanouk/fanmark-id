@@ -4,6 +4,16 @@
 Business/Auth/Master D1とavatar/cover/backup R2。実ユーザー移送、DNS切替、
 Supabase writer停止は最後の別工程とする。本書の作成から運用受け入れを推定しない。
 
+合成Authの保存済みAES-GCMファイルは、159f5c1/CI37407917794両job成功後、
+隔離実D1と専用Workerで全9非空表/14行/30定義・全列hash/FK0と元password/TOTPの
+再ログインまで復旧を受け入れた。target復旧/照合1144msは本番RTOではない。
+一時D1/Worker削除と独立read-only照合で元3 DB/Worker・全表hash・Auth3/7/2を保持。
+[合成Auth実復旧](evidence/synthetic-auth-file-remote-recovery-2026-10-06.json)。
+一致するSDK secretも必要であり、snapshot鍵とSDK鍵の別保管・交換、off-host保存、
+retention、担当/RPO-RTOの採用はこのone-off試験から推定しない。元sessionを保持した
+隔離試験は本番session/verification/assuranceを復活させる運用方針ではない。
+本番再開前の失効/incarnation方針と最終一式復旧は残る。
+
 ## 読み取りの運用確認
 
 移行worktreeのrootでNode 22.6を使用する。

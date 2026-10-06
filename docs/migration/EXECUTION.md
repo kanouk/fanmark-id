@@ -1,5 +1,26 @@
 # 2026-10-05 認証メール設定をstagingへ配備
 
+## Saved complete synthetic Auth real-D1 recovery accepted (2026-10-06 JST)
+
+Exact code159f5c1/CI37407917794 both jobs passed before resource creation. The
+saved AES-GCM archive, with source runtime already disposed, restored all9
+nonempty tables/14 rows/30 schema objects and full column hashes/FK0 into one
+owned isolated D1. No trigger correction was needed; existing target refused
+before writes. Restore/target verification1144ms excludes deploy, application
+checks and cleanup and is not production RTO. A private allowlisted temporary
+Worker used the actual router/Better Auth and matching synthetic SDK secret.
+Exact bindings, incarnation/origin/private gates and100% version were checked.
+
+Restored session/then-unexpired TOTP assurance, logout/stale cookie, original
+password/TOTP, backup consumption/replay refusal and wrong-password/unverified/
+suspended refusal passed. Signup/enrollment/deletion/SQL stayed closed. Saved
+bytes unchanged; exact-receipt D1/Worker deletion and independent03:24:35.917Z
+RO readback preserved all main DB table hashes/FK0, original Auth3/7/2, three-DB/
+Worker inventory and Worker8cbe1e5f. No real export, main DB write, main Worker/
+R2/DNS change or additional email. [Bounded proof](evidence/synthetic-auth-file-remote-recovery-2026-10-06.json).
+Operational keys/retention/revocation and final combined/six-package acceptance
+remain open. Mac unlock request remains pending.
+
 ## Deferred identity preflight prepared (2026-10-06 JST)
 
 The remaining sequence-key gate now has an executable aggregate-only source

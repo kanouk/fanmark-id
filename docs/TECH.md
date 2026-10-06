@@ -90,6 +90,9 @@ session/同一factor assurance・停止状態を含めて別local D1へ復旧す
 隔離Auth用entrypointは`isolated-recovery-auth-worker.mjs`、通常CIの
 `test:isolated-auth-recovery`はtoken/incarnationと小さなallowlist、実signin/logoutを確認する。
 main Workerへbinding/routeを追加せず、実remote資源は候補CI/所有receiptを照合して作成する。
+159f5c1のCI両job成功後、保存済み全合成Auth9表/14行/30定義を実D1と専用Workerへ復旧し、
+元password/TOTP・backup codeの再利用拒否・停止拒否を確認。一時資源削除と独立main全表hash保持も
+[受け入れ済み](migration/evidence/synthetic-auth-file-remote-recovery-2026-10-06.json)。運用鍵/失効方針と最終一式復旧は残る。
 Masterのrelease・avatar/coverの分離R2を同じbundleへ含めた復旧は`npm run test:combined-recovery`。importer codec v5はprofile等の世代writerを認証情報より先に取り込み、v4の途中runを継続しない。合成データ限定で、画像URLのブラウザ配信・remote復旧時間は別に確認する。
 隔離D1向けのREST prepared/batch transportは`isolated-remote-d1.mjs`、専用native試験は
 `test:isolated-remote-d1`。作成receiptのUUID/名前/時刻/incarnationと実metadataを照合し、

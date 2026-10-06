@@ -4,6 +4,26 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 合成Authの保存ファイルから実D1と専用Workerへ復旧（2026-10-06 JST）
+
+159f5c1のCI37407917794は両job成功。元runtime終了後のAES-GCM保存ファイルを
+新規の隔離D1へ復旧し、全9非空表/14行/30 schema object・全列/hash・FK0が一致。
+既存targetはSQL前に拒否した。専用Workerの正確なD1 UUID、origin/incarnation、
+binding/secret名、100% versionを確認後、元のsessionと期限内の同factor assurance、
+logout/旧cookie失効、元password/TOTPでの再login、backup code消費/再利用拒否、
+誤password/未確認email/停止user拒否を実router/SDKで確認した。signup/MFA登録/
+退会/汎用SQL経路は閉じた。復旧＋target全件照合1144msは本番RTOではない。
+
+保存ファイルを保持し、一時D1とWorkerをexact receiptで削除。別read-only processの
+03:24:35.917Z照合で元3 DB/Worker inventory、全Business/Auth/Master表hash、FK0、
+元Auth3/7/2と稼働Worker8cを保持した。既存DBへの書込・main配備/secret変更・
+追加メール・実ユーザー移送・DNS変更は0。
+[限定証拠](evidence/synthetic-auth-file-remote-recovery-2026-10-06.json)。
+
+全Masterと全合成Authの個別remote復旧は受け入れ済み。実運用の鍵保管/交換・
+off-host保存/retention・session/verification失効方針、最終一式復旧は別の残件。
+六項目全体は未完了で、実Authユーザー移送を前倒ししない。Mac解除は返答待ち。
+
 ## 全Masterの暗号化ファイルから実D1へ復旧（2026-10-06 JST）
 
 補正コード801dc78のCI37405218853は両job成功。保存済みAES-GCMファイルを新規の
@@ -14,7 +34,7 @@ read-only processで元の3 DB inventory・全Business/Auth/Master表hash・Work
 保持した。[実D1復旧の限定証拠](evidence/full-staging-master-remote-recovery-2026-10-06.json)。
 
 全Masterのremote復旧を未実行扱いに戻さない。atomic本番snapshot、定期/off-host保存、
-運用鍵/担当/retention/RPO-RTO、全Auth remote復旧・最終一式統合は残る。
+運用鍵/担当/retention/RPO-RTO、Authの運用失効方針・最終一式統合は残る。
 この単位の成功を六項目全体の完了と扱わない。Macのロック解除依頼は返答待ち。
 
 ## 合成Auth資格情報の暗号化・ローカル復旧（2026-10-06 JST）
@@ -259,7 +279,7 @@ userdata移送を開始していない。[準備と範囲](evidence/deferred-ide
 | 2. アプリと認証・業務処理の仕上げ | 多くのsession/権限/競合/失敗時rollbackは受け入れ済み。退会388044b/Worker4a8d85ddはnative66・remote6を受け入れ済み。検索・お気に入りの4既知event/count不整合もbce8993、CI37094750732両job、Workerc09ece05のlocal17・remote4/cleanup/独立readbackで解消済み。取得の通常CI漏れを修正し、既存21と現行25 Business/4 Auth/8 Master・実signin/TOTP/停止・登録の5件（local26/26）を確認した。ただし全画面・実provider・最終統合は未完了。 | 現行画面の必須操作、管理者MFA、登録/password setup/reset、ライセンス取得・返却・移管・抽選・上限・クーポンを統合構成で確認する。現在修正中の既知不具合を解消し、必要な新経路をstagingで確認する。 | #31, #33, #34 |
 | 3. 実サービスとのテスト接続 | GitHubは0fb4976/CI37180854336両job・Worker07bf9d61で実callback/provisioning/初回password保存/logout/session失効/同一identity再loginを受け入れた。Googleのcallback保存・既存資格情報のstaging保存とGoogle/GitHub capabilitiesはWorker8bb6b4d9で確認済み。Googleも実callback/provisioning/本人の初回password保存/logout/session失効/同一identity再loginを受け入れた。DiscordもWorkerfa4ef348で実callbackによる既存Google userへの連携・session失効・同一identity再loginを受け入れた。新規Discord user作成/初回設定は未確認。Appleは本人の契約同意・callback追加許可後に本番設定を保持してstaging URLを保存し、Vaultの既存鍵で更新した90日有効なsecretを保存した。初回実callbackのorigin拒否を限定修正し、7e6cf76/CI37192167542両job成功後のWorker495b3ce4でremote form POSTとstate拒否を確認した。実Apple callbackで既存Google userへの連携とsession失効・同一account再ログインを確認した。Apple新規user/初回設定/relayは未受け入れ。Stripeはtest料金19件・専用10 event Webhook（testのみ有効）・test default Portalを作成し、test key/署名secretをstagingへ保存した。Business test Price/modeとMasterのprivate test Price派生版を照合済み。87b61ef/CI37200812928両job成功・Workerca971193でtest Checkout→Creator、Portal支払い確定→Business、Free即時解約→署名反映、重複単一適用・処理済みeventの逆順再送・自然retryと専用合成userのcleanupを確認した。同じWorkerで実登録→Sティア1か月JPY2,000延長、拒否時未延長、3DS成功、実署名自然処理とdelivery2/効果各1・cleanupの独立照合も受け入れた。定期請求の実拒否/past_due、未受信の古い成功eventをdelivery1で初回逆順配送して失敗状態を維持、成功支払いからBusiness/activeと失敗状態クリア、解約/cleanup・独立保持照合も受け入れた。定期請求の実payment_action_required投影、保存済みカードのhosted3DS完了、同じInvoice/PaymentIntentの成功復旧・独立cleanupも受け入れた。12fa13f/Workercc6d9da7で同一合成userの実signin/プラン選択/Checkout→Creator/Portal支払い→Business/警告確認→Free/logoutと独立cleanupを受け入れた。license/延長/上限超過選択/有料退会を含む全UIは未受け入れ。Resendの実登録・メール確認・再設定・変更後のログインは上記の限定証拠で受け入れ済み。検証account cleanupは残る。Apple/Discord/GitHub/Googleを公開する。 | Stripe sandboxのCheckout/Portal/変更/延長/署名Webhook・重複/逆順/再試行、テスト宛先の認証メール、4 providerの開始/callback/初回設定を確認する。Apple relayも含む。必要なprovider資格情報・テスト設定・テスト送信の許可が必要。本番課金・本番宛先送信は行わない。 | #31, #32, #34, #37 |
 | 4. ジョブ・運用・復旧 | 通知DOの起動/排出/停止・復旧、期限処理の合成一回実行、archive smoke、Time Travel/R2 replayの個別証拠はある。隔離実Cronでarchive2件/残す2件・履歴payload/FK・cleanupを受け入れ、独立inventoryも一致した。mainの日次expiry/archive・Paid/CPU30,000msは有効化・配備/readback済みで、2026-10-05 09:00:15 JSTの自然expiry/graceは対象0/競合0・完了台帳を確認した。旧監視の秒完全一致による取りこぼしを修正し、10月6日09:00:57 JSTのmain expiry/grace/archive自然実行は完了/例外0/競合0/残り0で受け入れた。対象0件のhandler観測と隔離環境の有データarchive試験は分ける。監視専用tokenを二つのRead権限・対象account限定・期限11/4で発行し、Macキーチェーン保管と専用CLIの実readを受け入れた。新規一時D1のSELECT成功・非ゼロINSERT認可拒否・同一SQLの配備権限positive controlを確認し、所有D1の削除と独立inventory一致も受け入れた。定期監視/秘密運用全体/retention/担当/RPO-RTOと最終運用は未受け入れ。 | 起動条件/周期/再開/監視、保存期間、担当と権限、秘密の保管・交換、停止時間/復旧時間目標を確定し、合成障害から復旧を実測する。測定で有料planが必要なら設定前に明示する。 | #30, #34, #37 |
-| 5. 移送器の合成データ受け入れ | 現行25 Business/4 Auth、8 Master＋保持する旧Auth core、分離したavatar/cover R2で、同じbundleの合成40表/15行・マスター・2画像を別incarnationへ復旧した。source hash/型/閲覧password/画像参照・bytes/MIMEと通知wakeの単発性を照合。local復旧10182ms。プロフィールを後から取り込むとpassword世代照合が失敗する不具合をcodec v5の順序制御で修正し、専用試験コマンドを追加。通常CIに実行stepがないことを今回確認し、Business/Auth・combined復旧の明示stepを追加。復旧先画像の冗長bucket prefixによる実Storage API404を再現・修正し、primary/別incarnationのGET/HEAD・bytes/MIME/size一致を確認。fresh local復旧10812ms。隔離D1 REST経路はnative9件に加え、1d3085f/CI37108741104両job成功後の実APIで値・rollback・応答破棄後の非自動再送を確認し、所有した一時D1削除/既存3件inventory一致を受け入れた。共通fixture生成と一式remote conductorを準備し、HTTP R2経路のnative6件（import/replay・競合・実Storage GET/HEAD・所有key cleanup）と共通化後combined1件が成功。2cbf4e0/CI37115000097両job成功後、一式remoteの2 targetで40表/15行（非空9表）・Master・2画像・source hash/count・FK/wake・中断再開が成功。新規targetの合成復旧90726msで本番RTOではない。所有した全資源を削除し、独立10:18:30.138Z inventory一致を受け入れた。Authはseedした合成依存userでcredential backup証拠ではない。画像参照のDTO対応と変更なし保存・既存key削除は6a1870a/CI37118191381両job成功後、実stagingのWorker51db2c90でAPI・実Chromeの編集/公開画像decode・cleanup・独立readbackを受け入れた。RTO/運用・最終統合は残る。2026-10-05には保存済みsource catalogと現行v43/25 Business/4 Authで40 checkpoint/13合成行のimport・resume・fresh local restore（69056ms）・単一wakeと改変拒否を確認した。このlocal runにMaster/R2・実Auth credential backupは含まない。4c2a8c5/CI37246478014両job成功後、現行25/4/8と分離R2の一式remote復旧を二つの新規targetで通し、40表/15合成行・Master fixture3 emoji/4 tier・2画像・中断再開・GET/HEAD・FK/wake・96988msとcleanup/独立inventory一致を確認した。既存2/6/1・Master履歴/MFA/wakeと匿名検索2/5も保持。これは全Masterや実Auth資格情報のbackupではない。source schema converterは4 blocking groups/deployable=false。実ユーザーデータは読み出して移送しない。 | 最終schemaと運用構成で合成snapshotの中断・再開・照合・復旧を通し、未説明差分0と所要時間を記録する。個別の旧schema検証から最終構成の成立を推定しない。 | #35, #37 |
+| 5. 移送器の合成データ受け入れ | 現行25 Business/4 Auth、8 Master＋保持する旧Auth core、分離したavatar/cover R2で、同じbundleの合成40表/15行・マスター・2画像を別incarnationへ復旧した。source hash/型/閲覧password/画像参照・bytes/MIMEと通知wakeの単発性を照合。local復旧10182ms。プロフィールを後から取り込むとpassword世代照合が失敗する不具合をcodec v5の順序制御で修正し、専用試験コマンドを追加。通常CIに実行stepがないことを今回確認し、Business/Auth・combined復旧の明示stepを追加。復旧先画像の冗長bucket prefixによる実Storage API404を再現・修正し、primary/別incarnationのGET/HEAD・bytes/MIME/size一致を確認。fresh local復旧10812ms。隔離D1 REST経路はnative9件に加え、1d3085f/CI37108741104両job成功後の実APIで値・rollback・応答破棄後の非自動再送を確認し、所有した一時D1削除/既存3件inventory一致を受け入れた。共通fixture生成と一式remote conductorを準備し、HTTP R2経路のnative6件（import/replay・競合・実Storage GET/HEAD・所有key cleanup）と共通化後combined1件が成功。2cbf4e0/CI37115000097両job成功後、一式remoteの2 targetで40表/15行（非空9表）・Master・2画像・source hash/count・FK/wake・中断再開が成功。新規targetの合成復旧90726msで本番RTOではない。所有した全資源を削除し、独立10:18:30.138Z inventory一致を受け入れた。Authはseedした合成依存userでcredential backup証拠ではない。画像参照のDTO対応と変更なし保存・既存key削除は6a1870a/CI37118191381両job成功後、実stagingのWorker51db2c90でAPI・実Chromeの編集/公開画像decode・cleanup・独立readbackを受け入れた。RTO/運用・最終統合は残る。2026-10-05には保存済みsource catalogと現行v43/25 Business/4 Authで40 checkpoint/13合成行のimport・resume・fresh local restore（69056ms）・単一wakeと改変拒否を確認した。このlocal runにMaster/R2・実Auth credential backupは含まない。4c2a8c5/CI37246478014両job成功後、現行25/4/8と分離R2の一式remote復旧を二つの新規targetで通し、40表/15合成行・Master fixture3 emoji/4 tier・2画像・中断再開・GET/HEAD・FK/wake・96988msとcleanup/独立inventory一致を確認した。既存2/6/1・Master履歴/MFA/wakeと匿名検索2/5も保持。これは全Masterや実Auth資格情報のbackupではない。全Master25表/12,254行の保存file実D1復旧と、全合成Auth9非空表/14行/30定義の保存file実D1・実SDK再login復旧も上記で受け入れ済み。鍵運用/失効方針と最終一式統合は残る。source schema converterは4 blocking groups/deployable=false。実ユーザーデータは読み出して移送しない。 | 最終schemaと運用構成で合成snapshotの中断・再開・照合・復旧を通し、未説明差分0と所要時間を記録する。個別の旧schema検証から最終構成の成立を推定しない。 | #35, #37 |
 | 6. 最終統合と引き渡し | desktop・390px viewportのeditor/favorites、API/static/PWA/noindexなどの個別証拠がある。実スマホ・対応言語・旧PWAからの更新を含む最終通し確認は未完了。PR #41はdraft。 | 同じ最終candidateで主要利用フロー、provider、ジョブ、PC/スマホ、言語、旧client更新、障害/復旧を一巡する。実行結果と残すデータ/DNS工程の手順を更新し、PRの最終差分・CIをレビュー可能にする。 | #33, #37 |
 
 ## 進行方法

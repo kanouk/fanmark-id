@@ -103,9 +103,39 @@ incarnation, origin and100% version before application requests, then restore
 only the saved synthetic snapshot. Verify every row/definition and SDK behavior,
 delete owned resources by exact receipts and independently recheck the original
 inventory/main DB hashes/Worker. Unknown write ACKs must not be automatically
-retried. The real remote run is still pending at this preparation checkpoint.
+retried. This preparation checkpoint preceded the accepted remote run below.
 
 Saved isolated sessions are kept only to prove snapshot fidelity; expired MFA
 assurance must remain refused. No production session revival or live generation
 rewind is authorized. Operational revocation/incarnation policy, real credential
 backup, providers, phone enrollment and final combined recovery remain open.
+
+## Real D1 and temporary Worker saved-file recovery accepted (2026-10-06 JST)
+
+At159f5c1, CI37407917794 completed both jobs successfully. The saved file above
+restored all9 nonempty tables/14 rows/30 original objects/full columns/hashes/FK0
+into one new isolated D1 in45 statements. No trigger SQL correction was needed.
+Existing targets were refused before writes. Restore and target verification
+took1144ms; resource creation/deploy, application checks, cleanup and operator
+work are excluded, so this is not production RTO.
+
+Exact target UUID/name, Worker bindings/secrets' names, origin/incarnation and
+single100% deployment were verified. Token/incarnation controls refused invalid
+requests; signup, new factor enrollment, deletion and generic SQL remained closed.
+The actual router/SDK accepted the restored session and then-unexpired same-factor
+assurance, revoked both on logout, refused stale cookies, and accepted original
+password/TOTP login. Backup code was consumed once, replay refused, and backup
+code alone did not grant admin assurance. Wrong password/unverified/suspended
+users were refused. The archive remained unchanged.
+
+Exact ownership receipts guarded deletion of the D1 and temporary Worker. An
+independent read-only process at03:24:35.917Z verified their absence and original
+inventory, all main Business/Auth/Master table counts/hashes/FK0, original3/7/2
+Auth state and unchanged staging Worker8cbe1e5f. No main DB write/configuration
+change, real Auth export, provider test, R2/DNS change or additional email occurred.
+[Bounded remote proof](evidence/synthetic-auth-file-remote-recovery-2026-10-06.json).
+
+This closes complete synthetic Auth saved-file/real-D1/login recovery. Operational
+custody/rotation/off-host retention, production revocation/incarnation policy and
+final combined recovery remain open. Keep actual user transfer in the deferred
+stage. Do not revive old production sessions by following the fidelity rehearsal.
