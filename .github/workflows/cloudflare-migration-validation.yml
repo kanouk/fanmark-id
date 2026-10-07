@@ -33,10 +33,14 @@ jobs:
       - name: Install Worker dependencies used by migration tests
         run: npm ci --prefix workers/api
 
-      - name: Install SQLite schema-validation CLI
+      - name: Ensure SQLite schema-validation CLI
+        timeout-minutes: 5
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends sqlite3
+          if ! command -v sqlite3 >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --yes --no-install-recommends sqlite3
+          fi
+          sqlite3 --version
 
       - name: Verify workflow isolation
         run: npm run check:ci

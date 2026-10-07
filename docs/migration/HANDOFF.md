@@ -1,3 +1,12 @@
+## CIのSQLite準備待ちを除去（2026-10-08 JST）
+
+13a9681/CI37673335916のWorker jobは成功。アプリjobはSQLite導入stepが10分以上
+続き、テスト開始前で未受け入れ。原因をコード不具合とは断定していない。
+Ubuntu hosted runnerの既存SQLiteを`command -v`で確認し、不足時だけapt導入する。
+CLIのversionを出力し、この準備stepに5分上限を置く。全既存テストは維持する。
+[GitHub runnerのSQLite一覧](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md)。
+通常staging/remote resourceは未変更。次候補の両CI成功後に専用remote driverを使う。
+
 ## native復旧WorkerのR2 binding照合（2026-10-08 JST）
 
 7f4b490/CI37668885700はアプリ・Worker両job成功。追加の配備前照合で、検証用
