@@ -449,3 +449,11 @@ redirectの場合は`TotpLoginChallenge`を表示し、同じbrowser cookieでSD
 監視で遷移する。missing/failureはfalseで、challengeを完了扱いにしない。
 回帰検証は`npm run test:auth-login-mfa`。実際のTSX hook/ProviderとSDKを実行し、外部
 HTTP/UI/context adapterだけを合成に置換する。native D1/ブラウザー受け入れは別に記録する。
+
+## Master D1復旧の共通処理
+
+`workers/api/src/master-d1-recovery.ts`の限定契約・サイズ/query制限は
+[master-recovery.md](migration/master-recovery.md)。native local D1試験は
+`npm --prefix workers/api run test:master-recovery:d1`で通常Worker CIにも含める。
+既知25表・独立schema pin・legacy Auth空・空targetを要求し、履歴を先に投入して
+triggerを後から設置する。保存済み全Masterの限定照合は定期collector採用ではない。

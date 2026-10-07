@@ -29,6 +29,15 @@ commit後ACK喪失時のtarget保持/再実行拒否と実SDKの新規password/T
 これは採用可能な共通primitiveであり、本番失効方針の採用やcollector/schedulerの
 有効化ではない。全ストアの一貫したcapture・運用鍵・off-host保存・retentionは残る。
 
+## Master復旧の共通処理（2026-10-07）
+
+`workers/api/src/master-d1-recovery.ts`は固定25表のcapture/AES-256-GCM保存・読込/空D1復旧。
+独立schema pin、legacy Auth空、chunk/batch制限、履歴後trigger設置、全表照合を要求する。
+通常Worker CIのnative local D1回帰7件と、保存済み全Master12,254行/98 objectの
+新format復旧・全hash一致を確認。[契約と限定証拠](master-recovery.md)。
+旧private runnerの再実行や実source再取得は不要。Master単独primitiveであり、
+運用鍵・定期off-host collector・保存期間・全ストア整合性の採用は引き続き残る。
+
 ## 運用にするために残っていること
 
 | 残件 | 必要な結果 | 現在の状態 |

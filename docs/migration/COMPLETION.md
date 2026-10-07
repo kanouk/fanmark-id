@@ -4,6 +4,20 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## Master復旧を共通化し、保存済み全Masterを照合（2026-10-07 JST）
+
+Master限定capture/暗号化/空target復旧を共通moduleへ移し、通常Worker CIへ7件の
+native local D1回帰を追加した。実batchのDDL/FK rollback、commit後ACK不明の保持、
+再実行拒否、inactive release・監査triggerを確認。別private processで保存済み全Master
+25表/12,254行/98 objectを新formatから復旧し、全hash・FK0・公開view件数が一致した。
+233 statementで復旧、28でreadback。保存時点のgeneration0を保持し、現stagingの
+generationや実Authを変更していない。[共通処理と境界](master-recovery.md)・
+[限定証拠](evidence/master-recovery-shared-full-local-2026-10-07.json)。
+
+前候補f0d94b9のCI37631765556はアプリ/Worker両job成功。今回はsource/remote read・write、
+mail・runtime配備0。担当/鍵/off-host/retention/全ストアcollector/失効方針と
+同一最終candidateの統合は残り、六項目の全体完了とは扱わない。
+
 ## メールテンプレート管理のnative保存・再取得を確認（2026-10-07 JST）
 
 現行Worker17fdbf39と専用合成管理者の同じsession/verified factorで、Chromeの
