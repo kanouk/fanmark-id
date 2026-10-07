@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "scope": "Fresh metadata-only source catalog linked to the manual current-application counterpart trace; no whole-source equivalence or converter approval",
+  "sourceProjectRef": "ppqgtbjykitqtiaisyji",
+  "sourceObservedAt": "2026-10-07T21:14:44.389671+00:00",
+  "runtimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+  "runtimeFingerprintMatchesPriorObservation": true,
+  "counts": {
+    "functions": 58,
+    "triggerBindings": 37,
+    "externalTriggerBindings": 1,
+    "eventTriggerBindings": 0,
+    "reviewedUnboundTriggerDefinitions": 4,
+    "pendingFunctionReviews": 54
+  },
+  "counterpartTrace": {
+    "functionCount": 58,
+    "missingFunctionCount": 0,
+    "traceSha256": "fb013e898e6d645d9482214fc6b04ebd497643c4f949b84436d034d227554f04",
+    "semanticApprovalInferred": false,
+    "boundary": "Exact source identity, definition, attributes and binding count matched to manual correspondence; feature/provider/operational acceptance and converter gates remain separate."
+  },
+  "manualTrace": {
+    "path": "docs/migration/evidence/source-function-counterparts-2026-10-03.json",
+    "sha256": "0dc8e78b91220db5cad2a985ad0bdf563ae388b42da7866de9113c8da8d59101",
+    "historicalFeatureAcceptanceDatesPreserved": true
+  },
+  "sourceOrAuthRowsRead": false,
+  "sourceFunctionsInvoked": false,
+  "sourceWritesPerformed": false,
+  "sourceBodiesIncluded": false,
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "remainingBoundary": "Historical data, arbitrary external consumers, operational adoption and final integration remain separate requirements."
+}

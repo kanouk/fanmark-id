@@ -4,6 +4,22 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 内部確認機能の通常staging反映と最新source照合（2026-10-08 JST）
+
+`4445297`/[CI37687088667](https://github.com/kanouk/fanmark-id/actions/runs/37687088667)は
+アプリ・Worker両job成功。Worker logでnative writerの6件成功も確認した。
+同じ候補を通常stagingへ反映し、version `55ab5910-9abf-499e-8c34-af8d77a5e37b` の100%配信を確認した。
+公開6 asset、既存binding/secret登録metadata/namespace、全表hash/FK0を保持。
+別Read processでもBusiness79/Auth10/Master25表、Auth3・7・2と全表hash/設定の一致を確認。
+[限定配備証拠](evidence/staging-writer-inspection-runtime-rollout-2026-10-08.json)。
+計測/停止selectorは未有効化。この配備を通常環境の初回停止や定期backup採用とは扱わない。
+
+最新Supabase catalog `2026-10-07T21:14:44.389671Z` は58関数/37binding/外部表binding1/
+event binding0で、前回fingerprintと一致。58件の定義/属性/binding件数が手動対応表と一致した。
+[限定source照合](evidence/source-runtime-counterpart-refresh-2026-10-08.json)。
+Supabaseユーザー行の読取/移送・source関数呼出し/書込みは0。historical/data/任意外部consumer、
+54 pending分類/full-runtime/converter=false、運用採用と最終統合の条件は保持する。
+
 ## 通知のイベント指定言語を実stagingで確認（2026-10-08 JST）
 
 通常Worker`e688fdf6`（runtime`ad8f754`）で、日本語設定の専用利用者へEN/KO/IDの

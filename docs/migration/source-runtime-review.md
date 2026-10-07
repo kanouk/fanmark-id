@@ -1,5 +1,14 @@
 # Source runtime bindings review
 
+## Latest source observation (2026-10-08 JST)
+
+The metadata-only observation at2026-10-07T21:14:44.389671Z retains58 functions,
+37 bindings and the same runtime fingerprint. All58 manual counterpart rows
+match exact definition/attributes/binding counts with missing0. Source/Auth rows
+were not read and stored source functions were not invoked. [Bounded refresh](evidence/source-runtime-counterpart-refresh-2026-10-08.json).
+Historical feature dates,54 pending semantic classifications, fullRuntimeReconciled
+and converterDeployable=false remain separate from this catalog match.
+
 The separate [2026-10-06 Edge-body readback](source-edge-bodies-review.md) now
 downloads all35 identified ACTIVE bundles with stable before/after metadata:
 31 matching entrypoints, four differing prepared entrypoints and61 extracted
