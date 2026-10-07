@@ -4,6 +4,23 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 全ストアの収集・保存・exact再開を共通化（2026-10-08 JST）
+
+Auth/Business/Master/avatars/coversを`fanmark-recovery-set-v1`へまとめるcoordinatorと
+repo外0700/0600のfile helperを追加。全partを結び付けるencrypted manifest、独立schema/
+source/runtime/key identity、caller-owned source/target guard、全targetのwrite前検証を要求する。
+
+native local D1/R2と実fileで6件・型検査が成功。実Business commit後ACK喪失から、全hashが
+一致したD1を再INSERTせずに全体を再開。別part/SDK鍵/既存file/foreign R2を拒否し、
+明示失効方式ではsession/challengeを戻さずcredential bytes/FK0を保持した。
+[契約](recovery-set.md)・[限定証拠](evidence/recovery-set-local-2026-10-08.json)。
+
+通常CIへ追加。前文書候補fe46898/CI37645782521は両job成功。今回の一式はlocal限定で、
+class補完はtestのみ。trusted guard実装の採用・runtime停止/drain・off-host/運用鍵/
+周期/retention/担当/RPO-RTOと最終統合は未完了。CUTOVER_WRITE_FREEZEのAuth/Stripe継続を
+全ストア停止と扱わず、guard callback自体の存在も運用証拠にしない。新remote write/mail/
+runtime配備/source write/実ユーザー移送/DNSは0。
+
 ## 共通R2復旧を実Cloudflareで受け入れ（2026-10-08 JST）
 
 候補`fcd4812`の[CI37643375901](https://github.com/kanouk/fanmark-id/actions/runs/37643375901)

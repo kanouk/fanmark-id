@@ -17,6 +17,7 @@
 - `supabase/functions/`: Edge Functions 群。主要なものは下記参照。
 - `supabase/migrations/`: DB マイグレーション（Supabase CLI 生成形式）。
 - `scripts/migration/`: Cloudflare移行用のschema変換・snapshot・照合ツール。`credential-import-projection.mjs` は原本の6列を検証し、通常の5列と非公開のcredential入力を分離する。`emoji-master-release-stage.mjs` は検証済み絵文字releaseをD1のprivate stagingへ保存し、`emoji-master-release-activate.mjs` はreadback・identity continuityの検証後に版ポインタを切り替える。どちらも公開中の`emoji_master`は変更しない。
+- `workers/api/src/recovery-set.ts`: Auth/Business/Master/avatars/coversの共通collector/open/復旧coordinator。encrypted manifestで全partを結び付け、guard/全target事前検証/exact D1 skip/R2不足分再開を要求する。`scripts/migration/recovery-set-files.mjs`はprivate file保存/読込。運用writer停止やschedulerは未接続。契約は`docs/migration/recovery-set.md`。
 - `workers/api/src/d1-store-recovery.ts`: 信頼した固定store profileのbounded capture・暗号化・空D1復旧engine。公開route/collectorは持たず、MasterとBusinessのformat・table list・復旧容量を分離する。
 - `workers/api/src/business-d1-recovery.ts`: 現行27 migrationの79業務表と採番状態を取得・AES-256-GCM保存/読込・空target復旧。招待消費/通知outbox/command/ledgerと削除済みID high-waterを保持する。契約は`docs/migration/business-recovery.md`。
 - `workers/api/src/r2-recovery.ts`: avatars/cover-images全bucketのbytes・metadataを暗号化保存し、空targetまたはexact subsetへ不足分だけ復旧する。既存objectの上書き/削除は行わない。local補完の境界と、実Cloudflareで補完なしStandard class/8項目を受け入れた契約は`docs/migration/r2-recovery.md`。

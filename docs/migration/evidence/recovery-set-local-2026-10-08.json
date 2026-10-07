@@ -1,0 +1,69 @@
+{
+  "format": "fanmark-recovery-set-local-proof-v1",
+  "observedAt": "2026-10-07T15:58:12.202010+00:00",
+  "state": "verified-local-only",
+  "sourceSHA256": {
+    "workers/api/src/recovery-set.ts": "be2c5c2abdb28eba96b3775bb277ea686c6e855762605e971d6513db658d69ff",
+    "scripts/migration/recovery-set-files.mjs": "2570dcc26e364a4b9c29bd0a7f8655ab59627816caa3333a3765a15302b05052",
+    "workers/api/test/recovery-set.integration.mjs": "1790397f8133f4ea34b21372e742f1fac4ad089cd2cb2f4dd82d2663499cb1e1"
+  },
+  "command": "npm --prefix workers/api run test:recovery-set",
+  "tests": {
+    "passed": 6,
+    "failed": 0,
+    "workerTypecheck": true,
+    "fileHelperSyntaxCheck": true
+  },
+  "stores": {
+    "business": {
+      "migrations": 27,
+      "tableSet": "79 runtime tables plus sqlite_sequence"
+    },
+    "auth": {
+      "migrations": 4,
+      "tables": 9
+    },
+    "master": {
+      "activeMigrations": 8,
+      "historicalAuthSchema": true,
+      "tables": 25
+    },
+    "r2Kinds": [
+      "avatars",
+      "cover-images"
+    ]
+  },
+  "assertions": {
+    "authenticatedPartComposition": true,
+    "allPartsAndTargetsValidatedBeforeWrites": true,
+    "privateFile0600": true,
+    "directory0700": true,
+    "fileOverwriteRefused": true,
+    "rawSdkSecretAndEmailNotInFile": true,
+    "liveGuardExpiryRefused": true,
+    "observedSourceChangeRefused": true,
+    "foreignR2RefusedBeforeAnyD1Write": true,
+    "realBusinessCommitLostAckPreserved": true,
+    "exactD1SkipOnResume": true,
+    "sessionsChallengesRevokedExplicitly": true,
+    "credentialBytesRetained": true,
+    "foreignKeyCheckZero": true
+  },
+  "boundaries": {
+    "localStorageClassAdapter": true,
+    "fixtureCredentialIsSyntheticBytes": true,
+    "newSdkLoginAccepted": false,
+    "remoteCombinedCollectorAccepted": false,
+    "operationalQuiescenceAdopted": false,
+    "callbackPresenceIsProofOfQuiescence": false,
+    "offHostKeyRetentionAdopted": false,
+    "schedulerEnabled": false,
+    "capacityCpuMemoryMeasured": false,
+    "runtimeRedeployed": false,
+    "remoteWrites": 0,
+    "newMail": 0,
+    "sourceWrites": 0,
+    "userDataMigration": false,
+    "dnsCutover": false
+  }
+}

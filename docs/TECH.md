@@ -501,3 +501,14 @@ fcd4812/CI37643375901両job成功後、同じ共通moduleを実Cloudflare専用7
 補完なしに検証し、Standard classと8項目、全資源cleanup/inventory一致を受け入れた。
 [remote限定証拠](migration/evidence/r2-recovery-shared-remote-2026-10-08.json)。
 app Worker17fdbf39と既存bucketは保持。運用collector/全ストア整合点の採用とは分ける。
+
+
+## 全ストアの共通収集と復旧
+
+`recovery-set.ts`は独立schema/SDK key/source/runtime identity、全partのencrypted manifest、
+source/targetのlive guardを要求する。既知source profile→Auth user関係を確認し、全partを
+復号して全targetを確認した後にのみwriteする。D1 commit後の不明な応答はexact全hash照合で
+skip、R2は不足分だけ再開。全ストアにまたがるrollbackは行わない。
+`recovery-set-files.mjs`はrepo外の0700 directory/0600 file、fsync/exclusive linkによる非上書き
+保存と全内容検証。通常Worker CIの`test:recovery-set`（native6件）に追加。
+運用lease/drainとkey/off-host/retentionは未採用。[契約](migration/recovery-set.md)。

@@ -50,6 +50,16 @@ Standard classと8項目、全資源cleanupと前後inventory一致を受け入�
 [remote限定証拠](evidence/r2-recovery-shared-remote-2026-10-08.json)。
 collector未接続、運用条件は下表の残件。
 
+## 全ストアの共通collectorと保存file（2026-10-08）
+
+`recovery-set.ts`と`recovery-set-files.mjs`を追加し、5 leaf archiveを認証した一つのfileへ
+まとめる。native local D1/R2/実file6件で全target事前検証、Business commit後ACK喪失の
+exact skip再開、明示session失効を確認。[契約](recovery-set.md)。
+
+collector APIは呼出可能だが、実runtimeを停止/drainするtrusted guard、鍵/保存先/周期/
+retention/監視は未接続。既存CUTOVER_WRITE_FREEZEはAuth/Stripeが続くため、そのまま
+整合した運用保存点の証拠にはしない。下表の採用待ちは保持する。
+
 ## 運用にするために残っていること
 
 Businessの固定79表と採番状態のcapture/AES-256-GCM/空target復旧も共通moduleへ
