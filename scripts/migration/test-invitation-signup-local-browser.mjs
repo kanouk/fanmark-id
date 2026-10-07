@@ -11,7 +11,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';import os from 'node:os';
 import {build} from '../../workers/api/node_modules/esbuild/lib/main.js';
 import {Miniflare} from '../../workers/api/node_modules/miniflare/dist/src/index.js';
-import {continuePausedRequest,recordCanceledNetworkRequest} from './browser-request-interception.mjs';
+import {createLocalBrowserEgressProxy} from './local-browser-egress-proxy.mjs';
 import {BUSINESS_MIGRATION_SEQUENCE} from './business-migration-ledger.mjs';
 import {SYSTEM_SETTINGS_STAGE_KEYS} from './system-settings-stage.mjs';
 import {businessMigrationStatements} from './business-runtime-import-schema.mjs';
@@ -26,7 +26,7 @@ const port=await new Promise((resolve,reject)=>{const s=netServer();s.on('error'
 const origin=`https://127.0.0.1:${port}`,assets=path.join(temp,'assets'),delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const email='synthetic-invited-owner@example.invalid',password='Synthetic-Invite-only!2026',code='LOCALINVITE';
 const inviteId=randomUUID(),version=createHash('sha256').update('local-invitation-catalog').digest('hex');
-let mf,server,chrome,cdp,closing=false;const canceledRequests=new Set(),interceptionErrors=[],interceptionFailureReceipts=[],networkFailures=[],interceptionTasks=new Set();const mails=[],outboundDenied=[],browserDenied=[],apiRequests=[],apiResponses=[];
+let mf,server,chrome,cdp,egressProxy;const mails=[],outboundDenied=[],browserDenied=[],apiRequests=[],apiResponses=[];
 let report={state:'preparing',head,temp,origin,actualApplicationWorker:true,actualBrowser:true,
   businessMigrations:BUSINESS_MIGRATION_SEQUENCE.length,authMigrations:4,masterMigrations:8,
   remoteResources:false,remoteWrites:0,realProviderCalls:0,realEmailsSent:0,sourceRowsRead:false};
@@ -161,7 +161,8 @@ try{
   const {cdpConnection}=await import(path.join(temp,'cdp-helper.mjs'));
   const chromePath=[process.env.FANMARK_STAGING_CHROME,'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome','/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].filter(Boolean).find(existsSync);assert.ok(chromePath);
   const profile=path.join(temp,'chrome-profile');await mkdir(profile,{mode:0o700});
-  chrome=spawn(chromePath,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--disable-component-update',
+  egressProxy=await createLocalBrowserEgressProxy(origin,receipt=>browserDenied.push(receipt.hostname));
+  chrome=spawn(chromePath,[...egressProxy.chromeArguments,'--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--disable-component-update',
     '--disable-default-apps','--no-first-run','--no-default-browser-check','--ignore-certificate-errors',`--user-data-dir=${profile}`,'--remote-debugging-port=0','about:blank'],{stdio:'ignore'});
   let debugPort;for(let i=0;i<200;i++){assert.equal(chrome.exitCode,null);try{debugPort=(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];if(/^\d+$/u.test(debugPort))break;}catch{}await delay(100);}
   assert.ok(debugPort);const pages=await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
@@ -170,15 +171,11 @@ try{
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:1280,height:960,deviceScaleFactor:1,mobile:false});
   await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
   await cdp.send('Emulation.setUserAgentOverride',{userAgent:await value('navigator.userAgent'),acceptLanguage:'ja-JP,ja'});
-  cdp.on('Network.loadingFailed',event=>{recordCanceledNetworkRequest(canceledRequests,event);networkFailures.push({requestId:event.requestId,canceled:event.canceled===true});});
-  cdp.on('Fetch.requestPaused',params=>{const task=(async()=>{try{
-    const url=new URL(params.request.url);
-    if(url.origin===origin)await continuePausedRequest(cdp,params,canceledRequests);
-    else{browserDenied.push(url.hostname);await cdp.send('Fetch.failRequest',{requestId:params.requestId,errorReason:'BlockedByClient'});}
-  }catch(error){if(!closing){interceptionErrors.push(String(error.message));interceptionFailureReceipts.push({fetchId:params.requestId,networkId:params.networkId??null,path:new URL(params.request.url).pathname,canceledAtFailure:canceledRequests.has(params.networkId)});}}})();
-    interceptionTasks.add(task);void task.finally(()=>interceptionTasks.delete(task));
-  });
-  await cdp.send('Fetch.enable',{patterns:[{urlPattern:'*',requestStage:'Request'}]});
+  // The fixed proxy denies every destination except the owned local HTTPS server.
+  // No allowed request is paused, including service-worker catalog requests that
+  // Chrome may report without a Network ID. Exercise a real blocked CONNECT.
+  await value("fetch('https://browser-egress-fixture.example.invalid/blocked').then(()=>{throw Error('egress_leaked')},()=>true)");
+  assert.ok(browserDenied.includes('browser-egress-fixture.example.invalid'),'proxy_guard_not_exercised');
   await cdp.send('Page.navigate',{url:origin+'/auth'});
   await wait('[...document.querySelectorAll("[role=tab]")].map(el=>el.getAttribute("data-state"))',v=>v.length===2);
   await click('[role=tab][id$="trigger-signup"]');
@@ -225,8 +222,7 @@ try{
   assert.equal(mails.length,1);assert.equal(await auth.prepare('SELECT count(*) AS n FROM user').first('n'),1);
   assert.equal(await business.prepare('SELECT used_count FROM invitation_codes WHERE id=?').bind(inviteId).first('used_count'),1);
   for(const db of [auth,business,master])assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
-  while(interceptionTasks.size)await Promise.all([...interceptionTasks]);
-  assert.deepEqual(outboundDenied,[]);assert.deepEqual(interceptionErrors,[],'browser_interception_protocol_failure');
+  assert.deepEqual(outboundDenied,[]);assert.ok(egressProxy.stats.allowedConnections>0,'local_requests_bypassed_proxy');
   assert.deepEqual(apiResponses.filter(r=>r.status>=500),[],'unexpected_application_api_failure');
   Object.assign(report,{state:'verified',invitationModeRequired:true,googleBeforeInvitationMode:true,googleSuppressedWhenRequired:true,
     invalidCodeLeavesSignupHidden:true,validatedCodeRevealsSignup:true,signupCompletesOneCommand:true,invitationUses:1,
@@ -234,23 +230,21 @@ try{
     verificationLinkFromSyntheticProvider:true,realBrowserPasswordLogin:true,logoutRevokesSession:true,
     usedCodeRefusedInBrowser:true,syntheticMailRequests:1,foreignKeyViolations:0,workerOutboundDenied:outboundDenied.length,
     browserExternalHostsDenied:[...new Set(browserDenied)],apiRequests:apiRequests.map(r=>({method:r.method,path:r.path})),
-    browserInterceptionErrors:0,verifiedCanceledBrowserRequests:canceledRequests.size,requiredOwnerApisAvailable:true,workerUsesNativeAsyncLocalStorage:true,apiResponses,
+    browserFetchInterception:false,localProxyConnections:egressProxy.stats.allowedConnections,externalProxyGuardVerified:true,requiredOwnerApisAvailable:true,workerUsesNativeAsyncLocalStorage:true,apiResponses,
     screenshot:path.join(temp,'invited-dashboard.png'),wholeStagingAcceptance:false});
-}catch(error){report.interceptionFailureReceipts=interceptionFailureReceipts;report.networkFailures=networkFailures;report.browserInterceptionFailures=interceptionErrors.map(message=>String(message).replace(/https?:\/\/\S+/gu,'[url]'));
+}catch(error){
   if(cdp){try{const shot=await cdp.send('Page.captureScreenshot',{format:'png'});await privateWrite('failure.png',Buffer.from(shot.data,'base64'));
   report.failurePageText=await value('document.body.innerText');}catch{}}report.state='failed';report.error=String(error.message).replace(/https?:\/\/\S+/gu,'[url]');process.exitCode=1;}
 finally{
-  closing=true;if(cdp)cdp.close();
+  if(cdp)cdp.close();
   if(chrome&&chrome.exitCode===null&&chrome.signalCode===null){chrome.kill('SIGTERM');for(let i=0;i<20&&chrome.exitCode===null&&chrome.signalCode===null;i++)await delay(100);
     if(chrome.exitCode===null&&chrome.signalCode===null){chrome.kill('SIGKILL');await delay(500);}}
+  if(egressProxy)await egressProxy.close();
   if(server)await new Promise(resolve=>server.close(resolve));if(mf)await mf.dispose();
   await rm(path.join(temp,'chrome-profile'),{recursive:true,force:true,maxRetries:5,retryDelay:100});
   report.ownedBrowserStopped=!chrome||chrome.exitCode!==null||chrome.signalCode!==null;
-  report.localServerStopped=!server||!server.listening;report.localRuntimeDisposed=Boolean(mf);report.syntheticCredentialsIsolated=true;
+  report.localServerStopped=!server||!server.listening;report.localEgressProxyStopped=true;report.localRuntimeDisposed=Boolean(mf);report.syntheticCredentialsIsolated=true;
   await checkpoint();console.log(JSON.stringify({state:report.state,error:report.error,
-    browserInterceptionFailures:report.browserInterceptionFailures,
-    interceptionFailureReceipts:report.interceptionFailureReceipts,
-    networkFailureReceipts:report.state==='failed'?report.networkFailures:undefined,
     journalPath:path.join(temp,'report.json'),
     ownedBrowserStopped:report.ownedBrowserStopped,localServerStopped:report.localServerStopped}));
 }

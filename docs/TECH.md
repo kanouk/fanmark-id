@@ -526,3 +526,11 @@ Macの同じprivate fileから全5 storeのnative復旧と明示失効、全資�
 バックアップ用の新規書き込み停止は `recovery-write-freeze.ts` の `RECOVERY_WRITE_FREEZE` を使う。HTTP全入口・fetch後wake・Cron診断を含むjob・通知DOのD1処理を止め、alarmは再開用時刻だけ保持する。既存cutover停止とは独立し、default-off、不明値は停止側。既に動いている処理のdrainと外部writer停止は別条件で、このflagだけをrecovery collectorのguardにしない。詳細は `docs/migration/backup-operations.md`。
 
 writerの終了確認は `recovery-writer-drain.ts` と `RecoveryWriterCoordinator` の内部DO bindingを使う。明示したselector/scopeだけでHTTP・Cron・通知DOをticket管理し、claim後の新規処理とactive>0のassertを拒否する。ticketにTTLを設けず、HTTPのwake・Cronの全job終了まで記録を保持する。default-offで通常stagingのbindingは未追加。最初から計測したwriterに限るため、旧versionの初回drain・外部writer停止・collector接続・実remote採用は別条件。契約は `docs/migration/backup-operations.md`。
+
+### localブラウザ検証のHTTP(S)通信
+
+招待登録と実local Workerのプロフィール編集は`local-browser-egress-proxy.mjs`を使う。
+設定済みloopback HTTPS serverだけにCONNECTを許可し、外部hostを解決しない。Chromeの
+固定proxy・`<-loopback>`・QUIC無効を指定する。許可通信はFetch interceptionで止めず、
+Network IDのないカタログ通信をcancel照合できると仮定しない。プロフィールの意図的な
+失敗PATCH/cancel fixtureだけに狭いCDP patternを使い、実API応答を置き換えない。

@@ -63,5 +63,13 @@
     "application": "success",
     "worker": "success",
     "newIntegrationTestIncluded": false
+  },
+  "integrationCi": {
+    "id": 37658909089,
+    "head": "3a6322c3f02b01d2b84192271ae77a7bcf4c022b",
+    "worker": "success",
+    "application": "failure",
+    "newIntegrationTestIncluded": true,
+    "applicationFailure": "browser harness cancellation on catalog request without Network ID"
   }
 }

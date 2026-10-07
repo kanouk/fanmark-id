@@ -4,13 +4,15 @@ import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
 import path from 'node:path';
 import { continuePausedRequest, recordCanceledNetworkRequest } from './browser-request-interception.mjs';
+import { createLocalBrowserEgressProxy } from './local-browser-egress-proxy.mjs';
 
 export async function runBrowser({temp,origin,users,http,execute,sql,importedImages}){
  const {cdpConnection}=await import(path.join(temp,'cdp-helper.mjs'));
  const chromePath=[process.env.FANMARK_STAGING_CHROME,'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome','/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].filter(Boolean).find(existsSync);
  assert.ok(chromePath,'Chrome is required; set FANMARK_STAGING_CHROME if needed');
  const chromeProfile=path.join(temp,'chrome-profile');await mkdir(chromeProfile,{mode:0o700});
- const chrome=spawn(chromePath,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--no-default-browser-check','--ignore-certificate-errors',`--user-data-dir=${chromeProfile}`,'--remote-debugging-port=0','about:blank'],{stdio:'ignore'});
+ const proxyBlocked=[];const egressProxy=await createLocalBrowserEgressProxy(origin,receipt=>proxyBlocked.push({origin:'https://'+receipt.hostname+(receipt.port?':'+receipt.port:''),path:'[proxy]'}));
+ const chrome=spawn(chromePath,[...egressProxy.chromeArguments,'--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--no-default-browser-check','--ignore-certificate-errors',`--user-data-dir=${chromeProfile}`,'--remote-debugging-port=0','about:blank'],{stdio:'ignore'});
  const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  let cdp;const errors=[],blocked=[],requests=[],canceledRequests=new Set();
  let canceledInterceptions=0,cancellationFixture;
@@ -28,15 +30,16 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   const targets=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();cdp=cdpConnection(targets.find(target=>target.type==='page').webSocketDebuggerUrl);await cdp.opened;
   await cdp.send('Page.enable');await cdp.send('Network.enable');await cdp.send('Runtime.enable');
   cdp.on('Network.loadingFailed',event=>recordCanceledNetworkRequest(canceledRequests,event));
+  cdp.on('Network.requestWillBeSent',event=>{const url=new URL(event.request.url);if(url.origin===origin)requests.push({path:url.pathname,method:event.request.method});});
   cdp.on('Fetch.requestPaused',event=>{void(async()=>{
    const url=new URL(event.request.url);
    if(url.origin!==origin){blocked.push({origin:url.origin,path:url.pathname});await cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'BlockedByClient'});return;}
    if(url.pathname===cancellationPath){cancellationFixture=event;return;}
-   requests.push({path:url.pathname,method:event.request.method});
+
    if(failNextPatch&&url.pathname===profilePath&&event.request.method==='PATCH'){failNextPatch=false;failedPatches++;await cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'ConnectionFailed'});return;}
    if((await continuePausedRequest(cdp,event,canceledRequests)).canceled)canceledInterceptions++;
   })().catch(error=>errors.push(error.message));});
-  await cdp.send('Fetch.enable',{patterns:[{urlPattern:'*'}]});
+  await cdp.send('Fetch.enable',{patterns:[{urlPattern:origin+cancellationPath}]});
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await cdp.send('Page.navigate',{url:origin+editor});
   await wait('location.pathname',pathname=>pathname==='/auth');
@@ -53,6 +56,7 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   assert.ok(canceledRequests.has(cancellationFixture.networkId),'missing_chrome_cancellation_receipt');
   assert.equal((await continuePausedRequest(cdp,cancellationFixture,canceledRequests)).canceled,true);
   canceledInterceptions++;
+  await cdp.send('Fetch.disable');
   for(const [selector,text] of [['#auth-email',owner.email],['#auth-password',owner.password]]){await value(`document.querySelector(${JSON.stringify(selector)}).focus()`);await cdp.send('Input.insertText',{text});}
   await value("document.querySelector('#auth-email').closest('form').querySelector('button[type=\"submit\"]').click()");
   await wait("document.querySelector('input[name=\"display_name\"]')?.value",result=>result===owner.name);
@@ -68,8 +72,9 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   for(const [selector,text] of [['input[name="display_name"]',textName],['textarea[name="bio"]',textBio]]){await value(`(()=>{const field=document.querySelector(${JSON.stringify(selector)});field.focus();field.select();})()`);await cdp.send('Input.insertText',{text});}
   await wait(`sessionStorage.getItem(${JSON.stringify(draftKey)})`,result=>result&&JSON.parse(result).form.bio===textBio);
   const save="Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='保存する')";
-  failNextPatch=true;await value(`${save}.click()`);
+  failNextPatch=true;await cdp.send('Fetch.enable',{patterns:[{urlPattern:origin+profilePath}]});await value(`${save}.click()`);
   await wait("document.body.innerText.includes('更新に失敗しました')",Boolean);
+  await cdp.send('Fetch.disable');
   assert.equal(failedPatches,1);assert.deepEqual(await snapshot(),before);
   assert.equal(await value('location.pathname'),editor);
   assert.equal(JSON.parse(await value(`sessionStorage.getItem(${JSON.stringify(draftKey)})`)).form.bio,textBio);
@@ -96,7 +101,7 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   await wait(decodedImages,images=>images.length===2&&images.every(image=>image.complete&&image.width===1));
   const publicScreenshot=await cdp.send('Page.captureScreenshot',{format:'png'});
   await writeFile(path.join(temp,'imported-images-public.png'),Buffer.from(publicScreenshot.data,'base64'),{mode:0o600});
-  assert.equal(blocked.some(entry=>entry.origin==='https://synthetic-source.example.invalid'),false,'browser attempted source Storage access');
+  assert.equal([...blocked,...proxyBlocked].some(entry=>entry.origin==='https://synthetic-source.example.invalid'),false,'browser attempted source Storage access');
   for(const [field,url] of Object.entries(importedImages)){
    const logical=new URL(url).pathname.split('/storage/v1/object/public/')[1];
    const result=await value(`(async()=>{const response=await fetch(${JSON.stringify('/api/storage/object/'+logical)},{method:'DELETE',credentials:'include'});return response.status;})()`);
@@ -113,12 +118,13 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   assert.equal(await value("!!document.querySelector('input[name=\"display_name\"]')"),false);
   assert.deepEqual(await snapshot(),rowsBeforeBan);
   const violations=await execute('FANMARK_DB','PRAGMA foreign_key_check;');assert.deepEqual(violations.flatMap(part=>part.results),[]);
-  assert.deepEqual(errors,[]);
+  assert.deepEqual(errors,[]);assert.ok(egressProxy.stats.allowedConnections>0,'local_requests_bypassed_proxy');
   assert.ok(requests.some(req=>req.path==='/api/auth/sign-in/email'&&req.method==='POST'));
   assert.ok(requests.some(req=>req.path===profilePath&&req.method==='PATCH'));
-  return {actualApiResponses:true,fulfilledApiResponses:0,canceledInterceptionFixture:true,canceledInterceptions,importedImagesDecodedInEditor:true,importedImagesDecodedInPublicPage:true,unchangedSourceImageReferencesPreserved:true,legacyOwnerDelete:true,externalRequestsBlocked:blocked.length,anonymousReturn:true,actualFormSignin:true,viewport390Overflow:false,failedSaveRequests:failedPatches,failedSavePreservesRows:true,reloadRestoresDraft:true,retryPersistsInD1:true,successfulSaveClearsDraft:true,coldReopen:true,publicPrivateToggling:true,crossOwnerEditorRefused:true,suspensionRedirect:true,foreignKeyViolations:0,realPhone:false};
+  return {actualApiResponses:true,fulfilledApiResponses:0,canceledInterceptionFixture:true,canceledInterceptions,importedImagesDecodedInEditor:true,importedImagesDecodedInPublicPage:true,unchangedSourceImageReferencesPreserved:true,legacyOwnerDelete:true,externalRequestsBlocked:blocked.length+proxyBlocked.length,localProxyConnections:egressProxy.stats.allowedConnections,anonymousReturn:true,actualFormSignin:true,viewport390Overflow:false,failedSaveRequests:failedPatches,failedSavePreservesRows:true,reloadRestoresDraft:true,retryPersistsInD1:true,successfulSaveClearsDraft:true,coldReopen:true,publicPrivateToggling:true,crossOwnerEditorRefused:true,suspensionRedirect:true,foreignKeyViolations:0,realPhone:false};
  }finally{
   cdp?.close();if(chrome.exitCode===null){chrome.kill('SIGTERM');for(let i=0;i<20&&chrome.exitCode===null;i++)await delay(100);if(chrome.exitCode===null){chrome.kill('SIGKILL');for(let i=0;i<20&&chrome.exitCode===null;i++)await delay(100);}}
+  await egressProxy.close();
   await rm(chromeProfile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
  }
 }

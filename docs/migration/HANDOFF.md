@@ -1,3 +1,23 @@
+## カタログ通信のID欠落を回避するlocal proxy（2026-10-08 JST）
+
+3a6322c/CI37658909089はWorker job成功（通常SDK→DO fence→一式file復旧の新testも成功）、
+アプリjobは招待登録の通信cancel照合で失敗。追加診断から、`/api/emoji/catalog`の
+paused requestにChromeのNetwork IDがなかったと確認した。2秒の待機だけでは解消しない。
+
+新しいlocal fixture proxyは、設定済み`127.0.0.1:port`のHTTPS tunnelだけを許可し、
+要求された外部hostをDNS解決・接続しない。外部/別loopback/普通のHTTPは拒否する。
+Chromiumの固定proxyと`<-loopback>`設定でlocalhostの暗黙bypassを除き、QUICを無効化。
+[Chromiumの一次資料](https://chromium.googlesource.com/chromium/src/+/main/net/docs/proxy.md)。
+招待testは許可通信をFetchでpauseせず、実外部CONNECT拒否とlocal proxy経由を検証する。
+プロフィールtestも通常通信をpauseせず、既存のcancel fixture/失敗PATCHだけに狭い
+CDP patternを使う。資格情報やproviderを実接続する変更ではない。
+
+native proxy2件（tunnel bytes/別宛先拒否）と、実Chromeの招待一式・プロフィール一式が成功。
+プロフィールは保存失敗/下書き/reload/retry、画像/公開範囲、別owner/停止account、390pxの
+既存条件を保持。remote write/mail0、owned browser/server/proxy cleanup済み。
+[限定証拠](evidence/local-browser-egress-proxy-2026-10-08.json)。新候補のLinux CIはまだ
+確認前で、実スマホ/PWA・本移行の受け入れとは分ける。
+
 ## 通常SDKとwriter fence、一式collectorをlocalで接続（2026-10-08 JST）
 
 新規6 D1・4 R2と別々のSQLite DO namespaceを持つ2つの実アプリWorkerをlocalで起動し、
