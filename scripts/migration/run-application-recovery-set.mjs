@@ -323,6 +323,7 @@ try {
     for (const store of ['business','master','avatars','covers']) assert.equal(journal.phases.restore.result.restoredHashes[store], opened.manifest.parts[store].snapshotHash);
     assert.notEqual(journal.phases.restore.result.restoredHashes.auth, opened.manifest.parts.auth.snapshotHash);
     assert.equal(journal.phases.restore.oldSessionRejected,true);assert.equal(journal.phases.restore.normalSdkTargetLogin,true);
+    assert.deepEqual(journal.phases.restore.emptyR2ReadStatus,{avatars:404,'cover-images':404});
     assert.equal(journal.phases.restore.canonicalEmojiCount,masterPins.canonicalEmojiCount);
     assert.deepEqual(journal.phases.restore.referenceViewCounts,masterPins.referenceViewCounts);
     for(const phase of Object.values(journal.phases))assert.ok(Object.values(phase.d1Queries).reduce((n,count)=>n+count,0)<=1000);

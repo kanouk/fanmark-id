@@ -15,7 +15,7 @@ import {d1RecoveryDigest} from '../../workers/api/src/d1-store-recovery.ts';
 import {saveRecoverySetFile,readRecoverySetFile} from './recovery-set-files.mjs';
 import {restoreMasterRecoverySnapshot} from '../../workers/api/src/master-d1-recovery.ts';
 
-const bindingNames={auth:'AUTH_DB',business:'FANMARK_DB',master:'MASTER_DB',avatars:'AVATARS',covers:'COVERS'};
+const bindingNames={auth:'AUTH_DB',business:'FANMARK_DB',master:'MASTER_DB',avatars:'AVATARS_BUCKET',covers:'COVER_IMAGES_BUCKET'};
 const ids=prefix=>Object.fromEntries(stores.map(store=>[store,'new-local-'+prefix+'-'+store]));
 const email='synthetic-recovery-set@example.invalid',password='Synthetic-owned-recovery!2026';
 

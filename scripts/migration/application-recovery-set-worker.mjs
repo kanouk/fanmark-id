@@ -47,7 +47,7 @@ function appEnv(env,receipt,prefix,counts){
   const db=bindings(env,prefix,counts);
   return {D1_TOPOLOGY:'split',AUTH_BACKEND:'better-auth',AUTH_USER_STATUS_BACKEND:'d1',BETTER_AUTH_SECRET:env.PROOF_SDK_SECRET,
     BETTER_AUTH_URL:receipt.origin,CORS_ALLOWED_ORIGINS:receipt.origin,EMOJI_CATALOG_BACKEND:'d1',REFERENCE_MASTER_BACKEND:'d1',
-    AUTH_DB:db.auth,FANMARK_DB:db.business,MASTER_DB:db.master,AVATARS:db.avatars,COVERS:db.covers,
+    AUTH_DB:db.auth,FANMARK_DB:db.business,MASTER_DB:db.master,STORAGE_BACKEND:'r2',AVATARS_BUCKET:db.avatars,COVER_IMAGES_BUCKET:db.covers,
     RECOVERY_DRAIN_BACKEND:'durable-object',RECOVERY_DRAIN:prefix==='S'?env.SOURCE_DRAIN:env.TARGET_DRAIN,
     RECOVERY_DRAIN_SCOPE_DIGEST:receipt.scopes[prefix]};
 }
@@ -174,6 +174,11 @@ export default {async fetch(request,env){
         const targetLogin=await login(env,receipt,'T',value.d1Queries);check(targetLogin.status===200,'target_login');
         check((await targetLogin.json()).user.id==='90000000-0000-4000-8000-000000000001','target_user');
         check(await targets.auth.prepare('SELECT count(*) AS n FROM session').first('n')===1,'target_session');
+        const emptyR2ReadStatus={};
+        for(const bucket of ['avatars','cover-images']){
+          const response=await appFetch(env,receipt,'T',value.d1Queries,'/api/storage/public/'+bucket+'/90000000-0000-4000-8000-000000000001/missing.png');
+          check(response.status===404,'empty_storage_read');await response.body?.cancel();emptyR2ReadStatus[bucket]=response.status;
+        }
         const catalogCounts={};
         if(Number(env.PROOF_CATALOG_ROWS)>0){
           let offset=0,version;const catalogIds=new Set();
@@ -192,7 +197,7 @@ export default {async fetch(request,env){
         await releaseRecoveryWriterFence(appEnv(env,receipt,'S'),sourceOwner);
         let captureRefused=false;try{await collectRecoverySet(bindings(env,'S',value.d1Queries),context,key,guard(env,receipt,'S',sourceOwner));}
         catch(error){captureRefused=error.message==='recovery_set_guard_lost';}check(captureRefused,'released_guard');
-        value={...value,result,...catalogCounts,credentialBytesRetained:true,sessionChallengesRevoked:true,oldSessionRejected:true,normalSdkTargetLogin:true,releasedGuardRefusesCapture:true,foreignKeyViolations:0};
+        value={...value,result,...catalogCounts,emptyR2ReadStatus,credentialBytesRetained:true,sessionChallengesRevoked:true,oldSessionRejected:true,normalSdkTargetLogin:true,releasedGuardRefusesCapture:true,foreignKeyViolations:0};
       }
       value.state='verified';
     }catch(error){value={...value,state:'failed',error:safeError(error)};}

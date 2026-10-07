@@ -57,8 +57,10 @@ export async function exerciseApplicationRecoveryWorker({savedMaster}={}){
     const source=Object.fromEntries(await Promise.all(['auth','business','master'].map(async store=>[store,await mf.getD1Database('S_'+store.toUpperCase())])));
     await seedRecoverySetFixture(source,{skipMaster:true});
     await source.auth.prepare("UPDATE account SET password=? WHERE providerId='credential'").bind(await bcrypt.hash(fixturePassword,10)).run();
-    assert.equal((await request('initialize',{method:'POST',body:archiveBytes,headers:{}})).status,401);
-    assert.equal((await request('initialize',{method:'POST',body:archiveBytes,headers:{...headers,'x-proof-nonce':'bad'}})).status,403);
+    // Admission is checked before payload parsing. A small malformed body also
+    // avoids an unread multi-MiB upload racing the transport's early rejection.
+    assert.equal((await request('initialize',{method:'POST',body:'{}',headers:{}})).status,401);
+    assert.equal((await request('initialize',{method:'POST',body:'{}',headers:{...headers,'x-proof-nonce':'bad'}})).status,403);
     assert.equal((await request('query',{method:'POST',body:'{}'})).status,404);
     assert.equal((await request('collect',{method:'POST'})).status,409);
     assert.equal((await request('initialize',{method:'POST',body:Buffer.alloc(8*1024*1024+1)})).status,413);
@@ -75,6 +77,7 @@ export async function exerciseApplicationRecoveryWorker({savedMaster}={}){
     const restore=await (await request('restore',{method:'POST',body:JSON.stringify(archive)})).json();assert.equal(restore.report.state,'verified',JSON.stringify(restore.report));
     assert.equal(restore.report.progress.length,10);assert.equal(restore.report.result.captureId,collect.report.captureId);
     assert.equal(restore.report.oldSessionRejected,true);assert.equal(restore.report.normalSdkTargetLogin,true);assert.equal(restore.report.credentialBytesRetained,true);
+    assert.deepEqual(restore.report.emptyR2ReadStatus,{avatars:404,'cover-images':404});
     assert.equal((await request('restore',{method:'POST',body:JSON.stringify(archive)})).status,409);
     const control=await mf.getR2Bucket('CONTROL');await control.put('unowned','preserve');
     assert.equal((await request('objects',{method:'DELETE'})).status,409);assert.equal(await (await control.get('unowned')).text(),'preserve');await control.delete('unowned');

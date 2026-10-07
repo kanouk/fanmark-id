@@ -1,3 +1,18 @@
+## native復旧WorkerのR2 binding照合（2026-10-08 JST）
+
+7f4b490/CI37668885700はアプリ・Worker両job成功。追加の配備前照合で、検証用
+appEnvのR2名を通常アプリの`AVATARS_BUCKET`/`COVER_IMAGES_BUCKET`へ合わせ、
+`STORAGE_BACKEND=r2`を明示した。復旧後の実Storage APIから、空avatar/cover bucketの
+未存在objectがそれぞれ404になることもlocal全Master試験で確認した。
+initialize/collect/restoreはverified、SQL数262/251/786、Master12,254行、catalog3,944件、
+reference4/4/5/16件とhash/FK0を保持。所有runtime/bucket/fileをcleanup済み。
+
+未認証・別nonceの試験は小さい不正JSONでpayload解析前の401/403を確認する。
+旧試験は未消費の6.3MiB uploadと早期拒否が競合してECONNRESETとなったため変更した。
+超過入力8MiB+1の413とclaimなしの試験は維持。回復suite10/10も成功。
+この修正を含む次候補の両CI成功後、同じ新driverでowned remote検証へ進む。
+通常mainは未配備、remote resourceはまだ未作成。六つの完了条件は未完了。
+
 ## 実アプリと全Master用のnative隔離Worker構成（2026-10-08 JST）
 
 d2d9c3a/CI37664045796はアプリ・Worker両job成功。main stagingは17fdbf39のまま。
