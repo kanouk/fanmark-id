@@ -38,6 +38,13 @@ commit後ACK喪失時のtarget保持/再実行拒否と実SDKの新規password/T
 旧private runnerの再実行や実source再取得は不要。Master単独primitiveであり、
 運用鍵・定期off-host collector・保存期間・全ストア整合性の採用は引き続き残る。
 
+## R2復旧の共通処理（2026-10-08）
+
+whole-bucketの暗号化captureとexact subset再開処理を追加し、local R2のbytes/HTTP/custom
+metadata・ACK喪失の不足分再開・実画像GET/HEADを6件で確認した。
+[契約](r2-recovery.md)・[限定証拠](evidence/r2-recovery-shared-local-2026-10-08.json)。
+local storage-class補完はremote受け入れではない。collector未接続、運用条件は下表の残件。
+
 ## 運用にするために残っていること
 
 Businessの固定79表と採番状態のcapture/AES-256-GCM/空target復旧も共通moduleへ

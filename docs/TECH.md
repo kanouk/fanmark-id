@@ -477,3 +477,11 @@ AES-256-GCMで保存/読込し、新しい空targetへ単一batch復旧する。
 wakeを再発生させず、削除済みevent/ledgerの最大IDも保持する。native local D1の5件は
 `npm --prefix workers/api run test:business-recovery:d1`で通常Worker CIへ含める。
 [契約と限定検証](migration/business-recovery.md)。全ストアcollectorや定期保存の採用は別工程。
+
+## R2復旧の共通処理
+
+`r2-recovery.ts`はkind別の全bucket capture/暗号化と、条件付きPUTによる不足object復旧。
+`new-empty`または`resume-exact`を明示し、既存全objectのbytes/hash/全metadataを照合する。
+ACK喪失でも保存済みobjectを消去せず、再開時にexact subsetだけを許す。
+`npm --prefix workers/api run test:r2-recovery`を通常Worker CIへ含める。local storageClassの
+fixture補完はremote受け入れではない。[契約と限定検証](migration/r2-recovery.md)。

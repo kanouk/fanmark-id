@@ -4,6 +4,26 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## R2復旧の共通処理とCI診断（2026-10-08 JST）
+
+avatars/cover-images全bucketのcapture・AES-256-GCM・空target/exact subset復旧を
+共通moduleへ追加。local R2のavatar3件/cover1件で全bytes/HTTP/custom metadata、
+Unicode/空object/ページング、実画像GET/HEAD、ACK喪失から不足分だけの再開と保存済み
+version不変を確認。別bytes/metadata/未知keyはwrite前に拒否し、上書き/削除しない。
+6件・Worker型/dry-run成功、通常Worker CIへ追加した。
+[契約](r2-recovery.md)・[限定証拠](evidence/r2-recovery-shared-local-2026-10-08.json)。
+
+固定MiniflareがstorageClassを空で返すため、local fixtureだけでStandard fieldを補った。
+本実装は補完せず未知classを拒否する。実Cloudflareのstorage class受け入れ、全ストア
+collector/整合した復旧点、運用鍵/off-host/retention/担当は未完了のまま。
+
+Business候補aac3bb4のCI37639502798はapplicationの招待browser通信guardで一度失敗。
+詳細を出力していなかったため、protocol method/codeを機密値なしで出す診断を8ddd51cに
+追加した。判定は緩めていない。local招待flowは再実行成功、CI37640360292のapplicationも
+成功したが、原因確定・再現修正とは扱わない。Worker jobは実行中としてexact handleを
+監視している。R2の今回remote write/追加mail/runtime配備0。六項目と実ユーザー/DNSの
+後工程境界は保持する。実staging招待用の未登録受信先は引き続き回答待ち。
+
 ## Business復旧の共通処理と採番保持（2026-10-07 JST）
 
 現行27 migrationの79業務表と採番状態をcapture/暗号化/空D1復旧する共通profileを
