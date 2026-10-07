@@ -9,6 +9,7 @@ import {seedRecoverySetFixture, recoverySetFixturePins, fixtureSecret} from './r
 import {saveRecoverySetFile, readRecoverySetFile} from './recovery-set-files.mjs';
 import {openRecoverySet} from '../../workers/api/src/recovery-set.ts';
 import {databaseRoles,bucketRoles,fixturePassword} from './application-recovery-set-contract.mjs';
+import {createApplicationRecoveryCloudflareApi} from './application-recovery-cloudflare-api.mjs';
 import {d1RecoveryDigest} from '../../workers/api/src/d1-store-recovery.ts';
 import bcrypt from '../../workers/api/node_modules/bcryptjs/index.js';
 import path from 'node:path';
@@ -40,33 +41,28 @@ assert.ok(ci.jobs.some(job => job.steps.some(step => step.name === 'Test Worker 
 
 let credential;
 const stagingConfig = path.join(apiDirectory, 'wrangler.app-staging.jsonc');
-function wrangler(args, {config = stagingConfig, input, json = false} = {}) {
+function wrangler(args, {config = stagingConfig, input, json = false, oauthProfile = false} = {}) {
   let output;
+  const cliEnv = {...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false'};
+  if (oauthProfile) delete cliEnv.CLOUDFLARE_API_TOKEN;
+  else if (credential) cliEnv.CLOUDFLARE_API_TOKEN = credential;
   try {output = execFileSync(path.join(apiDirectory, 'node_modules/.bin/wrangler'), [...args, '--config', config], {
     cwd: apiDirectory, encoding: 'utf8', timeout: 90_000, maxBuffer: 8 * 1024 * 1024,
-    env: {...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false', ...(credential ? {CLOUDFLARE_API_TOKEN: credential} : {})},
+    env: cliEnv,
     input, stdio: ['pipe', 'pipe', 'pipe'],
   });} catch {throw new Error('proof_wrangler_' + args[0].replaceAll('-', '_') + '_failed');}
   if (!json) return;
   try {return JSON.parse(output);} catch {throw new Error('proof_cli_response_invalid');}
 }
-const who = wrangler(['whoami', '--json'], {json: true});
-assert.equal(who.email, 'fanmark.id@gmail.com'); assert.ok(who.accounts.some(row => row.id === account));
-credential = wrangler(['auth', 'token', '--json'], {json: true}).token;
-assert.equal(typeof credential, 'string'); assert.ok(credential.length > 20);
-async function api(resource, method = 'GET', payload, absent = false) {
-  let response;
-  try {response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/${resource}`, {
-    method, redirect: 'error', headers: {authorization: `Bearer ${credential}`, 'content-type': 'application/json'},
-    body: payload === undefined ? undefined : JSON.stringify(payload), signal: AbortSignal.timeout(30_000),
-  });} catch {throw new Error('proof_resource_ack_unknown');}
-  if (absent && response.status === 404) return null;
-  if (method === 'DELETE' && response.status === 204) return null;
-  let envelope;
-  try {envelope = await response.json();} catch {throw new Error('proof_resource_response_invalid');}
-  if (!response.ok || envelope.success !== true) throw new Error('proof_resource_api_' + response.status);
-  return envelope.result;
+function readOAuthCredential() {
+  const who = wrangler(['whoami', '--json'], {json: true, oauthProfile: true});
+  assert.equal(who.email, 'fanmark.id@gmail.com'); assert.ok(who.accounts.some(row => row.id === account));
+  const auth = wrangler(['auth', 'token', '--json'], {json: true, oauthProfile: true});
+  assert.equal(auth.type, 'oauth'); assert.equal(typeof auth.token, 'string'); assert.ok(auth.token.length > 20);
+  credential = auth.token;
 }
+readOAuthCredential();
+const api = createApplicationRecoveryCloudflareApi({account, getToken: () => credential, refreshToken: readOAuthCredential});
 const sorted = rows => rows.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 async function inventory() {
   const d1 = await api('d1/database?per_page=100'), r2 = await api('r2/buckets'), workers = await api('workers/scripts');
@@ -218,6 +214,7 @@ async function cleanup() {
     try {await unlink(filename);} catch (error) {if (error.code !== 'ENOENT') throw error;}
   }
   journal.keyFilesRemoved = true;
+  delete journal.cleanupFailure;
   journal.cleanupVerified = true; journal.finishedAt = new Date().toISOString(); await save();
 }
 let failure;

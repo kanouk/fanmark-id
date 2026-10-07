@@ -1,3 +1,24 @@
+## 隔離remote作成の401と所有cleanup（2026-10-08 JST）
+
+9b433be/CI37674983990はアプリ・Worker両job成功。アプリjobは既存SQLite3.45.1を使い
+5分46秒で完了。専用remote driverは6 D1と合成source Auth/Business、R2の作成へ進んだ。
+3個目のR2作成後のmetadata GETが401で停止し、Worker/DO配備・Master復旧・通常SDKの
+remote proofは未実行。期限切れが原因かは確定していない。
+
+同じjournalのpending nameを再作成せず、fresh OAuthで実R2名/creation_dateとbeforeの不在、
+Worker/namespaceの不在を照合して作成済み1個を所有記録へ取り込んだ。元driverの同じ
+journal resumeでD1 6個/R2 3個をcleanupし、独立全一覧はbeforeと一致（D1/R2/Worker/DOが
+3/3/2/1）。privateログの原401と初回cleanup拒否は履歴として保存する。
+[未受け入れとcleanupの証拠](evidence/application-recovery-resource-preparation-2026-10-08.json)。
+
+新しい`application-recovery-cloudflare-api.mjs`はGET401だけ、同じstaging OAuth profileの
+email/account/typeを再検証してtokenを取得し直し、同じ読み取りを1回だけやり直す。
+Wranglerへ古いbearerを環境注入したまま再取得しない。POST/DELETEの401、通信断、unknown ACKを
+自動再実行しない。6ケースで作成1回→GET401→fresh GET、mutation非再実行、上限、失敗時の
+秘密非表示、cleanupの404/204を確認。通常recovery suite/CIへ追加する。
+これは通常mainのtoken/運用collectorの採用ではなく、専用proof driverの修正。
+六つの完了条件と既存の回答待ちは保持し、次候補の両CI後に新規owned runを実行する。
+
 ## CIのSQLite準備待ちを除去（2026-10-08 JST）
 
 13a9681/CI37673335916のWorker jobは成功。アプリjobはSQLite導入stepが10分以上
