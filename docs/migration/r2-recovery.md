@@ -76,3 +76,22 @@ resourcesを保持する。terminal receipt取得後のみ全bucketのowned key�
 APIのbucket/Worker identityと消失、前後D1/R2/Worker inventory一致を確認する。
 これは合成Standard objectの限定試験で、InfrequentAccess・容量上限のCPU/memory・
 全ストアの整合した復旧点や定期運用を受け入れるものではない。remote実行結果は別途記録する。
+
+## 実Cloudflareの限定受け入れ（2026-10-08）
+
+候補fcd4812/CI37643375901の両job成功後、新規の7 bucket/専用Workerで、補完なしの
+Standard classを確認した。実R2も未設定contentEncodingはundefinedで返り、今回の
+既知optional fieldのみ省略する処理でcaptureと復旧が成功した。
+
+avatar3/cover1の暗号化往復、全bytes/metadata、Unicode/空object、native画像GET・HEAD、
+本物のPUT commit後に応答を捨てる注入→不足2件だけの再開とversion保持、異なるmetadata
+を持つ既存objectへの無書込拒否、source不変の8項目を確認。
+[限定証拠](evidence/r2-recovery-shared-remote-2026-10-08.json)。
+
+全owned objectと7 bucket/Workerを削除し、元のD1/R2/Worker inventory（3/3/2）に戻った。
+別CLIのbucket一覧と独立Read tokenのmain Worker17fdbf39/Business27/wake34/34/FK0/
+queue滞留0/API200も一致。retained staging bucketへのwriteやapp runtime配備は0。
+
+proof自体は約18秒、作成/配備/cleanupを含むone-off全体は約98秒だった。合成4 objectの
+所要時間であり、実データ量や新規鍵/off-host/retentionによる運用RTOを保証しない。
+InfrequentAccess/最大容量のCPU・memory/全ストア整合点/運用collectorの受け入れは別。

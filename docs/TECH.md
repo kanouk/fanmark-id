@@ -495,3 +495,9 @@ classのみtest補完した全proofを加えた8件。remote CLIはexact HEADの
 専用7 bucketとWorkerをjournalで追跡する。実stagingの既存bucketには書き込まない。
 API/Worker応答不明時は同じreceiptを照会し、proofを盲目的に再実行しない。
 詳細は[R2復旧](migration/r2-recovery.md)。
+
+
+fcd4812/CI37643375901両job成功後、同じ共通moduleを実Cloudflare専用7 bucket/Workerで
+補完なしに検証し、Standard classと8項目、全資源cleanup/inventory一致を受け入れた。
+[remote限定証拠](migration/evidence/r2-recovery-shared-remote-2026-10-08.json)。
+app Worker17fdbf39と既存bucketは保持。運用collector/全ストア整合点の採用とは分ける。

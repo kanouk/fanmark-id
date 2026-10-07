@@ -45,7 +45,10 @@ metadata・ACK喪失の不足分再開・実画像GET/HEADを6件で確認した
 [契約](r2-recovery.md)・[限定証拠](evidence/r2-recovery-shared-local-2026-10-08.json)。
 実bundleの既知optional metadata差異を修正し、8件へ拡張した。専用7 bucket/Workerの
 明示remote runnerを追加したが、このcheckpointではremote未実行。
-local storage-class補完はremote受け入れではない。collector未接続、運用条件は下表の残件。
+その後、両CI成功のfcd4812で実Cloudflare専用7 bucket/Workerを実行し、class補完なしの
+Standard classと8項目、全資源cleanupと前後inventory一致を受け入れた。
+[remote限定証拠](evidence/r2-recovery-shared-remote-2026-10-08.json)。
+collector未接続、運用条件は下表の残件。
 
 ## 運用にするために残っていること
 

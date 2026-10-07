@@ -1,3 +1,24 @@
+## 共通R2復旧を実Cloudflareで受け入れ（2026-10-08 JST）
+
+候補`fcd4812`の[CI37643375901](https://github.com/kanouk/fanmark-id/actions/runs/37643375901)
+は両job成功、R2 native/bundle8件も実CI logで確認した。CIの総合/個別step反映に一時差が
+あり、最初のCLIはresource作成前のgateで拒否。step成功の反映後に検証を実行した。
+
+新規の専用7 R2 bucketとWorker `ae69e6bd-27fe-424d-87a9-1023a6098ed2`で、class補完なしに
+Standard class、avatar3/cover1の暗号化往復と全bytes/HTTP/custom metadata、Unicode/空object、
+実アプリ画像GET・HEAD、commit後ACK喪失の不足2件のみ再開/version不変、異なるmetadata
+の無書込拒否とsource不変の8項目を確認した。
+[限定証拠](evidence/r2-recovery-shared-remote-2026-10-08.json)。
+
+全owned objectを消去し、7 bucket/Workerのidentity/消失、D1/R2/Worker inventoryの前後一致
+（3/3/2）を確認。別Wrangler processでも元の3 bucketだけを確認し、private request keyを
+除去した。独立Read tokenのmain観測はWorker `17fdbf39`、Business27、wake34/34、FK0、
+queue/処理滞留0、API/root200と前後同じ。全既存行のhashを再照合した証拠とは扱わない。
+
+R2単体の実API境界を受け入れた。一式collector/整合した復旧点/鍵/off-host/retentionと
+運用採用・最終統合は残る。既存staging bucketへのwrite、新規mail、runtime再配備、
+実ユーザー移送/source write/公開DNS/本番課金は0。
+
 ## R2の実Worker metadata差異を修正し、remote試験を準備（2026-10-08 JST）
 
 前candidate `de07b9a`のCI 37642308160は両job成功。新しいbundle試験で既知optional HTTP
