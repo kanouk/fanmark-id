@@ -3,7 +3,7 @@ import { runInDurableObject, runDurableObjectAlarm } from "cloudflare:test";
 import { beforeAll, beforeEach, expect, it } from "vitest";
 import worker from "../src/index";
 import { assertRecoveryWriterFence, claimRecoveryWriterFence, releaseRecoveryWriterFence,
-  settleRecoveryWriterTasks, withRecoveryWriter } from "../src/recovery-writer-drain";
+  inspectRecoveryWriters, settleRecoveryWriterTasks, withRecoveryWriter } from "../src/recovery-writer-drain";
 import type { Env } from "../src/repository";
 
 const runtime = env as unknown as Env;
@@ -27,6 +27,35 @@ beforeEach(async () => {
   await runInDurableObject(wake, async (_instance, state) => { await state.storage.deleteAlarm(); });
   await db.prepare("DELETE FROM drain_fixture").run();
   await db.prepare("INSERT OR REPLACE INTO notification_worker_wake_state VALUES (1, 1, 0)").run();
+});
+
+it("inspects the native census without initializing, fencing or changing writer state", async () => {
+  const stored = () => runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  expect(await stored()).toEqual([]);
+  expect(await inspectRecoveryWriters(runtime)).toEqual({ owner: null, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST,
+    active: 0, drained: false, initialized: false });
+  expect(await stored()).toEqual([]);
+
+  const entered = signal(), finish = signal();
+  const work = withRecoveryWriter(runtime, async () => { entered.resolve(); await finish.promise; });
+  await entered.promise;
+  const activeStorage = await stored();
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner: null, active: 1, drained: false, initialized: true });
+  expect(await stored()).toEqual(activeStorage);
+  await expect(inspectRecoveryWriters({ ...runtime, RECOVERY_DRAIN_SCOPE_DIGEST: "b".repeat(64) }))
+    .rejects.toThrow("recovery_writer_unavailable");
+  expect(await stored()).toEqual(activeStorage);
+  finish.resolve(); await work;
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner: null, active: 0, drained: false, initialized: true });
+
+  await claimRecoveryWriterFence(runtime, owner);
+  const fencedStorage = await stored();
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner, active: 0, drained: true, initialized: true });
+  expect(await stored()).toEqual(fencedStorage);
+  await releaseRecoveryWriterFence(runtime, owner);
+  await withRecoveryWriter(runtime, async () => { await db.prepare("INSERT INTO drain_fixture VALUES (5)").run(); });
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner: null, active: 0, drained: false });
+  expect((await db.prepare("SELECT id FROM drain_fixture").all()).results).toEqual([{ id: 5 }]);
 });
 
 it("keeps actual HTTP work and its awaited post-response wake in the census until they finish", async () => {

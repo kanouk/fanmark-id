@@ -7,6 +7,7 @@ const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 const HASH = /^[0-9a-f]{64}$/u;
 type Fence = { owner: string; scope: string };
 export type RecoveryWriterStatus = { owner: string | null; scope: string; active: number; drained: boolean };
+export type RecoveryWriterInspection = RecoveryWriterStatus & { initialized: boolean };
 
 export class RecoveryWriterDrainError extends Error {
   constructor() { super("recovery_writer_unavailable"); this.name = "RecoveryWriterDrainError"; }
@@ -60,6 +61,13 @@ export async function settleRecoveryWriterTasks(tasks: Promise<unknown>[]): Prom
 }
 
 /** Privileged binding-only operations. These are not exposed as public HTTP routes. */
+export async function inspectRecoveryWriters(env: Env): Promise<RecoveryWriterInspection> {
+  const status = await command(env, "inspect", crypto.randomUUID()) as RecoveryWriterInspection;
+  if (typeof status.initialized !== "boolean" || (!status.initialized && (status.active !== 0 || status.owner !== null))) {
+    throw new RecoveryWriterDrainError();
+  }
+  return status;
+}
 export async function claimRecoveryWriterFence(env: Env, owner: string): Promise<RecoveryWriterStatus> {
   if (!UUID.test(owner)) throw new RecoveryWriterDrainError();
   return command(env, "claim", owner);
@@ -77,7 +85,7 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     if (url.origin !== ORIGIN || url.search || request.method !== "POST" ||
-        !["/enter", "/leave", "/claim", "/assert", "/release"].includes(url.pathname)) {
+        !["/enter", "/leave", "/inspect", "/claim", "/assert", "/release"].includes(url.pathname)) {
       return new Response(null, { status: 404 });
     }
     if (Number(request.headers.get("content-length") ?? 0) > 256) return new Response(null, { status: 400 });
@@ -100,6 +108,13 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
           return { status: 409 };
         }
         const fence = await storage.get<Fence>("fence");
+        if (url.pathname === "/inspect") {
+          if ((!installedScope && (storedActive !== undefined || fence !== undefined)) ||
+              (fence && (fence.scope !== input.scope || !UUID.test(fence.owner)))) return { status: 409 };
+          const owner = fence?.owner ?? null;
+          return { status: 200, body: { owner, scope: input.scope, active,
+            drained: owner !== null && active === 0, initialized: installedScope !== undefined } };
+        }
         const key = "writer:" + input.id;
         const entered = await storage.get(key);
         if (url.pathname === "/enter") {

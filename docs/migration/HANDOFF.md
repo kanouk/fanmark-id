@@ -1,3 +1,11 @@
+## 書き込み件数の読み取り機能を追加（2026-10-08 JST）
+
+バックアップ準備の内部bindingに`inspectRecoveryWriters`を追加した。処理の停止・ticket変更・
+未初期化状態への書込みをせず、初期化/active/owner/drainedを確認する。native local6件・
+型検査・eslint成功。[限定証拠](evidence/recovery-writer-inspection-local-2026-10-08.json)。
+通常stagingのselector/bindingはまだ有効化していない。初回旧writer終了・外部writer停止・
+定期保存と運用条件の採用は残る。ユーザーデータ・ドメインは別の最終工程を保持する。
+
 ## CIの保存失敗表示待ちを診断（2026-10-08 JST）
 
 記録だけの`9bf766d`/CI37684442945はWorker成功・アプリ失敗。実local Workerの編集検証で
@@ -7,8 +15,10 @@ interception error件数を出す診断を追加した。入力値/cookie/応答
 診断付きのMac local実ブラウザは通信失敗1件→行保持→draft/reload→retry保存を含む全経路が
 成功し、local Worker/port/DBもcleanup済み。source trace13件とsyntaxも成功。
 [限定証拠](evidence/owner-editor-ci-failed-save-diagnostic-2026-10-08.json)。
-Linuxの再確認は次候補で行う。失敗したCIを合格にせず、通常staging`ad8f754/e688fdf6`の
-直前合格CI/配備証拠は別に保持する。アプリruntime・既存データ・秘密設定は変更していない。
+診断候補`89c2b95`の[CI37685951939](https://github.com/kanouk/fanmark-id/actions/runs/37685951939)は
+アプリ・Worker両job成功し、同じassertionのLinux再確認も通過した。元timeoutの原因は未確定。
+失敗CIの記録と、通常staging`ad8f754/e688fdf6`の合格CI/配備証拠は別に保持する。
+この診断ではアプリruntime・既存データ・秘密設定を変更していない。
 
 ## 通知のイベント指定言語を実stagingで確認（2026-10-08 JST）
 

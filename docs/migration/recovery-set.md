@@ -196,3 +196,16 @@ R2 data storeは空。通常mainへコードも反映したが停止/計測bindi
 [配備証拠](evidence/staging-native-recovery-runtime-rollout-2026-10-08.json)。
 隔離runtime接続の残件は解消。main初回の旧writer終了、外部writer lease、容量と運用条件の
 採用は残る。過去節の未接続/未配備は当時の記録として読み、この最新観測を優先する。
+
+## 書き込み件数の停止を伴わない確認（2026-10-08 JST）
+
+内部bindingの`inspectRecoveryWriters(env)`で、初期化済みか、実行中の件数、停止owner、
+そのownerが停止を保持して全件終了したかを読み取れる。未初期化の状態を初期化せず、
+ticket・件数・停止状態を変更しない。件数0でも停止ownerがなければ`drained=false`となる。
+selector/binding/scopeの検証は停止操作と共通で、公開HTTPの操作口は追加していない。
+
+native local試験は、未初期化、実行中、終了後、停止保持中、解除後の保存状態と実D1書込みを
+照合した。別scopeの拒否も含めて既存5件と追加1件の計6件、型検査、eslintが成功した。
+[限定証拠](evidence/recovery-writer-inspection-local-2026-10-08.json)。
+通常stagingの計測有効化・初回旧writer終了・外部writer停止や運用採用は、この読み取り機能の
+ローカル検証に含めない。復旧collectorは引き続きowner付きの停止と終了確認を要求する。

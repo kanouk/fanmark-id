@@ -63,5 +63,14 @@
   },
   "runtimeChanged": false,
   "newCloudflareResourcesCreated": 0,
-  "remaining": "A diagnostic-enabled Linux CI run is still required; local success does not establish the cause of the original timeout or accept that failed CI."
+  "remaining": "Original CI timeout cause remains unconfirmed. Diagnostic-enabled Linux CI succeeded with the same assertions; no application runtime change or remote redeployment.",
+  "linuxRecheck": {
+    "runId": 37685951939,
+    "head": "89c2b9538a18b6576df9a230ce43b7cfe6ae2db4",
+    "status": "completed",
+    "application": "success",
+    "worker": "success",
+    "failedSaveAssertionRelaxed": false,
+    "originalTimeoutCauseEstablished": false
+  }
 }

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "observedDateJst": "2026-10-08",
+  "scope": "Read-only internal inspection of the instrumented recovery writer coordinator; native local verification only",
+  "parentHead": "89c2b9538a18b6576df9a230ce43b7cfe6ae2db4",
+  "sourceSha256": {
+    "workers/api/src/recovery-writer-drain.ts": "ec3a47fc76baaec20896903521b42724597a45409b27ceb448dddd6090fdc554",
+    "workers/api/test/recovery-writer-drain.test.ts": "84a86fa876228fd7e3791979aeb423002bfef20a513c5aa828b5122f78bf6403"
+  },
+  "verification": [
+    {
+      "command": "npm run --prefix workers/api test:recovery-writer-drain",
+      "passed": 6,
+      "failed": 0,
+      "newTests": 1
+    },
+    {
+      "command": "npm run --prefix workers/api typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "npx eslint workers/api/src/recovery-writer-drain.ts workers/api/test/recovery-writer-drain.test.ts",
+      "result": "passed"
+    },
+    {
+      "command": "npm run --prefix workers/api build:dry-run",
+      "result": "passed",
+      "deployment": false
+    }
+  ],
+  "assertions": [
+    "Uninitialized inspection returns initialized=false and leaves storage empty",
+    "Active writer inspection preserves exact stored state and reports active=1",
+    "Wrong scope is refused without changing storage",
+    "After completion active=0 without a held owner remains drained=false",
+    "Held fence inspection preserves exact stored state and reports drained=true only for active=0",
+    "Release allows actual native D1 writing and later unfenced inspection remains drained=false"
+  ],
+  "boundaries": {
+    "publicOperatorRouteAdded": false,
+    "regularStagingBindingsOrSelectorsChanged": false,
+    "remoteInspectionExecuted": false,
+    "preInstrumentationOldWorkDrained": false,
+    "externalWriterInventoryComplete": false,
+    "operationalBackupAdopted": false,
+    "userDataMigration": false,
+    "domainCutover": false,
+    "newEmailsSent": 0
+  }
+}
