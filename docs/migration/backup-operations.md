@@ -148,3 +148,14 @@ native localの5件では、実Worker HTTP/後続wake、Cron・通知alarmの拒
 選択時は各処理のenter/leaveでDOのRPCとtransactionが増え、HTTPはwake終了まで応答を
 待つ。中断したticketは保存の安全性を優先して停止を継続するため、停止解除には所有者が
 不明処理の終了を確認する必要がある。これらの運用/latency条件をremote採用時に検証する。
+
+## 実アプリ・全Masterのnative remote受け入れ（2026-10-08 JST）
+
+`ad8f754`/CI37678533990の両job成功後、新規owned Cloudflare資源で通常SDK・別DO fence・
+全Master12,254行・5ストアcollector・同じMac保存fileの復旧を受け入れた。旧session拒否、
+新login、catalog3,944件/参照4・4・5・16件、hash/FK0と全資源cleanup/inventory一致を確認。
+[限定証拠](evidence/application-recovery-transport-full-master-remote-2026-10-08.json)。
+R2 data storeは空。通常mainへコードも反映したが停止/計測binding/selectorは未有効化。
+[配備証拠](evidence/staging-native-recovery-runtime-rollout-2026-10-08.json)。
+隔離runtime接続の残件は解消。main初回の旧writer終了、外部writer lease、容量と運用条件の
+採用は残る。過去節の未接続/未配備は当時の記録として読み、この最新観測を優先する。

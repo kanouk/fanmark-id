@@ -4,6 +4,32 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 実Cloudflareの全Master復旧と通常staging反映（2026-10-08 JST）
+
+候補`ad8f754`の[CI37678533990](https://github.com/kanouk/fanmark-id/actions/runs/37678533990)は
+アプリ・Worker両job成功。新規6 D1・5 R2・Worker・別source/target SQLite DOで、
+保存済み非ユーザーMaster12,254行と合成Auth/Businessを実アプリへ接続した。
+通常SDKログイン→両writer fence→共通collector→Macの暗号化file→同じfileから空target復旧を
+受け入れた。SQL数はinitialize262/collect251/restore786。明示失効でcredentialを保持し、
+旧cookie拒否・新ログイン成功、実catalog3,944件、参照4/4/5/16件、hash一致/FK0を確認。
+[remote限定証拠](evidence/application-recovery-transport-full-master-remote-2026-10-08.json)。
+
+全owned資源とone-off鍵fileをcleanupし、D1/R2/Worker/DOの前後identityは3/3/2/1で一致。
+4つのdata R2は空なので、画像class/最大容量の証拠にはしない。合計109,844msは作成・検証・
+cleanupを含むone-off所要時間で、本番RTOではない。受け入れ済みのdriverは再実行しない。
+
+同じ候補を通常`fanmark-app-staging`へ一度配備し、version
+`e688fdf6-a5d7-4868-89b7-8171768ed865`の100%配信を確認した。公開6 assetのbytes/hash、
+既存設定・secret登録metadata・namespaceを保持。別Read資格情報の独立processで全表hash/FK0、
+Auth users3/accounts7/sessions2、Business79/Auth10/Master25表を再照合した。
+[staging反映と独立照合](evidence/staging-native-recovery-runtime-rollout-2026-10-08.json)。
+
+停止/計測selectorとmainのRecovery bindingは未有効化。今回で隔離remoteの実アプリ・
+全Master・DO guard・collector接続の残件は閉じたが、通常main初回停止/旧writer終了、
+外部writer lease、運用鍵/off-host/周期/retention/担当/RPO-RTO採用と最終統合は残る。
+六つの完了条件は維持し、実ユーザーデータ・ドメイン移行は最後の別工程とする。
+以下の「remote未実行」「通常main未配備」は過去のcheckpointであり、この観測を優先する。
+
 ## 計測したHTTP/Cron/DOの終了確認を追加（2026-10-08 JST）
 
 内部DOによるticket censusとowner fenceを追加。native local5件・既存37件・型/bundleが
