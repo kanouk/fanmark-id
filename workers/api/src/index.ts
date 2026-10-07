@@ -1,5 +1,6 @@
 import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from "./notification-wake";
 export { NotificationWakeCoordinator } from "./notification-wake";
+export { RecoveryWriterCoordinator } from "./recovery-writer-drain";
 import {
   createSupabaseRecentFanmarksRepository,
   mapRecentFanmarkRows,
@@ -116,6 +117,7 @@ import {
   shouldPauseScheduledJobsForCutover,
 } from "./cutover-write-freeze";
 import { shouldFreezeRecoveryWrites } from "./recovery-write-freeze";
+import { RecoveryWriterDrainError, recoveryWriterTrackingSelected, settleRecoveryWriterTasks, withRecoveryWriter } from "./recovery-writer-drain";
 import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
 import { handleLifecycleRunRequest, isLifecycleRunPath } from "./lifecycle-run-d1-api";
 import { handleSystemSettingsRequest, isSystemSettingsPath } from "./system-settings-d1-api";
@@ -1736,166 +1738,182 @@ export async function handleRequest(
 
 const worker = {
   async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
-    try { return await handleRequest(request, env); }
-    finally {
-      // The operator route performs its own authorized force-wake. A refused
-      // Origin/MFA request must never replay an outbox through this finally.
-      if (!shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE) &&
-          !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
-          new URL(request.url).pathname !== "/api/admin/notifications/wake" &&
-          env.NOTIFICATION_WAKE_BACKEND?.trim() === "durable-object") {
-        const wake = flushNotificationWakeSafely(env);
-        if (ctx) ctx.waitUntil(wake); else await wake;
+    try {
+      return await withRecoveryWriter(env, async () => {
+        try { return await handleRequest(request, env); }
+        finally {
+          // The operator route performs its own authorized force-wake. A refused
+          // Origin/MFA request must never replay an outbox through this finally.
+          if (!shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE) &&
+              !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+              new URL(request.url).pathname !== "/api/admin/notifications/wake" &&
+              env.NOTIFICATION_WAKE_BACKEND?.trim() === "durable-object") {
+            const wake = flushNotificationWakeSafely(env);
+            if (ctx && !recoveryWriterTrackingSelected(env)) ctx.waitUntil(wake); else await wake;
+          }
+        }
+      });
+    } catch (error) {
+      if (error instanceof RecoveryWriterDrainError) {
+        return jsonResponse({ error: "recovery_writer_unavailable" }, 503, { "retry-after": "60" });
       }
+      throw error;
     }
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    // Even diagnostic D1 writes must stop before a recovery capture.
-    if (shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE)) {
-      console.log(JSON.stringify({ job: "scheduled-dispatch", status: "paused", reason: "recovery_write_freeze" }));
-      return;
-    }
-    const freezeState = cutoverWriteFreezeState(env.CUTOVER_WRITE_FREEZE);
-    const diagnosticsEnabled = env.SCHEDULED_DISPATCH_DIAGNOSTICS?.trim() === "true";
-    const writeDiagnostic = async (
-      stage: "received" | "paused" | "selected" | "job_started" | "job_completed" | "job_failed",
-      jobName?: ScheduledJobName,
-      details?: Parameters<typeof recordScheduledDispatchDiagnostic>[1]["details"],
-    ): Promise<void> => {
-      if (!diagnosticsEnabled || !env.SCHEDULED_DISPATCH_DIAGNOSTICS_DB) return;
-      try {
-        await recordScheduledDispatchDiagnostic(env.SCHEDULED_DISPATCH_DIAGNOSTICS_DB, {
-          cron: controller.cron,
-          scheduledTime: controller.scheduledTime,
-          stage,
-          ...(jobName ? { jobName } : {}),
-          ...(details ? { details } : {}),
-        });
-      } catch {
-        console.error(JSON.stringify({ job: "scheduled-dispatch-diagnostic", status: "failed" }));
-      }
-    };
-    if (diagnosticsEnabled) {
-      console.log(JSON.stringify({
-        job: "scheduled-dispatch",
-        status: "received",
-        cron: controller.cron,
-        cutoverWriteFreeze: freezeState,
-      }));
-    }
-    await writeDiagnostic("received", undefined, { status: "received" });
-    if (shouldPauseScheduledJobsForCutover(env.CUTOVER_WRITE_FREEZE)) {
-      console.log(JSON.stringify({
-        job: "scheduled-dispatch",
-        status: "paused",
-        reason: freezeState === "invalid" ? "invalid_cutover_write_freeze" : "cutover_write_freeze",
-      }));
-      await writeDiagnostic("paused", undefined, {
-        code: freezeState === "invalid" ? "invalid_cutover_write_freeze" : "cutover_write_freeze",
+    try {
+      await withRecoveryWriter(env, async () => {
+        // Even diagnostic D1 writes must stop before a recovery capture.
+        if (shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE)) {
+          console.log(JSON.stringify({ job: "scheduled-dispatch", status: "paused", reason: "recovery_write_freeze" }));
+          return;
+        }
+        const freezeState = cutoverWriteFreezeState(env.CUTOVER_WRITE_FREEZE);
+        const diagnosticsEnabled = env.SCHEDULED_DISPATCH_DIAGNOSTICS?.trim() === "true";
+        const writeDiagnostic = async (
+          stage: "received" | "paused" | "selected" | "job_started" | "job_completed" | "job_failed",
+          jobName?: ScheduledJobName,
+          details?: Parameters<typeof recordScheduledDispatchDiagnostic>[1]["details"],
+        ): Promise<void> => {
+          if (!diagnosticsEnabled || !env.SCHEDULED_DISPATCH_DIAGNOSTICS_DB) return;
+          try {
+            await recordScheduledDispatchDiagnostic(env.SCHEDULED_DISPATCH_DIAGNOSTICS_DB, {
+              cron: controller.cron,
+              scheduledTime: controller.scheduledTime,
+              stage,
+              ...(jobName ? { jobName } : {}),
+              ...(details ? { details } : {}),
+            });
+          } catch {
+            console.error(JSON.stringify({ job: "scheduled-dispatch-diagnostic", status: "failed" }));
+          }
+        };
+        if (diagnosticsEnabled) {
+          console.log(JSON.stringify({
+            job: "scheduled-dispatch",
+            status: "received",
+            cron: controller.cron,
+            cutoverWriteFreeze: freezeState,
+          }));
+        }
+        await writeDiagnostic("received", undefined, { status: "received" });
+        if (shouldPauseScheduledJobsForCutover(env.CUTOVER_WRITE_FREEZE)) {
+          console.log(JSON.stringify({
+            job: "scheduled-dispatch",
+            status: "paused",
+            reason: freezeState === "invalid" ? "invalid_cutover_write_freeze" : "cutover_write_freeze",
+          }));
+          await writeDiagnostic("paused", undefined, {
+            code: freezeState === "invalid" ? "invalid_cutover_write_freeze" : "cutover_write_freeze",
+          });
+          return;
+        }
+        const selectedJobs = new Set(selectScheduledJobs(controller.cron, env));
+        if (diagnosticsEnabled) {
+          console.log(JSON.stringify({
+            job: "scheduled-dispatch",
+            status: "selected",
+            cron: controller.cron,
+            selectedJobs: [...selectedJobs],
+          }));
+        }
+        await writeDiagnostic("selected", undefined, { selectedJobs: [...selectedJobs] });
+        const jobs: Promise<unknown>[] = [];
+        if (selectedJobs.has("license-expiry")) {
+          jobs.push(runScheduledLicenseExpiry({
+            scheduledTime: controller.scheduledTime,
+            env,
+            database: selectD1Database(env, "business"),
+            masterDatabase: selectD1Database(env, "master"),
+          }).then((summary) => {
+            const finalization = "graceFinalization" in summary ? summary.graceFinalization : undefined;
+            console.log(JSON.stringify({
+              job: "license-expiry-lifecycle",
+              status: summary.status,
+              runId: "runId" in summary ? summary.runId : undefined,
+              candidateCount: "candidateCount" in summary ? summary.candidateCount : undefined,
+              processed: "processed" in summary ? summary.processed : undefined,
+              conflicts: "conflicts" in summary ? summary.conflicts : undefined,
+              pagesProcessed: "pagesProcessed" in summary ? summary.pagesProcessed : undefined,
+              graceFinalizationStatus: finalization?.status,
+              graceFinalizationRunId: finalization && "runId" in finalization ? finalization.runId : undefined,
+              graceFinalizationCandidates: finalization && "candidateCount" in finalization
+                ? finalization.candidateCount
+                : undefined,
+              graceFinalizationProcessed: finalization && "processed" in finalization
+                ? finalization.processed
+                : undefined,
+              graceFinalizationConflicts: finalization && "conflicts" in finalization
+                ? finalization.conflicts
+                : undefined,
+              graceFinalizationPagesProcessed: finalization && "pagesProcessed" in finalization
+                ? finalization.pagesProcessed
+                : undefined,
+            }));
+          }).catch((error: unknown) => {
+            const code = error instanceof ScheduledLicenseExpiryError
+              ? error.code
+              : "unexpected_error";
+            console.error(JSON.stringify({ job: "license-expiry-lifecycle", status: "failed", code }));
+            throw error;
+          }));
+        }
+        if (selectedJobs.has("notification-events")) {
+          jobs.push(runScheduledNotificationEvents({ env, scheduledTime: controller.scheduledTime })
+            .then((summary) => {
+              console.log(JSON.stringify({ job: "notification-events", ...summary }));
+            }).catch((error: unknown) => {
+              console.error(JSON.stringify({ job: "notification-events", status: "failed", code: "notification_processor_failed" }));
+              throw error;
+            }));
+        }
+        if (selectedJobs.has("notification-archive")) {
+          jobs.push((async () => {
+            await writeDiagnostic("job_started", "notification-archive", { status: "started" });
+            try {
+              const summary = await runScheduledNotificationArchive({ env });
+              await writeDiagnostic("job_completed", "notification-archive", summary);
+              console.log(JSON.stringify({ job: "notification-archive", ...summary }));
+            } catch {
+              await writeDiagnostic("job_failed", "notification-archive", { code: "notification_archive_failed" });
+              console.error(JSON.stringify({ job: "notification-archive", status: "failed", code: "notification_archive_failed" }));
+              throw new Error("notification_archive_failed");
+            }
+          })());
+        }
+        if (selectedJobs.has("stripe-webhook-dispatch")) {
+          jobs.push((async () => {
+            await writeDiagnostic("job_started", "stripe-webhook-dispatch", { status: "started" });
+            try {
+              const summary = await runScheduledStripeWebhookDispatches({ env, scheduledTime: controller.scheduledTime });
+              await writeDiagnostic("job_completed", "stripe-webhook-dispatch", summary);
+              console.log(JSON.stringify({ job: "stripe-webhook-dispatch", ...summary }));
+            } catch (error) {
+              await writeDiagnostic("job_failed", "stripe-webhook-dispatch", { code: "stripe_dispatch_failed" });
+              console.error(JSON.stringify({ job: "stripe-webhook-dispatch", status: "failed", code: "stripe_dispatch_failed" }));
+              throw error;
+            }
+          })());
+        }
+        if (selectedJobs.has("broadcast-email-delivery")) {
+          jobs.push((async () => {
+            const snapshot = await snapshotBroadcastEmailDeliveryPage(env, () => new Date(controller.scheduledTime));
+            console.log(JSON.stringify({ job: "broadcast-email-snapshot", ...snapshot }));
+            const delivery = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date(controller.scheduledTime));
+            console.log(JSON.stringify({ job: "broadcast-email-delivery", ...delivery }));
+          })().catch((error: unknown) => {
+              console.error(JSON.stringify({ job: "broadcast-email-delivery", status: "failed", code: "broadcast_delivery_failed" }));
+              throw error;
+            }));
+        }
+        const completion = settleRecoveryWriterTasks(jobs.map(job => job.finally(() => flushNotificationWakeSafely(env))));
+        ctx.waitUntil(completion);
+        await completion;
       });
-      return;
+    } catch (error) {
+      if (!(error instanceof RecoveryWriterDrainError)) throw error;
+      console.error(JSON.stringify({ job: "scheduled-dispatch", status: "paused", reason: "recovery_writer_unavailable" }));
     }
-    const selectedJobs = new Set(selectScheduledJobs(controller.cron, env));
-    if (diagnosticsEnabled) {
-      console.log(JSON.stringify({
-        job: "scheduled-dispatch",
-        status: "selected",
-        cron: controller.cron,
-        selectedJobs: [...selectedJobs],
-      }));
-    }
-    await writeDiagnostic("selected", undefined, { selectedJobs: [...selectedJobs] });
-    const jobs: Promise<unknown>[] = [];
-    if (selectedJobs.has("license-expiry")) {
-      jobs.push(runScheduledLicenseExpiry({
-        scheduledTime: controller.scheduledTime,
-        env,
-        database: selectD1Database(env, "business"),
-        masterDatabase: selectD1Database(env, "master"),
-      }).then((summary) => {
-        const finalization = "graceFinalization" in summary ? summary.graceFinalization : undefined;
-        console.log(JSON.stringify({
-          job: "license-expiry-lifecycle",
-          status: summary.status,
-          runId: "runId" in summary ? summary.runId : undefined,
-          candidateCount: "candidateCount" in summary ? summary.candidateCount : undefined,
-          processed: "processed" in summary ? summary.processed : undefined,
-          conflicts: "conflicts" in summary ? summary.conflicts : undefined,
-          pagesProcessed: "pagesProcessed" in summary ? summary.pagesProcessed : undefined,
-          graceFinalizationStatus: finalization?.status,
-          graceFinalizationRunId: finalization && "runId" in finalization ? finalization.runId : undefined,
-          graceFinalizationCandidates: finalization && "candidateCount" in finalization
-            ? finalization.candidateCount
-            : undefined,
-          graceFinalizationProcessed: finalization && "processed" in finalization
-            ? finalization.processed
-            : undefined,
-          graceFinalizationConflicts: finalization && "conflicts" in finalization
-            ? finalization.conflicts
-            : undefined,
-          graceFinalizationPagesProcessed: finalization && "pagesProcessed" in finalization
-            ? finalization.pagesProcessed
-            : undefined,
-        }));
-      }).catch((error: unknown) => {
-        const code = error instanceof ScheduledLicenseExpiryError
-          ? error.code
-          : "unexpected_error";
-        console.error(JSON.stringify({ job: "license-expiry-lifecycle", status: "failed", code }));
-        throw error;
-      }));
-    }
-    if (selectedJobs.has("notification-events")) {
-      jobs.push(runScheduledNotificationEvents({ env, scheduledTime: controller.scheduledTime })
-        .then((summary) => {
-          console.log(JSON.stringify({ job: "notification-events", ...summary }));
-        }).catch((error: unknown) => {
-          console.error(JSON.stringify({ job: "notification-events", status: "failed", code: "notification_processor_failed" }));
-          throw error;
-        }));
-    }
-    if (selectedJobs.has("notification-archive")) {
-      jobs.push((async () => {
-        await writeDiagnostic("job_started", "notification-archive", { status: "started" });
-        try {
-          const summary = await runScheduledNotificationArchive({ env });
-          await writeDiagnostic("job_completed", "notification-archive", summary);
-          console.log(JSON.stringify({ job: "notification-archive", ...summary }));
-        } catch {
-          await writeDiagnostic("job_failed", "notification-archive", { code: "notification_archive_failed" });
-          console.error(JSON.stringify({ job: "notification-archive", status: "failed", code: "notification_archive_failed" }));
-          throw new Error("notification_archive_failed");
-        }
-      })());
-    }
-    if (selectedJobs.has("stripe-webhook-dispatch")) {
-      jobs.push((async () => {
-        await writeDiagnostic("job_started", "stripe-webhook-dispatch", { status: "started" });
-        try {
-          const summary = await runScheduledStripeWebhookDispatches({ env, scheduledTime: controller.scheduledTime });
-          await writeDiagnostic("job_completed", "stripe-webhook-dispatch", summary);
-          console.log(JSON.stringify({ job: "stripe-webhook-dispatch", ...summary }));
-        } catch (error) {
-          await writeDiagnostic("job_failed", "stripe-webhook-dispatch", { code: "stripe_dispatch_failed" });
-          console.error(JSON.stringify({ job: "stripe-webhook-dispatch", status: "failed", code: "stripe_dispatch_failed" }));
-          throw error;
-        }
-      })());
-    }
-    if (selectedJobs.has("broadcast-email-delivery")) {
-      jobs.push((async () => {
-        const snapshot = await snapshotBroadcastEmailDeliveryPage(env, () => new Date(controller.scheduledTime));
-        console.log(JSON.stringify({ job: "broadcast-email-snapshot", ...snapshot }));
-        const delivery = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date(controller.scheduledTime));
-        console.log(JSON.stringify({ job: "broadcast-email-delivery", ...delivery }));
-      })().catch((error: unknown) => {
-          console.error(JSON.stringify({ job: "broadcast-email-delivery", status: "failed", code: "broadcast_delivery_failed" }));
-          throw error;
-        }));
-    }
-    const completion = Promise.all(jobs.map(job => job.finally(() => flushNotificationWakeSafely(env))));
-    ctx.waitUntil(completion);
-    await completion;
   },
 } satisfies ExportedHandler<Env>;
 

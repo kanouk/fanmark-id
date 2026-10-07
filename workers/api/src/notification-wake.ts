@@ -3,6 +3,7 @@ import { selectD1Database, type Env } from "./repository";
 import { NOTIFICATION_EVENT_STALE_PROCESSING_MS, runScheduledNotificationEvents } from "./notifications-scheduled";
 import { shouldPauseScheduledJobsForCutover } from "./cutover-write-freeze";
 import { shouldFreezeRecoveryWrites } from "./recovery-write-freeze";
+import { RecoveryWriterDrainError, withRecoveryWriter } from "./recovery-writer-drain";
 
 const INTERVAL_MS = 60_000;
 const INTERNAL_URL = "https://notification-wake.internal/wake";
@@ -103,7 +104,7 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
       } catch { return new Response(null, { status: 503 }); }
     }
     if (request.url !== INTERNAL_URL || request.method !== "POST") return new Response(null, { status: 404 });
-    try { await this.reconcile(Date.now()); return new Response(null, { status: 204 }); }
+    try { await withRecoveryWriter(this.env, () => this.reconcile(Date.now())); return new Response(null, { status: 204 }); }
     catch { return new Response(null, { status: 503 }); }
   }
 
@@ -115,14 +116,15 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
     await this.ctx.storage.setAlarm(Date.now() + INTERVAL_MS);
     if (shouldFreezeRecoveryWrites(this.env.RECOVERY_WRITE_FREEZE) ||
         shouldPauseScheduledJobsForCutover(this.env.CUTOVER_WRITE_FREEZE)) return;
-    try {
+    try { await withRecoveryWriter(this.env, async () => {
       const summary = await runScheduledNotificationEvents({ env: this.env, scheduledTime: Date.now() });
       await this.reconcile(Date.now());
       console.log(JSON.stringify({ job: "notification-events-alarm", ...summary,
         alarmScheduled: (await this.ctx.storage.getAlarm()) !== null }));
-    } catch {
+    }); } catch (error) {
       // The persisted next alarm remains. No payload, request or provider error is logged.
-      console.error(JSON.stringify({ job: "notification-events-alarm", status: "failed", code: "notification_processor_failed" }));
+      console.error(JSON.stringify({ job: "notification-events-alarm", status: error instanceof RecoveryWriterDrainError ? "paused" : "failed",
+        code: error instanceof RecoveryWriterDrainError ? "recovery_writer_unavailable" : "notification_processor_failed" }));
     }
   }
 }

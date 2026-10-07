@@ -73,7 +73,7 @@ async function observe() {
   const vars = Object.fromEntries(settings.bindings.filter(row => row.type === 'plain_text')
     .map(row => [row.name, row.text]));
   const selectors = Object.fromEntries([
-    'CUTOVER_WRITE_FREEZE', 'RECOVERY_WRITE_FREEZE', 'LICENSE_EXPIRY_BACKEND', 'LICENSE_EXPIRY_CRON',
+    'CUTOVER_WRITE_FREEZE', 'RECOVERY_WRITE_FREEZE', 'RECOVERY_DRAIN_BACKEND', 'LICENSE_EXPIRY_BACKEND', 'LICENSE_EXPIRY_CRON',
     'NOTIFICATION_PROCESSOR_BACKEND', 'NOTIFICATION_WAKE_BACKEND',
     'NOTIFICATION_ARCHIVE_BACKEND', 'NOTIFICATION_ARCHIVE_CRON',
     'STRIPE_DISPATCH_BACKEND', 'BROADCAST_SEND_BACKEND',
@@ -82,7 +82,7 @@ async function observe() {
     if (value === null) continue;
     const allowed = name.endsWith('_CRON') ? /^[0-9*/,-]+(?:\s+[0-9*/,-]+){4}$/u.test(value)
       : name.endsWith('_WRITE_FREEZE') ? ['true', 'false'].includes(value)
-        : name === 'NOTIFICATION_WAKE_BACKEND' ? value === 'durable-object' : value === 'd1';
+        : ['NOTIFICATION_WAKE_BACKEND', 'RECOVERY_DRAIN_BACKEND'].includes(name) ? value === 'durable-object' : value === 'd1';
     assert.ok(allowed, 'unexpected_staging_selector');
   }
   stage = 'schema_ledger';

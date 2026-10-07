@@ -360,3 +360,5 @@ Business追加`0026_broadcast_delivery_provider_time.sql`は告知Webhookにnull
 告知配送通知の受信は `BROADCAST_WEBHOOK_BACKEND=d1` で独立して有効化できる。送信を停止したまま、署名・時刻を検証した既送信メールの通知をD1へ反映する。未指定時は従来の `BROADCAST_SEND_BACKEND` に従い、明示的な無効値は受信・新規配信開始・dispatchを止める。署名secretだけでは受信を有効にしない。snapshotと送信のselectorは別に必要で、受信だけを有効にしても宛先の抽出やメール送信は始まらない。現在はローカル検証段階で、Resendへの登録とstaging配備は未実施。
 
 バックアップ用の新規書き込み停止は `recovery-write-freeze.ts` の `RECOVERY_WRITE_FREEZE` を使う。HTTP全入口・fetch後wake・Cron診断を含むjob・通知DOのD1処理を止め、alarmは再開用時刻だけ保持する。既存cutover停止とは独立し、default-off、不明値は停止側。既に動いている処理のdrainと外部writer停止は別条件で、このflagだけをrecovery collectorのguardにしない。詳細は `docs/migration/backup-operations.md`。
+
+writerの終了確認は `recovery-writer-drain.ts` と `RecoveryWriterCoordinator` の内部DO bindingを使う。明示したselector/scopeだけでHTTP・Cron・通知DOをticket管理し、claim後の新規処理とactive>0のassertを拒否する。ticketにTTLを設けず、HTTPのwake・Cronの全job終了まで記録を保持する。default-offで通常stagingのbindingは未追加。最初から計測したwriterに限るため、旧versionの初回drain・外部writer停止・collector接続・実remote採用は別条件。契約は `docs/migration/backup-operations.md`。

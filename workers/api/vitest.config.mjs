@@ -26,6 +26,7 @@ export default defineConfig({
       "./test/profile-d1.test.ts",
       "./test/notifications-d1.test.ts",
       "./test/notification-wake.test.ts",
+      "./test/recovery-writer-drain.test.ts",
       "./test/favorites-d1.test.ts",
       "./test/fanmark-search-d1.test.ts",
       "./test/fanmark-profile-d1.test.ts",

@@ -145,3 +145,34 @@ alarmが未処理イベントを再開する。DOのalarm時刻はこの5スト�
 停止中のqueue全行/generationが同一、通知0件、次回alarm保持、解除後に2 eventが各1回
 だけ配信されてalarmが消えることを確認した。synthetic local証拠で、remote停止/drainや
 全体の運用復旧完了とは扱わない。
+
+## 計測済みwriterの終了確認（2026-10-08 JST）
+
+`recovery-writer-drain.ts`は内部binding専用のSQLite Durable Object coordinator。
+`RECOVERY_DRAIN_BACKEND=durable-object`、`RECOVERY_DRAIN` bindingと、5ストアのidentity集合に
+対応する`RECOVERY_DRAIN_SCOPE_DIGEST`を明示した環境で、HTTP・Cron・通知DOの処理を
+ticketへ記録する。未指定時は通常動作を保持し、不明selector・欠落binding・scope不一致は
+新しい処理を拒否する。public control routeやcredentialは追加していない。
+
+owner UUIDによるclaimは先に新規enterを閉じる。既存ticketがある間はdrained=falseで、
+assertは拒否する。開始/終了ticketと件数はDO storageの同じtransactionで更新し、
+処理・ticketをTTLで終了扱いにしない。enter応答喪失では処理を始めずticketを保持する。
+操作や終了ACKが不明なticketを機械的に消す手順はない。owner以外の解除と別scopeは拒否し、
+解除後に通常処理を再開する。HTTP選択時はoutbox wakeもawaitしてからticketを消す。
+Cronの1件が失敗しても、他のjobと各wakeのsettlementを待ってからticketを終了する。
+
+native localの5件では、実Worker HTTP/後続wake、Cron・通知alarmの拒否、native D1へ
+書く既存処理の終了待ち、並行2件、enter ACK喪失、別owner/scope、1 job失敗中の他job
+継続を確認。既存Worker/Cron16件・通知D1/DO21件と型検査・bundle dry-runも成功。
+[限定証拠](evidence/recovery-writer-drain-local-2026-10-08.json)。通常CIに5件を追加した。
+
+これは**最初から計測したwriter集合**の停止・終了確認。追跡開始前から動いている旧version、
+直接D1/R2を書くCLI・別Worker・operatorはcensusに含まれない。scope digestは実bindingの
+独立readbackやruntime pinを代替しない。初回有効化時の旧処理終了、全writer inventory/
+外部writerの停止、collectorへのtrusted adapter、実Cloudflareでの配備/停止/capture/復旧、
+運用鍵/off-host/retention/監視の採用は未完了。通常stagingには新binding/selectorをまだ
+追加していない。未回答の運用方針を採用済みとせず、実ユーザー/DNSは最後の範囲を保つ。
+
+選択時は各処理のenter/leaveでDOのRPCとtransactionが増え、HTTPはwake終了まで応答を
+待つ。中断したticketは保存の安全性を優先して停止を継続するため、停止解除には所有者が
+不明処理の終了を確認する必要がある。これらの運用/latency条件をremote採用時に検証する。

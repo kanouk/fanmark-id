@@ -4,6 +4,15 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 計測したHTTP/Cron/DOの終了確認を追加（2026-10-08 JST）
+
+内部DOによるticket censusとowner fenceを追加。native local5件・既存37件・型/bundleが
+成功し、通常CIへ追加した。[限定証拠](evidence/recovery-writer-drain-local-2026-10-08.json)。
+最初から計測した処理に限る。旧version/外部writerの終了確認・trusted collector adapter・
+通常stagingへの配備と実remote capture/運用backupは未完了。前の停止候補3f7b6e4の
+[CI37654697817](https://github.com/kanouk/fanmark-id/actions/runs/37654697817)は両job成功。
+六項目と実ユーザー/DNSを最後にする範囲は維持する。
+
 ## バックアップ用の新規書き込み停止を追加（2026-10-08 JST）
 
 `RECOVERY_WRITE_FREEZE`でHTTP全入口、fetch後outbox flush、Cron診断を含むjob、
