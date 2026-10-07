@@ -113,5 +113,13 @@
     "scopedLint": "success",
     "gitDiffCheck": "success",
     "remoteMainDeployed": false
+  },
+  "confirmedCi": {
+    "id": 37664045796,
+    "head": "d2d9c3ae44f396aa8e86391cb0024c02cc14ab12",
+    "worker": "success",
+    "application": "success",
+    "smallFixtureIncluded": true,
+    "privateFullMasterCaseIncluded": false
   }
 }

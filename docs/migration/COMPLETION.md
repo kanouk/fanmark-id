@@ -664,6 +664,18 @@ userdata移送を開始していない。[準備と範囲](evidence/deferred-ide
 5ba5f5fのCI37396865202は両job成功。52790bfのCI37396416191は後続更新によりcancelled。
 4つのgeneric converter groupと全source意味論・運用・最終統合は未完了のまま。
 
+## 全Master用のnative実アプリ隔離構成（2026-10-08 JST）
+
+d2d9c3a/CI37664045796は両job成功。新しい隔離Workerは実アプリ・別SQLite DO・
+native collector/restorerを接続し、非ユーザーMaster全12,254行をlocalで受け入れた。
+通常SDK loginと停止、旧session/challenge失効と新login、絵文字3,944件全ページ、
+reference4/4/5/16件、全hash/FK0、guard解除後のcollector拒否を確認した。
+initialize262/collect251/restore786 SQLはSDK/復旧後APIを含む。8MiB境界と一回限りの
+claims、改ざん前拒否、所有外/未完了cleanup拒否も確認。
+[限定証拠](evidence/application-recovery-transport-full-master-local-2026-10-08.json)。
+remote driverは実version/bindingsと2 namespace/全before-afterを検査する実装まで。
+次候補のCI受入れと新規owned remoteでの実行はまだ残る。通常main運用や全移行の完了とはしない。
+
 ## 全Masterと通常アプリのlocal一式復旧（2026-10-08 JST）
 
 f931782/CI37660877665はアプリ・Worker両job成功。招待登録とプロフィールの実ブラウザに

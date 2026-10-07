@@ -1,0 +1,185 @@
+{
+  "observedAt": "2026-10-07T18:33:23.382Z",
+  "scope": "New isolated native Worker transport, actual application and distinct DO fences with saved non-user Master",
+  "independentMasterArchiveSha256": "de482a920fc37fe3d547a1bf8852293fcbbbb2b67a6f591c4ac997cf93b77832",
+  "result": {
+    "initialize": {
+      "state": "verified",
+      "startedAt": "2026-10-07T18:33:18.109Z",
+      "d1Queries": {
+        "S_MASTER": 262
+      },
+      "progress": [],
+      "masterRows": 12254,
+      "masterSchemaHash": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+      "masterRowsHash": "0ed634aba4f87fa585c8dc29570f5e99eae56319c3a189648ffd6df9f2e28861",
+      "finishedAt": "2026-10-07T18:33:19.260Z"
+    },
+    "collect": {
+      "state": "verified",
+      "startedAt": "2026-10-07T18:33:19.311Z",
+      "d1Queries": {
+        "S_AUTH": 29,
+        "S_BUSINESS": 166,
+        "S_MASTER": 56
+      },
+      "progress": [],
+      "captureId": "861ad1bb-5b6d-4ec3-9a21-62e0b10d77a2",
+      "parts": {
+        "auth": {
+          "archiveHash": "f9f7c6b011930ef5dec97a49f6afff51f98d3dabd06e1f128a132177dc1b7042",
+          "snapshotHash": "2aa08e0cc7130c92449ca6659c40e007cf1d2e86a3680aba38268d4382a3e58f"
+        },
+        "business": {
+          "archiveHash": "206f68ea464d75f8240b9fa48472ab1847dd8f596e0dc55bcdfe13fab585a147",
+          "snapshotHash": "84942a6348f2fc6ac7b111c68b2503be64b9919fd0d4809ac9632c5826df49f7"
+        },
+        "master": {
+          "archiveHash": "fa2b6a3320a33275d0909f09f47c9eec74e925dc3b0816fcab3ce2bcca801da6",
+          "snapshotHash": "8ce0bd867776847a76431911014dad5465d1c3b926ca48c3f1fdf9f1f6bf54e7"
+        },
+        "avatars": {
+          "archiveHash": "42121e6767316eb54da209a7ffbdb70710dd8e896aee2c84c2f94cd7e2f48416",
+          "snapshotHash": "6c6700c1e4d5d33c17fe9a49f20454dfdb9b57f89f339be3f33560cd1d2b5511"
+        },
+        "covers": {
+          "archiveHash": "3322535cb585a20f5e46cf4026a0e7e121f6615511178d156e68ad02ee1fac07",
+          "snapshotHash": "440e56e0a073e94ec028a006f1f035bcf85aab1fa6241c53299ceec155b33291"
+        }
+      },
+      "sourceAuthSessions": 2,
+      "normalSdkSourceLogin": true,
+      "heldSourceAndTargetLoginRefused": true,
+      "wrongOwnerReleaseRefused": true,
+      "finishedAt": "2026-10-07T18:33:20.639Z"
+    },
+    "restore": {
+      "state": "verified",
+      "startedAt": "2026-10-07T18:33:21.013Z",
+      "d1Queries": {
+        "T_AUTH": 71,
+        "T_BUSINESS": 402,
+        "T_MASTER": 313
+      },
+      "progress": [
+        {
+          "store": "master",
+          "state": "started"
+        },
+        {
+          "store": "master",
+          "state": "verified"
+        },
+        {
+          "store": "business",
+          "state": "started"
+        },
+        {
+          "store": "business",
+          "state": "verified"
+        },
+        {
+          "store": "auth",
+          "state": "started"
+        },
+        {
+          "store": "auth",
+          "state": "verified"
+        },
+        {
+          "store": "avatars",
+          "state": "started"
+        },
+        {
+          "store": "avatars",
+          "state": "verified"
+        },
+        {
+          "store": "covers",
+          "state": "started"
+        },
+        {
+          "store": "covers",
+          "state": "verified"
+        }
+      ],
+      "result": {
+        "captureId": "861ad1bb-5b6d-4ec3-9a21-62e0b10d77a2",
+        "sessionPolicy": "revoke-local-sessions-and-challenges",
+        "restoredHashes": {
+          "auth": "f021caca24cf550da7ce212821f7c54d435b099569405a8627314c0edfb58ee9",
+          "business": "84942a6348f2fc6ac7b111c68b2503be64b9919fd0d4809ac9632c5826df49f7",
+          "master": "8ce0bd867776847a76431911014dad5465d1c3b926ca48c3f1fdf9f1f6bf54e7",
+          "avatars": "6c6700c1e4d5d33c17fe9a49f20454dfdb9b57f89f339be3f33560cd1d2b5511",
+          "covers": "440e56e0a073e94ec028a006f1f035bcf85aab1fa6241c53299ceec155b33291"
+        },
+        "verified": true
+      },
+      "canonicalEmojiCount": 3944,
+      "referenceViewCounts": {
+        "fanmark_tiers": 4,
+        "languages": 4,
+        "reserved_emoji_patterns": 5,
+        "fanmark_tier_extension_prices": 16
+      },
+      "credentialBytesRetained": true,
+      "sessionChallengesRevoked": true,
+      "oldSessionRejected": true,
+      "normalSdkTargetLogin": true,
+      "releasedGuardRefusesCapture": true,
+      "foreignKeyViolations": 0,
+      "finishedAt": "2026-10-07T18:33:23.176Z"
+    },
+    "archiveBytes": 6681526,
+    "authenticationAndNonceRefused": true,
+    "oversizeBeforeClaimRefused": true,
+    "arbitrarySqlRouteAbsent": true,
+    "tamperBeforeTargetWritesRefused": true,
+    "repeatedPhasesRefused": true,
+    "unownedAndInProgressCleanupRefused": true,
+    "ownedBucketsEmpty": true,
+    "remoteWrites": 0,
+    "providerCalls": 0
+  },
+  "runtimeDisposed": true,
+  "sourceUserDataImported": false,
+  "remoteAcceptance": false,
+  "productionRtoAccepted": false,
+  "operationalBackupAccepted": false,
+  "fullMigrationAccepted": false,
+  "format": "fanmark-native-application-recovery-transport-local-v1",
+  "parentHead": "d2d9c3ae44f396aa8e86391cb0024c02cc14ab12",
+  "parentCi": {
+    "id": 37664045796,
+    "worker": "success",
+    "application": "success",
+    "newTransportIncluded": false
+  },
+  "remoteResourcesCreated": 0,
+  "mainDeployed": false,
+  "sourceSha256": {
+    "scripts/migration/application-recovery-set-worker.mjs": "c49ef928f0ce761b9681318eb35d3e3327efd7adfc472b811a8eb7c58ad7c1a6",
+    "scripts/migration/application-recovery-set-contract.mjs": "f87ddcc9b5bcdc3a9deb20fe29f6ded73ba6574101216b9d1a1621166e09ddf5",
+    "scripts/migration/test-application-recovery-set-worker.mjs": "9d5b58cd1972943504f8c88282033368e991aa2c08849011a6fb62782a6ab754",
+    "scripts/migration/application-recovery-set-full-master-local.mjs": "884cbdf0557be3e464a85496254115c2d94fe3a00187e24b3df987196c8d706a",
+    "scripts/migration/run-application-recovery-set.mjs": "dc789494bc4a94b13f9f333a91a23ca03a8057c96f755a9ed61eaee66532ed14"
+  },
+  "limits": [
+    "Native local actual application and two SQLite DO namespaces; no remote acceptance yet",
+    "Saved non-user Master only; synthetic Auth/Business; four R2 stores empty",
+    "Phase query counts include ordinary SDK requests and full restored catalog/reference readback; no maximum dataset/capacity claim",
+    "No first activation drain for existing main or external writers",
+    "No off-host schedule, key custody, retention, owner or RPO/RTO adoption",
+    "User data and domain/live billing changes remain deferred; six full completion packages remain open"
+  ],
+  "validation": {
+    "nativeOwnedTransportCase": "success",
+    "privateFullMasterNativeTransportCase": "success",
+    "sharedRecoverySuite": "10/10 passed",
+    "isolatedWorkerBundleDryRun": "success, no deployment",
+    "nodeSyntaxCheck": "success",
+    "scopedLint": "success",
+    "gitDiffCheck": "success",
+    "remoteDriverRun": "not started"
+  }
+}

@@ -1,3 +1,35 @@
+## 実アプリと全Master用のnative隔離Worker構成（2026-10-08 JST）
+
+d2d9c3a/CI37664045796はアプリ・Worker両job成功。main stagingは17fdbf39のまま。
+新しい`application-recovery-set-worker.mjs`は実アプリentrypoint、source/target別SQLite DO、
+共通Master initialize/5ストアcollect/open/restoreをnative bindingで接続する。検証用の
+独立Workerだけに使い、通常mainのoperator routeや資格情報を増やさない。
+
+一回限りのtoken/nonceとsource/target scopeを要求し、initialize/collect/restoreはR2の
+条件付きclaimと永続statusで再実行を拒否する。リクエストは8MiBまで読み、改ざんや
+超過ではclaim/target書込み前に拒否。旧SDK cookieは別AADで暗号化してcontrolへ保存する。
+通常SDKのD1判定に必要なnative形状を維持するProxyで、batch/単独SQLを計測。
+未計測exec/session APIは拒否し、各phaseは1,000 statements超過で停止する。
+
+保存済み非ユーザーMaster12,254行を、独立archive/schema/rows pinへ照合してこの構成へ
+渡すlocal試験が成功。通常source login、source/target fence保持と別owner拒否、
+5ストア一式復旧、session2件/challenge失効、同じSDK secretの旧cookie拒否、target login、
+実catalog3,944件全ページとreference4/4/5/16件、全hash/FK0を確認。initialize262、
+collect251、restore786 SQL（後二つは通常SDK/再取得も含む）。R2の4 data storeは空。
+未認証/別nonce/任意SQL/超過/改ざん/再実行と、所有外・未完了cleanupを拒否した。
+[限定証拠](evidence/application-recovery-transport-full-master-local-2026-10-08.json)。
+
+新しいremote driverは `node --experimental-strip-types scripts/migration/run-application-recovery-set.mjs <HEAD> <CI_RUN> <private-master-directory>`。
+同じjournalだけを観察・再開する場合は `--resume <journal-directory>` を追加する。
+exact HEADの両CI成功とclean own treeを要求する。新規6 D1/5 R2/Worker/2 SQLite namespaceを
+作成し、Auth/Businessを未配備の合成sourceだけへ初期化。Masterはnative Workerで復旧する。
+各phase前後に実version/bindings/namespacesをreadback。unknown ACKを再実行せずstatusで
+判定し、terminalなowned object/Worker/namespace/D1/R2だけをcleanupして全before/afterを照合する。
+Worker削除はforceを使わず、namespace消失を独立一覧で確認する。
+[Cloudflareの削除API](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/methods/delete/)。
+この新driverのremote実行は次候補CI受入れ後。まだremote resource/writeは0で、
+通常main初回停止、外部writer lease、画像class/最大容量、backup運用採用と六つの条件は残る。
+
 ## 全Masterを通常SDK・writer fence・一式file復旧へ接続（2026-10-08 JST）
 
 最新確認済み候補f931782/CI37660877665はアプリ・Worker両job成功。Linux上の招待登録、

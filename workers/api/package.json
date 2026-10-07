@@ -78,7 +78,7 @@
     "test:master-recovery:d1": "node --experimental-strip-types --test test/master-recovery-d1.integration.mjs",
     "test:business-recovery:d1": "node --experimental-strip-types --test test/business-recovery-d1.integration.mjs",
     "test:r2-recovery": "node --experimental-strip-types --test test/r2-recovery.integration.mjs ../../scripts/migration/test-isolated-shared-r2-recovery-worker.mjs",
-    "test:recovery-set": "node --experimental-strip-types --test test/recovery-set.integration.mjs ../../scripts/migration/test-isolated-recovery-set-worker.mjs ../../scripts/migration/test-application-writer-recovery.mjs",
+    "test:recovery-set": "node --experimental-strip-types --test test/recovery-set.integration.mjs ../../scripts/migration/test-isolated-recovery-set-worker.mjs ../../scripts/migration/test-application-writer-recovery.mjs ../../scripts/migration/test-application-recovery-set-worker.mjs",
     "test:recovery-writer-drain": "vitest run --config vitest.recovery-writer-drain.config.mjs"
   },
   "devDependencies": {
