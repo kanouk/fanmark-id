@@ -1,15 +1,43 @@
+## 通常SDKとwriter fence、一式collectorをlocalで接続（2026-10-08 JST）
+
+新規6 D1・4 R2と別々のSQLite DO namespaceを持つ2つの実アプリWorkerをlocalで起動し、
+最初のアプリrequestからwriterを計測した。現行27 Business/4 Auth/8 Master+legacy Auth
+schemaと合成accountを初期化し、通常Better Auth password loginを実行。source/targetの
+owner fenceを保持したまま、共通collector→認証したprivate file→同じfileから空targetへ
+5ストアを復旧した。各guardは対応store ID・DO owner/scope・active=0を検証する。
+
+停止中の両loginは503、別ownerの解除は409。明示失効でsession2件/verificationを除去し、
+bcrypt credential bytesと非Auth hashを保持。解除後のtargetでは同じSDK secretの旧cookieが
+無効、新しい通常password loginが成功した。guard解除後のcaptureは拒否。1件/8.39秒、
+FK0、local runtimeとtemp archiveをcleanup済み。通常Worker CIの一式復旧suiteに追加した。停止/census実装とcancel通知修正を含む
+親4487437のCI37656996765は両job成功。この追加testは次の候補CIで再確認する。
+[限定証拠](evidence/application-writer-recovery-local-2026-10-08.json)。
+
+これは最初から計測したowned local環境の接続証拠。Masterは小さいfixture、R2は空で、
+全Master12,254行・画像class・最大容量・remote collector/通常mainの初回有効化・
+CLI/operator等の外部writer lease・運用backupの採用を証明しない。通常stagingは変更なし。
+
+別の`fanmark-emoji-master-staging-api`は独立Read tokenで実settings/deployment/moduleを取得。
+version a7c8f421、実Master bindingは旧`FANMARK_DB`、repoの現在設定は`MASTER_DB`だった。
+実moduleはfetchのみで、catalogはGET/OPTIONSのSELECT、管理mutation routeなし、
+Auth selector/URL/secretもないためSDK書込み入口を拒否する。現在の設定下ではwriterに
+ならないと静的に判断した。公開HTTPチェックは3経路すべて403でhandler結果を未受け入れ。
+他のCLI/API token/外部callerを含む全writer inventoryの完了とは扱わない。
+[限定証拠](evidence/companion-worker-writer-inventory-2026-10-08.json)。
+
 ## 最新候補のCI再確認（2026-10-08 JST）
 
 writer census候補e9c9b1aのCI37655931604では、アプリjobの招待登録テストが
 `invalid_interception_id`のキャンセル通知未照合で失敗した。旧停止候補3f7b6e4の
-CI37654697817は両job成功。e9のWorker jobは実行中であり、候補全体は未受け入れ。
+CI37654697817は両job成功。e9のWorker jobは後続候補への切替でcancelledであり、e9自体は両job成功とは扱わない。
 
 同じ実ブラウザ/Worker/分離D1の招待登録→確認→password login→logoutをローカルで
 再確認したところ成功。原因を断定せず、正確なNetwork IDのキャンセル通知を待つ
 上限を250msから2秒へ調整し、無通知・別ID・別protocolエラーは引き続き拒否する。
 招待テストは全interception taskの終了後に成功判定し、失敗時にはtoken/URL queryを
 含めず通信ID・path・キャンセル通知の有無を記録する。遅延通知を含む7契約テストと
-修正後の実ブラウザ一式が成功。次のCIでLinux上の結果を確認する。
+修正後の実ブラウザ一式が成功。4487437のCI37656996765はアプリ/Worker両job成功し、
+Linux上の招待登録とnative writer-drain5件・型/bundleも成功した。原失敗の原因は未確定。
 [限定証拠](evidence/browser-cancellation-receipt-local-2026-10-08.json)。
 
 通常stagingはWorker17fdbf39のまま。この修正はtest harnessのみで、新規メール・

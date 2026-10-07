@@ -1,0 +1,67 @@
+{
+  "format": "fanmark-application-writer-recovery-local-v1",
+  "date": "2026-10-08",
+  "parentHead": "448743767466d5d6e17a406d9e1d74c71713f836",
+  "testSha256": "1359133e3e7fe776acd5a200e108d65222914fb1b46a0333b925b9d0026c5737",
+  "actualWorkerEntrypoint": "workers/api/src/index.ts",
+  "writerImplementationHead": "e9c9b1a41fb526a4f3a9201ff292e1bff4a68f52",
+  "localResult": {
+    "tests": 1,
+    "state": "success",
+    "durationMs": 8392.57125,
+    "distinctSqliteDoNamespaces": 2,
+    "newLocalD1Stores": 6,
+    "newLocalR2Stores": 4,
+    "storesCollectedAndRestored": 5,
+    "realSdkSourcePasswordLogin": true,
+    "heldSourceAndTargetFenceBlockLogin": true,
+    "wrongOwnerReleaseRefused": true,
+    "guardAssertsOwnerScopeAndZeroActiveBeforeEachPhase": true,
+    "authenticatedPrivateFileReopened": true,
+    "sourceSessions": 2,
+    "restoredSessions": 0,
+    "restoredChallenges": 0,
+    "oldSdkSessionRejectedWithSameSdkSecret": true,
+    "realSdkTargetPasswordLogin": true,
+    "credentialBytesRetained": true,
+    "nonAuthRestoredHashesEqualArchive": true,
+    "foreignKeyViolations": 0,
+    "releaseMakesCollectorRefuseCapture": true,
+    "runtimeDisposed": true,
+    "privateTemporaryArchiveRemoved": true
+  },
+  "scope": {
+    "businessMigrations": 27,
+    "authMigrations": 4,
+    "masterActiveMigrations": 8,
+    "masterLegacyAuthSchema": true,
+    "masterRows": "small synthetic/empty fixture",
+    "r2Objects": 0,
+    "classSupplementation": false,
+    "applicationTrackedFromFirstRequest": true,
+    "externalProviders": "denied"
+  },
+  "remote": {
+    "writes": 0,
+    "providerCalls": 0,
+    "emails": 0,
+    "mainDeployed": false,
+    "userMigration": false,
+    "dnsCutover": false
+  },
+  "limits": [
+    "Local SDK/DO/file integration is not remote operational acceptance",
+    "No first activation drain for existing uninstrumented main requests/jobs",
+    "No undiscovered external writers or CLI/operator lease proof",
+    "Full Master12254-row capture and R2 object classes/capacity are not covered by this case",
+    "No operational ownership/key/off-host/retention policy adoption",
+    "Full migration remains incomplete"
+  ],
+  "parentCi": {
+    "id": 37656996765,
+    "head": "448743767466d5d6e17a406d9e1d74c71713f836",
+    "application": "success",
+    "worker": "success",
+    "newIntegrationTestIncluded": false
+  }
+}

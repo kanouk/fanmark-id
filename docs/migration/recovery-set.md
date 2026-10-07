@@ -176,3 +176,12 @@ native localの5件では、実Worker HTTP/後続wake、Cron・通知alarmの拒
 選択時は各処理のenter/leaveでDOのRPCとtransactionが増え、HTTPはwake終了まで応答を
 待つ。中断したticketは保存の安全性を優先して停止を継続するため、停止解除には所有者が
 不明処理の終了を確認する必要がある。これらの運用/latency条件をremote採用時に検証する。
+
+## 通常SDKと計測済みwriterのlocal接続
+
+`test-application-writer-recovery.mjs`は、最初のrequestからcensusを選ぶ2つの新規アプリ
+Worker/別DO namespaceに、現行schemaと合成credentialを置く。通常password login後に
+source/targetをfenceし、owner/scope/active=0を検証するguardでprivate fileの収集・復旧を
+実行。停止中のlogin拒否、session失効、同じSDK secretの旧cookie拒否と新しいpassword
+login、解除後guard拒否を確認する。remote運用adapter/初回未計測writerのdrainを代替せず、
+空R2・小さいMaster fixtureなので画像class/全Master容量は別の検証である。
