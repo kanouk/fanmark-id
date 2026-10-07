@@ -1,3 +1,18 @@
+## メールテンプレート管理のnative保存・再取得を確認（2026-10-07 JST）
+
+現行Worker17fdbf39と専用合成管理者の同じsession/verified factorで、Chromeの
+メールテンプレート管理から日本語magiclinkの件名・本文・ボタン文言を一時保存。
+改行・絵文字・placeholder・literalドル/ampersandを含む全入力値、更新時刻、監査がD1と一致し、
+通常reloadして同じタブを開き直したフォームも一致した。元の3項目はUIから保存し、
+exact復元行をpinしたguard付きcleanupでtestのupdated_atも元へ戻した。activeは不変。
+
+UI logout後、合成actor/settings/所有監査2行をexact削除。独立read-only processで
+元templateを含む既存全表hash・Auth3/7/2・Master25表・FK0・MFA世代+2とWorker不変を確認。
+合成資格情報も除去済み。[限定証拠](evidence/staging-email-template-admin-native-2026-10-07.json)。
+追加mail・runtime配備・secret/source/実ユーザー/DNS変更は0。magiclinkは管理catalogの
+種類で、現Better Auth callbackの送信対象はsignup/recoveryだけ。この試験はmagiclinkの
+実送信/ログインを受け入れるものではない。全体の六項目は未完了。
+
 ## 通常ログインMFAと管理メール2通を受け入れ（2026-10-07 JST）
 
 候補dd9317bのCI37617933339はアプリ/Worker両job成功。通常`/auth`のメールログインを

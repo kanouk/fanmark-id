@@ -1,17 +1,25 @@
 # Auth email templates on Cloudflare staging
 
-## Current acceptance (2026-10-06 JST)
+## Current acceptance (2026-10-07 JST)
 
-Worker `b3a770b3-8735-4b31-abdd-f4fca99e05cd` selects
-`AUTH_EMAIL_BACKEND=resend` and `AUTH_EMAIL_TEMPLATE_BACKEND=d1` with the
-server Resend key/from configured. The specified recipient completed real
-signup, verification, password reset, and login with the changed password;
-see [the email/password login evidence](evidence/staging-email-password-login-2026-10-05.json).
-The retained mail test account/session has not been cleaned up.
-The latest read-only master projection matches all 16 Auth and 12 broadcast
-templates' content baselines. Broadcast/test-send selectors, its fixed
-recipient, and webhook signing secret remain unset; no broadcast send is
-accepted. See [the configuration and aggregate readback](evidence/staging-broadcast-readonly-preflight-2026-10-06.json).
+Current Worker `17fdbf39-99a5-4927-bf12-bc11e19b7c3d` uses Resend/D1 Auth
+mail configuration. The earlier real signup, verification, password reset and
+changed-password login remain accepted; the human test account is retained.
+See [email/password evidence](evidence/staging-email-password-login-2026-10-05.json).
+Native admin reset and fixed-recipient broadcast test mails were each Delivered
+once, with exact D1 readback and canonical test-setting restore/actor cleanup;
+[bounded delivery evidence](evidence/staging-main-auth-mfa-admin-mail-native-2026-10-07.json).
+Bulk/test-send selectors and broadcast signing secret are unset after restore.
+
+Native admin editing is now accepted for one Japanese magiclink catalog row:
+subject/body/button values, timestamps and audit matched D1, reload/reopened
+form matched, and original content was saved back through the UI. Exact test
+timestamp restoration and actor/audit cleanup retained all preexisting rows,
+Auth3/7/2, Master25 and FK0 in an independent read-only process. No additional
+mail was sent, and active state remained unchanged.
+[Bounded editor evidence](evidence/staging-email-template-admin-native-2026-10-07.json).
+This does not enable or accept magiclink mail/login. The callbacks below still
+send only signup/recovery. Bulk and actual signed provider events remain open.
 The September checkpoints below describe their historical disabled state.
 
 The migration moves only the 16 rows for the existing `signup`, `recovery`,

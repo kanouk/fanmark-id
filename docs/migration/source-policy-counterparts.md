@@ -55,7 +55,7 @@ Target: MFA campaign list/create/update and controlled delivery actions; interna
 
 Implementation: [broadcast-email-admin-d1-api.ts](../../workers/api/src/broadcast-email-admin-d1-api.ts), [broadcast-email-delivery-d1.ts](../../workers/api/src/broadcast-email-delivery-d1.ts). Contracts: [broadcast-email-admin-api.md](broadcast-email-admin-api.md), [broadcast-email-delivery-design.md](broadcast-email-delivery-design.md). Coverage: [broadcast-email-admin-d1.test.ts](../../workers/api/test/broadcast-email-admin-d1.test.ts), [broadcast-email-delivery-d1.integration.mjs](../../workers/api/test/broadcast-email-delivery-d1.integration.mjs).
 
-Difference or remaining condition: Source broad ALL becomes bounded campaign commands. The approved fixed-recipient test-send API was accepted with native draft creation, Resend Delivered and matching D1 audit; see [the bounded delivery evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json). Send UI, bulk, signed delivery/retry and retention remain unaccepted.
+Difference or remaining condition: Source broad ALL becomes bounded campaign commands. The approved fixed-recipient test-send API was accepted with native draft creation, Resend Delivered and matching D1 audit; see [the bounded delivery evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json). Native fixed-recipient test-send UI is accepted with Delivered/audit/restore/cleanup in [the later native evidence](evidence/staging-main-auth-mfa-admin-mail-native-2026-10-07.json). Bulk, actual signed delivery/retry and retention remain unaccepted.
 
 ### C03: email_templates (2 policies)
 
