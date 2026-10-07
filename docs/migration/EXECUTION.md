@@ -1,3 +1,21 @@
+## 有料延長の自動更新と移管ロック表示を受け入れ（2026-10-08 JST）
+
+修正`8586601`/[CI37697249567](https://github.com/kanouk/fanmark-id/actions/runs/37697249567)は
+アプリ・Worker両job成功。通常stagingのWorker `f6d162c5-6168-4389-bf22-c0ab2f04c5a4`へ100%配備し、
+公開6 assetを新buildと照合した。既存設定/namespace・全表hashを保持し、別Read processでも
+Business79/Auth10/Master25表、Auth3・7・2/FK0を確認。[配備証拠](evidence/staging-extension-confirmation-runtime-rollout-2026-10-08.json)。
+
+新しい使い捨て利用者と同じSafari private windowで、1か月JPY2000のsandbox Checkoutから自然復帰した。
+適用前は確認中と10月15日を表示し、自然署名dispatch/application/effect各1件の後に、
+手動reloadなしで11月15日・38日へ更新して確認中表示が消えた。短時間の成功toast自体は直接捕捉していない。
+同じ専用licenseだけに移管lock期限を置き、実発行操作が11月7日までの拒否を表示し、コード作成0を確認した。
+これはlock表示の合成検証であり、新しい自然移管/期限経過の証拠ではない。
+
+native logout→owned cleanup→別Read processで既存全表hash/Auth3・7・2/全Master25表/FK0を保持した。
+[新しい限定受け入れ](evidence/staging-extension-confirmation-native-2026-10-08.json)。以前の表示不整合の不合格記録は保持する。
+未登録受信先/Resend署名通知/新Apple・Discord identityとrelay、運用鍵・off-host・担当・周期・保存期間・
+RPO-RTO/外部writer、実スマホ/PWA・最終統合と六項目全体は未完了。実ユーザー移送とドメインは最後の別工程。
+
 ## 共通一式collectorを実Cloudflareで受け入れ（2026-10-08 JST）
 
 候補99762afの[CI37649724810](https://github.com/kanouk/fanmark-id/actions/runs/37649724810)

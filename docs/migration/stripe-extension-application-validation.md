@@ -2,6 +2,21 @@
 
 Date: 2026-09-25 JST
 
+## Corrected native return accepted (2026-10-08 JST)
+
+Exact correction8586601/CI37697249567 passed both jobs and was deployed as
+Workerf6d162c5 at100%. Separate Read credentials verified unchanged retained
+rows/settings/namespaces and the new six-asset build. A fresh disposable actor
+completed one JPY2000 sandbox Checkout in one Safari private window. Before
+natural signed dispatch, the dashboard showed pending and October15. It then
+updated automatically to November15/38days and cleared pending without any
+manual reload. The transient success toast was not directly captured.
+Native logout and owned cleanup were independently verified against every
+retained table hash, Auth3/7/2, all25 Master tables and FK0.
+[Bounded new acceptance](evidence/staging-extension-confirmation-native-2026-10-08.json).
+The earlier premature-success/stale-date failure remains historical evidence;
+this acceptance does not establish the final full-application integration.
+
 ## Checkout return confirmation correction (2026-10-08 JST)
 
 A fresh disposable Safari private-window flow on runtime4445297 / Worker55ab5910

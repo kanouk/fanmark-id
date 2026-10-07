@@ -385,7 +385,7 @@ Cloudflareの告知メールは、苦情・恒久的なバウンスで確定し�
 
 | カラム | 説明 |
 |--------|------|
-| tier_level | 1=S, 2=A, 3=B, 4=C |
+| tier_level | 1=C, 2=B, 3=A, 4=S（現行Masterのdisplay_nameと対応） |
 | months | 延長月数（1, 3, 6, 12 等） |
 | price_yen | 日本円価格 |
 | stripe_price_id | Stripe Price ID |
