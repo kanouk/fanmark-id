@@ -11,6 +11,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';import os from 'node:os';
 import {build} from '../../workers/api/node_modules/esbuild/lib/main.js';
 import {Miniflare} from '../../workers/api/node_modules/miniflare/dist/src/index.js';
+import {continuePausedRequest,recordCanceledNetworkRequest} from './browser-request-interception.mjs';
 import {BUSINESS_MIGRATION_SEQUENCE} from './business-migration-ledger.mjs';
 import {SYSTEM_SETTINGS_STAGE_KEYS} from './system-settings-stage.mjs';
 import {businessMigrationStatements} from './business-runtime-import-schema.mjs';
@@ -25,7 +26,7 @@ const port=await new Promise((resolve,reject)=>{const s=netServer();s.on('error'
 const origin=`https://127.0.0.1:${port}`,assets=path.join(temp,'assets'),delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const email='synthetic-invited-owner@example.invalid',password='Synthetic-Invite-only!2026',code='LOCALINVITE';
 const inviteId=randomUUID(),version=createHash('sha256').update('local-invitation-catalog').digest('hex');
-let mf,server,chrome,cdp;const mails=[],outboundDenied=[],browserDenied=[],apiRequests=[],apiResponses=[];
+let mf,server,chrome,cdp,closing=false;const canceledRequests=new Set(),interceptionErrors=[];const mails=[],outboundDenied=[],browserDenied=[],apiRequests=[],apiResponses=[];
 let report={state:'preparing',head,temp,origin,actualApplicationWorker:true,actualBrowser:true,
   businessMigrations:BUSINESS_MIGRATION_SEQUENCE.length,authMigrations:4,masterMigrations:8,
   remoteResources:false,remoteWrites:0,realProviderCalls:0,realEmailsSent:0,sourceRowsRead:false};
@@ -46,7 +47,7 @@ async function fill(selector,text){await value(`(()=>{const input=document.query
   input.dispatchEvent(new Event('input',{bubbles:true}));})()`);}
 async function click(selector){const point=await value(`(()=>{const button=document.querySelector(${JSON.stringify(selector)});if(!button||button.disabled)throw Error('button_unavailable');button.scrollIntoView({block:'center'});const r=button.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()`);
   await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});
-  await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});} 
+  await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});}
 try{
   await checkpoint();
   execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',path.join(temp,'tls.key'),
@@ -169,11 +170,12 @@ try{
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:1280,height:960,deviceScaleFactor:1,mobile:false});
   await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
   await cdp.send('Emulation.setUserAgentOverride',{userAgent:await value('navigator.userAgent'),acceptLanguage:'ja-JP,ja'});
+  cdp.on('Network.loadingFailed',event=>recordCanceledNetworkRequest(canceledRequests,event));
   cdp.on('Fetch.requestPaused',async params=>{try{
     const url=new URL(params.request.url);
-    if(url.origin===origin)await cdp.send('Fetch.continueRequest',{requestId:params.requestId});
+    if(url.origin===origin)await continuePausedRequest(cdp,params,canceledRequests);
     else{browserDenied.push(url.hostname);await cdp.send('Fetch.failRequest',{requestId:params.requestId,errorReason:'BlockedByClient'});}
-  }catch{/* Closing the owned test browser ends outstanding interceptions. */}});
+  }catch(error){if(!closing)interceptionErrors.push(String(error.message));}});
   await cdp.send('Fetch.enable',{patterns:[{urlPattern:'*',requestStage:'Request'}]});
   await cdp.send('Page.navigate',{url:origin+'/auth'});
   await wait('[...document.querySelectorAll("[role=tab]")].map(el=>el.getAttribute("data-state"))',v=>v.length===2);
@@ -221,7 +223,7 @@ try{
   assert.equal(mails.length,1);assert.equal(await auth.prepare('SELECT count(*) AS n FROM user').first('n'),1);
   assert.equal(await business.prepare('SELECT used_count FROM invitation_codes WHERE id=?').bind(inviteId).first('used_count'),1);
   for(const db of [auth,business,master])assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
-  assert.deepEqual(outboundDenied,[]);
+  assert.deepEqual(outboundDenied,[]);assert.deepEqual(interceptionErrors,[],'browser_interception_protocol_failure');
   assert.deepEqual(apiResponses.filter(r=>r.status>=500),[],'unexpected_application_api_failure');
   Object.assign(report,{state:'verified',invitationModeRequired:true,googleBeforeInvitationMode:true,googleSuppressedWhenRequired:true,
     invalidCodeLeavesSignupHidden:true,validatedCodeRevealsSignup:true,signupCompletesOneCommand:true,invitationUses:1,
@@ -229,12 +231,12 @@ try{
     verificationLinkFromSyntheticProvider:true,realBrowserPasswordLogin:true,logoutRevokesSession:true,
     usedCodeRefusedInBrowser:true,syntheticMailRequests:1,foreignKeyViolations:0,workerOutboundDenied:outboundDenied.length,
     browserExternalHostsDenied:[...new Set(browserDenied)],apiRequests:apiRequests.map(r=>({method:r.method,path:r.path})),
-    requiredOwnerApisAvailable:true,workerUsesNativeAsyncLocalStorage:true,apiResponses,
+    browserInterceptionErrors:0,verifiedCanceledBrowserRequests:canceledRequests.size,requiredOwnerApisAvailable:true,workerUsesNativeAsyncLocalStorage:true,apiResponses,
     screenshot:path.join(temp,'invited-dashboard.png'),wholeStagingAcceptance:false});
 }catch(error){if(cdp){try{const shot=await cdp.send('Page.captureScreenshot',{format:'png'});await privateWrite('failure.png',Buffer.from(shot.data,'base64'));
   report.failurePageText=await value('document.body.innerText');}catch{}}report.state='failed';report.error=String(error.message).replace(/https?:\/\/\S+/gu,'[url]');process.exitCode=1;}
 finally{
-  if(cdp)cdp.close();
+  closing=true;if(cdp)cdp.close();
   if(chrome&&chrome.exitCode===null&&chrome.signalCode===null){chrome.kill('SIGTERM');for(let i=0;i<20&&chrome.exitCode===null&&chrome.signalCode===null;i++)await delay(100);
     if(chrome.exitCode===null&&chrome.signalCode===null){chrome.kill('SIGKILL');await delay(500);}}
   if(server)await new Promise(resolve=>server.close(resolve));if(mf)await mf.dispose();

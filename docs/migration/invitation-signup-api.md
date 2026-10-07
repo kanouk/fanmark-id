@@ -64,7 +64,9 @@ synthetic settings and wrong harness selectors were also corrected before accept
 The application backend needed no code change. The dashboard screenshot was inspected at 1280×960
 with no error toast. Owned Chrome profile/server/runtime are stopped/disposed on completion.
 
-The test is included in application CI. [Bounded evidence](evidence/invitation-signup-local-browser-2026-10-07.json).
+Unexpected CDP interception errors fail acceptance. Page-canceled local requests use the shared
+receipt helper and require the matching Chrome Network cancellation receipt; unknown failures are
+not silently ignored. The test is included in application CI. [Bounded evidence](evidence/invitation-signup-local-browser-2026-10-07.json).
 Actual staging invitation-required signup/consumption and real verification delivery for a new
 invited identity still need their own acceptance. The previous staging mail account is retained and
 already registered; a separate unregistered test recipient has been requested. Physical mobile,

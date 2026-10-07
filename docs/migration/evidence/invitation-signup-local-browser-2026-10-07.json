@@ -1,6 +1,6 @@
 {
   "state": "verified",
-  "head": "8397627623ebec1ccb5ba7b260222b2c0a936473",
+  "head": "d53bfb093c51e93a72db14b10ebac6bae59972a7",
   "actualApplicationWorker": true,
   "actualBrowser": true,
   "businessMigrations": 27,
@@ -31,6 +31,8 @@
   "browserExternalHostsDenied": [
     "fonts.googleapis.com"
   ],
+  "browserInterceptionErrors": 0,
+  "verifiedCanceledBrowserRequests": 12,
   "requiredOwnerApisAvailable": true,
   "workerUsesNativeAsyncLocalStorage": true,
   "apiResponses": [
@@ -91,17 +93,22 @@
     },
     {
       "method": "GET",
+      "path": "/api/emoji/catalog",
+      "status": 200
+    },
+    {
+      "method": "GET",
       "path": "/api/reference-masters/languages",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/auth/get-session",
+      "path": "/api/system/maintenance",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/system/maintenance",
+      "path": "/api/auth/get-session",
       "status": 200
     },
     {
@@ -161,12 +168,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/system/settings",
+      "path": "/api/me/profile",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/me/profile",
+      "path": "/api/system/settings",
       "status": 200
     },
     {
@@ -191,12 +198,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/me/profile",
+      "path": "/api/me/analytics/summary",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/me/analytics/summary",
+      "path": "/api/me/profile",
       "status": 200
     },
     {
@@ -276,12 +283,11 @@
   "localRuntimeDisposed": true,
   "syntheticCredentialsIsolated": true,
   "scope": "One Japanese desktop browser invitation-required signup using actual built UI, Worker and local split D1; only upstream Resend is synthetic.",
-  "scriptSha256": "8e40ea1cb33956ccd3b6e1b3c49913e5acacd1b6b891b699af8aeab7d3ea6a83",
   "visualInspection": {
     "viewport": "1280x960",
     "dashboardRenderedWithoutErrorToast": true,
     "emptyOwnedFanmarksDisplayed": true,
-    "imageSha256": "ec7b3c83c1c93de767fa23e4162cb73f4bc3ce57a86672ce860c102514e45b63",
+    "imageSha256": "caf1e01a957e1cd9b4d51b6be291db47b74a84af84bbdba2809428a19591c6e1",
     "physicalMobileAccepted": false,
     "humanAcceptance": false
   },
@@ -289,5 +295,6 @@
   "stagingModeChanged": false,
   "workerDeployed": false,
   "fullMigrationAccepted": false,
-  "observedAt": "2026-10-07T14:22:04.769194+00:00"
+  "scriptSha256": "56f1b85185fdb742db333f1f82af1bea80c1ce518c6c014ecca06e331d923c02",
+  "observedAt": "2026-10-07T14:31:12.456676+00:00"
 }
