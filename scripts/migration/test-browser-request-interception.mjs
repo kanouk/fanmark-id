@@ -52,3 +52,13 @@ test('receipt can arrive after the command rejection without widening the guard'
     assert.equal((await continuePausedRequest(rejecting(canceledError()), event, receipts, 100)).canceled, true);
   } finally { clearTimeout(timer); }
 });
+
+// Exercise event delivery later than the prior 250 ms budget. The guard must
+// still correlate the exact Network ID after a late event and reject absence.
+test('default receipt budget accepts a late matching receipt beyond 250 ms', async () => {
+  const receipts = new Set();
+  const timer = setTimeout(() => recordCanceledNetworkRequest(receipts, { requestId: 'network-1', canceled: true }), 350);
+  try {
+    assert.equal((await continuePausedRequest(rejecting(canceledError()), event, receipts)).canceled, true);
+  } finally { clearTimeout(timer); }
+});

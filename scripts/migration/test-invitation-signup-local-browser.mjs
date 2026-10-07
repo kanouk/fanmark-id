@@ -26,7 +26,7 @@ const port=await new Promise((resolve,reject)=>{const s=netServer();s.on('error'
 const origin=`https://127.0.0.1:${port}`,assets=path.join(temp,'assets'),delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const email='synthetic-invited-owner@example.invalid',password='Synthetic-Invite-only!2026',code='LOCALINVITE';
 const inviteId=randomUUID(),version=createHash('sha256').update('local-invitation-catalog').digest('hex');
-let mf,server,chrome,cdp,closing=false;const canceledRequests=new Set(),interceptionErrors=[];const mails=[],outboundDenied=[],browserDenied=[],apiRequests=[],apiResponses=[];
+let mf,server,chrome,cdp,closing=false;const canceledRequests=new Set(),interceptionErrors=[],interceptionFailureReceipts=[],networkFailures=[],interceptionTasks=new Set();const mails=[],outboundDenied=[],browserDenied=[],apiRequests=[],apiResponses=[];
 let report={state:'preparing',head,temp,origin,actualApplicationWorker:true,actualBrowser:true,
   businessMigrations:BUSINESS_MIGRATION_SEQUENCE.length,authMigrations:4,masterMigrations:8,
   remoteResources:false,remoteWrites:0,realProviderCalls:0,realEmailsSent:0,sourceRowsRead:false};
@@ -170,12 +170,14 @@ try{
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:1280,height:960,deviceScaleFactor:1,mobile:false});
   await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
   await cdp.send('Emulation.setUserAgentOverride',{userAgent:await value('navigator.userAgent'),acceptLanguage:'ja-JP,ja'});
-  cdp.on('Network.loadingFailed',event=>recordCanceledNetworkRequest(canceledRequests,event));
-  cdp.on('Fetch.requestPaused',async params=>{try{
+  cdp.on('Network.loadingFailed',event=>{recordCanceledNetworkRequest(canceledRequests,event);networkFailures.push({requestId:event.requestId,canceled:event.canceled===true});});
+  cdp.on('Fetch.requestPaused',params=>{const task=(async()=>{try{
     const url=new URL(params.request.url);
     if(url.origin===origin)await continuePausedRequest(cdp,params,canceledRequests);
     else{browserDenied.push(url.hostname);await cdp.send('Fetch.failRequest',{requestId:params.requestId,errorReason:'BlockedByClient'});}
-  }catch(error){if(!closing)interceptionErrors.push(String(error.message));}});
+  }catch(error){if(!closing){interceptionErrors.push(String(error.message));interceptionFailureReceipts.push({fetchId:params.requestId,networkId:params.networkId??null,path:new URL(params.request.url).pathname,canceledAtFailure:canceledRequests.has(params.networkId)});}}})();
+    interceptionTasks.add(task);void task.finally(()=>interceptionTasks.delete(task));
+  });
   await cdp.send('Fetch.enable',{patterns:[{urlPattern:'*',requestStage:'Request'}]});
   await cdp.send('Page.navigate',{url:origin+'/auth'});
   await wait('[...document.querySelectorAll("[role=tab]")].map(el=>el.getAttribute("data-state"))',v=>v.length===2);
@@ -223,6 +225,7 @@ try{
   assert.equal(mails.length,1);assert.equal(await auth.prepare('SELECT count(*) AS n FROM user').first('n'),1);
   assert.equal(await business.prepare('SELECT used_count FROM invitation_codes WHERE id=?').bind(inviteId).first('used_count'),1);
   for(const db of [auth,business,master])assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
+  while(interceptionTasks.size)await Promise.all([...interceptionTasks]);
   assert.deepEqual(outboundDenied,[]);assert.deepEqual(interceptionErrors,[],'browser_interception_protocol_failure');
   assert.deepEqual(apiResponses.filter(r=>r.status>=500),[],'unexpected_application_api_failure');
   Object.assign(report,{state:'verified',invitationModeRequired:true,googleBeforeInvitationMode:true,googleSuppressedWhenRequired:true,
@@ -233,7 +236,7 @@ try{
     browserExternalHostsDenied:[...new Set(browserDenied)],apiRequests:apiRequests.map(r=>({method:r.method,path:r.path})),
     browserInterceptionErrors:0,verifiedCanceledBrowserRequests:canceledRequests.size,requiredOwnerApisAvailable:true,workerUsesNativeAsyncLocalStorage:true,apiResponses,
     screenshot:path.join(temp,'invited-dashboard.png'),wholeStagingAcceptance:false});
-}catch(error){report.browserInterceptionFailures=interceptionErrors.map(message=>String(message).replace(/https?:\/\/\S+/gu,'[url]'));
+}catch(error){report.interceptionFailureReceipts=interceptionFailureReceipts;report.networkFailures=networkFailures;report.browserInterceptionFailures=interceptionErrors.map(message=>String(message).replace(/https?:\/\/\S+/gu,'[url]'));
   if(cdp){try{const shot=await cdp.send('Page.captureScreenshot',{format:'png'});await privateWrite('failure.png',Buffer.from(shot.data,'base64'));
   report.failurePageText=await value('document.body.innerText');}catch{}}report.state='failed';report.error=String(error.message).replace(/https?:\/\/\S+/gu,'[url]');process.exitCode=1;}
 finally{
@@ -246,6 +249,8 @@ finally{
   report.localServerStopped=!server||!server.listening;report.localRuntimeDisposed=Boolean(mf);report.syntheticCredentialsIsolated=true;
   await checkpoint();console.log(JSON.stringify({state:report.state,error:report.error,
     browserInterceptionFailures:report.browserInterceptionFailures,
+    interceptionFailureReceipts:report.interceptionFailureReceipts,
+    networkFailureReceipts:report.state==='failed'?report.networkFailures:undefined,
     journalPath:path.join(temp,'report.json'),
     ownedBrowserStopped:report.ownedBrowserStopped,localServerStopped:report.localServerStopped}));
 }

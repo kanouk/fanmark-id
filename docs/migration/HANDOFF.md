@@ -1,3 +1,20 @@
+## 最新候補のCI再確認（2026-10-08 JST）
+
+writer census候補e9c9b1aのCI37655931604では、アプリjobの招待登録テストが
+`invalid_interception_id`のキャンセル通知未照合で失敗した。旧停止候補3f7b6e4の
+CI37654697817は両job成功。e9のWorker jobは実行中であり、候補全体は未受け入れ。
+
+同じ実ブラウザ/Worker/分離D1の招待登録→確認→password login→logoutをローカルで
+再確認したところ成功。原因を断定せず、正確なNetwork IDのキャンセル通知を待つ
+上限を250msから2秒へ調整し、無通知・別ID・別protocolエラーは引き続き拒否する。
+招待テストは全interception taskの終了後に成功判定し、失敗時にはtoken/URL queryを
+含めず通信ID・path・キャンセル通知の有無を記録する。遅延通知を含む7契約テストと
+修正後の実ブラウザ一式が成功。次のCIでLinux上の結果を確認する。
+[限定証拠](evidence/browser-cancellation-receipt-local-2026-10-08.json)。
+
+通常stagingはWorker17fdbf39のまま。この修正はtest harnessのみで、新規メール・
+ユーザー移送・DNS変更は0。Resendの既存action-time確認は未回答のまま保持する。
+
 ## 共通一式collectorを実Cloudflareで受け入れ（2026-10-08 JST）
 
 ## 計測済みwriterの終了確認（2026-10-08 JST）
