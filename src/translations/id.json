@@ -799,6 +799,14 @@
     "planFree": "Gratis"
   },
   "dashboard": {
+    "extensionConfirmation": {
+      "pending": "Memeriksa pembaruan lisensi",
+      "timeout": "Pembaruan lisensi belum terkonfirmasi",
+      "description": "Pembaruan pembayaran mungkin memerlukan waktu. Jangan melakukan pembayaran lagi sebelum konfirmasi selesai.",
+      "retry": "Periksa lagi",
+      "failed": "Perpanjangan lisensi tidak diterapkan"
+    },
+
     "title": "Dasbor",
     "userFallback": "Kreator",
     "welcomeBadge": "Anda memiliki {{count}} fanmark",

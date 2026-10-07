@@ -110,3 +110,46 @@ test("Worker checkout preserves structured HTTP errors and rejects malformed suc
     (error: unknown) => error instanceof StripeExtensionCheckoutApiError && error.kind === "invalid_response",
   );
 });
+
+// A hosted success redirect can precede the durable webhook application.
+test('extension confirmation waits for the bound committed effect and never posts another Checkout', async () => {
+  const { waitForStripeExtensionApplication } = await import('./stripe-extension-checkout-api.ts');
+  let calls = 0;
+  const result = await waitForStripeExtensionApplication(requestId, licenseId, {
+    baseUrl: 'https://app.example', authBaseUrl: 'https://app.example', intervalMs: 1,
+    fetchImpl: async (url, init) => {
+      assert.equal(init?.method, 'GET');
+      assert.equal(init?.credentials, 'include');
+      assert.equal(new URL(String(url)).searchParams.get('request_id'), requestId);
+      calls += 1;
+      return jsonResponse(calls < 3 ? { status: 'pending', fanmark_id: licenseId }
+        : { status: 'applied', fanmark_id: licenseId, license_end: '2026-11-15T00:00:00.000000Z' });
+    },
+  });
+  assert.equal(result.status, 'applied');
+  assert.equal(calls, 3);
+});
+
+test('extension confirmation rejects unrelated, malformed and failed results; pending times out and cancellation stops requests', async () => {
+  const { waitForStripeExtensionApplication, fetchStripeExtensionApplicationStatus } = await import('./stripe-extension-checkout-api.ts');
+  const options = { baseUrl: 'https://app.example', authBaseUrl: 'https://app.example', intervalMs: 1 };
+  await assert.rejects(waitForStripeExtensionApplication(requestId, licenseId, { ...options,
+    fetchImpl: async () => jsonResponse({ status: 'applied', fanmark_id: requestId, license_end: '2026-11-15' }),
+  }), (error: unknown) => error instanceof StripeExtensionCheckoutApiError && error.kind === 'invalid_response');
+  await assert.rejects(fetchStripeExtensionApplicationStatus(requestId, { ...options,
+    fetchImpl: async () => jsonResponse({ status: 'applied', fanmark_id: licenseId }),
+  }), (error: unknown) => error instanceof StripeExtensionCheckoutApiError && error.kind === 'invalid_response');
+  const failed = await waitForStripeExtensionApplication(requestId, licenseId, { ...options,
+    fetchImpl: async () => jsonResponse({ status: 'failed', fanmark_id: licenseId }),
+  });
+  assert.equal(failed.status, 'failed');
+  await assert.rejects(waitForStripeExtensionApplication(requestId, licenseId, { ...options, maxWaitMs: 10,
+    fetchImpl: async () => jsonResponse({ status: 'pending', fanmark_id: licenseId }),
+  }), (error: unknown) => error instanceof StripeExtensionCheckoutApiError && error.kind === 'timeout');
+  const controller = new AbortController();
+  let calls = 0;
+  await assert.rejects(waitForStripeExtensionApplication(requestId, licenseId, { ...options, signal: controller.signal,
+    fetchImpl: async () => { calls += 1; controller.abort(); return jsonResponse({ status: 'pending', fanmark_id: licenseId }); },
+  }), (error: unknown) => error instanceof DOMException && error.name === 'AbortError');
+  assert.equal(calls, 1);
+});

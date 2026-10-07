@@ -427,3 +427,43 @@ test("grace checkout obeys the user's configured active-fanmark limit", async ()
     await miniflare.dispose();
   }
 });
+
+test('read-only extension status is owner-bound and confirms only a committed application/effect', async () => {
+  const { miniflare, business, master } = await createFixture();
+  try {
+    const stripe = createFakeStripe(), env = envFor(business, master);
+    await handleStripeExtensionCheckoutD1Request(request(), env, dependencies(stripe));
+    const statusRequest = () => new Request(`https://app.synthetic.example/api/billing/extension-checkout/status?request_id=${REQUEST_ID}`, { headers: { origin: 'https://app.synthetic.example' } });
+    const read = async (user = USER_ID) => handleStripeExtensionCheckoutD1Request(statusRequest(), env,
+      dependencies(stripe, { resolveUser: async () => user }));
+    assert.equal((await read(null)).status, 401);
+    assert.equal((await read('00000000-0000-4000-8000-000000000099')).status, 404);
+    const before = await business.prepare('SELECT * FROM stripe_extension_checkout_intents').all();
+    const pending = await read();
+    assert.equal(pending.headers.get('cache-control'), 'no-store');
+    assert.deepEqual(await pending.json(), { status: 'pending', fanmark_id: FANMARK_ID });
+    assert.deepEqual((await business.prepare('SELECT * FROM stripe_extension_checkout_intents').all()).results, before.results);
+    await business.prepare("UPDATE stripe_extension_checkout_intents SET status='applied' WHERE id=?").bind(INTENT_ID).run();
+    assert.equal((await (await read()).json()).status, 'pending', 'intent alone is not a committed effect');
+    const receipt = '00000000-0000-4000-8000-000000000006', application = '00000000-0000-4000-8000-000000000007';
+    await business.prepare(`INSERT INTO stripe_webhook_receipts
+      (id,stripe_event_id,livemode,event_type,normalized_schema_version,normalized_payload,
+       normalized_payload_sha256,raw_payload_sha256,first_received_at,last_received_at,created_at,updated_at)
+      VALUES (?,'evt_status_synthetic',0,'checkout.session.completed',1,'{}',?,?,?, ?,?,?)`)
+      .bind(receipt, 'a'.repeat(64), 'b'.repeat(64), NOW_SQL, NOW_SQL, NOW_SQL, NOW_SQL).run();
+    await business.prepare(`INSERT INTO stripe_extension_applications
+      (id,billing_intent_id,livemode,stripe_checkout_session_id,source_receipt_id,last_receipt_id,
+       user_id,license_id,fanmark_id,tier_level,months,expected_total_yen,status,result_code,
+       previous_license_end,new_license_end,created_at,updated_at,applied_at,terminal_at)
+      VALUES (?,?,0,'cs_synthetic_1',?,?, ?,?,?,2,3,3600,'applied','applied',
+       '2026-12-31T00:00:00.000000Z','2027-03-31T00:00:00.000000Z',?,?,?,?)`)
+      .bind(application, INTENT_ID, receipt, receipt, USER_ID, LICENSE_ID, FANMARK_ID, NOW_SQL, NOW_SQL, NOW_SQL, NOW_SQL).run();
+    assert.equal((await (await read()).json()).status, 'pending', 'application without its effect is not accepted');
+    await business.prepare(`INSERT INTO stripe_extension_application_effects
+      (application_id,previous_license_end,new_license_end,created_at) VALUES (?,?,?,?)`)
+      .bind(application, '2026-12-31T00:00:00.000000Z', '2027-03-31T00:00:00.000000Z', NOW_SQL).run();
+    assert.deepEqual(await (await read()).json(), { status: 'applied', fanmark_id: FANMARK_ID, license_end: '2027-03-31T00:00:00.000000Z' });
+    assert.equal(stripe.calls.create.length, 1);
+    assert.equal(stripe.calls.retrieve.length, 0);
+  } finally { await miniflare.dispose(); }
+});

@@ -223,11 +223,11 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/FanmarkAccessByShortId.tsx:87` | rpc | `get_fanmark_by_short_id` | `rpc` |  |
 | `src/components/FanmarkAccessByShortId.tsx:146` | edge | `record-fanmark-access` | `edge_function_invoke` |  |
 | `src/components/FanmarkAcquisition.tsx:228` | edge | `register-fanmark` | `edge_function_invoke` |  |
-| `src/components/FanmarkDashboard.tsx:233` | edge | `return-fanmark` | `edge_function_invoke` |  |
-| `src/components/FanmarkDashboard.tsx:332` | edge | `create-extension-checkout` | `edge_function_invoke` |  |
-| `src/components/FanmarkDashboard.tsx:443` | table | `fanmark_licenses` | `table.select` |  |
-| `src/components/FanmarkDashboard.tsx:484` | table | `fanmark_basic_configs` | `table.select` |  |
-| `src/components/FanmarkDashboard.tsx:630` | table | `fanmark_access_daily_stats` | `table.select` |  |
+| `src/components/FanmarkDashboard.tsx:236` | edge | `return-fanmark` | `edge_function_invoke` |  |
+| `src/components/FanmarkDashboard.tsx:335` | edge | `create-extension-checkout` | `edge_function_invoke` |  |
+| `src/components/FanmarkDashboard.tsx:455` | table | `fanmark_licenses` | `table.select` |  |
+| `src/components/FanmarkDashboard.tsx:496` | table | `fanmark_basic_configs` | `table.select` |  |
+| `src/components/FanmarkDashboard.tsx:671` | table | `fanmark_access_daily_stats` | `table.select` |  |
 | `src/components/FanmarkQuickRegistration.tsx:139` | edge | `register-fanmark` | `edge_function_invoke` |  |
 | `src/components/FanmarkRegistrationForm.tsx:220` | edge | `register-fanmark` | `edge_function_invoke` |  |
 | `src/components/FanmarkSettings.tsx:439` | table | `fanmark_basic_configs` | `table.upsert` |  |
@@ -663,10 +663,10 @@ remains disabled until Stripe selectors and staging keys are configured.
 
 | Callsite | Operation and owner | Data class | Cloudflare replacement and parity |
 | --- | --- | --- | --- |
-| `src/components/FanmarkDashboard.tsx:233` | Return one fanmark owned by the signed-in user. | Owner license state and return side effects. | `POST /api/me/fanmarks/return` uses Better Auth identity and D1; the synthetic staging return canary passed with cleanup verified. |
-| `src/components/FanmarkDashboard.tsx:332` | Begin a paid extension checkout for the owner’s selected license. | Owner license and payment intent metadata. | The Worker client calls `/api/billing/extension-checkout`, which is gated on staging and returns 404 while Stripe selectors/secrets are absent. The server implementation has synthetic contract tests; no Stripe request or transaction was made, so provider acceptance remains open. |
-| `src/components/FanmarkDashboard.tsx:443,484` | List the owner’s active/history fanmarks and their basic display/access settings. | Owner licenses, fanmark labels, and configuration. | `VITE_OWNED_FANMARKS_BACKEND=worker` calls `GET /api/me/fanmarks`; the Better Auth session scopes the combined license/config projection. The rendered staging UI canary passed with synthetic rows cleaned up. |
-| `src/components/FanmarkDashboard.tsx:630`; `src/pages/Analytics.tsx:222` | Read daily access aggregates for the owner’s active fanmarks or selected date range. | Owner analytics aggregates and historical activity. | The paired `VITE_FANMARK_ANALYTICS_BACKEND=worker` route reads the owner-scoped D1 projection. The staging UI canary rendered access and visitor totals of 1/1 after duplicate suppression; historical Supabase aggregates were not copied. |
+| `src/components/FanmarkDashboard.tsx:236` | Return one fanmark owned by the signed-in user. | Owner license state and return side effects. | `POST /api/me/fanmarks/return` uses Better Auth identity and D1; the synthetic staging return canary passed with cleanup verified. |
+| `src/components/FanmarkDashboard.tsx:335` | Begin a paid extension checkout for the owner’s selected license. | Owner license and payment intent metadata. | The Worker client calls `/api/billing/extension-checkout`, which is gated on staging and returns 404 while Stripe selectors/secrets are absent. The server implementation has synthetic contract tests; no Stripe request or transaction was made, so provider acceptance remains open. |
+| `src/components/FanmarkDashboard.tsx:455,496` | List the owner’s active/history fanmarks and their basic display/access settings. | Owner licenses, fanmark labels, and configuration. | `VITE_OWNED_FANMARKS_BACKEND=worker` calls `GET /api/me/fanmarks`; the Better Auth session scopes the combined license/config projection. The rendered staging UI canary passed with synthetic rows cleaned up. |
+| `src/components/FanmarkDashboard.tsx:671`; `src/pages/Analytics.tsx:222` | Read daily access aggregates for the owner’s active fanmarks or selected date range. | Owner analytics aggregates and historical activity. | The paired `VITE_FANMARK_ANALYTICS_BACKEND=worker` route reads the owner-scoped D1 projection. The staging UI canary rendered access and visitor totals of 1/1 after duplicate suppression; historical Supabase aggregates were not copied. |
 | `src/pages/Analytics.tsx:132,161` | List active fanmarks and basic names for the analytics selector. | Owner licenses and display settings. | `GET /api/me/analytics/fanmarks` derives the owner from Better Auth and returns the D1 projection; the analytics UI canary verified the Worker-backed page. |
 
 See [return API](fanmark-return-api.md), [access analytics API](fanmark-access-analytics-api.md),

@@ -4,6 +4,21 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 有料延長の復帰で表示不整合を確認・修正準備（2026-10-08 JST）
+
+通常runtime4445297 / Worker55ab5910の専用Safari private windowで、使い捨て利用者1件と
+有限Tier4/Sのファンマ1件を用意し、1か月JPY2000のStripe sandbox決済を自然完了した。
+復帰直後に成功toastが出たが、期限は10月15日のまま。自然署名dispatchはapplication/effect各1件で
+D1を11月15日へ更新したが、画面は手動reloadまで更新されなかった。
+[不合格の限定証拠](evidence/staging-extension-return-stale-date-2026-10-08.json)。
+
+利用者とrequest UUIDに限定した状態確認GETと、適用後の所有一覧再取得・最大2分の待機・
+未確認時の再確認を追加した。local client7/native D1 checkout7、型/staging build、
+211 callsiteの現行位置・対応表2件を確認。追加のlint errorは0（Dashboard既存8件）。
+まだ修正candidateのCI・配備・新規の途切れないnative決済復帰は未受け入れ。
+今回のnative logoutは専用sessionを失効し、owned cleanup後の別Read processで既存全表hash/
+Auth3・7・2/全Master25表/FK0を保持した。ユーザーデータ/DNSと六項目全体の未完了は維持する。
+
 ## 既存UI証拠から残件を特定（2026-10-08 JST）
 
 移管の発行/申請/承認は[既存native証拠](evidence/staging-transfer-ui-2026-10-06.json)、

@@ -791,6 +791,14 @@
     "planFree": "フリー"
   },
   "dashboard": {
+    "extensionConfirmation": {
+      "pending": "ライセンスの更新を確認しています",
+      "timeout": "ライセンスの更新をまだ確認できません",
+      "description": "決済の反映に時間がかかることがあります。確認が終わるまで、追加の決済をしないでください。",
+      "retry": "更新を再確認",
+      "failed": "ライセンスの延長は適用されませんでした"
+    },
+
     "title": "ダッシュボード",
     "userFallback": "クリエイター",
     "welcomeBadge": "保有ファンマ {{count}} 件",

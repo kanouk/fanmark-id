@@ -2,6 +2,32 @@
 
 Date: 2026-09-25 JST
 
+## Checkout return confirmation correction (2026-10-08 JST)
+
+A fresh disposable Safari private-window flow on runtime4445297 / Worker55ab5910
+reproduced premature success: the native Stripe sandbox JPY2000 payment returned
+naturally, but the dashboard announced completion while its date remained
+October15. The natural signed minute dispatch applied one extension/effect to
+November15 in D1; the page stayed stale until manual refresh. This is a failure
+receipt, not acceptance of the uninterrupted UI path.
+
+The correction adds an authenticated owner-bound GET
+`/api/billing/extension-checkout/status?request_id=<uuid>`. Unknown/non-owner
+requests return404; invalid/multiple query keys are rejected. The API exposes
+only pending/failed/applied, fanmark ID and the applied end, with no-store.
+Applied requires the matching intent, application and effect; an intent or
+application alone cannot produce success. It calls no Stripe API and writes no
+Business rows. Existing POST/origin/backend/session protections remain.
+
+The Worker frontend retains the request and user binding, polls serially for up
+to two minutes, refetches the owned licenses before success, and preserves the
+pending request on timeout/network failure for explicit retry. Unmount/logout
+aborts polling. Supabase/default mode preserves its existing return behavior.
+Local client7 and native D1 checkout7 cover delayed application, read-only and
+owner boundaries, incomplete effects, malformed/unrelated results, timeout,
+terminal failure and cancellation. Exact-candidate CI, deployment and a fresh
+uninterrupted native return still need verification.
+
 ## Real staging extension acceptance (2026-10-04)
 
 On runtime 87b61ef / Worker ca971193, a disposable signed-in owner registered a

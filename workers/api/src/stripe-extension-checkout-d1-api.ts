@@ -5,6 +5,7 @@ import { stripeSecretAllowedByModePolicy } from "./stripe-mode-policy.ts";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const CHECKOUT_PATH = "/api/billing/extension-checkout";
+const STATUS_PATH = `${CHECKOUT_PATH}/status`;
 const METHODS = "POST, OPTIONS";
 const MAX_BODY_BYTES = 4 * 1024;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -88,7 +89,7 @@ export interface StripeExtensionCheckoutD1Dependencies {
 }
 
 export function isStripeExtensionCheckoutPath(pathname: string): boolean {
-  return pathname === CHECKOUT_PATH;
+  return pathname === CHECKOUT_PATH || pathname === STATUS_PATH;
 }
 
 function json(body: unknown, status: number, headers?: HeadersInit): Response {
@@ -99,14 +100,14 @@ function json(body: unknown, status: number, headers?: HeadersInit): Response {
   return new Response(JSON.stringify(body), { status, headers: responseHeaders });
 }
 
-function originHeaders(request: Request, env: Env): Headers | null {
+function originHeaders(request: Request, env: Env, methods = METHODS): Headers | null {
   const headers = new Headers();
   const origin = request.headers.get("Origin");
   if (!origin) return headers;
   const allowed = new Set((env.CORS_ALLOWED_ORIGINS ?? "").split(",").map((value) => value.trim()).filter(Boolean));
   if (!allowed.has(origin)) return null;
   headers.set("access-control-allow-origin", origin);
-  headers.set("access-control-allow-methods", METHODS);
+  headers.set("access-control-allow-methods", methods);
   headers.set("access-control-allow-headers", "content-type");
   headers.set("access-control-allow-credentials", "true");
   headers.set("vary", "Origin");
@@ -478,14 +479,16 @@ export async function handleStripeExtensionCheckoutD1Request(
       !env.STRIPE_WEBHOOK_SECRET?.trim()) {
     return json({ error: "stripe_checkout_not_ready" }, 503);
   }
-  const headers = originHeaders(request, env);
+  const isStatus = new URL(request.url).pathname === STATUS_PATH;
+  const methods = isStatus ? "GET, OPTIONS" : METHODS;
+  const headers = originHeaders(request, env, methods);
   if (!headers) return json({ error: "origin_not_allowed" }, 403);
   if (request.method === "OPTIONS") {
     headers.set("access-control-max-age", "600");
     return new Response(null, { status: 204, headers });
   }
-  if (request.method !== "POST") {
-    headers.set("allow", METHODS);
+  if (request.method !== (isStatus ? "GET" : "POST")) {
+    headers.set("allow", methods);
     return json({ error: "method_not_allowed" }, 405, headers);
   }
   if (env.AUTH_BACKEND?.trim() !== "better-auth") return json({ error: "server_misconfigured" }, 500, headers);
@@ -497,6 +500,40 @@ export async function handleStripeExtensionCheckoutD1Request(
   }
   if (!userId || !UUID.test(userId)) return json({ error: "unauthenticated" }, 401, headers);
   userId = userId.toLowerCase();
+
+  if (isStatus) {
+    const params = new URL(request.url).searchParams;
+    const requestId = params.get("request_id");
+    if (!requestId || !UUID.test(requestId) || params.getAll("request_id").length !== 1 ||
+        [...params.keys()].some((key) => key !== "request_id")) {
+      return json({ error: "invalid_request" }, 400, headers);
+    }
+    try {
+      const row = await database(env, "business").prepare(`
+        SELECT i.fanmark_id, i.status AS intent_status, a.status AS application_status,
+          e.new_license_end
+        FROM stripe_extension_checkout_intents i
+        LEFT JOIN stripe_extension_applications a ON a.billing_intent_id = i.id
+          AND a.user_id = i.user_id AND a.license_id = i.license_id
+          AND a.fanmark_id = i.fanmark_id AND a.livemode = i.livemode
+        LEFT JOIN stripe_extension_application_effects e ON e.application_id = a.id
+        WHERE i.user_id = ? AND i.request_id = ?
+        LIMIT 1
+      `).bind(userId, requestId.toLowerCase()).first<{
+        fanmark_id: string; intent_status: string; application_status: string | null;
+        new_license_end: string | null;
+      }>();
+      if (!row) return json({ error: "checkout_not_found" }, 404, headers);
+      if (row.intent_status === "applied" && row.application_status === "applied" && row.new_license_end) {
+        return json({ status: "applied", fanmark_id: row.fanmark_id, license_end: row.new_license_end }, 200, headers);
+      }
+      const failed = ["failed", "expired", "blocked_stale_owner"].includes(row.intent_status) ||
+        ["failed", "expired", "dead_letter"].includes(row.application_status ?? "");
+      return json({ status: failed ? "failed" : "pending", fanmark_id: row.fanmark_id }, 200, headers);
+    } catch {
+      return json({ error: "checkout_status_unavailable" }, 503, headers);
+    }
+  }
 
   let body: Awaited<ReturnType<typeof readBody>>;
   try {

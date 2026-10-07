@@ -149,3 +149,110 @@ export async function createStripeExtensionCheckoutThroughWorker(
   }
   return { url: payload.url };
 }
+
+
+export type StripeExtensionApplicationStatus =
+  | { status: "pending" | "failed"; fanmark_id: string }
+  | { status: "applied"; fanmark_id: string; license_end: string };
+
+interface ExtensionStatusOptions {
+  baseUrl?: string;
+  authBaseUrl?: string;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+  signal?: AbortSignal;
+}
+
+export async function fetchStripeExtensionApplicationStatus(
+  requestId: string,
+  options: ExtensionStatusOptions = {},
+): Promise<StripeExtensionApplicationStatus> {
+  if (!UUID.test(requestId)) throw new StripeExtensionCheckoutApiError("configuration");
+  const baseUrl = options.baseUrl ?? getRecentFanmarksApiBaseUrl() ??
+    (typeof window === "undefined" ? undefined : window.location.origin);
+  const authBaseUrl = options.authBaseUrl ?? import.meta.env?.VITE_AUTH_API_BASE_URL?.trim() ??
+    (typeof window === "undefined" ? undefined : window.location.origin);
+  if (!baseUrl || !authBaseUrl) throw new StripeExtensionCheckoutApiError("configuration");
+  const endpoint = buildStripeExtensionCheckoutUrl(baseUrl);
+  if (endpoint.origin !== buildRecentFanmarksApiUrl(authBaseUrl).origin) {
+    throw new StripeExtensionCheckoutApiError("configuration");
+  }
+  endpoint.pathname += "/status";
+  endpoint.searchParams.set("request_id", requestId.toLowerCase());
+  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000) {
+    throw new StripeExtensionCheckoutApiError("configuration");
+  }
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  options.signal?.throwIfAborted();
+  options.signal?.addEventListener("abort", abort, { once: true });
+  const timer = setTimeout(abort, timeoutMs);
+  try {
+    const response = await (options.fetchImpl ?? fetch)(endpoint, {
+      method: "GET", credentials: "include", cache: "no-store", signal: controller.signal,
+    });
+    if (response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
+      throw new StripeExtensionCheckoutApiError("invalid_response");
+    }
+    const declared = Number(response.headers.get("content-length"));
+    if (declared > MAX_RESPONSE_BYTES) {
+      await response.body?.cancel();
+      throw new StripeExtensionCheckoutApiError("invalid_response");
+    }
+    const body = await response.text();
+    if (new TextEncoder().encode(body).length > MAX_RESPONSE_BYTES) {
+      throw new StripeExtensionCheckoutApiError("invalid_response");
+    }
+    let value: unknown;
+    try { value = JSON.parse(body); } catch { throw new StripeExtensionCheckoutApiError("invalid_response"); }
+    if (!response.ok) {
+      throw new StripeExtensionCheckoutApiError("http", response.status,
+        isRecord(value) && typeof value.error === "string" ? value.error.slice(0, 128) : undefined);
+    }
+    if (!isRecord(value) || !["pending", "applied", "failed"].includes(String(value.status)) ||
+        typeof value.fanmark_id !== "string" || !UUID.test(value.fanmark_id) ||
+        Object.keys(value).sort().join(",") !== (value.status === "applied" ? "fanmark_id,license_end,status" : "fanmark_id,status") ||
+        (value.status === "applied" && (typeof value.license_end !== "string" || !Number.isFinite(Date.parse(value.license_end))))) {
+      throw new StripeExtensionCheckoutApiError("invalid_response");
+    }
+    return value as StripeExtensionApplicationStatus;
+  } catch (error) {
+    options.signal?.throwIfAborted();
+    if (error instanceof StripeExtensionCheckoutApiError) throw error;
+    throw new StripeExtensionCheckoutApiError(controller.signal.aborted ? "timeout" : "network");
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener("abort", abort);
+  }
+}
+
+export async function waitForStripeExtensionApplication(
+  requestId: string,
+  fanmarkId: string,
+  options: ExtensionStatusOptions & { intervalMs?: number; maxWaitMs?: number } = {},
+): Promise<StripeExtensionApplicationStatus> {
+  const intervalMs = options.intervalMs ?? 2000;
+  const maxWaitMs = options.maxWaitMs ?? 120_000;
+  if (!UUID.test(fanmarkId) || !Number.isSafeInteger(intervalMs) || intervalMs < 1 ||
+      !Number.isSafeInteger(maxWaitMs) || maxWaitMs < 1) {
+    throw new StripeExtensionCheckoutApiError("configuration");
+  }
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    options.signal?.throwIfAborted();
+    const result = await fetchStripeExtensionApplicationStatus(requestId, {
+      ...options, timeoutMs: Math.min(options.timeoutMs ?? TIMEOUT_MS, Math.max(1, deadline - Date.now())),
+    });
+    if (result.fanmark_id !== fanmarkId) throw new StripeExtensionCheckoutApiError("invalid_response");
+    if (result.status !== "pending") return result;
+    await new Promise<void>((resolve, reject) => {
+      const abort = () => { clearTimeout(timer); reject(options.signal?.reason); };
+      const timer = setTimeout(() => { options.signal?.removeEventListener("abort", abort); resolve(); },
+        Math.min(intervalMs, Math.max(1, deadline - Date.now())));
+      options.signal?.addEventListener("abort", abort, { once: true });
+      if (options.signal?.aborted) abort();
+    });
+  }
+  throw new StripeExtensionCheckoutApiError("timeout");
+}

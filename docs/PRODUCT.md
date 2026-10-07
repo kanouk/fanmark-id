@@ -403,7 +403,7 @@ Cloudflareの告知メールは、苦情・恒久的なバウンスで確定し�
 | 6 | Stripe Checkout で決済 | 決済画面 |
 | 7a | 成功 | `/dashboard?extension=success&fanmarkId=xxx` |
 | 7b | キャンセル | `/dashboard?extension=canceled` |
-| 8 | 完了 | 「ライセンスを延長しました」トースト、日付更新 |
+| 8 | 決済反映を確認 | Cloudflare stagingでは署名処理の適用を待ち、日付を再取得してから完了トースト。未確認の間は確認中表示、時間切れや通信失敗時は再確認できる |
 
 **ダイアログ表示内容:**
 - タイトル: 「{絵文字} の期間を延長」

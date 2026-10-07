@@ -799,6 +799,14 @@
     "planFree": "프리"
   },
   "dashboard": {
+    "extensionConfirmation": {
+      "pending": "라이선스 업데이트를 확인하고 있습니다",
+      "timeout": "라이선스 업데이트가 아직 확인되지 않았습니다",
+      "description": "결제 반영에 시간이 걸릴 수 있습니다. 확인이 끝날 때까지 추가 결제를 하지 마세요.",
+      "retry": "다시 확인",
+      "failed": "라이선스 연장이 적용되지 않았습니다"
+    },
+
     "title": "대시보드",
     "userFallback": "크리에이터",
     "welcomeBadge": "보유 팬마크 {{count}}개",

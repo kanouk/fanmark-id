@@ -800,6 +800,14 @@
     "planFree": "Free"
   },
   "dashboard": {
+    "extensionConfirmation": {
+      "pending": "Checking your license update",
+      "timeout": "Your license update is not confirmed yet",
+      "description": "Payment updates may take a little time. Please do not make another payment while confirmation is pending.",
+      "retry": "Check again",
+      "failed": "The license extension was not applied"
+    },
+
     "title": "Dashboard",
     "userFallback": "Creator",
     "welcomeBadge": "You have {{count}} fanmark",
