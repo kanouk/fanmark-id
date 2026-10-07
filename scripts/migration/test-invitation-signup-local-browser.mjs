@@ -233,7 +233,8 @@ try{
     browserExternalHostsDenied:[...new Set(browserDenied)],apiRequests:apiRequests.map(r=>({method:r.method,path:r.path})),
     browserInterceptionErrors:0,verifiedCanceledBrowserRequests:canceledRequests.size,requiredOwnerApisAvailable:true,workerUsesNativeAsyncLocalStorage:true,apiResponses,
     screenshot:path.join(temp,'invited-dashboard.png'),wholeStagingAcceptance:false});
-}catch(error){if(cdp){try{const shot=await cdp.send('Page.captureScreenshot',{format:'png'});await privateWrite('failure.png',Buffer.from(shot.data,'base64'));
+}catch(error){report.browserInterceptionFailures=interceptionErrors.map(message=>String(message).replace(/https?:\/\/\S+/gu,'[url]'));
+  if(cdp){try{const shot=await cdp.send('Page.captureScreenshot',{format:'png'});await privateWrite('failure.png',Buffer.from(shot.data,'base64'));
   report.failurePageText=await value('document.body.innerText');}catch{}}report.state='failed';report.error=String(error.message).replace(/https?:\/\/\S+/gu,'[url]');process.exitCode=1;}
 finally{
   closing=true;if(cdp)cdp.close();
@@ -243,6 +244,8 @@ finally{
   await rm(path.join(temp,'chrome-profile'),{recursive:true,force:true,maxRetries:5,retryDelay:100});
   report.ownedBrowserStopped=!chrome||chrome.exitCode!==null||chrome.signalCode!==null;
   report.localServerStopped=!server||!server.listening;report.localRuntimeDisposed=Boolean(mf);report.syntheticCredentialsIsolated=true;
-  await checkpoint();console.log(JSON.stringify({state:report.state,error:report.error,journalPath:path.join(temp,'report.json'),
+  await checkpoint();console.log(JSON.stringify({state:report.state,error:report.error,
+    browserInterceptionFailures:report.browserInterceptionFailures,
+    journalPath:path.join(temp,'report.json'),
     ownedBrowserStopped:report.ownedBrowserStopped,localServerStopped:report.localServerStopped}));
 }
