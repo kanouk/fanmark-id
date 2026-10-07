@@ -105,4 +105,22 @@ node --experimental-strip-types scripts/migration/run-isolated-recovery-set.mjs 
 local class補完はtestだけ。小さいfixtureのnative D1 query数は収集246・復旧623で、
 [Paidのinvocation当たり1000件上限](https://developers.cloudflare.com/d1/platform/limits/)内。
 全運用容量・全Master12,254行の一式capture・本番CPU/memory/RTOを証明しない。
-[限定証拠](evidence/recovery-set-bundled-local-2026-10-08.json)。remoteはこのcheckpointで未実行。
+[限定証拠](evidence/recovery-set-bundled-local-2026-10-08.json)。準備時点ではremote未実行だった。次節はその後の実行証拠。
+
+## 実Cloudflareの限定受け入れ（2026-10-08）
+
+99762af/[CI37649724810](https://github.com/kanouk/fanmark-id/actions/runs/37649724810)両job成功後、
+新規6 D1/5 R2/Worker74b7fa6eで同じmodule/CLIを実行した。独立schema pinとnative bindingを
+照合し、補完なしのStandard画像2件を含む全5 storeの収集→Macのprivate file→同じfileから
+空targetへのnative復旧が成功。全desired hash/FK、session/challenge失効、credential bytes
+保持を確認した。queryは収集246/復旧623で、各Worker invocationは1000以内だった。
+
+全owned object/6 D1/5 R2/Workerを削除して前後inventory3/3/2が一致。one-off request/
+archive key fileも除去。独立Read tokenと別Wrangler processでmain/元R2を確認した。
+[限定証拠](evidence/recovery-set-isolated-remote-2026-10-08.json)。
+
+新collectorのremote boundaryとfile復旧が受け入れ済みになった。小さい合成rowと画像の
+試験で、全Master12,254行・最大容量の新collector captureや新Auth SDK loginを証明しない。
+isolated guardはアプリ/SQL/Cron/DO経路のない新規owned環境だけ。通常アプリの停止/drain、
+定期保存/off-host/運用鍵/retention/担当/RPO-RTO採用は残る。現存main storeへのwrite、
+main runtime再配備、mail、source Supabase write、実ユーザー移送/DNSは行っていない。

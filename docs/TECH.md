@@ -516,3 +516,7 @@ skip、R2は不足分だけ再開。全ストアにまたがるrollbackは行わ
 一式collectorの専用Worker形式は通常`test:recovery-set`に含む。private file→native全store、
 独立schema pin/claim/version/bindingの契約と新規ownedだけのremote CLIを追加した。
 通常アプリの停止方式と定期運用は未採用。[契約](migration/recovery-set.md)。
+
+共通一式collectorは99762af/CI37649724810両job成功後の新規6 D1/5 R2/Workerで、
+Macの同じprivate fileから全5 storeのnative復旧と明示失効、全資源cleanupを受け入れた。
+通常アプリの停止方式・定期運用採用は残る。[限定証拠](migration/evidence/recovery-set-isolated-remote-2026-10-08.json)。

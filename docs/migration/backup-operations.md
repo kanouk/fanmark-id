@@ -60,6 +60,15 @@ collector APIは呼出可能だが、実runtimeを停止/drainするtrusted guar
 retention/監視は未接続。既存CUTOVER_WRITE_FREEZEはAuth/Stripeが続くため、そのまま
 整合した運用保存点の証拠にはしない。下表の採用待ちは保持する。
 
+## 新collectorの実Cloudflare file復旧（2026-10-08）
+
+`fanmark-recovery-set-v1`を新規6 D1/5 R2/Workerで収集し、Macのprivate fileを読み直して
+空targetへ復旧した。現行schemaと小さい合成行・Standard画像2件で全desired hash/FKと
+明示session失効、全資源cleanup/inventory一致を確認。[限定証拠](evidence/recovery-set-isolated-remote-2026-10-08.json)。
+collector APIのremote実行と保存file復旧は受け入れ済み。通常アプリのwriter停止/drain、
+運用鍵/off-host/retention等を採用した定期backupではない。one-off鍵はcleanup後に除去し、
+この合成保存fileを将来の運用backupとして配布しない。下表の未採用条件は維持する。
+
 ## 運用にするために残っていること
 
 Businessの固定79表と採番状態のcapture/AES-256-GCM/空target復旧も共通moduleへ

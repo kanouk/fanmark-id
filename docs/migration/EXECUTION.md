@@ -1,3 +1,25 @@
+## 共通一式collectorを実Cloudflareで受け入れ（2026-10-08 JST）
+
+候補99762afの[CI37649724810](https://github.com/kanouk/fanmark-id/actions/runs/37649724810)
+はアプリ/Worker両job成功。通常CI logでも一式native/bundle8件と型/dry-runの成功を確認。
+途中候補2e46cc9/CI37648656829はapplication成功・Workerは後続の実装追加によりcancelled。
+
+新規6 D1・5 R2・Worker74b7fa6eで、現行27 Business/4 Auth/8 Master+legacy Authと合成行、
+補完なしのStandard画像2件を共通moduleで収集した。Macの0700/0600暗号化fileを読み直し、
+同じfileから別の空targetへnative単一batchで戻し、全desired hash/FKを確認した。
+明示失効でsession/challengeを戻さずcredential bytesを保持。収集246/復旧623 query。
+[限定証拠](evidence/recovery-set-isolated-remote-2026-10-08.json)。
+
+全owned object/6 D1/5 R2/Workerを削除し、前後inventoryは3/3/2で一致。one-off request/
+archive key fileも除去した。独立Read tokenではmain Worker17fdbf39/Business27/wake34/34/
+FK0/queue滞留0/API・root200が前後同じ。別Wrangler processでも元の3 R2だけを確認した。
+既存全行hashの新しい再照合とは扱わない。既存staging store write/新mail/runtime再配備/
+Supabase write/実ユーザー移送/DNSは0。
+
+小さい合成fixtureでの実collector/file復旧を受け入れた。全Master12,254行の新collector
+capture・本番最大容量/RTO、通常アプリのwriter停止/drain、運用鍵/off-host/周期/retention/
+担当/RPO-RTO/定期監視・最終統合と六項目は未完了。旧一式復旧runnerは再実行していない。
+
 ## 一式collectorの実Worker形式とremote準備（2026-10-08 JST）
 
 共通recovery setを呼ぶ専用Worker/CLIを追加。独立local schema pin、固定account/HEAD/
