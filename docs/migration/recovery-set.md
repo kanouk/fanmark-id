@@ -124,3 +124,24 @@ archive key fileも除去。独立Read tokenと別Wrangler processでmain/元R2�
 isolated guardはアプリ/SQL/Cron/DO経路のない新規owned環境だけ。通常アプリの停止/drain、
 定期保存/off-host/運用鍵/retention/担当/RPO-RTO採用は残る。現存main storeへのwrite、
 main runtime再配備、mail、source Supabase write、実ユーザー移送/DNSは行っていない。
+
+## 新しい書き込みの停止（2026-10-08 JST）
+
+`RECOVERY_WRITE_FREEZE=true`はバックアップ用の独立した停止設定。未設定・空・falseは
+通常動作を保持し、不明な値は停止側へ倒す。HTTPの入口で全requestを503/no-store/
+Retry-After 60へ返すため、GETのsession更新・OAuth callback・Stripe/Resend通知・
+公開参照の副作用もroute実行前に停止する。fetchのfinallyでoutboxをflushせず、Cronは
+診断用D1書込みより前に停止する。通知DOのwake/statusは503とし、alarmは再開用の
+次回alarmだけを保持し、Businessの処理・generation ACKを行わない。解除後は保存済み
+alarmが未処理イベントを再開する。DOのalarm時刻はこの5ストアarchiveの対象外。
+
+これは新しく入るアプリ処理の停止実装。切替前から実行中のrequest/jobのdrainや、
+直接D1/R2へ接続する別Worker・CLI・operatorの停止は証明しない。flagだけを
+`RecoverySetGuard.assertHeld()`の成功条件にしてはいけない。collectorには未接続で、
+通常stagingへの有効化・停止中の実capture・運用方針の採用はまだ行っていない。
+既存CUTOVER_WRITE_FREEZEの認証・Stripe継続契約は維持する。
+
+実Worker入口/Cronの16件とnative D1/DO alarmの21件、型検査が成功。新しいnative caseは
+停止中のqueue全行/generationが同一、通知0件、次回alarm保持、解除後に2 eventが各1回
+だけ配信されてalarmが消えることを確認した。synthetic local証拠で、remote停止/drainや
+全体の運用復旧完了とは扱わない。

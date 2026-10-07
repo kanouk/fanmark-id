@@ -115,6 +115,7 @@ import {
   cutoverWriteFreezeState,
   shouldPauseScheduledJobsForCutover,
 } from "./cutover-write-freeze";
+import { shouldFreezeRecoveryWrites } from "./recovery-write-freeze";
 import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
 import { handleLifecycleRunRequest, isLifecycleRunPath } from "./lifecycle-run-d1-api";
 import { handleSystemSettingsRequest, isSystemSettingsPath } from "./system-settings-d1-api";
@@ -1049,6 +1050,10 @@ export async function handleRequest(
   const url = new URL(request.url);
   const routeHeaders = baseHeaders();
 
+  if (shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE)) {
+    return jsonResponse({ error: "recovery_write_freeze" }, 503, { "retry-after": "60" });
+  }
+
   if (blocksRequestDuringCutoverFreeze(request.method, url.pathname, env.CUTOVER_WRITE_FREEZE)) {
     return jsonResponse({ error: "cutover_write_freeze" }, 503, { "retry-after": "60" });
   }
@@ -1735,7 +1740,8 @@ const worker = {
     finally {
       // The operator route performs its own authorized force-wake. A refused
       // Origin/MFA request must never replay an outbox through this finally.
-      if (!["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+      if (!shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE) &&
+          !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
           new URL(request.url).pathname !== "/api/admin/notifications/wake" &&
           env.NOTIFICATION_WAKE_BACKEND?.trim() === "durable-object") {
         const wake = flushNotificationWakeSafely(env);
@@ -1744,6 +1750,11 @@ const worker = {
     }
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    // Even diagnostic D1 writes must stop before a recovery capture.
+    if (shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE)) {
+      console.log(JSON.stringify({ job: "scheduled-dispatch", status: "paused", reason: "recovery_write_freeze" }));
+      return;
+    }
     const freezeState = cutoverWriteFreezeState(env.CUTOVER_WRITE_FREEZE);
     const diagnosticsEnabled = env.SCHEDULED_DISPATCH_DIAGNOSTICS?.trim() === "true";
     const writeDiagnostic = async (

@@ -4,6 +4,15 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## バックアップ用の新規書き込み停止を追加（2026-10-08 JST）
+
+`RECOVERY_WRITE_FREEZE`でHTTP全入口、fetch後outbox flush、Cron診断を含むjob、
+通知DOのBusiness処理を停止する。native local37件・型検査・bundle dry-run成功。
+[限定証拠](evidence/recovery-write-freeze-local-2026-10-08.json)。停止中のqueue/generation保持と
+解除後の重複なしのalarm再開を確認。通常stagingでは未有効化。新規処理を止める実装であり、
+既に実行中の処理のdrain・外部writer停止・collector trusted guard・運用backup採用は残る。
+既存cutover設定のAuth/Stripe継続契約と、六項目・実ユーザー/DNSを最後にする範囲は保持する。
+
 ## 共通一式collectorを実Cloudflareで受け入れ（2026-10-08 JST）
 
 候補99762afの[CI37649724810](https://github.com/kanouk/fanmark-id/actions/runs/37649724810)

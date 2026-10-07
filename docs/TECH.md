@@ -522,3 +522,5 @@ Macの同じprivate fileから全5 storeのnative復旧と明示失効、全資�
 通常アプリの停止方式・定期運用採用は残る。[限定証拠](migration/evidence/recovery-set-isolated-remote-2026-10-08.json)。
 
 告知配送通知の受信は `BROADCAST_WEBHOOK_BACKEND=d1` で独立して有効化できる。送信を停止したまま、署名・時刻を検証した既送信メールの通知をD1へ反映する。未指定時は従来の `BROADCAST_SEND_BACKEND` に従い、明示的な無効値は受信・新規配信開始・dispatchを止める。署名secretだけでは受信を有効にしない。snapshotと送信のselectorは別に必要で、受信だけを有効にしても宛先の抽出やメール送信は始まらない。現在はローカル検証段階で、Resendへの登録とstaging配備は未実施。
+
+バックアップ用の新規書き込み停止は `recovery-write-freeze.ts` の `RECOVERY_WRITE_FREEZE` を使う。HTTP全入口・fetch後wake・Cron診断を含むjob・通知DOのD1処理を止め、alarmは再開用時刻だけ保持する。既存cutover停止とは独立し、default-off、不明値は停止側。既に動いている処理のdrainと外部writer停止は別条件で、このflagだけをrecovery collectorのguardにしない。詳細は `docs/migration/backup-operations.md`。

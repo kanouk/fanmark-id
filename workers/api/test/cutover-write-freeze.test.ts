@@ -7,8 +7,53 @@ import {
   shouldPauseScheduledJobsForCutover,
 } from "../src/cutover-write-freeze";
 import type { Env } from "../src/repository";
+import { shouldFreezeRecoveryWrites } from "../src/recovery-write-freeze";
 
 const runtimeEnv = env as unknown as Env;
+
+describe("recovery write freeze at the real Worker entrypoints", () => {
+  it("blocks auth/session GETs, provider receipts, public routes and post-response wakes before any binding access", async () => {
+    let accesses = 0;
+    const denied = () => { accesses++; throw new Error("frozen_binding_access"); };
+    const database = { prepare: denied } as unknown as D1Database;
+    const assets = { fetch: denied } as unknown as Fetcher;
+    const wake = { get: denied, idFromName: denied } as unknown as DurableObjectNamespace;
+    const ctx = { waitUntil: denied } as unknown as ExecutionContext;
+    for (const selector of ["true", "mistyped"]) {
+      const frozen: Env = { ...runtimeEnv, RECOVERY_WRITE_FREEZE: selector, CUTOVER_WRITE_FREEZE: "false",
+        FANMARK_DB: database, AUTH_DB: database, MASTER_DB: database, ASSETS: assets,
+        NOTIFICATION_WAKE: wake, NOTIFICATION_WAKE_BACKEND: "durable-object" };
+      for (const [method, path] of [
+        ["POST", "/api/auth/sign-in/email"], ["GET", "/api/auth/get-session"],
+        ["GET", "/api/auth/callback/google"], ["POST", "/api/stripe/webhook"],
+        ["POST", "/api/webhooks/resend/broadcast-delivery"], ["GET", "/api/emoji/catalog"],
+        ["GET", "/ogp/example"], ["GET", "/"], ["HEAD", "/"], ["OPTIONS", "/api/auth/sign-in/email"],
+      ]) {
+        const response = await worker.fetch(new Request(`https://app.example.test${path}`, { method }), frozen, ctx);
+        expect(response.status).toBe(503);
+        expect(response.headers.get("retry-after")).toBe("60");
+        expect(response.headers.get("cache-control")).toBe("no-store");
+        expect(await response.json()).toEqual({ error: "recovery_write_freeze" });
+      }
+    }
+    expect(accesses).toBe(0);
+    expect(shouldFreezeRecoveryWrites(undefined)).toBe(false);
+    expect(shouldFreezeRecoveryWrites("false")).toBe(false);
+  });
+
+  it("pauses Cron before diagnostic writes or background tasks on every configured schedule", async () => {
+    let accesses = 0;
+    const denied = () => { accesses++; throw new Error("frozen_scheduled_write"); };
+    const database = { prepare: denied } as unknown as D1Database;
+    const frozen = { ...runtimeEnv, RECOVERY_WRITE_FREEZE: "true", SCHEDULED_DISPATCH_DIAGNOSTICS: "true",
+      SCHEDULED_DISPATCH_DIAGNOSTICS_DB: database, FANMARK_DB: database, AUTH_DB: database };
+    for (const cron of ["* * * * *", "0 0 * * *", "0 1 * * *"]) {
+      await worker.scheduled({ cron, scheduledTime: Date.now() } as ScheduledController,
+        frozen, { waitUntil: denied } as unknown as ExecutionContext);
+    }
+    expect(accesses).toBe(0);
+  });
+});
 
 describe("cutover write freeze", () => {
   it("defaults off, enables only on true, and fails closed for an unknown value", () => {

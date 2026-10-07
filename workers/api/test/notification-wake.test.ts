@@ -53,6 +53,7 @@ beforeEach(async () => {
   await runInDurableObject(stub, async (instance: NotificationWakeCoordinator, state) => {
     await state.storage.deleteAlarm();
     delete (instance as unknown as { env: Env }).env.CUTOVER_WRITE_FREEZE;
+    delete (instance as unknown as { env: Env }).env.RECOVERY_WRITE_FREEZE;
   });
   for (const table of ["notifications", "notification_events", "notification_rules", "notification_templates", "user_settings"]) await run(`DELETE FROM ${table}`);
   const now = new Date().toISOString();
@@ -65,6 +66,32 @@ beforeEach(async () => {
 });
 
 describe("native D1 outbox and real SQLite Durable Object alarms", () => {
+  it("preserves pending D1 work while recovery is frozen and resumes it once through the durable alarm", async () => {
+    const first = await event();
+    await flushNotificationWake(runtime);
+    const second = await event();
+    const before = await wakeState();
+    const rows = (await db.prepare("SELECT * FROM notification_events ORDER BY id").all()).results;
+    await runInDurableObject(stub, async (instance: NotificationWakeCoordinator) => {
+      (instance as unknown as { env: Env }).env.RECOVERY_WRITE_FREEZE = "true";
+    });
+    await flushNotificationWake({ ...runtime, RECOVERY_WRITE_FREEZE: "true" }, true);
+    expect((await stub.fetch("https://notification-wake.internal/wake", { method: "POST" })).status).toBe(503);
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+    expect(await alarm()).not.toBeNull();
+    expect(await wakeState()).toEqual(before);
+    expect((await db.prepare("SELECT * FROM notification_events ORDER BY id").all()).results).toEqual(rows);
+    expect((await db.prepare("SELECT count(*) AS n FROM notifications").first())?.n).toBe(0);
+    await runInDurableObject(stub, async (instance: NotificationWakeCoordinator) => {
+      delete (instance as unknown as { env: Env }).env.RECOVERY_WRITE_FREEZE;
+    });
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+    expect((await db.prepare("SELECT count(*) AS n FROM notifications WHERE event_id IN (?, ?)")
+      .bind(first, second).first())?.n).toBe(2);
+    expect((await wakeState())?.requested_generation).toEqual((await wakeState())?.acknowledged_generation);
+    expect(await alarm()).toBeNull();
+    expect(await runDurableObjectAlarm(stub)).toBe(false);
+  });
   it("returns a committed manual event and delivers it when remote metadata includes the wake trigger", async () => {
     // Live D1 counts both the event insert and the trigger's marker update.
     function wrapStatement(statement: D1PreparedStatement): D1PreparedStatement {

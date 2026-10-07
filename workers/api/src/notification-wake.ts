@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { selectD1Database, type Env } from "./repository";
 import { NOTIFICATION_EVENT_STALE_PROCESSING_MS, runScheduledNotificationEvents } from "./notifications-scheduled";
 import { shouldPauseScheduledJobsForCutover } from "./cutover-write-freeze";
+import { shouldFreezeRecoveryWrites } from "./recovery-write-freeze";
 
 const INTERVAL_MS = 60_000;
 const INTERNAL_URL = "https://notification-wake.internal/wake";
@@ -31,6 +32,7 @@ async function readState(database: D1Database): Promise<WakeState> {
 
 /** Flush only a committed native outbox generation; never forward user headers/payload. */
 export async function flushNotificationWake(env: Env, force = false): Promise<void> {
+  if (shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE)) return;
   if (env.NOTIFICATION_WAKE_BACKEND?.trim() !== "durable-object") return;
   const database = databaseFor(env);
   if (!env.NOTIFICATION_WAKE) throw new NotificationWakeError();
@@ -82,6 +84,9 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
   }
 
   async fetch(request: Request): Promise<Response> {
+    if (shouldFreezeRecoveryWrites(this.env.RECOVERY_WRITE_FREEZE)) {
+      return new Response(null, { status: 503, headers: { "retry-after": "60", "cache-control": "no-store" } });
+    }
     if (request.url === INTERNAL_STATUS_URL && request.method === "GET") {
       try {
         const status = await this.ctx.blockConcurrencyWhile(async () => {
@@ -108,7 +113,8 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
     // Persist the next attempt before D1 work: a hard interruption must not
     // rely solely on the platform's finite alarm retry count.
     await this.ctx.storage.setAlarm(Date.now() + INTERVAL_MS);
-    if (shouldPauseScheduledJobsForCutover(this.env.CUTOVER_WRITE_FREEZE)) return;
+    if (shouldFreezeRecoveryWrites(this.env.RECOVERY_WRITE_FREEZE) ||
+        shouldPauseScheduledJobsForCutover(this.env.CUTOVER_WRITE_FREEZE)) return;
     try {
       const summary = await runScheduledNotificationEvents({ env: this.env, scheduledTime: Date.now() });
       await this.reconcile(Date.now());
