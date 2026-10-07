@@ -4,6 +4,20 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 通知のイベント指定言語を実stagingで確認（2026-10-08 JST）
+
+通常Worker`e688fdf6`（runtime`ad8f754`）で、日本語設定の専用利用者へEN/KO/IDの
+payload.languageを与え、指定言語の正確なtitle/bodyと実受信箱・既読更新を確認した。
+空文字/nullの2件は日本語へ戻り、利用者の設定は日本語のまま。5件の実DO processorは
+retry0で配信した。所有fixtureを削除し、別Read processで既存全表hash（単調増加wakeを除く）/
+Auth3・7・2/FK0、wake34→39とack39を照合した。新メール・runtime再配備・source writeは0。
+[限定証拠](evidence/staging-notification-payload-language-2026-10-08.json)。
+
+初回の検証手順はCLI INSERT後のGETをwakeと誤認し、30秒で待機失敗。既存eventの再作成は
+せず、同じjournalで実PATCHのbridgeへ合わせて継続した。中断前の専用session1件もexact条件で
+除去し、二度目のcleanup確認後に独立照合した。driverの途中失敗は証拠へ残す。
+API/processorのこの言語分岐を受け入れた範囲であり、新たなUI/実端末・外部配信・全体完了ではない。
+
 ## 実Cloudflareの全Master復旧と通常staging反映（2026-10-08 JST）
 
 候補`ad8f754`の[CI37678533990](https://github.com/kanouk/fanmark-id/actions/runs/37678533990)は

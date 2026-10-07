@@ -73,7 +73,16 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   await wait(`sessionStorage.getItem(${JSON.stringify(draftKey)})`,result=>result&&JSON.parse(result).form.bio===textBio);
   const save="Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='保存する')";
   failNextPatch=true;await cdp.send('Fetch.enable',{patterns:[{urlPattern:origin+profilePath}]});await value(`${save}.click()`);
-  await wait("document.body.innerText.includes('更新に失敗しました')",Boolean);
+  try{
+   await wait("document.body.innerText.includes('更新に失敗しました')",Boolean);
+  }catch(error){
+   // A timeout alone cannot distinguish a missing PATCH from a rendered error.
+   // Keep only fixture state and request methods; never record form values or cookies.
+   const state=await value(`({editorPresent:!!document.querySelector('input[name="display_name"]'),saveEnabled:!!(${save})&&!(${save}).disabled,formValid:document.querySelector('form')?.checkValidity()??null,settingsPage:location.pathname.endsWith('/settings'),failureTextPresent:document.body.textContent.includes('更新に失敗しました'),visibleFailureTextPresent:document.body.innerText.includes('更新に失敗しました'),alertCount:document.querySelectorAll('[role="alert"]').length})`);
+   const receipt={stage:'failed-save',failedPatches,failNextPatch,interceptionErrors:errors.length,profileRequests:requests.filter(req=>req.path===profilePath).map(req=>req.method),state};
+   await writeFile(path.join(temp,'failed-save-receipt.json'),JSON.stringify(receipt,null,2)+'\n',{mode:0o600});
+   throw new Error('local_editor_failed_save_timeout:'+JSON.stringify(receipt),{cause:error});
+  }
   await cdp.send('Fetch.disable');
   assert.equal(failedPatches,1);assert.deepEqual(await snapshot(),before);
   assert.equal(await value('location.pathname'),editor);

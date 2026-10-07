@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "scope": "Failed-save CI timeout diagnosis only; no application behavior or timeout/assertion relaxation",
+  "baseHead": "9bf766d64bbf99d9b39e1a11f887ef47eb929ba7",
+  "failedCI": {
+    "runId": 37684442945,
+    "application": "failure",
+    "worker": "success",
+    "applicationJobId": 113008506923,
+    "step": "Test owner editor with actual local Worker and split D1",
+    "failure": "local_browser_wait_timeout:document.body.innerText.includes(更新に失敗しました)",
+    "causeEstablished": false
+  },
+  "change": {
+    "path": "scripts/migration/owner-profile-editor-local-browser.mjs",
+    "sha256": "c08e416c08da2bfaf117761deefd22916131ca35151378ad8924c72db09baea4",
+    "behavior": "On the existing failure-display timeout, emit only boolean UI state, local request methods and interception counts. Preserve the timeout, network-failure injection, expected UI text and all downstream assertions."
+  },
+  "localRecheck": {
+    "state": "verified",
+    "remoteBindings": false,
+    "remoteD1Calls": 0,
+    "sourceRowsRead": false,
+    "providerCalls": 0,
+    "fullBusinessMigrations": 27,
+    "authMigrations": 4,
+    "masterMigrations": 8,
+    "actualAuthCookie": true,
+    "catalogItems": 8,
+    "browser": {
+      "actualApiResponses": true,
+      "fulfilledApiResponses": 0,
+      "canceledInterceptionFixture": true,
+      "canceledInterceptions": 1,
+      "importedImagesDecodedInEditor": true,
+      "importedImagesDecodedInPublicPage": true,
+      "unchangedSourceImageReferencesPreserved": true,
+      "legacyOwnerDelete": true,
+      "externalRequestsBlocked": 64,
+      "localProxyConnections": 9,
+      "anonymousReturn": true,
+      "actualFormSignin": true,
+      "viewport390Overflow": false,
+      "failedSaveRequests": 1,
+      "failedSavePreservesRows": true,
+      "reloadRestoresDraft": true,
+      "retryPersistsInD1": true,
+      "successfulSaveClearsDraft": true,
+      "coldReopen": true,
+      "publicPrivateToggling": true,
+      "crossOwnerEditorRefused": true,
+      "suspensionRedirect": true,
+      "foreignKeyViolations": 0,
+      "realPhone": false
+    },
+    "serverStopped": true,
+    "loopbackPortClosed": true,
+    "localDatabaseStateRemoved": true
+  },
+  "sourceRuntimeTraceTests": {
+    "passed": 13,
+    "failed": 0
+  },
+  "runtimeChanged": false,
+  "newCloudflareResourcesCreated": 0,
+  "remaining": "A diagnostic-enabled Linux CI run is still required; local success does not establish the cause of the original timeout or accept that failed CI."
+}
