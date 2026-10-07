@@ -1,3 +1,16 @@
+## R2の実Worker metadata差異を修正し、remote試験を準備（2026-10-08 JST）
+
+前candidate `de07b9a`のCI 37642308160は両job成功。新しいbundle試験で既知optional HTTP
+metadataのundefinedが拒否される差異を見つけ、その未設定fieldだけを省略する修正を加えた。
+通常R2検証8件・型検査・driver syntax checkが成功。無補完のnative Workerは欠落classを
+拒否し、test専用entrypointの補完時は8 assertionで両kind復旧/画像GET・HEAD/ACK再開を確認。
+[限定証拠](evidence/r2-recovery-bundled-local-2026-10-08.json)。
+
+専用7 bucket/Workerの明示remote runnerを追加。固定account/HEAD/両CI/owned identityを
+要求し、1回claimとstatusで不明な応答を扱う。既存stagingのrouteやbucketには未接続。
+remote Standard class受け入れはこのcheckpointでは未実行。一式collector/整合点/運用採用と
+六項目の完了条件、実ユーザーデータ/DNSを最後にする範囲は維持する。
+
 ## R2復旧の共通処理とCI診断（2026-10-08 JST）
 
 avatars/cover-images全bucketのcapture・AES-256-GCM・空target/exact subset復旧を

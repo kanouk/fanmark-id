@@ -77,7 +77,7 @@
     "test:isolated-combined-recovery": "node --test ../../scripts/migration/test-isolated-recovery-combined-worker.mjs",
     "test:master-recovery:d1": "node --experimental-strip-types --test test/master-recovery-d1.integration.mjs",
     "test:business-recovery:d1": "node --experimental-strip-types --test test/business-recovery-d1.integration.mjs",
-    "test:r2-recovery": "node --experimental-strip-types --test test/r2-recovery.integration.mjs"
+    "test:r2-recovery": "node --experimental-strip-types --test test/r2-recovery.integration.mjs ../../scripts/migration/test-isolated-shared-r2-recovery-worker.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.1.13",

@@ -47,3 +47,32 @@ productionでこの補完をしない。**この試験はremote storage classの
 
 新しいremote R2復旧、保存先/鍵/off-host/retention、全ストアcollectorと整合した復旧点、
 同一最終candidateの統合は残る。実ユーザーのStorage移送や公開domain/DNSは後工程。
+
+## 実Worker内のmetadataと隔離remote runner（2026-10-08）
+
+bundleしたnative workerd内では、HTTP metadataの未設定`contentEncoding`もenumerableな
+`undefined`で返る。captureは既知の未設定fieldだけを省略し、未知keyや不正な定義済み値は
+拒否する。従来のNode側binding proxyではこの違いを観測できなかった。
+
+同じ通常CIコマンドは8件へ拡張。実bundleの無補完試験ではclass欠落を拒否し、再実行claim/
+statusを保持する。全bucketの未知keyを見つけるとcleanupの最初の削除前に拒否する。
+別のtest専用entrypointではclass fieldだけを補い、実Worker内のcapture/暗号化/両kind復旧/
+画像GET・HEAD/ACK後再開/異なるmetadata拒否を確認した。
+[限定証拠](evidence/r2-recovery-bundled-local-2026-10-08.json)。
+
+`run-isolated-shared-r2-recovery.mjs`は固定account/正確なHEAD/両CI成功/clean checkoutを
+前提に、専用7 R2 bucketと専用Workerを作る明示CLI。`isolated-shared-r2-recovery-worker.mjs`
+にはclass補完を入れない。APIのbinding/version/resource creation identityとprivate journalを
+照合し、Bearer tokenとnonceで実行を限定する。既存stagingへrouteやbindingを追加しない。
+
+```sh
+node scripts/migration/run-isolated-shared-r2-recovery.mjs <full-HEAD> <successful-CI-run>
+# 不明な応答や観測timeoutは、同じjournalを読み取り再開する。POST /runは再送しない。
+node scripts/migration/run-isolated-shared-r2-recovery.mjs <full-HEAD> <successful-CI-run> --resume <private-run-directory>
+```
+
+claimは条件付きcreateで1回に限定。同期requestの応答が不明ならstatusを取得し、未完了時は
+resourcesを保持する。terminal receipt取得後のみ全bucketのowned keyを検証・削除し、
+APIのbucket/Worker identityと消失、前後D1/R2/Worker inventory一致を確認する。
+これは合成Standard objectの限定試験で、InfrequentAccess・容量上限のCPU/memory・
+全ストアの整合した復旧点や定期運用を受け入れるものではない。remote実行結果は別途記録する。

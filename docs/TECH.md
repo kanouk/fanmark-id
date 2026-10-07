@@ -485,3 +485,13 @@ wakeを再発生させず、削除済みevent/ledgerの最大IDも保持する�
 ACK喪失でも保存済みobjectを消去せず、再開時にexact subsetだけを許す。
 `npm --prefix workers/api run test:r2-recovery`を通常Worker CIへ含める。local storageClassの
 fixture補完はremote受け入れではない。[契約と限定検証](migration/r2-recovery.md)。
+
+
+### 隔離した共通R2 remote試験
+
+実WorkerのHTTP metadataには既知optional fieldの`undefined`もあるため、captureではその
+未設定fieldのみ除外する。`test:r2-recovery`はbundle内の欠落class拒否/claim/cleanup guardと、
+classのみtest補完した全proofを加えた8件。remote CLIはexact HEADの両CI成功を要求し、
+専用7 bucketとWorkerをjournalで追跡する。実stagingの既存bucketには書き込まない。
+API/Worker応答不明時は同じreceiptを照会し、proofを盲目的に再実行しない。
+詳細は[R2復旧](migration/r2-recovery.md)。

@@ -73,7 +73,10 @@ async function validate(snapshot: R2RecoverySnapshot, expectedKind: R2RecoveryKi
 }
 function semanticMetadata(object: R2Object) {
   const raw = object.httpMetadata ?? {};
-  const httpMetadata = Object.fromEntries(Object.entries(raw).map(([key, value]) =>
+  // Native workerd exposes known optional HTTP fields as enumerable undefined values.
+  // Treat those as absent; unknown keys and invalid defined values still fail below.
+  const httpMetadata = Object.fromEntries(Object.entries(raw).filter(([key, value]) =>
+    !HTTP_KEYS.includes(key) || value !== undefined).map(([key, value]) =>
     [key, key === "cacheExpiry" && value instanceof Date ? value.toISOString() : value]));
   if (object.ssecKeyMd5 || !metadataValid(httpMetadata) || !metadataValid(object.customMetadata ?? {}) ||
       Object.keys(httpMetadata).some(key => !HTTP_KEYS.includes(key))) fail("source_metadata_invalid");
