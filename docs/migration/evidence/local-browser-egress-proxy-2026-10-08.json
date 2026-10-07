@@ -75,7 +75,13 @@
   "limits": [
     "HTTP(S) browser fixture egress only; not a network policy for the user browser",
     "Controlled owner-editor cancellation and failed-save injection still use narrow CDP patterns",
-    "Linux CI of this proxy candidate remains pending",
     "No physical-phone/PWA or full migration acceptance"
-  ]
+  ],
+  "latestConfirmedCi": {
+    "id": 37660877665,
+    "head": "f931782d65e6844a545db51d14602574928ba73d",
+    "application": "success",
+    "worker": "success",
+    "proxyAndActualBrowserCasesIncluded": true
+  }
 }

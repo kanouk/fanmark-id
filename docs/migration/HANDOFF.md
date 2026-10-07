@@ -1,3 +1,26 @@
+## 全Masterを通常SDK・writer fence・一式file復旧へ接続（2026-10-08 JST）
+
+最新確認済み候補f931782/CI37660877665はアプリ・Worker両job成功。Linux上の招待登録、
+プロフィール実ブラウザ、native proxy、通常SDKとwriter fenceの小さいfixtureも成功した。
+main stagingへのdeployは行っていない。
+
+新しい`application-writer-full-master-local.mjs`は、保存済みの非ユーザーMaster archiveの
+SHA-256とschema/rows hashを既存の独立証拠へ照合し、共通Master decryptを通す。
+legacy Authの7表は空を強制する。新規local source/target各3 D1・2 R2、別SQLite DOで、
+Auth/Businessは合成のまま、Master25表/98 schema objects/12,254行を初期化した。
+最初のrequestから計測した実アプリで通常signin→両fence保持→共通collector→認証済み
+private file→空target復旧→session2件/verification失効→旧cookie拒否→通常signinを確認。
+schema/全行hashを保持し、復旧後の実APIで絵文字3,944件を全ページ・重複なしで取得、
+参照masterは4/4/5/16件。FK0。D1実行数はcapture246、restore752、最大batch233。
+一式fileは6,681,319 bytes、capture約1.68秒/restore約4.94秒（localのみ）。
+新しい容量経路と既存小fixtureの回帰1件は成功、runtime/temp fileはcleanup済み。
+[限定証拠](evidence/application-writer-full-master-local-2026-10-08.json)。
+
+残る復旧条件は、新規owned remoteの実アプリ・DO guard・全Master collectorの接続、
+通常mainの初回停止/旧writer終了と外部CLI/operator lease、画像class/最大容量、
+鍵/off-host定期保存/担当/retention/RPO-RTOの採用。local所要時間をproduction RTOにはしない。
+ユーザーデータとドメインは最後の別工程。六つの完了条件は引き続き未完了。
+
 ## カタログ通信のID欠落を回避するlocal proxy（2026-10-08 JST）
 
 3a6322c/CI37658909089はWorker job成功（通常SDK→DO fence→一式file復旧の新testも成功）、
@@ -15,8 +38,8 @@ CDP patternを使う。資格情報やproviderを実接続する変更ではな�
 native proxy2件（tunnel bytes/別宛先拒否）と、実Chromeの招待一式・プロフィール一式が成功。
 プロフィールは保存失敗/下書き/reload/retry、画像/公開範囲、別owner/停止account、390pxの
 既存条件を保持。remote write/mail0、owned browser/server/proxy cleanup済み。
-[限定証拠](evidence/local-browser-egress-proxy-2026-10-08.json)。新候補のLinux CIはまだ
-確認前で、実スマホ/PWA・本移行の受け入れとは分ける。
+[限定証拠](evidence/local-browser-egress-proxy-2026-10-08.json)。f931782のLinux CIは
+両job成功。実スマホ/PWA・本移行の受け入れとは分ける。
 
 ## 通常SDKとwriter fence、一式collectorをlocalで接続（2026-10-08 JST）
 

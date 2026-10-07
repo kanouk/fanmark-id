@@ -527,6 +527,8 @@ Macの同じprivate fileから全5 storeのnative復旧と明示失効、全資�
 
 writerの終了確認は `recovery-writer-drain.ts` と `RecoveryWriterCoordinator` の内部DO bindingを使う。明示したselector/scopeだけでHTTP・Cron・通知DOをticket管理し、claim後の新規処理とactive>0のassertを拒否する。ticketにTTLを設けず、HTTPのwake・Cronの全job終了まで記録を保持する。default-offで通常stagingのbindingは未追加。最初から計測したwriterに限るため、旧versionの初回drain・外部writer停止・collector接続・実remote採用は別条件。契約は `docs/migration/backup-operations.md`。
 
+通常アプリとのlocal接続は `scripts/migration/test-application-writer-recovery.mjs` が実entrypoint、別SQLite DO、合成Auth/Business、共通collectorとprivate fileを使って検証する。保存済み非ユーザーMasterの全量caseは `node --experimental-strip-types scripts/migration/application-writer-full-master-local.mjs <private-master-directory> <new-private-report>`。既存public証拠のarchive/schema/rows pinを使い、0600のarchive/keyを検査して共通decryptへ渡す。通常CIは小fixture、全Master12,254行はprivate archiveを持つlocal検証に限定する。statement計測はnative D1実行とbatch memberを数え、将来のremote wrapperや外部leaseのoverheadを含まない。最大容量・remote採用・運用RTOとは別の証拠。
+
 ### localブラウザ検証のHTTP(S)通信
 
 招待登録と実local Workerのプロフィール編集は`local-browser-egress-proxy.mjs`を使う。

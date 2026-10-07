@@ -1,0 +1,117 @@
+{
+  "observedAt": "2026-10-07T18:00:01.868Z",
+  "scope": "Native local actual application, writer fences and file recovery with saved non-user Master12254 rows",
+  "independentMasterArchiveSha256": "de482a920fc37fe3d547a1bf8852293fcbbbb2b67a6f591c4ac997cf93b77832",
+  "result": {
+    "proof": "actual-application-writer-recovery-local",
+    "normalSdkSourceLogin": true,
+    "namespacesSeparate": true,
+    "heldFenceBlocksBothLogins": true,
+    "privateFile": true,
+    "stores": 5,
+    "sourceSessions": 2,
+    "targetRestoredSessions": 0,
+    "oldSessionRejected": true,
+    "normalSdkTargetLogin": true,
+    "credentialBytesRetained": true,
+    "guardReleaseRefusesCapture": true,
+    "archiveBytes": 6681319,
+    "counts": {
+      "capture": {
+        "auth": {
+          "statements": 24,
+          "batches": 2,
+          "maxBatch": 12
+        },
+        "business": {
+          "statements": 166,
+          "batches": 2,
+          "maxBatch": 83
+        },
+        "master": {
+          "statements": 56,
+          "batches": 2,
+          "maxBatch": 28
+        }
+      },
+      "restore": {
+        "auth": {
+          "statements": 60,
+          "batches": 3,
+          "maxBatch": 34
+        },
+        "business": {
+          "statements": 401,
+          "batches": 3,
+          "maxBatch": 233
+        },
+        "master": {
+          "statements": 291,
+          "batches": 3,
+          "maxBatch": 233
+        }
+      }
+    },
+    "totals": {
+      "capture": 246,
+      "restore": 752
+    },
+    "captureMs": 1683.016375000001,
+    "restoreMs": 4939.662332999998,
+    "durationMs": 16106.888624999998,
+    "masterRows": 12254,
+    "masterSchemaHash": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+    "masterRowsHash": "0ed634aba4f87fa585c8dc29570f5e99eae56319c3a189648ffd6df9f2e28861",
+    "canonicalEmojiCount": 3944,
+    "referenceViewCounts": {
+      "fanmark_tiers": 4,
+      "languages": 4,
+      "reserved_emoji_patterns": 5,
+      "fanmark_tier_extension_prices": 16
+    },
+    "remoteWrites": 0,
+    "realProviderCalls": 0,
+    "fullSavedMasterProven": true,
+    "maximumCapacityProven": false,
+    "r2ObjectClassProven": false,
+    "mainFirstActivationProven": false
+  },
+  "temporaryRuntimeAndRecoveryFileCleaned": true,
+  "sourceArchiveUnchanged": true,
+  "sourceUserDataImported": false,
+  "remoteAcceptance": false,
+  "operationalBackupAccepted": false,
+  "productionRtoAccepted": false,
+  "fullMigrationAccepted": false,
+  "format": "fanmark-application-writer-full-master-local-v1",
+  "parentHead": "f931782d65e6844a545db51d14602574928ba73d",
+  "parentCi": {
+    "id": 37660877665,
+    "head": "f931782d65e6844a545db51d14602574928ba73d",
+    "application": "success",
+    "worker": "success",
+    "fullMasterCaseIncluded": false
+  },
+  "sourceSha256": {
+    "scripts/migration/application-writer-full-master-local.mjs": "3425b2a2f8cd9c30c2d040fd9cd20424975afa7d3b3cb0d3e02778995a662095",
+    "scripts/migration/test-application-writer-recovery.mjs": "af8c6f6baa1300a4d44a1ca9ad07313d17f2c69e49d13729f0a503bd3ef600fc",
+    "scripts/migration/recovery-set-fixture.mjs": "0cb0548a2d12eef7fabe48529f8edf8f6bf2db2453b77da8693cbe1ad1328608"
+  },
+  "limits": [
+    "Saved non-user Master only; Auth and Business are synthetic",
+    "Local timing is not production RTO",
+    "Native local query counts exclude any future remote wrapper, operational lease and provider overhead",
+    "R2 is empty; no new object-class or maximum-capacity proof",
+    "No first activation drain of existing uninstrumented main writers or external CLI/operator writers",
+    "No remote application/fence/full-Master collector proof or operational key/off-host/retention adoption",
+    "User data, DNS and live billing remain deferred; full migration remains incomplete"
+  ],
+  "validation": {
+    "defaultCaseRegression": "success, 1 test",
+    "sharedRecoverySuite": "success, 9 tests",
+    "fullMasterCase": "success",
+    "scopedLint": "success",
+    "gitDiffCheck": "success",
+    "remoteMainDeployed": false
+  }
+}

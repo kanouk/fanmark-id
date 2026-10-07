@@ -664,6 +664,22 @@ userdata移送を開始していない。[準備と範囲](evidence/deferred-ide
 5ba5f5fのCI37396865202は両job成功。52790bfのCI37396416191は後続更新によりcancelled。
 4つのgeneric converter groupと全source意味論・運用・最終統合は未完了のまま。
 
+## 全Masterと通常アプリのlocal一式復旧（2026-10-08 JST）
+
+f931782/CI37660877665はアプリ・Worker両job成功。招待登録とプロフィールの実ブラウザに
+固定local proxyを使う候補、小さいfixtureでの通常SDK/DO fence/file復旧を含む。
+追加の保存済み非ユーザーMaster全量caseは、独立archive/schema/rows pin照合後に
+新規local source/targetへ接続した。通常signin、両fence停止、共通collector、同一private
+fileからの復旧、session/challenge失効、旧cookie拒否、新signinが成功。Master12,254行の
+全hashを保持、実catalog API全3,944件/参照master4・4・5・16件/FK0を確認した。
+capture246/restore752 statements、最大batch233、一式file6,681,319 bytes。
+local復旧約4.94秒はproduction RTOではない。新caseと小fixture回帰はlocal成功。
+[限定証拠](evidence/application-writer-full-master-local-2026-10-08.json)。
+
+これで作業4/5のlocal全Masterと通常SDK接続を前進させた。owned remote接続、通常mainの
+初回停止/外部writer lease、画像class/最大容量、backup運用の採用、全source意味論、
+実providerと最終端末受入れは残る。ユーザーデータ/DNS/live billingの変更は0。
+
 ## 完了までに閉じる六つの作業
 
 バックアップ運用について、受け入れ済みのsource暗号化/R2 canary/現行schemaの一式復旧と、

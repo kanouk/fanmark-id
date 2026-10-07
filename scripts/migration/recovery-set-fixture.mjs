@@ -15,13 +15,13 @@ export const masterMigrations = ['0000_emoji_master.sql', '0001_emoji_master_rel
 const now = '2026-10-08T00:00:00.000Z';
 
 /** Initialization may be chunked ONLY while all three newly owned databases are empty and unrouted. */
-export async function seedRecoverySetFixture(source) {
-  for (const [db, names] of [[source.auth, authMigrations], [source.master, masterMigrations]]) for (const name of names) {
+export async function seedRecoverySetFixture(source, {skipMaster = false} = {}) {
+  for (const [db, names] of [[source.auth, authMigrations], ...(skipMaster ? [] : [[source.master, masterMigrations]])]) for (const name of names) {
     const sql = await readFile(new URL('../../workers/api/migrations/' + name, import.meta.url), 'utf8');
     await db.batch(businessMigrationStatements(sql).map(sql => db.prepare(sql)));
   }
   await applyBusinessRuntimeMigrations(source.business);
-  for (const [db, names] of [[source.business, BUSINESS_MIGRATION_SEQUENCE], [source.master, masterMigrations]]) {
+  for (const [db, names] of [[source.business, BUSINESS_MIGRATION_SEQUENCE], ...(skipMaster ? [] : [[source.master, masterMigrations]])]) {
     await db.prepare('CREATE TABLE d1_migrations(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TEXT NOT NULL)').run();
     await db.batch(names.map((name, i) => db.prepare('INSERT INTO d1_migrations VALUES(?,?,?)').bind(i + 1, name, now)));
   }
