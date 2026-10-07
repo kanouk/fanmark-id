@@ -356,3 +356,5 @@ Cloudflare stagingの認証メールは`AUTH_EMAIL_BACKEND=resend`、検証済�
 Business追加`0026_broadcast_delivery_provider_time.sql`は告知Webhookにnullable `provider_created_at`を追加し、effective viewを発生日時順へ更新する。`broadcast-email-webhook-d1.ts`は署名body root日時を必須検証し、UTC offsetと全小数桁を保持する。署名時刻/受信日時/メール作成日時を混同しない。既存NULL時刻を推定補完せず、苦情/恒久bounceの優先は維持する。詳細は告知配送設計書。
 
 - 一式復旧の専用remote rehearsal: `scripts/migration/isolated-recovery-set-worker.mjs` / `run-isolated-recovery-set.mjs` / `recovery-set-fixture.mjs`。6 D1/5 R2/Workerは新規ownedのみ。アプリrouter/Cronには未接続。
+
+告知配送通知の受信は `BROADCAST_WEBHOOK_BACKEND=d1` で独立して有効化できる。送信を停止したまま、署名・時刻を検証した既送信メールの通知をD1へ反映する。未指定時は従来の `BROADCAST_SEND_BACKEND` に従い、明示的な無効値は受信・新規配信開始・dispatchを止める。署名secretだけでは受信を有効にしない。snapshotと送信のselectorは別に必要で、受信だけを有効にしても宛先の抽出やメール送信は始まらない。現在はローカル検証段階で、Resendへの登録とstaging配備は未実施。

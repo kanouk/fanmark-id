@@ -171,6 +171,19 @@ Production defaults remain on Supabase until the final application cutover.
 The implementation, synthetic proof, selectors, and deployment do not authorize
 a real audience snapshot or real email delivery.
 
+## Receiving while sending is paused
+
+`BROADCAST_WEBHOOK_BACKEND=d1` enables the signature-verified receiver independently
+of bulk sending. It still requires `BROADCAST_EMAIL_BACKEND=d1`, split Business D1,
+and the signing secret. Without an explicit receiver selector, existing send-enabled
+configurations retain their previous behavior. An explicit non-D1 selector blocks
+the receiver, send-start and dispatch. Keeping `BROADCAST_SEND_BACKEND` unset stops
+snapshotting and dispatch even when the receiver is enabled; late provider events
+can still update recipients and suppression. No new route or schema is introduced.
+The native D1 regression checks signed deduplication/reconciliation of an already
+completed run with sending paused, unchanged recipient count, and zero provider
+calls. Remote registration/deployment remains pending.
+
 ## Acceptance tests
 
 - concurrent starts with the same request ID create one command; a changed

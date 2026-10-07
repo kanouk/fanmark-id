@@ -520,3 +520,5 @@ skip、R2は不足分だけ再開。全ストアにまたがるrollbackは行わ
 共通一式collectorは99762af/CI37649724810両job成功後の新規6 D1/5 R2/Workerで、
 Macの同じprivate fileから全5 storeのnative復旧と明示失効、全資源cleanupを受け入れた。
 通常アプリの停止方式・定期運用採用は残る。[限定証拠](migration/evidence/recovery-set-isolated-remote-2026-10-08.json)。
+
+告知配送通知の受信は `BROADCAST_WEBHOOK_BACKEND=d1` で独立して有効化できる。送信を停止したまま、署名・時刻を検証した既送信メールの通知をD1へ反映する。未指定時は従来の `BROADCAST_SEND_BACKEND` に従い、明示的な無効値は受信・新規配信開始・dispatchを止める。署名secretだけでは受信を有効にしない。snapshotと送信のselectorは別に必要で、受信だけを有効にしても宛先の抽出やメール送信は始まらない。現在はローカル検証段階で、Resendへの登録とstaging配備は未実施。

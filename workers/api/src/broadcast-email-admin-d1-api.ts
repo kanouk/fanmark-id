@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { isBroadcastEmailWebhookEnabled } from "./broadcast-email-delivery-d1.ts";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const API_PATH = "/api/admin/broadcast-emails";
@@ -501,6 +502,7 @@ function deliveryConfigurationReady(env: Env): boolean {
   const webhookSecret = env.BROADCAST_WEBHOOK_SIGNING_SECRET?.trim();
   const authSecret = env.BETTER_AUTH_SECRET?.trim();
   return env.BROADCAST_SEND_BACKEND?.trim() === "d1" &&
+    isBroadcastEmailWebhookEnabled(env) &&
     env.D1_TOPOLOGY?.trim() === "split" &&
     Boolean(selectD1Database(env, "auth")) &&
     Boolean(apiKey && apiKey.length <= 512) &&

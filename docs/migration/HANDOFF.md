@@ -1,5 +1,16 @@
 ## 共通一式collectorを実Cloudflareで受け入れ（2026-10-08 JST）
 
+## 配送通知受信の分離（2026-10-08 JST）
+
+`BROADCAST_WEBHOOK_BACKEND=d1`を追加し、送信停止中も署名通知を受け入れられるようにした。
+未指定時の既存設定は維持し、明示的な無効値は受信・send-start・dispatchを拒否する。
+配送統合23件と管理API11件、型検査が成功。最後に追加した管理者receiver無効条件は
+該当する2件を再検証し成功した。受信だけを有効にした場合、queue増加・外部送信は0件。
+Resend workspaceにはWebhookがなく、staging URLと対応する6 eventの登録フォームを準備済み。
+まだ登録・署名secret保存・staging配備・新規メール送信は行っていない。登録後の実署名通知と
+bounded dispatchは別の未受け入れ項目。ユーザーデータ移行・ドメイン切替は引き続き対象外。
+
+
 候補99762afの[CI37649724810](https://github.com/kanouk/fanmark-id/actions/runs/37649724810)
 はアプリ/Worker両job成功。通常CI logでも一式native/bundle8件と型/dry-runの成功を確認。
 途中候補2e46cc9/CI37648656829はapplication成功・Workerは後続の実装追加によりcancelled。

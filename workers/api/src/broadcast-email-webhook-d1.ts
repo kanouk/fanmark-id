@@ -1,4 +1,4 @@
-import { reconcileBroadcastDeliveryRun } from "./broadcast-email-delivery-d1.ts";
+import { isBroadcastEmailWebhookEnabled, reconcileBroadcastDeliveryRun } from "./broadcast-email-delivery-d1.ts";
 import { selectD1Database, type Env } from "./repository.ts";
 import { assertUtcMicrosecondTimestamp, toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
@@ -153,7 +153,7 @@ export async function handleBroadcastEmailWebhookRequest(
   if (!isBroadcastEmailWebhookPath(url.pathname)) return null;
   if (url.search || url.hash) return json({ error: "not_found" }, 404);
   if (request.method.toUpperCase() !== "POST") return json({ error: "method_not_allowed" }, 405);
-  if (env.BROADCAST_EMAIL_BACKEND?.trim() !== "d1" || env.BROADCAST_SEND_BACKEND?.trim() !== "d1" ||
+  if (env.BROADCAST_EMAIL_BACKEND?.trim() !== "d1" || !isBroadcastEmailWebhookEnabled(env) ||
       env.D1_TOPOLOGY?.trim() !== "split") return json({ error: "webhook_unavailable" }, 503);
   const secret = env.BROADCAST_WEBHOOK_SIGNING_SECRET?.trim();
   const businessDb = selectD1Database(env, "business");

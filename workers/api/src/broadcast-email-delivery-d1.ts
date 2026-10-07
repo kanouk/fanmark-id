@@ -7,6 +7,11 @@ const MAX_RECIPIENTS = 10_000;
 const LANGUAGES = new Set(["en", "ja", "ko", "id"]);
 const PLAN_TYPES = new Set(["free", "creator", "max", "business", "enterprise", "admin"]);
 
+/** Receive late provider events while sending is paused; preserve existing configs. */
+export function isBroadcastEmailWebhookEnabled(env: Env): boolean {
+  return (env.BROADCAST_WEBHOOK_BACKEND ?? env.BROADCAST_SEND_BACKEND)?.trim() === "d1";
+}
+
 type RecipientFilter = {
   plan_types?: string[];
   languages?: string[];
@@ -187,6 +192,7 @@ function validDeliveryConfiguration(env: Env): boolean {
   const webhookSecret = env.BROADCAST_WEBHOOK_SIGNING_SECRET?.trim();
   const authSecret = env.BETTER_AUTH_SECRET?.trim();
   return env.BROADCAST_SEND_BACKEND?.trim() === "d1" && env.BROADCAST_EMAIL_BACKEND?.trim() === "d1" &&
+    isBroadcastEmailWebhookEnabled(env) &&
     env.D1_TOPOLOGY?.trim() === "split" && Boolean(selectD1Database(env, "business")) && Boolean(selectD1Database(env, "auth")) &&
     Boolean(apiKey && apiKey.length <= 512) &&
     Boolean(from && from.length <= 320 && from.includes("@") && !/[\r\n]/u.test(from)) &&

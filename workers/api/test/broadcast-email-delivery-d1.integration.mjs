@@ -64,6 +64,57 @@ const USER_C = "00000000-0000-4000-8000-000000000006";
 const NOW = "2026-09-27T12:00:00.000000Z";
 const ADMIN = "00000000-0000-4000-8000-000000000008";
 
+test("signed delivery reconciles a paused sender without snapshotting or contacting Resend", async () => {
+  const fixture = await createFixture();
+  const { database, authDatabase } = fixture;
+  const secretBytes = Buffer.from("synthetic-receive-only-webhook-secret");
+  const env = { BROADCAST_EMAIL_BACKEND: "d1", BROADCAST_WEBHOOK_BACKEND: "d1", D1_TOPOLOGY: "split",
+    FANMARK_DB: database, AUTH_DB: authDatabase,
+    BROADCAST_WEBHOOK_SIGNING_SECRET: `whsec_${secretBytes.toString("base64")}`,
+    RESEND_API_KEY: "synthetic-key", RESEND_FROM_EMAIL: "sender@example.invalid",
+    BETTER_AUTH_SECRET: "synthetic-secret-with-at-least-32-bytes" };
+  try {
+    await database.batch([
+      database.prepare(`INSERT INTO broadcast_emails (id,subject,body_text,email_type,status,created_at,updated_at)
+        VALUES (?, 'Synthetic', 'Synthetic', 'broadcast_announcement', 'completed', ?, ?)`)
+        .bind(BROADCAST, NOW, NOW),
+      database.prepare(`INSERT INTO broadcast_delivery_runs (id,broadcast_id,request_id,requested_by,status,created_at)
+        VALUES (?, ?, 'synthetic-receive-only', ?, 'completed', ?)`)
+        .bind(RUN, BROADCAST, ADMIN, NOW),
+      database.prepare(`INSERT INTO broadcast_delivery_recipients
+        (run_id,user_id,language,status,next_attempt_at,provider_email_id,created_at,updated_at)
+        VALUES (?, ?, 'ja', 'sent', ?, 'synthetic-receive-only', ?, ?)`)
+        .bind(RUN, USER_A, NOW, NOW, NOW),
+    ]);
+    const body = JSON.stringify({ type: "email.delivered", created_at: NOW,
+      data: { email_id: "synthetic-receive-only", to: ["private@example.invalid"] } });
+    const timestamp = String(Math.floor(Date.parse(NOW) / 1000));
+    const id = "receive-only-delivered";
+    const signature = createHmac("sha256", secretBytes).update(`${id}.${timestamp}.${body}`).digest("base64");
+    const request = () => new Request(`https://app.example.test${BROADCAST_EMAIL_WEBHOOK_PATH}`, {
+      method: "POST", body, headers: { "svix-id": id, "svix-timestamp": timestamp, "svix-signature": `v1,${signature}` },
+    });
+    // Default remains closed. Merely having a signing secret never enables receipt.
+    assert.equal((await handleBroadcastEmailWebhookRequest(request(),
+      { ...env, BROADCAST_WEBHOOK_BACKEND: undefined }, () => new Date(NOW))).status, 503);
+    assert.equal((await handleBroadcastEmailWebhookRequest(request(), env, () => new Date(NOW))).status, 200);
+    assert.equal((await handleBroadcastEmailWebhookRequest(request(), env, () => new Date(NOW))).status, 200);
+    assert.equal((await database.prepare("SELECT status FROM broadcast_delivery_recipients WHERE run_id = ?")
+      .bind(RUN).first()).status, "delivered");
+    assert.equal((await database.prepare("SELECT COUNT(*) AS n FROM broadcast_delivery_webhook_events").first()).n, 1);
+    let providerCalls = 0;
+    const provider = async () => { providerCalls++; throw new Error("must_not_send"); };
+    assert.equal((await snapshotBroadcastEmailDeliveryPage(env, () => new Date(NOW))).status, "disabled");
+    assert.equal((await dispatchBroadcastEmailDeliveryBatch(env, () => new Date(NOW), provider)).status, "disabled");
+    // An explicit receiver override also stops sending even if its old selector remains enabled.
+    const disabled = { ...env, BROADCAST_SEND_BACKEND: "d1", BROADCAST_WEBHOOK_BACKEND: "disabled" };
+    assert.equal((await handleBroadcastEmailWebhookRequest(request(), disabled, () => new Date(NOW))).status, 503);
+    assert.equal((await dispatchBroadcastEmailDeliveryBatch(disabled, () => new Date(NOW), provider)).status, "disabled");
+    assert.equal(providerCalls, 0);
+    assert.equal((await database.prepare("SELECT COUNT(*) AS n FROM broadcast_delivery_recipients").first()).n, 1);
+  } finally { await fixture.miniflare.dispose(); }
+});
+
 for (const beforeAck of [false, true]) {
   for (const newerFailure of [false, true]) {
     for (const reverseArrival of [false, true]) {
@@ -467,6 +518,10 @@ test("queues an admin send idempotently, freezes its filter/templates, and fails
     const closed = await handleBroadcastEmailAdminRequest(request(secondBroadcastId, "00000000-0000-4000-8000-000000000013"),
       { ...env, BROADCAST_SEND_BACKEND: "" }, authorizeAdmin, () => new Date(NOW));
     assert.equal(closed?.status, 503);
+    const receiverClosed = await handleBroadcastEmailAdminRequest(
+      request(secondBroadcastId, "00000000-0000-4000-8000-000000000014"),
+      { ...env, BROADCAST_WEBHOOK_BACKEND: "disabled" }, authorizeAdmin, () => new Date(NOW));
+    assert.equal(receiverClosed?.status, 503);
     assert.equal((await database.prepare("SELECT COUNT(*) AS count FROM broadcast_delivery_runs WHERE broadcast_id = ?")
       .bind(secondBroadcastId).first()).count, 0);
     assert.equal(providerCalls, 0);

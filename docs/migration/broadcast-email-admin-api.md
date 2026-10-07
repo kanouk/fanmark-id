@@ -46,7 +46,16 @@ remain unset after cleanup. On 2026-10-06, one explicitly approved fixed-recipie
 API test was Delivered by Resend and matched to its minimized D1 audit. The
 native fixed-recipient test-send UI was subsequently accepted on2026-10-07,
 with Delivered, exact audit and canonical restore/cleanup; [native proof](evidence/staging-main-auth-mfa-admin-mail-native-2026-10-07.json).
-Bulk dispatch and actual signed provider delivery remain separate acceptance items. See [bounded delivery evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json). The shared Resend key/from are configured for the separately accepted
+Bulk dispatch and actual signed provider delivery remain separate acceptance items.
+
+The receiver can now be enabled independently with `BROADCAST_WEBHOOK_BACKEND=d1`,
+so late delivery events can reconcile already-sent recipients while bulk sending
+and audience snapshotting remain disabled. An unset receiver selector preserves
+the previous `BROADCAST_SEND_BACKEND` behavior; an explicit disabled value blocks
+receipt, send-start and dispatch. The signing secret alone never enables receipt.
+This change has not yet been deployed or registered with Resend.
+
+ See [bounded delivery evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json). The shared Resend key/from are configured for the separately accepted
 Auth verification/reset mails. The dispatcher uses bounded batches,
 leases and retries, a stable provider idempotency key, and a keyed payload fingerprint; a changed Auth email or
 payload after an uncertain attempt pauses the recipient for review. Signed
