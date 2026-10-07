@@ -452,6 +452,9 @@ HTTP/UI/context adapterだけを合成に置換する。native D1/ブラウザ�
 
 ## Master D1復旧の共通処理
 
+内部処理は`d1-store-recovery.ts`へ共通化した。既存format/APIとlegacy Auth空の契約は
+保持し、native回帰7件を確認している。
+
 `workers/api/src/master-d1-recovery.ts`の限定契約・サイズ/query制限は
 [master-recovery.md](migration/master-recovery.md)。native local D1試験は
 `npm --prefix workers/api run test:master-recovery:d1`で通常Worker CIにも含める。
@@ -466,3 +469,11 @@ triggerを後から設置する。保存済み全Masterの限定照合は定期c
 esbuild条件はworkerd、native AsyncLocalStorageを要求し、browser用polyfillを拒否する。
 fixtureの全設定・ready参照releaseをそろえ、画面APIの5xxを合格扱いにしない。
 [契約と範囲](migration/invitation-signup-api.md#actual-local-browser-flow-2026-10-07)。
+
+## Business D1復旧の共通処理
+
+`business-d1-recovery.ts`は同じengineの別profileで、27 migrationの79表と採番状態を
+AES-256-GCMで保存/読込し、新しい空targetへ単一batch復旧する。過去の招待消費/通知
+wakeを再発生させず、削除済みevent/ledgerの最大IDも保持する。native local D1の5件は
+`npm --prefix workers/api run test:business-recovery:d1`で通常Worker CIへ含める。
+[契約と限定検証](migration/business-recovery.md)。全ストアcollectorや定期保存の採用は別工程。

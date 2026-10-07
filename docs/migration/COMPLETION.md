@@ -4,6 +4,22 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## Business復旧の共通処理と採番保持（2026-10-07 JST）
+
+現行27 migrationの79業務表と採番状態をcapture/暗号化/空D1復旧する共通profileを
+追加した。Masterとbounded engineを共有し、既存Master format/APIは保持する。
+実local D1でevent1,001行・226 schema objectを83 statementで取得し、249 statementの
+単一batch復旧後に全hash/FK0が一致。招待消費1回、wake9/7、削除済みlicense incarnationと
+event/ledger最大IDを保持し、次のID9,001/101・実wake triggerも確認した。
+FK/constraintの実rollback、commit後ACK喪失の保持/再実行拒否も成功。
+
+Business native5件・Master互換native7件・Worker型検査・dry-run成功。通常Worker CIへ
+追加した。[契約](business-recovery.md)・[限定証拠](evidence/business-recovery-shared-local-2026-10-07.json)。
+招待browser候補9402f61のCI37637603237はアプリ/Worker両job成功。
+source行取得/remote write/追加mail/runtime配備0。全ストアcollector、運用鍵/off-host/
+retention/担当/失効方針と同一最終candidateの統合は残る。六項目の全体完了とは扱わない。
+実staging招待signup用の未登録受信先は回答待ち、実ユーザー/DNSは最後の別工程を保持。
+
 ## 招待必須登録を実ブラウザーとlocal Workerで確認（2026-10-07 JST）
 
 現行アプリbuildとWorker、27 Business/4 Auth/8 Masterの分離local D1で、日本語の

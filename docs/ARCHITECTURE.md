@@ -17,7 +17,9 @@
 - `supabase/functions/`: Edge Functions 群。主要なものは下記参照。
 - `supabase/migrations/`: DB マイグレーション（Supabase CLI 生成形式）。
 - `scripts/migration/`: Cloudflare移行用のschema変換・snapshot・照合ツール。`credential-import-projection.mjs` は原本の6列を検証し、通常の5列と非公開のcredential入力を分離する。`emoji-master-release-stage.mjs` は検証済み絵文字releaseをD1のprivate stagingへ保存し、`emoji-master-release-activate.mjs` はreadback・identity continuityの検証後に版ポインタを切り替える。どちらも公開中の`emoji_master`は変更しない。
-- `workers/api/src/master-d1-recovery.ts`: Master25表限定の取得・AES-256-GCM保存/読込・空target復旧。独立schema pin、legacy Auth空、履歴投入後のtrigger設置、全表照合を要求する。通常router/Cronへ公開せず、運用collectorの採用は別工程。契約は`docs/migration/master-recovery.md`。
+- `workers/api/src/d1-store-recovery.ts`: 信頼した固定store profileのbounded capture・暗号化・空D1復旧engine。公開route/collectorは持たず、MasterとBusinessのformat・table list・復旧容量を分離する。
+- `workers/api/src/business-d1-recovery.ts`: 現行27 migrationの79業務表と採番状態を取得・AES-256-GCM保存/読込・空target復旧。招待消費/通知outbox/command/ledgerと削除済みID high-waterを保持する。契約は`docs/migration/business-recovery.md`。
+- `workers/api/src/master-d1-recovery.ts`: 共通engineのMaster25表profile。既存format/API・独立schema pin、legacy Auth空、履歴投入後のtrigger設置、全表照合を保持する。通常router/Cronへ公開せず、運用collectorの採用は別工程。契約は`docs/migration/master-recovery.md`。
 - `workers/api/src/auth-d1-recovery.ts`: Auth D1の限定capture・AES-256-GCM保存/読込・空target復旧の共通処理。明示session policyを要求し、旧session/MFA assurance/verificationの失効を選択できる。隔離fidelity以外の旧session保持を拒否する。通常routerへ公開せず、運用鍵/collector/失効方針の採用は別工程。
 - `scripts/migration/test-invitation-signup-local-browser.mjs`: 実アプリ/Workerと分離local D1で招待必須登録から確認・本人API・logoutまで通すChrome試験。上流Resendだけ合成、他の外向き通信は拒否。workerd export条件を使い、通常application CIへ組み込む。実staging受信/消費の受け入れは別。
 - `scripts/migration/isolated-recovery-auth-worker.mjs`: 合成認証復旧だけに使う一時Worker。private token/incarnationと限定method/pathを検証した後に実アプリrouterを呼び、通常のstaging構成には追加しない。

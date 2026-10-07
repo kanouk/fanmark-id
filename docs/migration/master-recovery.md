@@ -50,3 +50,10 @@ immutable guardと新しい更新監査も確認した。通常Worker CIにこ�
 新source export、remote read/write、追加mail、Worker配備は0。旧private proofの形式は
 新formatへ直接互換ではなく、復号済みの既知schema/行を検証して明示変換した。
 定期collector、運用鍵/off-host/retention、同一時点の全ストアcaptureは未採用。
+
+## 共通engineへの移動（2026-10-07）
+
+内部処理を`d1-store-recovery.ts`へ移し、Masterは同じ25表/空Auth/format/schema pin/
+query budgetのprofileで使用する。公開export名を維持し、既存native7件が成功した。
+Businessは別formatで採番状態も扱うが、このMaster v1に採番high-waterの取得を追加した
+ものではない。Masterの既存の境界は保持する。[Business profile](business-recovery.md)。

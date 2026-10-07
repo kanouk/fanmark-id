@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "state": "verified-local-only",
+  "observedAt": "2026-10-07T14:45:47.073983+00:00",
+  "baseHead": "9402f6130f04733b85dd3044cdaca1519d3d9574",
+  "implementationSHA256": {
+    "workers/api/src/d1-store-recovery.ts": "2668c9fb9d3bee9de3b1409aad474b7acf4da4a9b90e7bf8e9865c391cdad9b4",
+    "workers/api/src/business-d1-recovery.ts": "4c3b014d5d231eeacde3141eb108d7797697151d147f8974aaa3b3b8c2c9c8ca",
+    "workers/api/src/master-d1-recovery.ts": "7800b3600ac4d2a6a5672b11ea6ff6cd62a39aee255d4be16e18c4d04bf398fa",
+    "workers/api/test/business-recovery-d1.integration.mjs": "9d41dbacbe76c74a35c7e2e090389882b8a2dbe04938178fc9673e73a3319c9c"
+  },
+  "runtime": "native local workerd D1",
+  "business": {
+    "testsPassed": 5,
+    "migrations": 27,
+    "tablesIncludingLedger": 79,
+    "internalSequenceTables": 1,
+    "schemaObjects": 226,
+    "schemaHash": "80fd26ba363a2babf649ddbc18490ecd423c4ebfd6be4f90611887f8ffd1b828",
+    "syntheticEventRows": 1001,
+    "captureStatements": 83,
+    "restoreStatements": 249,
+    "archiveFormat": "fanmark-business-recovery-v1",
+    "assertions": {
+      "archiveRoundTrip": true,
+      "wrongKeyAndTamperRejected": true,
+      "wrongFormatRejected": true,
+      "invalidSequenceRejectedBeforeWrite": true,
+      "fullRowsAndSchemaExact": true,
+      "foreignKeyAndConstraintBatchRollback": true,
+      "inviteConsumedExactlyOnce": true,
+      "wakeRequestedAcknowledgedRetained": [
+        9,
+        7
+      ],
+      "newWakeTriggerFunctional": true,
+      "deletedLicenseIncarnationRetained": 8,
+      "deletedEventHighWaterPreserved": 9000,
+      "nextEventId": 9001,
+      "deletedLedgerHighWaterPreserved": 100,
+      "nextLedgerId": 101,
+      "nonemptyTargetRefused": true,
+      "lostAckCommittedTargetPreserved": true,
+      "blindReplayRefused": true,
+      "sourceUnchanged": true
+    }
+  },
+  "masterCompatibility": {
+    "testsPassed": 7,
+    "tableCount": 25,
+    "schemaObjects": 98,
+    "archiveFormat": "fanmark-master-recovery-v1",
+    "captureStatements": 28
+  },
+  "checks": {
+    "workerTypecheck": true,
+    "workerDryRun": true,
+    "ordinaryWorkerCIIncludesBusinessRecovery": true
+  },
+  "boundaries": {
+    "sourceRowsRead": false,
+    "remoteWrites": 0,
+    "realEmailsSent": 0,
+    "workerDeployed": false,
+    "combinedAtomicCaptureAccepted": false,
+    "collectorEnabled": false,
+    "operationalPolicyAdopted": false,
+    "remoteBusinessRecoveryAcceptedByThisProof": false,
+    "fullMigrationAccepted": false
+  }
+}

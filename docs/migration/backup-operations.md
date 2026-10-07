@@ -40,6 +40,11 @@ commit後ACK喪失時のtarget保持/再実行拒否と実SDKの新規password/T
 
 ## 運用にするために残っていること
 
+Businessの固定79表と採番状態のcapture/AES-256-GCM/空target復旧も共通moduleへ
+追加した。現行27 migrationのnative合成復旧5件、Master互換回帰7件、型検査とdry-run
+が成功。招待消費/通知wake/削除済みIDを保持する。[Business復旧](business-recovery.md)。
+これはcollectorへ接続できる部品であり、全ストアの整合した復旧点や運用採用は下表の残件。
+
 | 残件 | 必要な結果 | 現在の状態 |
 | --- | --- | --- |
 | 担当・権限・復旧アクセス | 担当者が保存先と鍵へアクセスし、通常環境が使えなくても復旧できる。 | 既存の運用条件の質問が回答待ち。 |
