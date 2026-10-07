@@ -1,16 +1,25 @@
-## 通常メールログインのMFA段階を追加（2026-10-07 JST）
+## 通常ログインMFAと管理メール2通を受け入れ（2026-10-07 JST）
 
-通常`/auth`はBetter AuthのtwoFactorRedirectを無視してguestのままdashboardへ進み、
-ログイン画面へ戻っていた。既存TOTPを入力する画面を追加し、成功したsession取得を
-待つよう修正。password/codeは消去し、誤コード・期限切れ・sessionなし/取得失敗は
-challengeを完了扱いにしない。既存Supabaseログインは保持する。
-実際のhook/ProviderとSDKを使う合成回帰8件、SDK契約15件、型check、CI isolation、
-既存Supabase呼出211件の現行AST/意味対応は成功。変更ファイルlintはerror0で、
-既存hook由来のwarning3件。nativeブラウザー/D1、CI全体、配備はこの時点で未受け入れ。
-[実装時点の限定証拠](evidence/main-auth-mfa-local-2026-10-07.json)。
+候補dd9317bのCI37617933339はアプリ/Worker両job成功。通常`/auth`のメールログインを
+Chrome private windowで実行し、TOTP画面・検証前session0・検証後dashboardと
+同じsession/verified factorのMFA assuranceを確認した。誤コード/期限切れ等は
+実hook/Provider/SDKのローカル回帰8件とSDK契約15件の証拠で、native全ケースとは扱わない。
 
-本人の追加承認により、先に提示した検証アドレスへのメール2通（管理reset、告知test）を
-実施できる状態。まだ送っていない。実ユーザー移送・公開domain/DNSは後工程のまま。
+専用合成管理者の管理画面から、明示承認済みの同じ検証アドレスへ管理reset1通と
+告知test1通を各一度送信。Resendの新しい2行がDeliveredで、resetのexact監査/verificationと
+告知のprovider message ID・宛先を含まないD1監査を照合した。reset linkは使用せず、
+既存passwordは変更0。告知下書きはdraftのまま、一括配信は無効のまま維持した。
+
+通常設定へ復元した現行Workerは`17fdbf39-99a5-4927-bf12-bc11e19b7c3d`（100%）。
+一時test変数を除去し、frontendの告知2操作はdisabled。既存binding/secretと公開asset6件、
+復元前後の全D1表hashは一致。配備直後のasset不一致は再配備せずreadbackで解消した。
+UI logout後に所有user/settings/告知draftと監査12行・verification1行をexact削除し、
+別read-only processで既存全表hash・Auth3/7/2・Master25表・FK0・MFA世代+2保持を確認。
+残った専用private sessionは所有userのcascadeで失効し、合成資格情報も除去済み。
+[実配備・nativeメール・cleanupの限定証拠](evidence/staging-main-auth-mfa-admin-mail-native-2026-10-07.json)。
+再seed/再送/再cleanupは不要。実ユーザー移送・公開domain/DNS・本番課金は未実行。
+招待必須signup/消費、Apple/Discord新規identity/relay、告知bulk/実署名通知、運用採用と
+同一最終candidate/実端末の統合は残件で、全体の六項目は未完了。
 
 ## 招待コードのnative発行・切替・削除を確認（2026-10-07 JST）
 
