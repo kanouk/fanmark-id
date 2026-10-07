@@ -4,6 +4,20 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 一式collectorの実Worker形式とremote準備（2026-10-08 JST）
+
+共通recovery setを呼ぶ専用Worker/CLIを追加。独立local schema pin、固定account/HEAD/
+CI、6 D1/5 R2/Workerのowned identity/version、別one-shot claimとstatusを要求する。
+Macのprivate fileへ保存→同じfileを読み直し→空targetへのnative単一batch復旧を準備した。
+
+通常local/bundle合計8件・型検査が成功。native D1 queryは収集246/復旧623。
+無補完のlocal classは拒否し、補完はtest entrypointだけ。別archive、未認証/nonce/
+二重claim/処理中cleanup/未知keyを拒否する。
+[契約](recovery-set.md)・[限定証拠](evidence/recovery-set-bundled-local-2026-10-08.json)。
+
+今回のremoteはまだ未実行。通常アプリの停止/drain・運用鍵/off-host/retention/
+担当/RPO-RTO/定期監視・最終統合と六項目は残る。実ユーザー/DNSは最後の範囲を保持。
+
 ## 全ストアの収集・保存・exact再開を共通化（2026-10-08 JST）
 
 Auth/Business/Master/avatars/coversを`fanmark-recovery-set-v1`へまとめるcoordinatorと

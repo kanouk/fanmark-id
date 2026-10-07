@@ -75,3 +75,34 @@ Auth SDKの実signin/TOTPは既存leaf検証にあり、ここではcredential�
 旧source bundle v1/private combined v2と交換可能ではない。受け入れ済みの旧private runnerを
 再実行してこの形式の証拠にしない。実Cloudflareの一式collector/適切な停止方式、運用鍵/
 off-host/周期/retention/担当/RPO-RTO採用と最終運用構成は残る。実ユーザー移送とDNSは最後。
+
+## 専用remote rehearsalの準備（2026-10-08）
+
+`run-isolated-recovery-set.mjs`は固定account/40桁HEAD/同じCI両job・required stepの成功を
+要求し、新規6 D1・5 R2・1 Workerだけを作成する。Business現行27/Auth4/Master8+legacy Auth
+のschema pinはchecked-in migrationsの独立local runtimeから取得する。source初期化だけを
+RESTの80 statement以内に分割し、復旧はnative Workerの単一batchを維持する。
+
+Workerはアプリ/任意SQL/Cron/DO/provider経路を持たず、収集と復旧を別のone-shot claimで
+所有する。全binding/Worker version/無Cronをhostで前後照合し、caller-owned isolated guardが
+各store間で同じclaimを確認する。これは通常アプリのwriter停止/drain実装ではない。
+
+収集した暗号化archiveをMacのprivate fileへexclusive保存し、全体を認証して読み直した
+同じfileだけを別の空targetへ戻す。試験はsession/challenge失効を明示する。
+不明なHTTP応答では同じjournal/statusを読み、collect/restoreを自動再送しない。
+全owned resourceをidentity一致で片付け、前後inventoryの一致を確認する。未知objectや
+進行中phaseを見つけたら削除を止める。one-off request/archive key fileはcleanup後に除去する。
+鍵の永続運用・off-host/retention採用や、実ユーザーのbackupとしては扱わない。
+
+```sh
+node --experimental-strip-types scripts/migration/run-isolated-recovery-set.mjs <40-character-HEAD> <successful-CI-run>
+# 不明な応答後は同じjournal directoryだけを再開する
+node --experimental-strip-types scripts/migration/run-isolated-recovery-set.mjs <same-HEAD> <same-CI-run> --resume <private-directory>
+```
+
+通常CIのlocal/bundle合計8件と型検査が成功。bundleではprivate file→native全5 store、
+別archive拒否、session失効、未認証/nonce/二重claim/処理中cleanup/未知key拒否を確認した。
+local class補完はtestだけ。小さいfixtureのnative D1 query数は収集246・復旧623で、
+[Paidのinvocation当たり1000件上限](https://developers.cloudflare.com/d1/platform/limits/)内。
+全運用容量・全Master12,254行の一式capture・本番CPU/memory/RTOを証明しない。
+[限定証拠](evidence/recovery-set-bundled-local-2026-10-08.json)。remoteはこのcheckpointで未実行。

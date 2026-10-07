@@ -512,3 +512,7 @@ skip、R2は不足分だけ再開。全ストアにまたがるrollbackは行わ
 `recovery-set-files.mjs`はrepo外の0700 directory/0600 file、fsync/exclusive linkによる非上書き
 保存と全内容検証。通常Worker CIの`test:recovery-set`（native6件）に追加。
 運用lease/drainとkey/off-host/retentionは未採用。[契約](migration/recovery-set.md)。
+
+一式collectorの専用Worker形式は通常`test:recovery-set`に含む。private file→native全store、
+独立schema pin/claim/version/bindingの契約と新規ownedだけのremote CLIを追加した。
+通常アプリの停止方式と定期運用は未採用。[契約](migration/recovery-set.md)。
