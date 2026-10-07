@@ -67,6 +67,9 @@ jobs:
       - name: Test startup update checks during catalog failure
         run: npm run test:app-startup
 
+      - name: Test main login MFA and session completion
+        run: npm run test:auth-login-mfa
+
       - name: Type check application
         run: npm run typecheck
 

@@ -21,6 +21,7 @@ import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
 import type { BetterAuthCapabilities } from '@/lib/better-auth-client';
+import { TotpLoginChallenge } from '@/components/auth/TotpLoginChallenge';
 
 const SOCIAL_PROVIDER_ORDER = ['google', 'apple', 'discord', 'github'] as const;
 
@@ -30,7 +31,7 @@ const Auth = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation, resendCooldown, exitAwaitingConfirmation } = useAuthForm();
+  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation, resendCooldown, exitAwaitingConfirmation, twoFactorRequired, verificationCode, setVerificationCode, verifyTwoFactor, cancelTwoFactor } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
   const betterAuthEnabled = isBetterAuthEnabled();
@@ -220,6 +221,16 @@ const Auth = () => {
 
           <div className="rounded-3xl border border-primary/20 bg-background/90 p-6 shadow-[0_22px_55px_rgba(101,195,200,0.16)] backdrop-blur md:p-10">
             <div className="space-y-8">
+              {twoFactorRequired ? (
+                <TotpLoginChallenge
+                  code={verificationCode}
+                  onCodeChange={setVerificationCode}
+                  onVerify={verifyTwoFactor}
+                  onCancel={cancelTwoFactor}
+                  loading={authState.loading}
+                  error={authState.error}
+                />
+              ) : (
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="space-y-6">
                 <TabsList className={`grid w-full ${signupAvailable ? 'grid-cols-2' : 'grid-cols-1'} gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur`}>
                   <TabsTrigger
@@ -299,6 +310,7 @@ const Auth = () => {
                   </div>
                 </TabsContent>}
               </Tabs>
+              )}
             </div>
           </div>
         </div>

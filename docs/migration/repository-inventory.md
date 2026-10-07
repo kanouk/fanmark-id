@@ -158,8 +158,6 @@ Found 34 local directories with `index.ts` (`_shared` excluded). 34 have an expl
 
 ## Frontend Supabase callsites
 
-Frontend table refreshed against source at `52790bf9c5763c19a4d6baaf857b47b76700e9c9` (2026-10-06 JST). Other generated sections retain the base snapshot above. CI now compares these rows with a fresh AST inventory, including locations, operation targets and dynamic expressions.
-
 Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of the call and the extracted operation.
 
 | Location | Kind | Target | Operation | Dynamic expression |
@@ -253,21 +251,21 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/SecureWaitlistAdmin.tsx:137` | rpc | `get_waitlist_email_by_id` | `rpc` |  |
 | `src/components/UserProfileForm.tsx:143` | edge | `bulk-return-fanmarks` | `edge_function_invoke` |  |
 | `src/hooks/useAuth.tsx:52` | table | `user_settings` | `table.select` |  |
-| `src/hooks/useAuth.tsx:134` | auth | `auth` | `auth.getSession` |  |
-| `src/hooks/useAuth.tsx:149` | auth | `auth` | `auth.onAuthStateChange` |  |
-| `src/hooks/useAuth.tsx:188` | auth | `auth` | `auth.signOut` |  |
-| `src/hooks/useAuthForm.tsx:95` | edge | `check-email-exists` | `edge_function_invoke` |  |
-| `src/hooks/useAuthForm.tsx:154` | rpc | `validate_invitation_code` | `rpc` |  |
-| `src/hooks/useAuthForm.tsx:184` | auth | `auth` | `auth.signUp` |  |
-| `src/hooks/useAuthForm.tsx:193` | rpc | `use_invitation_code` | `rpc` |  |
-| `src/hooks/useAuthForm.tsx:205` | table | `user_settings` | `table.update` |  |
-| `src/hooks/useAuthForm.tsx:262` | auth | `auth` | `auth.signInWithPassword` |  |
-| `src/hooks/useAuthForm.tsx:307` | auth | `auth` | `auth.resetPasswordForEmail` |  |
-| `src/hooks/useAuthForm.tsx:343` | auth | `auth` | `auth.resend` |  |
-| `src/hooks/useAuthForm.tsx:378` | auth | `auth` | `auth.signInWithOAuth` |  |
-| `src/hooks/useAuthForm.tsx:406` | auth | `auth` | `auth.signInWithOAuth` |  |
-| `src/hooks/useAuthForm.tsx:434` | auth | `auth` | `auth.signInWithOAuth` |  |
-| `src/hooks/useAuthForm.tsx:462` | auth | `auth` | `auth.signInWithOAuth` |  |
+| `src/hooks/useAuth.tsx:136` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useAuth.tsx:153` | auth | `auth` | `auth.onAuthStateChange` |  |
+| `src/hooks/useAuth.tsx:192` | auth | `auth` | `auth.signOut` |  |
+| `src/hooks/useAuthForm.tsx:97` | edge | `check-email-exists` | `edge_function_invoke` |  |
+| `src/hooks/useAuthForm.tsx:156` | rpc | `validate_invitation_code` | `rpc` |  |
+| `src/hooks/useAuthForm.tsx:186` | auth | `auth` | `auth.signUp` |  |
+| `src/hooks/useAuthForm.tsx:195` | rpc | `use_invitation_code` | `rpc` |  |
+| `src/hooks/useAuthForm.tsx:207` | table | `user_settings` | `table.update` |  |
+| `src/hooks/useAuthForm.tsx:268` | auth | `auth` | `auth.signInWithPassword` |  |
+| `src/hooks/useAuthForm.tsx:341` | auth | `auth` | `auth.resetPasswordForEmail` |  |
+| `src/hooks/useAuthForm.tsx:377` | auth | `auth` | `auth.resend` |  |
+| `src/hooks/useAuthForm.tsx:412` | auth | `auth` | `auth.signInWithOAuth` |  |
+| `src/hooks/useAuthForm.tsx:440` | auth | `auth` | `auth.signInWithOAuth` |  |
+| `src/hooks/useAuthForm.tsx:468` | auth | `auth` | `auth.signInWithOAuth` |  |
+| `src/hooks/useAuthForm.tsx:496` | auth | `auth` | `auth.signInWithOAuth` |  |
 | `src/hooks/useAvatarUpload.tsx:35` | storage | `avatars` | `storage.upload` |  |
 | `src/hooks/useAvatarUpload.tsx:45` | storage | `avatars` | `storage.getPublicUrl` |  |
 | `src/hooks/useAvatarUpload.tsx:113` | storage | `avatars` | `storage.remove` |  |
@@ -489,13 +487,13 @@ were imported. Those identity records remain deferred to #38.
 
 | Callsite(s) | Operation and owner | Data class | Cloudflare replacement and parity |
 | --- | --- | --- | --- |
-| `src/hooks/useAuth.tsx:134,149,188` | Load session, observe auth changes, and sign out the current user. | Private identity and session. | Better Auth `getSession`/`signOut` with HttpOnly Worker cookies; Worker mode skips the Supabase auth-state listener. Synthetic session and logout passed in local/staging proof. |
+| `src/hooks/useAuth.tsx:136,153,192` | Load session, observe auth changes, and sign out the current user. | Private identity and session. | Better Auth `getSession`/`signOut` with HttpOnly Worker cookies; Worker mode skips the Supabase auth-state listener. Synthetic session and logout passed in local/staging proof. |
 | `src/components/AdminApp.tsx:88,100,137`; `src/pages/AdminAuth.tsx:42,76,89,118,172` | Admin session, password sign-in, AAL/factor checks, and sign-out. | Restricted admin identity and MFA assurance. | `CloudflareAdminAuth` uses Better Auth sign-in/TOTP and `/api/admin/session`; each protected Worker operation checks admin role and same-session, current-factor assurance. The Supabase `AdminAuth` branch remains for Supabase mode. |
 | `src/components/auth/MFAChallenge.tsx:43,73,108,120`; `src/components/auth/MFAEnrollment.tsx:37,62,82,136,148` | List, enroll, challenge, verify, or remove TOTP factors. | MFA secret, factor identity, and challenge state. | These components are only rendered by `SupabaseAdminAuth`. Cloudflare mode uses inline Better Auth `enableTotp`/`verifyTotp` flows in `CloudflareAdminAuth`; synthetic enrollment, challenge, replacement, and session-bound assurance are tested. Supabase factor secrets were not read or migrated. |
-| `src/hooks/useAuthForm.tsx:184` | Create an identity and send verification email. | Email, password credential, invitation attribution. | `POST /api/auth/sign-up/email` uses a recoverable split-D1 command; account creation remains closed until selector and Resend are configured. No real email was sent. See [invitation signup API](invitation-signup-api.md). |
-| `src/hooks/useAuthForm.tsx:262` | Sign in with email and password. | Password credential and session. | Better Auth email sign-in verifies the existing D1 account and sets a secure session cookie. Synthetic bcrypt-compatible credentials passed; actual Supabase hashes/users remain unmigrated. |
-| `src/hooks/useAuthForm.tsx:307,343`; `src/pages/ForgotPassword.tsx:65` | Request password reset and resend signup verification. | Email address and one-time token/link. | Better Auth callbacks send through Resend and return no token to the browser. Capability remains false while Resend settings are absent. No real delivery was attempted. |
-| `src/hooks/useAuthForm.tsx:378,406,434,462` | Start Google, GitHub, Discord, or Apple OAuth. | Provider identity, OAuth state, and callback. | Better Auth supports the four provider paths and state-bound synthetic callback tests. Real credentials and provider-console callback verification are absent, so staging capabilities list no enabled providers. |
+| `src/hooks/useAuthForm.tsx:186` | Create an identity and send verification email. | Email, password credential, invitation attribution. | `POST /api/auth/sign-up/email` uses a recoverable split-D1 command; account creation remains closed until selector and Resend are configured. No real email was sent. See [invitation signup API](invitation-signup-api.md). |
+| `src/hooks/useAuthForm.tsx:268` | Sign in with email and password. | Password credential and session. | Better Auth email sign-in verifies the existing D1 account and sets a secure session cookie. Synthetic bcrypt-compatible credentials passed; actual Supabase hashes/users remain unmigrated. |
+| `src/hooks/useAuthForm.tsx:341,377`; `src/pages/ForgotPassword.tsx:65` | Request password reset and resend signup verification. | Email address and one-time token/link. | Better Auth callbacks send through Resend and return no token to the browser. Capability remains false while Resend settings are absent. No real delivery was attempted. |
+| `src/hooks/useAuthForm.tsx:412,440,468,496` | Start Google, GitHub, Discord, or Apple OAuth. | Provider identity, OAuth state, and callback. | Better Auth supports the four provider paths and state-bound synthetic callback tests. Real credentials and provider-console callback verification are absent, so staging capabilities list no enabled providers. |
 | `src/hooks/usePasswordReset.tsx:34,47,83` | Validate a recovery session/token and set a new password. | Password credential and short-lived recovery token. | Worker mode requires the Better Auth reset token and calls its reset-password API; the Supabase session/setSession/updateUser path remains conditional on Supabase mode. Resend-gated delivery is unverified. |
 | `src/pages/PasswordSetup.tsx:89` | Complete the first-password setup gate. | Password credential and own-account setup state. | Better Auth `setupPassword` updates the credential and owner profile through the Worker; the Supabase password/profile updates remain the legacy branch. Synthetic API contract is tested. |
 | `src/pages/Profile.tsx:135` | Change the signed-in user's password. | Current/new password credential. | Better Auth `changePassword` uses the authenticated session; the Supabase `updateUser` call runs only in Supabase mode. |
@@ -519,7 +517,7 @@ in Supabase until the separate real-user/data phase.
 | `src/hooks/useAuth.tsx:52`; `src/hooks/useProfile.tsx:23,120`; `src/hooks/usePreferredLanguage.ts:28`; `src/lib/profile-utils.ts:34` | Read or update the signed-in user's profile and preferred language. | Private account/profile fields, including plan and password-setup state. | `GET/PATCH /api/me/profile`; session owns the row. PATCH allows display name, avatar URL, and language; plan, Stripe IDs, invitation fields, and password-setup state are not client-writable. Existing rows are not imported. |
 | `src/hooks/useProfile.tsx:145`; `src/lib/profile-utils.ts:59` | Check whether a candidate username is available, excluding the current user. | Username and account existence signal. | `GET /api/me/username-availability`; Worker derives the excluded ID from Better Auth and returns only a boolean. It is a read-only check and does not reserve the name. |
 | `src/pages/PasswordSetup.tsx:92`; `src/pages/Profile.tsx:139` | Clear `requires_password_setup` after a password change. | Private account security state. | Better Auth `setupPassword` and `changePassword` own these transitions; Worker mode does not expose a generic profile flag write. The direct table writes remain in Supabase mode. |
-| `src/hooks/useAuthForm.tsx:205` | Record the invitation attribution on the new user's profile. | Private signup attribution. | The split-D1 signup command creates the source-shaped profile and consumes the reserved invitation atomically; the legacy post-signup update runs only in Supabase mode. |
+| `src/hooks/useAuthForm.tsx:207` | Record the invitation attribution on the new user's profile. | Private signup attribution. | The split-D1 signup command creates the source-shaped profile and consumes the reserved invitation atomically; the legacy post-signup update runs only in Supabase mode. |
 | `src/components/AdminBroadcastEmail.tsx:192` | Count recipients matching allowlisted plan, language, and date filters. | Aggregate user population count. | `POST /api/admin/broadcast-emails/estimate` requires admin role and MFA and returns only `{count}`; it does not expose user IDs or addresses. Delivery remains selector/secret gated. |
 | `src/hooks/useExtensionCouponAdmin.ts:183` | Enrich coupon-use records with a user's display name or username. | Restricted user display label. | `GET /api/admin/extension-coupons/:couponId/usages` returns bounded display labels only to an MFA-authorized admin; it does not expose email or other profile fields. |
 | `src/components/FanmarkSettings.tsx:506,514,524`; `src/hooks/useEmojiProfile.tsx:73,125,168`; `src/pages/FanmarkSettingsPage.tsx:113` | Read, create, update, or preserve `fanmark_profiles` visibility for the owner's active fanmark. | Owner profile content and publication state. | Profile editor/preview use `GET/PATCH /api/me/fanmarks/{fanmarkId}/profile`; access-mode settings use `GET/PATCH /api/me/fanmarks/{fanmarkId}/settings`. Worker checks active ownership and preserves omitted bio/theme fields. The two Worker APIs are separate from the public read route. |

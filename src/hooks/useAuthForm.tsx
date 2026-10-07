@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +27,6 @@ const detectBrowserLanguage = (): ActiveLanguageCode => {
 
 export const useAuthForm = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation();
   const { refreshSession } = useAuth();
@@ -43,6 +42,9 @@ export const useAuthForm = () => {
     error: '',
     awaitingConfirmation: false
   });
+
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
 
   const [resendCooldown, setResendCooldown] = useState(0);
   const cooldownTimerRef = useRef<number | null>(null);
@@ -251,11 +253,15 @@ export const useAuthForm = () => {
 
     try {
       if (isBetterAuthEnabled()) {
-        await betterAuthClient.signInWithEmail(formData.email, formData.password);
-        await refreshSession();
-        const from = (location.state as { from?: unknown } | null)?.from;
-        navigate(typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
-          ? from : '/dashboard', { replace: true });
+        const result = await betterAuthClient.signInWithEmail(formData.email, formData.password);
+        if ('twoFactorRedirect' in result && result.twoFactorRedirect) {
+          setTwoFactorRequired(true);
+          setVerificationCode('');
+          setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
+          return;
+        }
+        if (!await refreshSession()) throw new Error(t('mfa.verificationFailed'));
+        // Auth navigates only after the refreshed context has a valid session.
         return;
       }
 
@@ -288,6 +294,34 @@ export const useAuthForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const verifyTwoFactor = async () => {
+    if (!isBetterAuthEnabled() || !twoFactorRequired || authState.loading) return;
+    if (!/^\d{6}$/u.test(verificationCode)) {
+      setError(t('mfa.invalidCode'));
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await betterAuthClient.verifyTotp(verificationCode);
+      if (!await refreshSession()) throw new Error('session_not_available');
+      setTwoFactorRequired(false);
+    } catch {
+      setError(t('mfa.verificationFailed'));
+    } finally {
+      setVerificationCode('');
+      setLoading(false);
+    }
+  };
+
+  const cancelTwoFactor = () => {
+    if (authState.loading) return;
+    setTwoFactorRequired(false);
+    setVerificationCode('');
+    setError('');
+    setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
   };
 
   const forgotPassword = async () => {
@@ -489,6 +523,11 @@ export const useAuthForm = () => {
     updateFormData,
     signUp,
     signIn,
+    twoFactorRequired,
+    verificationCode,
+    setVerificationCode,
+    verifyTwoFactor,
+    cancelTwoFactor,
     signInWithGoogle,
     signInWithGithub,
     signInWithDiscord,

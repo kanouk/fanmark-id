@@ -440,3 +440,12 @@ JSON byte array展開の前にUTF-8サイズを確認する。超過時は平文
 `npm --prefix workers/api run test:auth-recovery:d1`はこの共通実装で実SDKの認証、
 rollback、commit後ACK喪失/再実行拒否を検証する。運用policyの採用や定期/off-host
 collector有効化は含まない。詳細は[Auth復旧](migration/synthetic-auth-recovery.md)。
+
+## 通常ログインのTOTP確認
+
+Better Authを選ぶ`useAuthForm`はsign-inのsession応答とtwo-factor redirectを区別する。
+redirectの場合は`TotpLoginChallenge`を表示し、同じbrowser cookieでSDKのverify-totpを
+呼ぶ。有効sessionを確認した`refreshSession`の成功を待ち、Authページの既存user/session
+監視で遷移する。missing/failureはfalseで、challengeを完了扱いにしない。
+回帰検証は`npm run test:auth-login-mfa`。実際のTSX hook/ProviderとSDKを実行し、外部
+HTTP/UI/context adapterだけを合成に置換する。native D1/ブラウザー受け入れは別に記録する。

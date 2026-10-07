@@ -1,3 +1,17 @@
+## 通常メールログインのMFA段階を追加（2026-10-07 JST）
+
+通常`/auth`はBetter AuthのtwoFactorRedirectを無視してguestのままdashboardへ進み、
+ログイン画面へ戻っていた。既存TOTPを入力する画面を追加し、成功したsession取得を
+待つよう修正。password/codeは消去し、誤コード・期限切れ・sessionなし/取得失敗は
+challengeを完了扱いにしない。既存Supabaseログインは保持する。
+実際のhook/ProviderとSDKを使う合成回帰8件、SDK契約15件、型check、CI isolation、
+既存Supabase呼出211件の現行AST/意味対応は成功。変更ファイルlintはerror0で、
+既存hook由来のwarning3件。nativeブラウザー/D1、CI全体、配備はこの時点で未受け入れ。
+[実装時点の限定証拠](evidence/main-auth-mfa-local-2026-10-07.json)。
+
+本人の追加承認により、先に提示した検証アドレスへのメール2通（管理reset、告知test）を
+実施できる状態。まだ送っていない。実ユーザー移送・公開domain/DNSは後工程のまま。
+
 ## 招待コードのnative発行・切替・削除を確認（2026-10-07 JST）
 
 現行Worker471faabeで専用合成管理者の既存TOTPを検証し、Safariから未使用コード

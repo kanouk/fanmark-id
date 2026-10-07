@@ -20,7 +20,7 @@ interface AuthContextType {
   emailConfirmed: boolean;
   requiresPasswordSetup: boolean;
   setRequiresPasswordSetup: (value: boolean) => void;
-  refreshSession: () => Promise<void>;
+  refreshSession: () => Promise<boolean>;
   signOut: () => Promise<void>;
   signingOut: boolean;
 }
@@ -122,20 +122,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const refreshSession = useCallback(async () => {
     if (betterAuthEnabled) {
       try {
-        await applyBetterAuthSession(await betterAuthClient.getSession());
+        const nextSession = await betterAuthClient.getSession();
+        await applyBetterAuthSession(nextSession);
+        return nextSession !== null;
       } catch (error) {
         console.error('Error loading Better Auth session:', error);
         await applyBetterAuthSession(null);
+        return false;
       }
-      return;
     }
 
     try {
       const { data: { session: nextSession } } = await supabase.auth.getSession();
       applySession(nextSession);
+      return nextSession !== null;
     } catch (error) {
       console.error('Error loading Supabase session:', error);
       applySession(null);
+      return false;
     }
   }, [applyBetterAuthSession, applySession, betterAuthEnabled]);
 
