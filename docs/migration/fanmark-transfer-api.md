@@ -84,6 +84,19 @@ Account-deletion audit integrity, other source runtime/RLS/callers, real provide
 phone/CPU/plan and operational acceptance remain separate open work. Existing
 real users and domain/DNS have not moved; this is scoped transfer acceptance.
 
+## Recorded native transfer UI (2026-10-06 JST)
+
+The disposable Safari sender/recipient flow already accepted issue, application,
+approval, expired sender view and the recipient's seven-day inactive license.
+The D1 inactive reset and thirty-day lock, two delivered in-app events, UI logout,
+owned cleanup and independent preservation readback were confirmed.
+[Bounded UI evidence](evidence/staging-transfer-ui-2026-10-06.json).
+The eight captured transfer frontend/router files are unchanged from0ed4213 to
+runtime4445297; this is linkage to that prior proof, not a new UI run.
+Code reissuance during the lock, all former profile/password configurations,
+physical phones and the whole multilingual flow were not accepted by that proof.
+Final shared dependencies/integration retain their own requirements.
+
 ## Historical staging lifecycle canary (2026-09-25 JST)
 
 Worker version `929280ae-3285-4936-af67-a6f146aae03e` was active at 100% on
