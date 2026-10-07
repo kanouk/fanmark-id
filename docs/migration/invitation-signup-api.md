@@ -2,7 +2,7 @@
 
 ## Scope and current state
 
-This slice moves invitation validation, signup identity creation, email verification, and the matching business profile onto the Cloudflare path. The implementation and integration tests are in draft PR #41. Current staging Worker `471faabe-3aff-4312-ba22-cd326dc821e1` selects `INVITATION_SIGNUP_BACKEND=d1`, `AUTH_EMAIL_BACKEND=resend` and D1 email templates, with the Resend secret binding present. The 2026-10-06 read-only capability GET returns `signUp`, `emailVerification` and `passwordReset` true, and `invitationRequired` false. Registration is currently open without a required invitation. [Current configuration and capability evidence](evidence/staging-invitation-capabilities-current-2026-10-06.json).
+This slice moves invitation validation, signup identity creation, email verification, and the matching business profile onto the Cloudflare path. The implementation and integration tests are in draft PR #41. The 2026-10-06 staging checkpoint on Worker `471faabe-3aff-4312-ba22-cd326dc821e1` selected `INVITATION_SIGNUP_BACKEND=d1`, `AUTH_EMAIL_BACKEND=resend` and D1 email templates, with the Resend secret binding present. The 2026-10-06 read-only capability GET returns `signUp`, `emailVerification` and `passwordReset` true, and `invitationRequired` false. A fresh read-only capability GET on 2026-10-07 still returns signup/verification/reset enabled, invitationRequired=false and the four social providers. Registration remains open without a required invitation. [Current configuration and capability evidence](evidence/staging-invitation-capabilities-current-2026-10-06.json).
 
 Earlier actual email signup/verification and password recovery/login have separate bounded evidence: [verification delivery](evidence/resend-staging-verification-delivery-2026-10-05.json), [reset completion](evidence/staging-email-password-reset-completion-2026-10-05.json), and [password login](evidence/staging-email-password-login-2026-10-05.json). The new GET does not repeat or extend those tests, and does not accept invitation-required signup/consumption or provider signup.
 
@@ -34,3 +34,38 @@ The local test intercepts the Resend API with a synthetic handler. It does not e
 ## Staging gate
 
 The initial staging enablement gate required review of the invitation-mode row, invitation records, Resend delivery configuration and the explicit D1 signup selector. That selector is now enabled. Any later change to require invitations still needs its own configuration review and actual signup/consumption acceptance; the current capability GET is read-only and changes no mode or code. User/profile/Auth data import remains part of the final data migration, and the public domain cutover remains last.
+
+## Actual local browser flow (2026-10-07)
+
+Run `npm run test:staging-invitation-signup-local`. The test builds the real application with all
+45 staging frontend selectors, bundles the application Worker with `conditions: ["workerd"]`,
+and applies all 27 Business, 4 Auth and 8 Master migrations to isolated native local D1.
+It seeds synthetic settings, ready emoji/reference releases and a one-use invitation. A loopback
+HTTPS bridge forwards each browser API request to the real Worker; it does not replace responses.
+Only the upstream Resend API returns a synthetic receipt and exposes its generated verification link
+to this owned fixture. No real email is sent. All other Worker egress and non-loopback browser egress
+are denied. Real provider secrets, source rows, staging settings and retained accounts are not used.
+
+A real headless Chrome switches the signup tab, rejects an invalid invitation, applies the valid
+code, submits registration, follows the verification link, signs in with the submitted password,
+reaches the rendered dashboard, signs out and rejects the fully-used code. D1 readback requires:
+
+- one UUID command/user/profile with exact invite attribution, free plan and Japanese language;
+- invitation consumption exactly once, completed command marker and no extra user after code reuse;
+- unverified password login denied, no session before/after verification, one after login, zero after logout;
+- actual profile/owned-fanmarks/subscription/analytics APIs return 200 for the browser session;
+- all three stores have zero FK violations and no observed application API has a 5xx response.
+
+Google capability is available before requiring invitations, then suppressed by the actual policy.
+This checks the local Google gate, not a real OAuth callback. The build must contain native
+`node:async_hooks` and must not contain the browser AsyncLocalStorage polyfill: that polyfill lost
+request state under the concurrent dashboard reads in an earlier rejected test bundle. Missing
+synthetic settings and wrong harness selectors were also corrected before accepting the final flow.
+The application backend needed no code change. The dashboard screenshot was inspected at 1280×960
+with no error toast. Owned Chrome profile/server/runtime are stopped/disposed on completion.
+
+The test is included in application CI. [Bounded evidence](evidence/invitation-signup-local-browser-2026-10-07.json).
+Actual staging invitation-required signup/consumption and real verification delivery for a new
+invited identity still need their own acceptance. The previous staging mail account is retained and
+already registered; a separate unregistered test recipient has been requested. Physical mobile,
+other full language flows and final integrated-candidate acceptance remain separate.

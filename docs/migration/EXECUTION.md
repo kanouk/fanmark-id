@@ -1,3 +1,24 @@
+## 招待必須登録を実ブラウザーとlocal Workerで確認（2026-10-07 JST）
+
+現行アプリbuildとWorker、27 Business/4 Auth/8 Masterの分離local D1で、日本語の
+招待検証→登録→確認link→password login→dashboard→logoutを実Chromeで確認した。
+上流Resendだけを合成handlerにし、他のWorker/browser外向き通信を拒否。無効codeでは
+登録formを開かず、成功時はUUID command/Auth/profileの対応と消費1回を照合した。
+未確認login403・確認前後session0・login後1・logout後0、使用済みcodeの再登録拒否、
+本人API4経路200と全FK0も確認。応答を差し替えるAPI mockは使っていない。
+
+[再現コマンドと境界](invitation-signup-api.md#actual-local-browser-flow-2026-10-07)・
+[限定証拠](evidence/invitation-signup-local-browser-2026-10-07.json)。通常application CIへ
+このflowを追加した。esbuildはworkerd条件とnative AsyncLocalStorageを使い、browser用
+polyfillを含むbundleは拒否する。検証中の不足設定/誤ったbundleは受け入れず、最終試験
+では全画面APIに5xxなし、dashboardを視認した。owned browser/server/runtimeは停止済み。
+
+これはlocal flowの受け入れで、実stagingの招待必須signup/消費と実メール配信は未確認。
+読み取り専用の現在capabilityはsignUp/verification/reset=true、invitationRequired=false、
+4 provider公開を確認した。staging設定/実ユーザー移送/DNS/追加実mail/runtime配備0。
+実staging用の未登録受信先を問い合わせ済み。Master候補8397627のCI37634167828は
+アプリ/Worker両job成功。六項目の全体完了、最終candidateの統合とは扱わない。
+
 ## Master復旧を共通化し、保存済み全Masterを照合（2026-10-07 JST）
 
 Master限定capture/暗号化/空target復旧を共通moduleへ移し、通常Worker CIへ7件の

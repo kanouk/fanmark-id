@@ -457,3 +457,12 @@ HTTP/UI/context adapterだけを合成に置換する。native D1/ブラウザ�
 `npm --prefix workers/api run test:master-recovery:d1`で通常Worker CIにも含める。
 既知25表・独立schema pin・legacy Auth空・空targetを要求し、履歴を先に投入して
 triggerを後から設置する。保存済み全Masterの限定照合は定期collector採用ではない。
+
+## 招待必須登録の実local browser試験
+
+`npm run test:staging-invitation-signup-local`は実build/Worker/分離D1とloopback HTTPSを
+使い、登録・確認・login/dashboard・logout・再利用拒否を一巡する。通常application CIに
+含める。上流Resend以外のAPI応答はmockせず、全外向き通信を拒否する。Worker bundleの
+esbuild条件はworkerd、native AsyncLocalStorageを要求し、browser用polyfillを拒否する。
+fixtureの全設定・ready参照releaseをそろえ、画面APIの5xxを合格扱いにしない。
+[契約と範囲](migration/invitation-signup-api.md#actual-local-browser-flow-2026-10-07)。

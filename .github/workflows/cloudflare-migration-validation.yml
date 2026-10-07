@@ -70,6 +70,9 @@ jobs:
       - name: Test main login MFA and session completion
         run: npm run test:auth-login-mfa
 
+      - name: Test invitation-gated signup with actual local Worker
+        run: npm run test:staging-invitation-signup-local
+
       - name: Type check application
         run: npm run typecheck
 

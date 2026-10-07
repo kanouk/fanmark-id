@@ -102,7 +102,8 @@
     "test:account-deletion-api": "node --experimental-strip-types --test src/lib/account-deletion-api.test.ts",
     "test:admin-auth-url": "node --experimental-strip-types --test src/lib/main-site-url.test.ts",
     "migration:stage-extension-coupons": "node scripts/migration/stage-staging-extension-coupons.mjs",
-    "test:staging-monitor-api": "node --test scripts/migration/test-staging-monitor-api.mjs"
+    "test:staging-monitor-api": "node --test scripts/migration/test-staging-monitor-api.mjs",
+    "test:staging-invitation-signup-local": "node scripts/migration/test-invitation-signup-local-browser.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
