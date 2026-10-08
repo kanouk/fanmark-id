@@ -150,7 +150,12 @@
     "STAGING_NO_INDEX": "true",
     "NOTIFICATION_WAKE_BACKEND": "durable-object",
     "RECOVERY_DRAIN_BACKEND": "durable-object",
-    "RECOVERY_DRAIN_SCOPE_DIGEST": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948"
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+    "STAGING_BACKUP_BACKEND": "recovery-set-v1",
+    "STAGING_BACKUP_ADMISSION": "pending-writer-verification",
+    "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"2116bc43-32ab-4e3e-b762-9378df88b95f\",\"business\":\"d4bb0c48-f24a-491f-8693-fa393ab0b873\",\"master\":\"160376b0-bde6-4d5f-8969-96deb5ae1183\",\"avatars\":\"fanmark-avatars-staging\",\"covers\":\"fanmark-cover-images-staging\"}",
+    "STAGING_BACKUP_SCHEMA_HASHES": "{\"auth\":\"d9c94d0486e1fb96dad346512d3f89039e584b0dd9a05e4eae9c73943676229c\",\"business\":\"598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2\",\"master\":\"32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56\"}",
+    "STAGING_BACKUP_KEY_ID": "staging-backup-89ca6819-a159-4db8-aa7d-733315a9a0ef"
   },
   "r2_buckets": [
     {
@@ -160,6 +165,10 @@
     {
       "binding": "COVER_IMAGES_BUCKET",
       "bucket_name": "fanmark-cover-images-staging"
+    },
+    {
+      "binding": "STAGING_BACKUP_BUCKET",
+      "bucket_name": "fanmark-backups-staging"
     }
   ],
   "durable_objects": {
@@ -187,5 +196,8 @@
         "RecoveryWriterCoordinator"
       ]
     }
-  ]
+  ],
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  }
 }

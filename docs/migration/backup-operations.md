@@ -1,7 +1,47 @@
 # バックアップと復旧の現在の境界
 
-2026-10-06のリポジトリ監査。実ユーザーデータの移送とドメイン切り替えは最後の別工程とする。
-この文書は運用方針の採用や定期バックアップの有効化を記録するものではない。
+実ユーザーデータの移送とドメイン切り替えは最後の別工程とする。
+過去の節は当時の検証範囲。以下の2026-10-09の方針採用と実装状況を優先する。
+
+## 採用したステージング方針（2026-10-09 JST）
+
+ユーザー回答「その案でOK、まだ未確認」により、バックアップ運用案を採用した。
+実スマホ確認は未確認のまま。追加の運用許可は要求しない。
+
+| 項目 | 採用内容・現在の状態 |
+| --- | --- |
+| 担当 | サービス所有者 |
+| 周期・保存期間 | 1日1回、30日。04:15 JSTを候補時刻とする。Cronはまだ登録していない。 |
+| 保存先 | 専用R2 `fanmark-backups-staging`を作成。managed/public URL無効、custom domainなしをAPIで照合。 |
+| 鍵 | 新規AES-256鍵をMacキーチェーンとVault `10_sensitive/secret-keys/fanmark-cloudflare-staging-backup`へ保存・一致照合。保存ファイルは0600。R2へ鍵を保存しない。Vaultの遠隔Sync完了は今回の検証に含めない。 |
+| SDK鍵 | 通常Worker内部で運用鍵により暗号化し、別のescrowとしてキーチェーンとVaultへ保存する。生のSDK鍵をRPC応答・ログへ出さず、既存鍵を変更しない。実環境での取得・保管は配備後の工程。 |
+| 復旧 | session/MFA assurance/verificationを失効。認証情報・業務情報・マスター・画像の復旧は既存共通形式v1を使用する。 |
+| RPO/RTO | 24時間/4時間を目標とする。実測または保証ではない。 |
+| 本番 | 今回の採用・配備はstagingのみ。本番ユーザーデータとDNSは最後の別工程。 |
+
+`StagingBackupService`は内部service binding専用のnamed RPC。通常HTTP routerから
+capture/鍵/停止操作を呼べない。source binding集合から導出したscopeとschemaをpinし、
+独立したwriter終了確認後だけ`STAGING_BACKUP_ADMISSION=writers-verified-v1`を選べる。
+現在は`pending-writer-verification`。運用許可やactive=0を終了確認の代わりにしない。
+
+1. UTC日付のR2 conditional claimを作り、owner UUIDで新規writerを停止する。
+2. 計測済み既存処理の終了を最大20回/約20秒待つ。capture/writeをtimeoutとraceして残さない。
+3. 同じownerを各storeで確認し、共通collectorの2回capture・AES-256-GCM保存・全partの復号/hash検証を行う。
+4. 保存したR2 objectを読み戻して検証する。全処理終了後にownerの停止を解除し、永続receiptへ終了を記録する。
+5. 当日の成功archiveのhashが一致した時だけ、30 UTC日付より古い成功receiptとそのexact archiveを削除する。他prefix、未完了、失敗、hash不一致は自動削除しない。
+
+失敗/不明ACK/強制中断した日は再実行しない。receiptとownerを確認し、残った処理の
+終了を確認した上でoperatorが復旧する。TTLでwriterやownerを消す機能はない。
+失敗時の保存物は隔離して手動処理する必要があり、期限処理の完全自動化とは扱わない。
+失敗Cronと永続receiptを監視し、前日以前の成功日時と併せてRPO超過を判断する。
+通知の自動配送・監視担当の実通知受け入れはまだ実装/検証していない。
+
+native local検証11件で、RPC接続、既存writer終了待ち/新writer拒否、他ownerの保護、
+claim応答喪失、失敗の秘匿、同日の重複拒否、暗号化Auth鍵の復号、R2保存fileからの
+5ストア復旧とsession失効、30日の境界/別prefix保護、Cron拒否を確認した。
+source R2は空の隔離fixture。通常stagingの実データからのcaptureや運用鍵でのremote復旧を
+このlocal証拠へ含めない。初回旧writer終了・外部writer除外、実環境での保存/復旧、
+定期実行/失敗監視の受け入れが残る。
 
 ## 用途と保存形式
 

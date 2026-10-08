@@ -7974,3 +7974,53 @@ preflight/native editor/favorite acceptance remain required.
 2026-10-06 告知署名通知の発生順: 26 Businessで通常の失敗/成功の順序逆転による4件の誤判定を再現。追加0026とroot created_at検証により、受信日時とは別にUTC offset/小数秒の全桁を保持し、発生日時・同時刻IDで通常結果を選ぶ。恒久bounce/苦情の優先は維持する。全27 Businessの配送22件、Business/Auth import1件、監視5件とtypecheck/eslintを通過。[限定証拠](evidence/broadcast-provider-chronology-2026-10-06.json)。候補a5a2b75/CI37416934627両job成功後、全27 Businessの隔離実D1/専用Workerで従来の8件と発生順8件の署名HTTPシナリオを確認。発生順/逆順・ACK保存前後で最新結果と小数秒全桁が一致し、重複は単一receipt、無効日時は未書込だった。所有D1/Workerを削除し元inventoryとmain全表hash/旧Workerを保持した。mainへ0026とWorker 0605e4ed-38d2-4e09-967e-3c3f3c99910dを適用し、ledger27、追加ledger1件以外の全表hash・既存秘密設定・公開asset4件と変更2定義/他schema保持を独立照合した。現在の保存baselineはprivate broadcast-chronology-remote-2026-10-06/staging-install.jsonのbaselineであり、旧26/25の証拠を上書きしない。追加メール0、実Resend通知・bulk/UI/retentionや全体移行へ受け入れを拡張しない。
 
 2026-10-06 表示言語のHTML属性: in-app DOM接続で新規tabの現行トップを確認し、EN/KO/IDの本文切替後もhtml langがjaのままという3件の不一致を観測。選択言語effectにdocument lang同期を追加し、typecheck・eslint(error0/warning1)・staging buildを通過。ブラウザー表示言語をJAへ戻し、別read-only processで元全表hash/Workerを保持した。候補5e037d0/CI37418737512両job成功後、Worker d4375d19-5024-4bf6-9cd7-1e5d399ce7b5へ通常設定で配備。公開asset4件のbytes/hash、既存秘密設定・canonical vars・ledger27と全表hashを保持し、既存Worker runtime a5a2b75からの変更0を確認。既存IAB検証tabを通常reloadして新entryを確認し、JA/EN/KO/IDすべてで本文とhtml lang一致、最後にJAへ復元した。別read-only processで全表hash/FK0と100% versionを保持照合した。[限定証拠](evidence/staging-language-metadata-2026-10-06.json)。全言語の通し操作・実スマホ・native GUIの残件は保持する。
+
+## 2026-10-09 JST: staging backup policy adopted, native adapter and key custody
+
+The user answered 「その案でOK、まだ未確認」. The backup operating policy is
+approved: owner=user; daily/30 days; encrypted private dedicated R2; archive and
+SDK recovery keys in Mac Keychain + Vault `10_sensitive`; revoke local
+sessions/MFA assurances/verification on restore; RPO24h/RTO4h are targets.
+Physical smartphone acceptance remains unconfirmed. No additional approval is
+required for the authorized staging implementation. Production users/DNS stay
+in the final separate phase.
+
+Fresh read-only preflight matched all retained D1 table hashes/Auth3 users,
+7 accounts,2 sessions and the full five-binding scope. Main was cc6d75c4;
+companion remained a7c8f421. The scope hashes the account/Worker/sorted binding
+identity envelope, not the collector's sourceIds JSON. Recompute that exact
+format; never reset the existing DO scope to a sourceIds-only digest.
+
+`staging-backup.ts`/named `StagingBackupService` connect the existing census,
+owner fence and five-store collector to a dedicated R2 archive + durable daily
+attempt receipt. No public HTTP operation route is added. Incomplete/unknown
+ACK attempts refuse replay; collection and writes settle before release. A
+crash leaves the owner fence and receipt for manual inspection. Retention only
+removes exact old verified archives after current successful archive readback.
+Failed/incomplete archives need operator handling. The new scheduler candidate
+uses 04:15 JST but its deployed config must have disabled selector/no Cron
+until technical admission. Actual source capture admission remains pending.
+
+Native local11 assertions and existing writer-drain6 passed. Tests cover RPC,
+old counted writer completion/new writer refusal, other-owner protection,
+claim ACK loss, source-error redaction/release, duplicate slot, stored-file
+five-store restore with source sessions preserved/target sessions revoked,
+SDK-key escrow/AAD, retention boundary/foreign prefix and Cron failure. R2
+source in this local fixture is empty. This is not actual retained-source
+backup/remote operational restore/physical-phone acceptance.
+
+Created dedicated `fanmark-backups-staging`; independently checked managed
+public URL disabled/custom domains0. Generated archive key with exclusive
+Vault0600 write and exclusive UUID Keychain item, then compared readbacks.
+Neither repository nor R2 contains the key. Real SDK escrow is pending native
+RPC deployment. Existing SDK key is not rotated. Vault remote Sync is not
+claimed. Evidence: staging-backup-adapter-local-2026-10-09.json and
+staging-backup-provision-2026-10-09.json. Private live state resides under
+`~/.codex/fanmark-migration-private/operational-backup-2026-10-09`.
+
+Next: CI/readback of inactive staging adapter, seal/verify actual SDK key and
+store encrypted escrow in both approved key stores; resolve initial uncounted
+legacy-writer termination and external-writer exclusion; then first actual
+source archive, same-key isolated remote restore, daily Cron and failure
+monitoring acceptance. Do not turn permission, current active0, matching
+recaptures, elapsed time or platform-runtime-update grace into legacy drain.

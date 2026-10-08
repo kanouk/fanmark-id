@@ -8811,3 +8811,14 @@ private journalはverified_and_cleaned。削除済み合成passwordとui-credent
 Apple・Discord新規/relay、告知UI/実通知/bulk、運用条件、同じ最終candidateの実スマホ・
 対応言語・旧PWA・障害復旧の通し確認が残る。実ユーザー移送とDNS/domainは最後の別工程。
 本番Stripe、追加mail、実ユーザー移送、DNS変更は0。全体移行は未完了。
+
+## 2026-10-09 JST: approved backup operating policy
+
+User adopted daily/30-day private-R2 backup, Mac Keychain/Vault key custody,
+revoke-on-restore, owner=user and target RPO24h/RTO4h. Smartphone remains
+unconfirmed. Implemented binding-only staging adapter + disabled scheduler;
+native local11 and census regression6 passed. Dedicated nonpublic backup R2
+and matching archive-key custody provisioned. Initial legacy-writer proof,
+first real source capture/remote operational restore, Cron and failure
+monitoring are still required. See [backup operations](backup-operations.md)
+and the latest HANDOFF. User data and DNS are deferred to the final phase.

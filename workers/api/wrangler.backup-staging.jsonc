@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-backup-staging",
+  "main": "src/staging-backup-scheduler.ts",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "workers_dev": false,
+  "preview_urls": false,
+  "limits": { "cpu_ms": 30000 },
+  "services": [{ "binding": "BACKUP_SERVICE", "service": "fanmark-app-staging", "entrypoint": "StagingBackupService" }],
+  "vars": { "STAGING_BACKUP_SCHEDULE": "disabled" },
+  "triggers": { "crons": [] },
+  "observability": { "enabled": true }
+}
