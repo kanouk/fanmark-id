@@ -1,0 +1,24 @@
+{
+  "observedAt": "2026-10-08T14:08:29.475Z",
+  "headSha": "bcb956550ab575734815026a330f29cdbd04d891",
+  "ciRunId": 37785543127,
+  "application": "success",
+  "worker": "success",
+  "prMergeCheckout": "99b5e4717297a40e3f5e936e1d8b70329330263e",
+  "editor": {
+    "failedPatchCount": 1,
+    "matchingConnectionFailedReceipt": true,
+    "serviceWorkerControlledAtFailure": true,
+    "faultOnlyServiceWorkerBypass": true,
+    "normalRouteRestoredBeforeReload": true,
+    "databaseUnchangedOnFailure": true,
+    "draftReloadRetained": true,
+    "retryPersistedThroughActualWorker": true,
+    "apiResponseSubstitutions": 0
+  },
+  "limits": {
+    "physicalMobile": false,
+    "pwaRoutedNetworkFailure": false,
+    "fullMigration": false
+  }
+}

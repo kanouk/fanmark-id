@@ -9,14 +9,18 @@ missing, then updates recipient totals, sent/failed counts, status, and an audit
 row. Its current implementation performs the whole delivery in one request and
 does not provide durable per-recipient retry state.
 
-Cloudflare staging has MFA-gated draft, template, recipient-count, and
-fixed-recipient test-send paths, plus the default-off durable bulk queue,
-Resend dispatcher, and signed webhook handler in the deployed Worker bundle.
-The fixed-recipient test-send API delivered the one explicitly approved message
-on 2026-10-06; the send UI and bulk delivery remain unaccepted. Bulk/test-send
-selectors, the fixed test recipient, and the webhook signing secret were removed
-after cleanup. Auth verification/reset email acceptance is separate from broadcast
-acceptance. See [the fixed-message evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json).
+Cloudflare staging has MFA-gated draft/template/recipient-estimate APIs and a
+default-off durable bulk queue. On 2026-10-08, an actual same-session MFA send
+command, natural minute Cron snapshot/dispatch, one owned filtered recipient,
+and real signed Resend sent/delivered reconciliation were accepted together.
+The request-ID repeat returned the same run without another provider attempt.
+After exact-owned cleanup, the bulk/test-send selectors are disabled again;
+the approved signed receiver and signing secret remain enabled. Native send UI,
+multiple recipients/page boundaries, actual provider retries and bounce/complaint
+outcomes remain distinct unaccepted gates. See
+[the bounded real delivery evidence](evidence/staging-broadcast-single-recipient-2026-10-08.json)
+and [the signed receiver/replay evidence](evidence/staging-resend-signed-webhook-2026-10-08.json).
+Auth verification/reset mail acceptance remains separate.
 
 The additional Business migration `0025_broadcast_delivery_terminal_outcomes.sql`
 fixes event ordering in both webhook insertion and provider-ID attachment. A

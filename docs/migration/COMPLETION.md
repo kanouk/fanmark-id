@@ -1,5 +1,28 @@
 # ユーザーデータ・ドメイン移行前の完了判定
 
+## 告知の定期配信を検証用1名で受け入れ（2026-10-08 JST）
+
+番号付きの本人所有テスト宛先1名を、free/jaと過去の閉じた登録日範囲で限定した。
+既存利用者を含まない対象0件から専用fixtureを追加し、MFA保護APIのestimate=1、
+配信要求202、同一request IDの再要求で同じrunだけが残ることを確認した。
+実毎分CronがAuth ID snapshotを完了し、Resendへ1回送信した。実署名sent/deliveredを
+同じprovider ID・recipientへ反映し、run completed、recipient delivered、集計1/1/0、
+作成・要求・初回完了の監査3件を照合した。手動Cron起動・API応答置換は0。
+
+一時配備のCLI末尾が認証エラー10000になったため、再配備・新要求は行わず、
+100%の配備版、binding、6 asset、専用行を除く全表hashを読み取り専用で照合して
+反映済みと確認した。通常構成へ復元したmainは
+`cc6d75c4-53c3-4ccd-939e-5a2c4a706c1c`。署名受信だけを有効に保ち、
+bulk/test送信を再び無効化。専用actor/recipient/draft/run/監査/eventを除去後、
+独立プロセスでAuth3・7・2、他の全表hash、FK0、同じ6 assetを確認した。
+MFA generationは258→260へ進み、戻していない。
+[限定証拠](evidence/staging-broadcast-single-recipient-2026-10-08.json)。
+
+これは送信API・実定期処理・実配送を1名でつないだ受け入れ。送信UI、複数名/50件境界、
+実bounce/苦情・provider retry、運用backup、Apple/Discord新規identity/relay、
+実スマホ/PWA、同じ最終candidateの統合は引き続き残る。運用案と実スマホの質問は回答待ち。
+実ユーザー移送と本番domainは最後の別工程。
+
 ## CIの保存失敗テストの通信遮断を修正（2026-10-08 JST）
 
 設定commit `62a4d6c` のCI37782119977はWorker job成功。アプリjobは最初にChrome起動待ち、
@@ -11,7 +34,7 @@ editor試験の失敗1回だけService Worker経路をバイパスし、実PATCH
 ローカルの実Chrome/Worker・全27 Business/4 Auth/8 Masterで、SWが制御中の状態から
 遮断1回・実ネットワーク失敗・DB未更新・下書きreload・再試行保存を確認した。
 API応答置換0、provider/remote操作0。PWA経由の障害試験や実スマホ確認へは拡張しない。
-[限定証拠](evidence/editor-network-fault-boundary-local-2026-10-08.json)。修正候補のCIは別途確認する。
+[限定証拠](evidence/editor-network-fault-boundary-local-2026-10-08.json)。修正commit `bcb9565` の[CI37785543127](https://github.com/kanouk/fanmark-id/actions/runs/37785543127)はアプリ・Worker両job成功。
 
 通常stagingの実Resend受信・再送・owned cleanupの受け入れは保持する。
 mainは`cbb800a3-9f71-4a90-b21c-6fe87d2d7b12`、bulk/test送信は無効。
