@@ -147,7 +147,9 @@
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_fixture_only",
     "CORS_ALLOWED_ORIGINS": "https://fanmark-app-staging.fanmark-id.workers.dev",
     "STAGING_NO_INDEX": "true",
-    "NOTIFICATION_WAKE_BACKEND": "durable-object"
+    "NOTIFICATION_WAKE_BACKEND": "durable-object",
+    "RECOVERY_DRAIN_BACKEND": "durable-object",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948"
   },
   "r2_buckets": [
     {
@@ -164,6 +166,10 @@
       {
         "name": "NOTIFICATION_WAKE",
         "class_name": "NotificationWakeCoordinator"
+      },
+      {
+        "name": "RECOVERY_DRAIN",
+        "class_name": "RecoveryWriterCoordinator"
       }
     ]
   },
@@ -172,6 +178,12 @@
       "tag": "notification-wake-v1",
       "new_sqlite_classes": [
         "NotificationWakeCoordinator"
+      ]
+    },
+    {
+      "tag": "recovery-writer-drain-v1",
+      "new_sqlite_classes": [
+        "RecoveryWriterCoordinator"
       ]
     }
   ]

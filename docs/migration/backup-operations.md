@@ -172,3 +172,15 @@ native local試験は、未初期化、実行中、終了後、停止保持中�
 [限定証拠](evidence/recovery-writer-inspection-local-2026-10-08.json)。
 通常stagingの計測有効化・初回旧writer終了・外部writer停止や運用採用は、この読み取り機能の
 ローカル検証に含めない。復旧collectorは引き続きowner付きの停止と終了確認を要求する。
+
+## 通常stagingのwriter計測設定（2026-10-08 JST）
+
+通常staging用configへRecoveryWriterCoordinatorの専用SQLite DO、内部binding、
+計測selectorを追加した。scopeは独立readbackしたBusiness/Auth/Master D1と
+avatars/covers R2のidentity集合から導出する。通知DOとHTTP/Cronは既存の共通
+wrapperでenter/leaveを記録する。停止selectorとpublic操作routeは追加しない。
+
+設定前に現行Workerと既存全表hash/Auth3・7・2/FK0を照合した。実配備と
+計測readbackはこのcheckpointでは未実行。件数0だけではbackup整合点とせず、
+初回の旧writer終了、外部writerの停止・lease、owner付きfenceとcollector、
+運用方針の採用は引き続き別条件とする。
