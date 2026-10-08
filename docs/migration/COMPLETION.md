@@ -1,5 +1,14 @@
 # ユーザーデータ・ドメイン移行前の完了判定
 
+## R2合計20 MiBの復旧・exact resumeを実Cloudflareで受け入れ（2026-10-08 JST）
+
+- `87920b1` / [CI37762268107](https://github.com/kanouk/fanmark-id/actions/runs/37762268107) はアプリ・Worker両job成功。
+- 新規専用7 bucket/Workerで、前の不合格と同じ8 MiB・8 MiB・4 MiBの合成3 object、合計20 MiB、補完なしStandard、同じsnapshot hash・v1・暗号文長を使用した。fixture側で以前のinput/resultを破棄したり、検証を小さく分割したりせず、一つの実行でcapture・暗号化往復・初回復元・exact resume/version保持・object上限+1 byte拒否・total上限+1 byte拒否の6項目すべてが通過した。
+- 既存上書き拒否、全bytes/metadataと復元後の全native読取/hash検証は維持する。ローカル9 R2/16一式復旧、型/lint/bundleの検査も通過。容量上限のメモリ超過という今回の残件は、この合成materialで解消した。
+- 全owned objectと7 bucket/Workerを削除し、元のD1/R2/Worker inventoryに戻した。別Read processでmain `1071896f-7e6c-4218-818d-6b1eceeea9f3`・既存全表hash/Auth3・7・2/FK0・binding/namespaceを保持照合した。通常stagingへの再配備は0。
+- 記録: [`evidence/r2-recovery-maximum-capacity-accepted-2026-10-08.json`](evidence/r2-recovery-maximum-capacity-accepted-2026-10-08.json)。1000 object・InfrequentAccess・五つのstoreを同時に最大量にした試験や運用RTO/定期backupの受け入れへは拡張しない。
+- Resend実署名通知、外部writer/運用方針、残る実provider/実端末/最終統合と六項目全体は未完了。実ユーザー移送と本番domain変更は最後の別工程。
+
 ## R2容量上限で復号・初回復元は通過、exact resumeを修正中（2026-10-08 JST）
 
 - `7a8c6ee` / [CI37760585412](https://github.com/kanouk/fanmark-id/actions/runs/37760585412) は両job成功。新規専用環境の同じ3 object・20 MiB・Standard・v1で、capture・暗号化往復・初回復元と全hashの照合まで実Cloudflareで通過した。
