@@ -196,3 +196,23 @@ local全migration-data試験では、同じ旧config projectionを使うexpiry/a
 legacy Cronでも計測設定の混入を拒否する。修正後のlocal307件が成功した。
 招待登録とeditorのlocal fixtureもmainのscope/selectorを引き継がず、
 各試験のowned storeだけを使う構成を保持する。
+
+## 通常stagingの処理件数計測を有効化（2026-10-08 JST）
+
+候補450ec08/[CI37748771478](https://github.com/kanouk/fanmark-id/actions/runs/37748771478)は
+アプリ・Worker両job成功。通常Workerを`1071896f-7e6c-4218-818d-6b1eceeea9f3`へ一度配備し、
+内部SQLite DOと計測selectorを追加した。元の通知namespace/全bindingと公開6 assetを保持。
+並行catalog GET6件でactive6を観測し、完了後0へ戻った。専用合成actorのsignin/
+authenticated session/signoutとexact-owned cleanup後も0。同versionに絞ったLive Tailで
+自然の毎分Cronがoutcome=ok/例外0と確認し、tailを終了した。追加メールは0。
+
+一時検査Workerの初回HTTP assertはstatusを保存しておらず再構成しない。
+検査Workerだけ再配備した後、同じURLの404→401を観測し、同じmainの検査を再開した。
+一時Workerとfixtureは除去済み。別Read processで既存全表hash、Auth3・7・2、
+Business79/Auth10/Master25表、FK0、設定/namespaceを照合した。
+[限定受け入れ](evidence/staging-writer-tracking-2026-10-08.json)。
+
+停止flagは未設定、owner=null/drained=falseのまま。これは計測有効化と対象処理の
+終了確認であり、初回旧writer終了/外部writer lease/owner付き停止/整合capture/定期backup
+採用の証拠ではない。source・provider・運用方針・実端末/最終統合の残件と、
+実ユーザー移送・ドメインを最後にする範囲は保持する。

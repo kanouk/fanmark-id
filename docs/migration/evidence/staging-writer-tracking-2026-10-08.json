@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-08T08:38:18.867Z",
+  "scope": "Enable staging writer census; actual concurrent HTTP/auth, current-version natural minute Cron, cleanup and independent unchanged-store readback",
+  "candidateHead": "450ec085821b8fb8d491ec5ac0bf69067863eb22",
+  "runtimeSourceHead": "85866014c8079e407ab480ed6f2c9a0ae6663971",
+  "ciRun": 37748771478,
+  "ciBothJobsPassed": true,
+  "previousWorkerVersion": "f6d162c5-6168-4389-bf22-c0ab2f04c5a4",
+  "workerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+  "scopeDigest": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+  "newBindings": [
+    "RECOVERY_DRAIN",
+    "RECOVERY_DRAIN_BACKEND",
+    "RECOVERY_DRAIN_SCOPE_DIGEST"
+  ],
+  "trackingNamespace": "351f0559886c4057954cf111d061e182",
+  "originalNotificationNamespaceRetained": true,
+  "persistentNamespaceCount": 2,
+  "freezeSelected": false,
+  "http": {
+    "concurrentRequests": 6,
+    "path": "/api/emoji/catalog?limit=500",
+    "statuses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200
+    ],
+    "activeCounts": [
+      0,
+      0,
+      0,
+      6,
+      6
+    ],
+    "activeAfter": 0,
+    "ownerAfter": null,
+    "drainedAfter": false,
+    "elapsedMs": [
+      844,
+      903,
+      1115,
+      848,
+      911,
+      1142
+    ]
+  },
+  "auth": {
+    "disposableSyntheticActor": true,
+    "passwordReadFromHuman": false,
+    "generatedPasswordPersisted": false,
+    "signinAndAuthenticatedSessionVerified": true,
+    "signoutVerified": true,
+    "sessionCountAfterSignout": 0,
+    "exactOwnedFixtureRemoved": true,
+    "activeAfterAuth": 0
+  },
+  "naturalMinuteCron": {
+    "at": "2026-10-08T08:43:11.155Z",
+    "cron": "* * * * *",
+    "outcome": "ok",
+    "scriptName": "fanmark-app-staging",
+    "eventTimestamp": 1791448989113,
+    "observedVersionFilter": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+    "exceptions": 0,
+    "tailProcessStopped": true,
+    "manualCronTriggered": false,
+    "oldVersionDrainInferred": false
+  },
+  "assetsUnchanged": 6,
+  "allExistingBindingsRetained": true,
+  "allBaselineHashesRetained": true,
+  "independentReadback": {
+    "at": "2026-10-08T08:38:18.867Z",
+    "separateProcess": true,
+    "readCredentialOnly": true,
+    "workerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+    "allBaselineHashesEqual": true,
+    "businessTables": 79,
+    "authTables": 10,
+    "masterTables": 25,
+    "authUsers": 3,
+    "authAccounts": 7,
+    "authSessions": 2,
+    "foreignKeyViolations": 0,
+    "settingsMatched": true,
+    "namespacesMatched": true,
+    "trackingNamespace": "351f0559886c4057954cf111d061e182",
+    "originalNotificationNamespaceRetained": true,
+    "temporaryInspectorAbsent": true,
+    "ownedAuthFixtureAbsent": true,
+    "freezeSelected": false,
+    "backupCaptured": false
+  },
+  "temporaryInspectorDeleted": true,
+  "rollback": "Remove tracking selector/scope, retain namespace and migration; private config dry-run passed. No database restore.",
+  "newProviderEmails": 0,
+  "sourceWrites": 0,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "firstActivationLegacyDrainAccepted": false,
+  "externalWriterDrainAccepted": false,
+  "backupCaptured": false,
+  "operationalBackupAdopted": false,
+  "fullMigrationAccepted": false,
+  "driverFailures": [
+    "Initial inspector assertion omitted the HTTP status; the original missing detail is not reconstructed.",
+    "After inspector-only redeployment, the same live worker returned 404 then 401; main deployment was not repeated.",
+    "Wrangler rejected explicit sampling-rate=1 before tail start. Removing that option allowed current-version natural Cron observation."
+  ],
+  "limitations": [
+    "Actual concurrency/auth and minute Cron only; no new notification alarm or daily expiry acceptance claimed",
+    "Owner is null and drained=false after probes; zero active count is not a backup fence",
+    "Pre-tracking old writers and direct external D1/R2 writers are not included",
+    "Operational policy, provider residuals, physical device/PWA and final integrated candidate remain open"
+  ]
+}

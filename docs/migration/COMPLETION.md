@@ -4,6 +4,26 @@
 照合した残件表。作業時間やテスト件数を進捗率に換算しない。
 stagingの機能別受け入れは進んでいるが、以下の全条件はまだ成立していない。
 
+## 通常stagingの処理件数計測を有効化（2026-10-08 JST）
+
+候補450ec08/[CI37748771478](https://github.com/kanouk/fanmark-id/actions/runs/37748771478)は
+アプリ・Worker両job成功。通常Workerを`1071896f-7e6c-4218-818d-6b1eceeea9f3`へ一度配備し、
+内部SQLite DOと計測selectorを追加した。元の通知namespace/全bindingと公開6 assetを保持。
+並行catalog GET6件でactive6を観測し、完了後0へ戻った。専用合成actorのsignin/
+authenticated session/signoutとexact-owned cleanup後も0。同versionに絞ったLive Tailで
+自然の毎分Cronがoutcome=ok/例外0と確認し、tailを終了した。追加メールは0。
+
+一時検査Workerの初回HTTP assertはstatusを保存しておらず再構成しない。
+検査Workerだけ再配備した後、同じURLの404→401を観測し、同じmainの検査を再開した。
+一時Workerとfixtureは除去済み。別Read processで既存全表hash、Auth3・7・2、
+Business79/Auth10/Master25表、FK0、設定/namespaceを照合した。
+[限定受け入れ](evidence/staging-writer-tracking-2026-10-08.json)。
+
+停止flagは未設定、owner=null/drained=falseのまま。これは計測有効化と対象処理の
+終了確認であり、初回旧writer終了/外部writer lease/owner付き停止/整合capture/定期backup
+採用の証拠ではない。source・provider・運用方針・実端末/最終統合の残件と、
+実ユーザー移送・ドメインを最後にする範囲は保持する。
+
 ## 確認メールの期限表記を1時間へ修正（2026-10-08 JST）
 
 実リンクのJWTはexp−iat=3600秒なのに、移行したsignup本文は24時間と記載していた。
