@@ -1,5 +1,25 @@
 # Invitation-gated Better Auth signup on D1
 
+## 招待必須の実登録・メール確認・ログインを検証（2026-10-08 JST）
+
+通常Worker `f6d162c5-6168-4389-bf22-c0ab2f04c5a4` の専用Safari private windowで、
+未登録の番号付き検証用受信先、1回限りの招待コード、一時的な招待必須設定を使った。
+無効コードを拒否し、有効コードを適用。本人が新しいパスワードを入力して登録した。
+UUID command/user/credential/profile各1件、招待消費1回、Free/JA/招待帰属と
+未認証session0を確認した。Resendで指定先への確認メール2件のDeliveredを観測し、
+本人のリンク操作後にemailVerified=1/session0、通常ログイン後にdashboard/上限3/session1、
+native logout後にsession0、消費済みコードのAPI拒否を確認した。2通の発生源を推定しない。
+
+招待設定は元行へ正確に復元し、所有したsignup fixtureだけを除去した。
+別Read processでも全baseline hash、Auth3・7・2、Business79/Auth10/Master25表、FK0、
+同じWorkerを確認した。provider履歴を保持し、本人が入力したパスワードは読取・保存していない。
+[限定証拠](evidence/staging-invitation-signup-native-2026-10-08.json)。
+
+メール本文の24時間という記載と、実リンクのexp−iat=3600秒が不一致だった。
+実際の期限に合わせる4言語signup本文のtarget修正を別途記録する。
+この登録検証は全Auth/mail・provider・実スマホ/PWA・最終統合と六項目全体の完了ではない。
+実ユーザーデータ移送とドメイン移行は最後の別工程のまま。
+
 ## Scope and current state
 
 This slice moves invitation validation, signup identity creation, email verification, and the matching business profile onto the Cloudflare path. The implementation and integration tests are in draft PR #41. The 2026-10-06 staging checkpoint on Worker `471faabe-3aff-4312-ba22-cd326dc821e1` selected `INVITATION_SIGNUP_BACKEND=d1`, `AUTH_EMAIL_BACKEND=resend` and D1 email templates, with the Resend secret binding present. The 2026-10-06 read-only capability GET returns `signUp`, `emailVerification` and `passwordReset` true, and `invitationRequired` false. A fresh read-only capability GET on 2026-10-07 still returns signup/verification/reset enabled, invitationRequired=false and the four social providers. Registration remains open without a required invitation. [Current configuration and capability evidence](evidence/staging-invitation-capabilities-current-2026-10-06.json).
@@ -67,7 +87,9 @@ with no error toast. Owned Chrome profile/server/runtime are stopped/disposed on
 Unexpected CDP interception errors fail acceptance. Page-canceled local requests use the shared
 receipt helper and require the matching Chrome Network cancellation receipt; unknown failures are
 not silently ignored. The test is included in application CI. [Bounded evidence](evidence/invitation-signup-local-browser-2026-10-07.json).
-Actual staging invitation-required signup/consumption and real verification delivery for a new
-invited identity still need their own acceptance. The previous staging mail account is retained and
-already registered; a separate unregistered test recipient has been requested. Physical mobile,
-other full language flows and final integrated-candidate acceptance remain separate.
+The actual staging Japanese invitation-required signup, consumption, real delivered verification mail,
+human verification and native login/logout are now boundedly accepted by the 2026-10-08 checkpoint
+above. That owned signup identity/profile/code/command was cleaned; the previous human mail
+account remains retained. Other full language flows, new provider identities, physical mobile and
+final integrated-candidate acceptance remain separate. The mail lifetime-copy discrepancy is
+recorded independently from successful registration.

@@ -1,3 +1,39 @@
+## 確認メールの期限表記を1時間へ修正（2026-10-08 JST）
+
+実リンクのJWTはexp−iat=3600秒なのに、移行したsignup本文は24時間と記載していた。
+EN/JA/KO/IDの4行の本文を1時間へ合わせ、updated_atを更新した。現在のtoken期限、
+他12 template、source snapshot/初回seed、Worker/config/schemaは保持した。
+実際のtarget行を既存rendererへ渡し、HTML/textとも4言語で1時間と確認。
+実providerへの追加送信は0なので、新しい実メールの受信確認とは区別する。
+別Read processでtargetの全baseline hash、Auth3・7・2/FK0と同じWorkerを再確認した。
+[限定修正証拠](evidence/staging-auth-verification-copy-2026-10-08.json)。
+
+現在の4 signup行は初回source-copyからの明示的なtarget修正である。
+元source/seedの完全一致検証を現在の4行にそのまま当てれば相違になるため、
+初回取込証拠とこの補正を分けて比較する。次のbaselineはprivate
+`auth-verification-copy-2026-10-08/plan.json`のafterBaseline。
+rollbackは同planで現在値を照合した4行だけを戻す。全Auth/mailと六項目全体は未完了。
+
+## 招待必須の実登録・メール確認・ログインを検証（2026-10-08 JST）
+
+通常Worker `f6d162c5-6168-4389-bf22-c0ab2f04c5a4` の専用Safari private windowで、
+未登録の番号付き検証用受信先、1回限りの招待コード、一時的な招待必須設定を使った。
+無効コードを拒否し、有効コードを適用。本人が新しいパスワードを入力して登録した。
+UUID command/user/credential/profile各1件、招待消費1回、Free/JA/招待帰属と
+未認証session0を確認した。Resendで指定先への確認メール2件のDeliveredを観測し、
+本人のリンク操作後にemailVerified=1/session0、通常ログイン後にdashboard/上限3/session1、
+native logout後にsession0、消費済みコードのAPI拒否を確認した。2通の発生源を推定しない。
+
+招待設定は元行へ正確に復元し、所有したsignup fixtureだけを除去した。
+別Read processでも全baseline hash、Auth3・7・2、Business79/Auth10/Master25表、FK0、
+同じWorkerを確認した。provider履歴を保持し、本人が入力したパスワードは読取・保存していない。
+[限定証拠](evidence/staging-invitation-signup-native-2026-10-08.json)。
+
+メール本文の24時間という記載と、実リンクのexp−iat=3600秒が不一致だった。
+実際の期限に合わせる4言語signup本文のtarget修正を別途記録する。
+この登録検証は全Auth/mail・provider・実スマホ/PWA・最終統合と六項目全体の完了ではない。
+実ユーザーデータ移送とドメイン移行は最後の別工程のまま。
+
 ## 有料延長の自動更新と移管ロック表示を受け入れ（2026-10-08 JST）
 
 修正`8586601`/[CI37697249567](https://github.com/kanouk/fanmark-id/actions/runs/37697249567)は

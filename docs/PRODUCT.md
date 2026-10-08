@@ -95,6 +95,7 @@ Cloudflareの告知メールは、苦情・恒久的なバウンスで確定し�
 - Cloudflareのログアウトはサーバーのsession失効に成功してから画面の認証状態を解除する。失敗時は認証状態を保持し、成功通知やguest画面への遷移を行わずエラーを表示する。
 - Cloudflareの通常メールログインでも、既存の二段階認証が有効なら6桁TOTPを要求する。認証コードの検証と有効sessionの取得後にだけ保護画面へ進み、不正コード・期限切れ・session取得失敗ではログインを完了扱いにしない。入力したpassword/codeは確認段階の切替・取消・送信後に消去し、保存しない。
 - Cloudflareのパスワード再設定はログイン前に利用できる。送信設定が有効な場合に再設定メールを要求し、メールのtokenを使う再設定画面で新しいパスワードを保存する。tokenの期限・有効性は認証APIで検証し、tokenなしでは再設定メールの要求画面へ戻す。
+- Cloudflare stagingのメール確認リンクは発行から1時間有効。signupメールの4言語本文も1時間と記載する。確認前はログインsessionを発行せず、確認リンクを開くだけでもsessionは作成しない。
 - 確認メール: Supabase Auth の Confirm email は ON。メール/パスワード登録のみ確認メールを送信し、OAuth ユーザーは `send-auth-email` で `signup` および `password_changed_notification` をスキップする（provider≠email の場合）。
 - 多言語: 日本語/英語の翻訳バンドルを用意し、ヘッダーで切替可能。
 

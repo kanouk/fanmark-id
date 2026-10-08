@@ -1,5 +1,21 @@
 # Auth email templates on Cloudflare staging
 
+## 確認メールの期限表記を1時間へ修正（2026-10-08 JST）
+
+実リンクのJWTはexp−iat=3600秒なのに、移行したsignup本文は24時間と記載していた。
+EN/JA/KO/IDの4行の本文を1時間へ合わせ、updated_atを更新した。現在のtoken期限、
+他12 template、source snapshot/初回seed、Worker/config/schemaは保持した。
+実際のtarget行を既存rendererへ渡し、HTML/textとも4言語で1時間と確認。
+実providerへの追加送信は0なので、新しい実メールの受信確認とは区別する。
+別Read processでtargetの全baseline hash、Auth3・7・2/FK0と同じWorkerを再確認した。
+[限定修正証拠](evidence/staging-auth-verification-copy-2026-10-08.json)。
+
+現在の4 signup行は初回source-copyからの明示的なtarget修正である。
+元source/seedの完全一致検証を現在の4行にそのまま当てれば相違になるため、
+初回取込証拠とこの補正を分けて比較する。次のbaselineはprivate
+`auth-verification-copy-2026-10-08/plan.json`のafterBaseline。
+rollbackは同planで現在値を照合した4行だけを戻す。全Auth/mailと六項目全体は未完了。
+
 ## Current acceptance (2026-10-07 JST)
 
 Current Worker `17fdbf39-99a5-4927-bf12-bc11e19b7c3d` uses Resend/D1 Auth
