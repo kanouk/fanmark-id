@@ -8822,3 +8822,11 @@ and matching archive-key custody provisioned. Initial legacy-writer proof,
 first real source capture/remote operational restore, Cron and failure
 monitoring are still required. See [backup operations](backup-operations.md)
 and the latest HANDOFF. User data and DNS are deferred to the final phase.
+
+The same phase deployed implementation b32fb9c after CI37810140113 both-job
+success. Main now79e75f89; actual encrypted SDK escrow verified in both approved
+key stores; backup scheduler installed disabled/crons0. Independent readonly
+all-table/Auth3/7/2/asset6/namespace readback unchanged; owned probe absent.
+Native census active27, ownernull, drainedfalse: investigate, never reset by
+TTL. Mac locked/manual unlock requested for Safari connection inventory.
+Actual source archive/remote operational restore/Cron/monitoring remain open.

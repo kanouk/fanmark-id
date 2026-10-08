@@ -8024,3 +8024,43 @@ legacy-writer termination and external-writer exclusion; then first actual
 source archive, same-key isolated remote restore, daily Cron and failure
 monitoring acceptance. Do not turn permission, current active0, matching
 recaptures, elapsed time or platform-runtime-update grace into legacy drain.
+
+### Same phase: native inactive rollout, SDK escrow and current blocker
+
+Implementation b32fb9cfec0cebcdcf4547f318fdf579e1db7ed2 / CI37810140113 both jobs
+succeeded. Main is 79e75f89-8121-4d4a-8ec0-1df4f9f94383 at100%; native named RPC
+verified actual revision/key/source IDs/schema/scope. Actual SDK secret remains
+in its original Worker binding; encrypted escrow was decrypted/hash-verified
+and read back from both Mac Keychain and Vault0600. AES key also matches both
+stores. Dedicated R2 remains private. Scheduler fanmark-backup-staging installed
+with disabled selector/crons0. Source capture admission stays pending.
+
+Native writer status observed active27, owner=null, drained=false. It does not
+prove27 live operations or27 safely expired tickets. DO records must not be
+reset or TTL-cleared. The first private status assertion incorrectly required
+active0 for an inactive adapter readback; corrected observation preserves27
+and leaves capture unaccepted. Need investigation/closure, not permission to
+ignore the count. Initial pretracking writers remain a separate prerequisite.
+
+First predeployment private guard used */* for a known SPA route, got404, and
+was corrected to text/html after observing all six deployed/local hashes match.
+No deployment/secret mutation occurred in that failed guard. First probe
+postdeploy check did not retain HTTP status; don't infer its status or cause.
+The existing probe/version was independently read and reused; no duplicate
+app/probe deploy or archive-key secret upload or SDK escrow call occurred.
+Temporary probe is now deleted and absent in independent account inventory.
+
+Separate readonly process matched all retained tables/Auth3 users,7 accounts,
+2 sessions/FK0; public six files and DO namespaces unchanged; main pending
+admission and scheduler Cron0 independently checked. Private root rollout.json
+state verified_inactive and final-independent-readback.json are canonical.
+Old failedPhase in the raw journal is historical, not current work status.
+No source backup file, actual operational restore, daily Cron or alert accepted.
+
+CUA inventory showed no app-origin tabs in in-app/connected Chrome surfaces.
+Safari is running but OS/provider reports Mac locked and automatic unlock
+failed. AppleScript inventory timed out and is not evidence of absence. Asked
+the user once asynchronously to unlock; no reply yet. Wait for manual unlock
+before browser closure work. Preserve unrelated Chrome perfume-production
+work, Stripe tab, Resend tab and unrelated Safari windows. Smartphone remains
+unconfirmed. Source users/DNS/live Stripe still untouched.

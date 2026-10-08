@@ -14,7 +14,7 @@
 | 周期・保存期間 | 1日1回、30日。04:15 JSTを候補時刻とする。Cronはまだ登録していない。 |
 | 保存先 | 専用R2 `fanmark-backups-staging`を作成。managed/public URL無効、custom domainなしをAPIで照合。 |
 | 鍵 | 新規AES-256鍵をMacキーチェーンとVault `10_sensitive/secret-keys/fanmark-cloudflare-staging-backup`へ保存・一致照合。保存ファイルは0600。R2へ鍵を保存しない。Vaultの遠隔Sync完了は今回の検証に含めない。 |
-| SDK鍵 | 通常Worker内部で運用鍵により暗号化し、別のescrowとしてキーチェーンとVaultへ保存する。生のSDK鍵をRPC応答・ログへ出さず、既存鍵を変更しない。実環境での取得・保管は配備後の工程。 |
+| SDK鍵 | 通常Worker内部で運用鍵により暗号化し、別のescrowとしてキーチェーンとVaultへ保存する。生のSDK鍵をRPC応答・ログへ出さず、既存鍵を変更しない。通常Workerの内部RPCで取得し、復号/hash検証後にキーチェーンとVaultへ保存・読戻し照合済み。 |
 | 復旧 | session/MFA assurance/verificationを失効。認証情報・業務情報・マスター・画像の復旧は既存共通形式v1を使用する。 |
 | RPO/RTO | 24時間/4時間を目標とする。実測または保証ではない。 |
 | 本番 | 今回の採用・配備はstagingのみ。本番ユーザーデータとDNSは最後の別工程。 |
@@ -262,3 +262,31 @@ Business79/Auth10/Master25表、FK0、設定/namespaceを照合した。
 終了確認であり、初回旧writer終了/外部writer lease/owner付き停止/整合capture/定期backup
 採用の証拠ではない。source・provider・運用方針・実端末/最終統合の残件と、
 実ユーザー移送・ドメインを最後にする範囲は保持する。
+
+## 通常stagingへ無効状態で配備（2026-10-09 JST）
+
+`b32fb9c`/[CI37810140113](https://github.com/kanouk/fanmark-id/actions/runs/37810140113)は
+アプリ・Worker両job成功。通常Workerを`79e75f89-8121-4d4a-8ec0-1df4f9f94383`へ配備した。
+バックアップbinding・version metadata・新規archive keyを追加し、既存binding/secret名・
+D1/R2・DO namespaceを保持した。SDK鍵は変更せず、内部RPCの暗号化escrowを実際に
+復号/hash検証してMacキーチェーンとVaultへ保存・読み戻した。鍵/元のSDK秘密値を
+HTTP routerやR2へ公開していない。
+
+`fanmark-backup-staging`はservice bindingを持つが、daily selectorはdisabled、Cronは0。
+通常Workerのcapture admissionはpendingのまま。内部statusでは実version/key ID/
+source identity/schema/scopeが一致し、ownerなし・**active27・drained=false**を観測した。
+27件が現在も処理しているのか、終了応答が不明なのかは未判定。数だけで削除/失効しない。
+最初のprivate検査がactive0を期待して止まったため、status観測とcaptureの終了条件を
+分けた。実アプリの停止/整合captureの受け入れは行っていない。
+
+別の読み取り専用processで既存の全表hash・Auth3/7/2・FK0・公開6 asset・全DO namespaceを
+保持照合し、一時probeの除去とscheduler Cron0を確認した。配備前のprivate検査では
+既知のSPA routeへHTML Acceptを付けず404になり、正しいheaderで同一hashを確認後に
+配備した。新probe配備後の最初の検査失敗ではHTTP statusを保存していないため、
+具体的な失敗statusや原因を再構成しない。同じ配備済みprobeを独立照合して再開し、
+app/probe配備・secret登録・鍵取得を重複していない。
+
+Macがロックされ、Safariの旧接続確認はproviderに拒否された。手動unlockを依頼済み。
+未終了ticket27の調査、旧writer/外部writerの終了確認、最初の実source archiveと同じ
+運用鍵によるisolated remote復旧、定期Cron・失敗監視が残る。実スマホも未確認。
+[配備・鍵保管の限定証拠](evidence/staging-backup-provision-2026-10-09.json)。
