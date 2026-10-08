@@ -1160,3 +1160,14 @@ private journalはverified_and_cleaned。削除済み合成passwordとui-credent
 Apple・Discord新規/relay、告知UI/実通知/bulk、運用条件、同じ最終candidateの実スマホ・
 対応言語・旧PWA・障害復旧の通し確認が残る。実ユーザー移送とDNS/domainは最後の別工程。
 本番Stripe、追加mail、実ユーザー移送、DNS変更は0。全体移行は未完了。
+
+## ステージングの運用backup方針とwriter調査（2026-10-09 JST）
+
+運用方針の質問は回答済み。所有者・毎日/30日・非公開R2・Keychain/Vault・復旧時session失効を
+採用し、archive鍵と既存SDK鍵の暗号化escrowを保管・読み戻し確認した。実スマホは未確認。
+main97826bffではHTTP/Cronのwriter lifecycleをcontextへ登録し、新規ticketに開始時刻/versionを
+保持する。e53558b/CI37856413174両jobとlocal関連検査は成功。通常8種類GET後に旧形式34件/
+新形式未終了0件を観測し、データ・設定を独立保持照合した。旧形式34の原因/終了確認は未了。
+実archive/同運用鍵のremote復旧・毎日Cron/失敗監視は未受け入れ。
+[backupの現在状態](backup-operations.md)・[限定証拠](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。
+実ユーザー移送と本番ドメインは引き続き最後の別工程。

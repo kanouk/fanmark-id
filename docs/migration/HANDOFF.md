@@ -8073,3 +8073,13 @@ Safariのスタートページのみと、接続済みChrome/in-appにsource app
 HTTP/Cronのenter〜leave全promiseのwaitUntil登録と、新規ticketの開始時刻/version集計を追加。
 local終了追跡8/通知21/backup11/停止Cron16件成功。remote配備は後続CI/観測待ち。
 詳細は[backup operations](backup-operations.md)末尾。
+
+### 上記修正のnative結果
+
+e53558b/CI37856413174は両job成功。main97826bffを100%配信。
+配備直前active34、配備後8種類GETでlegacy34・attributed0を観測。
+既存全表hash/Auth3・7・2/FK0/111 binding/2 namespaceを独立保持照合した。
+最初のguardはJSON項目順を差分扱いしたため停止し、値の独立比較で回復した。
+app再配備は1回、probeは除去済み。capture pending・backup Cron0。
+旧記録34の原因/終了、初回旧writer/実source backup/remote復旧/監視は未受け入れ。
+[限定証拠](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。

@@ -317,3 +317,21 @@ DO自身はpending I/Oで存続するため、DOのwaitUntilを追加しない�
 既存記録の原因調査と実archive/isolated復旧・Cron/監視の受け入れは残る。
 local nativeの終了追跡8件、通知21件、バックアップ11件、停止/Cron16件を確認した。
 この節の新しいコードのremote配備・帰属観測は、後続の結果を確認するまで未受け入れ。
+
+### 同じコードのnative配備・独立照合
+
+`e53558b`/[CI37856413174](https://github.com/kanouk/fanmark-id/actions/runs/37856413174)は
+アプリ・Worker両job成功。mainは`97826bff-6d43-49d2-bd4e-8ffb7f1a328e`を100%配信。
+配備直前active34。配備後、認証ok/capabilities/未認証session/root/index/checkout戻り先/
+Service Worker/cache-clearの8種類のGETとidle観測で、legacy34・attributed0が続いた。
+旧記録を消しておらず、新しい未終了ticketはこの観測で残らなかった。開始時刻/versionを
+持つnative実処理の途中観測や、切断時の終了継続のremote再現は今回の範囲に含めない。
+開始・leave遅延中のcontext登録と旧形式保持は前述のlocal nativeで検証した。
+
+配備後guardがbindingのJSON項目順を差分と判定した。値を名前順に独立照合し直し、
+全111 bindingと2 DO namespace、既存全表hash、Auth3/7/2・FK0を保持確認した。
+配備は1回のみ。最初と独立観測用のprobeはそれぞれ削除・inventory照合済み。
+配備前の同version Live Tailは自然の毎分Cron1件とenter/leaveが各outcome=ok、例外0。
+これは旧記録34件の終了・原因を証明しない。capture admission pending、backup Cron0、
+実source backup未実行を保持する。
+[限定証拠](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。

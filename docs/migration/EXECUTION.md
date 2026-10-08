@@ -8837,3 +8837,8 @@ Actual source archive/remote operational restore/Cron/monitoring remain open.
 - main79e75f89のreadonly RPCでactive30、通常GET後30/30/31/30。原因/対応は未確定、記録保持。
 - HTTP/Cronの全writer lifecycleのcontext登録、新規ticketの開始時刻/version集計を追加。
 - local追跡8/通知21/backup11/停止Cron16件成功。実capture・定期Cron・本番user/DNSは未実行。
+
+- e53558b/CI37856413174両job成功後にmain97826bffへ1回配備。8種類GET後はlegacy34/attributed0。
+- binding guardのJSON項目順による差分を、名前順の値・全表hash/namespaceの独立比較で回復。
+- 既存Auth3/7/2・FK0と111 binding/2 namespaceを保持。各probe除去、実capture/Cronは未有効化。
+- [native限定結果](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。原因未判定の旧ticket34は保持。
