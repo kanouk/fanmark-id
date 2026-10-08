@@ -34,6 +34,8 @@ export function isStagingNotificationWakeTarget(config) {
 
 /** Accept either the legacy staged Cron or the complete opt-in alarm baseline. */
 export function stagingNotificationScheduleMode(config) {
+  if (["RECOVERY_DRAIN_BACKEND", "RECOVERY_DRAIN_SCOPE_DIGEST", "RECOVERY_WRITE_FREEZE"]
+    .some(key => config?.vars?.[key] !== undefined)) return null;
   if (isStagingNotificationWakeTarget(config)) return "alarm";
   if (config?.vars?.NOTIFICATION_WAKE_BACKEND !== undefined || config?.vars?.NOTIFICATION_PROCESSOR_BACKEND !== "d1" ||
       config?.durable_objects !== undefined || config?.migrations !== undefined) return null;

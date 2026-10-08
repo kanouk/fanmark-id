@@ -190,3 +190,9 @@ wrapperでenter/leaveを記録する。停止selectorとpublic操作routeは追�
 初回CI37747859530ではfixtureが通常configの新DOを引き継いで2件失敗した。
 このprojectionと混入拒否を修正し、selector coverageと合わせてlocal9件成功。
 通常アプリの計測設定を拒否するものではなく、旧単独rehearsalの分離境界である。
+
+local全migration-data試験では、同じ旧config projectionを使うexpiry/archiveの
+3件も不一致になった。3つの単独rehearsal fixtureを同じ分離境界へ揃え、
+legacy Cronでも計測設定の混入を拒否する。修正後のlocal307件が成功した。
+招待登録とeditorのlocal fixtureもmainのscope/selectorを引き継がず、
+各試験のowned storeだけを使う構成を保持する。

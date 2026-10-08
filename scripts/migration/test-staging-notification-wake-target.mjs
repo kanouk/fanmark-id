@@ -71,6 +71,11 @@ test("refuses production routes, other targets, malformed bindings and enabled s
 });
 
 test("notification-only rehearsals reject inherited recovery tracking or freeze settings", () => {
+  const legacy = structuredClone(candidate);
+  delete legacy.vars.NOTIFICATION_WAKE_BACKEND;
+  delete legacy.durable_objects;
+  delete legacy.migrations;
+  legacy.triggers.crons = ["* * * * *", "0 0 * * *"];
   for (const [key, value] of [
     ["RECOVERY_DRAIN_BACKEND", "durable-object"],
     ["RECOVERY_DRAIN_SCOPE_DIGEST", "a".repeat(64)],
@@ -79,6 +84,7 @@ test("notification-only rehearsals reject inherited recovery tracking or freeze 
     const mixed = { ...candidate, vars: { ...candidate.vars, [key]: value } };
     assert.equal(isStagingNotificationWakeTarget(mixed), false);
     assert.equal(stagingNotificationScheduleMode(mixed), null);
+    assert.equal(stagingNotificationScheduleMode({ ...legacy, vars: { ...legacy.vars, [key]: value } }), null);
   }
   const extraBinding = { ...candidate, durable_objects: { bindings: [
     ...candidate.durable_objects.bindings,

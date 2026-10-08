@@ -12,6 +12,11 @@ delete config.vars.NOTIFICATION_ARCHIVE_BACKEND;
 delete config.vars.STRIPE_DISPATCH_BACKEND;
 delete config.vars.STRIPE_WEBHOOK_BACKEND;
 delete config.vars.AUTH_EMAIL_BACKEND;
+delete config.vars.RECOVERY_DRAIN_BACKEND;
+delete config.vars.RECOVERY_DRAIN_SCOPE_DIGEST;
+delete config.vars.RECOVERY_WRITE_FREEZE;
+config.durable_objects.bindings = config.durable_objects.bindings.filter(binding => binding.name === "NOTIFICATION_WAKE");
+config.migrations = config.migrations.filter(migration => migration.tag === "notification-wake-v1");
 config.triggers.crons = ["0 0 * * *"];
 const identity = {
   loggedIn: true,

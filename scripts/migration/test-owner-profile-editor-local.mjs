@@ -29,9 +29,11 @@ const config=JSON.parse(await readFile(path.join(api,'wrangler.app-staging.jsonc
 delete config.account_id;delete config.triggers;
 // This isolated editor test has no scheduler or provider credentials.
 delete config.vars.LICENSE_EXPIRY_BACKEND;delete config.vars.NOTIFICATION_ARCHIVE_BACKEND;delete config.vars.AUTH_SOCIAL_BACKEND;
-for (const key of ['AUTH_EMAIL_BACKEND','RESEND_FROM_EMAIL','INVITATION_SIGNUP_BACKEND']) delete config.vars[key];
+for (const key of ['AUTH_EMAIL_BACKEND','RESEND_FROM_EMAIL','INVITATION_SIGNUP_BACKEND','RECOVERY_DRAIN_BACKEND','RECOVERY_DRAIN_SCOPE_DIGEST','RECOVERY_WRITE_FREEZE']) delete config.vars[key];
 for (const key of ['STRIPE_WEBHOOK_BACKEND','STRIPE_DISPATCH_BACKEND','STRIPE_PLAN_CHECKOUT_BACKEND',
   'STRIPE_PLAN_CHANGE_BACKEND','STRIPE_CUSTOMER_PORTAL_BACKEND','STRIPE_EXTENSION_CHECKOUT_BACKEND']) delete config.vars[key];
+config.durable_objects.bindings=config.durable_objects.bindings.filter(binding=>binding.name!=='RECOVERY_DRAIN');
+config.migrations=config.migrations.filter(migration=>migration.tag!=='recovery-writer-drain-v1');
 config.name='fanmark-local-editor-compose';
 config.main=path.join(api,'src/index.ts');
 config.assets.directory=path.join(temp,'assets');
