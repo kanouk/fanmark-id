@@ -1,5 +1,27 @@
 # ユーザーデータ・ドメイン移行前の完了判定
 
+## Resendの実署名通知と受信専用構成を受け入れ（2026-10-08 JST）
+
+利用者がWebhook追加と署名キーのstaging/キーチェーン保存を個別に許可した。
+Workspace全体の宛先・件名・配送状態が届く範囲を説明済み。番号付き検証宛先へ
+MFA認証付きWorker APIから1通だけ送信し、実Resendのsent/delivered両イベントを
+署名検証して最小6列のD1記録と照合した。宛先・件名はevent表へ保存しない。
+deliveredのprovider再送も200/received=true、Attempts 2で確認し、D1は同じ2行のまま。
+
+通常stagingは`cbb800a3-9f71-4a90-b21c-6fe87d2d7b12`を100%配信する。
+`BROADCAST_WEBHOOK_BACKEND=d1`と署名secretを保持し、bulk/test送信のselectorと
+固定宛先は解除した。元の6 asset・通知/処理件数計測DOと他bindingを保持した。
+専用actor/draft/audit/eventのみ除去し、独立Read processで他の全表hash、Auth3・7・2、
+FK0を照合した。MFA generationは合成factorの作成/削除により256→258へ進み、戻さない。
+[限定証拠](evidence/staging-resend-signed-webhook-2026-10-08.json)。
+
+利用者はstagingのD1・R2に既知のfanmark Worker/このチャット以外の書き込み元は
+ないと回答した。将来の追加writerや本番まで確認済みとは扱わない。
+実Resendの署名受信とこの再送の残件は解消。一括配送、実bounce/苦情等、retry/retention、
+バックアップ運用採用、Apple/Discord新規identityとApple relay、実スマホ/PWAと
+同じ最終candidateの統合は残る。実ユーザー移送と本番domainは最後の別工程。
+
+
 ## R2合計20 MiBの復旧・exact resumeを実Cloudflareで受け入れ（2026-10-08 JST）
 
 - `87920b1` / [CI37762268107](https://github.com/kanouk/fanmark-id/actions/runs/37762268107) はアプリ・Worker両job成功。

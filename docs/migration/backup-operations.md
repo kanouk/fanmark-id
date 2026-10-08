@@ -93,6 +93,12 @@ RECOVERY_WRITE_FREEZEもselector一覧へ出力し、flag存在をdrain完了へ
 
 ## 運用にするために残っていること
 
+2026-10-08 JST、利用者はstagingのD1・R2について、既知のfanmark Workerと
+このチャットの作業以外のCLI・外部ジョブ・手動書き込み元はないと回答した。
+これは現在の書き込み元の確認であり、将来の追加処理や本番環境には適用しない。
+一貫した保存点のcaptureでは、この作業の直接書き込みも止め、main/companionの
+対象bindingと処理終了を確認する。鍵・保存先・周期・保持期間等の採用待ちは維持する。
+
 Businessの固定79表と採番状態のcapture/AES-256-GCM/空target復旧も共通moduleへ
 追加した。現行27 migrationのnative合成復旧5件、Master互換回帰7件、型検査とdry-run
 が成功。招待消費/通知wake/削除済みIDを保持する。[Business復旧](business-recovery.md)。

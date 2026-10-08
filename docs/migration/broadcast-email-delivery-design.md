@@ -182,7 +182,7 @@ snapshotting and dispatch even when the receiver is enabled; late provider event
 can still update recipients and suppression. No new route or schema is introduced.
 The native D1 regression checks signed deduplication/reconciliation of an already
 completed run with sending paused, unchanged recipient count, and zero provider
-calls. Remote registration/deployment remains pending.
+calls. Remote registration/deployment was accepted on 2026-10-08; see the scoped evidence below.
 
 ## Acceptance tests
 
@@ -245,3 +245,21 @@ review remains open because the host Mac was locked.
 2026-10-06 acceptance: candidate eeb4f6a passed both jobs in CI 37414547662. The full 26-migration Business schema matched in an owned remote D1; eight signed HTTP scenarios and invalid/duplicate events passed through the actual isolated Worker handler. The owned D1 and Worker were deleted and original resources/data preserved. Staging now uses Worker b3ce17ce-cd56-464c-8694-2215dce51b39 and ledger26, with bulk/test sending still disabled. See [bounded ordering and deployment evidence](evidence/broadcast-terminal-outcomes-2026-10-06.json). This does not accept delivery from Resend or the send UI/bulk/retention.
 
 0026 acceptance: candidate a5a2b75 passed both jobs in CI 37416934627. An owned remote D1 matched all 27 Business migrations; the isolated actual Worker accepted eight terminal-outcome cases and eight chronology cases across both arrival and ACK orders. Missing or invalid signed provider timestamps made no writes, exact fractional provider time survived, and duplicate receipts remained unique. Owned resources were deleted and original resources/data preserved. Staging now uses Worker 0605e4ed-38d2-4e09-967e-3c3f3c99910d and ledger27, with sending disabled. Separate readback matched retained tables, the two changed definitions, other schema, secret names and four public assets. See [provider chronology evidence](evidence/broadcast-provider-chronology-2026-10-06.json). The0025/26-migration proof remains historical; Resend service delivery, send UI/bulk/retention and full combined recovery under27 remain separate.
+
+## Actual Resend signed callbacks (2026-10-08 JST)
+
+The user explicitly approved the Workspace-wide webhook and secret destinations.
+One fixed-recipient email was sent through the MFA-protected staging test API.
+The actual `email.sent` and `email.delivered` callbacks returned HTTP 200, and
+matched the two minimized Business D1 event rows. A provider replay of the
+same delivered event succeeded with test and bulk sending disabled; the event
+rows were unchanged. Owned actor, draft, audit and event rows were cleaned.
+Independent readback retained the other table hashes and Auth 3/7/2; the MFA
+generation advanced from 256 to 258 and was not reset.
+
+Staging Worker `cbb800a3-9f71-4a90-b21c-6fe87d2d7b12` keeps
+`BROADCAST_WEBHOOK_BACKEND=d1` and the signing secret. The canonical staging
+configuration enables this receiver but leaves bulk and test sending disabled.
+This does not accept bulk audience delivery, actual bounce/complaint/failure/
+suppression events, operational retry/retention policy, or full migration.
+[Scoped evidence](evidence/staging-resend-signed-webhook-2026-10-08.json).
