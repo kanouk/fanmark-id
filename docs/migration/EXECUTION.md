@@ -1,3 +1,19 @@
+## 修正後の確認メールを実配信で確認（2026-10-08 JST）
+
+通常Worker `1071896f-7e6c-4218-818d-6b1eceeea9f3` で、許可済み番号付き宛先test02へ
+確認メールを1通だけ送った。ResendのDelivered、実際の日本語本文の「1時間」、
+リンクのexp−iat=3600秒、同originのverify-emailと`/auth?verified=1`への戻り先を確認。
+リンクは開いておらず、本人のGmail受信・新規signup/loginの受け入れには拡張しない。
+[限定証拠](evidence/staging-auth-verification-copy-delivery-2026-10-08.json)。
+
+パスワード・credential account・sessionを作らないemail-only fixtureとprofileだけを
+exact条件で削除した。別Read processで全baseline hash、Auth3・7・2、
+Business79/Auth10/Master25表、FK0、同じWorkerとbinding/namespaceを照合した。
+test02は旧tokenの期限まで再利用せず、次の検証はtest03以降を使う。
+今回の追加送信は1通。4言語rendererの既存証拠は保持するが、残る3言語の新しい実配信、
+Resend署名Webhook・運用backup・実端末/最終統合と六項目全体は未完了。
+実ユーザー移送とドメイン移行は最後の別工程のまま。
+
 ## 通常stagingの処理件数計測を有効化（2026-10-08 JST）
 
 候補450ec08/[CI37748771478](https://github.com/kanouk/fanmark-id/actions/runs/37748771478)は
