@@ -1,5 +1,14 @@
 # R2の保存・再開可能な復旧処理
 
+## R2容量上限の修正候補を実環境で再検証（2026-10-08 JST）
+
+- `5eb0ced` の [CI37758494467](https://github.com/kanouk/fanmark-id/actions/runs/37758494467) は両job成功。
+- 同じ合成3 object・合計20 MiB・Standard・保存形式v1で新規専用環境を作り、単一の実行要求を送った。復号 `open-maximum` で再び native `exceededMemory` を確認した。最初の中間コピー削減だけでは容量上限の条件を満たさない。
+- 実行終了を同script/versionの監視結果で確認してから、所有7 bucketとWorkerを削除した。別のRead processで既存全表hash/Auth3・7・2/FK0/設定・namespace・元資源inventoryを保持照合した。journalの最初の非終端cleanup拒否は履歴として残す。
+- 次の修正候補は、private archive containerのciphertext参照と復号byte bufferをparse前に解放し、decoded textをvalidate前に解放する。呼び出し元のarchiveは変更せず、保存形式と8 MiB/object・20 MiB/rawの上限を維持する。
+- ローカル20 MiBの復号・復元・exact resume・plus-one拒否を確認した。次候補のCIと実Cloudflare容量上限の受け入れはまだ未完了。通常stagingの再配備は0。
+- 記録: [`evidence/r2-recovery-capacity-candidate-recheck-2026-10-08.json`](evidence/r2-recovery-capacity-candidate-recheck-2026-10-08.json)。実ユーザー移送と本番ドメイン変更は最後の別工程。
+
 `workers/api/src/r2-recovery.ts`は、既にCloudflareにあるavatars/cover-images bucket全体の
 capture・AES-256-GCM保存/読込・空targetまたはexact subsetへの復旧を行う管理処理。
 source Supabase Storageのexport/importとは別で、公開routerやcollectorには接続していない。

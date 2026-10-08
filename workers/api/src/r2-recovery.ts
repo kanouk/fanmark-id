@@ -176,14 +176,24 @@ export async function openR2RecoverySnapshot(archive: R2RecoveryArchive, key: Cr
   kind(expectedKind); archiveKey(key, "decrypt"); archive = {...archive};
   if (!archive || archive.format !== "fanmark-r2-recovery-v1" || archive.kind !== expectedKind ||
       !HASH.test(archive.objectsHash)) fail("archive_invalid");
-  const nonce = decode(archive.nonce, 12), ciphertext = decode(archive.ciphertext, MAX_ARCHIVE_BYTES);
+  const nonce = decode(archive.nonce, 12);
+  let ciphertext = decode(archive.ciphertext, MAX_ARCHIVE_BYTES);
   if (nonce.length !== 12 || ciphertext.length < 16) fail("archive_invalid");
+  // This is our private container. Drop the encoded ciphertext before decrypting,
+  // then release byte buffers before allocating the parsed snapshot and its digest.
+  archive.ciphertext = "";
   let plaintext: ArrayBuffer;
   try {plaintext = await crypto.subtle.decrypt({name: "AES-GCM", iv: nonce, additionalData: aad(archive)}, key, ciphertext);}
   catch {fail("decryption_failed");}
+  finally {ciphertext.fill(0); ciphertext = new Uint8Array(0);}
+  let text: string;
+  try {text = new TextDecoder("utf-8", {fatal: true}).decode(plaintext);}
+  catch {fail("snapshot_invalid");}
+  finally {new Uint8Array(plaintext).fill(0); plaintext = new ArrayBuffer(0);}
   let snapshot: R2RecoverySnapshot;
-  try {snapshot = JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(plaintext)) as R2RecoverySnapshot;}
-  catch {fail("snapshot_invalid");} finally {new Uint8Array(plaintext).fill(0);}
+  try {snapshot = JSON.parse(text) as R2RecoverySnapshot;}
+  catch {fail("snapshot_invalid");}
+  finally {text = "";}
   await validate(snapshot, expectedKind);
   if (snapshot.objectsHash !== archive.objectsHash) fail("snapshot_invalid");
   return snapshot;

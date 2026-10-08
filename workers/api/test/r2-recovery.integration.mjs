@@ -67,6 +67,9 @@ test('R2 archive codecs cross chunk boundaries without accepting noncanonical da
     const restored = await restoring;
     assert.equal(restored.objectsHash, expectedHash); assert.equal(restored.objects.length, 6);
     assert.ok(restored.objects.every(object => object.httpMetadata.contentType === 'application/octet-stream'));
+    const retained = await seal(restored, key, 'avatars'), before = structuredClone(retained);
+    assert.equal((await open(retained, key, 'avatars')).objectsHash, expectedHash);
+    assert.deepEqual(retained, before, 'releasing private decode buffers must preserve the caller archive');
   } finally {await mf.dispose();}
 });
 test('R2 capture and exact resumable restore on native local buckets', {timeout: 60_000}, async t => {
