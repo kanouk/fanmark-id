@@ -96,3 +96,14 @@ provisioning and initial-setup flow still needs integration acceptance. Provider
 credentials remain absent. Credential or synthetic proof cannot clear this Auth binding
 for the complete migration. The function/RLS/trigger gate and real provider,
 mobile and remote acceptance remain open.
+
+## Native invitation-required acceptance (2026-10-08 JST)
+
+The Japanese native signup now accepts invalid/valid invitation interaction,
+one-time capacity consumption, server-derived Free/JA defaults and invitation
+attribution, followed by verification/login/logout and independent exact-owned
+cleanup. See [native proof](evidence/staging-invitation-signup-native-2026-10-08.json)
+and [source counterpart linkage](evidence/source-invitation-counterpart-acceptance-2026-10-08.json).
+This replaces the prior invitation-consumption evidence gap. It does not accept
+new Apple/Discord identity provisioning, Apple relay, arbitrary external callers
+or the final integrated candidate.

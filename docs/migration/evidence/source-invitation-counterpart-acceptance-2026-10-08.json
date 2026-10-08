@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-08T07:51:25.277Z",
+  "scope": "Link already accepted native invitation signup to three source counterparts; no new source observation or runtime test",
+  "sourceCatalogObservedAt": "2026-10-07T21:14:44.389671+00:00",
+  "sourceRuntimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+  "acceptedFeatureEvidence": "staging-invitation-signup-native-2026-10-08.json",
+  "updatedFunctions": [
+    "handle_new_user",
+    "use_invitation_code",
+    "validate_invitation_code"
+  ],
+  "sourceMetadataUnchanged": true,
+  "all58IdentitiesAndDefinitionsMatched": true,
+  "missingFunctionCount": 0,
+  "manualTrace": {
+    "path": "docs/migration/evidence/source-function-counterparts-2026-10-03.json",
+    "sha256": "249232da69f7f46a8b7664fd1178467a20e6ca873fc6d65986a9999047b2f349"
+  },
+  "counterpartTrace": {
+    "functionCount": 58,
+    "missingFunctionCount": 0,
+    "traceSha256": "a39b74fd54267dd62281e2544b4e2ed890aaa3af399bf1cfbb44acf7b301a822",
+    "semanticApprovalInferred": false,
+    "boundary": "Exact source identity, definition, attributes and binding count matched to manual correspondence; feature/provider/operational acceptance and converter gates remain separate."
+  },
+  "priorTraceProof": "source-runtime-counterpart-refresh-2026-10-08.json",
+  "pendingClassifierCount": 54,
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "newProviderEmails": 0,
+  "sourceOrTargetWritesPerformed": false,
+  "remainingBoundary": "Arbitrary external consumers, new Apple/Discord identities and relay, operational adoption and final integration remain separate."
+}

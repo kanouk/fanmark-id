@@ -1,5 +1,22 @@
 # Source runtime bindings review
 
+## Native invitation acceptance linked (2026-10-08 JST)
+
+The accepted Japanese invitation-required signup now replaces capability-only
+consumption gaps for `handle_new_user`, `use_invitation_code` and
+`validate_invitation_code`. Invalid/valid code interaction, one-time consumption,
+Free/JA defaults and attribution, verification/login/logout and independent
+cleanup readback are linked to the existing
+[native acceptance](evidence/staging-invitation-signup-native-2026-10-08.json).
+Re-linking the already captured catalog validates all58 identities/definitions,
+with exactly these three correspondence hashes changed. This is documentation
+linkage, with no new source observation, runtime test, email or D1 write.
+[Current trace proof](evidence/source-invitation-counterpart-acceptance-2026-10-08.json)
+records the new checksum; prior trace proofs retain their historical checksums.
+External/direct callers, provider and final integration gates remain open;
+54 conservative classifier dispositions and whole-source/converter false gates
+are unchanged.
+
 ## Latest source observation (2026-10-08 JST)
 
 The metadata-only observation at2026-10-07T21:14:44.389671Z retains58 functions,
