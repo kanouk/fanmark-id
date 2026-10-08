@@ -95,3 +95,21 @@ queue滞留0/API200も一致。retained staging bucketへのwriteやapp runtime�
 proof自体は約18秒、作成/配備/cleanupを含むone-off全体は約98秒だった。合成4 objectの
 所要時間であり、実データ量や新規鍵/off-host/retentionによる運用RTOを保証しない。
 InfrequentAccess/最大容量のCPU・memory/全ストア整合点/運用collectorの受け入れは別。
+
+## R2の容量上限でメモリ超過を確認・修正候補（2026-10-08 JST）
+
+通常stagingを保持し、新規7 bucket/専用Workerで8 MiB・8 MiB・4 MiBの合成objectを
+扱った。補完なしStandardの合計20 MiB captureは通ったが、`open-maximum`で応答が
+不明になり、同じscript/version・開始時刻のCloudflare監視データにexceededMemory1件を
+確認した。未完了receiptを成功扱いにせず、呼出終了の確認後だけoperator failureを
+記録し、同じjournalの読取再開で全owned資源を削除した。POSTの再送は0。
+別Read processで元inventory・main全表hash/Auth3・7・2/FK0・設定/namespaceを保持照合。
+[不合格の限定証拠と候補](evidence/r2-recovery-maximum-capacity-failure-2026-10-08.json)。
+
+容量8/20 MiBとarchive v1を維持し、base64の巨大なbinary/canonical文字列コピーを
+chunk処理に変更。immutableなpayload文字列を共有し、snapshot/metadata等のmutable
+containerはコピーする。chunk境界・不正padding/pad bits/空白と呼出後input変更の拒否/
+分離を加え、R2 9件・一式復旧16件・型/bundleとlocal実workerd20 MiB検証が通った。
+修正候補の両CIと、新しい隔離remoteで同じ容量の受け入れはまだ必要。main再配備は0。
+1000 object上限、InfrequentAccess、全ストア同時の最大容量/運用RTOへは拡張しない。
+実ユーザー移送とdomainは最後の別工程、六項目と既存の回答待ちは維持する。

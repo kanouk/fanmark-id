@@ -22,16 +22,40 @@ function metadataValid(value: unknown): value is Record<string, string> {
     Object.values(value).every(v => typeof v === "string") && encoder.encode(JSON.stringify(value)).length <= 16_384;
 }
 function base64(bytes: Uint8Array): string {
-  let text = "";
-  for (let i = 0; i < bytes.length; i += 8192) text += String.fromCharCode(...bytes.subarray(i, i + 8192));
-  return btoa(text);
+  // Keep each binary string bounded; full-size intermediate strings exhaust
+  // the Worker heap when opening an archive at the supported capacity.
+  let encoded = "";
+  for (let i = 0; i < bytes.length; i += 8190) {
+    encoded += btoa(String.fromCharCode(...bytes.subarray(i, i + 8190)));
+  }
+  return encoded;
 }
 function decode(value: string, maximum: number): Uint8Array {
-  if (typeof value !== "string" || value.length > 4 * Math.ceil(maximum / 3) || value.length % 4 ||
-      !/^[A-Za-z0-9+/]*={0,2}$/u.test(value)) fail("encoding_invalid");
-  const bytes = Uint8Array.from(atob(value), c => c.charCodeAt(0));
-  if (bytes.length > maximum || base64(bytes) !== value) fail("encoding_invalid");
+  if (typeof value !== "string" || value.length > 4 * Math.ceil(maximum / 3) || value.length % 4) fail("encoding_invalid");
+  const size = value.length / 4 * 3 - (value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0);
+  if (size > maximum) fail("encoding_invalid");
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (let i = 0; i < value.length; i += 32768) {
+    const part = value.slice(i, i + 32768);
+    let binary: string;
+    try {binary = atob(part);} catch {fail("encoding_invalid");}
+    // Canonical chunk roundtrip rejects whitespace, bad padding and pad bits
+    // without allocating another archive-sized binary/base64 string.
+    if (btoa(binary) !== part || offset + binary.length > size) fail("encoding_invalid");
+    for (let j = 0; j < binary.length; j++) bytes[offset++] = binary.charCodeAt(j);
+  }
+  if (offset !== size) fail("encoding_invalid");
   return bytes;
+}
+function copySnapshot(snapshot: R2RecoverySnapshot): R2RecoverySnapshot {
+  if (!snapshot || !Array.isArray(snapshot.objects) || snapshot.objects.length > MAX_OBJECTS) fail("snapshot_invalid");
+  return {...snapshot, objects: snapshot.objects.map(object => {
+    if (!object || !metadataValid(object.httpMetadata) || !metadataValid(object.customMetadata)) fail("snapshot_invalid");
+    // All scalar strings are immutable, including the large base64 payload.
+    // Copy the mutable containers without serializing those strings again.
+    return {...object, httpMetadata: {...object.httpMetadata}, customMetadata: {...object.customMetadata}};
+  })};
 }
 async function byteHash(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), b => b.toString(16).padStart(2, "0")).join("");
@@ -98,7 +122,7 @@ async function inventory(bucket: R2Bucket): Promise<R2Object[]> {
     if (!page.truncated) break;
     if (!page.cursor || seen.has(page.cursor)) fail("pagination_invalid");
     seen.add(page.cursor); cursor = page.cursor;
-  } while (true);
+  } while (cursor !== undefined);
   return objects.sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
 }
 /** Reject observed changes; repeated reads are not an atomic cross-store snapshot. */
@@ -136,7 +160,7 @@ function aad(archive: Pick<R2RecoveryArchive, "format" | "kind" | "objectsHash">
 }
 export async function sealR2RecoverySnapshot(snapshot: R2RecoverySnapshot, key: CryptoKey,
   expectedKind: R2RecoveryKind): Promise<R2RecoveryArchive> {
-  archiveKey(key, "encrypt"); snapshot = structuredClone(snapshot); await validate(snapshot, expectedKind);
+  archiveKey(key, "encrypt"); snapshot = copySnapshot(snapshot); await validate(snapshot, expectedKind);
   const plaintext = encoder.encode(JSON.stringify(snapshot));
   if (plaintext.length + 16 > MAX_ARCHIVE_BYTES) {plaintext.fill(0); fail("archive_too_large");}
   const nonce = crypto.getRandomValues(new Uint8Array(12));
@@ -149,7 +173,7 @@ export async function sealR2RecoverySnapshot(snapshot: R2RecoverySnapshot, key: 
 }
 export async function openR2RecoverySnapshot(archive: R2RecoveryArchive, key: CryptoKey,
   expectedKind: R2RecoveryKind): Promise<R2RecoverySnapshot> {
-  kind(expectedKind); archiveKey(key, "decrypt"); archive = structuredClone(archive);
+  kind(expectedKind); archiveKey(key, "decrypt"); archive = {...archive};
   if (!archive || archive.format !== "fanmark-r2-recovery-v1" || archive.kind !== expectedKind ||
       !HASH.test(archive.objectsHash)) fail("archive_invalid");
   const nonce = decode(archive.nonce, 12), ciphertext = decode(archive.ciphertext, MAX_ARCHIVE_BYTES);
@@ -168,7 +192,7 @@ export async function openR2RecoverySnapshot(archive: R2RecoveryArchive, key: Cr
 export async function restoreR2RecoverySnapshot(bucket: R2Bucket, snapshot: R2RecoverySnapshot,
   options: {expectedKind: R2RecoveryKind; mode: "new-empty" | "resume-exact"}): Promise<R2RecoverySnapshot> {
   if (!options || !["new-empty", "resume-exact"].includes(options.mode)) fail("target_mode_required");
-  options = {...options}; snapshot = structuredClone(snapshot); await validate(snapshot, options.expectedKind);
+  options = {...options}; snapshot = copySnapshot(snapshot); await validate(snapshot, options.expectedKind);
   snapshot.objects = normalized(snapshot.objects);
   const current = await captureR2RecoverySnapshot(bucket, options.expectedKind);
   if (options.mode === "new-empty" && current.objects.length) fail("target_not_empty");

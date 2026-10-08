@@ -29,6 +29,46 @@ function standardLocalBucket(bucket) {
     list: async (...args) => {const page = await bucket.list(...args); return {...page, objects: page.objects.map(object)};},
   });
 }
+test('R2 archive codecs cross chunk boundaries without accepting noncanonical data or caller mutation', {timeout: 60_000}, async () => {
+  const mf = new Miniflare({workers: [{config: {name: 'r2-recovery-codec-boundaries', type: 'worker', compatibilityDate: '2026-09-18',
+    env: {SOURCE: {type: 'r2', name: 'codec-source'}, TARGET: {type: 'r2', name: 'codec-target'}},
+    manifest: {mainModule: 'index.js', modules: {'index.js': {type: 'esm', contents:
+      'export default {fetch(){return new Response("local-only")}}'}}},
+  }}]});
+  try {
+    const source = standardLocalBucket(await mf.getR2Bucket('SOURCE')), target = standardLocalBucket(await mf.getR2Bucket('TARGET'));
+    for (const size of [8190, 8191, 24575, 24576, 24577, 65537]) {
+      const bytes = new Uint8Array(size); bytes.fill(78);
+      await source.put(String(size), bytes, {storageClass: 'Standard', httpMetadata: {contentType: 'application/octet-stream'},
+        customMetadata: {literal: 'preserve'}});
+    }
+    const snapshot = await capture(source, 'avatars'), expectedHash = snapshot.objectsHash;
+    const key = await crypto.subtle.generateKey({name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
+    const sealing = seal(snapshot, key, 'avatars');
+    snapshot.objects[0].bytes = 'invalid'; snapshot.objects[0].customMetadata.literal = 'mutated'; snapshot.objects.length = 0;
+    const archive = await sealing;
+    const opening = open(archive, key, 'avatars');
+    archive.ciphertext = 'invalid'; archive.nonce = 'invalid'; archive.objectsHash = 'f'.repeat(64);
+    const reopened = await opening;
+    assert.equal(reopened.objectsHash, expectedHash); assert.equal(reopened.objects.length, 6);
+    assert.ok(reopened.objects.every(object => object.customMetadata.literal === 'preserve'));
+    const padBits = structuredClone(reopened), padded = padBits.objects.find(object => object.size === 8191);
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const index = padded.bytes.length - 3;
+    padded.bytes = padded.bytes.slice(0, index) + alphabet[alphabet.indexOf(padded.bytes[index]) | 1] + '==';
+    await assert.rejects(seal(padBits, key, 'avatars'), /r2_recovery_encoding_invalid/);
+    const internalPadding = structuredClone(reopened), large = internalPadding.objects.find(object => object.size === 65537);
+    large.bytes = large.bytes.slice(0, 32764) + 'AA==' + large.bytes.slice(32768);
+    await assert.rejects(seal(internalPadding, key, 'avatars'), /r2_recovery_encoding_invalid/);
+    const whitespace = structuredClone(reopened); whitespace.objects[0].bytes = '    ' + whitespace.objects[0].bytes;
+    await assert.rejects(seal(whitespace, key, 'avatars'), /r2_recovery_encoding_invalid/);
+    const restoring = restore(target, reopened, modes('new-empty'));
+    reopened.objects[0].httpMetadata.contentType = 'text/plain'; reopened.objects.length = 0;
+    const restored = await restoring;
+    assert.equal(restored.objectsHash, expectedHash); assert.equal(restored.objects.length, 6);
+    assert.ok(restored.objects.every(object => object.httpMetadata.contentType === 'application/octet-stream'));
+  } finally {await mf.dispose();}
+});
 test('R2 capture and exact resumable restore on native local buckets', {timeout: 60_000}, async t => {
   const mf = new Miniflare({workers: [{config: {
     name: 'r2-recovery-local', type: 'worker', compatibilityDate: '2026-09-18',

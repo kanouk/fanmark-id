@@ -1,0 +1,76 @@
+{
+  "observedAt": "2026-10-08T09:28:20.652Z",
+  "scope": "Maximum raw-byte capacity of isolated shared R2 leaf recovery; no main/source-user writes",
+  "baselineHead": "7f257ab877f368a5ac96bf3a64c1269f4b506e28",
+  "baselineCi": "37753798808",
+  "isolatedWorkerVersion": "fce9a019-63cd-428a-aa77-724bad965857",
+  "objectsBytes": [
+    8388608,
+    8388608,
+    4194304
+  ],
+  "totalRawBytes": 20971520,
+  "storageClasses": [
+    "Standard"
+  ],
+  "maximumCaptureAccepted": true,
+  "maximumEncryptedRoundtripAccepted": false,
+  "maximumRestoreAccepted": false,
+  "maximumResumeAccepted": false,
+  "failure": {
+    "stage": "open-maximum",
+    "nativeOutcome": "exceededMemory",
+    "exactScriptVersionMatched": true,
+    "failedInvocationsObserved": 1,
+    "invocationTerminationVerified": true,
+    "initialAckUnknown": true,
+    "operatorTerminalReceiptRecordedOnlyAfterNativeFailure": true,
+    "proofPostResent": false
+  },
+  "cleanup": {
+    "bucketsDeleted": 7,
+    "workerDeleted": true,
+    "originalResourceInventoryEqual": true,
+    "ephemeralRequestKeyDeleted": true,
+    "initialNonterminalCleanupRefusalRetained": true
+  },
+  "independentReadback": {
+    "at": "2026-10-08T09:28:20.652Z",
+    "separateProcess": true,
+    "readCredentialOnly": true,
+    "workerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+    "allBaselineHashesEqual": true,
+    "authCounts": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "foreignKeyViolations": 0,
+    "settingsAndNamespacesEqual": true,
+    "isolatedResourceInventoryEqual": true,
+    "temporaryBucketsDeleted": 7,
+    "temporaryWorkerDeleted": true,
+    "proofState": "failed",
+    "proofFailure": "proof_exceeded_memory"
+  },
+  "candidate": {
+    "r2SourceSha256": "004810148e29a1fa88f31b785b92da8aeb8797ce135c720b070ab6ef2df14866",
+    "capacityLimitsChanged": false,
+    "archiveFormatChanged": false,
+    "wholePayloadBinaryAndCanonicalBase64CopiesRemoved": true,
+    "immutablePayloadStringsSharedWithCopiedMutableContainers": true,
+    "localNativeMaximumBytesProbe": true,
+    "localStorageClassAdapter": true,
+    "r2Contracts": 9,
+    "recoverySetContracts": 16,
+    "typecheck": true,
+    "bundleDryRun": true,
+    "actualRemoteMaximumCapacityAccepted": false
+  },
+  "objectCountMaximumAccepted": false,
+  "infrequentAccessMaximumAccepted": false,
+  "regularBackupOperationsAccepted": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false
+}
