@@ -1,5 +1,14 @@
 # R2の保存・再開可能な復旧処理
 
+## R2容量上限で復号・初回復元は通過、exact resumeを修正中（2026-10-08 JST）
+
+- `7a8c6ee` / [CI37760585412](https://github.com/kanouk/fanmark-id/actions/runs/37760585412) は両job成功。新規専用環境の同じ3 object・20 MiB・Standard・v1で、capture・暗号化往復・初回復元と全hashの照合まで実Cloudflareで通過した。
+- 結果を保持した同じ呼び出しの `resume-maximum` で native `exceededMemory` が発生した。exact resume/容量上限全体の受け入れはまだ未完了。テストの容量・元データ・保存形式・全件照合は減らさない。
+- 同script/versionのnative終了を照合してから、専用7 bucket/Workerを削除した。別Read processで元inventory・通常staging全表hash/Auth3・7・2/FK0/設定・namespaceを保持照合した。
+- 次候補は、検証済みbytesを直接比較して巨大なobject JSONの二重生成を避け、exact subset確認後のprivate読取payloadを解放する。復元後の全native capture/hash検証は維持し、返却値はその検証と一致したprivate normalized containerとimmutable payloadを使い、次のresumeまで同じ全bucket payloadを重複保持しない。
+- 次候補の実Cloudflare再検証は未完了。通常stagingへの再配備は0。実ユーザー移送と本番domainは最後の別工程。
+- 記録: [`evidence/r2-recovery-capacity-resume-memory-2026-10-08.json`](evidence/r2-recovery-capacity-resume-memory-2026-10-08.json)。
+
 ## R2容量上限の修正候補を実環境で再検証（2026-10-08 JST）
 
 - `5eb0ced` の [CI37758494467](https://github.com/kanouk/fanmark-id/actions/runs/37758494467) は両job成功。
@@ -11,7 +20,8 @@
 
 `workers/api/src/r2-recovery.ts`は、既にCloudflareにあるavatars/cover-images bucket全体の
 capture・AES-256-GCM保存/読込・空targetまたはexact subsetへの復旧を行う管理処理。
-source Supabase Storageのexport/importとは別で、公開routerやcollectorには接続していない。
+source Supabase Storageのexport/importとは別で、公開routerには接続していない。
+管理用の共通一式collector (`workers/api/src/recovery-set.ts`) はこの処理を使う。
 
 ## 契約
 

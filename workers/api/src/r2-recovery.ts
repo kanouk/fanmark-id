@@ -208,9 +208,18 @@ export async function restoreR2RecoverySnapshot(bucket: R2Bucket, snapshot: R2Re
   if (options.mode === "new-empty" && current.objects.length) fail("target_not_empty");
   const wanted = new Map(snapshot.objects.map(o => [o.key, o]));
   for (const object of current.objects) {
-    if (JSON.stringify(object) !== JSON.stringify(wanted.get(object.key))) fail("target_mismatch");
+    const expected = wanted.get(object.key);
+    // Payload strings are already validated. Compare them directly without
+    // allocating two full-size JSON strings for each retained object.
+    if (!expected || object.size !== expected.size || object.sha256 !== expected.sha256 ||
+        object.bytes !== expected.bytes || object.storageClass !== expected.storageClass ||
+        JSON.stringify(object.httpMetadata) !== JSON.stringify(expected.httpMetadata) ||
+        JSON.stringify(object.customMetadata) !== JSON.stringify(expected.customMetadata)) fail("target_mismatch");
   }
   const existing = new Set(current.objects.map(o => o.key));
+  // Only the keys are needed after the exact-subset check. These are private
+  // capture containers; release their payloads before the final independent read.
+  current.objects.length = 0;
   for (const object of snapshot.objects) {
     if (existing.has(object.key)) continue;
     const bytes = decode(object.bytes, MAX_OBJECT_BYTES);
@@ -222,7 +231,10 @@ export async function restoreR2RecoverySnapshot(bucket: R2Bucket, snapshot: R2Re
       if (!stored) fail("target_changed");
     } catch {fail("restore_failed");} finally {bytes.fill(0);}
   }
-  const restored = await captureR2RecoverySnapshot(bucket, options.expectedKind);
-  if (restored.objectsHash !== snapshot.objectsHash) fail("restore_verification_failed");
-  return restored;
+  const restoredHash = (await captureR2RecoverySnapshot(bucket, options.expectedKind)).objectsHash;
+  if (restoredHash !== snapshot.objectsHash) fail("restore_verification_failed");
+  // The complete native readback verified all desired bytes and metadata. Return
+  // our normalized private containers, sharing only immutable payload strings,
+  // so keeping the result does not duplicate a full bucket before exact resume.
+  return {kind: snapshot.kind, objects: snapshot.objects, objectsHash: snapshot.objectsHash};
 }
