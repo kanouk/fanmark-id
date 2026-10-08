@@ -33,7 +33,8 @@ it("inspects the native census without initializing, fencing or changing writer 
   const stored = () => runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
   expect(await stored()).toEqual([]);
   expect(await inspectRecoveryWriters(runtime)).toEqual({ owner: null, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST,
-    active: 0, drained: false, initialized: false });
+    active: 0, drained: false, initialized: false, tickets: { scanned: 0, complete: true, legacy: 0,
+      attributed: 0, oldestEnteredAt: null, runtimeRevisions: {} } });
   expect(await stored()).toEqual([]);
 
   const entered = signal(), finish = signal();
@@ -69,7 +70,7 @@ it("keeps actual HTTP work and its awaited post-response wake in the census unti
   await assertRecoveryWriterFence(runtime, owner); await releaseRecoveryWriterFence(runtime, owner);
 
   const wakeEntered = signal(), wakeFinish = signal();
-  let waitUntilCalls = 0;
+  const lifecycles: Promise<unknown>[] = [];
   const post = worker.fetch(new Request("https://app.example.test/api/unknown-synthetic-route", { method: "POST" }), {
     ...runtime, NOTIFICATION_WAKE: {
       idFromName: runtime.NOTIFICATION_WAKE!.idFromName.bind(runtime.NOTIFICATION_WAKE),
@@ -79,12 +80,13 @@ it("keeps actual HTTP work and its awaited post-response wake in the census unti
         return new Response(null, { status: 204 });
       } }; },
     } as unknown as DurableObjectNamespace,
-  }, { waitUntil() { waitUntilCalls++; } } as unknown as ExecutionContext);
+  }, { waitUntil(work: Promise<unknown>) { lifecycles.push(work); } } as unknown as ExecutionContext);
   await wakeEntered.promise;
   expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
-  expect(waitUntilCalls).toBe(0);
+  expect(lifecycles).toHaveLength(1);
   expect((await db.prepare("SELECT count(*) AS n FROM drain_fixture").first())?.n).toBe(0);
   wakeFinish.resolve(); expect((await post).status).toBe(404);
+  await Promise.all(lifecycles);
   await assertRecoveryWriterFence(runtime, owner);
   expect((await db.prepare("SELECT id FROM drain_fixture").first())?.id).toBe(4);
   await releaseRecoveryWriterFence(runtime, owner);
@@ -111,7 +113,7 @@ it("fences HTTP, Cron and a real notification alarm while waiting for an existin
   await worker.scheduled({ cron: "* * * * *", scheduledTime: Date.now() } as ScheduledController,
     { ...runtime, SCHEDULED_DISPATCH_DIAGNOSTICS: "true",
       SCHEDULED_DISPATCH_DIAGNOSTICS_DB: { prepare() { diagnostics++; throw new Error("must_not_write"); } } as unknown as D1Database },
-    { waitUntil() { diagnostics++; } } as unknown as ExecutionContext);
+    { waitUntil() {} } as unknown as ExecutionContext);
   expect(diagnostics).toBe(0);
   expect((await wake.fetch("https://notification-wake.internal/wake", { method: "POST" })).status).toBe(503);
   await runInDurableObject(wake, async (_instance, state) => { await state.storage.setAlarm(Date.now() + 1000); });
@@ -186,4 +188,61 @@ it("preserves two concurrent writer entries and refuses another scope or fence o
   b.resolve(); await second;
   await assertRecoveryWriterFence(runtime, owner);
   await releaseRecoveryWriterFence(runtime, owner);
+});
+
+it("registers enter, work and leave as one protected lifecycle before the enter acknowledgement", async () => {
+  const entered = signal(), enterAck = signal(), leaveStarted = signal(), leaveAck = signal();
+  const protectedWork: Promise<unknown>[] = [];
+  let operations = 0, protectedFinished = false;
+  const delayed = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get(id: DurableObjectId) {
+      const native = namespace.get(id);
+      return { async fetch(input: string, init: RequestInit) {
+        if (input.endsWith("/leave")) { leaveStarted.resolve(); await leaveAck.promise; }
+        const response = await native.fetch(input, init);
+        if (input.endsWith("/enter")) { entered.resolve(); await enterAck.promise; }
+        return response;
+      } };
+    },
+  } as unknown as DurableObjectNamespace };
+  const caller = withRecoveryWriter(delayed, async () => {
+    operations++;
+    await db.prepare("INSERT INTO drain_fixture VALUES (8)").run();
+  }, { waitUntil(promise) { protectedWork.push(promise); promise.then(() => { protectedFinished = true; }); } });
+  expect(protectedWork).toHaveLength(1);
+  await entered.promise;
+  expect(operations).toBe(0);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 1 });
+  enterAck.resolve(); await leaveStarted.promise;
+  expect(operations).toBe(1); expect(protectedFinished).toBe(false);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 1 });
+  leaveAck.resolve(); await protectedWork[0]; await caller;
+  expect(protectedFinished).toBe(true);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0 });
+  expect((await db.prepare("SELECT id FROM drain_fixture").first())?.id).toBe(8);
+});
+
+it("reports legacy and attributed tickets without expiring, removing or exposing their IDs", async () => {
+  const legacyId = "00000000-0000-4000-8000-000000000009";
+  await runInDurableObject(gate, async (_instance, state) => {
+    await state.storage.put({ scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1,
+      ["writer:" + legacyId]: true });
+  });
+  const entered = signal(), finish = signal(), revision = "00000000-0000-4000-8000-000000000010";
+  const work = withRecoveryWriter({ ...runtime, CF_VERSION_METADATA: { id: revision } }, async () => {
+    entered.resolve(); await finish.promise;
+  });
+  await entered.promise;
+  const before = await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  const inspection = await inspectRecoveryWriters(runtime);
+  expect(inspection).toMatchObject({ active: 2, tickets: { scanned: 2, complete: true, legacy: 1,
+    attributed: 1, runtimeRevisions: { [revision]: 1 } } });
+  expect(inspection.tickets.oldestEnteredAt).toBeTypeOf("number");
+  expect(JSON.stringify(inspection)).not.toContain(legacyId);
+  expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
+  finish.resolve(); await work;
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
+  await expect(assertRecoveryWriterFence(runtime, owner)).rejects.toThrow("recovery_writer_unavailable");
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ tickets: { legacy: 1, attributed: 0 } });
 });

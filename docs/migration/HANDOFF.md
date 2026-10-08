@@ -8064,3 +8064,12 @@ the user once asynchronously to unlock; no reply yet. Wait for manual unlock
 before browser closure work. Preserve unrelated Chrome perfume-production
 work, Stripe tab, Resend tab and unrelated Safari windows. Smartphone remains
 unconfirmed. Source users/DNS/live Stripe still untouched.
+
+### 2026-10-09: Mac unlock後のwriter調査
+
+Safariのスタートページのみと、接続済みChrome/in-appにsource appタブなしを確認。
+既存main79e75f89のreadonly内部RPCでactive30→30→30→31→30を観測し、probe除去済み。
+記録をリセット/expireしていない。増加原因と帰属は不明。
+HTTP/Cronのenter〜leave全promiseのwaitUntil登録と、新規ticketの開始時刻/version集計を追加。
+local終了追跡8/通知21/backup11/停止Cron16件成功。remote配備は後続CI/観測待ち。
+詳細は[backup operations](backup-operations.md)末尾。

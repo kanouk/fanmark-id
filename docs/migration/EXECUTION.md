@@ -8830,3 +8830,10 @@ all-table/Auth3/7/2/asset6/namespace readback unchanged; owned probe absent.
 Native census active27, ownernull, drainedfalse: investigate, never reset by
 TTL. Mac locked/manual unlock requested for Safari connection inventory.
 Actual source archive/remote operational restore/Cron/monitoring remain open.
+
+### 2026-10-09: ロック解除・追跡記録の調査
+
+- Safari/接続ブラウザにアプリの現在タブなしを確認。旧Worker処理全件の終了とは扱わない。
+- main79e75f89のreadonly RPCでactive30、通常GET後30/30/31/30。原因/対応は未確定、記録保持。
+- HTTP/Cronの全writer lifecycleのcontext登録、新規ticketの開始時刻/version集計を追加。
+- local追跡8/通知21/backup11/停止Cron16件成功。実capture・定期Cron・本番user/DNSは未実行。

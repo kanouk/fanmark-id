@@ -290,3 +290,30 @@ Macがロックされ、Safariの旧接続確認はproviderに拒否された。
 未終了ticket27の調査、旧writer/外部writerの終了確認、最初の実source archiveと同じ
 運用鍵によるisolated remote復旧、定期Cron・失敗監視が残る。実スマホも未確認。
 [配備・鍵保管の限定証拠](evidence/staging-backup-provision-2026-10-09.json)。
+
+## ロック解除後の調査と終了通知の保護（2026-10-09 JST）
+
+Safariの開いているウインドウはスタートページ1件で、現在のタブも1件。
+接続済みChrome/in-app browserにもアプリoriginを開いたタブはなかった。
+閲覧履歴の候補は接続中タブとして数えない。この確認はブラウザの現在状態の確認であり、
+Cloudflareの旧処理全件の終了証明ではない。
+
+通常main `79e75f89`の内部RPCを新しい読み取り専用probeから観測した。
+idle時active30、認証ok/capabilitiesの完了後30、未認証get-session後31、root完了後30。
+一時的な31から30への戻りを確認したが、今回のHTTPと減ったticketの対応は未記録。
+前回27から30への増加原因や、残る30件の処理状態は未判定。probeは削除・独立確認済み。
+初回probeはassertで停止したがHTTP status未保存のため原因を推定しない。
+2回目は別journalで新規作成し、最初の無認可アクセス401と認可status200を保存した。
+
+HTTP/Cron入口の`withRecoveryWriter`は、enterから処理・後続wake・leaveまでの同じpromiseを
+`ctx.waitUntil`に登録してからawaitする。これによりHTTP切断時もプラットフォームの猶予内で
+終了通知を続けられる。HTTPの猶予は最大30秒で、完了保証や長時間処理の終了証明ではない。
+DO自身はpending I/Oで存続するため、DOのwaitUntilを追加しない。
+[Cloudflare context契約](https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil)。
+
+新しいticketはDO側開始時刻と呼出元runtimeRevisionを持つ。inspectは最大1001件を集計し、
+1000件超ではcomplete=falseを返す。旧boolean ticketをlegacyとして区別し、IDやrequest内容を
+返さない。既存記録は保持し、経過時間・runtime変更・ブラウザ閉鎖でexpireしない。
+既存記録の原因調査と実archive/isolated復旧・Cron/監視の受け入れは残る。
+local nativeの終了追跡8件、通知21件、バックアップ11件、停止/Cron16件を確認した。
+この節の新しいコードのremote配備・帰属観測は、後続の結果を確認するまで未受け入れ。

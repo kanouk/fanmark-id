@@ -14,7 +14,6 @@ export interface StagingBackupEnv extends Env {
   STAGING_BACKUP_KEY_ID?: string;
   STAGING_BACKUP_KEY?: string;
   STAGING_BACKUP_BUCKET?: R2Bucket;
-  CF_VERSION_METADATA?: { id: string };
 }
 export type BackupReceipt = {
   format: "fanmark-staging-backup-receipt-v1"; slot: string; owner: string;

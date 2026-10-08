@@ -5,9 +5,14 @@ const ORIGIN = "https://recovery-writer.internal";
 const NAME = "recovery-writers-v1";
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 const HASH = /^[0-9a-f]{64}$/u;
+const REVISION = /^[A-Za-z0-9:_-]{1,128}$/u;
 type Fence = { owner: string; scope: string };
 export type RecoveryWriterStatus = { owner: string | null; scope: string; active: number; drained: boolean };
-export type RecoveryWriterInspection = RecoveryWriterStatus & { initialized: boolean };
+type WriterTicket = { enteredAt: number; runtimeRevision: string | null };
+export type RecoveryWriterInspection = RecoveryWriterStatus & { initialized: boolean; tickets: {
+  scanned: number; complete: boolean; legacy: number; attributed: number;
+  oldestEnteredAt: number | null; runtimeRevisions: Record<string, number>;
+} };
 
 export class RecoveryWriterDrainError extends Error {
   constructor() { super("recovery_writer_unavailable"); this.name = "RecoveryWriterDrainError"; }
@@ -32,7 +37,8 @@ async function command(env: Env, operation: string, id: string): Promise<Recover
   const stub = env.RECOVERY_DRAIN!.get(env.RECOVERY_DRAIN!.idFromName(NAME));
   try {
     const response = await stub.fetch(`${ORIGIN}/${operation}`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, scope }),
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, scope,
+        ...(operation === "enter" ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null } : {}) }),
     });
     if (response.status !== 200) throw new RecoveryWriterDrainError();
     const value = await response.json() as RecoveryWriterStatus;
@@ -44,13 +50,20 @@ async function command(env: Env, operation: string, id: string): Promise<Recover
 }
 
 /** Tickets never expire: a crashed or unacknowledged writer blocks capture rather than falsely draining. */
-export async function withRecoveryWriter<T>(env: Env, operation: () => Promise<T>): Promise<T> {
+export async function withRecoveryWriter<T>(env: Env, operation: () => Promise<T>,
+  context?: Pick<ExecutionContext, "waitUntil">): Promise<T> {
   if (!recoveryWriterTrackingSelected(env)) return operation();
   const id = crypto.randomUUID();
-  // A lost enter response never permits the operation to run. Its ticket is retained.
-  await command(env, "enter", id);
-  try { return await operation(); }
-  finally { await command(env, "leave", id); }
+  const lifecycle = (async () => {
+    // A lost enter response never permits the operation to run. Its ticket is retained.
+    await command(env, "enter", id);
+    try { return await operation(); }
+    finally { await command(env, "leave", id); }
+  })();
+  // Register before awaiting enter: protect the complete lifecycle, including leave,
+  // during the platform's limited disconnect grace. This is not a completion guarantee.
+  context?.waitUntil(lifecycle.catch(() => {}));
+  return lifecycle;
 }
 
 /** A sibling failure must not release the writer ticket while other tasks still mutate stores. */
@@ -88,13 +101,17 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
         !["/enter", "/leave", "/inspect", "/claim", "/assert", "/release"].includes(url.pathname)) {
       return new Response(null, { status: 404 });
     }
-    if (Number(request.headers.get("content-length") ?? 0) > 256) return new Response(null, { status: 400 });
-    let input: { id: string; scope: string };
+    if (Number(request.headers.get("content-length") ?? 0) > 384) return new Response(null, { status: 400 });
+    let input: { id: string; scope: string; runtimeRevision?: string | null };
     try {
       const text = await request.text();
-      if (text.length > 256) return new Response(null, { status: 400 });
+      if (text.length > 384) return new Response(null, { status: 400 });
       input = JSON.parse(text);
-      if (!input || Object.keys(input).sort().join(",") !== "id,scope" || !UUID.test(input.id) || !HASH.test(input.scope) ||
+      const keys = Object.keys(input ?? {}).sort().join(",");
+      if (!input || !(keys === "id,scope" || (url.pathname === "/enter" && keys === "id,runtimeRevision,scope")) ||
+          (input.runtimeRevision !== undefined && input.runtimeRevision !== null &&
+            (typeof input.runtimeRevision !== "string" || !REVISION.test(input.runtimeRevision))) ||
+          !UUID.test(input.id) || !HASH.test(input.scope) ||
           input.scope !== scopeFor(this.env)) return new Response(null, { status: 400 });
     } catch { return new Response(null, { status: 400 }); }
     return this.ctx.blockConcurrencyWhile(async () => {
@@ -112,15 +129,32 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
           if ((!installedScope && (storedActive !== undefined || fence !== undefined)) ||
               (fence && (fence.scope !== input.scope || !UUID.test(fence.owner)))) return { status: 409 };
           const owner = fence?.owner ?? null;
+          // Legacy boolean tickets have no provenance. Preserve them and report that
+          // limitation; timestamps and version IDs never authorize ticket removal.
+          const entries = await storage.list<true | WriterTicket>({ prefix: "writer:", limit: 1001 });
+          const tickets: RecoveryWriterInspection["tickets"] = { scanned: entries.size,
+            complete: entries.size <= 1000, legacy: 0, attributed: 0, oldestEnteredAt: null,
+            runtimeRevisions: Object.create(null) as Record<string, number> };
+          for (const value of entries.values()) {
+            if (value === true) { tickets.legacy++; continue; }
+            if (!value || !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0 ||
+                (value.runtimeRevision !== null &&
+                  (typeof value.runtimeRevision !== "string" || !REVISION.test(value.runtimeRevision)))) return { status: 409 };
+            tickets.attributed++;
+            tickets.oldestEnteredAt = Math.min(tickets.oldestEnteredAt ?? value.enteredAt, value.enteredAt);
+            const revision = value.runtimeRevision ?? "unavailable";
+            tickets.runtimeRevisions[revision] = (tickets.runtimeRevisions[revision] ?? 0) + 1;
+          }
+          if (tickets.scanned > active || (tickets.complete && tickets.scanned !== active)) return { status: 409 };
           return { status: 200, body: { owner, scope: input.scope, active,
-            drained: owner !== null && active === 0, initialized: installedScope !== undefined } };
+            drained: owner !== null && active === 0, initialized: installedScope !== undefined, tickets } };
         }
         const key = "writer:" + input.id;
         const entered = await storage.get(key);
         if (url.pathname === "/enter") {
           if (fence || entered || active === Number.MAX_SAFE_INTEGER) return { status: 409 };
           active++;
-          await storage.put(key, true);
+          await storage.put(key, { enteredAt: Date.now(), runtimeRevision: input.runtimeRevision ?? null });
         } else if (url.pathname === "/leave") {
           if (entered) {
             if (active === 0) return { status: 409 };

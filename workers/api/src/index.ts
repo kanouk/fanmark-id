@@ -1753,7 +1753,7 @@ const worker = {
             if (ctx && !recoveryWriterTrackingSelected(env)) ctx.waitUntil(wake); else await wake;
           }
         }
-      });
+      }, ctx);
     } catch (error) {
       if (error instanceof RecoveryWriterDrainError) {
         return jsonResponse({ error: "recovery_writer_unavailable" }, 503, { "retry-after": "60" });
@@ -1910,7 +1910,7 @@ const worker = {
         const completion = settleRecoveryWriterTasks(jobs.map(job => job.finally(() => flushNotificationWakeSafely(env))));
         ctx.waitUntil(completion);
         await completion;
-      });
+      }, ctx);
     } catch (error) {
       if (!(error instanceof RecoveryWriterDrainError)) throw error;
       console.error(JSON.stringify({ job: "scheduled-dispatch", status: "paused", reason: "recovery_writer_unavailable" }));

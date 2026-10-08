@@ -1,4 +1,5 @@
 export interface Env {
+  CF_VERSION_METADATA?: { id: string };
   ASSETS?: Fetcher;
   FANMARK_DB?: D1Database;
   AUTH_DB?: D1Database;
