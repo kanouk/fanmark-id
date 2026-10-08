@@ -1,3 +1,20 @@
+## CIの保存失敗テストの通信遮断を修正（2026-10-08 JST）
+
+設定commit `62a4d6c` のCI37782119977はWorker job成功。アプリjobは最初にChrome起動待ち、
+再実行ではlocal editorの保存失敗試験で失敗した。後者は遮断件数0・未消費の遮断flagと
+実PATCH/設定画面への成功遷移を記録し、保存失敗の受け入れにしなかった。
+
+editor試験の失敗1回だけService Worker経路をバイパスし、実PATCHへのCDP遮断と
+同じnetworkIdの接続失敗receiptを要求する。reload前に通常の経路へ戻す。
+ローカルの実Chrome/Worker・全27 Business/4 Auth/8 Masterで、SWが制御中の状態から
+遮断1回・実ネットワーク失敗・DB未更新・下書きreload・再試行保存を確認した。
+API応答置換0、provider/remote操作0。PWA経由の障害試験や実スマホ確認へは拡張しない。
+[限定証拠](evidence/editor-network-fault-boundary-local-2026-10-08.json)。修正候補のCIは別途確認する。
+
+通常stagingの実Resend受信・再送・owned cleanupの受け入れは保持する。
+mainは`cbb800a3-9f71-4a90-b21c-6fe87d2d7b12`、bulk/test送信は無効。
+今回の修正はテストと文書のみ。バックアップ運用案と実スマホ確認の質問は回答待ち。
+
 ## Resendの実署名通知と受信専用構成を受け入れ（2026-10-08 JST）
 
 利用者がWebhook追加と署名キーのstaging/キーチェーン保存を個別に許可した。

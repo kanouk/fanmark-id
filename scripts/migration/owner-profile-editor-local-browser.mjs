@@ -24,19 +24,23 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
  const textName=' Local editor exact spaces ';
  const textBio='Local real Worker save after draft recovery';
  const draftKey='emoji_profile_draft_'+owner.fanmarkId;
- let failNextPatch=false,failedPatches=0;
+ let failNextPatch=false,failedPatches=0,failedPatchNetworkId;
+ const networkFailures=new Map();
  try{
   let port;for(let i=0;i<150;i++){assert.equal(chrome.exitCode,null,'local_chrome_exited');try{port=(await readFile(path.join(chromeProfile,'DevToolsActivePort'),'utf8')).split('\n')[0];if(port)break;}catch{}await delay(100);}assert.ok(port);
   const targets=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();cdp=cdpConnection(targets.find(target=>target.type==='page').webSocketDebuggerUrl);await cdp.opened;
   await cdp.send('Page.enable');await cdp.send('Network.enable');await cdp.send('Runtime.enable');
-  cdp.on('Network.loadingFailed',event=>recordCanceledNetworkRequest(canceledRequests,event));
+  cdp.on('Network.loadingFailed',event=>{
+   recordCanceledNetworkRequest(canceledRequests,event);
+   networkFailures.set(event.requestId,event.errorText);
+  });
   cdp.on('Network.requestWillBeSent',event=>{const url=new URL(event.request.url);if(url.origin===origin)requests.push({path:url.pathname,method:event.request.method});});
   cdp.on('Fetch.requestPaused',event=>{void(async()=>{
    const url=new URL(event.request.url);
    if(url.origin!==origin){blocked.push({origin:url.origin,path:url.pathname});await cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'BlockedByClient'});return;}
    if(url.pathname===cancellationPath){cancellationFixture=event;return;}
 
-   if(failNextPatch&&url.pathname===profilePath&&event.request.method==='PATCH'){failNextPatch=false;failedPatches++;await cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'ConnectionFailed'});return;}
+   if(failNextPatch&&url.pathname===profilePath&&event.request.method==='PATCH'){failNextPatch=false;failedPatches++;failedPatchNetworkId=event.networkId;await cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'ConnectionFailed'});return;}
    if((await continuePausedRequest(cdp,event,canceledRequests)).canceled)canceledInterceptions++;
   })().catch(error=>errors.push(error.message));});
   await cdp.send('Fetch.enable',{patterns:[{urlPattern:origin+cancellationPath}]});
@@ -72,18 +76,27 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   for(const [selector,text] of [['input[name="display_name"]',textName],['textarea[name="bio"]',textBio]]){await value(`(()=>{const field=document.querySelector(${JSON.stringify(selector)});field.focus();field.select();})()`);await cdp.send('Input.insertText',{text});}
   await wait(`sessionStorage.getItem(${JSON.stringify(draftKey)})`,result=>result&&JSON.parse(result).form.bio===textBio);
   const save="Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='保存する')";
-  failNextPatch=true;await cdp.send('Fetch.enable',{patterns:[{urlPattern:origin+profilePath}]});await value(`${save}.click()`);
+  // Keep this fault at the page's network boundary even if the PWA takes
+  // control while the editor is open. Restore normal SW routing before reload.
+  const serviceWorkerControlledAtFailure=await value('Boolean(navigator.serviceWorker.controller)');
+  await cdp.send('Network.setBypassServiceWorker',{bypass:true});
+  await cdp.send('Fetch.enable',{patterns:[{urlPattern:origin+profilePath}]});
+  failNextPatch=true;await value(`${save}.click()`);
   try{
    await wait("document.body.innerText.includes('更新に失敗しました')",Boolean);
   }catch(error){
    // A timeout alone cannot distinguish a missing PATCH from a rendered error.
    // Keep only fixture state and request methods; never record form values or cookies.
    const state=await value(`({editorPresent:!!document.querySelector('input[name="display_name"]'),saveEnabled:!!(${save})&&!(${save}).disabled,formValid:document.querySelector('form')?.checkValidity()??null,settingsPage:location.pathname.endsWith('/settings'),failureTextPresent:document.body.textContent.includes('更新に失敗しました'),visibleFailureTextPresent:document.body.innerText.includes('更新に失敗しました'),alertCount:document.querySelectorAll('[role="alert"]').length})`);
-   const receipt={stage:'failed-save',failedPatches,failNextPatch,interceptionErrors:errors.length,profileRequests:requests.filter(req=>req.path===profilePath).map(req=>req.method),state};
+   const receipt={stage:'failed-save',failedPatches,failNextPatch,serviceWorkerControlledAtFailure,failedPatchNetworkId,failedPatchNetworkError:networkFailures.get(failedPatchNetworkId),interceptionErrors:errors.length,profileRequests:requests.filter(req=>req.path===profilePath).map(req=>req.method),state};
    await writeFile(path.join(temp,'failed-save-receipt.json'),JSON.stringify(receipt,null,2)+'\n',{mode:0o600});
    throw new Error('local_editor_failed_save_timeout:'+JSON.stringify(receipt),{cause:error});
   }
   await cdp.send('Fetch.disable');
+  await cdp.send('Network.setBypassServiceWorker',{bypass:false});
+  assert.ok(failedPatchNetworkId,'failed_patch_network_id_missing');
+  for(let i=0;i<20&&!networkFailures.has(failedPatchNetworkId);i++)await delay(100);
+  assert.equal(networkFailures.get(failedPatchNetworkId),'net::ERR_CONNECTION_FAILED','failed_patch_network_receipt_missing');
   assert.equal(failedPatches,1);assert.deepEqual(await snapshot(),before);
   assert.equal(await value('location.pathname'),editor);
   assert.equal(JSON.parse(await value(`sessionStorage.getItem(${JSON.stringify(draftKey)})`)).form.bio,textBio);
@@ -130,7 +143,7 @@ export async function runBrowser({temp,origin,users,http,execute,sql,importedIma
   assert.deepEqual(errors,[]);assert.ok(egressProxy.stats.allowedConnections>0,'local_requests_bypassed_proxy');
   assert.ok(requests.some(req=>req.path==='/api/auth/sign-in/email'&&req.method==='POST'));
   assert.ok(requests.some(req=>req.path===profilePath&&req.method==='PATCH'));
-  return {actualApiResponses:true,fulfilledApiResponses:0,canceledInterceptionFixture:true,canceledInterceptions,importedImagesDecodedInEditor:true,importedImagesDecodedInPublicPage:true,unchangedSourceImageReferencesPreserved:true,legacyOwnerDelete:true,externalRequestsBlocked:blocked.length+proxyBlocked.length,localProxyConnections:egressProxy.stats.allowedConnections,anonymousReturn:true,actualFormSignin:true,viewport390Overflow:false,failedSaveRequests:failedPatches,failedSavePreservesRows:true,reloadRestoresDraft:true,retryPersistsInD1:true,successfulSaveClearsDraft:true,coldReopen:true,publicPrivateToggling:true,crossOwnerEditorRefused:true,suspensionRedirect:true,foreignKeyViolations:0,realPhone:false};
+  return {actualApiResponses:true,fulfilledApiResponses:0,canceledInterceptionFixture:true,canceledInterceptions,importedImagesDecodedInEditor:true,importedImagesDecodedInPublicPage:true,unchangedSourceImageReferencesPreserved:true,legacyOwnerDelete:true,externalRequestsBlocked:blocked.length+proxyBlocked.length,localProxyConnections:egressProxy.stats.allowedConnections,anonymousReturn:true,actualFormSignin:true,viewport390Overflow:false,failedSaveRequests:failedPatches,failedSaveNetworkReceipt:true,failedSaveServiceWorkerBypassOnly:true,serviceWorkerControlledAtFailure,failedSavePreservesRows:true,reloadRestoresDraft:true,retryPersistsInD1:true,successfulSaveClearsDraft:true,coldReopen:true,publicPrivateToggling:true,crossOwnerEditorRefused:true,suspensionRedirect:true,foreignKeyViolations:0,realPhone:false};
  }finally{
   cdp?.close();if(chrome.exitCode===null){chrome.kill('SIGTERM');for(let i=0;i<20&&chrome.exitCode===null;i++)await delay(100);if(chrome.exitCode===null){chrome.kill('SIGKILL');for(let i=0;i<20&&chrome.exitCode===null;i++)await delay(100);}}
   await egressProxy.close();

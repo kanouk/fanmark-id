@@ -77,6 +77,14 @@ helperの6回帰は`node --test scripts/migration/test-browser-request-intercept
 通常`test:migration-data`/CIにも含める。全browser試験は
 `npm run test:staging-profile-editor-local`。390pxは実スマホ検証の代わりにはしない。
 
+このeditor試験の保存失敗1回は、Chromeの
+[`Network.setBypassServiceWorker`](https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-setBypassServiceWorker)
+をその期間だけ有効にし、ページの`Fetch.failRequest`で実PATCHを遮断する。
+同じ`networkId`の`Network.loadingFailed`と`net::ERR_CONNECTION_FAILED`も要求し、
+遮断を仕掛けただけで失敗再現済みとは扱わない。API応答は置換しない。
+遮断後に通常のService Worker経路へ戻してから、下書きreload・実Workerへの再試行、
+DB保存を検証する。これはPWA経由の通信障害試験の受け入れではない。
+
 Cloudflareの本人profile native検証は`npm run --prefix workers/api test:profile-d1`。
 全25 Business/4 Auth migration・実session/R2・invitation FKと各caseのFK checkを
 使用し、通常Worker CIの`test:api-contracts-d1`にも含まれる。sourceのsettings権限と
