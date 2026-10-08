@@ -8,7 +8,8 @@ export function isStagingNotificationWakeTarget(config) {
       vars.AUTH_BACKEND !== "better-auth" || vars.CUTOVER_WRITE_FREEZE !== "false" ||
       vars.STAGING_NO_INDEX !== "true" || vars.CORS_ALLOWED_ORIGINS !== "https://fanmark-app-staging.fanmark-id.workers.dev" ||
       ["LICENSE_EXPIRY_BACKEND", "NOTIFICATION_ARCHIVE_BACKEND", "STRIPE_DISPATCH_BACKEND", "STRIPE_WEBHOOK_BACKEND",
-        "BROADCAST_SEND_BACKEND", "BROADCAST_TEST_SEND_BACKEND", "AUTH_EMAIL_BACKEND"].some(key => vars[key] !== undefined)) return false;
+        "BROADCAST_SEND_BACKEND", "BROADCAST_TEST_SEND_BACKEND", "AUTH_EMAIL_BACKEND",
+        "RECOVERY_DRAIN_BACKEND", "RECOVERY_DRAIN_SCOPE_DIGEST", "RECOVERY_WRITE_FREEZE"].some(key => vars[key] !== undefined)) return false;
   const crons = config.triggers?.crons;
   if (!Array.isArray(crons) || crons.length !== 1 || crons[0] !== "0 0 * * *") return false;
   const expected = {

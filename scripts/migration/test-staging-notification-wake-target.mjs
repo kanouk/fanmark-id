@@ -9,6 +9,13 @@ delete current.vars.NOTIFICATION_ARCHIVE_BACKEND;
 delete current.vars.STRIPE_DISPATCH_BACKEND;
 delete current.vars.STRIPE_WEBHOOK_BACKEND;
 delete current.vars.AUTH_EMAIL_BACKEND;
+// Project only the historical notification rehearsal. The live app's recovery
+// coordinator must not be inherited by an independently run alarm rehearsal.
+delete current.vars.RECOVERY_DRAIN_BACKEND;
+delete current.vars.RECOVERY_DRAIN_SCOPE_DIGEST;
+delete current.vars.RECOVERY_WRITE_FREEZE;
+current.durable_objects.bindings = current.durable_objects.bindings.filter(binding => binding.name === "NOTIFICATION_WAKE");
+current.migrations = current.migrations.filter(migration => migration.tag === "notification-wake-v1");
 current.triggers.crons = ["0 0 * * *"];
 const candidate = {
   ...current,
@@ -61,4 +68,21 @@ test("refuses production routes, other targets, malformed bindings and enabled s
     assert.equal(isStagingNotificationWakeTarget({ ...candidate, vars: { ...candidate.vars, [key]: "d1" } }), false);
   }
   assert.equal(isStagingNotificationWakeTarget({ ...candidate, vars: { ...candidate.vars, CUTOVER_WRITE_FREEZE: "true" } }), false);
+});
+
+test("notification-only rehearsals reject inherited recovery tracking or freeze settings", () => {
+  for (const [key, value] of [
+    ["RECOVERY_DRAIN_BACKEND", "durable-object"],
+    ["RECOVERY_DRAIN_SCOPE_DIGEST", "a".repeat(64)],
+    ["RECOVERY_WRITE_FREEZE", "false"],
+  ]) {
+    const mixed = { ...candidate, vars: { ...candidate.vars, [key]: value } };
+    assert.equal(isStagingNotificationWakeTarget(mixed), false);
+    assert.equal(stagingNotificationScheduleMode(mixed), null);
+  }
+  const extraBinding = { ...candidate, durable_objects: { bindings: [
+    ...candidate.durable_objects.bindings,
+    { name: "RECOVERY_DRAIN", class_name: "RecoveryWriterCoordinator" },
+  ] } };
+  assert.equal(isStagingNotificationWakeTarget(extraBinding), false);
 });

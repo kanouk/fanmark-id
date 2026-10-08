@@ -184,3 +184,9 @@ wrapperでenter/leaveを記録する。停止selectorとpublic操作routeは追�
 計測readbackはこのcheckpointでは未実行。件数0だけではbackup整合点とせず、
 初回の旧writer終了、外部writerの停止・lease、owner付きfenceとcollector、
 運用方針の採用は引き続き別条件とする。
+
+通知単独rehearsalのfixtureは、通常configから独立した通知DOだけを選ぶ。
+計測selector/scope/停止flagが残る場合はrehearsalのguardが拒否する。
+初回CI37747859530ではfixtureが通常configの新DOを引き継いで2件失敗した。
+このprojectionと混入拒否を修正し、selector coverageと合わせてlocal9件成功。
+通常アプリの計測設定を拒否するものではなく、旧単独rehearsalの分離境界である。
