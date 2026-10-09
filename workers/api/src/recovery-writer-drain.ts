@@ -96,6 +96,8 @@ export async function releaseRecoveryWriterFence(env: Env, owner: string): Promi
 /** One SQLite DO fences new entries and persists the census across object restarts. */
 export class RecoveryWriterCoordinator extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
+    if (!this.env.RECOVERY_DRAIN || this.ctx.id.toString() !==
+        this.env.RECOVERY_DRAIN.idFromName(NAME).toString()) return new Response(null, { status: 409 });
     const url = new URL(request.url);
     if (url.origin !== ORIGIN || url.search || request.method !== "POST" ||
         !["/enter", "/leave", "/inspect", "/claim", "/assert", "/release"].includes(url.pathname)) {
@@ -180,3 +182,6 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
     });
   }
 }
+
+/** Fresh staging namespace; never resets or imports the legacy census. */
+export class RecoveryWriterCoordinatorV2 extends RecoveryWriterCoordinator {}

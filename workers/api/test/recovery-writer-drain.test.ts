@@ -246,3 +246,22 @@ it("reports legacy and attributed tickets without expiring, removing or exposing
   await expect(assertRecoveryWriterFence(runtime, owner)).rejects.toThrow("recovery_writer_unavailable");
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ tickets: { legacy: 1, attributed: 0 } });
 });
+
+it("rejects a legacy object without changing its census when the binding points to a fresh object", async () => {
+  await claimRecoveryWriterFence(runtime, owner);
+  await runInDurableObject(gate, async (instance, state) => {
+    const local = (instance as unknown as { env: Env }).env;
+    const original = local.RECOVERY_DRAIN!;
+    const before = [...await state.storage.list()];
+    local.RECOVERY_DRAIN = { idFromName() { return original.idFromName("fresh-scope-object"); } } as unknown as DurableObjectNamespace;
+    try {
+      const response = await instance.fetch(new Request("https://recovery-writer.internal/inspect", {
+        method: "POST", body: JSON.stringify({ id: owner, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }),
+      }));
+      expect(response.status).toBe(409);
+      expect([...await state.storage.list()]).toEqual(before);
+    } finally { local.RECOVERY_DRAIN = original; }
+  });
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner, active: 0, drained: true });
+  await releaseRecoveryWriterFence(runtime, owner);
+});

@@ -52,23 +52,23 @@
   "d1_databases": [
     {
       "binding": "FANMARK_DB",
-      "database_name": "fanmark-business-staging",
-      "database_id": "d4bb0c48-f24a-491f-8693-fa393ab0b873",
+      "database_name": "fanmark-recovery-staging-v2-e434eb11-business",
+      "database_id": "c99c9f7e-b234-400e-aa89-8d15a168abcc",
       "migrations_dir": "migrations-business",
       "remote": true
     },
     {
       "binding": "AUTH_DB",
-      "database_name": "fanmark-auth-staging",
-      "database_id": "2116bc43-32ab-4e3e-b762-9378df88b95f",
+      "database_name": "fanmark-recovery-staging-v2-e434eb11-auth",
+      "database_id": "2d1a775e-e584-4ce6-baf2-946efc62ff99",
       "migrations_dir": "migrations",
       "migrations_pattern": "migrations/{0003_better_auth_core.sql,0007_auth_signup_command.sql,0008_auth_user_suspension.sql,0009_auth_oauth_signup.sql}",
       "remote": true
     },
     {
       "binding": "MASTER_DB",
-      "database_name": "fanmark-emoji-master-staging",
-      "database_id": "160376b0-bde6-4d5f-8969-96deb5ae1183",
+      "database_name": "fanmark-recovery-staging-v2-e434eb11-master",
+      "database_id": "02681378-5528-45a9-8093-76805a4705c9",
       "migrations_dir": "migrations",
       "migrations_pattern": "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}",
       "remote": true
@@ -80,7 +80,7 @@
     "LICENSE_EXPIRY_CRON": "0 0 * * *",
     "NOTIFICATION_ARCHIVE_BACKEND": "d1",
     "NOTIFICATION_ARCHIVE_CRON": "0 0 * * *",
-    "LICENSE_EXPIRY_TARGET_INCARNATION": "fanmark-business-staging-lifecycle-v1",
+    "LICENSE_EXPIRY_TARGET_INCARNATION": "fanmark-business-staging-lifecycle-v2-e434eb11",
     "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST": "370662758a78a7f0ab01f2ee005bf082c5858065a2ed850aca373350dcef86a9",
     "LICENSE_EXPIRY_MAX_PAGES": "4",
     "LIFECYCLE_RUN_BACKEND": "d1",
@@ -150,21 +150,21 @@
     "STAGING_NO_INDEX": "true",
     "NOTIFICATION_WAKE_BACKEND": "durable-object",
     "RECOVERY_DRAIN_BACKEND": "durable-object",
-    "RECOVERY_DRAIN_SCOPE_DIGEST": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
     "STAGING_BACKUP_BACKEND": "recovery-set-v1",
     "STAGING_BACKUP_ADMISSION": "pending-writer-verification",
-    "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"2116bc43-32ab-4e3e-b762-9378df88b95f\",\"business\":\"d4bb0c48-f24a-491f-8693-fa393ab0b873\",\"master\":\"160376b0-bde6-4d5f-8969-96deb5ae1183\",\"avatars\":\"fanmark-avatars-staging\",\"covers\":\"fanmark-cover-images-staging\"}",
-    "STAGING_BACKUP_SCHEMA_HASHES": "{\"auth\":\"d9c94d0486e1fb96dad346512d3f89039e584b0dd9a05e4eae9c73943676229c\",\"business\":\"598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2\",\"master\":\"32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56\"}",
+    "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"2d1a775e-e584-4ce6-baf2-946efc62ff99\",\"business\":\"c99c9f7e-b234-400e-aa89-8d15a168abcc\",\"master\":\"02681378-5528-45a9-8093-76805a4705c9\",\"avatars\":\"fanmark-avatars-staging-v2-e434eb11\",\"covers\":\"fanmark-covers-staging-v2-e434eb11\"}",
+    "STAGING_BACKUP_SCHEMA_HASHES": "{\"auth\":\"3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b\",\"business\":\"598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2\",\"master\":\"32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56\"}",
     "STAGING_BACKUP_KEY_ID": "staging-backup-89ca6819-a159-4db8-aa7d-733315a9a0ef"
   },
   "r2_buckets": [
     {
       "binding": "AVATARS_BUCKET",
-      "bucket_name": "fanmark-avatars-staging"
+      "bucket_name": "fanmark-avatars-staging-v2-e434eb11"
     },
     {
       "binding": "COVER_IMAGES_BUCKET",
-      "bucket_name": "fanmark-cover-images-staging"
+      "bucket_name": "fanmark-covers-staging-v2-e434eb11"
     },
     {
       "binding": "STAGING_BACKUP_BUCKET",
@@ -175,11 +175,11 @@
     "bindings": [
       {
         "name": "NOTIFICATION_WAKE",
-        "class_name": "NotificationWakeCoordinator"
+        "class_name": "NotificationWakeCoordinatorV2"
       },
       {
         "name": "RECOVERY_DRAIN",
-        "class_name": "RecoveryWriterCoordinator"
+        "class_name": "RecoveryWriterCoordinatorV2"
       }
     ]
   },
@@ -194,6 +194,13 @@
       "tag": "recovery-writer-drain-v1",
       "new_sqlite_classes": [
         "RecoveryWriterCoordinator"
+      ]
+    },
+    {
+      "tag": "staging-resource-scope-v2",
+      "new_sqlite_classes": [
+        "NotificationWakeCoordinatorV2",
+        "RecoveryWriterCoordinatorV2"
       ]
     }
   ],

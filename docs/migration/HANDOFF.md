@@ -8083,3 +8083,18 @@ e53558b/CI37856413174は両job成功。main97826bffを100%配信。
 app再配備は1回、probeは除去済み。capture pending・backup Cron0。
 旧記録34の原因/終了、初回旧writer/実source backup/remote復旧/監視は未受け入れ。
 [限定証拠](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。
+
+### 2026-10-09: new staging resource candidate, not yet routed
+
+旧ticket34を消さず、全5 storeを別resourceへ分離するcandidateを用意した。
+新3D1のschema、非ユーザーMaster25表/12,254行、Business共通6表/106行、Auth user/session0、
+旧全表保持、他Workerから新resourceへのbindingなし、R2公開無効を独立確認した。
+一時initializer削除済み。新Authの六つのMFA triggerはBEGIN大文字化のみの差を確認し、
+実DDL hashをpinした。旧Authのgeneration/sessionを新Authへコピーしていない。
+新namespace V2と、旧DOが新bindingへ書けないobject ID照合を追加し、
+writer9/通知22/recovery-set16/backup11・型検査/eslintを確認した。
+staging configは新resourceの配備前candidateで、main実環境は97826bff/旧5 storeのまま。
+詳細とidentityは[backup operations](backup-operations.md)末尾と
+[candidate evidence](evidence/staging-resource-scope-v2-candidate-2026-10-09.json)。
+次はCI→新scope配備→binding/namespace/初回writer/external writerの独立確認→
+admission採用→実archive/同運用鍵の隔離復旧→定期Cron/監視。実ユーザー/DNSは最後。

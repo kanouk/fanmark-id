@@ -51,6 +51,10 @@ export async function flushNotificationWakeSafely(env: Env): Promise<void> {
 
 /** One SQLite-backed object coordinates wake/sleep; no event payload or identity is stored here. */
 export class NotificationWakeCoordinator extends DurableObject<Env> {
+  private ownsCurrentNamespace(): boolean {
+    return !!this.env.NOTIFICATION_WAKE && this.ctx.id.toString() ===
+      this.env.NOTIFICATION_WAKE.idFromName(OBJECT_NAME).toString();
+  }
   private async reconcile(now: number): Promise<void> {
     await this.ctx.blockConcurrencyWhile(async () => {
       const database = databaseFor(this.env);
@@ -85,6 +89,7 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
   }
 
   async fetch(request: Request): Promise<Response> {
+    if (!this.ownsCurrentNamespace()) return new Response(null, { status: 503 });
     if (shouldFreezeRecoveryWrites(this.env.RECOVERY_WRITE_FREEZE)) {
       return new Response(null, { status: 503, headers: { "retry-after": "60", "cache-control": "no-store" } });
     }
@@ -109,6 +114,8 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
   }
 
   async alarm(): Promise<void> {
+    // A retained legacy namespace must not process the newly bound business store.
+    if (!this.ownsCurrentNamespace()) return;
     if (this.env.NOTIFICATION_WAKE_BACKEND?.trim() !== "durable-object" ||
         this.env.NOTIFICATION_PROCESSOR_BACKEND?.trim() !== "d1") return;
     // Persist the next attempt before D1 work: a hard interruption must not
@@ -128,6 +135,9 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
     }
   }
 }
+
+/** Fresh staging namespace; the legacy class and its stored state remain available. */
+export class NotificationWakeCoordinatorV2 extends NotificationWakeCoordinator {}
 
 type Authorize = (request: Request, headers: Headers) => Promise<Response | { userId: string; sessionId: string }>;
 export async function handleNotificationWakeRepairRequest(request: Request, env: Env, authorize: Authorize): Promise<Response | null> {

@@ -335,3 +335,30 @@ Service Worker/cache-clearの8種類のGETとidle観測で、legacy34・attribut
 これは旧記録34件の終了・原因を証明しない。capture admission pending、backup Cron0、
 実source backup未実行を保持する。
 [限定証拠](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。
+
+### 2026-10-09: fresh staging scope candidate
+
+帰属不明の旧ticket34件は保持する。旧5 storeの終了を証明できないため、新しい
+Business/Auth/Master D1とavatar/cover R2の全5 storeを別に作成した。censusだけの
+交換ではない。旧resource/namespaceは削除せず、旧runtimeのbindingから新storeへ
+書き込めない構成にする。新しい通知・writer DOはV2 classの別namespaceを使う。
+通知DOは自分のobject IDと現在選択されたnamespaceの固定object IDを照合し、
+旧namespaceのfetch/alarmは新Businessに触れない。writer DOも同じ照合で拒否する。
+新scopeの最初のアプリ処理から追跡を有効にする。旧ticketの終了確認には換算しない。
+
+新Authは全4 migration・ユーザー/session0、新Businessは全27 migration・許可した
+共通6表106行のみ、新Masterは保存済み暗号化マスター25表12,254行から初期化した。
+旧Masterとの全行照合、共通設定の全行hash、FK0、account/resource identity、
+既存全表保持を独立確認した。system_settingsは20keyのallowlistと非公開Price ID設定を
+保持し、Authや利用者行をコピーしない。旧ステージング認証/利用者データは旧DBに残る。
+新AuthではWranglerが六つのMFA triggerの`begin`を`BEGIN`で保存した。その他のSQLと
+全object identityの一致を確認し、新Authの実DDL hashを個別にpinした。
+
+初回initializerのGET/statusは404で停止し、POST前・新Master空を確認した。
+別journalから空の新Masterだけを初期化し、12,254行のreceipt/readbackを照合した。
+一時initializerは削除済み。共通seedもtransport method名の誤りで書込前に停止し、
+空のtargetと旧全表保持を確認後、別journalの6 bounded batchで完了した。
+source archiveの初回運用保存、同鍵の隔離復旧、定期Cron/監視はまだ未受け入れ。
+現行mainは97826bffの旧scopeのまま。新configは配備前のcandidateで、admissionは
+pending・backup Cron0を保持する。CI後の新scope配備と独立readbackを先に行う。
+[candidate evidence](evidence/staging-resource-scope-v2-candidate-2026-10-09.json)。

@@ -557,3 +557,8 @@ R2 data storeは空。通常mainへコードも反映したが停止/計測bindi
 [配備証拠](migration/evidence/staging-native-recovery-runtime-rollout-2026-10-08.json)。
 隔離runtime接続の残件は解消。main初回の旧writer終了、外部writer lease、容量と運用条件の
 採用は残る。過去節の未接続/未配備は当時の記録として読み、この最新観測を優先する。
+Cloudflare stagingの新scopeは全5 storeを別resourceとし、通知/終了追跡DOもV2の
+別namespaceを使う。DOは現在のbindingから生成した固定object IDとの一致を必須にする。
+データ領域を再初期化する際も、旧censusだけのreset/TTL削除は禁止する。
+非ユーザーマスターのseed完了・一時writer終了・全bindingの独立照合を行い、
+最初の新アプリ処理から計測する。受け入れは[backup operations](migration/backup-operations.md)。

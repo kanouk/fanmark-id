@@ -66,6 +66,29 @@ beforeEach(async () => {
 });
 
 describe("native D1 outbox and real SQLite Durable Object alarms", () => {
+  it("quarantines a retained legacy object before reading or writing the newly bound business store", async () => {
+    await event();
+    const rows = (await db.prepare("SELECT * FROM notification_events ORDER BY id").all()).results;
+    const before = await wakeState();
+    await runInDurableObject(stub, async (instance: NotificationWakeCoordinator, state) => {
+      const local = (instance as unknown as { env: Env }).env;
+      const original = local.NOTIFICATION_WAKE!;
+      await state.storage.setAlarm(Date.now() + 60_000);
+      const storedAlarm = await state.storage.getAlarm();
+      local.NOTIFICATION_WAKE = {
+        idFromName() { return original.idFromName("different-current-namespace-object"); },
+      } as unknown as DurableObjectNamespace;
+      try {
+        expect((await instance.fetch(new Request("https://notification-wake.internal/wake", { method: "POST" }))).status).toBe(503);
+        expect((await instance.fetch(new Request("https://notification-wake.internal/status"))).status).toBe(503);
+        await instance.alarm();
+        expect(await state.storage.getAlarm()).toBe(storedAlarm);
+      } finally { local.NOTIFICATION_WAKE = original; }
+    });
+    expect(await wakeState()).toEqual(before);
+    expect((await db.prepare("SELECT * FROM notification_events ORDER BY id").all()).results).toEqual(rows);
+    expect((await db.prepare("SELECT count(*) AS n FROM notifications").first())?.n).toBe(0);
+  });
   it("preserves pending D1 work while recovery is frozen and resumes it once through the durable alarm", async () => {
     const first = await event();
     await flushNotificationWake(runtime);

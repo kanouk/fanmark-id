@@ -1171,3 +1171,12 @@ main97826bffではHTTP/Cronのwriter lifecycleをcontextへ登録し、新規tic
 実archive/同運用鍵のremote復旧・毎日Cron/失敗監視は未受け入れ。
 [backupの現在状態](backup-operations.md)・[限定証拠](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。
 実ユーザー移送と本番ドメインは引き続き最後の別工程。
+
+### 2026-10-09: fresh staging scope candidate
+
+旧ticket34の終了は未判定のまま保持する。全5 storeを別resourceへ分離するcandidateを
+用意し、3D1 schema/非ユーザーマスター/共通6表106行/Auth user・session0と旧全表保持を
+独立確認した。旧通知DOが新Businessへ書けないID照合とV2 namespaceを追加した。
+現行mainは97826bff/旧scope。新configは配備前でbackup admission pending/Cron0。
+実運用archive/隔離復旧/定期運用は未受け入れ。
+詳細は[backup operations](backup-operations.md)末尾と[candidate evidence](evidence/staging-resource-scope-v2-candidate-2026-10-09.json)。

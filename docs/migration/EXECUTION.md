@@ -8842,3 +8842,7 @@ Actual source archive/remote operational restore/Cron/monitoring remain open.
 - binding guardのJSON項目順による差分を、名前順の値・全表hash/namespaceの独立比較で回復。
 - 既存Auth3/7/2・FK0と111 binding/2 namespaceを保持。各probe除去、実capture/Cronは未有効化。
 - [native限定結果](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。原因未判定の旧ticket34は保持。
+[2026-10-09 fresh staging candidate](backup-operations.md)では、旧ticket34を保持したまま
+全5 storeと2 DO namespaceを分離する配備前configを準備した。新DB初期化と非ユーザー
+マスターの全行照合は完了。mainはまだ97826bff/旧scope、admission pending/Cron0。
+CIと実配備・独立binding確認後に運用backupを進める。旧利用者の移送とDNSは実行しない。

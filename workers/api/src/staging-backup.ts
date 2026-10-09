@@ -50,7 +50,9 @@ async function configuration(env: StagingBackupEnv, capture: boolean) {
       Object.values(ids!).some(id => typeof id !== "string" || !ID.test(id)) || new Set(Object.values(ids!)).size !== 5 ||
       Object.values(schemas!).some(hash => typeof hash !== "string" || !HASH.test(hash)) ||
       await stagingBackupScope(ids!) !== env.RECOVERY_DRAIN_SCOPE_DIGEST) fail("identity_mismatch");
-  // Set only after independent binding readback, legacy-writer termination and external-writer exclusion.
+  // Set only after independent binding readback and exclusion of every untracked writer.
+  // A fresh set of stores may use a fresh census when retained legacy invocations
+  // can only reach the old stores; replacing the census alone is never sufficient.
   // Permission to adopt the policy is not evidence that these technical prerequisites passed.
   if (capture && env.STAGING_BACKUP_ADMISSION !== "writers-verified-v1") fail("admission_required");
   const key = await crypto.subtle.importKey("raw", new Uint8Array(env.STAGING_BACKUP_KEY!.match(/../gu)!.map(x => parseInt(x, 16))),
