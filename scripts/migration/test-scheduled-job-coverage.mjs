@@ -6,9 +6,11 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { selectScheduledJobs } from "../../workers/api/src/scheduled-dispatch.ts";
-import { validateScheduledJobCoverage } from "./scheduled-job-coverage.mjs";
+import { validateScheduledJobCoverage, validateStagingBackupJobCoverage } from "./scheduled-job-coverage.mjs";
 
 const deployed = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+const backup = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.backup-staging.jsonc", import.meta.url), "utf8"));
+const monitor = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.backup-monitor-staging.jsonc", import.meta.url), "utf8"));
 const baseline = structuredClone(deployed);
 delete baseline.vars.LICENSE_EXPIRY_BACKEND;
 delete baseline.vars.NOTIFICATION_ARCHIVE_BACKEND;
@@ -28,6 +30,30 @@ test("operational staging routes daily jobs and test Stripe dispatch without not
   assert.deepEqual(selectScheduledJobs("* * * * *", deployed.vars), ["stripe-webhook-dispatch"]);
   assert.equal(deployed.vars.STRIPE_MODE_POLICY, "test_only");
   assert.deepEqual(validateScheduledJobCoverage(baseline), []);
+});
+
+test("backup/monitor activation requires matching scope, transport admission and exact independent Crons", () => {
+  validateStagingBackupJobCoverage(deployed, backup, monitor);
+  const main = structuredClone(deployed), daily = structuredClone(backup), hourly = structuredClone(monitor);
+  main.vars.STAGING_BACKUP_ALERT_BACKEND = "resend-v1";
+  daily.vars.STAGING_BACKUP_SCHEDULE = "daily-v1"; daily.triggers.crons = ["5 0 * * *"];
+  hourly.vars.STAGING_BACKUP_MONITOR = "hourly-v1"; hourly.triggers.crons = ["35 * * * *"];
+  assert.deepEqual(validateStagingBackupJobCoverage(main, daily, hourly), [
+    { job: "fanmark-backup-staging", cron: "5 0 * * *" },
+    { job: "fanmark-backup-monitor-staging", cron: "35 * * * *" },
+  ]);
+  for (const change of [
+    c => { c.daily.triggers.crons = []; },
+    c => { c.main.vars.STAGING_BACKUP_ALERT_BACKEND = "disabled"; },
+    c => { c.main.vars.STAGING_BACKUP_ADMISSION = "pending"; },
+    c => { c.hourly.vars.RECOVERY_DRAIN_SCOPE_DIGEST = "a".repeat(64); },
+    c => { c.hourly.vars.STAGING_BACKUP_SOURCE_IDS = "{}"; },
+    c => { c.hourly.d1_databases = [{ binding: "AUTH_DB", database_id: "unowned" }]; },
+    c => { c.hourly.services[0].service = "other-project"; },
+  ]) {
+    const c = structuredClone({ main, daily, hourly }); change(c);
+    assert.throws(() => validateStagingBackupJobCoverage(c.main, c.daily, c.hourly), /staging_backup_/u);
+  }
 });
 
 for (const [selector, job] of [

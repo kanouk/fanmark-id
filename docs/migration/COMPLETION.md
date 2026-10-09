@@ -6,7 +6,7 @@
 分離し、旧全表/旧namespace/未判定ticket34を保持した。CI205b168の両job成功後、
 新scope限定で初回暗号化R2保存・同運用鍵での隔離復旧14,591ms・独立全表/R2照合と
 所有targetのcleanupを確認した。保存元Auth user/credential/session0・画像R2空。
-実Cron0、失敗監視/通知・残るprovider/最終端末統合は未受け入れ。実ユーザー/DNSは最後。
+実Cron0。別monitor/固定本人宛先通知と期限処理完了receiptの候補を追加し、local native21件・schedule guard12件を確認した。native配備/実通知/自然Cron・残るprovider/最終端末統合は未受け入れ。実ユーザー/DNSは最後。
 最新の[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)と
 [backup operations](backup-operations.md)末尾を優先する。以下の詳細には過去の状態も含む。
 

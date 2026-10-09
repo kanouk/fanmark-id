@@ -108,12 +108,14 @@ test('native staging backup RPC fences writers, verifies private R2 archive, rev
       await bucket.put(prefix+'runs/'+boundary+'.json',JSON.stringify({...receipt,slot:boundary}));
       await bucket.put('unrelated-keep','keep');
       assert.equal((await request('prune')).deleted,1);assert.equal(await bucket.head(old.objectKey),null);
+      const retained=(await request('rpc-status')).receipt.retention;
+      assert.equal(retained.days,30);assert.equal(retained.deleted,1);assert.ok(Number.isFinite(Date.parse(retained.finishedAt)));
       assert.ok(await bucket.head(prefix+'runs/'+boundary+'.json'));assert.equal(await(await bucket.get('unrelated-keep')).text(),'keep');
       await bucket.delete(receipt.objectKey);await request('prune',{},409);await bucket.put(receipt.objectKey,serialized);
     });
     await t.test('disabled/wrong Cron calls no service and service failure prevents retention',async()=>{
       assert.equal((await request('scheduler',{mode:'disabled'})).calls,0);assert.equal((await request('scheduler',{mode:'bad-cron'})).calls,0);
-      assert.deepEqual(await request('scheduler',{mode:'active'}),{calls:1,error:'synthetic-rpc-failure'});
+      assert.deepEqual(await request('scheduler',{mode:'active'}),{calls:1,alerts:1,error:'staging_backup_failed'});
     });
   }finally{await mf.dispose();}
 });

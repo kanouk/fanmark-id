@@ -562,3 +562,22 @@ Cloudflare stagingの新scopeは全5 storeを別resourceとし、通知/終了�
 データ領域を再初期化する際も、旧censusだけのreset/TTL削除は禁止する。
 非ユーザーマスターのseed完了・一時writer終了・全bindingの独立照合を行い、
 最初の新アプリ処理から計測する。受け入れは[backup operations](migration/backup-operations.md)。
+
+
+### ステージングbackup監視の候補（2026-10-09）
+
+日次captureは`staging-backup-schedule.ts`の`5 0 * * *`（09:05 JST）。別Workerの
+`staging-backup-monitor.ts`は`35 * * * *`で、00:05 UTCから30分の猶予後は当日receiptを
+要求し、それ以前は前日を確認する。receiptのsource/schema/key ID、owner、verified/released、
+時刻、24時間の経過、archive HEADの存在/容量、retention終了を照合する。本文の再復号は
+capture側の完了検証で行い、毎時monitorはarchiveのhash再計算や復号をしない。
+monitorはsource bindingも運用秘密鍵も持たず、失敗通知だけmainのbinding専用RPCへ委ねる。
+
+`staging-backup-alert.ts`の宛先は本人が許可した`fanmark.id+staging-test05@gmail.com`へ固定。
+メッセージにraw例外、credential、source行、provider応答を入れない。scope/UTC date/codeの
+conditional R2 claim後にproviderへ一度だけ要求する。2xx/idはprovider-acceptedであり、
+配送/受信の証明ではない。不明claim/送信ACK/receipt保存は自動再送しない。dailyの保存/
+期限処理が失敗した場合は通知の成功に関係なくCronを失敗にし、別monitorもreceiptを検出する。
+Cloudflare/R2/Resend/内部service自体の広域障害はこの経路のみでは通知を保証しない。
+設定と実Cronの一致は`validateStagingBackupJobCoverage()`で検査する。現在は全selectorが
+disabled、Cron0であり、native配備・期限処理・実通知・自然Cronを受け入れてから運用化する。

@@ -7,6 +7,37 @@ import {
   NOTIFICATION_PROCESSOR_CRON,
   selectScheduledJobs,
 } from "../../workers/api/src/scheduled-dispatch.ts";
+import { STAGING_BACKUP_CRON, STAGING_BACKUP_MONITOR_CRON } from "../../workers/api/src/staging-backup-schedule.ts";
+
+/** Operational backup and its independent monitor must share the explicitly pinned application scope. */
+export function validateStagingBackupJobCoverage(main, scheduler, monitor) {
+  const jobs = [];
+  for (const [config, name, selector, enabled, cron] of [
+    [scheduler, "fanmark-backup-staging", "STAGING_BACKUP_SCHEDULE", "daily-v1", STAGING_BACKUP_CRON],
+    [monitor, "fanmark-backup-monitor-staging", "STAGING_BACKUP_MONITOR", "hourly-v1", STAGING_BACKUP_MONITOR_CRON],
+  ]) {
+    if (config?.name !== name || config.account_id !== main.account_id || config.workers_dev !== false || config.preview_urls !== false ||
+        !["disabled", enabled].includes(config.vars?.[selector])) throw new Error("staging_backup_job_configuration_invalid");
+    const active = config.vars[selector] === enabled;
+    if (JSON.stringify(config.triggers?.crons) !== JSON.stringify(active ? [cron] : [])) throw new Error("staging_backup_job_uncovered");
+    if (config.vars.RECOVERY_DRAIN_SCOPE_DIGEST !== main.vars.RECOVERY_DRAIN_SCOPE_DIGEST)
+      throw new Error("staging_backup_job_scope_mismatch");
+    const binding = name === "fanmark-backup-staging" ? "BACKUP_SERVICE" : "BACKUP_ALERT_SERVICE";
+    if (JSON.stringify(config.services) !== JSON.stringify([{ binding, service: "fanmark-app-staging", entrypoint: "StagingBackupService" }]))
+      throw new Error("staging_backup_job_service_mismatch");
+    if (active) {
+      if (main.vars.STAGING_BACKUP_ALERT_BACKEND !== "resend-v1" || main.vars.STAGING_BACKUP_ADMISSION !== "writers-verified-v1")
+        throw new Error("staging_backup_job_admission_missing");
+      jobs.push({ job: name, cron });
+    }
+  }
+  for (const key of ["STAGING_BACKUP_SOURCE_IDS", "STAGING_BACKUP_SCHEMA_HASHES", "STAGING_BACKUP_KEY_ID"])
+    if (monitor.vars[key] !== main.vars[key]) throw new Error("staging_backup_monitor_source_mismatch");
+  if (monitor.d1_databases || monitor.durable_objects || monitor.vars.STAGING_BACKUP_KEY || monitor.vars.BETTER_AUTH_SECRET ||
+      JSON.stringify(monitor.r2_buckets) !== JSON.stringify([{ binding: "STAGING_BACKUP_BUCKET", bucket_name: "fanmark-backups-staging" }]))
+    throw new Error("staging_backup_monitor_binding_invalid");
+  return jobs;
+}
 
 /** Check the base config's enabled jobs against the actual Worker router. No remote reads or writes. */
 export function validateScheduledJobCoverage(config) {
@@ -46,5 +77,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const configPath = process.argv[2] ?? fileURLToPath(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url));
   const config = JSON.parse(readFileSync(configPath, "utf8"));
   const jobs = validateScheduledJobCoverage(config);
-  console.log(JSON.stringify({ status: "covered", jobs }));
+  const backupJobs = !process.argv[2] ? validateStagingBackupJobCoverage(config,
+    JSON.parse(readFileSync(new URL("../../workers/api/wrangler.backup-staging.jsonc", import.meta.url), "utf8")),
+    JSON.parse(readFileSync(new URL("../../workers/api/wrangler.backup-monitor-staging.jsonc", import.meta.url), "utf8"))) : [];
+  console.log(JSON.stringify({ status: "covered", jobs: [...jobs, ...backupJobs] }));
 }

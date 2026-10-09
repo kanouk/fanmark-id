@@ -80,7 +80,7 @@
     "test:r2-recovery": "node --experimental-strip-types --test test/r2-recovery.integration.mjs ../../scripts/migration/test-isolated-shared-r2-recovery-worker.mjs",
     "test:recovery-set": "node --experimental-strip-types --test test/recovery-set.integration.mjs ../../scripts/migration/test-isolated-recovery-set-worker.mjs ../../scripts/migration/test-application-writer-recovery.mjs ../../scripts/migration/test-application-recovery-set-worker.mjs ../../scripts/migration/test-application-recovery-cloudflare-api.mjs",
     "test:recovery-writer-drain": "vitest run --config vitest.recovery-writer-drain.config.mjs",
-    "test:staging-backup": "node --experimental-strip-types --test test/staging-backup.integration.mjs"
+    "test:staging-backup": "node --experimental-strip-types --test test/staging-backup.integration.mjs test/staging-backup-monitor.integration.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.1.13",

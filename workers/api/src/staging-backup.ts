@@ -22,6 +22,7 @@ export type BackupReceipt = {
   sourceIds: RecoverySetContext["sourceIds"]; schemaHashes: RecoverySetContext["schemaHashes"];
   objectKey?: string; archiveHash?: string; bytes?: number; captureId?: string;
   fenceReleased: boolean; error?: "capture_failed" | "release_failed";
+  retention?: { days: 30; deleted: number; finishedAt: string };
 };
 const PREFIX = "recovery/v1/", DAY = 86_400_000;
 const ID = /^[A-Za-z0-9:_-]{1,128}$/u, HASH = /^[a-f0-9]{64}$/u;
@@ -185,5 +186,10 @@ export async function pruneStagingBackups(env: StagingBackupEnv, today: string) 
     }
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
+  // A verified capture alone is not proof that the daily retention phase completed.
+  // Persist its settled outcome so the independent monitor also catches a lost scheduler/alert ACK.
+  latest.retention = { days: 30, deleted, finishedAt: new Date().toISOString() };
+  await bucket.put(receiptKey(today), JSON.stringify(latest), { storageClass: "Standard",
+    httpMetadata: { contentType: "application/json" } });
   return { deleted, retentionDays: 30 };
 }

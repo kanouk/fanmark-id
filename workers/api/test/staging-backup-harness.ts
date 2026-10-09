@@ -50,10 +50,12 @@ export default {
         }
         case "scheduler": {
           let calls = 0;
-          const service = { async run() { calls++; throw new Error("synthetic-rpc-failure"); }, async prune() { calls++; return { deleted: 0 }; } };
+          let alerts = 0;
+          const service = { async run() { calls++; throw new Error("synthetic-rpc-failure"); },
+            async prune() { calls++; return { deleted: 0 }; }, async alert() { alerts++; return {}; } };
           try { await scheduler.scheduled({ cron: mode === "bad-cron" ? "* * * * *" : STAGING_BACKUP_CRON,
             scheduledTime: Date.now() } as ScheduledController, { STAGING_BACKUP_SCHEDULE: mode === "disabled" ? "disabled" : "daily-v1", BACKUP_SERVICE: service }); }
-          catch (error) { return Response.json({ calls, error: (error as Error).message }); }
+          catch (error) { return Response.json({ calls, alerts, error: (error as Error).message }); }
           return Response.json({ calls });
         }
         default: return new Response(null, { status: 404 });

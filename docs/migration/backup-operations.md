@@ -35,7 +35,7 @@ capture/鍵/停止操作を呼べない。source binding集合から導出した
 終了を確認した上でoperatorが復旧する。TTLでwriterやownerを消す機能はない。
 失敗時の保存物は隔離して手動処理する必要があり、期限処理の完全自動化とは扱わない。
 失敗Cronと永続receiptを監視し、前日以前の成功日時と併せてRPO超過を判断する。
-通知の自動配送・監視担当の実通知受け入れはまだ実装/検証していない。
+別の毎時monitorと固定宛先の内部RPC通知は実装した候補。まだnative配備・実配送・受信を受け入れていない。
 
 native local検証11件で、RPC接続、既存writer終了待ち/新writer拒否、他ownerの保護、
 claim応答喪失、失敗の秘匿、同日の重複拒否、暗号化Auth鍵の復号、R2保存fileからの
@@ -405,3 +405,29 @@ exact hash/bytesを照合し、所有したtarget3D1/3R2と全operator/probeを�
 間隔を24時間未満にするためで、同UTC slotの再実行はしない。local backup11件成功。
 自然の定期実行、失敗通知/担当者への実通知、残るprovider/端末の最終統合は未受け入れ。
 [限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)。
+
+
+### 2026-10-09: 日次失敗・保存漏れの監視候補
+
+保存は09:05 JST、別monitorは毎時35分。monitorは復号鍵とsource DB/画像bindingを持たず、
+非公開backup R2のreceipt/HEADだけを確認する。保存失敗、未完了、日次receipt欠落、
+source/schema/key ID違い、停止未解除、24時間超過、archive欠落/容量差、期限処理の
+未完了を区別する。日次期限処理のsettled結果をreceiptへ追記し、通知の失敗やscheduler
+の中断後もmonitorから未完了を検出できる。通常HTTPから操作口を呼べない。
+
+mainのnamed RPCから既存Resendで、本人許可済みの番号付き宛先
+`fanmark.id+staging-test05@gmail.com`へ静的な状態/日付だけを通知する。scope/date/code単位の
+R2 conditional claimでprovider requestを一度に限定。ACK不明なら自動再送せず、operator
+の調査が必要。同じ正常日付の定期メールは送らない。provider-acceptedはdelivery/受信と
+別に確認する。monitor自体/Cloudflare/R2/service/Resend全体の障害ではこの経路だけの
+通知保証はない。alertの失敗記録は30日archive削除の対象外で、手動調査まで保持する。
+
+local native21件で保存/復旧/期限処理とmonitor/通知の欠落検知・identity/30分境界/24時間・
+重複抑止・claim/provider ACK喪失・失敗秘匿を確認。schedule guard12件、Worker typecheck/
+lintを確認する。通常mainは1b57012d、既存backup schedulerはdisabled/Cron0のまま。
+新monitor configもdisabled/Cron0。実環境での再配備・当日保存への期限処理追記・通知
+経路の実配送/受信・定期運用・自然Cronは、このlocal候補証拠に含めない。
+
+運用化後の停止はdaily/monitorのselectorをdisabled、Cronを空に戻し、mainのalert selectorも
+disabledへ戻す。archive・鍵・claim・未終了ownerはその操作で削除しない。過去のruntimeへ
+戻す場合もV2 namespaceのmigration履歴を保つ。

@@ -8,6 +8,16 @@
 最新の[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)と
 [backup operations](backup-operations.md)末尾を優先する。以下の詳細には過去の状態も含む。
 
+## 日次backup監視の候補（2026-10-09 JST）
+
+初回source保存・隔離復旧/cleanupは前節のnative証拠。次の候補では別monitor、固定本人
+宛先の失敗通知、retentionの永続完了receiptを追加する。local native21件とschedule guard
+12件を検証。候補は未配備、Cronは0のまま。UTC2026-10-09の保存を再実行しない。
+CI後に同じsource/binding/secretを保持してmainを配備し、当日の期限処理だけを一度
+実行・照合する。実通知/配送を確認した後にdaily09:05 JSTと毎時35分monitorを採用する。
+最初の自然dailyはUTC2026-10-10 00:05（10/10 09:05 JST）の予定。自然Cron・本人受信、
+残るprovider/実端末/最終candidateは別の未完了条件として保持する。
+
 ## 告知の定期配信を検証用1名で受け入れ（2026-10-08 JST）
 
 番号付きの本人所有テスト宛先1名を、free/jaと過去の閉じた登録日範囲で限定した。
