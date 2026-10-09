@@ -1,12 +1,30 @@
 ## 現在のチェックポイント（2026-10-09 JST）
 
-通常stagingは`3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74`を100%配信する。
-API sourceはc1cc1e2のまま。今回のfrontend修正は伝言板のpreview/空本文と
-お気に入り登録日の4言語表示。Asia/Tokyoと取得後の再取得を保持し、直前2世代の
-hash付き公開bundleも保持した。bulk/test送信は無効、署名受信・113 binding・
-4 DO namespace・backup/monitorのversionと周期・既存データを保持した。
-前候補6ebae6fの[CI37893801719](https://github.com/kanouk/fanmark-id/actions/runs/37893801719)は両job成功。
-この修正候補の最新CIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
+通常stagingは`e9f7c04f-6f05-47cd-8700-ab78329ee387`を100%配信する。API sourceは
+c1cc1e2のまま。bulk/test送信は無効、署名受信・113 binding・4 DO namespace・
+backup/monitorのversionと周期・現行/旧D1全表hashを保持した。直前3世代の公開bundleも保持する。
+最新候補のCIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
+直前5e78396bの[CI37897922217](https://github.com/kanouk/fanmark-id/actions/runs/37897922217)は両job成功。
+
+新しい5 store/V2の通常3cd3c8b6では、専用JA Chrome accountのログイン→Tier C取得→
+Stripe sandbox Checkout/Creator→Portal差額確定/Business→警告確認/Free即時解約→返却0/3→
+logoutを確認した。署名receipt7件・dispatch7件の完了、重複delivery2/単一適用と購読解約を
+D1で照合し、専用user/fanmark/operatorを除去した。既存全表hash/FK0/設定/asset/namespaceを
+独立照合し、差分はrequested=acknowledgedの通知wakeだけ。providerのテスト履歴は保持した。
+[限定有料フロー](evidence/staging-core-paid-journey-native-2026-10-09.json)。
+購入復帰時のprofile/maintenance timeoutと、解約反映後のUI待機終了にはそれぞれ手動reloadが
+必要だった。途切れない有料フローや全体完了として受け入れない。
+
+profile取得の失敗でパスワード未設定と推測して移動する挙動と、maintenance取得失敗を
+メンテナンスとして表示する挙動を修正した。確認できない間は操作を閉じ、現在URLを保持して
+読取の再試行を表示する。既知の初回password/MFA gateは維持する。実provider/gate部品を使う
+隔離localhostの合成失敗→native再試行2回→元URL復帰、auth/MFA11件、型検査/build/PWA境界を
+確認した。e9f7c04fの匿名native認証画面も確認した。[再試行の限定証拠](evidence/staging-account-readiness-retry-2026-10-09.json)。
+新versionで有料フローや本人の初回password設定を再度完了した証拠には広げない。
+
+残件はsourceの4 converter group/外部read consumer、旧writer ticketの扱い、翌日09:05 JSTの
+日次backup自然発火、Discord新規identityの初回password/logout/relogin、Apple新規identity/relay、
+実スマホ/PWAと最終統合。実user移送・DNSは最後の別工程。以下は過去の限定証拠。
 
 通常d074b5ddの別合成account3件でEN/KO/IDも、実ログイン→取得前のお気に入り→
 無期限Tier C取得→伝言板保存→再読込なしの所有/リンク反映→公開本文→返却→logoutを

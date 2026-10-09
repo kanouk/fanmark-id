@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "test:app-startup": "node --test scripts/test-app-startup.mjs",
     "test:staging-asset-retention": "node --test scripts/migration/retain-staging-hashed-assets.test.mjs",
-    "test:auth-login-mfa": "node --experimental-strip-types --test scripts/test-auth-login-mfa.mjs",
+    "test:auth-login-mfa": "node --experimental-strip-types --test scripts/test-auth-login-mfa.mjs scripts/test-account-readiness.mjs",
     "test:recent": "node --experimental-strip-types --test src/lib/recent-fanmarks.test.ts",
     "test:owned-fanmarks-plan-projection": "node --experimental-strip-types --test src/lib/owned-fanmarks-plan-projection.test.ts",
     "test:public-access": "node --experimental-strip-types --test src/lib/public-access-api.test.ts",

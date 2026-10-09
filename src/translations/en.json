@@ -104,6 +104,8 @@
     "seeHowUsed": "See How It's Used"
   },
   "auth": {
+    "profileCheckFailed": "Unable to verify your account",
+    "profileCheckRetry": "Check your connection and try again. You do not need to change your password.",
     "title": "fanmark.id",
     "login": "Login",
     "signUp": "Sign Up",
@@ -1641,6 +1643,8 @@
     }
   },
   "maintenance": {
+    "settingsCheckFailed": "Unable to check service settings",
+    "settingsCheckRetry": "Check your connection and try again.",
     "title": "Under Maintenance",
     "subtitle": "We are currently performing maintenance.",
     "description": "Sorry for the inconvenience. Please check back soon.",

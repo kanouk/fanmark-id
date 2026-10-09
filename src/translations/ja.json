@@ -104,6 +104,8 @@
     "seeHowUsed": "みんなの使い方を見る"
   },
   "auth": {
+    "profileCheckFailed": "アカウント情報を確認できませんでした",
+    "profileCheckRetry": "通信状態を確認して再試行してください。パスワードの変更は必要ありません。",
     "title": "fanmark.id",
     "login": "ログイン",
     "signUp": "新規登録",
@@ -1632,6 +1634,8 @@
     }
   },
   "maintenance": {
+    "settingsCheckFailed": "サービス設定を確認できませんでした",
+    "settingsCheckRetry": "通信状態を確認して再試行してください。",
     "title": "メンテナンス中",
     "subtitle": "現在サービスのメンテナンスを行っています。",
     "description": "ご不便をおかけしますが、しばらくお待ちください。",

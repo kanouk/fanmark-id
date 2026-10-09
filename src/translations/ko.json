@@ -104,6 +104,8 @@
     "seeHowUsed": "사용 방법 보기"
   },
   "auth": {
+    "profileCheckFailed": "계정 정보를 확인할 수 없습니다",
+    "profileCheckRetry": "인터넷 연결을 확인하고 다시 시도해 주세요. 비밀번호를 변경할 필요는 없습니다.",
     "title": "fanmark.id",
     "login": "로그인",
     "signUp": "가입",
@@ -1641,6 +1643,8 @@
     }
   },
   "maintenance": {
+    "settingsCheckFailed": "서비스 설정을 확인할 수 없습니다",
+    "settingsCheckRetry": "인터넷 연결을 확인하고 다시 시도해 주세요.",
     "title": "점검 중",
     "subtitle": "현재 서비스 점검을 진행하고 있습니다.",
     "description": "불편을 드려 죄송합니다. 잠시 후 다시 시도해 주세요.",

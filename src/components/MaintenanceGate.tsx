@@ -6,10 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { betterAuthClient, isBetterAuthEnabled } from "@/lib/auth-backend";
 import Maintenance from "@/pages/Maintenance";
+import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const { settings, loading, error } = useMaintenanceSettings();
+  const { settings, loading, error, refetch } = useMaintenanceSettings();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const userId = user?.id;
   const [isAdmin, setIsAdmin] = useState(false);
@@ -82,7 +85,19 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if ((settings.maintenance_mode || error) && !shouldBypass) {
+  if (error && !shouldBypass) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <div role="alert" className="max-w-md space-y-4 text-center">
+          <h1 className="text-xl font-semibold">{t('maintenance.settingsCheckFailed')}</h1>
+          <p className="text-muted-foreground">{t('maintenance.settingsCheckRetry')}</p>
+          <Button onClick={() => { void refetch().catch(() => undefined); }}>{t('common.tryAgain')}</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (settings.maintenance_mode && !shouldBypass) {
     return <Maintenance />;
   }
 

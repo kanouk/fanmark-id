@@ -43,6 +43,7 @@ import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayPr
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import MaintenanceGate from "@/components/MaintenanceGate";
+import { AuthReadinessGate } from "@/components/AuthReadinessGate";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const MainApp = () => (
             <Sonner />
             <BrowserRouter>
               <ScrollToTop />
+              <AuthReadinessGate>
               <PasswordSetupGate />
               <MaintenanceGate>
                 <Routes>
@@ -99,6 +101,7 @@ const MainApp = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </MaintenanceGate>
+              </AuthReadinessGate>
             </BrowserRouter>
           </TooltipProvider>
         </LotteryActionOverlayProvider>

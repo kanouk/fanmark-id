@@ -242,7 +242,7 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/layout/AppHeader.tsx:117` | realtime | `notifications` | `realtime.channel` | `` `notifications-preview-${user.id}` `` |
 | `src/components/layout/AppHeader.tsx:135` | realtime | `notifications` | `realtime.removeChannel` |  |
 | `src/components/layout/AppHeader.tsx:164` | rpc | `mark_notification_read` | `rpc` |  |
-| `src/components/MaintenanceGate.tsx:48` | rpc | `is_admin` | `rpc` |  |
+| `src/components/MaintenanceGate.tsx:51` | rpc | `is_admin` | `rpc` |  |
 | `src/components/PasswordProtection.tsx:59` | rpc | `verify_fanmark_password` | `rpc` |  |
 | `src/components/RecentFanmarksScroll.tsx:25` | rpc | `list_recent_fanmarks` | `rpc` |  |
 | `src/components/SecureWaitlistAdmin.tsx:54` | rpc | `is_super_admin` | `rpc` |  |
@@ -250,10 +250,10 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/SecureWaitlistAdmin.tsx:108` | table | `audit_logs` | `table.select` |  |
 | `src/components/SecureWaitlistAdmin.tsx:137` | rpc | `get_waitlist_email_by_id` | `rpc` |  |
 | `src/components/UserProfileForm.tsx:143` | edge | `bulk-return-fanmarks` | `edge_function_invoke` |  |
-| `src/hooks/useAuth.tsx:52` | table | `user_settings` | `table.select` |  |
-| `src/hooks/useAuth.tsx:136` | auth | `auth` | `auth.getSession` |  |
-| `src/hooks/useAuth.tsx:153` | auth | `auth` | `auth.onAuthStateChange` |  |
-| `src/hooks/useAuth.tsx:192` | auth | `auth` | `auth.signOut` |  |
+| `src/hooks/useAuth.tsx:54` | table | `user_settings` | `table.select` |  |
+| `src/hooks/useAuth.tsx:141` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useAuth.tsx:158` | auth | `auth` | `auth.onAuthStateChange` |  |
+| `src/hooks/useAuth.tsx:198` | auth | `auth` | `auth.signOut` |  |
 | `src/hooks/useAuthForm.tsx:97` | edge | `check-email-exists` | `edge_function_invoke` |  |
 | `src/hooks/useAuthForm.tsx:156` | rpc | `validate_invitation_code` | `rpc` |  |
 | `src/hooks/useAuthForm.tsx:186` | auth | `auth` | `auth.signUp` |  |
@@ -487,7 +487,7 @@ were imported. Those identity records remain deferred to #38.
 
 | Callsite(s) | Operation and owner | Data class | Cloudflare replacement and parity |
 | --- | --- | --- | --- |
-| `src/hooks/useAuth.tsx:136,153,192` | Load session, observe auth changes, and sign out the current user. | Private identity and session. | Better Auth `getSession`/`signOut` with HttpOnly Worker cookies; Worker mode skips the Supabase auth-state listener. Synthetic session and logout passed in local/staging proof. |
+| `src/hooks/useAuth.tsx:141,158,198` | Load session, observe auth changes, and sign out the current user. | Private identity and session. | Better Auth `getSession`/`signOut` with HttpOnly Worker cookies; Worker mode skips the Supabase auth-state listener. Synthetic session and logout passed in local/staging proof. |
 | `src/components/AdminApp.tsx:88,100,137`; `src/pages/AdminAuth.tsx:42,76,89,118,172` | Admin session, password sign-in, AAL/factor checks, and sign-out. | Restricted admin identity and MFA assurance. | `CloudflareAdminAuth` uses Better Auth sign-in/TOTP and `/api/admin/session`; each protected Worker operation checks admin role and same-session, current-factor assurance. The Supabase `AdminAuth` branch remains for Supabase mode. |
 | `src/components/auth/MFAChallenge.tsx:43,73,108,120`; `src/components/auth/MFAEnrollment.tsx:37,62,82,136,148` | List, enroll, challenge, verify, or remove TOTP factors. | MFA secret, factor identity, and challenge state. | These components are only rendered by `SupabaseAdminAuth`. Cloudflare mode uses inline Better Auth `enableTotp`/`verifyTotp` flows in `CloudflareAdminAuth`; synthetic enrollment, challenge, replacement, and session-bound assurance are tested. Supabase factor secrets were not read or migrated. |
 | `src/hooks/useAuthForm.tsx:186` | Create an identity and send verification email. | Email, password credential, invitation attribution. | `POST /api/auth/sign-up/email` uses a recoverable split-D1 command; account creation remains closed until selector and Resend are configured. No real email was sent. See [invitation signup API](invitation-signup-api.md). |
@@ -514,7 +514,7 @@ in Supabase until the separate real-user/data phase.
 
 | Callsite(s) | Operation and owner | Data class | Cloudflare replacement and parity |
 | --- | --- | --- | --- |
-| `src/hooks/useAuth.tsx:52`; `src/hooks/useProfile.tsx:23,120`; `src/hooks/usePreferredLanguage.ts:28`; `src/lib/profile-utils.ts:34` | Read or update the signed-in user's profile and preferred language. | Private account/profile fields, including plan and password-setup state. | `GET/PATCH /api/me/profile`; session owns the row. PATCH allows display name, avatar URL, and language; plan, Stripe IDs, invitation fields, and password-setup state are not client-writable. Existing rows are not imported. |
+| `src/hooks/useAuth.tsx:54`; `src/hooks/useProfile.tsx:23,120`; `src/hooks/usePreferredLanguage.ts:28`; `src/lib/profile-utils.ts:34` | Read or update the signed-in user's profile and preferred language. | Private account/profile fields, including plan and password-setup state. | `GET/PATCH /api/me/profile`; session owns the row. PATCH allows display name, avatar URL, and language; plan, Stripe IDs, invitation fields, and password-setup state are not client-writable. Existing rows are not imported. |
 | `src/hooks/useProfile.tsx:145`; `src/lib/profile-utils.ts:59` | Check whether a candidate username is available, excluding the current user. | Username and account existence signal. | `GET /api/me/username-availability`; Worker derives the excluded ID from Better Auth and returns only a boolean. It is a read-only check and does not reserve the name. |
 | `src/pages/PasswordSetup.tsx:92`; `src/pages/Profile.tsx:139` | Clear `requires_password_setup` after a password change. | Private account security state. | Better Auth `setupPassword` and `changePassword` own these transitions; Worker mode does not expose a generic profile flag write. The direct table writes remain in Supabase mode. |
 | `src/hooks/useAuthForm.tsx:207` | Record the invitation attribution on the new user's profile. | Private signup attribution. | The split-D1 signup command creates the source-shaped profile and consumes the reserved invitation atomically; the legacy post-signup update runs only in Supabase mode. |

@@ -104,6 +104,8 @@
     "seeHowUsed": "Lihat Cara Penggunaannya"
   },
   "auth": {
+    "profileCheckFailed": "Informasi akun tidak dapat diverifikasi",
+    "profileCheckRetry": "Periksa koneksi Anda dan coba lagi. Anda tidak perlu mengubah kata sandi.",
     "title": "fanmark.id",
     "login": "Masuk",
     "signUp": "Daftar",
@@ -1641,6 +1643,8 @@
     }
   },
   "maintenance": {
+    "settingsCheckFailed": "Pengaturan layanan tidak dapat diperiksa",
+    "settingsCheckRetry": "Periksa koneksi Anda dan coba lagi.",
     "title": "Sedang Maintenance",
     "subtitle": "Saat ini kami sedang melakukan pemeliharaan layanan.",
     "description": "Mohon maaf atas ketidaknyamanannya. Silakan coba lagi nanti.",

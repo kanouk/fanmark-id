@@ -19,6 +19,7 @@ interface AuthContextType {
   loading: boolean;
   emailConfirmed: boolean;
   requiresPasswordSetup: boolean;
+  profileGateError: boolean;
   setRequiresPasswordSetup: (value: boolean) => void;
   refreshSession: () => Promise<boolean>;
   signOut: () => Promise<void>;
@@ -46,6 +47,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
   const [requiresPasswordSetup, setRequiresPasswordSetup] = useState(false);
+  const [profileGateError, setProfileGateError] = useState(false);
 
   const loadUserSettings = useCallback(async (userId: string) => {
     try {
@@ -89,6 +91,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [loadUserSettings]);
 
   const applyBetterAuthSession = useCallback(async (nextSession: Awaited<ReturnType<typeof betterAuthClient.getSession>>) => {
+    setProfileGateError(false);
     const betterAuthUser = nextSession?.user;
     const nextUser: AuthUser | null = betterAuthUser ? {
       id: betterAuthUser.id,
@@ -100,7 +103,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (!nextUser) {
       setRequiresPasswordSetup(false);
       setLoading(false);
-      return;
+      return false;
     }
 
     // The Cloudflare profile row is authoritative for the OAuth first-password
@@ -111,9 +114,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const profile = await loadOwnProfile();
       if (profile.user_id !== nextUser.id) throw new Error('Profile identity did not match the Better Auth session');
       setRequiresPasswordSetup(profile.requires_password_setup);
+      return true;
     } catch (error) {
       console.error('Error loading Better Auth profile gate:', error);
       setRequiresPasswordSetup(true);
+      setProfileGateError(true);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -123,8 +129,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (betterAuthEnabled) {
       try {
         const nextSession = await betterAuthClient.getSession();
-        await applyBetterAuthSession(nextSession);
-        return nextSession !== null;
+        return await applyBetterAuthSession(nextSession);
       } catch (error) {
         console.error('Error loading Better Auth session:', error);
         await applyBetterAuthSession(null);
@@ -179,6 +184,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(null);
       setEmailConfirmed(false);
       setRequiresPasswordSetup(false);
+      setProfileGateError(false);
       
       // Clear localStorage
       try {
@@ -209,6 +215,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     emailConfirmed,
     requiresPasswordSetup,
+    profileGateError,
     setRequiresPasswordSetup,
     refreshSession,
     signOut,

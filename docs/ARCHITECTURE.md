@@ -1,5 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
+Cloudflareの通常画面は`AuthReadinessGate.tsx`で認証プロフィールの取得完了を待つ。取得失敗時はURLを保って再試行し、`PasswordSetupGate.tsx`は確認済みの未設定状態だけをパスワード設定へ送る。`MaintenanceGate.tsx`も設定取得の失敗とメンテナンス有効を別表示にする。
+
 全Master・合成Auth・業務・R2一式復旧の専用入口は
 `scripts/migration/isolated-recovery-combined-worker.mjs`。
 実アプリrouterを使用し、通常staging Workerとは別の所有targetへ限定する。
