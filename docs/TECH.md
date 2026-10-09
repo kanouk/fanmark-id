@@ -17,6 +17,7 @@
 2. 開発サーバー: `npm run dev`（ポートは Vite デフォルト）。  
 3. 型/静的チェック: `npm run lint`。  
 4. ビルド: `npm run build` / プレビュー `npm run preview`。  
+   Cloudflare stagingの更新前は、直前に配備したbuildを保存し、新しいbuild後に `node scripts/migration/retain-staging-hashed-assets.mjs <previous-build> dist-staging` を実行する。旧clientが更新を始めるまで必要なhash付き公開assetを保持する。HTML・SW・manifestは現行buildを使い、同名異内容のassetは上書きせず拒否する。
 5. Supabase ローカル: `npm run db:start` / `db:reset` / `db:stop`（`supabase` CLI 依存）。`supabase link --project-ref <ref>` で本番/ステージングへ接続。  
 6. 翻訳追加時は `src/translations/*.json` を編集し、UI で言語切替を確認。
 

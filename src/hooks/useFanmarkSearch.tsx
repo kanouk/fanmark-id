@@ -13,6 +13,7 @@ import { invokeFanmarkRegistration } from '@/lib/fanmark-registration-api';
 import { loadFanmarkSearchDetails, recordFanmarkSearch } from '@/lib/fanmark-search-api';
 import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
 import { useAuth } from './useAuth';
+import { useInvalidateFavoriteFanmarks } from './useFavoriteFanmarks';
 
 export interface FanmarkSearchResult {
   id: string;
@@ -129,6 +130,7 @@ type UseFanmarkSearchOptions = {
 export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkSearchOptions) {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
+  const invalidateFavorites = useInvalidateFavoriteFanmarks();
   const [result, setResult] = useState<FanmarkSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [recentFanmarks, setRecentFanmarks] = useState<FanmarkSearchResult[]>([]);
@@ -523,6 +525,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       if (response.data?.fanmark) {
         const fanmarkRecord = response.data.fanmark;
+        void invalidateFavorites();
         return {
           success: true,
           fanmark: {

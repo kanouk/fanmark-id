@@ -233,6 +233,8 @@ export const FanmarkAcquisition = ({
       }
 
       const fanmark = response.data.fanmark;
+      // Registration links previously unclaimed favorites to the new fanmark.
+      void invalidateFavorites();
 
       toast({
         title: t('dashboard.acquireSuccessTitle'),
@@ -257,7 +259,7 @@ export const FanmarkAcquisition = ({
       setIsRegistering(false);
       setIsConfirmOpen(false);
     }
-  }, [navigate, onObtain, searchResult, t, toast]);
+  }, [invalidateFavorites, navigate, onObtain, searchResult, t, toast]);
 
   const handleVisitFanmark = useCallback(() => {
     if (!displayedFanmark) return;

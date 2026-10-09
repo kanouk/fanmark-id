@@ -1,0 +1,95 @@
+{
+  "observedAt": "2026-10-09T06:20:25.115Z",
+  "scope": "same normal staging candidate synthetic JA Chrome desktop core journey only",
+  "version": "d074b5dd-b69a-4e50-b847-8770383dc0ea",
+  "backendSourceRevision": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "frontendSourceHashes": {
+    "src/components/FanmarkAcquisition.tsx": "4c12d8d34fd9c704edb0256d3378bae13210f2d664319aea2c2a5e85c8855849",
+    "src/hooks/useFanmarkSearch.tsx": "7e92810ba0acb9b3f3a625c23d68496556763e2a40ed280d44554e41ab23a991"
+  },
+  "beforeFix": {
+    "version": "6afcaee0-a5bd-4bba-8c95-756c69731bdb",
+    "immediateFavoriteStateAccepted": false,
+    "afterReloadStateMatched": true,
+    "fixtureRemoved": true,
+    "cleanupToolOrderRepairRequired": true,
+    "existingLifecycleGuardsRetained": true
+  },
+  "acceptedJourney": [
+    "native password login using one generated synthetic account",
+    "native favorite registration before acquisition",
+    "native acquisition of one indefinite Tier C fanmark",
+    "native text settings save",
+    "favorite ownership and links update without page reload",
+    "favorite link opens exact saved public message",
+    "native return to grace and owned count 0/3",
+    "native logout"
+  ],
+  "pageReloadsDuringAcceptedJourney": 0,
+  "oldClientUpdate": {
+    "missingPreviousEntryStatus": 404,
+    "retainedPreviousEntryStatus": 200,
+    "previousEntrySha256": "81735f15d322ae1dc75439200ba902ea75d9ad8071f73dee9aa2eb92dd316d7d",
+    "sameTabRecoveredOnOrdinaryReload": true,
+    "currentEntry": "/assets/index-BAb0qenK.js",
+    "storageClearingActionsPerformed": false,
+    "physicalPhoneOrStandaloneAccepted": false
+  },
+  "preservation": {
+    "currentAndOldD1OtherTableCountsAndHashesUnchanged": true,
+    "foreignKeyViolations": 0,
+    "onlyCurrentTableDifference": [
+      "business.notification_worker_wake_state"
+    ],
+    "notificationRequestedGeneration": 2,
+    "notificationAcknowledgedGeneration": 2,
+    "mainSettingsHeld": true,
+    "bindings": 113,
+    "durableObjectNamespaces": 4,
+    "backupAndMonitorVersionsAndSchedulesHeld": true,
+    "mainBackendSourceUnchanged": true,
+    "currentAssetsMatched": true,
+    "syntheticAccountAndFanmarkRemoved": true,
+    "ownedOperatorRemoved": true,
+    "ownerIabPreserved": true,
+    "authCountsAfterCleanup": {
+      "user": 1,
+      "account": 1,
+      "session": 1
+    }
+  },
+  "calls": {
+    "realUserDataCopied": 0,
+    "sourceWrites": 0,
+    "domainChanges": 0,
+    "StripeOrEmailRequests": 0,
+    "imageWrites": 0
+  },
+  "localValidation": {
+    "typecheck": "passed",
+    "stagingBuild": "passed",
+    "pwaCacheBoundary": "passed",
+    "hashedAssetRetentionTests": "3 passed",
+    "eslintErrors": 0,
+    "existingHookDependencyWarnings": 2
+  },
+  "boundaries": {
+    "allLanguagesAuthenticatedJourneyAccepted": false,
+    "allProvidersNewIdentityAccepted": false,
+    "paidFlowsOnThisCandidateAccepted": false,
+    "physicalPhonePwaAccepted": false,
+    "allSixGatesAccepted": false,
+    "naturalDailyBackupAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "privateEvidenceHashes": {
+    "journal.json": "06d9332f9f1add2dd32ccaf794701977eca3d707a472c88a9f4001203799b3c6",
+    "ui-proof.json": "2df52ae13bc551c75c2ef7dd3a78e77275cbb82ae240747e7cfc04f0ab25e5ca",
+    "immediate-favorite.json": "ab861e903f60eb0a88ced14926b9dbf161313c0c768f082e228d590f7b672c95",
+    "favorites-immediate.png": "f1da89954c0defe3dc3f315a55676a2aa8a1c6ac35731a62e8df09799110ac09",
+    "public-messageboard.png": "a57a729aa8f21a52be9112db44d7895be10721a4fa5a85d11cb28e448f6a2235",
+    "returned.png": "17f56b06818a2533bb31cc33f787bfa14dfd89c2d4bd5d73f1a396a6856cbd73",
+    "logout.png": "c43553be0cb0ba733ab6bdc787c424abbe7cd99adde10c42527fb723b39bb0d1",
+    "execution.json": "bac4ce8b023a7a4e7bfa9feb642203a740a551223e2374c13c96374e1221f614"
+  }
+}

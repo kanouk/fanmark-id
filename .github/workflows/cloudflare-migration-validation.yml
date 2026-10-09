@@ -71,6 +71,9 @@ jobs:
       - name: Test startup update checks during catalog failure
         run: npm run test:app-startup
 
+      - name: Test old-client hashed asset preservation
+        run: npm run test:staging-asset-retention
+
       - name: Test main login MFA and session completion
         run: npm run test:auth-login-mfa
 

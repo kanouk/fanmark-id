@@ -228,3 +228,16 @@ The temporary Chrome profile and the app bundle it created were moved to the
 Trash after verification. No staging resource, application data, production
 route, or domain/DNS setting was changed. This closes the staging workers.dev
 native-install/standalone-launch subgate only.
+
+## Previous public bundle preservation (2026-10-09)
+
+A Chrome client still referenced the prior hash-named bundle after the new staging deployment; that bundle returned404 and the page stayed blank. Keeping its exact public bytes alongside the new build restored the same tab on an ordinary reload and selected the new entry. The current HTML/SW/manifest and six selected asset hashes were unchanged by the retention step. This is desktop recovery evidence, not acceptance of an installed physical-device PWA. See [the bounded native journey evidence](evidence/staging-core-journey-native-2026-10-09.json).
+
+Before staging updates, preserve the previous deployed build outside `dist-staging`. After building the new candidate, run:
+
+```sh
+node scripts/migration/retain-staging-hashed-assets.mjs /absolute/path/to/previous-build dist-staging
+npm run test:staging-asset-retention
+```
+
+The helper accepts only regular hash-named public assets, refuses symlinks and same-name byte collisions before copying, and uses exclusive creates. It copies no entry documents or service workers. The new build selects the current entry; retained old bundles allow existing clients to boot and discover the update. This is a packaging step; CI tests its guards without copying private artifacts or making remote calls. No automatic removal policy is introduced.

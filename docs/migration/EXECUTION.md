@@ -1,9 +1,22 @@
 ## 現在のチェックポイント（2026-10-09 JST）
 
-通常stagingは`6afcaee0-a5bd-4bba-8c95-756c69731bdb`を100%配信する。
-runtime sourceはc1cc1e2のまま。Macの鍵保管ツール候補859ac57の
-[CI37887131924](https://github.com/kanouk/fanmark-id/actions/runs/37887131924)は両job成功。
-bulk/test送信は無効へ戻し、署名受信・113 binding・4 DO namespace・6公開assetを保持した。
+通常stagingは`d074b5dd-b69a-4e50-b847-8770383dc0ea`を100%配信する。
+API sourceはc1cc1e2のまま。frontendは取得成功後のお気に入り再取得を追加し、
+直前のhash付き公開bundleを保持した。bulk/test送信は無効、署名受信・113 binding・
+4 DO namespace・backup/monitorのversionと周期・既存データを保持した。
+修正前の権限対応表af5ed00の[CI37889243811](https://github.com/kanouk/fanmark-id/actions/runs/37889243811)は両job成功。
+この修正候補の最新CIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
+
+同じd074b5dd・別の専用合成Free account・日本語Chromeで、実ログイン→取得前の
+お気に入り登録→無期限Tier C取得→伝言板設定保存→再読込なしの所有状態/リンク反映→
+お気に入りから公開本文表示→返却/grace/0枠→logoutを一巡した。修正前に観測した
+取得後の古い「取得可能」表示は不合格として保持し、修正後だけを受け入れた。
+旧entryの404による白画面は、その公開assetを保持した後の通常reloadで同じタブが復帰した。
+検証用user/fanmark/operatorを除去し、独立readonly照合で現行/旧storeの他全表hash・FK0・
+現在asset/設定を確認した。差分は通知wake generationだけで、requested/acknowledgedは一致。
+[主要フローと旧client復帰の限定証拠](evidence/staging-core-journey-native-2026-10-09.json)。
+これは合成desktopの主要フローであり、有料/provider初回設定・全言語・実スマホ/PWAと
+六工程全体の受け入れではない。実ユーザー移送・DNS・Stripe/mail・画像writeは0。
 
 公式Resend宛先51件の自然Cron配送は49 delivered・1 permanent bounce・1 complaint、
 実署名通知103件・集計51/49/2・配信停止2件を照合し、専用52 user/profileとqueue/operatorを
@@ -47,7 +60,7 @@ Vault全体が同期済みでも、鍵JSONは未対応添付として遠隔履�
 [鍵の遠隔保管の限定証拠](evidence/staging-backup-vault-sync-custody-2026-10-09.json)。
 これは選択した鍵・escrowの遠隔保管であり、自然daily・別端末での復旧・全体移行は未受け入れ。
 
-現行6afcaee0の匿名ChromeではJA/EN/KO/IDのhomeと認証画面の見出し・フォーム・4 providerボタン、
+当時の6afcaee0の匿名ChromeではJA/EN/KO/IDのhomeと認証画面の見出し・フォーム・4 providerボタン、
 homeからのログインリンク、日本語の再設定画面と戻り、匿名/plans→/authを確認した。
 入力・provider認証・メール・Stripe呼出し・fixture作成・設定変更は0。ゲスト言語を日本語へ戻し、
 専用タブを閉じ、本人IABを保持。現行6公開assetのhash一致も照合した。
