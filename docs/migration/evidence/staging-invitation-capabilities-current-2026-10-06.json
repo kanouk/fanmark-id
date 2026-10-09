@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "scope": "Current staging invitation/signup/email configuration metadata and public capability GET; no signup, invitation use or email send",
+  "worker": "fanmark-app-staging",
+  "workerVersion": "471faabe-3aff-4312-ba22-cd326dc821e1",
+  "settingsObservedAt": "2026-10-06T14:18:46.265Z",
+  "capabilitiesObservedAt": "2026-10-06T14:20:42.338Z",
+  "selectors": {
+    "AUTH_BACKEND": "better-auth",
+    "AUTH_EMAIL_BACKEND": "resend",
+    "INVITATION_SIGNUP_BACKEND": "d1",
+    "INVITATION_ADMIN_BACKEND": "d1",
+    "AUTH_EMAIL_TEMPLATE_BACKEND": "d1"
+  },
+  "resendSecretBindingPresent": true,
+  "secretValuesRead": false,
+  "capabilities": {
+    "emailVerification": true,
+    "passwordReset": true,
+    "signUp": true,
+    "invitationRequired": false,
+    "socialProviders": [
+      "apple",
+      "discord",
+      "github",
+      "google"
+    ]
+  },
+  "signupRequests": 0,
+  "invitationValidationRequests": 0,
+  "additionalEmails": 0,
+  "configurationChanged": false,
+  "sourceWrites": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false,
+  "boundary": "Capability advertising and binding metadata prove current readiness, not a new signup, invitation-required consumption, OAuth callback, mail delivery, or final acceptance. Prior actual email signup/recovery evidence retains its own dates and scope."
+}

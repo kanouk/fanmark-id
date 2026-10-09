@@ -1,0 +1,59 @@
+{
+  "observedAt": "2026-10-04T09:37:20.827Z",
+  "candidateHead": "7e6cf76d86aa231a09af674b09212893857faf58",
+  "ciRun": 37192167542,
+  "runtimeCodeHead": "7e6cf76d86aa231a09af674b09212893857faf58",
+  "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "worker": "fanmark-app-staging",
+  "previousVersion": "4bc50d76-ec1d-4565-af73-b9199e79bfa9",
+  "version": "495b3ce4-7733-40c5-82e6-c7d4c180d287",
+  "secretNames": [
+    "APPLE_OAUTH_CLIENT_ID",
+    "APPLE_OAUTH_CLIENT_SECRET",
+    "BETTER_AUTH_SECRET",
+    "DISCORD_OAUTH_CLIENT_ID",
+    "DISCORD_OAUTH_CLIENT_SECRET",
+    "GITHUB_OAUTH_CLIENT_ID",
+    "GITHUB_OAUTH_CLIENT_SECRET",
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET",
+    "REFERENCE_MASTER_SERVICE_SECRET",
+    "VERIFIED_ACCESS_SECRET"
+  ],
+  "credentialValuesExported": false,
+  "credentialConfigurationChanged": false,
+  "humanAccountPreserved": true,
+  "masterHistoryPreserved": true,
+  "mfaAndWakePreserved": true,
+  "otherBindingsPreserved": true,
+  "authCounts": {
+    "users": 2,
+    "accounts": 5,
+    "sessions": 0
+  },
+  "socialProviders": [
+    "apple",
+    "discord",
+    "github",
+    "google"
+  ],
+  "appleFormPost302Accepted": true,
+  "invalidStateOrMissingCookieRejected": true,
+  "appleNonCallbackOriginRejected": true,
+  "appleCorsGranted": false,
+  "appleActualLoginAccepted": false,
+  "userDataMigrated": false,
+  "productionDomainChanged": false,
+  "schemasChanged": false,
+  "independentMonitor": {
+    "observedAt": "2026-10-04T09:40:30.090Z",
+    "version": "495b3ce4-7733-40c5-82e6-c7d4c180d287",
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": []
+  },
+  "humanApplePasswordRequired": true,
+  "fullMigrationAccepted": false
+}

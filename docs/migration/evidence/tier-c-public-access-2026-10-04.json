@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "scope": "synthetic staging public/protected indefinite emoji access; not provider/user-data/domain acceptance",
+  "codeHead": "0e866880f508d1d934df8e5199bf46ca3024eab0",
+  "ciRun": 37130360266,
+  "ciApplication": "success",
+  "ciWorker": "success",
+  "workerVersion": "bddc0dad-e996-4930-bf1d-97aacc6065b7",
+  "previousVersion": "51db2c90-d79b-4d83-882a-c308d93ee278",
+  "state": "verified-and-cleaned",
+  "journalSha256": "8224ae0ba00d5a7e648fef7bc8ce162ed84a91a20b7688d0057514779bef8963",
+  "flow": {
+    "publicIndefiniteAccounts": 2,
+    "shortEmojiIdentical": true,
+    "protectedPublicRedacted": true,
+    "ownerSettings": 200,
+    "unverifiedRead": 401,
+    "wrongPassword": 401,
+    "verification": 204,
+    "protectedRead": 200,
+    "selectorReplay": 401,
+    "gracePublicUnavailable": true,
+    "graceProtectedRead": 401,
+    "finiteExpiredEmojiUnavailable": true,
+    "foreignKeyViolations": 0
+  },
+  "cleanup": {
+    "sourceOwnedRows": 0,
+    "authOwnedRows": 0,
+    "retainedBaselineEqual": true,
+    "syntheticIncarnationTombstonesRetained": 2
+  },
+  "independentReadback": {
+    "observedAt": "2026-10-04T00:01:53.330Z",
+    "ledgerEntries": 25,
+    "wake": [
+      {
+        "singleton_id": 1,
+        "requested_generation": 17,
+        "acknowledged_generation": 17
+      }
+    ],
+    "mfaGenerationUnchanged": true,
+    "referenceContentsPreserved": true,
+    "referenceGeneration": 10,
+    "referenceActivationsAppended": 0
+  },
+  "sourceRPCsChanged": false,
+  "userDataMigrated": false,
+  "domainChanged": false,
+  "providerIntegrationAccepted": false,
+  "localNativeCounts": {
+    "publicAccess": 15,
+    "registration": 26,
+    "protectedAccess": 13
+  },
+  "ciExecutedEvidence": {
+    "registration": 26,
+    "protectedAccess": 13,
+    "publicAccessDedicated15": "not in0e86688 standard command; added to ordinary CI by follow-up"
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "scope": "Ordinary /auth email-login TOTP completion and two specifically authorized native admin mails in Cloudflare staging, followed by canonical restore and exact-owned cleanup",
+  "runtimeHead": "dd9317b9e4ce2a9099880091049ef7d4b3dba834",
+  "worker": "fanmark-app-staging",
+  "workerVersion": "17fdbf39-99a5-4927-bf12-bc11e19b7c3d",
+  "startedAt": "2026-10-07T12:44:38.299Z",
+  "checkedAt": "2026-10-07T13:43:15.827Z",
+  "ci": {
+    "runId": 37617933339,
+    "headSha": "dd9317b9e4ce2a9099880091049ef7d4b3dba834",
+    "application": "success",
+    "worker": "success"
+  },
+  "ordinaryLoginMfa": {
+    "nativeBrowser": "Chrome private window",
+    "ordinaryAuthRoute": true,
+    "totpChallengeDisplayed": true,
+    "sessionsBeforeCode": 0,
+    "dashboardReached": true,
+    "sameSessionVerifiedFactor": true,
+    "localRegressionCasesPassed": 8,
+    "sdkContractCasesPassed": 15,
+    "nativeInvalidAndExpiredCodeAccepted": false
+  },
+  "nativeAdminMail": {
+    "syntheticAdmin": true,
+    "passwordReset": {
+      "requests": 1,
+      "auditAndVerificationExact": true,
+      "providerDelivered": true,
+      "passwordChanged": false
+    },
+    "broadcastTest": {
+      "draftsCreated": 1,
+      "subjectAndBodyExact": true,
+      "requests": 1,
+      "fixedAuthorizedRecipientOnly": true,
+      "providerMessageMatchedD1Audit": true,
+      "providerDelivered": true,
+      "auditContainsNoRecipient": true,
+      "draftRemainedUnsent": true
+    },
+    "totalEmailsSent": 2,
+    "deliveryConfirmedInResendNativeBrowser": true,
+    "bulkSendEnabled": false,
+    "liveBulkAndActualProviderWebhookAccepted": false
+  },
+  "deployment": {
+    "baseMfaVersion": "52c6321f-b229-457c-9715-9d8dcd8e70a1",
+    "temporaryFixedRecipientVersion": "f0ae3b37-b102-4f57-97c2-94b68ef33620",
+    "canonicalVersion": "17fdbf39-99a5-4927-bf12-bc11e19b7c3d",
+    "temporaryTestVarsRemoved": true,
+    "frontendTestAndBulkDisabled": true,
+    "preexistingBindingsRetained": true,
+    "allD1RowsUnchangedAcrossDeploys": true,
+    "publicAssetHashesMatched": 6,
+    "transientAssetMismatchResolvedByReadbackWithoutRedeploy": true
+  },
+  "cleanup": {
+    "accepted": true,
+    "state": "verified_and_cleaned",
+    "nativeAdminLogout": true,
+    "remainingPrivateFixtureSessionRevokedByCleanup": true,
+    "exactOwnedRowsRemoved": {
+      "user_settings": 1,
+      "user": 1,
+      "broadcast_emails": 1,
+      "audit_logs": 12,
+      "verification": 1
+    },
+    "ownedRowsRemaining": 0,
+    "syntheticCredentialsRemoved": true,
+    "allPreexistingTableRowHashesPreserved": true,
+    "authBaseline": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "masterTableCount": 25,
+    "foreignKeyViolations": 0,
+    "mfaGenerationIncrement": 2,
+    "generationsNotRewound": true,
+    "independentReadOnlyProcessAt": "2026-10-07T13:43:15.827Z"
+  },
+  "screenshotSha256": {
+    "fanmark-main-mfa-dashboard.png": "6c3188bf12ab139249d67fff9c03194782e5fbdb499dbaafa6c59a52be3c8e7a",
+    "fanmark-staging-mail-delivered-2026-10-07.png": "fdf5e220d6c8891ef685d9adfb3dbcd4e72b1d5f2f50cb95b5957ab0b34ff107"
+  },
+  "sourceWrites": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false,
+  "remainingBoundary": "Invitation-required signup/consumption; new Apple/Discord identities and Apple relay; bulk/signed actual provider events; operational adoption; final integrated candidate and physical-device acceptance remain separate."
+}

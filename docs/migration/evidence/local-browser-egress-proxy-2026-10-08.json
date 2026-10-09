@@ -1,0 +1,87 @@
+{
+  "format": "fanmark-local-browser-egress-proxy-proof-v1",
+  "date": "2026-10-08",
+  "parentHead": "3a6322c3f02b01d2b84192271ae77a7bcf4c022b",
+  "observedCiFailure": {
+    "id": 37658909089,
+    "application": "failure",
+    "worker": "success",
+    "path": "/api/emoji/catalog",
+    "pausedRequestNetworkId": null,
+    "reason": "An optional Network ID was absent; extending cancellation receipt timeout cannot correlate this request"
+  },
+  "sourceSha256": {
+    "scripts/migration/local-browser-egress-proxy.mjs": "c3dc8f3a2633cf33dadef50cf801329bdbf944b0e651f28fe76b1f274ca9a7bb",
+    "scripts/migration/test-local-browser-egress-proxy.mjs": "5dd851e13e79e78fd19f740102aa5f3d2a73eea4a016446fa8f35f293c7a220f",
+    "scripts/migration/test-invitation-signup-local-browser.mjs": "e027a8939d93be52dc52f367e87b454ae20e0fed394978a472b7ed588748524c",
+    "scripts/migration/owner-profile-editor-local-browser.mjs": "e71232ac4307ccd8b4527765a38add3a5f799be226a2844733d2cc429c9125b1"
+  },
+  "proxy": {
+    "allowedTarget": "one configured loopback HTTPS host and port",
+    "requestedHostResolved": false,
+    "requestedHostConnected": false,
+    "arbitraryConnectDenied": true,
+    "plainHttpDenied": true,
+    "chromeImplicitLoopbackBypassRemoved": true,
+    "quicDisabled": true,
+    "nativeContractTests": 2,
+    "tunnelBytesVerified": true,
+    "wrongLocalAndExternalTargetsDoNotReachFixtureServer": true
+  },
+  "invitationBrowser": {
+    "state": "verified",
+    "browserFetchInterception": false,
+    "localProxyConnections": 7,
+    "externalProxyGuardVerified": true,
+    "realBrowserPasswordLogin": true,
+    "logoutRevokesSession": true,
+    "localEgressProxyStopped": true,
+    "ownedBrowserStopped": true,
+    "localServerStopped": true,
+    "localRuntimeDisposed": true,
+    "realProviderCalls": 0,
+    "realEmailsSent": 0,
+    "foreignKeyViolations": 0
+  },
+  "ownerEditorBrowser": {
+    "actualApiResponses": true,
+    "fulfilledApiResponses": 0,
+    "canceledInterceptionFixture": true,
+    "canceledInterceptions": 1,
+    "importedImagesDecodedInEditor": true,
+    "importedImagesDecodedInPublicPage": true,
+    "unchangedSourceImageReferencesPreserved": true,
+    "legacyOwnerDelete": true,
+    "externalRequestsBlocked": 68,
+    "localProxyConnections": 9,
+    "anonymousReturn": true,
+    "actualFormSignin": true,
+    "viewport390Overflow": false,
+    "failedSaveRequests": 1,
+    "failedSavePreservesRows": true,
+    "reloadRestoresDraft": true,
+    "retryPersistsInD1": true,
+    "successfulSaveClearsDraft": true,
+    "coldReopen": true,
+    "publicPrivateToggling": true,
+    "crossOwnerEditorRefused": true,
+    "suspensionRedirect": true,
+    "foreignKeyViolations": 0,
+    "realPhone": false
+  },
+  "remoteWrites": 0,
+  "newRealEmails": 0,
+  "mainDeployments": 0,
+  "limits": [
+    "HTTP(S) browser fixture egress only; not a network policy for the user browser",
+    "Controlled owner-editor cancellation and failed-save injection still use narrow CDP patterns",
+    "No physical-phone/PWA or full migration acceptance"
+  ],
+  "latestConfirmedCi": {
+    "id": 37660877665,
+    "head": "f931782d65e6844a545db51d14602574928ba73d",
+    "application": "success",
+    "worker": "success",
+    "proxyAndActualBrowserCasesIncluded": true
+  }
+}

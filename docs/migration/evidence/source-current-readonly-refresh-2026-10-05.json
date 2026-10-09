@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "scope": "Fresh read-only source catalog/runtime/authorization/scheduler metadata compared with prior catalogs and manual counterpart indexes; not whole runtime semantics or user migration.",
+  "runtimeHead": "12fa13f3c99712f7cae9b814d8fd1a9813b48108",
+  "testedDocumentationHead": "fe49343d5ac9002742fd86fac8f5f7733e62bfa7",
+  "documentationCI": 37243719919,
+  "documentationCIBothJobsSuccess": true,
+  "sourceObservations": {
+    "schema": "2026-10-04T23:40:15.748033+00:00",
+    "runtime": "2026-10-04T23:39:31.1247+00:00",
+    "authorization": "2026-10-04T23:39:28.055776+00:00",
+    "scheduledWriters": "2026-10-04T23:39:28.09197+00:00"
+  },
+  "catalogFingerprint": "977e826cddfa69e755e6850c322e6faa8f48f434394db2887b86694156ea6271",
+  "catalogFingerprintUnchanged": true,
+  "allCapturedSchemaSectionsIncludingRegexProbeUnchanged": true,
+  "runtimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+  "runtimeFingerprintUnchanged": true,
+  "authorizationFingerprint": "8e9859a0fe06eb1e7b123f55f3cde2c1ae482081ed6912dd9dbc53a7452cd273",
+  "authorizationFingerprintUnchanged": true,
+  "schemaCounts": {
+    "tables": 40,
+    "columns": 406,
+    "constraints": 144,
+    "indexes": 139,
+    "enumLabels": 15,
+    "views": 1,
+    "functions": 58,
+    "publicTableTriggers": 36,
+    "policies": 77
+  },
+  "runtimeCounts": {
+    "functions": 58,
+    "triggerBindings": 37,
+    "externalTriggerBindings": 1,
+    "eventTriggerBindings": 0,
+    "reviewedUnboundTriggerDefinitions": 4,
+    "pendingFunctionReviews": 54
+  },
+  "authorizationCounts": {
+    "relations": 41,
+    "tables": 40,
+    "views": 1,
+    "rlsEnabledTables": 40,
+    "policies": 77,
+    "functions": 58,
+    "triggerFunctions": 13,
+    "nonTriggerRoutines": 45,
+    "securityDefiners": 52,
+    "effectiveExecuteIncludingTriggers": {
+      "anon": 40,
+      "authenticated": 40,
+      "service_role": 56
+    },
+    "effectiveExecuteNonTriggers": {
+      "anon": 39,
+      "authenticated": 39,
+      "service_role": 44
+    }
+  },
+  "manualCounterpartTrace": {
+    "functionsMatched": 58,
+    "policiesMatched": 77,
+    "policyRelationsMatched": 40,
+    "triggerBindingsMatched": 37,
+    "definitionOrIndexIdentityMismatches": 0,
+    "semanticApprovalInferred": false
+  },
+  "converter": {
+    "version": 43,
+    "gates": [
+      {
+        "code": "seq_key_input_contract_requires_review",
+        "severity": "blocking",
+        "reason": "Canonical JSON indexing is a candidate for non-empty NULL-free UUID sequences; source seq_key skips NULL elements and accepts empty arrays. Review every writer/import disposition and source definition before accepting this replacement.",
+        "locations": [
+          {
+            "kind": "index",
+            "table": "fanmark_discoveries",
+            "name": "fanmark_discoveries_seq_key_idx"
+          },
+          {
+            "kind": "index",
+            "table": "fanmark_favorites",
+            "name": "fanmark_favorites_user_seq_idx"
+          },
+          {
+            "kind": "index",
+            "table": "fanmarks",
+            "name": "fanmarks_seq_key_idx"
+          }
+        ]
+      },
+      {
+        "code": "unsupported_catalog_scope",
+        "severity": "blocking",
+        "reason": "The catalog input includes functions, but this converter does not translate or verify that scope.",
+        "locations": [
+          {
+            "kind": "catalog",
+            "name": "functions"
+          }
+        ]
+      },
+      {
+        "code": "unsupported_catalog_scope",
+        "severity": "blocking",
+        "reason": "The catalog input includes rls_policies, but this converter does not translate or verify that scope.",
+        "locations": [
+          {
+            "kind": "catalog",
+            "name": "rls_policies"
+          }
+        ]
+      },
+      {
+        "code": "unsupported_catalog_scope",
+        "severity": "blocking",
+        "reason": "The catalog input includes triggers, but this converter does not translate or verify that scope.",
+        "locations": [
+          {
+            "kind": "catalog",
+            "name": "triggers"
+          }
+        ]
+      }
+    ],
+    "stageReadiness": {
+      "rowConversion": {
+        "ready": true,
+        "gateGroupCount": 0,
+        "affectedLocationCount": 0,
+        "gateCodes": []
+      },
+      "schemaAndOperations": {
+        "ready": false,
+        "gateGroupCount": 4,
+        "affectedLocationCount": 6,
+        "gateCodes": [
+          "seq_key_input_contract_requires_review",
+          "unsupported_catalog_scope"
+        ]
+      }
+    },
+    "deployable": false
+  },
+  "sourceScheduler": {
+    "sessionTimezone": "UTC",
+    "cronTimezone": "GMT",
+    "jobs": [
+      {
+        "schedule": "* * * * *",
+        "active": false,
+        "commandMentions": [
+          "process-notification-events"
+        ],
+        "commandSha256": "4a91f5efe8e2b06eb9dce1797cb016ed9116c2e2478a50d1a39d055d42f2d806"
+      },
+      {
+        "schedule": "0 0 * * *",
+        "active": true,
+        "commandMentions": [
+          "check-expired-licenses"
+        ],
+        "commandSha256": "1a89b98b2d351ccb187f3fad2477aa728cddb6896f62139d41edffeaa38bcf14"
+      }
+    ],
+    "rawCommandsExcluded": true,
+    "invocationSuccessInferred": false
+  },
+  "changedSourceOrCloudflareState": false,
+  "sourceOrRealAuthRowsRead": false,
+  "sourceBodiesOrPolicyExpressionsIncluded": false,
+  "existingSyntheticImportReexecuted": false,
+  "unchangedCatalogLinksPriorBoundedImportEvidence": "schema-current-preparation-2026-10-05.json",
+  "fullRuntimeReconciled": false,
+  "authorizationReconciled": false,
+  "converterDeployable": false,
+  "fullMigrationAccepted": false
+}

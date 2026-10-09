@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "scope": "Canonical staging rollout of owner-bound extension application confirmation; no schema, secret or selector changes",
+  "head": "85866014c8079e407ab480ed6f2c9a0ae6663971",
+  "ci": {
+    "runId": 37697249567,
+    "application": "success",
+    "worker": "success"
+  },
+  "previousVersion": "55ab5910-9abf-499e-8c34-af8d77a5e37b",
+  "version": "f6d162c5-6168-4389-bf22-c0ab2f04c5a4",
+  "percentage": 100,
+  "completedAt": "2026-10-07T22:48:51.483Z",
+  "publicAssets": {
+    "count": 6,
+    "newBuildHashesVerified": true
+  },
+  "allTableHashesRetained": true,
+  "existingSettingsAndNamespacesRetained": true,
+  "missingAssetRemains404": true,
+  "independentReadback": {
+    "state": "verified",
+    "observedAt": "2026-10-07T22:50:30.831Z",
+    "head": "85866014c8079e407ab480ed6f2c9a0ae6663971",
+    "version": "f6d162c5-6168-4389-bf22-c0ab2f04c5a4",
+    "readOnlyProcess": true,
+    "mainMutations": 0,
+    "allTableHashesRetained": true,
+    "foreignKeyViolations": 0,
+    "tables": {
+      "business": 79,
+      "auth": 10,
+      "master": 25
+    },
+    "retainedAuth": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "existingSettingsAndNamespacesRetained": true
+  },
+  "boundaries": {
+    "recoveryTrackingActivated": false,
+    "recoveryFreezeActivated": false,
+    "operationalBackupAdopted": false,
+    "userDataMigration": false,
+    "domainCutover": false
+  }
+}

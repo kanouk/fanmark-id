@@ -104,12 +104,15 @@
     "seeHowUsed": "Lihat Cara Penggunaannya"
   },
   "auth": {
+    "profileCheckFailed": "Informasi akun tidak dapat diverifikasi",
+    "profileCheckRetry": "Periksa koneksi Anda dan coba lagi. Anda tidak perlu mengubah kata sandi.",
     "title": "fanmark.id",
     "login": "Masuk",
     "signUp": "Daftar",
     "logout": "Keluar",
     "email": "Email",
     "password": "Kata Sandi",
+    "currentPassword": "Kata Sandi Saat Ini",
     "showPassword": "Tampilkan kata sandi",
     "hidePassword": "Sembunyikan kata sandi",
     "confirmPassword": "Konfirmasi Kata Sandi",
@@ -170,6 +173,8 @@
   "messageBoard": {
     "title": "Papan Pesan",
     "previewTitle": "Pratinjau Papan Pesan",
+    "preview": "Pratinjau",
+    "noMessage": "Tidak ada pesan",
     "messageFromOwner": "Anda telah menerima pesan dari pemilik fanmark",
     "passwordProtection": "Perlindungan Kata Sandi",
     "passwordProtectedMessage": "Papan pesan ini dilindungi kata sandi",
@@ -451,6 +456,7 @@
       "confirmDescriptionItems": "• Fanmark milik Anda (dikembalikan segera)\n• Favorit dan pengaturan pemberitahuan\n• Informasi profil",
       "confirmDescriptionFooter": "Riwayat lisensi akan dipertahankan, tetapi nama pengguna Anda akan ditampilkan sebagai \"Pengguna Dihapus\".",
       "confirmPrompt": "Ketik \"DELETE\" untuk lanjutkan.",
+      "passwordPrompt": "Masukkan kata sandi saat ini untuk mengonfirmasi penghapusan.",
       "confirmPlaceholder": "DELETE",
       "deleteButton": "Hapus Akun",
       "cancelButton": "Batalkan",
@@ -531,6 +537,8 @@
     "checkoutCanceled": "Checkout dibatalkan",
     "checkoutCanceledDescription": "Paket Anda tidak diubah. Silakan coba lagi kapan saja Anda siap.",
     "refreshRequired": "Jika paket tidak diperbarui, silakan segarkan halaman",
+    "projectionDelayed": "Perubahan paket belum terkonfirmasi. Silakan periksa kembali sebentar lagi.",
+    "checkAgain": "Periksa perubahan paket lagi",
     "features": {
       "limit": "Miliki hingga {limit} fanmark secara bersamaan"
     },
@@ -797,6 +805,14 @@
     "planFree": "Gratis"
   },
   "dashboard": {
+    "extensionConfirmation": {
+      "pending": "Memeriksa pembaruan lisensi",
+      "timeout": "Pembaruan lisensi belum terkonfirmasi",
+      "description": "Pembaruan pembayaran mungkin memerlukan waktu. Jangan melakukan pembayaran lagi sebelum konfirmasi selesai.",
+      "retry": "Periksa lagi",
+      "failed": "Perpanjangan lisensi tidak diterapkan"
+    },
+
     "title": "Dasbor",
     "userFallback": "Kreator",
     "welcomeBadge": "Anda memiliki {{count}} fanmark",
@@ -1213,6 +1229,8 @@
     "updateSuccessDescription": "Perubahan profil Anda telah disimpan!",
     "updateError": "Pembaruan Gagal",
     "updateErrorDescription": "Gagal memperbarui profil Anda. Silakan coba lagi.",
+    "loadError": "Profil tidak dapat dimuat",
+    "loadErrorDescription": "Kami tidak dapat memastikan profil yang dapat Anda edit. Coba lagi atau kembali ke halaman pengaturan.",
     "licenseError": "Kesalahan Lisensi",
     "licenseErrorDescription": "Tidak ada lisensi yang valid ditemukan. Kembali ke halaman pengaturan.",
     "preview": "Pratinjau",
@@ -1236,6 +1254,7 @@
     "started": "Diperoleh Pada",
     "expires": "Kedaluwarsa (direncanakan)",
     "noHistory": "Tidak ada riwayat lisensi yang tersedia",
+    "historySignInPrompt": "Masuk untuk melihat riwayat kepemilikan dan status favorit Anda.",
     "initial": "Awal",
     "favorite": "Tambah ke Favorit",
     "unfavorite": "Hapus dari Favorit",
@@ -1626,6 +1645,8 @@
     }
   },
   "maintenance": {
+    "settingsCheckFailed": "Pengaturan layanan tidak dapat diperiksa",
+    "settingsCheckRetry": "Periksa koneksi Anda dan coba lagi.",
     "title": "Sedang Maintenance",
     "subtitle": "Saat ini kami sedang melakukan pemeliharaan layanan.",
     "description": "Mohon maaf atas ketidaknyamanannya. Silakan coba lagi nanti.",

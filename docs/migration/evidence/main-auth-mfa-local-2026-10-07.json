@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "scope": "Local ordinary-email login TOTP flow, valid-session completion and legacy-login regression",
+  "observedAt": "2026-10-07T11:39:42.045217+00:00",
+  "previousWorkerVersion": "39ae1327-9f4d-4294-ac77-904f7ee0262c",
+  "changeFiles": {
+    "src/hooks/useAuth.tsx": "b792d3330396faa7285075efbc355a836890bbd13fcdd59c07f26c73f8534040",
+    "src/hooks/useAuthForm.tsx": "09dc6863debc5b81199e6526e3d4d68e23e6ba542e1b71bdb3de2816ae0a9726",
+    "src/pages/Auth.tsx": "4dddb0cb8ae5f6f2c7ece22637a531022883bb6074bae26c56563110d8ca8831",
+    "src/components/auth/TotpLoginChallenge.tsx": "b458bdb28966d14e4b90c0e7e4f60bb3e767b8ad01b9321a59cd122815b6341e",
+    "scripts/test-auth-login-mfa.mjs": "6af1cd17a29f28b970854b465c374e6c3313d53d0e2d5a73ce8739fc0c512ebf"
+  },
+  "actualSourceExecuted": [
+    "useAuthForm.tsx",
+    "useAuth.tsx",
+    "better-auth-client.ts"
+  ],
+  "syntheticAdapters": [
+    "HTTP",
+    "React hook storage/context",
+    "router",
+    "translation/profile adapters"
+  ],
+  "regressionTests": 8,
+  "regressionTestsPassed": 8,
+  "sdkContractTestsPassed": 15,
+  "typecheckPassed": true,
+  "lintErrors": 0,
+  "existingLintWarnings": 3,
+  "ciIsolationPassed": true,
+  "currentAstSupabaseCallsites": 211,
+  "supabaseSemanticMapLocationsMatched": true,
+  "nativeD1AndBrowserAccepted": false,
+  "runtimeDeployed": false,
+  "fullMigrationAccepted": false,
+  "actualUserMigration": false,
+  "domainCutover": false,
+  "emailsSent": 0
+}

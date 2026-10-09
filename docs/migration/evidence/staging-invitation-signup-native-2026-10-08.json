@@ -1,0 +1,85 @@
+{
+  "observedAt": "2026-10-08T02:58:23.398Z",
+  "scope": "Native Safari Japanese invitation-required signup, human mail verification, password login, logout, exact-owned cleanup only",
+  "runtimeHead": "85866014c8079e407ab480ed6f2c9a0ae6663971",
+  "workerVersion": "f6d162c5-6168-4389-bf22-c0ab2f04c5a4",
+  "recipientWasUnregistered": true,
+  "numberedTestAliasesAuthorized": true,
+  "newCredentialEnteredAndSubmittedByHuman": true,
+  "newPasswordReadOrSavedByAgent": false,
+  "nativeInvalidCodeRejected": true,
+  "nativeValidCodeApplied": true,
+  "nativeSignupCompleted": true,
+  "oneIdentityAndCredentialCreated": true,
+  "completedCommandAndMarkerMatched": true,
+  "invitationConsumedExactlyOnce": true,
+  "profileDefaultsAndInviteAttributionMatched": true,
+  "unverifiedReadback": {
+    "at": "2026-10-08T02:51:16.908Z",
+    "emailVerified": false,
+    "sessions": 0
+  },
+  "humanReportedVerificationLinkOpened": true,
+  "verifiedIdentityReadback": true,
+  "sessionCountAfterVerification": 0,
+  "nativeDashboardAccepted": true,
+  "authenticatedSessionCount": 1,
+  "freeCapacity": 3,
+  "nativeLogoutAccepted": true,
+  "sessionCountAfterLogout": 0,
+  "depletedCodeApiRejected": true,
+  "invitationModeRestoredExactly": true,
+  "realProviderDeliveriesObserved": 2,
+  "providerHistoryPreserved": true,
+  "cleanup": {
+    "at": "2026-10-08T02:57:41.520Z",
+    "exactOwnedRowsRemoved": true,
+    "allPreexistingRowsPreserved": true,
+    "originalAuthCounts": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "foreignKeyViolations": 0,
+    "invitationModeRestored": true,
+    "workerUnchanged": true,
+    "providerHistoryRetained": true
+  },
+  "independentReadback": {
+    "at": "2026-10-08T02:58:23.398Z",
+    "separateProcess": true,
+    "readCredentialOnly": true,
+    "workerVersion": "f6d162c5-6168-4389-bf22-c0ab2f04c5a4",
+    "authUsers": 3,
+    "authAccounts": 7,
+    "authSessions": 2,
+    "businessTables": 79,
+    "authTables": 10,
+    "masterTables": 25,
+    "allBaselineHashesEqual": true,
+    "ownedIdentityAndCodeAbsent": true,
+    "foreignKeyViolations": 0
+  },
+  "lifetimeMismatch": {
+    "observed": true,
+    "tokenSeconds": 3600,
+    "templateClaimsHours": 24,
+    "correctionAcceptance": false
+  },
+  "boundedRegistrationFlowAccepted": true,
+  "allAuthAndMailAccepted": false,
+  "fullMigrationAccepted": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "driverCorrections": [
+    "Generic prepare argv triggered imported historical helper existing-journal guard without mutation; distinct prepare-native entry and separate zero-exit readback succeeded.",
+    "Fixture expiration used milliseconds; corrected exact-owned expiry to the six-digit UTC format required by validation. No application code changed.",
+    "Pre-verification assertion met concurrent human verification; that assertion was not accepted. Subsequent verified-state readback and initial unverified readback are recorded separately."
+  ],
+  "limitations": [
+    "One Japanese test signup, not new Apple/Discord identities or Apple relay",
+    "No physical mobile/PWA or final integrated-candidate acceptance",
+    "Mail validity statement mismatch is separate from successful registration/login",
+    "No account-deletion product acceptance claimed from fixture cleanup"
+  ]
+}

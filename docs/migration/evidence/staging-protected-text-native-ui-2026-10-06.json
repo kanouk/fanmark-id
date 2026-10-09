@@ -1,0 +1,65 @@
+{
+  "observedAt": "2026-10-06T00:13:55.791Z",
+  "workerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "scope": "synthetic native protected text via short and emoji selectors plus independent cleanup",
+  "uiChecks": {
+    "anonymousPublicLocked": true,
+    "nativeShortInitiallyLocked": true,
+    "nativeWrongShortCodeKeptTextHiddenAndClearedInput": true,
+    "nativeCorrectShortCodeRenderedExactText": true,
+    "nativeEmojiCanonicalShortGateAccepted": true,
+    "nativeEmojiEntryCorrectCodeRenderedExactText": true,
+    "distinctEmojiSelectorUiAccepted": false
+  },
+  "setupApiSessionRevoked": true,
+  "protectedWrongAndCorrectNativeUiAccepted": true,
+  "distinctEmojiSelectorUiAccepted": false,
+  "emojiCanonicalShortUiAccepted": true,
+  "retainedAccessHistoryPreserved": true,
+  "sharedExistingRequesterBucketsPreservedWithoutReset": true,
+  "ownedBusinessAndAuthRowsAbsent": true,
+  "retainedAuthCounts": {
+    "users": 3,
+    "accounts": 7,
+    "sessions": 2
+  },
+  "masterFullTableDigestsUnchanged": true,
+  "mfaAndRetainedProfilesUnchanged": true,
+  "anonymousHistoryCounts": {
+    "discoveries": 5,
+    "events": 8
+  },
+  "anonymousHistoryPreservedExceptOwnedFanmarkPointer": true,
+  "foreignKeyViolations": 0,
+  "providerCallsMade": 0,
+  "paidCheckoutReplayed": false,
+  "independentReadOnlyReadback": true,
+  "fullMigrationAccepted": false,
+  "masterTableCount": 24,
+  "actualBrowser": "Safari normal window without Better Auth session",
+  "fixtureSetup": "Disposable verified credential and Free profile seeded directly; actual register and owner settings APIs; setup session revoked before UI",
+  "runtimeHead": "0ed4213ac55620ec45b4d59fcc173005cb1e1de3",
+  "checkpointHead": "79881231140ad31ce6cf17ff5322de4d02092a3b",
+  "checkpointCiRun": 37391902928,
+  "checkpointCiBothJobsSuccess": true,
+  "verificationCounts": {
+    "failure": 1,
+    "success": 2,
+    "proofs": 2
+  },
+  "proofSelectorKinds": [
+    "short",
+    "short"
+  ],
+  "emojiEntryBehavior": "Native emoji URL resolves and redirects to /a/:shortId before password entry; this is not distinct emoji-selector verification",
+  "priorAccessRows": {
+    "audit": 1,
+    "reservations": 1,
+    "rateBuckets": 1
+  },
+  "ownedRateBucketsRemoved": 2,
+  "priorAccessRowsAndRateBucketsUnchanged": true,
+  "realUserDataMigrated": false,
+  "domainChanged": false,
+  "passwordConfigAbsenceIndependentlyVerified": true
+}

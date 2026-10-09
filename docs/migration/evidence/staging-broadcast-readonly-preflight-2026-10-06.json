@@ -1,0 +1,44 @@
+{
+  "observedAt": "2026-10-05T15:20:54.783Z",
+  "scope": "read-only staging broadcast configuration and master/queue aggregates",
+  "workerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "credentialSource": "identified_app_config_wrangler_oauth",
+  "leastPrivilegeAccepted": false,
+  "selectors": {
+    "AUTH_EMAIL_BACKEND": "resend",
+    "AUTH_EMAIL_TEMPLATE_BACKEND": "d1",
+    "BROADCAST_EMAIL_BACKEND": "d1",
+    "BROADCAST_SEND_BACKEND": null,
+    "BROADCAST_TEST_SEND_BACKEND": null,
+    "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+    "NOTIFICATION_WAKE_BACKEND": "durable-object",
+    "NOTIFICATION_ARCHIVE_BACKEND": "d1"
+  },
+  "configuration": {
+    "resendKeyPresent": true,
+    "senderPresent": true,
+    "fixedTestRecipientPresent": false,
+    "broadcastSigningSecretPresent": false
+  },
+  "masters": {
+    "authTemplates": 16,
+    "broadcastTemplates": 12,
+    "totalTemplates": 28,
+    "contentBaseline": "seeded"
+  },
+  "counts": {
+    "drafts": 0,
+    "runs": 0,
+    "recipients": 0,
+    "suppressions": 0,
+    "webhook_events": 0,
+    "test_send_audits": 0,
+    "other_channel_pending": 0
+  },
+  "readOnlyReceiptAccepted": true,
+  "providerCallsMade": 0,
+  "writesMade": 0,
+  "testSendAccepted": false,
+  "bulkSendAccepted": false,
+  "fullMigrationAccepted": false
+}

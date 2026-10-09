@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-06T04:06:39.048Z",
+  "scope": "complete saved staging Master plus synthetic full Auth/current Business/two linked images recovered in two distinct owned real D1/R2 incarnations",
+  "codeCandidate": "dcb0127695c69f13bee58c166b258fab33264291",
+  "ci": {
+    "run": "37410960675",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "Validate Cloudflare Worker API",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Validate Cloudflare staging application",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "archive": {
+    "format": "fanmark-full-combined-recovery-v2",
+    "sha256": "72f63a2c8e3fd932aba1b623d3df9c7784360c34ce194d04a2c24ac59e70ff11",
+    "savedFileReopenedAfterSourceRuntimeDisposed": true,
+    "exactBusinessManifestCatalogSchemaReportAnd40StreamsRetained": true,
+    "sourceArchiveUnchanged": true,
+    "wrongArchiveKeySdkSecretAndTamperRefusedBeforeTargets": true,
+    "archiveKeysAndSyntheticSdkCredentialsPrivateAndSeparate": true
+  },
+  "source": {
+    "masterTables": 25,
+    "masterRows": 12254,
+    "masterSchemaObjects": 98,
+    "authTables": 9,
+    "authRows": 16,
+    "authUsers": 4,
+    "authAccounts": 5,
+    "originalThreeUserAuthRowsPreserved": true,
+    "oneAdditionalSyntheticCredentialOwner": true,
+    "businessSourceTables": 40,
+    "businessSourceRows": 15,
+    "syntheticBusinessEmojiIdsMatchedFullMaster": true,
+    "r2Objects": 2
+  },
+  "targets": [
+    {
+      "label": "primary",
+      "targetIncarnation": "79162dc3-4484-47b3-915d-8fbf41e7c728",
+      "accepted": true,
+      "master": {
+        "tableCount": 25,
+        "totalRows": 12254,
+        "schemaObjectCount": 98,
+        "normalizedTriggerCount": 6,
+        "sourceSchemaSha256": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+        "restoredSchemaSha256": "3ca374efa733a5c6db5e71918bae25e259bdc1b4a7b1b2d3d96dda1e6fba2240",
+        "everyTableHashMatched": true,
+        "everySchemaObjectMatchedAfterBeginCorrection": true,
+        "foreignKeyViolations": 0,
+        "restoreAndVerifyMs": 31799
+      },
+      "auth": {
+        "statementCount": 47,
+        "schemaObjectCount": 30,
+        "normalizedTriggerCount": 0,
+        "restoredSchemaSha256": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+        "allDefinitionAndTableHashesMatchedBeforeBehavior": true
+      },
+      "businessAll40SourceStreamHashesMatched": true,
+      "credentialCommitInterruptionAndResumeVerified": true,
+      "r2ImportAndReplayComplete": true,
+      "savedSessionWorked": true,
+      "savedAssuranceExpiryRespected": true,
+      "savedAssuranceWasExpired": false,
+      "logoutRevokedSavedSessionAndAssurance": true,
+      "staleCookieRefused": true,
+      "restoredPasswordAndTotpLogin": true,
+      "wrongPasswordUnverifiedAndSuspendedRefused": true,
+      "backupCodeLoginAndReplayRefusal": true,
+      "backupCodeAloneDoesNotGrantAdminAssurance": true,
+      "foreignKeyViolations": 0,
+      "ownerProfileAndOwnedFanmarksRead": true,
+      "actualApplicationImageGetHeadVerified": true,
+      "applicationEmojiCount": 3944,
+      "applicationReferenceCounts": {
+        "fanmark_tiers": 4,
+        "languages": 4,
+        "reserved_emoji_patterns": 5,
+        "fanmark_tier_extension_prices": 16
+      },
+      "wakeRequested": 1,
+      "wakeAcknowledged": 0,
+      "restoreAndApplicationVerificationMs": 145407,
+      "exactBindingsAndPrivateGuardsVerified": true,
+      "ownedDatabaseCount": 3,
+      "ownedBucketCount": 2,
+      "ownedWorkerDeleted": true,
+      "allOwnedDatabasesDeleted": true,
+      "allOwnedBucketsDeleted": true,
+      "cleanupVerified": true
+    },
+    {
+      "label": "restored",
+      "targetIncarnation": "b94ac8e6-3a2d-46d9-80a2-e04e1fd9f633",
+      "accepted": true,
+      "master": {
+        "tableCount": 25,
+        "totalRows": 12254,
+        "schemaObjectCount": 98,
+        "normalizedTriggerCount": 6,
+        "sourceSchemaSha256": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+        "restoredSchemaSha256": "3ca374efa733a5c6db5e71918bae25e259bdc1b4a7b1b2d3d96dda1e6fba2240",
+        "everyTableHashMatched": true,
+        "everySchemaObjectMatchedAfterBeginCorrection": true,
+        "foreignKeyViolations": 0,
+        "restoreAndVerifyMs": 24939
+      },
+      "auth": {
+        "statementCount": 47,
+        "schemaObjectCount": 30,
+        "normalizedTriggerCount": 0,
+        "restoredSchemaSha256": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+        "allDefinitionAndTableHashesMatchedBeforeBehavior": true
+      },
+      "businessAll40SourceStreamHashesMatched": true,
+      "credentialCommitInterruptionAndResumeVerified": false,
+      "r2ImportAndReplayComplete": true,
+      "savedSessionWorked": true,
+      "savedAssuranceExpiryRespected": true,
+      "savedAssuranceWasExpired": false,
+      "logoutRevokedSavedSessionAndAssurance": true,
+      "staleCookieRefused": true,
+      "restoredPasswordAndTotpLogin": true,
+      "wrongPasswordUnverifiedAndSuspendedRefused": true,
+      "backupCodeLoginAndReplayRefusal": true,
+      "backupCodeAloneDoesNotGrantAdminAssurance": true,
+      "foreignKeyViolations": 0,
+      "ownerProfileAndOwnedFanmarksRead": true,
+      "actualApplicationImageGetHeadVerified": true,
+      "applicationEmojiCount": 3944,
+      "applicationReferenceCounts": {
+        "fanmark_tiers": 4,
+        "languages": 4,
+        "reserved_emoji_patterns": 5,
+        "fanmark_tier_extension_prices": 16
+      },
+      "wakeRequested": 1,
+      "wakeAcknowledged": 0,
+      "restoreAndApplicationVerificationMs": 105809,
+      "exactBindingsAndPrivateGuardsVerified": true,
+      "ownedDatabaseCount": 3,
+      "ownedBucketCount": 2,
+      "ownedWorkerDeleted": true,
+      "allOwnedDatabasesDeleted": true,
+      "allOwnedBucketsDeleted": true,
+      "cleanupVerified": true
+    }
+  ],
+  "wrapper": {
+    "file": "scripts/migration/isolated-recovery-combined-worker.mjs",
+    "sha256": "332eddf9a16622c0800bd83f1cd4568d15d6d11974c8583978e35a4b7c2f6b95",
+    "nativeChecksPassed": 5,
+    "allRoutesIncludingImagesRequirePrivateRecoveryGate": true,
+    "signupEnrollmentBusinessMutationDeletionGenericSqlClosed": true
+  },
+  "independentReadback": {
+    "observedAt": "2026-10-06T04:06:55.383Z",
+    "originalMasterAndAuthArchivesUnchanged": true,
+    "originalSyntheticAuthRowsPreservedInBundle": true,
+    "combinedSavedArchiveUnchanged": true,
+    "mainAllBusinessAuthMasterHashesAndCountsUnchanged": true,
+    "mainAuthUsers": 3,
+    "mainAuthAccounts": 7,
+    "mainAuthSessions": 2,
+    "mainForeignKeyViolations": 0,
+    "mainWorkerVersion": "8cbe1e5f-5e55-4a82-a853-65ec96051db2",
+    "originalD1AndWorkerInventoryUnchanged": true,
+    "originalR2InventoryUnchanged": true,
+    "allOwnedTemporaryResourcesAbsent": true,
+    "credentials": {
+      "mainD1AndWorker": "independent read-only Keychain monitor",
+      "r2Inventory": "canonical account verified Wrangler OAuth, GET only"
+    }
+  },
+  "limits": {
+    "remoteCombinedRecoveryAccepted": true,
+    "mainDatabaseWritesPerformed": false,
+    "mainWorkerOrSecretsChanged": false,
+    "additionalEmailsSent": false,
+    "sourceConverterDeployable": false,
+    "sourceConverterFullMigrationReconciled": false,
+    "operationalKeyCustodyAccepted": false,
+    "offHostRetentionAccepted": false,
+    "productionSessionRevocationPolicyAccepted": false,
+    "productionRtoAccepted": false,
+    "actualUserMigrationPerformed": false,
+    "domainCutoverPerformed": false,
+    "fullMigrationAccepted": false
+  }
+}

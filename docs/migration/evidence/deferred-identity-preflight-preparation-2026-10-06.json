@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "scope": "preparation of deferred source identity preflight and literal-only PostgreSQL validation; real-user-data migration not started",
+  "runtimeHead": "0ed4213ac55620ec45b4d59fcc173005cb1e1de3",
+  "runtimeWorkerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "sourceSqlSha256": "c58e144812553b4607a2356483b38cdbf5d72b6e5567176cb4e6011ad2dd82c5",
+  "oracleGeneratorSha256": "ecd9274af35853f657e24556dd89872012ac25a3e9b6c56aa514820103a27d92",
+  "literalOracleEvidence": "scripts/migration/fixtures/identity-readiness-oracle-2026-10-06.json",
+  "tables": [
+    "fanmark_discoveries",
+    "fanmark_events",
+    "fanmark_favorites",
+    "fanmarks"
+  ],
+  "uniqueIdentityTables": [
+    "fanmark_discoveries",
+    "fanmark_favorites",
+    "fanmarks"
+  ],
+  "eventsRepeatedIdentityPreserved": true,
+  "favoritesOwnerPartOfIdentity": true,
+  "historicalOrderRepetitionsAndLengthPreserved": true,
+  "additionalFanmarkDisplayUniquenessChecked": true,
+  "shapeBlockingReasons": [
+    "null_array",
+    "empty_array",
+    "unsupported_dimensions",
+    "unsupported_lower_bound",
+    "null_element"
+  ],
+  "validSyntheticRows": 8,
+  "blockedScenarioSyntheticRows": 16,
+  "focusedTestsPassed": 13,
+  "actualSourceUserRowsRead": false,
+  "storedApplicationFunctionsInvoked": false,
+  "realTablePreflightExecuted": false,
+  "sourceOrCloudflareStateChanged": false,
+  "genericConverterGateGroupsRetained": 4,
+  "genericConverterDeployable": false,
+  "fullMigrationAccepted": false,
+  "callerMapCI": 37396865202,
+  "callerMapHead": "5ba5f5f41306442c57317253fa2cf226eab2460d",
+  "callerMapBothJobsSuccess": true,
+  "supersededLotteryDocsCI": {
+    "run": 37396416191,
+    "conclusion": "cancelled"
+  }
+}

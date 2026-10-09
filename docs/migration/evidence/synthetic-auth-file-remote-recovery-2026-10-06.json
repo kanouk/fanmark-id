@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-06T03:24:19.306Z",
+  "scope": "saved complete synthetic Auth archive restored to newly created isolated D1 and guarded temporary Worker only",
+  "candidate": {
+    "commit": "159f5c14759f521f093f77b8f297e84ec95d07ac",
+    "ciRun": "37407917794",
+    "bothJobs": "success"
+  },
+  "source": {
+    "format": "fanmark-synthetic-auth-file-v1",
+    "archiveSha256": "1041560567c9cfd2d849f9b9a47c3c09484da800ab7aa838d52ec7174c120981",
+    "sourceRuntimeDisposedBeforeReopen": true,
+    "users": 3,
+    "accounts": 4,
+    "nonemptyTables": 9,
+    "totalRows": 14,
+    "schemaObjects": 30,
+    "realUserCredentialsExported": false,
+    "providerTokens": "synthetic values only"
+  },
+  "restore": {
+    "observedAt": "2026-10-06T03:24:19.306Z",
+    "tableCount": 9,
+    "totalRows": 14,
+    "schemaObjectCount": 30,
+    "everyColumnAndTableHashMatchedBeforeBehavior": true,
+    "sourceArchiveUnchanged": true,
+    "remoteSavedFileRecovered": true,
+    "statementCount": 45,
+    "normalizedTriggerCount": 0,
+    "restoredSchemaSha256": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+    "savedSessionWorked": true,
+    "savedAssuranceExpiryRespected": true,
+    "savedAssuranceWasExpired": false,
+    "logoutRevokedSavedSessionAndAssurance": true,
+    "staleCookieRefused": true,
+    "restoredPasswordAndTotpLogin": true,
+    "wrongPasswordUnverifiedAndSuspendedRefused": true,
+    "backupCodeLoginAndReplayRefusal": true,
+    "backupCodeAloneDoesNotGrantAdminAssurance": true,
+    "foreignKeyViolations": 0,
+    "restoreAndFullHashVerificationMs": 1144,
+    "existingTargetRefusedBeforeWrites": true
+  },
+  "worker": {
+    "privateTokenAndIncarnationGatesVerified": true,
+    "exactDatabaseUuidAndBindingsVerified": true,
+    "signupEnrollmentDeletionAndGenericSqlClosed": true,
+    "applicationRouterAndBetterAuthUsed": true,
+    "matchingSdkSecretSavedToOwnedTemporaryWorker": true,
+    "mainWorkerReconfigured": false
+  },
+  "cleanup": {
+    "exactDatabaseReceiptChecked": true,
+    "exactWorkerNameCreationTimeAndVersionChecked": true,
+    "ownedD1Deleted": true,
+    "ownedWorkerDeleted": true,
+    "originalD1AndWorkerInventoryMatched": true,
+    "independentReadOnly": {
+      "observedAt": "2026-10-06T03:24:35.917Z",
+      "credential": "independent read-only Keychain monitor",
+      "mainAllBusinessAuthMasterTableCountsAndHashesUnchanged": true,
+      "mainForeignKeyViolations": 0,
+      "mainWorkerVersion": "8cbe1e5f-5e55-4a82-a853-65ec96051db2",
+      "mainAuthUsers": 3,
+      "mainAuthAccounts": 7,
+      "mainAuthSessions": 2,
+      "originalD1AndWorkerInventoryMatched": true,
+      "ownedAuthD1Absent": true,
+      "ownedGuardedWorkerAbsent": true,
+      "d1DatabaseCount": 3
+    }
+  },
+  "limits": {
+    "operationalArchiveKeyCustodyAccepted": false,
+    "offHostRetentionAccepted": false,
+    "productionSessionRevocationPolicyAccepted": false,
+    "finalCombinedRecoveryAccepted": false,
+    "actualUserMigrationPerformed": false,
+    "domainCutoverPerformed": false,
+    "providerAcceptanceProved": false,
+    "productionRtoProved": false
+  }
+}

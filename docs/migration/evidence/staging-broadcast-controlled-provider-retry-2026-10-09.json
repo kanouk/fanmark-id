@@ -1,0 +1,253 @@
+{
+  "format": "fanmark-staging-controlled-ack-state-real-provider-retry-v1",
+  "startedAt": "2026-10-09T03:56:52.199Z",
+  "firstDeliveryObservedAt": "2026-10-09T04:02:26.456Z",
+  "retryObservedAt": "2026-10-09T04:03:47.474Z",
+  "cleanupVerifiedAt": "2026-10-09T04:05:17.640Z",
+  "schemaVerifiedAt": "2026-10-09T04:05:45.609Z",
+  "source": {
+    "checkedOutHead": "e5dd44abed5365bfe137214fda8acbbc9fb63f7a",
+    "runtimeSourceHead": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+    "passingCiRun": 37880263746,
+    "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "origin": "https://fanmark-app-staging.fanmark-id.workers.dev",
+    "beforeVersion": "6af713aa-d5b8-4e21-a0b2-7780d269178b",
+    "deliveryVersion": "269c70da-29fb-495d-bcdb-bda2edc485de",
+    "restoredVersion": "e33aa8c5-d13c-42a5-9745-a2e191325871",
+    "businessDatabase": "c99c9f7e-b234-400e-aa89-8d15a168abcc",
+    "authDatabase": "2d1a775e-e584-4ce6-baf2-946efc62ff99",
+    "runtimeSourceChanged": false,
+    "frontendAssetsChanged": false,
+    "schemaHashes": {
+      "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+      "business": "598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2",
+      "master": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56"
+    }
+  },
+  "cohort": {
+    "actualAuthUsersBefore": 1,
+    "syntheticAdmin": 1,
+    "syntheticRecipients": 1,
+    "filter": {
+      "plan_types": [
+        "free"
+      ],
+      "languages": [
+        "ja"
+      ],
+      "registered_after": "2003-01-01",
+      "registered_before": "2003-01-03"
+    },
+    "onlyOfficialResendDeliveredSimulator": true,
+    "realAudienceExcluded": true,
+    "maximumDistinctProviderMessages": 1
+  },
+  "controlledFault": {
+    "firstProviderAcceptanceAndSignedDeliveryActuallyObserved": true,
+    "actualTransportFailure": false,
+    "apiResponseReplaced": false,
+    "syntheticPostAcceptanceRecipientState": true,
+    "transition": "delivered/known-provider-id -> pending/null-provider-id/provider_network_error",
+    "firstCompletionAuditRetained": true,
+    "stableFields": [
+      "payload_fingerprint",
+      "first_attempt_at",
+      "idempotency_expires_at",
+      "language",
+      "created_at",
+      "run_id",
+      "user_id"
+    ],
+    "operatorProviderRequests": 0,
+    "providerOrAuthSigningSecretCopied": false,
+    "sourceDdlChanged": false,
+    "writerNamespace": "b216edc446254761892e5b12776d5ca5",
+    "singleTrackedAtomicBusinessBatch": true
+  },
+  "actualRetry": {
+    "sameSessionAdminMfa": true,
+    "naturalMinuteCron": true,
+    "manualCronInvocations": 0,
+    "realResendRetryAccepted": true,
+    "attemptCountBefore": 1,
+    "attemptCountAfter": 2,
+    "sameProviderEmailId": true,
+    "providerEmailIdSha256": "38a267405857e6874faef5eefc3a3238149ffba0c9f9b2e67b6aaf218e310928",
+    "samePayloadFingerprint": true,
+    "sameFirstAttemptAndIdempotencyWindow": true,
+    "recipientStatus": "delivered",
+    "runStatus": "completed",
+    "campaign": {
+      "status": "completed",
+      "total_recipients": 1,
+      "sent_count": 1,
+      "failed_count": 0
+    },
+    "snapshotLeaseReleased": true,
+    "recipientLeaseReleased": true,
+    "firstCompletionAuditUnchanged": true,
+    "completionAuditCount": 1,
+    "signedReceiptCount": 2,
+    "signedReceiptTypes": {
+      "email.sent": 1,
+      "email.delivered": 1
+    },
+    "receiptReadbackSha256": "9efa917e7f58a3e57cd301e7a422664d8fd5119714c8ed614868ffea58c819e7",
+    "observations": [
+      {
+        "at": "2026-10-09T03:59:46.824Z",
+        "runStatus": "snapshotting",
+        "count": 0,
+        "statuses": {},
+        "attemptCounts": {},
+        "eventCount": 0
+      },
+      {
+        "at": "2026-10-09T04:00:40.221Z",
+        "runStatus": "snapshotting",
+        "count": 1,
+        "statuses": {
+          "pending": 1
+        },
+        "attemptCounts": {
+          "0": 1
+        },
+        "eventCount": 0
+      },
+      {
+        "at": "2026-10-09T04:01:38.127Z",
+        "runStatus": "snapshotting",
+        "count": 1,
+        "statuses": {
+          "pending": 1
+        },
+        "attemptCounts": {
+          "0": 1
+        },
+        "eventCount": 0
+      },
+      {
+        "at": "2026-10-09T04:02:26.456Z",
+        "runStatus": "completed",
+        "count": 1,
+        "statuses": {
+          "delivered": 1
+        },
+        "attemptCounts": {
+          "1": 1
+        },
+        "eventCount": 2
+      },
+      {
+        "at": "2026-10-09T04:03:03.503Z",
+        "runStatus": "sending",
+        "count": 1,
+        "statuses": {
+          "pending": 1
+        },
+        "attemptCounts": {
+          "1": 1
+        },
+        "eventCount": 0
+      },
+      {
+        "at": "2026-10-09T04:03:47.474Z",
+        "runStatus": "completed",
+        "count": 1,
+        "statuses": {
+          "delivered": 1
+        },
+        "attemptCounts": {
+          "2": 1
+        },
+        "eventCount": 2
+      }
+    ]
+  },
+  "cleanup": {
+    "independentConfigurationReadback": {
+      "checkedAt": "2026-10-09T04:06:04.317Z",
+      "workers": {
+        "fanmark-app-staging": {
+          "version": "e33aa8c5-d13c-42a5-9745-a2e191325871",
+          "percentage": 100,
+          "crons": [
+            "0 0 * * *",
+            "* * * * *"
+          ]
+        },
+        "fanmark-backup-staging": {
+          "version": "c0c5de89-5c4c-45dc-bd47-e919fa074004",
+          "percentage": 100,
+          "crons": [
+            "5 0 * * *"
+          ]
+        },
+        "fanmark-backup-monitor-staging": {
+          "version": "8298289e-d9b6-4dd4-8ce4-4a51457c5afe",
+          "percentage": 100,
+          "crons": [
+            "35 * * * *"
+          ]
+        }
+      },
+      "sourceDataWritten": false,
+      "settingsChanged": false,
+      "mainBindingCount": 113,
+      "mainDurableObjectBindings": 2,
+      "accountDurableObjectNamespaces": 4,
+      "receiveOnly": true,
+      "operatorDeleted": true
+    },
+    "sendingDisabledAgain": true,
+    "existing113BindingsPreserved": true,
+    "sourceSchemasAndOtherTableHashesPreserved": true,
+    "oldRetainedStoresAllTableHashesPreserved": true,
+    "fourDurableObjectNamespacesPreserved": true,
+    "sixPublicAssetHashesPreserved": true,
+    "existingCronsAndBackupWorkersPreserved": true,
+    "ownedUsersAndProfilesRemoved": 2,
+    "ownedDraftRunRecipientAuditAndMfaRemoved": true,
+    "privateOperatorDeleted": true,
+    "sourceDifferences": [
+      "auth.mfaGeneration",
+      "business.broadcast_delivery_webhook_events"
+    ],
+    "mfaGenerationBefore": 2,
+    "mfaGenerationAfter": 4,
+    "mfaGenerationReset": false,
+    "foreignKeyViolations": 0,
+    "finalWriterInspection": {
+      "owner": null,
+      "scope": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
+      "active": 0,
+      "drained": false,
+      "initialized": true,
+      "tickets": {
+        "scanned": 0,
+        "complete": true,
+        "legacy": 0,
+        "attributed": 0,
+        "oldestEnteredAt": null,
+        "runtimeRevisions": {}
+      }
+    }
+  },
+  "boundaries": {
+    "actualLostNetworkResponseUnproven": true,
+    "real429OrProviderOutageUnproven": true,
+    "nativeSendUiUnaccepted": true,
+    "productionQueueRetentionPolicyUnadopted": true,
+    "discordInitialPasswordStillHumanWork": true,
+    "naturalDailyBackupPending": true,
+    "physicalPhoneAndStandalonePwaPending": true,
+    "wholeMigrationUnaccepted": true,
+    "realSupabaseUserDataAndProductionDnsDeferred": true
+  },
+  "notes": [
+    "This is an actual provider retry after controlled post-acceptance state injection. The first provider ACK was observed, so it does not prove handling of an actual lost transport response.",
+    "The normal frontend remained unchanged and bulk-disabled; the server send selector was enabled only during this one official simulator campaign.",
+    "The real Resend retry returned the original provider ID, and persisted signed delivery receipts reconciled the recipient back to delivered. No second distinct provider message was observed.",
+    "The fixture setup stopped before bootstrap while its new URL returned 404. After read-only route and identity verification, setup resumed without redeployment. A private harness variable error after successful bootstrap was repaired by a guarded factor-only continuation, without a second bootstrap or provider send."
+  ]
+}

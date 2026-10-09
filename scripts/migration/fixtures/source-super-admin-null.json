@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "sourceDefinitionSha256": "71b926d07b7f6279cfea4919dc05c7ed8b87dec8bb6d381835afc470a3ac30ec",
+  "observedAt": "2026-10-03T04:48:47.499457+00:00",
+  "oracleSqlSha256": "1fe0c8f40c24c92873f93bf56d7e50929a6486586f4dc4d5d3ce8ea3dc154df4",
+  "boundary": "Literal decision expressions only; no stored source function, application/Auth rows, or audit write executed.",
+  "cases": [
+    {
+      "caseName": "admin_recent",
+      "explicitPlanDecision": true,
+      "selectedAdminFlag": true,
+      "sourceDecisionWithRecentSession": true,
+      "sourceReturnsBeforeSessionCheck": false
+    },
+    {
+      "caseName": "admin_stale",
+      "explicitPlanDecision": false,
+      "selectedAdminFlag": true,
+      "sourceDecisionWithRecentSession": false,
+      "sourceReturnsBeforeSessionCheck": false
+    },
+    {
+      "caseName": "missing_plan_recent",
+      "explicitPlanDecision": false,
+      "selectedAdminFlag": null,
+      "sourceDecisionWithRecentSession": true,
+      "sourceReturnsBeforeSessionCheck": false
+    },
+    {
+      "caseName": "non_admin_recent",
+      "explicitPlanDecision": false,
+      "selectedAdminFlag": null,
+      "sourceDecisionWithRecentSession": true,
+      "sourceReturnsBeforeSessionCheck": false
+    },
+    {
+      "caseName": "non_admin_stale",
+      "explicitPlanDecision": false,
+      "selectedAdminFlag": null,
+      "sourceDecisionWithRecentSession": false,
+      "sourceReturnsBeforeSessionCheck": false
+    }
+  ]
+}

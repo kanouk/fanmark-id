@@ -1,0 +1,73 @@
+{
+  "observedDateJst": "2026-10-08",
+  "scope": "new application entrypoint freeze; existing in-flight drain is not proven",
+  "parentHead": "83011d952f67436e2dbf5a8fd5ee4031daecac4b",
+  "sourceSha256": {
+    "workers/api/src/recovery-write-freeze.ts": "4487ce0692718132580cf21efb4141da2e924590a53bbf057b3ee39bb604d3a8",
+    "workers/api/src/index.ts": "247078b13d452a873c5f138c57349d69f56bf6d181d600b22dbb53d1dfafee68",
+    "workers/api/src/notification-wake.ts": "419f952dd1f658e6cc3772f07f1e456c1a91bc7b6ae51db605a807e8f6082a60",
+    "workers/api/src/repository.ts": "4bffed93f4bf140df7e700b4f048d6e44d780a50f5b50329b78c00b92f908f31",
+    "workers/api/test/cutover-write-freeze.test.ts": "f151bcc394507f02d1df32bdcde69744ac80d352944543d5dca313e32e58eb27",
+    "workers/api/test/notification-wake.test.ts": "fa6e4030f2af93f63a6d6b958c00ab8b76461f44716eed1dd06c5626c4502ab3"
+  },
+  "selector": "RECOVERY_WRITE_FREEZE",
+  "defaults": "unset/empty/false preserve ordinary operation; unknown values freeze",
+  "verification": [
+    {
+      "command": "./node_modules/.bin/vitest run --config vitest.config.mjs test/cutover-write-freeze.test.ts test/scheduled-dispatch.test.ts",
+      "passed": 16,
+      "failed": 0,
+      "level": "real imported Worker/Cron entrypoint with binding-access sentinels",
+      "cwd": "workers/api"
+    },
+    {
+      "command": "npm --prefix workers/api run test:notification-wake",
+      "passed": 21,
+      "failed": 0,
+      "level": "native local D1 and SQLite Durable Object alarms"
+    },
+    {
+      "command": "npm --prefix workers/api run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "npm --prefix workers/api run build:dry-run",
+      "result": "passed",
+      "deployment": false
+    }
+  ],
+  "newAssertions": [
+    "True and invalid selectors return HTTP503/no-store/Retry-After60 before accessing storage, assets, outbox namespace or waitUntil for auth/session/OAuth/provider/public paths",
+    "Cron performs no diagnostic D1 write or background dispatch while frozen",
+    "Native DO keeps pending-event rows and wake generations exactly unchanged while frozen, creates zero notifications, and retains a future alarm",
+    "Removing freeze lets the durable alarm process two queued events exactly once, acknowledge the generation and delete its alarm"
+  ],
+  "boundaries": {
+    "existingStagingChanged": false,
+    "productionChanged": false,
+    "userDataMigration": false,
+    "domainCutover": false,
+    "inFlightRequestJobDrainProven": false,
+    "externalSqlR2WritersStopped": false,
+    "trustedCollectorGuardConnected": false,
+    "remoteFreezeValidated": false,
+    "operationalBackupAdopted": false
+  },
+  "ci": "candidate must pass CI before deployment; parent CI37653547770 was still running at local verification",
+  "monitoring": "staging-operations-status.mjs includes the independent recovery-freeze selector; not a drain or runtime capture receipt",
+  "existingMainReadback": {
+    "observedAt": "2026-10-07T16:44:06.357Z",
+    "version": "17fdbf39-99a5-4927-bf12-bc11e19b7c3d",
+    "ledgerEntries": 27,
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": [],
+    "recoveryWriteFreeze": null,
+    "wakeRequested": 34,
+    "wakeAcknowledged": 34,
+    "foreignKeyViolations": 0,
+    "fullRetainedRowHashRecheck": false
+  }
+}

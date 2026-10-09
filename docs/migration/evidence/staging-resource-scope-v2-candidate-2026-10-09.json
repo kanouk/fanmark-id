@@ -1,0 +1,73 @@
+{
+  "format": "fanmark-fresh-staging-candidate-v1",
+  "date": "2026-10-09",
+  "state": "verified_candidate_unrouted",
+  "incarnation": "e434eb11-9351-498b-8855-8bec0fed7a7b",
+  "mainStillOldVersion": "97826bff-6d43-49d2-bd4e-8ffb7f1a328e",
+  "resources": {
+    "databases": [
+      {
+        "role": "business",
+        "name": "fanmark-recovery-staging-v2-e434eb11-business",
+        "id": "c99c9f7e-b234-400e-aa89-8d15a168abcc",
+        "createdAt": "2026-10-09T00:21:33.676Z",
+        "targetIncarnation": "e434eb11-9351-498b-8855-8bec0fed7a7b"
+      },
+      {
+        "role": "auth",
+        "name": "fanmark-recovery-staging-v2-e434eb11-auth",
+        "id": "2d1a775e-e584-4ce6-baf2-946efc62ff99",
+        "createdAt": "2026-10-09T00:21:34.671Z",
+        "targetIncarnation": "e434eb11-9351-498b-8855-8bec0fed7a7b"
+      },
+      {
+        "role": "master",
+        "name": "fanmark-recovery-staging-v2-e434eb11-master",
+        "id": "02681378-5528-45a9-8093-76805a4705c9",
+        "createdAt": "2026-10-09T00:21:35.611Z",
+        "targetIncarnation": "e434eb11-9351-498b-8855-8bec0fed7a7b"
+      }
+    ],
+    "buckets": [
+      {
+        "role": "avatars",
+        "name": "fanmark-avatars-staging-v2-e434eb11"
+      },
+      {
+        "role": "covers",
+        "name": "fanmark-covers-staging-v2-e434eb11"
+      }
+    ]
+  },
+  "scopeDigest": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
+  "schemaHashes": {
+    "business": "598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2",
+    "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+    "master": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56"
+  },
+  "masterTables": 25,
+  "masterRows": 12254,
+  "businessGlobalTables": 6,
+  "businessGlobalRows": 106,
+  "authUsers": 0,
+  "authSessions": 0,
+  "sourceUsersCopied": false,
+  "activated": false,
+  "oldResourcesKept": true,
+  "oldDataUnchanged": true,
+  "legacyTicketsNotCleared": 34,
+  "initializerDeleted": true,
+  "newResourcesUnboundToOtherWorkers": true,
+  "r2PublicUrlsDisabled": true,
+  "backupAdmission": "pending-writer-verification",
+  "backupCronCount": 0,
+  "localChecks": {
+    "writerDrain": 9,
+    "notificationWake": 22,
+    "recoverySet": 16,
+    "stagingBackup": 11,
+    "typecheck": true,
+    "eslint": true
+  },
+  "authSchemaDifference": "Only BEGIN keyword capitalization in six MFA triggers during Wrangler migration application. Object identities, remaining SQL and behavior preserved; exact new hash pinned."
+}

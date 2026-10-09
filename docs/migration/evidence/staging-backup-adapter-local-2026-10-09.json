@@ -1,0 +1,36 @@
+{
+  "format": "fanmark-staging-backup-adapter-local-v1",
+  "dateJst": "2026-10-09",
+  "scope": "owned synthetic native workerd/Miniflare fixtures only",
+  "sourceR2": "empty",
+  "externalProviderCalls": 0,
+  "tests": {
+    "command": "npm --prefix workers/api run test:staging-backup",
+    "passed": 11,
+    "failed": 0,
+    "accepted": [
+      "named service-binding RPC",
+      "policy approval without writer admission refuses before any attempt lock",
+      "foreign fence owner is preserved",
+      "native existing writer finishes before capture and new writer refuses under fence",
+      "source failure is redacted and awaited before fence release",
+      "lost R2 claim ACK leaves persistent claim and refuses replay",
+      "same UTC date refuses replay and preserves verified archive and receipt",
+      "five encrypted parts are read back and authenticated from dedicated R2",
+      "same R2 archive restores isolated split D1 and both empty R2 targets",
+      "restore revokes session, MFA assurance and verification without revoking source session",
+      "encrypted SDK-key escrow authenticates and rejects changed AAD",
+      "30 UTC-date retention preserves boundary and unrelated prefix",
+      "missing latest success archive prevents retention",
+      "disabled or unexpected Cron calls no service; RPC failure prevents retention"
+    ]
+  },
+  "regression": { "writerDrainTestsPassed": 6 },
+  "limits": [
+    "no retained staging source capture",
+    "no real scheduled Cron acceptance",
+    "no operational remote restore with actual retained-source archive",
+    "no failure notification or physical-phone acceptance",
+    "initial legacy-writer termination and external-writer exclusion remain prerequisites"
+  ]
+}

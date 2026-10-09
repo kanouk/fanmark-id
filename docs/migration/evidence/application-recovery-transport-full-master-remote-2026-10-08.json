@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "scope": "Owned native Cloudflare application, separate source/target writer coordinators and saved non-user full Master recovery",
+  "head": "ad8f7540d3df5bd83d63348de89973d47dc1ca21",
+  "ci": {
+    "runId": "37678533990",
+    "bothJobs": "success"
+  },
+  "startedAt": "2026-10-07T20:07:26.526Z",
+  "finishedAt": "2026-10-07T20:09:16.370Z",
+  "workerVersion": "6c17cae6-8b1d-452c-9537-e78f1b19e142",
+  "ownedResourcesCreated": {
+    "d1": 6,
+    "r2": 5,
+    "workers": 1,
+    "sqliteDurableObjectNamespaces": 2
+  },
+  "independentMasterArchiveSha256": "de482a920fc37fe3d547a1bf8852293fcbbbb2b67a6f591c4ac997cf93b77832",
+  "phases": {
+    "initialize": {
+      "state": "verified",
+      "startedAt": "2026-10-07T20:08:11.409Z",
+      "d1Queries": {
+        "S_MASTER": 262
+      },
+      "progress": [],
+      "masterRows": 12254,
+      "masterSchemaHash": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+      "masterRowsHash": "0ed634aba4f87fa585c8dc29570f5e99eae56319c3a189648ffd6df9f2e28861",
+      "finishedAt": "2026-10-07T20:08:13.025Z"
+    },
+    "collect": {
+      "state": "verified",
+      "startedAt": "2026-10-07T20:08:20.006Z",
+      "d1Queries": {
+        "S_AUTH": 29,
+        "S_BUSINESS": 166,
+        "S_MASTER": 56
+      },
+      "progress": [],
+      "captureId": "db8056eb-91bd-457a-93be-d2d90e32df8a",
+      "parts": {
+        "auth": {
+          "archiveHash": "32a0da1ee4f209b44f1b9da527203ede2b690316df915f00d67331b817c44887",
+          "snapshotHash": "50229bdaf82230f73cf83ca1fb909183264df6c3348e8017f2f4e9725493cd46"
+        },
+        "business": {
+          "archiveHash": "8466246badbddad9b56a573859710f63e785dc87ac137dcc3c77f30f09404808",
+          "snapshotHash": "84942a6348f2fc6ac7b111c68b2503be64b9919fd0d4809ac9632c5826df49f7"
+        },
+        "master": {
+          "archiveHash": "917c796e2183351be0b8c197f941ccab1a47d47bc70c8ded1a5f3031b00a029e",
+          "snapshotHash": "8ce0bd867776847a76431911014dad5465d1c3b926ca48c3f1fdf9f1f6bf54e7"
+        },
+        "avatars": {
+          "archiveHash": "f8308a83b048d35776a03d0ddfb7b6caa94dd4296022211f74b1fd9f0c5edd8a",
+          "snapshotHash": "6c6700c1e4d5d33c17fe9a49f20454dfdb9b57f89f339be3f33560cd1d2b5511"
+        },
+        "covers": {
+          "archiveHash": "c59ab0764744bbe94eeb5bcf2fd86927da082ee08f618739e463d135b5e4bade",
+          "snapshotHash": "440e56e0a073e94ec028a006f1f035bcf85aab1fa6241c53299ceec155b33291"
+        }
+      },
+      "sourceAuthSessions": 2,
+      "normalSdkSourceLogin": true,
+      "heldSourceAndTargetLoginRefused": true,
+      "wrongOwnerReleaseRefused": true,
+      "finishedAt": "2026-10-07T20:08:26.141Z"
+    },
+    "restore": {
+      "state": "verified",
+      "startedAt": "2026-10-07T20:08:33.981Z",
+      "d1Queries": {
+        "T_AUTH": 71,
+        "T_BUSINESS": 402,
+        "T_MASTER": 313
+      },
+      "progress": [
+        {
+          "store": "master",
+          "state": "started"
+        },
+        {
+          "store": "master",
+          "state": "verified"
+        },
+        {
+          "store": "business",
+          "state": "started"
+        },
+        {
+          "store": "business",
+          "state": "verified"
+        },
+        {
+          "store": "auth",
+          "state": "started"
+        },
+        {
+          "store": "auth",
+          "state": "verified"
+        },
+        {
+          "store": "avatars",
+          "state": "started"
+        },
+        {
+          "store": "avatars",
+          "state": "verified"
+        },
+        {
+          "store": "covers",
+          "state": "started"
+        },
+        {
+          "store": "covers",
+          "state": "verified"
+        }
+      ],
+      "result": {
+        "captureId": "db8056eb-91bd-457a-93be-d2d90e32df8a",
+        "sessionPolicy": "revoke-local-sessions-and-challenges",
+        "restoredHashes": {
+          "auth": "fef93c73fafddaf74eb14d8ce0dfb661bd15d4c5917aeb58e1dcb24743f1c4de",
+          "business": "84942a6348f2fc6ac7b111c68b2503be64b9919fd0d4809ac9632c5826df49f7",
+          "master": "8ce0bd867776847a76431911014dad5465d1c3b926ca48c3f1fdf9f1f6bf54e7",
+          "avatars": "6c6700c1e4d5d33c17fe9a49f20454dfdb9b57f89f339be3f33560cd1d2b5511",
+          "covers": "440e56e0a073e94ec028a006f1f035bcf85aab1fa6241c53299ceec155b33291"
+        },
+        "verified": true
+      },
+      "canonicalEmojiCount": 3944,
+      "referenceViewCounts": {
+        "fanmark_tiers": 4,
+        "languages": 4,
+        "reserved_emoji_patterns": 5,
+        "fanmark_tier_extension_prices": 16
+      },
+      "emptyR2ReadStatus": {
+        "avatars": 404,
+        "cover-images": 404
+      },
+      "credentialBytesRetained": true,
+      "sessionChallengesRevoked": true,
+      "oldSessionRejected": true,
+      "normalSdkTargetLogin": true,
+      "releasedGuardRefusesCapture": true,
+      "foreignKeyViolations": 0,
+      "finishedAt": "2026-10-07T20:08:44.649Z"
+    }
+  },
+  "archiveBytes": 6681604,
+  "verified": true,
+  "cleanup": {
+    "cleanupVerified": true,
+    "workerDeleted": true,
+    "objectsCleared": true,
+    "keyFilesRemoved": true
+  },
+  "inventory": {
+    "before": {
+      "d1": 3,
+      "r2": 3,
+      "workers": 2,
+      "namespaces": 1
+    },
+    "after": {
+      "d1": 3,
+      "r2": 3,
+      "workers": 2,
+      "namespaces": 1
+    },
+    "identitiesUnchanged": true
+  },
+  "limits": [
+    "Synthetic Auth/Business only; saved non-user Master, not live user migration",
+    "All four data R2 buckets empty; no image class or maximum capacity acceptance from this run",
+    "First activation/old/external writer drain on normal staging unproven",
+    "Operational owner, keys, off-host cadence, retention and RPO/RTO remain unadopted",
+    "Whole migration and final human/device acceptance remain incomplete"
+  ],
+  "sideEffects": {
+    "existingStagingDataWrites": 0,
+    "newEmails": 0,
+    "liveSupabaseWrites": 0,
+    "liveBillingChanges": 0,
+    "userMigration": 0,
+    "dnsChanges": 0
+  }
+}

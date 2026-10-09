@@ -1,0 +1,313 @@
+# Reference master data release
+
+## Retained timestamps and latest deployment (2026-10-03 JST)
+
+Candidatec7b71c6 passed CI37101502623 and is deployed at100% as
+Worker70090cdc-7476-4892-8f53-ec38b21ed32e. Public reference counts4/4/5/16,
+static JS/CSS bytes and retained7888-row emoji inventory/history passed readback.
+The subsequent activation canary found the MFA-protected pricing read returning
+503 before any Master write: retained reference rows contain PostgreSQL UTC
+export timestamps and older ISO millisecond writes, incompatible with the
+new canonical-only admin snapshot reader.
+
+The newer reader fix accepts those exact UTC representations and canonicalizes
+them in a new snapshot without rounding their fractional digits or changing the
+immutable old release. New snapshot timestamps are six-digit UTC; prior
+millisecond values express zero sub-millisecond digits. Invalid calendar dates,
+non-UTC offsets, unsupported ISO forms and fractions beyond six digits refuse.
+Generic importer and standalone release-input validation remain strict. Native
+D1 API10/10 covers loading->ready legacy fixtures, read/edit/restore, exact
+five-digit source fraction preservation, retained old rows and invalid-format
+refusal without disabling immutability guards. Worker typecheck/lint pass.
+CI, deployment and remote activation/restore of this newer fix remain pending.
+
+The failed canary's synthetic Auth and sole leftover synthetic admin profile
+were cleaned. Independent06:25:49Z readback confirms owned Business/Auth0,
+unchanged active referenceba598c61 and retained emoji inventory/history. MFA
+generation advanced236->238 during its factor lifecycle; no counter was reset.
+This is not inactive-member remote acceptance or provider integration evidence.
+
+The first explicit non-user reference-data release contained:
+
+| Source table | Rows | Source SHA-256 |
+| --- | ---: | --- |
+| `fanmark_tiers` | 4 | `d1e407e86d72ebb4be6ab3b39c50b04da0fae3222e8b6ba3b29d1ffd17682084` |
+| `languages` | 4 | `faba8449e8838a8b8982000d0582ba96aab476d296bbbc4b91fa7e704aacc637` |
+| `reserved_emoji_patterns` | 5 | `36155076b6810d1a4a8813eb97cbc5ee0f11b3977e4ecf78d449d257b57762b2` |
+
+The explicit-column source query returned one read-only result. CSV and typed
+JSON artifacts are kept outside Git with mode `0600`; the snapshot JSON hash is
+`5be91463bd0429cc9fc7a280892a80a922deb2dd9224325374171a4ce7bdc88e`. No raw
+records are included in this document. The export excludes `system_settings`,
+Auth, user rows, and Storage. Other tables that might be configuration remain
+out until their user-data boundary and write behavior have been classified.
+
+`fanmark_tier_extension_prices` is classified as non-user reference data and
+has a versioned D1 schema and Worker read projection in migration
+`0006_reference_master_extension_prices.sql`. The first active remote release
+above contains only the first three tables; the current complete release is
+recorded below.
+
+## Latest remote release (2026-09-25 JST)
+
+A fresh, explicit-column, read-only Supabase query captured all four allowlisted
+reference masters. The private snapshot is outside Git with mode `0600`; its
+SHA-256 and active release version are
+`49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`. It
+contains 29 rows: 4 tiers, 4 languages, 5 reserved patterns, and 16 extension
+prices. The extension rows cover four tiers and 1, 2, 3, and 6 month terms,
+with no duplicate tier/term keys. All 16 are active. Stripe Price ID values
+were kept in the private snapshot and staging D1 only; the read API excludes
+them. Format checks passed, but the IDs were not verified against Stripe's
+objects.
+
+The remote importer staged the release, compared each staged table and the
+active views against the private snapshot, and promoted it to active generation
+2. It confirmed all seven user-owned Auth tables remained empty and the
+existing emoji release pointer/history remained unchanged. The live Worker
+returned all four masters as HTTP 200 with `Cache-Control: no-store`; the
+extension-price response contained the 16 public fields and no Stripe IDs.
+The staging `AdminTierExtensionPrices` selector now reads and writes through
+the versioned D1 admin API; at this 2026-09-25 checkpoint, an authenticated edit
+had not yet been run. Checkout
+and extension flows still use Supabase until their Edge Function secrets and
+selectors move with the same active release. No user rows, Storage objects,
+production service, or domain/DNS settings were changed.
+
+`workers/api/migrations/0004_reference_master_releases.sql` creates immutable,
+versioned staging tables, manifest hashes, a ready-state guard, a singleton
+active pointer with append-only activation history, and active views named
+`fanmark_tiers`, `languages`, and `reserved_emoji_patterns`. Migration
+`0006_reference_master_extension_prices.sql` adds extension-price rows and a
+fourth active view under the same release pointer. Staging does not change
+active views. Promotion exposes a complete release through one D1 pointer
+change after its row counts and table set pass readiness checks. A retry can
+replace only a partial `loading` release; a `ready` release cannot be changed.
+Migration `0007_release_audit_timestamps.sql` keeps release activation audit
+timestamps aligned with that pointer's six-digit UTC `updated_at` value. It is
+selected by the staging migration selectors and has been applied to staging
+Master D1. Readback confirmed both emoji and reference audit triggers use the
+active pointer timestamp; no release rows were written by the migration.
+
+`monthly_price_usd` is PostgreSQL `numeric(10,2)`. The importer parses its
+canonical two-place decimal text into integer cents without binary floating
+point. The target view exposes that column in cents, matching the D1
+availability repository codec; API boundaries convert cents back to USD.
+Values are preserved; this conversion does not revise the configured prices.
+
+The release importer validates every source `created_at` and `updated_at`
+before creating a D1 release. The admin editor also validates the active
+release's timestamps before staging an edited snapshot. Both accept valid
+six-digit UTC timestamp text ending in `Z` or `+00:00`, preserve the original
+bytes, and reject millisecond-only, invalid-calendar, or non-UTC offset values
+before any target write. This protects imported and admin-edited releases from
+silently importing a rounded or shifted timestamp.
+
+Local verification on Node 22.6.0:
+
+```sh
+cd workers/api
+/Users/kanouk/.anyenv/envs/nodenv/versions/22.6.0/bin/node test/reference-master-release.integration.mjs
+/Users/kanouk/.anyenv/envs/nodenv/versions/22.6.0/bin/node --check ../../scripts/migration/reference-master-release-remote.mjs
+```
+
+The Miniflare tests cover exact money conversion, interrupted staging and safe
+retry, ready-release immutability, no visibility before activation, active-view
+readback, activation audit, and a SQL artifact generated from the source-shaped
+snapshot. `scripts/migration/reference-master-release-remote.mjs` checks the
+Cloudflare account/database identity, migration ledger, empty user-owned Auth
+tables, emoji release immutability, exact staged readback, and optionally
+activates the release.
+
+Separately, Wrangler local D1 applied all five migrations (`0000`–`0004`) using
+the app-staging migration pattern. The generated SQL artifact then loaded the
+real source snapshot into that temporary local database. An independent
+read-only SQLite comparison matched every staged row and active-view row, the
+three source hashes/counts, activation generation 1, and the `0004` migration
+ledger. Results were exact for 4 tiers, 4 languages, and 5 reserved patterns.
+This tests the rendered source data and Wrangler migration parser locally; it
+does not prove remote D1 access or remote import.
+
+Remote result on 2026-09-23 JST: Wrangler read/write access to the intended
+APAC staging database recovered after an earlier error 7403. Migration `0004`
+was applied with the private SQL artifact (34 statements); `d1_migrations`
+now contains `0000`–`0004`. The private snapshot was staged as release
+`5be91463bd0429cc9fc7a280892a80a922deb2dd9224325374171a4ce7bdc88e`; remote
+readback verified 4 tiers, 4 languages, and 5 reserved patterns against the
+source rows and hashes. The release was activated at generation 1, and the
+active views were re-read and matched exactly. The remote guard confirmed all
+8 Auth schema tables exist with zero user-owned rows, and the emoji active
+release and activation history were unchanged.
+
+The first post-promotion check rejected rows because it compared JSON object
+property order. The values and counts were intact; the row comparator now sorts
+keys before comparing, has a regression test, and the remote import script was
+rerun idempotently to verify the active views and generation 1. See
+[`live-observations.md`](live-observations.md) for the app-staging deployment
+and HTTP readback. The source snapshot and row contents remain outside Git.
+
+## Worker read API
+
+`workers/api/src/reference-master-d1-repository.ts` exposes only four
+allowlisted active masters at `GET /api/reference-masters/{name}`. Each query
+joins the active pointer, a `ready` release, its table manifest, and rows bound
+to that release version; row count and every returned field are checked before
+serialization. The response contains a versioned minimal projection, uses
+`Cache-Control: no-store`, requires no user session, and never reads
+user-owned tables. Tier prices are named and returned as exact integer cents.
+Unknown routes and backend values fail closed.
+
+### Public activation filter and retained-history activation correction
+
+The current candidate validates the complete selected release count, types and
+uniqueness before returning only active Tier, reserved-pattern and extension-
+price rows. Source active-only visibility no longer relies on the browser
+hiding inactive data. Languages retain the source's public-all scope, with
+inactive-language UI filtering. Public minimal price preview remains the
+established target API contract; no Stripe IDs or arbitrary row read is added.
+
+All-inactive nonempty snapshots return `200` with an empty public list. The
+Tier/price clients accept 0–4 active tiers and 0–64 prices; duplicate/private/
+malformed/inactive DTO members still refuse. Admin pricing and release storage
+retain inactive members. Release integrity is checked before filtering, so an
+incomplete manifest or malformed inactive member remains a 502 refusal.
+
+The expanded native fixture also reproduced a separate release helper bug:
+`activateReferenceMasterRelease` expected at most two historical activation
+rows, reporting failure after a valid switch once existing history was longer.
+It now verifies one appended audit and unchanged prior history against the
+captured pre-switch state. No activation records or generations are reset.
+
+Local reference API9/9, client8/8, standalone release6/6, app/Worker typecheck
+and focused lint pass. The native Worker fixture proves inactive public rows,
+empty active tiers, full admin retention, language scope and manifest/malformed
+refusal. The helper switches after the preceding multi-generation admin edits.
+This is local candidate evidence; CI and deployed acceptance remain pending.
+No source/user rows, remote Master pointer or provider configuration changed.
+
+`useLanguages` can opt into this API with
+`VITE_LANGUAGE_READ_BACKEND=worker`; the default remains Supabase. The Worker
+client uses the explicit API base or the current same-origin Worker, validates
+the release digest and strict language DTO, caps response bodies at 16 KiB,
+and does not fall back to Supabase after a Worker failure. The staging build
+uses this selector against its active reference release.
+
+`AdminExtensionCoupons` can select `VITE_REFERENCE_MASTER_READ_BACKEND=worker`
+to read tier labels and eligibility from the active release. A failed Worker
+read disables new coupon creation; coupon writes remain on Supabase.
+`AdminTierExtensionPrices` now has an opt-in Cloudflare staging path selected
+by `VITE_REFERENCE_MASTER_ADMIN_BACKEND=d1`. The MFA-protected
+`/api/admin/reference-masters/pricing` endpoint exposes Stripe IDs only to an
+authorized admin session. Each single-field edit copies all four active
+masters into a new immutable release, verifies D1 readback, and changes the
+active pointer only if the screen's expected release is still current. Stale
+screens get a conflict response, and API failures never fall back to Supabase.
+At this earlier checkpoint the D1 admin implementation was locally tested and
+its route code deployed, but the Worker and frontend selectors were unset in
+staging. The later `Staging app wiring` section records the paired selectors
+now active. The extension
+display has its own opt-in `VITE_EXTENSION_PRICING_BACKEND=worker` selector. The two Supabase
+Edge Functions can read prices from the same D1 release with
+`REFERENCE_MASTER_PRICING_BACKEND=cloudflare`, `CLOUDFLARE_API_URL`, and the
+Worker's `REFERENCE_MASTER_SERVICE_SECRET`. The private HMAC route has no CORS
+or public fallback, rejects browser Origin headers, and allows only a 60-second
+timestamp window. The checkout function receives only the selected test/live
+Price ID; direct coupon extension receives only price and active status. The
+Edge Functions continue to authenticate users and mutate licenses in Supabase.
+The service route is deployed and its Cloudflare secret is configured. A live
+request through the Supabase Edge helper verified an active D1 row for tier 2,
+month 1 in both checkout and price-only projections at the current release;
+the Stripe ID was validated in memory but never printed. The Edge Function
+secret and selectors are still unset, and no payment or Supabase Edge Function
+was deployed, so current checkout and extension writes still use Supabase.
+These switches must move together with the admin editor to keep amount, active
+state, and Stripe ID on one release. The reserved-pattern API has no frontend
+consumer yet. Local synthetic proof runs with
+`npm --prefix workers/api run test:reference-master-api`,
+`npm --prefix workers/api run test:reference-master-service`,
+`npm run test:reference-master-admin-api`,
+`npm run test:reference-master-api`, and `npm run test:cloudflare-reference-master`.
+
+The private route deployment was version `763c798c-8e37-456b-a720-54f75be1270b`;
+the staging secret change is active as version
+`04c062e3-15a2-40d6-aef5-4cce5340879e`. Live readback returned public extension
+prices with 16 rows and no Stripe IDs, rejected an unsigned private request
+with 401, and accepted the signed Edge helper requests without returning a
+Stripe ID to the coupon path. Root stayed `noindex`, Auth health stayed 200,
+and no user/Auth rows, D1 schema, Storage object, Stripe resource, production
+service, or domain/DNS state was changed.
+
+
+## Staging app wiring (2026-09-26 JST)
+
+The workers.dev staging app now builds with the Worker extension-price read selector, the versioned D1 admin editor selector, and the Worker extension-checkout client selector together. The app Worker selects the D1 admin API, which retains its Better Auth admin and verified same-session MFA gate. The checkout client cannot invoke the Supabase Edge Function as fallback.
+
+Live readback returned the existing 16-row extension-price projection under active release `49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`; the public DTO has no Stripe IDs. Anonymous admin access returned 401. At this 2026-09-26 checkpoint, no authenticated edit had been made, so the release content and pointer remained unchanged. Stripe checkout remains unavailable: the server selector, webhook/dispatch selectors, and Stripe secrets are unset, and the Worker route returns 404. No payment was attempted. Production and Supabase defaults, legacy coupon/direct-extension functions, user data, and domain/DNS remain unchanged.
+
+## Authenticated Tier editor round-trip (2026-09-27 JST)
+
+The deployed workers.dev staging admin API was exercised with a synthetic
+Better Auth administrator whose same-session TOTP assurance was verified. The
+preflight required empty Auth tables, zero business fanmarks/licenses, the
+expected active Tier C value (`initial_license_days = null`), and the expected
+29-row release shape (4 tiers, 4 languages, 5 reserved patterns, 16 extension
+prices).
+
+The canary changed only Tier C from null to one day, read back the new version
+and all four release tables, rejected an anonymous write with 401, and rejected
+a stale-release write with 409 without changing the active pointer. It then
+restored Tier C to null through the same MFA-protected API. A canonical
+comparison of all four tables matched the pre-canary values after restoration,
+apart from the expected new release version and updated_at on the edited row.
+
+A separate canary changed the active tier-1 one-month extension price from
+¥500 to ¥501 and restored ¥500 through the same MFA-gated editor. Anonymous
+and stale-version writes were rejected, the public price API returned the
+restored value under the current release, and canonical comparison of all four
+masters confirmed that no other value or Stripe ID changed. The active
+reference release is generation 8 at
+`ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`.
+
+The first canary run exposed that its new flag was not included in the script's
+synthetic target-user cleanup condition. The remaining `example.invalid`
+synthetic identity and profile were identified by exact ID and removed; readback
+confirmed zero Auth users, accounts, sessions, verifications, factors, roles,
+assurances, status audits, business profiles, fanmarks, and licenses. The
+cleanup condition was corrected, and the repeated Tier run plus the separate
+extension-price run completed with the same zero-row cleanup proof. The
+retained MFA generation singleton is monotonic.
+
+Local validation passed: Worker reference-master API tests 6/6, Worker
+reference-master service tests 5/5, frontend admin client tests 6/6, Node 22.6
+syntax check, and `git diff --check`. The smoke commands used
+`--reference-master-tier-roundtrip` and
+`--reference-master-extension-price-roundtrip`, each with the explicit live
+staging write and database arguments. The canaries advanced only staging
+Master D1 release history; no Supabase row, production resource, Stripe
+resource, user-owned record, or
+domain/DNS setting was changed. Browser interaction with the admin editor,
+payment processing, and production selector changes remain unverified.
+
+
+## Accepted retained-timestamp and active-price staging check (2026-10-03)
+
+Code `cbb90c7`, CI37105400187 (both jobs successful) is deployed as Worker
+`e0a4b16e-d829-4016-95df-26471cd7940d`. The MFA-protected admin reader now
+accepts the retained PostgreSQL UTC and old ISO millisecond representations
+without changing the old immutable releases. The previous baseline503 is
+resolved. A synthetic admin deactivated the tier-1 one-month price through the
+API, verified public15/admin16, rejected anonymous/stale writes, and restored
+it through the same API. Public counts returned to4/4/5/16. All four Master
+contents and Stripe identifiers matched the normalized original snapshot;
+public DTOs contain no Stripe identifiers. Existing activation audits are
+unchanged with two appended entries, generation8->10; the restored active
+release is `e44ecbeda38fe4a5c7c7adf66e2168e181da08b9033932543f991a54a868a036`.
+
+Independent07:25:20.731Z readback confirms zero owned Business/Auth rows, the
+retained emoji7888 inventory/history, wake17/17 and the original three secret
+names. MFA generation advanced238->240 from the synthetic factor lifecycle.
+The subsequent four-public-API readback also passed. Private proof prefix:
+`/tmp/fanmark-reference-cbb90c7`. This accepts the price deactivate/restore
+contract and retained timestamp reader; native Tier/pattern filtering evidence
+is separate from remote mutation. Real Stripe/provider, browser pricing-editor
+interaction, real users and production/domain cutover remain open.

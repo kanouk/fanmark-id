@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-invitation-admin-local-proof",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "vars": {
+    "D1_TOPOLOGY": "split",
+    "INVITATION_ADMIN_BACKEND": "d1",
+    "AUTH_BACKEND": "better-auth",
+    "CORS_ALLOWED_ORIGINS": "https://app.example.test"
+  },
+  "d1_databases": [{
+    "binding": "FANMARK_DB",
+    "database_name": "fanmark-invitation-admin-local-fixture",
+    "database_id": "00000000-0000-0000-0000-000000000093"
+  }]
+}

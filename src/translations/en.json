@@ -104,12 +104,15 @@
     "seeHowUsed": "See How It's Used"
   },
   "auth": {
+    "profileCheckFailed": "Unable to verify your account",
+    "profileCheckRetry": "Check your connection and try again. You do not need to change your password.",
     "title": "fanmark.id",
     "login": "Login",
     "signUp": "Sign Up",
     "logout": "Logout",
     "email": "Email",
     "password": "Password",
+    "currentPassword": "Current Password",
     "confirmPassword": "Confirm Password",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
@@ -170,6 +173,8 @@
   "messageBoard": {
     "title": "Message Board",
     "previewTitle": "Message Board Preview",
+    "preview": "Preview",
+    "noMessage": "No message",
     "messageFromOwner": "You have received a message from the fanmark owner",
     "passwordProtection": "Password Protection",
     "passwordProtectedMessage": "This message board is password protected",
@@ -452,6 +457,7 @@
       "confirmDescriptionItems": "• Your owned fanmarks (returned immediately)\n• Favorites and notification settings\n• Profile information",
       "confirmDescriptionFooter": "License history will be retained, but your username will be displayed as \"Deleted User\".",
       "confirmPrompt": "Type \"DELETE\" to continue.",
+      "passwordPrompt": "Enter your current password to confirm deletion.",
       "confirmPlaceholder": "DELETE",
       "deleteButton": "Delete Account",
       "cancelButton": "Cancel",
@@ -532,6 +538,8 @@
     "checkoutCanceled": "Checkout canceled",
     "checkoutCanceledDescription": "Your plan was not changed. Feel free to try again whenever you’re ready.",
     "refreshRequired": "If plan doesn't update, please refresh the page",
+    "projectionDelayed": "The plan update has not been confirmed yet. Please check again shortly.",
+    "checkAgain": "Check plan update again",
     "features": {
       "limit": "Own up to {limit} fanmarks simultaneously"
     },
@@ -798,6 +806,14 @@
     "planFree": "Free"
   },
   "dashboard": {
+    "extensionConfirmation": {
+      "pending": "Checking your license update",
+      "timeout": "Your license update is not confirmed yet",
+      "description": "Payment updates may take a little time. Please do not make another payment while confirmation is pending.",
+      "retry": "Check again",
+      "failed": "The license extension was not applied"
+    },
+
     "title": "Dashboard",
     "userFallback": "Creator",
     "welcomeBadge": "You have {{count}} fanmark",
@@ -1213,6 +1229,8 @@
     "updateSuccessDescription": "Profile updated!",
     "updateError": "Update Failed",
     "updateErrorDescription": "Failed to update your profile. Please try again.",
+    "loadError": "Unable to load the profile",
+    "loadErrorDescription": "We could not confirm a profile you can edit. Try again or return to the settings page.",
     "licenseError": "License Error",
     "licenseErrorDescription": "No valid license found. Returning to settings page.",
     "preview": "Preview",
@@ -1236,6 +1254,7 @@
     "started": "Acquired At",
     "expires": "Expires (planned)",
     "noHistory": "No license history available",
+    "historySignInPrompt": "Sign in to view ownership history and your favorite status.",
     "initial": "Initial",
     "favorite": "Add to Favorites",
     "unfavorite": "Remove from Favorites",
@@ -1626,6 +1645,8 @@
     }
   },
   "maintenance": {
+    "settingsCheckFailed": "Unable to check service settings",
+    "settingsCheckRetry": "Check your connection and try again.",
     "title": "Under Maintenance",
     "subtitle": "We are currently performing maintenance.",
     "description": "Sorry for the inconvenience. Please check back soon.",

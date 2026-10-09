@@ -4,6 +4,7 @@ import { useTranslation } from './useTranslation';
 import { toast } from '@/hooks/use-toast';
 import { useLotteryActionOverlay } from '@/providers/LotteryActionOverlayProvider';
 import type { FunctionsHttpError } from '@supabase/supabase-js';
+import { invokeFanmarkLotteryAction } from '@/lib/fanmark-lottery-api';
 
 interface LotteryActionOptions {
   emoji?: string | null;
@@ -120,9 +121,8 @@ export function useLotteryEntry() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('apply-fanmark-lottery', {
-        body: { fanmark_id: fanmarkId }
-      });
+      const { data, error } = await invokeFanmarkLotteryAction('apply', { fanmark_id: fanmarkId }, () =>
+        supabase.functions.invoke('apply-fanmark-lottery', { body: { fanmark_id: fanmarkId } }));
       
       if (error) throw error;
       
@@ -168,9 +168,8 @@ export function useLotteryEntry() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('cancel-lottery-entry', {
-        body: { entry_id: entryId }
-      });
+      const { data, error } = await invokeFanmarkLotteryAction('cancel', { entry_id: entryId }, () =>
+        supabase.functions.invoke('cancel-lottery-entry', { body: { entry_id: entryId } }));
       
       if (error) throw error;
       

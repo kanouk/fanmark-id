@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "scope": "Native admin manual notification creation, event/delivery logs, own in-app inbox and individual read; disposable synthetic user only",
+  "worker": "fanmark-app-staging",
+  "workerVersion": "471faabe-3aff-4312-ba22-cd326dc821e1",
+  "runtimeHead": "bdc23da03136d9ae7ad3e509f23ebceb71b0d522",
+  "startedAt": "2026-10-06T13:58:14.860Z",
+  "finishedAt": "2026-10-06T14:06:39.500Z",
+  "fixtures": {
+    "syntheticAdmins": 1,
+    "credentialAccounts": 1,
+    "existingTestTotpFactors": 1,
+    "notificationEvents": 1,
+    "inAppNotifications": 1,
+    "notificationMastersChanged": 0,
+    "fanmarksCreated": 0,
+    "licensesCreated": 0
+  },
+  "authentication": {
+    "nativeAdminExistingFactorChallengeAccepted": true,
+    "sameSessionFactorAssuranceVerifiedInD1": true,
+    "nativeCredentialCreationOrChange": false,
+    "passwordSaveDeclined": true,
+    "nativeLogoutAccepted": true,
+    "sessionsAfterLogout": 0,
+    "assurancesAfterLogout": 0
+  },
+  "creation": {
+    "entry": "AdminNotificationManager manual-send tab",
+    "eventType": "license_grace_started",
+    "source": "admin_manual",
+    "nativeSubmitClicks": 1,
+    "fullVisiblePayloadMatchedPreparedSyntheticPayloadBeforeSubmit": true,
+    "nativeCreationToastObserved": true,
+    "directEventInsertUsed": false,
+    "allRecipientValuesFixedToExactOwnSyntheticUser": true,
+    "inputIssue": "Paste reported possible user conflict; native AX subsequently showed the exact complete prepared payload. Submission proceeded only after equality check."
+  },
+  "processing": {
+    "canonicalPendingOutboxAndPostcommitWakeUsed": true,
+    "actualDeployedProcessorUsed": true,
+    "eventProcessed": true,
+    "eventProcessedAt": "2026-10-06T14:01:12.261000Z",
+    "notificationDeliveredAt": "2026-10-06T14:01:12.261000Z",
+    "exactLocalizedTemplateTitleBodySummaryAndMetadataMatch": true,
+    "nativeEventLogProcessedAndSourceObserved": true,
+    "nativeDeliveryLogOwnShortUserIdInAppDeliveredObserved": true,
+    "deliveryLogRefreshButtonUsed": true,
+    "manualScheduledInvocation": false,
+    "manualWakeRepair": false,
+    "manualTerminalization": false,
+    "notificationChannels": [
+      "in_app"
+    ],
+    "additionalEmails": 0
+  },
+  "recipientUi": {
+    "browser": "Same Safari private window",
+    "language": "ja",
+    "nativeNotificationMenuTitleAndBodyObserved": true,
+    "nativeInboxBodyAndFormattedDeadlineObserved": true,
+    "nativeIndividualReadAccepted": true,
+    "readVia": "app",
+    "readAt": "2026-10-06T14:03:46.866000Z",
+    "nativeUiLoggedOut": true,
+    "screenshotSha256": {
+      "event-processed.jpg": "c5d0c46e7fdc482017d6c0d201f77af0d407e29884e45166eaa79222bbbf6eef",
+      "native-delivery-log.jpg": "33fc71e398f60467e4533daf30a3d541d2e43eab888825d6b9b811853ed3bfbe",
+      "native-inbox-read.jpg": "d6966af619d22a52736b8a53351dda212023c4728ee2a512a42e421ee49b4dc1"
+    }
+  },
+  "cleanup": {
+    "exactOwnedRowsRemoved": {
+      "notifications": 1,
+      "notification_events": 1,
+      "user_settings": 1,
+      "user": 1
+    },
+    "ownedAuthCascadeRowsAbsent": true,
+    "ownedRowsRemaining": 0,
+    "allPreexistingTableRowHashesPreserved": true,
+    "foreignKeyViolations": 0,
+    "authBaseline": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "masterTableCount": 25,
+    "mfaGenerationIncrement": 2,
+    "notificationWakeGenerationIncrement": 1,
+    "notificationWakeAcknowledged": true,
+    "generationsNotRewound": true,
+    "workerVersionUnchanged": true,
+    "syntheticPasswordAndTotpSecretRemoved": true,
+    "uiCredentialsChallengeAndPayloadFilesRemoved": true,
+    "independentReadOnlyProcessAt": "2026-10-06T14:06:39.500Z"
+  },
+  "runtimeRedeployed": false,
+  "secretsChanged": false,
+  "sourceWrites": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false,
+  "remainingBoundary": "Accepts this native manual license_grace_started in_app flow, not actual business license expiry, email/webpush, all event origins, other admin screens, provider signup, operational adoption or physical-phone/installed-PWA final integration."
+}

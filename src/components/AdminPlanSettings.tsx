@@ -2,10 +2,9 @@ import React, { ChangeEvent, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useSystemSettings, type SystemSettings } from "@/hooks/useSystemSettings";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 type PlanField = {
   id: string;
@@ -25,7 +24,7 @@ type PlanSection = {
 };
 
 export const AdminPlanSettings = () => {
-  const { settings, loading, refetch } = useSystemSettings({ includePrivate: true });
+  const { settings, loading, error: settingsError, refetch, updateSetting } = useSystemSettings({ includePrivate: true });
   const { toast } = useToast();
   const [updating, setUpdating] = useState(false);
 
@@ -54,23 +53,14 @@ export const AdminPlanSettings = () => {
   const updateSystemSetting = async (key: string, value: number | string) => {
     setUpdating(true);
     try {
-      const { data, error } = await supabase
-        .from("system_settings")
-        .update({ setting_value: value.toString() })
-        .eq("setting_key", key)
-        .select("setting_key");
-
-      if (error) throw error;
-      if (!data || data.length === 0) {
-        throw new Error("No settings updated (permission or key mismatch).");
-      }
+      const updated = await updateSetting(key as keyof SystemSettings, value as SystemSettings[keyof SystemSettings]);
+      if (!updated) throw new Error("system_setting_update_failed");
 
       toast({
         title: "設定更新完了",
         description: `${key} を更新しました`,
       });
 
-      await refetch();
     } catch (error) {
       console.error("Error updating system setting:", error);
       toast({
@@ -216,6 +206,15 @@ export const AdminPlanSettings = () => {
     );
   }
 
+  if (settingsError) {
+    return (
+      <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <span>プラン設定を読み込めませんでした。設定を更新せず、接続を確認してください。</span>
+        <Button variant="outline" size="sm" onClick={() => void refetch()}>再読み込み</Button>
+      </div>
+    );
+  }
+
   const validatePriceId = (priceId: string): boolean => {
     return priceId.startsWith('price_') && priceId.length > 6;
   };
@@ -313,4 +312,3 @@ export const AdminPlanSettings = () => {
     </div>
   );
 };
-

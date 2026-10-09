@@ -1,0 +1,43 @@
+{
+  "format": "fanmark-application-recovery-resource-preparation-v1",
+  "observedAt": "2026-10-07T19:50:49.614Z",
+  "candidate": "9b433be9a1372fa5e8dcec32d6d01a7267592aa5",
+  "ci": {
+    "id": 37674983990,
+    "application": "success",
+    "worker": "success"
+  },
+  "proofAccepted": false,
+  "failure": "proof_resource_api_401",
+  "failurePhase": "R2 metadata read after third bucket creation",
+  "oauthExpiryAsCause": "unconfirmed",
+  "unknownCreationResolvedByReadback": true,
+  "creationRepeated": false,
+  "resourcesCreated": {
+    "d1": 6,
+    "r2": 3,
+    "workers": 0,
+    "durableObjectNamespaces": 0
+  },
+  "syntheticSourceInitialized": true,
+  "masterInitialized": false,
+  "appProofRequested": false,
+  "cleanup": {
+    "verified": true,
+    "beforeAfterEqual": true,
+    "baseline": {
+      "d1": 3,
+      "r2": 3,
+      "workers": 2,
+      "namespaces": 1
+    },
+    "requestKeyRemoved": true
+  },
+  "originalFailureLogPreserved": true,
+  "mainDeployments": 0,
+  "sourceUserDataImported": false,
+  "dnsChanges": 0,
+  "newEmails": 0,
+  "mutationReplayPolicy": "No replay; pending creation was resolved from exact name/creation-time and before-absence before owned cleanup",
+  "nextChange": "On GET401 only, revalidate pinned OAuth profile and repeat that read once; never repeat POST/DELETE or unknown ACK"
+}

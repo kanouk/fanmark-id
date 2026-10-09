@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { formatInTimeZone } from 'date-fns-tz';
 import { usePendingCheckout } from '@/hooks/usePendingCheckout';
@@ -24,13 +24,22 @@ import { ReturnFanmarkDialog } from './ReturnFanmarkDialog';
 import { LicenseCountdown } from './LicenseCountdown';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
-import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { useLifecycleSettings } from '@/hooks/useLifecycleSettings';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
 import { useSubscription } from '@/hooks/useSubscription';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
+import { fetchFanmarkAnalyticsSummaryWorker, getFanmarkAnalyticsBackend } from '@/lib/fanmark-analytics-api';
+import { getFanmarkReturnBackend, returnFanmarkThroughWorker } from '@/lib/fanmark-return-api';
+import { getOwnedFanmarksBackend, loadOwnedFanmarks } from '@/lib/owned-fanmarks-api';
+import { isBetterAuthEnabled } from '@/lib/auth-backend';
+import {
+  createStripeExtensionCheckoutThroughWorker,
+  getStripeExtensionCheckoutBackend,
+  waitForStripeExtensionApplication,
+} from '@/lib/stripe-extension-checkout-api';
 import { useTransferCode } from '@/hooks/useTransferCode';
 import { FanmarkTransferSection } from '@/components/FanmarkTransferSection';
 import { TransferCodeIssueDialog } from '@/components/TransferCodeIssueDialog';
@@ -44,6 +53,21 @@ const LICENSE_STATUS_WEIGHT: Record<LicenseTimingResult['status'], number> = {
 };
 
 const ACTIVE_TAB_STORAGE_KEY = 'fanmark-dashboard:active-tab';
+const EXTENSION_CHECKOUT_REQUEST_STORAGE_PREFIX = 'fanmark:extension-checkout-request:';
+
+function clearExtensionCheckoutRequestIds() {
+  if (typeof window === 'undefined') return;
+  try {
+    for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = sessionStorage.key(index);
+      if (key?.startsWith(EXTENSION_CHECKOUT_REQUEST_STORAGE_PREFIX)) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to clear extension checkout request IDs:', error);
+  }
+}
 
 interface Fanmark {
   id: string;
@@ -60,7 +84,7 @@ interface Fanmark {
   status: string;
   created_at: string;
   updated_at: string;
-  user_id: string;
+  user_id?: string;
   fanmark_licenses?: {
     license_start: string;
     license_end: string | null;
@@ -111,7 +135,7 @@ export const FanmarkDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { settings } = useSystemSettings();
+  const { settings: lifecycleSettings } = useLifecycleSettings();
   const { limit: fanmarkLimit, isUnlimited } = useFanmarkLimit();
   const { paymentFailureAt, nextPaymentAttempt, subscription_end: subscriptionEnd } = useSubscription();
   const { count: favoriteCount, isLoading: favoritesLoading } = useFavoriteFanmarks({
@@ -124,6 +148,8 @@ export const FanmarkDashboard = () => {
     return planType === 'creator' || planType === 'business' || planType === 'enterprise' || planType === 'admin';
   }, [profile?.plan_type]);
 
+  const [extensionConfirmation, setExtensionConfirmation] = useState<'pending' | 'timeout' | null>(null);
+  const [extensionConfirmationRetry, setExtensionConfirmationRetry] = useState(0);
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTabState] = useState(() => {
@@ -150,6 +176,7 @@ export const FanmarkDashboard = () => {
   const [extendSelectedPlan, setExtendSelectedPlan] = useState<ExtendPlanOption | null>(null);
   const [extendPlans, setExtendPlans] = useState<ExtendPlanOption[]>([]);
   const [extendProcessing, setExtendProcessing] = useState(false);
+  const extensionCheckoutRequestIds = useRef(new Map<string, string>());
   const [totalAccessCount, setTotalAccessCount] = useState<number | null>(null);
   const [accessCountLoading, setAccessCountLoading] = useState(true);
   const paymentWarningDate = useMemo(() => {
@@ -203,12 +230,13 @@ export const FanmarkDashboard = () => {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('return-fanmark', {
-        body: { fanmark_id: fanmarkId },
-      });
-
-      if (error) {
-        throw error;
+      if (getFanmarkReturnBackend() === 'worker') {
+        await returnFanmarkThroughWorker(fanmarkId);
+      } else {
+        const { error } = await supabase.functions.invoke('return-fanmark', {
+          body: { fanmark_id: fanmarkId },
+        });
+        if (error) throw error;
       }
 
       toast({
@@ -244,6 +272,7 @@ export const FanmarkDashboard = () => {
   };
 
   const openExtendDialog = (fanmark: Fanmark, timing: LicenseTimingResult) => {
+    extensionCheckoutRequestIds.current.clear();
     const licenseData = fanmark.fanmark_licenses;
     setExtendTarget({
       fanmarkId: fanmark.id,
@@ -265,22 +294,60 @@ export const FanmarkDashboard = () => {
 
   const handleExtendSubmit = async () => {
     if (!extendTarget || !extendSelectedPlan) return;
+    const requestScope = [
+      user?.id ?? 'anonymous',
+      extendTarget.licenseId ?? '',
+      extendTarget.fanmarkId,
+      extendSelectedPlan.months,
+    ].join(':');
+    const requestStorageKey = `${EXTENSION_CHECKOUT_REQUEST_STORAGE_PREFIX}${requestScope}`;
+    let requestId = extensionCheckoutRequestIds.current.get(requestScope);
+    if (!requestId) {
+      try {
+        const storedRequestId = sessionStorage.getItem(requestStorageKey);
+        requestId = storedRequestId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(storedRequestId)
+          ? storedRequestId
+          : undefined;
+      } catch (error) {
+        console.warn('Failed to read extension checkout request ID:', error);
+      }
+      requestId ??= crypto.randomUUID();
+      extensionCheckoutRequestIds.current.set(requestScope, requestId);
+      try {
+        sessionStorage.setItem(requestStorageKey, requestId);
+      } catch (error) {
+        console.warn('Failed to save extension checkout request ID:', error);
+      }
+    }
     setExtendProcessing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-extension-checkout', {
-        body: {
-          license_id: extendTarget.licenseId,
+      let data: { url?: string | null } | null;
+      if (getStripeExtensionCheckoutBackend() === 'worker') {
+        if (!isBetterAuthEnabled()) throw new Error('The Worker extension checkout requires Better Auth.');
+        if (!extendTarget.licenseId) throw new Error('The license ID is unavailable.');
+        data = await createStripeExtensionCheckoutThroughWorker({
+          licenseId: extendTarget.licenseId,
           months: extendSelectedPlan.months,
-        },
-      });
-
-      if (error || !data?.url) {
-        throw new Error(error?.message ?? 'Failed to create checkout session');
+          requestId,
+        });
+      } else {
+        const result = await supabase.functions.invoke('create-extension-checkout', {
+          body: {
+            license_id: extendTarget.licenseId,
+            months: extendSelectedPlan.months,
+            request_id: requestId,
+          },
+        });
+        if (result.error) throw new Error(result.error.message ?? 'Failed to create checkout session');
+        data = result.data;
       }
 
+      if (!data?.url) throw new Error('Failed to create checkout session');
+
       // Track pending checkout
-      setPendingCheckout(extendTarget.fanmarkId);
+      setPendingCheckout(extendTarget.fanmarkId,
+        getStripeExtensionCheckoutBackend() === 'worker' ? requestId : undefined, user?.id);
 
       // Redirect to Stripe Checkout
       window.location.href = data.url;
@@ -307,7 +374,17 @@ export const FanmarkDashboard = () => {
     // Check for extension URL parameters
     const extensionStatus = searchParams.get('extension');
 
-    if (extensionStatus === 'success') {
+    if (extensionStatus === 'success' && getStripeExtensionCheckoutBackend() === 'worker') {
+      if (!user) return;
+      const pending = getPendingCheckout();
+      if (!pending?.requestId || pending.userId !== user.id || pending.fanmarkId !== searchParams.get('fanmarkId')) {
+        setExtensionConfirmation('timeout');
+      }
+      // Checkout redirect is not proof that the signed application has committed.
+      navigate(location.pathname, { replace: true });
+    } else if (extensionStatus === 'success') {
+      clearExtensionCheckoutRequestIds();
+      extensionCheckoutRequestIds.current.clear();
       clearPendingCheckout();
       toast({
         title: t('dashboard.paymentSuccessTitle'),
@@ -355,7 +432,7 @@ export const FanmarkDashboard = () => {
     if (shouldClearState) {
       navigate(location.pathname, { replace: true });
     }
-  }, [location, navigate, setActiveTab, toast, t]);
+  }, [location, navigate, setActiveTab, toast, t, user, searchParams, getPendingCheckout, clearPendingCheckout]);
 
   useEffect(() => {
     if (!shouldScrollToSearch) return;
@@ -366,6 +443,14 @@ export const FanmarkDashboard = () => {
 
   const fetchFanmarks = useCallback(async () => {
     try {
+      if (getOwnedFanmarksBackend() === 'worker') {
+        if (!isBetterAuthEnabled()) {
+          throw new Error('The Worker-owned fanmarks backend requires Better Auth.');
+        }
+        setFanmarks(await loadOwnedFanmarks());
+        return true;
+      }
+
       // First, get the licenses and fanmarks
       const { data: licenses, error: licensesError } = await supabase
         .from('fanmark_licenses')
@@ -495,6 +580,7 @@ export const FanmarkDashboard = () => {
         description: t('dashboard.failedToLoadFanmarks'),
         variant: 'destructive',
       });
+      return false;
     } finally {
       setLoading(false);
     }
@@ -505,7 +591,35 @@ export const FanmarkDashboard = () => {
     fetchFanmarks();
   }, [fetchFanmarks, user]);
 
-  const gracePeriodDaysSetting = settings?.grace_period_days ?? null;
+  useEffect(() => {
+    if (!user || getStripeExtensionCheckoutBackend() !== 'worker') return;
+    const pending = getPendingCheckout();
+    if (!pending?.requestId || pending.userId !== user.id) return;
+    const controller = new AbortController();
+    setExtensionConfirmation('pending');
+    void waitForStripeExtensionApplication(pending.requestId, pending.fanmarkId, { signal: controller.signal })
+      .then(async (result) => {
+        if (controller.signal.aborted) return;
+        if (result.status === 'applied') {
+          const refreshed = await fetchFanmarks();
+          if (controller.signal.aborted) return;
+          if (!refreshed) throw new Error('extension_refresh_unavailable');
+          toast({ title: t('dashboard.paymentSuccessTitle'), description: t('dashboard.paymentSuccessDescription') });
+        } else {
+          toast({ title: t('dashboard.extensionConfirmation.failed'), variant: 'destructive' });
+        }
+        clearPendingCheckout();
+        clearExtensionCheckoutRequestIds();
+        extensionCheckoutRequestIds.current.clear();
+        setExtensionConfirmation(null);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setExtensionConfirmation('timeout');
+      });
+    return () => controller.abort();
+  }, [user, fetchFanmarks, t, toast, getPendingCheckout, clearPendingCheckout, extensionConfirmationRetry]);
+
+  const gracePeriodDaysSetting = lifecycleSettings.grace_period_days;
 
   // Fetch total access count for all fanmarks (available for all plans)
   useEffect(() => {
@@ -517,6 +631,12 @@ export const FanmarkDashboard = () => {
 
       try {
         setAccessCountLoading(true);
+
+        if (getFanmarkAnalyticsBackend() === 'worker') {
+          const total = await fetchFanmarkAnalyticsSummaryWorker({ days: 30 });
+          setTotalAccessCount(total);
+          return;
+        }
 
         // Filter to only active fanmarks (exclude grace/expired status)
         const activeFanmarkIds = fanmarks
@@ -819,6 +939,18 @@ export const FanmarkDashboard = () => {
             {t('dashboard.subtitle')}
           </p>
         </div>
+
+        {extensionConfirmation && (
+          <Alert role="status">
+            <AlertTitle>{t(`dashboard.extensionConfirmation.${extensionConfirmation}`)}</AlertTitle>
+            <AlertDescription>{t('dashboard.extensionConfirmation.description')}</AlertDescription>
+            {extensionConfirmation === 'timeout' && (
+              <Button variant="outline" onClick={() => setExtensionConfirmationRetry((value) => value + 1)}>
+                {t('dashboard.extensionConfirmation.retry')}
+              </Button>
+            )}
+          </Alert>
+        )}
 
         {showPaymentWarning && (
           <Alert className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4 text-amber-950 shadow-sm sm:px-6 sm:py-5">

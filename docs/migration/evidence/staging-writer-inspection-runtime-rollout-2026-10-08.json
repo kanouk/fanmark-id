@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "scope": "Canonical staging rollout of validated read-only internal recovery writer inspection; tracking and freeze selectors remain unset",
+  "head": "44452973686f43652714cc01092853bc2c4a9e03",
+  "ci": {
+    "runId": 37687088667,
+    "application": "success",
+    "worker": "success",
+    "nativeWriterDrainTestsPassed": 6
+  },
+  "previousVersion": "e688fdf6-a5d7-4868-89b7-8171768ed865",
+  "version": "55ab5910-9abf-499e-8c34-af8d77a5e37b",
+  "percentage": 100,
+  "completedAt": "2026-10-07T21:20:00.781Z",
+  "runtimeChange": "Only workers/api/src/recovery-writer-drain.ts differs from accepted native recovery runtime ad8f754; adds internal inspection without changing writer/fence state",
+  "priorNativeRecoveryEvidenceRetained": "application-recovery-transport-full-master-remote-2026-10-08.json",
+  "localInspectionEvidence": "recovery-writer-inspection-local-2026-10-08.json",
+  "publicAssets": {
+    "count": 6,
+    "unchanged": true
+  },
+  "allTableHashesRetained": true,
+  "existingSettingsAndNamespacesRetained": true,
+  "publicHealth": {
+    "/api/auth/ok": 200,
+    "/api/auth/capabilities": 200
+  },
+  "missingAssetRemains404": true,
+  "independentReadback": {
+    "observedAt": "2026-10-07T21:20:37.024Z",
+    "version": "55ab5910-9abf-499e-8c34-af8d77a5e37b",
+    "readOnlyProcess": true,
+    "mainMutations": 0,
+    "allTableHashesRetained": true,
+    "foreignKeyViolations": 0,
+    "tables": {
+      "business": 79,
+      "auth": 10,
+      "master": 25
+    },
+    "retainedAuth": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "existingSettingsAndNamespacesRetained": true
+  },
+  "boundaries": {
+    "normalTrackingActivated": false,
+    "normalFreezeActivated": false,
+    "normalRemoteInspectionAccepted": false,
+    "firstActivationOldWriterDrainProven": false,
+    "externalWriterInventoryComplete": false,
+    "operationalBackupAdopted": false,
+    "newEmailsSent": 0,
+    "userDataMigration": false,
+    "domainCutover": false
+  }
+}

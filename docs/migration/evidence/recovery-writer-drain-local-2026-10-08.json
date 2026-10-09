@@ -1,0 +1,74 @@
+{
+  "observedDateJst": "2026-10-08",
+  "scope": "native local census and owner fence for writers instrumented from their start; not a main-staging quiescence proof",
+  "parentHead": "3f7b6e4bd8b6a5720b1d814870a8f60830947457",
+  "sourceSha256": {
+    "workers/api/src/recovery-writer-drain.ts": "7f747108137a2154ca7b44103596435966e02957ace7e13b0300620359fedd5b",
+    "workers/api/src/index.ts": "3355d73cccaaaeae7b6a0c324b8f86ec56526f1da9f42e86662a827a092967e6",
+    "workers/api/src/notification-wake.ts": "875c48d3945189d1849e083512b77e72766346dbcbd83bf2ef6a09c9114c11b9",
+    "workers/api/src/repository.ts": "3cae68dbc60ae29370698fa80cdad3ef12b7c3591321214bac1fa223683ad071",
+    "workers/api/test/recovery-writer-drain.test.ts": "27ae81248914177407b7e1413a919ce5223baeb34ce10d5d6d17a930fc40162f",
+    "workers/api/wrangler.recovery-writer-drain-test.jsonc": "6ca5f6b0f79e9cbfcb85b5add83c52e3e3823a1054ca138896b551ddcd5df263",
+    "workers/api/vitest.recovery-writer-drain.config.mjs": "a1e55d6dd54b13020412b9f9ae8aacc624adfcd454ad28e728bbbc332ecb56d6"
+  },
+  "selectors": [
+    "RECOVERY_DRAIN_BACKEND=durable-object",
+    "RECOVERY_DRAIN_SCOPE_DIGEST=independently pinned store-set identity digest"
+  ],
+  "namespace": "RECOVERY_DRAIN / RecoveryWriterCoordinator",
+  "publicOperatorRouteAdded": false,
+  "verification": [
+    {
+      "command": "npm --prefix workers/api run test:recovery-writer-drain",
+      "passed": 5,
+      "failed": 0,
+      "level": "native local D1 marker/readonly wake-state fixtures and SQLite Durable Objects; controlled deferred callbacks"
+    },
+    {
+      "command": "./node_modules/.bin/vitest run --config vitest.config.mjs test/cutover-write-freeze.test.ts test/scheduled-dispatch.test.ts",
+      "cwd": "workers/api",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "command": "npm --prefix workers/api run test:notification-wake",
+      "passed": 21,
+      "failed": 0
+    },
+    {
+      "command": "npm --prefix workers/api run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "npm --prefix workers/api run build:dry-run",
+      "result": "passed",
+      "deployment": false
+    }
+  ],
+  "assertions": [
+    "Real Worker HTTP and awaited post-response wake remain active until completion",
+    "Claim closes new HTTP/Cron/notification-DO entries and refuses drained assertions while a prior D1-writing operation remains active",
+    "Native D1 effects occur before the ticket is removed; release allows later operations",
+    "An unknown enter acknowledgement does not run the operation and preserves its ticket",
+    "Two concurrent tickets remain independently tracked; another scope/fence owner cannot claim or release",
+    "A failed sibling job does not release the parent writer until all background jobs settle"
+  ],
+  "parentCi": {
+    "id": 37654697817,
+    "head": "3f7b6e4bd8b6a5720b1d814870a8f60830947457",
+    "application": "success",
+    "worker": "success"
+  },
+  "boundaries": {
+    "regularStagingBindingsOrSelectorsChanged": false,
+    "remoteDrainExecuted": false,
+    "preInstrumentationOldWorkDrained": false,
+    "externalD1R2WritersStopped": false,
+    "trustedCollectorAdapterConnected": false,
+    "operationalKeyOffHostRetentionAdopted": false,
+    "userDataMigration": false,
+    "domainCutover": false,
+    "newEmailsSent": 0
+  },
+  "operationalCosts": "When selected, per-operation enter/leave RPC and transaction overhead, awaited HTTP wake, and retained interrupted tickets require operational monitoring and explicit recovery; no TTL or automatic ticket purging."
+}

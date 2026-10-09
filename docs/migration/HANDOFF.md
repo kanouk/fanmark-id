@@ -1,0 +1,8310 @@
+## 現在のチェックポイント（2026-10-09 JST）
+
+2026-10-09 22:20 JST、本人の明示的なlogout後のメール/password再ログイン成功報告を受け、
+新しく作られたDiscord identity1件のcredential保存・同じAuth/business owner・setup flag解除を照合した。
+以前の唯一sessionは消え、credential保存後の新しいsession1件とprovisioning completedを確認した。
+初回password保存/logout/同一identityメールpassword再loginを限定受け入れた。現在のDiscord identityは
+2件で、以前の設定待ち1件は保持する。password/hash/tokenは読まず、古いcookieの再送検証は行っていない。
+[Discord初回設定と再ログインの証拠](evidence/discord-staging-first-password-relogin-2026-10-09.json)。
+
+通常stagingは`49e191a8-d85e-4ccd-a343-5387439edaac`を100%配信する。API sourceは
+c1cc1e2のまま。bulk/test送信は無効、署名受信・113 binding・4 DO namespace・
+backup/monitorのversionと周期・現行/旧D1全表hashを保持した。直前4世代の公開bundleも保持する。
+最新候補のCIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
+直前96b5893の[CI37902130472](https://github.com/kanouk/fanmark-id/actions/runs/37902130472)は両job成功。
+
+
+通常49e191a8では同じ専用JA Chrome accountでログイン→Creatorのsandbox Checkout→
+PortalでBusiness差額確定→警告確認/Free即時解約→logoutを、手動reload0回・再確認クリック0回で
+一巡した。51.291秒時点でも待機を続け、次の観測97.002秒時点ではFree表示へ追随していた。
+これは観測時刻であり正確な反映時間の測定ではない。署名receipt7件/dispatch7件完了、
+Checkout command1・変更command2・session1→0を照合した。専用user/operatorの除去後、
+現行/旧D1の全表hash差分0/FK0と設定/asset/namespaceを独立照合した。テスト購読は解約済みで
+provider履歴は保持する。読取の90秒上限・時間切れ後の再確認・通信を重ねない条件は
+実画面moduleのlocal4件、移行308件・型検査/lint/build・callsite/asset保持5件で確認した。
+[プラン反映修正と有料フローの限定証拠](evidence/staging-plan-projection-sync-native-2026-10-09.json)。
+この証拠はJA desktopのプラン課金であり、全言語/実スマホ/PWA/provider初回identityや
+全六工程の受け入れではない。
+
+新しい5 store/V2の通常3cd3c8b6では、専用JA Chrome accountのログイン→Tier C取得→
+Stripe sandbox Checkout/Creator→Portal差額確定/Business→警告確認/Free即時解約→返却0/3→
+logoutを確認した。署名receipt7件・dispatch7件の完了、重複delivery2/単一適用と購読解約を
+D1で照合し、専用user/fanmark/operatorを除去した。既存全表hash/FK0/設定/asset/namespaceを
+独立照合し、差分はrequested=acknowledgedの通知wakeだけ。providerのテスト履歴は保持した。
+[限定有料フロー](evidence/staging-core-paid-journey-native-2026-10-09.json)。
+購入復帰時のprofile/maintenance timeoutと、解約反映後のUI待機終了にはそれぞれ手動reloadが
+必要だった。途切れない有料フローや全体完了として受け入れない。
+
+profile取得の失敗でパスワード未設定と推測して移動する挙動と、maintenance取得失敗を
+メンテナンスとして表示する挙動を修正した。確認できない間は操作を閉じ、現在URLを保持して
+読取の再試行を表示する。既知の初回password/MFA gateは維持する。実provider/gate部品を使う
+隔離localhostの合成失敗→native再試行2回→元URL復帰、auth/MFA11件、型検査/build/PWA境界を
+確認した。e9f7c04fの匿名native認証画面も確認した。[再試行の限定証拠](evidence/staging-account-readiness-retry-2026-10-09.json)。
+新versionで有料フローや本人の初回password設定を再度完了した証拠には広げない。
+
+残件はsourceの4 converter group/外部read consumer、旧writer ticketの扱い、翌日09:05 JSTの
+日次backup自然発火、Apple新規identity/relay、
+実スマホ/PWAと最終統合。実user移送・DNSは最後の別工程。以下は過去の限定証拠。
+
+通常d074b5ddの別合成account3件でEN/KO/IDも、実ログイン→取得前のお気に入り→
+無期限Tier C取得→伝言板保存→再読込なしの所有/リンク反映→公開本文→返却→logoutを
+一巡した。各専用user/fanmark/operatorを除去し、現行/旧D1の他全表hash・FK0と
+設定/asset/namespaceを独立照合した。差分はrequested=acknowledgedの通知wakeだけ。
+[3言語の主要フロー](evidence/staging-core-journeys-en-ko-id-native-2026-10-09.json)。
+その途中で日本語固定preview/空本文とKO/IDの英語日付を実画面で観測し修正した。
+修正後3cd3c8b6では4言語の変更箇所、previewからの下書き保持、保存・返却・logoutと
+exact-owned cleanupを確認した。[表示修正の限定証拠](evidence/staging-core-locale-display-fix-native-2026-10-09.json)。
+この新versionの全業務を4言語で一巡した証拠へは広げない。typecheck/build、
+生成PWAのAPI cache境界とcallsite/旧asset保持5件は成功。変更3 TSXのlintは
+Favorites既存の未変更any1件で失敗し、変更前にも同じ行があることを確認した。
+
+同じd074b5dd・別の専用合成Free account・日本語Chromeで、実ログイン→取得前の
+お気に入り登録→無期限Tier C取得→伝言板設定保存→再読込なしの所有状態/リンク反映→
+お気に入りから公開本文表示→返却/grace/0枠→logoutを一巡した。修正前に観測した
+取得後の古い「取得可能」表示は不合格として保持し、修正後だけを受け入れた。
+旧entryの404による白画面は、その公開assetを保持した後の通常reloadで同じタブが復帰した。
+検証用user/fanmark/operatorを除去し、独立readonly照合で現行/旧storeの他全表hash・FK0・
+現在asset/設定を確認した。差分は通知wake generationだけで、requested/acknowledgedは一致。
+[主要フローと旧client復帰の限定証拠](evidence/staging-core-journey-native-2026-10-09.json)。
+この日本語の証拠単独は合成desktopの主要フローであり、有料/provider初回設定・実スマホ/PWAと
+六工程全体の受け入れではない。実ユーザー移送・DNS・Stripe/mail・画像writeは0。
+
+公式Resend宛先51件の自然Cron配送は49 delivered・1 permanent bounce・1 complaint、
+実署名通知103件・集計51/49/2・配信停止2件を照合し、専用52 user/profileとqueue/operatorを
+除去済み。[51件の限定証拠](evidence/staging-broadcast-multi-recipient-native-2026-10-09.json)。
+その51件はすべてattempt1で、retryの証明には使わない。
+
+追加の公式delivered宛先1件では初回ACKと署名配信成功を確認した後、同じV2 writerを使う
+単一Business batchで「受理後に応答を失った場合のpending状態」を合成注入した。
+通信障害そのものやAPI応答の偽装は行っていない。自然毎分Cronが実Resendへ再試行し、
+attempt1→2・同じprovider ID・同じ本文fingerprint/初回日時/24時間窓・delivered・集計1/1/0・
+初回完了監査の不変を照合した。専用2 user/profile・資格情報/MFA・draft/run/recipient/監査と
+operatorを除去し、独立readonly照合で差分はminimal署名receiptと単調増加MFA generationだけ。
+旧store全表hash・現行3 storeのschema/その他表hash・FK0を保持した。
+[合成状態注入後の実provider再試行](evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json)。
+このretry証拠を実network失敗/429/outage、本番queue retentionの受け入れへ広げない。
+
+追加の告知UI検証では、別Chromeの専用合成管理者で実ログイン/MFA、下書き作成、
+Free/ja/過去登録日の対象1件、保存済み本文のプレビュー、確認画面からの送信を行った。
+送信ボタンのnative操作は1回で、APIによる下書き作成/送信代行と手動Cronは0。
+自然毎分Cronと実署名sent/deliveredにより、D1と実画面の完了・成功1/失敗0を照合した。
+ログアウト後に通常asset/受信専用構成へ戻し、専用2 user/profile・資格情報/MFA・queue/監査と
+operatorを除去。独立照合で現行3 store schema/その他表hash・旧store全表hash・FK0、
+3 Workerのversion/Cron・113 binding・4 namespace・6公開assetの保持を確認した。
+差分はminimal署名receipt2件と単調増加MFA generationのみ。画像への書込みは0で、
+この検証ではR2画像object全内容のhash照合は行っていない。本人のIAB sessionは保持した。
+[実送信UIの限定証拠](evidence/staging-broadcast-send-ui-native-2026-10-09.json)。
+
+バックアップは運用鍵による初回保存・同鍵隔離復旧14,591ms・30日処理receipt・通知の本人受信を
+受け入れ済み。日次09:05 JSTと毎時35分の別monitorを登録・独立照合した。
+12:35:05 JSTの自然monitorはoutcome=ok・例外0・当日slot正常。
+[自然監視の限定証拠](evidence/staging-natural-backup-monitor-accepted-2026-10-09.json)。
+日次backupの自然captureは未受け入れで、最初の自然dailyは10/10 09:05 JST予定。
+UTC10/09の保存は再実行せずarchive/鍵を変更していない。初回保存時のAuth0と画像空を
+現在状態へ当てはめない。現行Auth/profileには新規Discord identity1件があり、本人の
+初回パスワード保存はまだ未確認。
+
+Vault全体が同期済みでも、鍵JSONは未対応添付として遠隔履歴0だった。既存JSON/キーチェーンの
+一致を確認し、この完成済み鍵・暗号化SDK escrowだけを0600のMarkdownにも保存した。
+遠隔履歴1件のexact versionを取得し、ローカル1,651 bytesと全バイト一致を照合した。
+元JSON/鍵を変更せず、既存noteへの再実行は上書きを拒否。同期設定と他Vaultファイルは変更0。
+[鍵の遠隔保管の限定証拠](evidence/staging-backup-vault-sync-custody-2026-10-09.json)。
+これは選択した鍵・escrowの遠隔保管であり、自然daily・別端末での復旧・全体移行は未受け入れ。
+
+当時の6afcaee0の匿名ChromeではJA/EN/KO/IDのhomeと認証画面の見出し・フォーム・4 providerボタン、
+homeからのログインリンク、日本語の再設定画面と戻り、匿名/plans→/authを確認した。
+入力・provider認証・メール・Stripe呼出し・fixture作成・設定変更は0。ゲスト言語を日本語へ戻し、
+専用タブを閉じ、本人IABを保持。現行6公開assetのhash一致も照合した。
+[公開導線4言語の限定証拠](evidence/staging-public-locales-native-2026-10-09.json)。
+これは匿名desktopの表示/導線であり、ログイン後の全フロー、翻訳全件、実スマホ/PWAは未受け入れ。
+
+初期Cloudflare運用の告知記録は完了後の最終活動から最低30日・その後ownerレビュー、未解決/重複防止/
+抑止記録は保持継続とする。窓外の強制再送・自動purge・不確定状態の解除は行わない。
+[停止・調査・保管手順](broadcast-operations.md)を記録した。既存の非クリティカル作業の継続許可に基づく保持方針は採用済み。実際の削除/強制再送は行わず、手動resume APIや自動purgeを追加必須項目にはしない。
+
+Discord初回設定/logout/relogin、Apple新規identity/relay、
+自然daily、実スマホ/PWA、source/converter照合と同じ最終candidateの六工程は残る。
+実Supabase利用者データと本番DNS切り替えは最後の別工程。以下は過去の状態を含む。
+
+## 告知の51名snapshot境界（2026-10-09 JST）
+
+独立した実D12個と限定Workerで、現行27 Businessと新scopeと同一のAuth全schemaを照合し、
+専用呼出終了control表を追加して、合成51名・4言語の宛先snapshotを実行した。50件→1件→空ページで完了→idleとなり、
+全51 ID/言語、cursor、件数、lease解除と重複0を各段階でreadbackした。queueにメール本文/
+宛先列はなく、FK0。Resend資格情報・sender/dispatch route・Cronを持たず、実送信0。
+所有D12個/Workerを削除し、別readonly processで削除・main version/binding保持を確認した。
+[限定証拠](evidence/broadcast-snapshot-boundary-native-2026-10-09.json)。
+これは50件境界のsnapshot受け入れで、51名の実配送や送信UIを受け入れたとは扱わない。
+最新0cd462b/[CI37871947020](https://github.com/kanouk/fanmark-id/actions/runs/37871947020)は両job成功。
+
+## Resendの実バウンス・苦情通知（2026-10-09 JST）
+
+公式検証宛先へ恒久バウンス・苦情の2通だけを送信し、通常stagingの既存署名Webhookへ
+sent/bounced、sent/complained/deliveredの計5件が記録された。同じprovider IDの実D1 viewは
+`bounced/permanent_bounce`と`suppressed/complaint`。苦情後の配送済み通知で停止判定を消さない。
+main再配備・設定変更・実利用者宛先への送信は0、FK0。
+[限定証拠](evidence/resend-real-terminal-simulations-2026-10-09.json)。
+これは実providerの検証宛先→署名受信→有効状態の照合であり、告知recipient/runはこの2通へ
+接続していない。複数名の配送、送信UI、recipientの再集計・停止連携、運用retry/retentionは
+別条件として残す。Discord初回パスワード保存と自然monitor/dailyも未確認。
+
+## Discord新規identityの実callback（2026-10-09 JST）
+
+新scopeのAuth/account/profile0から実Discord認証を開始し、Auth user1・Discord account1・
+Free profile1を同じownerで作成、provisioning completed・FK0を独立readで確認した。
+実画面は`/password-setup`へ到達。初回パスワードの入力・保存は本人へ引き継ぎ、
+保存後のcredential/flag、logoutと同一identity再loginはまだ未確認。
+[限定証拠](evidence/discord-new-identity-callback-native-2026-10-09.json)。
+Apple新規identity/relay・実端末・全体統合と最終データ/DNSは未実行。
+
+## 日次backup監視の候補（2026-10-09 JST）
+
+初回source保存・隔離復旧/cleanupは前節のnative証拠。次の候補では別monitor、固定本人
+宛先の失敗通知、retentionの永続完了receiptを追加する。local native22件とschedule guard
+12件を検証。候補は未配備、Cronは0のまま。UTC2026-10-09の保存を再実行しない。
+CI後に同じsource/binding/secretを保持してmainを配備し、当日の期限処理だけを一度
+実行・照合する。実通知/配送を確認した後にdaily09:05 JSTと毎時35分monitorを採用する。
+最初の自然dailyはUTC2026-10-10 00:05（10/10 09:05 JST）の予定。自然Cron・本人受信、
+残るprovider/実端末/最終candidateは別の未完了条件として保持する。
+
+## 告知の定期配信を検証用1名で受け入れ（2026-10-08 JST）
+
+番号付きの本人所有テスト宛先1名を、free/jaと過去の閉じた登録日範囲で限定した。
+既存利用者を含まない対象0件から専用fixtureを追加し、MFA保護APIのestimate=1、
+配信要求202、同一request IDの再要求で同じrunだけが残ることを確認した。
+実毎分CronがAuth ID snapshotを完了し、Resendへ1回送信した。実署名sent/deliveredを
+同じprovider ID・recipientへ反映し、run completed、recipient delivered、集計1/1/0、
+作成・要求・初回完了の監査3件を照合した。手動Cron起動・API応答置換は0。
+
+一時配備のCLI末尾が認証エラー10000になったため、再配備・新要求は行わず、
+100%の配備版、binding、6 asset、専用行を除く全表hashを読み取り専用で照合して
+反映済みと確認した。通常構成へ復元したmainは
+`cc6d75c4-53c3-4ccd-939e-5a2c4a706c1c`。署名受信だけを有効に保ち、
+bulk/test送信を再び無効化。専用actor/recipient/draft/run/監査/eventを除去後、
+独立プロセスでAuth3・7・2、他の全表hash、FK0、同じ6 assetを確認した。
+MFA generationは258→260へ進み、戻していない。
+[限定証拠](evidence/staging-broadcast-single-recipient-2026-10-08.json)。
+
+これは送信API・実定期処理・実配送を1名でつないだ受け入れ。送信UI、複数名/50件境界、
+実bounce/苦情・provider retry、運用backup、Apple/Discord新規identity/relay、
+実スマホ/PWA、同じ最終candidateの統合は引き続き残る。運用案と実スマホの質問は回答待ち。
+実ユーザー移送と本番domainは最後の別工程。
+
+## CIの保存失敗テストの通信遮断を修正（2026-10-08 JST）
+
+設定commit `62a4d6c` のCI37782119977はWorker job成功。アプリjobは最初にChrome起動待ち、
+再実行ではlocal editorの保存失敗試験で失敗した。後者は遮断件数0・未消費の遮断flagと
+実PATCH/設定画面への成功遷移を記録し、保存失敗の受け入れにしなかった。
+
+editor試験の失敗1回だけService Worker経路をバイパスし、実PATCHへのCDP遮断と
+同じnetworkIdの接続失敗receiptを要求する。reload前に通常の経路へ戻す。
+ローカルの実Chrome/Worker・全27 Business/4 Auth/8 Masterで、SWが制御中の状態から
+遮断1回・実ネットワーク失敗・DB未更新・下書きreload・再試行保存を確認した。
+API応答置換0、provider/remote操作0。PWA経由の障害試験や実スマホ確認へは拡張しない。
+[限定証拠](evidence/editor-network-fault-boundary-local-2026-10-08.json)。修正commit `bcb9565` の[CI37785543127](https://github.com/kanouk/fanmark-id/actions/runs/37785543127)はアプリ・Worker両job成功。
+
+通常stagingの実Resend受信・再送・owned cleanupの受け入れは保持する。
+mainは`cbb800a3-9f71-4a90-b21c-6fe87d2d7b12`、bulk/test送信は無効。
+今回の修正はテストと文書のみ。バックアップ運用案と実スマホ確認の質問は回答待ち。
+
+## Resendの実署名通知と受信専用構成を受け入れ（2026-10-08 JST）
+
+利用者がWebhook追加と署名キーのstaging/キーチェーン保存を個別に許可した。
+Workspace全体の宛先・件名・配送状態が届く範囲を説明済み。番号付き検証宛先へ
+MFA認証付きWorker APIから1通だけ送信し、実Resendのsent/delivered両イベントを
+署名検証して最小6列のD1記録と照合した。宛先・件名はevent表へ保存しない。
+deliveredのprovider再送も200/received=true、Attempts 2で確認し、D1は同じ2行のまま。
+
+通常stagingは`cbb800a3-9f71-4a90-b21c-6fe87d2d7b12`を100%配信する。
+`BROADCAST_WEBHOOK_BACKEND=d1`と署名secretを保持し、bulk/test送信のselectorと
+固定宛先は解除した。元の6 asset・通知/処理件数計測DOと他bindingを保持した。
+専用actor/draft/audit/eventのみ除去し、独立Read processで他の全表hash、Auth3・7・2、
+FK0を照合した。MFA generationは合成factorの作成/削除により256→258へ進み、戻さない。
+[限定証拠](evidence/staging-resend-signed-webhook-2026-10-08.json)。
+
+利用者はstagingのD1・R2に既知のfanmark Worker/このチャット以外の書き込み元は
+ないと回答した。将来の追加writerや本番まで確認済みとは扱わない。
+実Resendの署名受信とこの再送の残件は解消。一括配送、実bounce/苦情等、retry/retention、
+バックアップ運用採用、Apple/Discord新規identityとApple relay、実スマホ/PWAと
+同じ最終candidateの統合は残る。実ユーザー移送と本番domainは最後の別工程。
+
+## R2の容量上限でメモリ超過を確認・修正候補（2026-10-08 JST）
+
+## R2合計20 MiBの復旧・exact resumeを実Cloudflareで受け入れ（2026-10-08 JST）
+
+- `87920b1` / [CI37762268107](https://github.com/kanouk/fanmark-id/actions/runs/37762268107) はアプリ・Worker両job成功。
+- 新規専用7 bucket/Workerで、前の不合格と同じ8 MiB・8 MiB・4 MiBの合成3 object、合計20 MiB、補完なしStandard、同じsnapshot hash・v1・暗号文長を使用した。fixture側で以前のinput/resultを破棄したり、検証を小さく分割したりせず、一つの実行でcapture・暗号化往復・初回復元・exact resume/version保持・object上限+1 byte拒否・total上限+1 byte拒否の6項目すべてが通過した。
+- 既存上書き拒否、全bytes/metadataと復元後の全native読取/hash検証は維持する。ローカル9 R2/16一式復旧、型/lint/bundleの検査も通過。容量上限のメモリ超過という今回の残件は、この合成materialで解消した。
+- 全owned objectと7 bucket/Workerを削除し、元のD1/R2/Worker inventoryに戻した。別Read processでmain `1071896f-7e6c-4218-818d-6b1eceeea9f3`・既存全表hash/Auth3・7・2/FK0・binding/namespaceを保持照合した。通常stagingへの再配備は0。
+- 記録: [`evidence/r2-recovery-maximum-capacity-accepted-2026-10-08.json`](evidence/r2-recovery-maximum-capacity-accepted-2026-10-08.json)。1000 object・InfrequentAccess・五つのstoreを同時に最大量にした試験や運用RTO/定期backupの受け入れへは拡張しない。
+- Resend実署名通知、外部writer/運用方針、残る実provider/実端末/最終統合と六項目全体は未完了。実ユーザー移送と本番domain変更は最後の別工程。
+
+## R2容量上限で復号・初回復元は通過、exact resumeを修正中（2026-10-08 JST）
+
+- `7a8c6ee` / [CI37760585412](https://github.com/kanouk/fanmark-id/actions/runs/37760585412) は両job成功。新規専用環境の同じ3 object・20 MiB・Standard・v1で、capture・暗号化往復・初回復元と全hashの照合まで実Cloudflareで通過した。
+- 結果を保持した同じ呼び出しの `resume-maximum` で native `exceededMemory` が発生した。exact resume/容量上限全体の受け入れはまだ未完了。テストの容量・元データ・保存形式・全件照合は減らさない。
+- 同script/versionのnative終了を照合してから、専用7 bucket/Workerを削除した。別Read processで元inventory・通常staging全表hash/Auth3・7・2/FK0/設定・namespaceを保持照合した。
+- 次候補は、検証済みbytesを直接比較して巨大なobject JSONの二重生成を避け、exact subset確認後のprivate読取payloadを解放する。復元後の全native capture/hash検証は維持し、返却値はその検証と一致したprivate normalized containerとimmutable payloadを使い、次のresumeまで同じ全bucket payloadを重複保持しない。
+- 次候補の実Cloudflare再検証は未完了。通常stagingへの再配備は0。実ユーザー移送と本番domainは最後の別工程。
+- 記録: [`evidence/r2-recovery-capacity-resume-memory-2026-10-08.json`](evidence/r2-recovery-capacity-resume-memory-2026-10-08.json)。
+
+## R2容量上限の修正候補を実環境で再検証（2026-10-08 JST）
+
+- `5eb0ced` の [CI37758494467](https://github.com/kanouk/fanmark-id/actions/runs/37758494467) は両job成功。
+- 同じ合成3 object・合計20 MiB・Standard・保存形式v1で新規専用環境を作り、単一の実行要求を送った。復号 `open-maximum` で再び native `exceededMemory` を確認した。最初の中間コピー削減だけでは容量上限の条件を満たさない。
+- 実行終了を同script/versionの監視結果で確認してから、所有7 bucketとWorkerを削除した。別のRead processで既存全表hash/Auth3・7・2/FK0/設定・namespace・元資源inventoryを保持照合した。journalの最初の非終端cleanup拒否は履歴として残す。
+- 次の修正候補は、private archive containerのciphertext参照と復号byte bufferをparse前に解放し、decoded textをvalidate前に解放する。呼び出し元のarchiveは変更せず、保存形式と8 MiB/object・20 MiB/rawの上限を維持する。
+- ローカル20 MiBの復号・復元・exact resume・plus-one拒否を確認した。次候補のCIと実Cloudflare容量上限の受け入れはまだ未完了。通常stagingの再配備は0。
+- 記録: [`evidence/r2-recovery-capacity-candidate-recheck-2026-10-08.json`](evidence/r2-recovery-capacity-candidate-recheck-2026-10-08.json)。実ユーザー移送と本番ドメイン変更は最後の別工程。
+
+通常stagingを保持し、新規7 bucket/専用Workerで8 MiB・8 MiB・4 MiBの合成objectを
+扱った。補完なしStandardの合計20 MiB captureは通ったが、`open-maximum`で応答が
+不明になり、同じscript/version・開始時刻のCloudflare監視データにexceededMemory1件を
+確認した。未完了receiptを成功扱いにせず、呼出終了の確認後だけoperator failureを
+記録し、同じjournalの読取再開で全owned資源を削除した。POSTの再送は0。
+別Read processで元inventory・main全表hash/Auth3・7・2/FK0・設定/namespaceを保持照合。
+[不合格の限定証拠と候補](evidence/r2-recovery-maximum-capacity-failure-2026-10-08.json)。
+
+容量8/20 MiBとarchive v1を維持し、base64の巨大なbinary/canonical文字列コピーを
+chunk処理に変更。immutableなpayload文字列を共有し、snapshot/metadata等のmutable
+containerはコピーする。chunk境界・不正padding/pad bits/空白と呼出後input変更の拒否/
+分離を加え、R2 9件・一式復旧16件・型/bundleとlocal実workerd20 MiB検証が通った。
+修正候補の両CIと、新しい隔離remoteで同じ容量の受け入れはまだ必要。main再配備は0。
+1000 object上限、InfrequentAccess、全ストア同時の最大容量/運用RTOへは拡張しない。
+実ユーザー移送とdomainは最後の別工程、六項目と既存の回答待ちは維持する。
+
+## 修正後の確認メールを実配信で確認（2026-10-08 JST）
+
+通常Worker `1071896f-7e6c-4218-818d-6b1eceeea9f3` で、許可済み番号付き宛先test02へ
+確認メールを1通だけ送った。ResendのDelivered、実際の日本語本文の「1時間」、
+リンクのexp−iat=3600秒、同originのverify-emailと`/auth?verified=1`への戻り先を確認。
+リンクは開いておらず、本人のGmail受信・新規signup/loginの受け入れには拡張しない。
+[限定証拠](evidence/staging-auth-verification-copy-delivery-2026-10-08.json)。
+
+パスワード・credential account・sessionを作らないemail-only fixtureとprofileだけを
+exact条件で削除した。別Read processで全baseline hash、Auth3・7・2、
+Business79/Auth10/Master25表、FK0、同じWorkerとbinding/namespaceを照合した。
+test02は旧tokenの期限まで再利用せず、次の検証はtest03以降を使う。
+今回の追加送信は1通。4言語rendererの既存証拠は保持するが、残る3言語の新しい実配信、
+Resend署名Webhook・運用backup・実端末/最終統合と六項目全体は未完了。
+実ユーザー移送とドメイン移行は最後の別工程のまま。
+
+## 通常stagingの処理件数計測を有効化（2026-10-08 JST）
+
+候補450ec08/[CI37748771478](https://github.com/kanouk/fanmark-id/actions/runs/37748771478)は
+アプリ・Worker両job成功。通常Workerを`1071896f-7e6c-4218-818d-6b1eceeea9f3`へ一度配備し、
+内部SQLite DOと計測selectorを追加した。元の通知namespace/全bindingと公開6 assetを保持。
+並行catalog GET6件でactive6を観測し、完了後0へ戻った。専用合成actorのsignin/
+authenticated session/signoutとexact-owned cleanup後も0。同versionに絞ったLive Tailで
+自然の毎分Cronがoutcome=ok/例外0と確認し、tailを終了した。追加メールは0。
+
+一時検査Workerの初回HTTP assertはstatusを保存しておらず再構成しない。
+検査Workerだけ再配備した後、同じURLの404→401を観測し、同じmainの検査を再開した。
+一時Workerとfixtureは除去済み。別Read processで既存全表hash、Auth3・7・2、
+Business79/Auth10/Master25表、FK0、設定/namespaceを照合した。
+[限定受け入れ](evidence/staging-writer-tracking-2026-10-08.json)。
+
+停止flagは未設定、owner=null/drained=falseのまま。これは計測有効化と対象処理の
+終了確認であり、初回旧writer終了/外部writer lease/owner付き停止/整合capture/定期backup
+採用の証拠ではない。source・provider・運用方針・実端末/最終統合の残件と、
+実ユーザー移送・ドメインを最後にする範囲は保持する。
+
+## 確認メールの期限表記を1時間へ修正（2026-10-08 JST）
+
+実リンクのJWTはexp−iat=3600秒なのに、移行したsignup本文は24時間と記載していた。
+EN/JA/KO/IDの4行の本文を1時間へ合わせ、updated_atを更新した。現在のtoken期限、
+他12 template、source snapshot/初回seed、Worker/config/schemaは保持した。
+実際のtarget行を既存rendererへ渡し、HTML/textとも4言語で1時間と確認。
+実providerへの追加送信は0なので、新しい実メールの受信確認とは区別する。
+別Read processでtargetの全baseline hash、Auth3・7・2/FK0と同じWorkerを再確認した。
+[限定修正証拠](evidence/staging-auth-verification-copy-2026-10-08.json)。
+
+現在の4 signup行は初回source-copyからの明示的なtarget修正である。
+元source/seedの完全一致検証を現在の4行にそのまま当てれば相違になるため、
+初回取込証拠とこの補正を分けて比較する。次のbaselineはprivate
+`auth-verification-copy-2026-10-08/plan.json`のafterBaseline。
+rollbackは同planで現在値を照合した4行だけを戻す。全Auth/mailと六項目全体は未完了。
+
+## 招待必須の実登録・メール確認・ログインを検証（2026-10-08 JST）
+
+通常Worker `f6d162c5-6168-4389-bf22-c0ab2f04c5a4` の専用Safari private windowで、
+未登録の番号付き検証用受信先、1回限りの招待コード、一時的な招待必須設定を使った。
+無効コードを拒否し、有効コードを適用。本人が新しいパスワードを入力して登録した。
+UUID command/user/credential/profile各1件、招待消費1回、Free/JA/招待帰属と
+未認証session0を確認した。Resendで指定先への確認メール2件のDeliveredを観測し、
+本人のリンク操作後にemailVerified=1/session0、通常ログイン後にdashboard/上限3/session1、
+native logout後にsession0、消費済みコードのAPI拒否を確認した。2通の発生源を推定しない。
+
+招待設定は元行へ正確に復元し、所有したsignup fixtureだけを除去した。
+別Read processでも全baseline hash、Auth3・7・2、Business79/Auth10/Master25表、FK0、
+同じWorkerを確認した。provider履歴を保持し、本人が入力したパスワードは読取・保存していない。
+[限定証拠](evidence/staging-invitation-signup-native-2026-10-08.json)。
+
+メール本文の24時間という記載と、実リンクのexp−iat=3600秒が不一致だった。
+実際の期限に合わせる4言語signup本文のtarget修正を別途記録する。
+この登録検証は全Auth/mail・provider・実スマホ/PWA・最終統合と六項目全体の完了ではない。
+実ユーザーデータ移送とドメイン移行は最後の別工程のまま。
+
+## 有料延長の自動更新と移管ロック表示を受け入れ（2026-10-08 JST）
+
+修正`8586601`/[CI37697249567](https://github.com/kanouk/fanmark-id/actions/runs/37697249567)は
+アプリ・Worker両job成功。通常stagingのWorker `f6d162c5-6168-4389-bf22-c0ab2f04c5a4`へ100%配備し、
+公開6 assetを新buildと照合した。既存設定/namespace・全表hashを保持し、別Read processでも
+Business79/Auth10/Master25表、Auth3・7・2/FK0を確認。[配備証拠](evidence/staging-extension-confirmation-runtime-rollout-2026-10-08.json)。
+
+新しい使い捨て利用者と同じSafari private windowで、1か月JPY2000のsandbox Checkoutから自然復帰した。
+適用前は確認中と10月15日を表示し、自然署名dispatch/application/effect各1件の後に、
+手動reloadなしで11月15日・38日へ更新して確認中表示が消えた。短時間の成功toast自体は直接捕捉していない。
+同じ専用licenseだけに移管lock期限を置き、実発行操作が11月7日までの拒否を表示し、コード作成0を確認した。
+これはlock表示の合成検証であり、新しい自然移管/期限経過の証拠ではない。
+
+native logout→owned cleanup→別Read processで既存全表hash/Auth3・7・2/全Master25表/FK0を保持した。
+[新しい限定受け入れ](evidence/staging-extension-confirmation-native-2026-10-08.json)。以前の表示不整合の不合格記録は保持する。
+未登録受信先/Resend署名通知/新Apple・Discord identityとrelay、運用鍵・off-host・担当・周期・保存期間・
+RPO-RTO/外部writer、実スマホ/PWA・最終統合と六項目全体は未完了。実ユーザー移送とドメインは最後の別工程。
+
+## 有料延長の復帰で表示不整合を確認・修正準備（2026-10-08 JST）
+
+通常runtime4445297 / Worker55ab5910の専用Safari private windowで、使い捨て利用者1件と
+有限Tier4/Sのファンマ1件を用意し、1か月JPY2000のStripe sandbox決済を自然完了した。
+復帰直後に成功toastが出たが、期限は10月15日のまま。自然署名dispatchはapplication/effect各1件で
+D1を11月15日へ更新したが、画面は手動reloadまで更新されなかった。
+[不合格の限定証拠](evidence/staging-extension-return-stale-date-2026-10-08.json)。
+
+利用者とrequest UUIDに限定した状態確認GETと、適用後の所有一覧再取得・最大2分の待機・
+未確認時の再確認を追加した。local client7/native D1 checkout7、型/staging build、
+211 callsiteの現行位置・対応表2件を確認。追加のlint errorは0（Dashboard既存8件）。
+まだ修正candidateのCI・配備・新規の途切れないnative決済復帰は未受け入れ。
+今回のnative logoutは専用sessionを失効し、owned cleanup後の別Read processで既存全表hash/
+Auth3・7・2/全Master25表/FK0を保持した。ユーザーデータ/DNSと六項目全体の未完了は維持する。
+
+## 内部確認機能の通常staging反映と最新source照合（2026-10-08 JST）
+
+`4445297`/[CI37687088667](https://github.com/kanouk/fanmark-id/actions/runs/37687088667)は
+アプリ・Worker両job成功。Worker logでnative writerの6件成功も確認した。
+同じ候補を通常stagingへ反映し、version `55ab5910-9abf-499e-8c34-af8d77a5e37b` の100%配信を確認した。
+公開6 asset、既存binding/secret登録metadata/namespace、全表hash/FK0を保持。
+別Read processでもBusiness79/Auth10/Master25表、Auth3・7・2と全表hash/設定の一致を確認。
+[限定配備証拠](evidence/staging-writer-inspection-runtime-rollout-2026-10-08.json)。
+計測/停止selectorは未有効化。この配備を通常環境の初回停止や定期backup採用とは扱わない。
+
+最新Supabase catalog `2026-10-07T21:14:44.389671Z` は58関数/37binding/外部表binding1/
+event binding0で、前回fingerprintと一致。58件の定義/属性/binding件数が手動対応表と一致した。
+[限定source照合](evidence/source-runtime-counterpart-refresh-2026-10-08.json)。
+Supabaseユーザー行の読取/移送・source関数呼出し/書込みは0。historical/data/任意外部consumer、
+54 pending分類/full-runtime/converter=false、運用採用と最終統合の条件は保持する。
+
+## 書き込み件数の読み取り機能を追加（2026-10-08 JST）
+
+バックアップ準備の内部bindingに`inspectRecoveryWriters`を追加した。処理の停止・ticket変更・
+未初期化状態への書込みをせず、初期化/active/owner/drainedを確認する。native local6件・
+型検査・eslint成功。[限定証拠](evidence/recovery-writer-inspection-local-2026-10-08.json)。
+通常stagingのselector/bindingはまだ有効化していない。初回旧writer終了・外部writer停止・
+定期保存と運用条件の採用は残る。ユーザーデータ・ドメインは別の最終工程を保持する。
+
+## CIの保存失敗表示待ちを診断（2026-10-08 JST）
+
+記録だけの`9bf766d`/CI37684442945はWorker成功・アプリ失敗。実local Workerの編集検証で
+通信失敗を注入後、「更新に失敗しました」の表示待ちがtimeoutした。原因はまだ確定していない。
+同じassertion/15秒上限を保持し、失敗時だけPATCH件数、フォーム/画面のboolean状態、
+interception error件数を出す診断を追加した。入力値/cookie/応答本文は記録しない。
+診断付きのMac local実ブラウザは通信失敗1件→行保持→draft/reload→retry保存を含む全経路が
+成功し、local Worker/port/DBもcleanup済み。source trace13件とsyntaxも成功。
+[限定証拠](evidence/owner-editor-ci-failed-save-diagnostic-2026-10-08.json)。
+診断候補`89c2b95`の[CI37685951939](https://github.com/kanouk/fanmark-id/actions/runs/37685951939)は
+アプリ・Worker両job成功し、同じassertionのLinux再確認も通過した。元timeoutの原因は未確定。
+失敗CIの記録と、通常staging`ad8f754/e688fdf6`の合格CI/配備証拠は別に保持する。
+この診断ではアプリruntime・既存データ・秘密設定を変更していない。
+
+## 通知のイベント指定言語を実stagingで確認（2026-10-08 JST）
+
+通常Worker`e688fdf6`（runtime`ad8f754`）で、日本語設定の専用利用者へEN/KO/IDの
+payload.languageを与え、指定言語の正確なtitle/bodyと実受信箱・既読更新を確認した。
+空文字/nullの2件は日本語へ戻り、利用者の設定は日本語のまま。5件の実DO processorは
+retry0で配信した。所有fixtureを削除し、別Read processで既存全表hash（単調増加wakeを除く）/
+Auth3・7・2/FK0、wake34→39とack39を照合した。新メール・runtime再配備・source writeは0。
+[限定証拠](evidence/staging-notification-payload-language-2026-10-08.json)。
+
+初回の検証手順はCLI INSERT後のGETをwakeと誤認し、30秒で待機失敗。既存eventの再作成は
+せず、同じjournalで実PATCHのbridgeへ合わせて継続した。中断前の専用session1件もexact条件で
+除去し、二度目のcleanup確認後に独立照合した。driverの途中失敗は証拠へ残す。
+API/processorのこの言語分岐を受け入れた範囲であり、新たなUI/実端末・外部配信・全体完了ではない。
+
+## 実Cloudflareの全Master復旧と通常staging反映（2026-10-08 JST）
+
+候補`ad8f754`の[CI37678533990](https://github.com/kanouk/fanmark-id/actions/runs/37678533990)は
+アプリ・Worker両job成功。新規6 D1・5 R2・Worker・別source/target SQLite DOで、
+保存済み非ユーザーMaster12,254行と合成Auth/Businessを実アプリへ接続した。
+通常SDKログイン→両writer fence→共通collector→Macの暗号化file→同じfileから空target復旧を
+受け入れた。SQL数はinitialize262/collect251/restore786。明示失効でcredentialを保持し、
+旧cookie拒否・新ログイン成功、実catalog3,944件、参照4/4/5/16件、hash一致/FK0を確認。
+[remote限定証拠](evidence/application-recovery-transport-full-master-remote-2026-10-08.json)。
+
+全owned資源とone-off鍵fileをcleanupし、D1/R2/Worker/DOの前後identityは3/3/2/1で一致。
+4つのdata R2は空なので、画像class/最大容量の証拠にはしない。合計109,844msは作成・検証・
+cleanupを含むone-off所要時間で、本番RTOではない。受け入れ済みのdriverは再実行しない。
+
+同じ候補を通常`fanmark-app-staging`へ一度配備し、version
+`e688fdf6-a5d7-4868-89b7-8171768ed865`の100%配信を確認した。公開6 assetのbytes/hash、
+既存設定・secret登録metadata・namespaceを保持。別Read資格情報の独立processで全表hash/FK0、
+Auth users3/accounts7/sessions2、Business79/Auth10/Master25表を再照合した。
+[staging反映と独立照合](evidence/staging-native-recovery-runtime-rollout-2026-10-08.json)。
+
+停止/計測selectorとmainのRecovery bindingは未有効化。今回で隔離remoteの実アプリ・
+全Master・DO guard・collector接続の残件は閉じたが、通常main初回停止/旧writer終了、
+外部writer lease、運用鍵/off-host/周期/retention/担当/RPO-RTO採用と最終統合は残る。
+六つの完了条件は維持し、実ユーザーデータ・ドメイン移行は最後の別工程とする。
+以下の「remote未実行」「通常main未配備」は過去のcheckpointであり、この観測を優先する。
+
+## 隔離remote作成の401と所有cleanup（2026-10-08 JST）
+
+9b433be/CI37674983990はアプリ・Worker両job成功。アプリjobは既存SQLite3.45.1を使い
+5分46秒で完了。専用remote driverは6 D1と合成source Auth/Business、R2の作成へ進んだ。
+3個目のR2作成後のmetadata GETが401で停止し、Worker/DO配備・Master復旧・通常SDKの
+remote proofは未実行。期限切れが原因かは確定していない。
+
+同じjournalのpending nameを再作成せず、fresh OAuthで実R2名/creation_dateとbeforeの不在、
+Worker/namespaceの不在を照合して作成済み1個を所有記録へ取り込んだ。元driverの同じ
+journal resumeでD1 6個/R2 3個をcleanupし、独立全一覧はbeforeと一致（D1/R2/Worker/DOが
+3/3/2/1）。privateログの原401と初回cleanup拒否は履歴として保存する。
+[未受け入れとcleanupの証拠](evidence/application-recovery-resource-preparation-2026-10-08.json)。
+
+新しい`application-recovery-cloudflare-api.mjs`はGET401だけ、同じstaging OAuth profileの
+email/account/typeを再検証してtokenを取得し直し、同じ読み取りを1回だけやり直す。
+Wranglerへ古いbearerを環境注入したまま再取得しない。POST/DELETEの401、通信断、unknown ACKを
+自動再実行しない。6ケースで作成1回→GET401→fresh GET、mutation非再実行、上限、失敗時の
+秘密非表示、cleanupの404/204を確認。通常recovery suite/CIへ追加する。
+これは通常mainのtoken/運用collectorの採用ではなく、専用proof driverの修正。
+六つの完了条件と既存の回答待ちは保持し、次候補の両CI後に新規owned runを実行する。
+
+## CIのSQLite準備待ちを除去（2026-10-08 JST）
+
+13a9681/CI37673335916のWorker jobは成功。アプリjobはSQLite導入stepが10分以上
+続き、テスト開始前で未受け入れ。原因をコード不具合とは断定していない。
+Ubuntu hosted runnerの既存SQLiteを`command -v`で確認し、不足時だけapt導入する。
+CLIのversionを出力し、この準備stepに5分上限を置く。全既存テストは維持する。
+[GitHub runnerのSQLite一覧](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md)。
+通常staging/remote resourceは未変更。次候補の両CI成功後に専用remote driverを使う。
+
+## native復旧WorkerのR2 binding照合（2026-10-08 JST）
+
+7f4b490/CI37668885700はアプリ・Worker両job成功。追加の配備前照合で、検証用
+appEnvのR2名を通常アプリの`AVATARS_BUCKET`/`COVER_IMAGES_BUCKET`へ合わせ、
+`STORAGE_BACKEND=r2`を明示した。復旧後の実Storage APIから、空avatar/cover bucketの
+未存在objectがそれぞれ404になることもlocal全Master試験で確認した。
+initialize/collect/restoreはverified、SQL数262/251/786、Master12,254行、catalog3,944件、
+reference4/4/5/16件とhash/FK0を保持。所有runtime/bucket/fileをcleanup済み。
+
+未認証・別nonceの試験は小さい不正JSONでpayload解析前の401/403を確認する。
+旧試験は未消費の6.3MiB uploadと早期拒否が競合してECONNRESETとなったため変更した。
+超過入力8MiB+1の413とclaimなしの試験は維持。回復suite10/10も成功。
+この修正を含む次候補の両CI成功後、同じ新driverでowned remote検証へ進む。
+通常mainは未配備、remote resourceはまだ未作成。六つの完了条件は未完了。
+
+## 実アプリと全Master用のnative隔離Worker構成（2026-10-08 JST）
+
+d2d9c3a/CI37664045796はアプリ・Worker両job成功。main stagingは17fdbf39のまま。
+新しい`application-recovery-set-worker.mjs`は実アプリentrypoint、source/target別SQLite DO、
+共通Master initialize/5ストアcollect/open/restoreをnative bindingで接続する。検証用の
+独立Workerだけに使い、通常mainのoperator routeや資格情報を増やさない。
+
+一回限りのtoken/nonceとsource/target scopeを要求し、initialize/collect/restoreはR2の
+条件付きclaimと永続statusで再実行を拒否する。リクエストは8MiBまで読み、改ざんや
+超過ではclaim/target書込み前に拒否。旧SDK cookieは別AADで暗号化してcontrolへ保存する。
+通常SDKのD1判定に必要なnative形状を維持するProxyで、batch/単独SQLを計測。
+未計測exec/session APIは拒否し、各phaseは1,000 statements超過で停止する。
+
+保存済み非ユーザーMaster12,254行を、独立archive/schema/rows pinへ照合してこの構成へ
+渡すlocal試験が成功。通常source login、source/target fence保持と別owner拒否、
+5ストア一式復旧、session2件/challenge失効、同じSDK secretの旧cookie拒否、target login、
+実catalog3,944件全ページとreference4/4/5/16件、全hash/FK0を確認。initialize262、
+collect251、restore786 SQL（後二つは通常SDK/再取得も含む）。R2の4 data storeは空。
+未認証/別nonce/任意SQL/超過/改ざん/再実行と、所有外・未完了cleanupを拒否した。
+[限定証拠](evidence/application-recovery-transport-full-master-local-2026-10-08.json)。
+
+新しいremote driverは `node --experimental-strip-types scripts/migration/run-application-recovery-set.mjs <HEAD> <CI_RUN> <private-master-directory>`。
+同じjournalだけを観察・再開する場合は `--resume <journal-directory>` を追加する。
+exact HEADの両CI成功とclean own treeを要求する。新規6 D1/5 R2/Worker/2 SQLite namespaceを
+作成し、Auth/Businessを未配備の合成sourceだけへ初期化。Masterはnative Workerで復旧する。
+各phase前後に実version/bindings/namespacesをreadback。unknown ACKを再実行せずstatusで
+判定し、terminalなowned object/Worker/namespace/D1/R2だけをcleanupして全before/afterを照合する。
+Worker削除はforceを使わず、namespace消失を独立一覧で確認する。
+[Cloudflareの削除API](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/methods/delete/)。
+この新driverのremote実行は次候補CI受入れ後。まだremote resource/writeは0で、
+通常main初回停止、外部writer lease、画像class/最大容量、backup運用採用と六つの条件は残る。
+
+## 全Masterを通常SDK・writer fence・一式file復旧へ接続（2026-10-08 JST）
+
+最新確認済み候補f931782/CI37660877665はアプリ・Worker両job成功。Linux上の招待登録、
+プロフィール実ブラウザ、native proxy、通常SDKとwriter fenceの小さいfixtureも成功した。
+main stagingへのdeployは行っていない。
+
+新しい`application-writer-full-master-local.mjs`は、保存済みの非ユーザーMaster archiveの
+SHA-256とschema/rows hashを既存の独立証拠へ照合し、共通Master decryptを通す。
+legacy Authの7表は空を強制する。新規local source/target各3 D1・2 R2、別SQLite DOで、
+Auth/Businessは合成のまま、Master25表/98 schema objects/12,254行を初期化した。
+最初のrequestから計測した実アプリで通常signin→両fence保持→共通collector→認証済み
+private file→空target復旧→session2件/verification失効→旧cookie拒否→通常signinを確認。
+schema/全行hashを保持し、復旧後の実APIで絵文字3,944件を全ページ・重複なしで取得、
+参照masterは4/4/5/16件。FK0。D1実行数はcapture246、restore752、最大batch233。
+一式fileは6,681,319 bytes、capture約1.68秒/restore約4.94秒（localのみ）。
+新しい容量経路と既存小fixtureの回帰1件は成功、runtime/temp fileはcleanup済み。
+[限定証拠](evidence/application-writer-full-master-local-2026-10-08.json)。
+
+残る復旧条件は、新規owned remoteの実アプリ・DO guard・全Master collectorの接続、
+通常mainの初回停止/旧writer終了と外部CLI/operator lease、画像class/最大容量、
+鍵/off-host定期保存/担当/retention/RPO-RTOの採用。local所要時間をproduction RTOにはしない。
+ユーザーデータとドメインは最後の別工程。六つの完了条件は引き続き未完了。
+
+## カタログ通信のID欠落を回避するlocal proxy（2026-10-08 JST）
+
+3a6322c/CI37658909089はWorker job成功（通常SDK→DO fence→一式file復旧の新testも成功）、
+アプリjobは招待登録の通信cancel照合で失敗。追加診断から、`/api/emoji/catalog`の
+paused requestにChromeのNetwork IDがなかったと確認した。2秒の待機だけでは解消しない。
+
+新しいlocal fixture proxyは、設定済み`127.0.0.1:port`のHTTPS tunnelだけを許可し、
+要求された外部hostをDNS解決・接続しない。外部/別loopback/普通のHTTPは拒否する。
+Chromiumの固定proxyと`<-loopback>`設定でlocalhostの暗黙bypassを除き、QUICを無効化。
+[Chromiumの一次資料](https://chromium.googlesource.com/chromium/src/+/main/net/docs/proxy.md)。
+招待testは許可通信をFetchでpauseせず、実外部CONNECT拒否とlocal proxy経由を検証する。
+プロフィールtestも通常通信をpauseせず、既存のcancel fixture/失敗PATCHだけに狭い
+CDP patternを使う。資格情報やproviderを実接続する変更ではない。
+
+native proxy2件（tunnel bytes/別宛先拒否）と、実Chromeの招待一式・プロフィール一式が成功。
+プロフィールは保存失敗/下書き/reload/retry、画像/公開範囲、別owner/停止account、390pxの
+既存条件を保持。remote write/mail0、owned browser/server/proxy cleanup済み。
+[限定証拠](evidence/local-browser-egress-proxy-2026-10-08.json)。f931782のLinux CIは
+両job成功。実スマホ/PWA・本移行の受け入れとは分ける。
+
+## 通常SDKとwriter fence、一式collectorをlocalで接続（2026-10-08 JST）
+
+新規6 D1・4 R2と別々のSQLite DO namespaceを持つ2つの実アプリWorkerをlocalで起動し、
+最初のアプリrequestからwriterを計測した。現行27 Business/4 Auth/8 Master+legacy Auth
+schemaと合成accountを初期化し、通常Better Auth password loginを実行。source/targetの
+owner fenceを保持したまま、共通collector→認証したprivate file→同じfileから空targetへ
+5ストアを復旧した。各guardは対応store ID・DO owner/scope・active=0を検証する。
+
+停止中の両loginは503、別ownerの解除は409。明示失効でsession2件/verificationを除去し、
+bcrypt credential bytesと非Auth hashを保持。解除後のtargetでは同じSDK secretの旧cookieが
+無効、新しい通常password loginが成功した。guard解除後のcaptureは拒否。1件/8.39秒、
+FK0、local runtimeとtemp archiveをcleanup済み。通常Worker CIの一式復旧suiteに追加した。停止/census実装とcancel通知修正を含む
+親4487437のCI37656996765は両job成功。この追加testは次の候補CIで再確認する。
+[限定証拠](evidence/application-writer-recovery-local-2026-10-08.json)。
+
+これは最初から計測したowned local環境の接続証拠。Masterは小さいfixture、R2は空で、
+全Master12,254行・画像class・最大容量・remote collector/通常mainの初回有効化・
+CLI/operator等の外部writer lease・運用backupの採用を証明しない。通常stagingは変更なし。
+
+別の`fanmark-emoji-master-staging-api`は独立Read tokenで実settings/deployment/moduleを取得。
+version a7c8f421、実Master bindingは旧`FANMARK_DB`、repoの現在設定は`MASTER_DB`だった。
+実moduleはfetchのみで、catalogはGET/OPTIONSのSELECT、管理mutation routeなし、
+Auth selector/URL/secretもないためSDK書込み入口を拒否する。現在の設定下ではwriterに
+ならないと静的に判断した。公開HTTPチェックは3経路すべて403でhandler結果を未受け入れ。
+他のCLI/API token/外部callerを含む全writer inventoryの完了とは扱わない。
+[限定証拠](evidence/companion-worker-writer-inventory-2026-10-08.json)。
+
+## 最新候補のCI再確認（2026-10-08 JST）
+
+writer census候補e9c9b1aのCI37655931604では、アプリjobの招待登録テストが
+`invalid_interception_id`のキャンセル通知未照合で失敗した。旧停止候補3f7b6e4の
+CI37654697817は両job成功。e9のWorker jobは後続候補への切替でcancelledであり、e9自体は両job成功とは扱わない。
+
+同じ実ブラウザ/Worker/分離D1の招待登録→確認→password login→logoutをローカルで
+再確認したところ成功。原因を断定せず、正確なNetwork IDのキャンセル通知を待つ
+上限を250msから2秒へ調整し、無通知・別ID・別protocolエラーは引き続き拒否する。
+招待テストは全interception taskの終了後に成功判定し、失敗時にはtoken/URL queryを
+含めず通信ID・path・キャンセル通知の有無を記録する。遅延通知を含む7契約テストと
+修正後の実ブラウザ一式が成功。4487437のCI37656996765はアプリ/Worker両job成功し、
+Linux上の招待登録とnative writer-drain5件・型/bundleも成功した。原失敗の原因は未確定。
+[限定証拠](evidence/browser-cancellation-receipt-local-2026-10-08.json)。
+
+通常stagingはWorker17fdbf39のまま。この修正はtest harnessのみで、新規メール・
+ユーザー移送・DNS変更は0。Resendの既存action-time確認は未回答のまま保持する。
+
+## 共通一式collectorを実Cloudflareで受け入れ（2026-10-08 JST）
+
+## 計測済みwriterの終了確認（2026-10-08 JST）
+
+`recovery-writer-drain.ts`は内部binding専用のSQLite Durable Object coordinator。
+`RECOVERY_DRAIN_BACKEND=durable-object`、`RECOVERY_DRAIN` bindingと、5ストアのidentity集合に
+対応する`RECOVERY_DRAIN_SCOPE_DIGEST`を明示した環境で、HTTP・Cron・通知DOの処理を
+ticketへ記録する。未指定時は通常動作を保持し、不明selector・欠落binding・scope不一致は
+新しい処理を拒否する。public control routeやcredentialは追加していない。
+
+owner UUIDによるclaimは先に新規enterを閉じる。既存ticketがある間はdrained=falseで、
+assertは拒否する。開始/終了ticketと件数はDO storageの同じtransactionで更新し、
+処理・ticketをTTLで終了扱いにしない。enter応答喪失では処理を始めずticketを保持する。
+操作や終了ACKが不明なticketを機械的に消す手順はない。owner以外の解除と別scopeは拒否し、
+解除後に通常処理を再開する。HTTP選択時はoutbox wakeもawaitしてからticketを消す。
+Cronの1件が失敗しても、他のjobと各wakeのsettlementを待ってからticketを終了する。
+
+native localの5件では、実Worker HTTP/後続wake、Cron・通知alarmの拒否、native D1へ
+書く既存処理の終了待ち、並行2件、enter ACK喪失、別owner/scope、1 job失敗中の他job
+継続を確認。既存Worker/Cron16件・通知D1/DO21件と型検査・bundle dry-runも成功。
+[限定証拠](evidence/recovery-writer-drain-local-2026-10-08.json)。通常CIに5件を追加した。
+
+これは**最初から計測したwriter集合**の停止・終了確認。追跡開始前から動いている旧version、
+直接D1/R2を書くCLI・別Worker・operatorはcensusに含まれない。scope digestは実bindingの
+独立readbackやruntime pinを代替しない。初回有効化時の旧処理終了、全writer inventory/
+外部writerの停止、collectorへのtrusted adapter、実Cloudflareでの配備/停止/capture/復旧、
+運用鍵/off-host/retention/監視の採用は未完了。通常stagingには新binding/selectorをまだ
+追加していない。未回答の運用方針を採用済みとせず、実ユーザー/DNSは最後の範囲を保つ。
+
+選択時は各処理のenter/leaveでDOのRPCとtransactionが増え、HTTPはwake終了まで応答を
+待つ。中断したticketは保存の安全性を優先して停止を継続するため、停止解除には所有者が
+不明処理の終了を確認する必要がある。これらの運用/latency条件をremote採用時に検証する。
+
+
+## 新しい書き込みの停止（2026-10-08 JST）
+
+`RECOVERY_WRITE_FREEZE=true`はバックアップ用の独立した停止設定。未設定・空・falseは
+通常動作を保持し、不明な値は停止側へ倒す。HTTPの入口で全requestを503/no-store/
+Retry-After 60へ返すため、GETのsession更新・OAuth callback・Stripe/Resend通知・
+公開参照の副作用もroute実行前に停止する。fetchのfinallyでoutboxをflushせず、Cronは
+診断用D1書込みより前に停止する。通知DOのwake/statusは503とし、alarmは再開用の
+次回alarmだけを保持し、Businessの処理・generation ACKを行わない。解除後は保存済み
+alarmが未処理イベントを再開する。DOのalarm時刻はこの5ストアarchiveの対象外。
+
+これは新しく入るアプリ処理の停止実装。切替前から実行中のrequest/jobのdrainや、
+直接D1/R2へ接続する別Worker・CLI・operatorの停止は証明しない。flagだけを
+`RecoverySetGuard.assertHeld()`の成功条件にしてはいけない。collectorには未接続で、
+通常stagingへの有効化・停止中の実capture・運用方針の採用はまだ行っていない。
+既存CUTOVER_WRITE_FREEZEの認証・Stripe継続契約は維持する。
+
+実Worker入口/Cronの16件とnative D1/DO alarmの21件、型検査が成功。新しいnative caseは
+停止中のqueue全行/generationが同一、通知0件、次回alarm保持、解除後に2 eventが各1回
+だけ配信されてalarmが消えることを確認した。synthetic local証拠で、remote停止/drainや
+全体の運用復旧完了とは扱わない。
+
+
+## 配送通知受信の分離（2026-10-08 JST）
+
+`BROADCAST_WEBHOOK_BACKEND=d1`を追加し、送信停止中も署名通知を受け入れられるようにした。
+未指定時の既存設定は維持し、明示的な無効値は受信・send-start・dispatchを拒否する。
+配送統合23件と管理API11件、型検査が成功。最後に追加した管理者receiver無効条件は
+該当する2件を再検証し成功した。受信だけを有効にした場合、queue増加・外部送信は0件。
+Resend workspaceにはWebhookがなく、staging URLと対応する6 eventの登録フォームを準備済み。
+まだ登録・署名secret保存・staging配備・新規メール送信は行っていない。登録後の実署名通知と
+bounded dispatchは別の未受け入れ項目。ユーザーデータ移行・ドメイン切替は引き続き対象外。
+
+
+候補99762afの[CI37649724810](https://github.com/kanouk/fanmark-id/actions/runs/37649724810)
+はアプリ/Worker両job成功。通常CI logでも一式native/bundle8件と型/dry-runの成功を確認。
+途中候補2e46cc9/CI37648656829はapplication成功・Workerは後続の実装追加によりcancelled。
+
+新規6 D1・5 R2・Worker74b7fa6eで、現行27 Business/4 Auth/8 Master+legacy Authと合成行、
+補完なしのStandard画像2件を共通moduleで収集した。Macの0700/0600暗号化fileを読み直し、
+同じfileから別の空targetへnative単一batchで戻し、全desired hash/FKを確認した。
+明示失効でsession/challengeを戻さずcredential bytesを保持。収集246/復旧623 query。
+[限定証拠](evidence/recovery-set-isolated-remote-2026-10-08.json)。
+
+全owned object/6 D1/5 R2/Workerを削除し、前後inventoryは3/3/2で一致。one-off request/
+archive key fileも除去した。独立Read tokenではmain Worker17fdbf39/Business27/wake34/34/
+FK0/queue滞留0/API・root200が前後同じ。別Wrangler processでも元の3 R2だけを確認した。
+既存全行hashの新しい再照合とは扱わない。既存staging store write/新mail/runtime再配備/
+Supabase write/実ユーザー移送/DNSは0。
+
+小さい合成fixtureでの実collector/file復旧を受け入れた。全Master12,254行の新collector
+capture・本番最大容量/RTO、通常アプリのwriter停止/drain、運用鍵/off-host/周期/retention/
+担当/RPO-RTO/定期監視・最終統合と六項目は未完了。旧一式復旧runnerは再実行していない。
+
+## 一式collectorの実Worker形式とremote準備（2026-10-08 JST）
+
+共通recovery setを呼ぶ専用Worker/CLIを追加。独立local schema pin、固定account/HEAD/
+CI、6 D1/5 R2/Workerのowned identity/version、別one-shot claimとstatusを要求する。
+Macのprivate fileへ保存→同じfileを読み直し→空targetへのnative単一batch復旧を準備した。
+
+通常local/bundle合計8件・型検査が成功。native D1 queryは収集246/復旧623。
+無補完のlocal classは拒否し、補完はtest entrypointだけ。別archive、未認証/nonce/
+二重claim/処理中cleanup/未知keyを拒否する。
+[契約](recovery-set.md)・[限定証拠](evidence/recovery-set-bundled-local-2026-10-08.json)。
+
+今回のremoteはまだ未実行。通常アプリの停止/drain・運用鍵/off-host/retention/
+担当/RPO-RTO/定期監視・最終統合と六項目は残る。実ユーザー/DNSは最後の範囲を保持。
+
+## 全ストアの収集・保存・exact再開を共通化（2026-10-08 JST）
+
+Auth/Business/Master/avatars/coversを`fanmark-recovery-set-v1`へまとめるcoordinatorと
+repo外0700/0600のfile helperを追加。全partを結び付けるencrypted manifest、独立schema/
+source/runtime/key identity、caller-owned source/target guard、全targetのwrite前検証を要求する。
+
+native local D1/R2と実fileで6件・型検査が成功。実Business commit後ACK喪失から、全hashが
+一致したD1を再INSERTせずに全体を再開。別part/SDK鍵/既存file/foreign R2を拒否し、
+明示失効方式ではsession/challengeを戻さずcredential bytes/FK0を保持した。
+[契約](recovery-set.md)・[限定証拠](evidence/recovery-set-local-2026-10-08.json)。
+
+通常CIへ追加。前文書候補fe46898/CI37645782521は両job成功。今回の一式はlocal限定で、
+class補完はtestのみ。trusted guard実装の採用・runtime停止/drain・off-host/運用鍵/
+周期/retention/担当/RPO-RTOと最終統合は未完了。CUTOVER_WRITE_FREEZEのAuth/Stripe継続を
+全ストア停止と扱わず、guard callback自体の存在も運用証拠にしない。新remote write/mail/
+runtime配備/source write/実ユーザー移送/DNSは0。
+
+## 共通R2復旧を実Cloudflareで受け入れ（2026-10-08 JST）
+
+候補`fcd4812`の[CI37643375901](https://github.com/kanouk/fanmark-id/actions/runs/37643375901)
+は両job成功、R2 native/bundle8件も実CI logで確認した。CIの総合/個別step反映に一時差が
+あり、最初のCLIはresource作成前のgateで拒否。step成功の反映後に検証を実行した。
+
+新規の専用7 R2 bucketとWorker `ae69e6bd-27fe-424d-87a9-1023a6098ed2`で、class補完なしに
+Standard class、avatar3/cover1の暗号化往復と全bytes/HTTP/custom metadata、Unicode/空object、
+実アプリ画像GET・HEAD、commit後ACK喪失の不足2件のみ再開/version不変、異なるmetadata
+の無書込拒否とsource不変の8項目を確認した。
+[限定証拠](evidence/r2-recovery-shared-remote-2026-10-08.json)。
+
+全owned objectを消去し、7 bucket/Workerのidentity/消失、D1/R2/Worker inventoryの前後一致
+（3/3/2）を確認。別Wrangler processでも元の3 bucketだけを確認し、private request keyを
+除去した。独立Read tokenのmain観測はWorker `17fdbf39`、Business27、wake34/34、FK0、
+queue/処理滞留0、API/root200と前後同じ。全既存行のhashを再照合した証拠とは扱わない。
+
+R2単体の実API境界を受け入れた。一式collector/整合した復旧点/鍵/off-host/retentionと
+運用採用・最終統合は残る。既存staging bucketへのwrite、新規mail、runtime再配備、
+実ユーザー移送/source write/公開DNS/本番課金は0。
+
+## R2の実Worker metadata差異を修正し、remote試験を準備（2026-10-08 JST）
+
+前candidate `de07b9a`のCI 37642308160は両job成功。新しいbundle試験で既知optional HTTP
+metadataのundefinedが拒否される差異を見つけ、その未設定fieldだけを省略する修正を加えた。
+通常R2検証8件・型検査・driver syntax checkが成功。無補完のnative Workerは欠落classを
+拒否し、test専用entrypointの補完時は8 assertionで両kind復旧/画像GET・HEAD/ACK再開を確認。
+[限定証拠](evidence/r2-recovery-bundled-local-2026-10-08.json)。
+
+専用7 bucket/Workerの明示remote runnerを追加。固定account/HEAD/両CI/owned identityを
+要求し、1回claimとstatusで不明な応答を扱う。既存stagingのrouteやbucketには未接続。
+remote Standard class受け入れはこのcheckpointでは未実行。一式collector/整合点/運用採用と
+六項目の完了条件、実ユーザーデータ/DNSを最後にする範囲は維持する。
+
+## R2復旧の共通処理とCI診断（2026-10-08 JST）
+
+avatars/cover-images全bucketのcapture・AES-256-GCM・空target/exact subset復旧を
+共通moduleへ追加。local R2のavatar3件/cover1件で全bytes/HTTP/custom metadata、
+Unicode/空object/ページング、実画像GET/HEAD、ACK喪失から不足分だけの再開と保存済み
+version不変を確認。別bytes/metadata/未知keyはwrite前に拒否し、上書き/削除しない。
+6件・Worker型/dry-run成功、通常Worker CIへ追加した。
+[契約](r2-recovery.md)・[限定証拠](evidence/r2-recovery-shared-local-2026-10-08.json)。
+
+固定MiniflareがstorageClassを空で返すため、local fixtureだけでStandard fieldを補った。
+本実装は補完せず未知classを拒否する。実Cloudflareのstorage class受け入れ、全ストア
+collector/整合した復旧点、運用鍵/off-host/retention/担当は未完了のまま。
+
+Business候補aac3bb4のCI37639502798はapplicationの招待browser通信guardで一度失敗。
+詳細を出力していなかったため、protocol method/codeを機密値なしで出す診断を8ddd51cに
+追加した。判定は緩めていない。local招待flowは再実行成功、CI37640360292のapplicationも
+成功したが、原因確定・再現修正とは扱わない。Worker jobは実行中としてexact handleを
+監視している。R2の今回remote write/追加mail/runtime配備0。六項目と実ユーザー/DNSの
+後工程境界は保持する。実staging招待用の未登録受信先は引き続き回答待ち。
+
+## Business復旧の共通処理と採番保持（2026-10-07 JST）
+
+現行27 migrationの79業務表と採番状態をcapture/暗号化/空D1復旧する共通profileを
+追加した。Masterとbounded engineを共有し、既存Master format/APIは保持する。
+実local D1でevent1,001行・226 schema objectを83 statementで取得し、249 statementの
+単一batch復旧後に全hash/FK0が一致。招待消費1回、wake9/7、削除済みlicense incarnationと
+event/ledger最大IDを保持し、次のID9,001/101・実wake triggerも確認した。
+FK/constraintの実rollback、commit後ACK喪失の保持/再実行拒否も成功。
+
+Business native5件・Master互換native7件・Worker型検査・dry-run成功。通常Worker CIへ
+追加した。[契約](business-recovery.md)・[限定証拠](evidence/business-recovery-shared-local-2026-10-07.json)。
+招待browser候補9402f61のCI37637603237はアプリ/Worker両job成功。
+source行取得/remote write/追加mail/runtime配備0。全ストアcollector、運用鍵/off-host/
+retention/担当/失効方針と同一最終candidateの統合は残る。六項目の全体完了とは扱わない。
+実staging招待signup用の未登録受信先は回答待ち、実ユーザー/DNSは最後の別工程を保持。
+
+## 招待必須登録を実ブラウザーとlocal Workerで確認（2026-10-07 JST）
+
+現行アプリbuildとWorker、27 Business/4 Auth/8 Masterの分離local D1で、日本語の
+招待検証→登録→確認link→password login→dashboard→logoutを実Chromeで確認した。
+上流Resendだけを合成handlerにし、他のWorker/browser外向き通信を拒否。無効codeでは
+登録formを開かず、成功時はUUID command/Auth/profileの対応と消費1回を照合した。
+未確認login403・確認前後session0・login後1・logout後0、使用済みcodeの再登録拒否、
+本人API4経路200と全FK0も確認。応答を差し替えるAPI mockは使っていない。
+
+[再現コマンドと境界](invitation-signup-api.md#actual-local-browser-flow-2026-10-07)・
+[限定証拠](evidence/invitation-signup-local-browser-2026-10-07.json)。通常application CIへ
+このflowを追加した。esbuildはworkerd条件とnative AsyncLocalStorageを使い、browser用
+polyfillを含むbundleは拒否する。検証中の不足設定/誤ったbundleは受け入れず、最終試験
+では全画面APIに5xxなし、dashboardを視認した。owned browser/server/runtimeは停止済み。
+
+これはlocal flowの受け入れで、実stagingの招待必須signup/消費と実メール配信は未確認。
+読み取り専用の現在capabilityはsignUp/verification/reset=true、invitationRequired=false、
+4 provider公開を確認した。staging設定/実ユーザー移送/DNS/追加実mail/runtime配備0。
+実staging用の未登録受信先を問い合わせ済み。Master候補8397627のCI37634167828は
+アプリ/Worker両job成功。六項目の全体完了、最終candidateの統合とは扱わない。
+
+## Master復旧を共通化し、保存済み全Masterを照合（2026-10-07 JST）
+
+Master限定capture/暗号化/空target復旧を共通moduleへ移し、通常Worker CIへ7件の
+native local D1回帰を追加した。実batchのDDL/FK rollback、commit後ACK不明の保持、
+再実行拒否、inactive release・監査triggerを確認。別private processで保存済み全Master
+25表/12,254行/98 objectを新formatから復旧し、全hash・FK0・公開view件数が一致した。
+233 statementで復旧、28でreadback。保存時点のgeneration0を保持し、現stagingの
+generationや実Authを変更していない。[共通処理と境界](master-recovery.md)・
+[限定証拠](evidence/master-recovery-shared-full-local-2026-10-07.json)。
+
+前候補f0d94b9のCI37631765556はアプリ/Worker両job成功。今回はsource/remote read・write、
+mail・runtime配備0。担当/鍵/off-host/retention/全ストアcollector/失効方針と
+同一最終candidateの統合は残り、六項目の全体完了とは扱わない。
+
+## メールテンプレート管理のnative保存・再取得を確認（2026-10-07 JST）
+
+現行Worker17fdbf39と専用合成管理者の同じsession/verified factorで、Chromeの
+メールテンプレート管理から日本語magiclinkの件名・本文・ボタン文言を一時保存。
+改行・絵文字・placeholder・literalドル/ampersandを含む全入力値、更新時刻、監査がD1と一致し、
+通常reloadして同じタブを開き直したフォームも一致した。元の3項目はUIから保存し、
+exact復元行をpinしたguard付きcleanupでtestのupdated_atも元へ戻した。activeは不変。
+
+UI logout後、合成actor/settings/所有監査2行をexact削除。独立read-only processで
+元templateを含む既存全表hash・Auth3/7/2・Master25表・FK0・MFA世代+2とWorker不変を確認。
+合成資格情報も除去済み。[限定証拠](evidence/staging-email-template-admin-native-2026-10-07.json)。
+追加mail・runtime配備・secret/source/実ユーザー/DNS変更は0。magiclinkは管理catalogの
+種類で、現Better Auth callbackの送信対象はsignup/recoveryだけ。この試験はmagiclinkの
+実送信/ログインを受け入れるものではない。全体の六項目は未完了。
+
+## 通常ログインMFAと管理メール2通を受け入れ（2026-10-07 JST）
+
+候補dd9317bのCI37617933339はアプリ/Worker両job成功。通常`/auth`のメールログインを
+Chrome private windowで実行し、TOTP画面・検証前session0・検証後dashboardと
+同じsession/verified factorのMFA assuranceを確認した。誤コード/期限切れ等は
+実hook/Provider/SDKのローカル回帰8件とSDK契約15件の証拠で、native全ケースとは扱わない。
+
+専用合成管理者の管理画面から、明示承認済みの同じ検証アドレスへ管理reset1通と
+告知test1通を各一度送信。Resendの新しい2行がDeliveredで、resetのexact監査/verificationと
+告知のprovider message ID・宛先を含まないD1監査を照合した。reset linkは使用せず、
+既存passwordは変更0。告知下書きはdraftのまま、一括配信は無効のまま維持した。
+
+通常設定へ復元した現行Workerは`17fdbf39-99a5-4927-bf12-bc11e19b7c3d`（100%）。
+一時test変数を除去し、frontendの告知2操作はdisabled。既存binding/secretと公開asset6件、
+復元前後の全D1表hashは一致。配備直後のasset不一致は再配備せずreadbackで解消した。
+UI logout後に所有user/settings/告知draftと監査12行・verification1行をexact削除し、
+別read-only processで既存全表hash・Auth3/7/2・Master25表・FK0・MFA世代+2保持を確認。
+残った専用private sessionは所有userのcascadeで失効し、合成資格情報も除去済み。
+[実配備・nativeメール・cleanupの限定証拠](evidence/staging-main-auth-mfa-admin-mail-native-2026-10-07.json)。
+再seed/再送/再cleanupは不要。実ユーザー移送・公開domain/DNS・本番課金は未実行。
+招待必須signup/消費、Apple/Discord新規identity/relay、告知bulk/実署名通知、運用採用と
+同一最終candidate/実端末の統合は残件で、全体の六項目は未完了。
+
+## 招待コードのnative発行・切替・削除を確認（2026-10-07 JST）
+
+現行Worker471faabeで専用合成管理者の既存TOTPを検証し、Safariから未使用コード
+1件を発行。使用上限1回・無期限・JSON特典がD1と一致し、有効→無効→有効→無効の
+各更新日時が進んだ。再取得した一覧も一致し、全体の招待モードは保持した。
+本人が確認画面から完全削除し、成功toast・再取得後の空一覧・exact D1行の不在を確認。
+
+UI logoutでsession/assuranceを失効後、所有settings/Auth user各1件とcascade、空waitlist
+監査2行、通常signinに残ったMFA challenge/attempts2行をexact ID/metadataで除去。
+独立read-only processで既存全表hash・Auth3/7/2・Master25表・FK0・Worker不変を確認。
+正当なMFA世代+2は保持し、合成資格情報と入力ファイルを除去済み。再seed/再削除は不要。
+[限定証拠](evidence/staging-invitation-create-toggle-native-2026-10-07.json)。
+
+日本語の削除ボタンに欠けていたcommon.deleteを追加し、staging build成功、未配備。
+この管理画面の発行/編集/切替/削除は確認済み。招待必須でのsignup/消費、provider/mail/
+運用/最終統合は残件。追加mail・source write・実ユーザー移送・DNS変更は0、全体は未完了。
+
+## Auth保存ファイルのサイズ制限を保存・読込で統一（2026-10-07 JST）
+
+共通Auth復旧処理はopenだけ暗号文32 MiB上限があり、sealは読込できないサイズの
+ファイルを作成できた。GCM tag16 bytesを含む同じ上限をseal/openで共用し、sealは
+暗号化・JSON byte array展開の前にUTF-8サイズを確認、平文bufferを消去して拒否する。
+Node WebCryptoの合成確認ではUnicode超過とtagによる1 byte超過を暗号化呼出0で拒否し、
+小さいUnicode snapshotのseal/openが一致。native D1/SDK既存統合1 case・型/lint/diffも成功。
+[サイズ制限の限定証拠](evidence/auth-recovery-size-boundary-2026-10-07.json)。
+
+Macの実ロックをComputer Useが検出し、招待管理のnative作成/切替/削除は解除待ち。
+新しいfixture/remote row mutation/追加mail/設定変更は0。前候補d986a72の
+CI37485153008はアプリ/Worker両job成功。運用採用・全体の六項目は未完了。
+
+## Auth復旧を共通処理へ移し、明示失効方式を合成検証（2026-10-07 JST）
+
+`auth-d1-recovery.ts`へ9表のcapture/AES-256-GCM/空target復旧を切り出し、既存の
+native試験から共通処理を使用。明示session policyを要求し、選択した失効方式では
+session/MFA assurance/verificationを戻さず、他のcredential/factor/role/停止監査/
+generationを保持する。旧cookie/管理MFA拒否と実SDKの新規password/TOTPを確認。
+不正列の実transaction rollback、migration ledgerだけのtarget拒否、実commit後に
+応答を失ったtargetの保持/盲目的な再実行拒否も確認した。native統合1 case・型/lint/
+workflow isolation成功。これは運用policy採用・定期/off-host collector有効化ではない。
+[限定証拠](evidence/auth-recovery-shared-local-2026-10-07.json)。
+
+source対応表は現在の登録/Resendと既存Google/GitHub・メール受け入れへ補正。
+8旧ordinary RPCのbounded direct caller不在を記録したが、外部利用は未確認のまま。
+全58 metadata/linkageと13試験は一致し、54分類pending/full-runtime/converter=falseを保持。
+追加mailは新たな2通の許可待ち。今回のremote write/実ユーザーexport/移送・DNSは0。
+全体の六項目は未完了。担当/鍵/off-host/retention/失効方針の既存質問は回答待ち。
+
+## 無効な招待コードのnative編集を確認（2026-10-06 JST）
+
+現行Worker471faabeで専用合成管理者の既存TOTP/MFAを確認し、Safariの招待管理から
+専用の無効コード1件を編集した。使用可能回数10→1と検証用JSONメモを保存し、
+更新toast・D1の正確な値・再読み込み後の一覧・開き直したフォームが一致した。
+コード文字列・未使用0件・無期限・無効状態、全体の招待モードは保持した。
+発行/有効化/招待signup/メール送信は実行していない。
+
+UI logout後、所有するcode/settings/Auth user各1件とcascadeを除去。招待画面が
+同時に空のwaitlistを読むことで生じた管理監査2件も、本人UUIDとaction/resource/
+timestamp/metadataをpinしてexact IDだけ除去した。別read-only processで既存全表
+hash・Auth3/7/2・Master25表・FK0・Worker不変を確認。正当なMFA世代+2は保持し、
+合成資格情報と入力ファイルを除去済み。[限定証拠](evidence/staging-invitation-edit-native-2026-10-06.json)。
+
+招待管理の編集操作を受け入れた。発行/有効化/削除、招待必須でのsignup/消費と
+他の管理画面・provider/運用採用/実端末/最終統合は別の条件。全体は未完了。
+
+## 登録・メール設定の古い未設定記述を補正（2026-10-06 JST）
+
+現行Worker471faabeのread-only設定metadataと`GET /api/auth/capabilities`を照合した。
+D1 signup、Resend、D1メールtemplateとResend secret bindingがあり、signUp/
+emailVerification/passwordReset=true、invitationRequired=false、4 providerを公開する。
+招待関連文書の「資格情報/selector未設定で登録閉鎖」は初期checkpointの記録だった。
+現在の設定と既存の実メール受け入れへ結び直し、再設定待ちとして扱わない。
+[現在の限定証拠](evidence/staging-invitation-capabilities-current-2026-10-06.json)。
+
+今回の登録/コード検証/追加mail・設定変更は0。広告されたcapabilityを新規provider
+登録や招待必須での実消費の証拠に拡張せず、その残件と全体未完了は保持する。
+
+## 手動通知作成から受信・既読までを実Safariで受け入れ（2026-10-06 JST）
+
+現行Worker `471faabe-3aff-4312-ba22-cd326dc821e1`を保持し、専用合成管理者の
+既存TOTP/MFAで通知管理へ入り、手動送信画面から`license_grace_started`を一度だけ作成。
+宛先は本人の合成UUID、配信ruleは既存のin-app/遅延0の1件で、masterは変更しない。
+入力pasteの競合報告後は、画面のJSON全体が準備したpayloadと一致することを確認して
+送信した。nativeの作成toastとexact event receipt、source=admin_manualを照合した。
+
+通常POSTのpostcommit wakeから実processorが約2秒後にevent processed/in-app deliveredを
+記録した。保存title/body/summary/metadataが一致し、手動wake/定期処理呼出/状態変更は0。
+イベントログはprocessed、配信ログはUIの更新ボタンで本人の短縮ID/in_app/deliveredを確認。
+同じSafariの通知メニュー・受信一覧は本文と日時を表示し、個別既読/read_via=appも一致した。
+これは手動の合成イベントであり、実ライセンス期限切れの発生証拠には使わない。
+
+UI logout後、所有する通知/event/settings/Auth user各1件とAuth cascadeを除去。
+別のread-only processで既存全表row hash、Auth3/7/2、Master25表、FK0を保持した。
+正当なMFA世代+2とwake世代+1/ack一致は残し、世代を巻き戻さない。合成password/TOTP、
+入力ファイルと操作セッション内の認証情報も除去済み。再seed/再submit/再runnerは不要。
+[限定証拠](evidence/staging-notification-manual-native-2026-10-06.json)。
+
+配備/secret変更、追加mail、実ユーザー移送、DNS変更は0。他の管理画面、実provider新規登録、
+外部配信、運用採用と実端末/最終統合は残る。六項目全体は未完了。
+
+## 通知管理のルール切替・テンプレート編集を実Safariで受け入れ（2026-10-06 JST）
+
+現行Worker `471faabe-3aff-4312-ba22-cd326dc821e1`を保持し、専用合成管理者1件の
+既存TOTPを`/admin`で検証。同一session/factorのMFA assuranceをD1で確認した。
+`AdminNotificationManager`から専用rule1件を有効→無効へ切り替え、各`updated_at`が
+進んだ。専用日本語in-app template1件のtitle/body/summary/activeを保存し、D1の
+正確な値と、UIの「更新」後に再表示した編集フォームの全入力値が一致した。
+本文の絵文字・`{{fanmark_name}}`・literal `$&`も保持した。
+
+初回の通常signinで残った合成MFA challenge/attempts2行をfixtureが除外しておらず、
+保持チェックは一度失敗した。SDKの識別子/value/同じ期限/作成日時で所有を確定し、
+exact2 IDだけをpinして再照合した。全verification行を除外する緩和は行っていない。
+UI logout後、専用rule/template/settings各1件とAuth user/所有cascade・上記2行を除去。
+独立read-only processで既存全表row hash、Auth3/7/2、Master25表、FK0を保持した。
+MFA世代の正当な+2は残し、wake世代とWorker versionは不変。合成password/TOTP secret、
+UI入力ファイルと操作セッション内の認証情報も除去済み。再seed/再runnerは不要。
+[限定証拠](evidence/staging-notification-admin-native-2026-10-06.json)。
+
+この管理画面の編集操作は受け入れ済み。通知送信UI・他の管理画面、provider新規登録、
+運用採用と実端末/最終統合は別の残件。配備/secret変更、追加mail、実ユーザー移送、
+DNS変更は0。六項目全体は未完了。
+
+## 4言語のアプリ内通知を実Safariで受け入れ（2026-10-06 JST）
+
+現在のWorker `471faabe-3aff-4312-ba22-cd326dc821e1`（runtime bdc23da）を保持し、専用合成account1件に
+JA/EN/KO/IDの通知を各1件配信。payload.languageを与えず本人profileの優先言語を
+APIで変更し、D1 pending INSERTと通常sign-outのpostcommit wakeから実processorへ通した。
+各event processed・in-app delivered・正確なtitle/body・literalの$&とJSONB object表記が一致。
+同じSafariのreload後は画面の言語も一致し、本文表示・個別既読・read_via=appを確認した。
+一覧はbodyを表示する仕様で、titleは保存payloadの照合である。
+
+UI logout後、所有する通知4/event4/rule1/template4/settings1/Auth account1/user1を除去。
+独立read-only processで既存全表の全row hash、Auth3/7/2、Master25表、FK0を保持。
+wake世代の正当な+4とack一致を残し、世代は巻き戻さず、合成passwordを除去した。
+最初のprepare引数はimported旧runnerの既存journal guardでexit1となったが、
+旧runnerはmutation前に停止し、目的fixtureは準備済み。別processで保持を再確認し、
+引数はseed-ownedへ変更した。再seed・完了runner再実行は不要。
+[限定証拠](evidence/staging-notification-locales-native-2026-10-06.json)。
+
+配備/secret変更、追加mail、本番Stripe、実ユーザー移送、DNS変更は0。
+曖昧な複数channel・import codec/任意精度・外部caller、他event発生元と外部配信、
+実スマホ/standalone・全言語/全フローの最終確認は引き続き別条件。全体移行は未完了。
+
+## 有料退会の実Safari・実解約通知・後片付けを受け入れ（2026-10-06 JST）
+
+専用合成accountの最終削除を本人許可後に一度だけ実行し、Stripe test購読の即時解約/200、
+Auth関連行0、業務profile/購読0、無期限Tier Cのgrace返却/所有者NULL、退会監査1件を照合。
+設定2行はgrace期間中に保持する仕様で、同じSafariの/dashboardは/authへ戻った。
+同じSafariの通常reload/既存Checkout成功URL/Creator表示も受け入れた。
+Macロック中のPWA自動更新・実スマホ/standalone更新は未証明。
+
+退会後の署名解約通知が削除済み設定を要求する不具合を修正した候補bdc23daは、
+CI37456809494の両job成功後、Worker 471faabe-3aff-4312-ba22-cd326dc821e1へ100%配備。
+関連Webhook79/79（購読22）、typecheck/lint成功。秘密/設定/全公開asset6件を保持した。
+専用通知のavailable_atだけを一度早め、試行回数・generation・terminal状態は変更せず、
+実毎分Cronによる同じ署名通知のignored/completed・errorなし・fence解放を確認した。
+退会監査/過去applied同一購読/Stripe現在canceled・有効購読0の厳格一致を要求し、
+本人projectionを再作成しない。これは運用者による待ち時間短縮を含む受け入れである。
+
+所有する3監査/4receiptと関連台帳/command/fence/ファンマ/設定だけを後片付けした。
+別のread-only credentialによる全表照合で既存全row hash、Auth3/7/2、Master25表、FK0を保持。
+再利用防止のlicense incarnation tombstoneは+1で残し、既存MFA/wake世代は巻き戻さない。
+private journalはverified_and_cleaned。削除済み合成passwordとui-credentialsを除去。
+再seed/再Checkout/再Delete/完了runner再実行は不要。
+[受け入れの限定証拠](evidence/staging-native-paid-deletion-accepted-2026-10-06.json)。
+
+有料退会のこの経路は完了。六項目全体はopenで、source/外部caller/4 converter group、
+Apple・Discord新規/relay、告知UI/実通知/bulk、運用条件、同じ最終candidateの実スマホ・
+対応言語・旧PWA・障害復旧の通し確認が残る。実ユーザー移送とDNS/domainは最後の別工程。
+本番Stripe、追加mail、実ユーザー移送、DNS変更は0。全体移行は未完了。
+
+## Prior checkpoint: 有料退会の実Safari確認・解約通知の修正（2026-10-06 JST）
+
+Mac解除後、同じSafari private windowで通常reloadと既存Checkout成功URLの表示が成功し、
+Creatorを確認した。queryはアプリの既存処理が消費した。解除中のPWA自動更新は未証明。
+本人の明示許可後、専用合成アカウントの最終削除を一度だけ実行した。
+Stripe test購読の即時解約と200応答、guest画面、本人Auth関連行0、業務profile/購読0、
+無期限Tier Cのgrace返却・所有者NULL、退会監査1件、FK0を照合した。
+graceでは設定2行を保持し、expiredで削除する仕様に一致する（即時削除を要求しない）。
+
+実customer.subscription.deleted通知が、削除済みuser_settingsを要求して再試行になる
+不具合を発見した。退会監査の厳格な一致・過去の同一customer/subscription/modeのapplied記録・
+Stripe現在canceled/有効購読0を確認した場合だけ、projectionを再作成せずignored/completedとする。
+監査/所有関係/fenceを同じtransactionで再確認し、通知・dispatch・fence解放の欠落はrollbackする。
+既存通知をSQLで完了扱いにせず、fixed runtimeの自然dispatchで確認する。
+
+旧コードでは追加regressionが失敗。修正後の関連Webhook79/79（購読22件を含む）、
+Worker typecheckとfocused lintを通過。CI・staging修正配備・同じ解約通知の完了・
+exact-owned cleanup/独立保持照合はこのcheckpointでは未受け入れ。
+[実退会と修正の限定証拠](evidence/paid-deletion-cancellation-regression-2026-10-06.json)。
+実ユーザー移送・DNS/domain・本番Stripe・追加mailを行っておらず、全体移行は未完了。
+
+## Prior unit: Safari復帰修正のstaging配備完了・Mac解除待ち（2026-10-06 JST）
+
+候補ac0ac670405a766f0eebcc9d122d97b1ce1407c8のCI37452793228は両job成功。
+Worker d71e54b5-dc6f-4b0b-b92e-bf75b698d8e4へ100%配備し、root/index/checkout成功routeの
+直接200・Locationなし、root HEAD、欠落script404、公開asset6件のbytes/hashを照合した。
+既存bindings/秘密設定/全Business・Auth・Master表hashは配備前後で保持し、broadcastはdisabled。
+
+同じ合成paid fixtureのCreator/active test subscriptionに加え、Stripe管理画面の有効表示を確認。
+customer.subscription.createdとinvoice.payment_succeededはapplied、checkout.session.completedは
+契約どおりignored、errorなし。receipt3/dispatch3と適用ledger/購読projectionを同じcustomer/subscriptionへ
+pinした。別read-only processでfixture以外の全既存表hash保持・FK0を照合した。
+[配備と限定証拠](evidence/safari-static-shell-staging-deployment-2026-10-06.json)。
+
+同じSafariの通常reloadを試す直前、CUAはMac lockedを返し操作を実行できなかった。
+Mac解除をユーザーへ依頼済み。同じprivate window、合成session/paid subscription/Tier C/profileを保持する。
+同じSafariの復帰・戻り先query/Creator UI、有料退会、exact-owned cleanupは未受け入れ。
+再seed/再Checkout/再配備せず、解除後は現在のSafari windowから続ける。
+実userdata移送・domain/DNS・本番Stripe・追加mailは実行していない。全体移行は未完了。
+
+## Prior unit: Safariのテスト決済復帰エラー修正・CI/配備待ち（2026-10-06 JST）
+
+同じ合成account/Checkoutに公開test cardでsandbox申込を行い、Business D1でCreator/active
+subscription1件を確認した。戻り先SafariはService Workerのredirect応答でページを開けず、
+通常reload/二度目の申込で隠していない。元Worker d437の/index.html=307→/を独立観測し、
+redirectを自動追跡していた旧HTTP smokeの穴を修正した。修正前の実Wranglerは307≠200で失敗。
+
+両Assets configのhtml_handling=noneとroot GET/HEADの明示HTML fallbackを追加。
+route/queryを保ち、API/欠落script境界は維持する。stagingだけstatic cache v2へ更新し、
+既存Safariの旧HTML cacheを使い回さない。default buildのcache namespaceは変更しない。
+修正後の実Assets binding19/19・outer Wrangler HTTP smoke、両typecheck・focused lint、
+CIと同じ空env/合成値のstaging build・生成PWA cache境界を通過。JSは既存UQpaFrj8のまま。
+[修正と限定証拠](evidence/safari-static-shell-redirect-regression-2026-10-06.json)。
+
+現時点では新候補CI/配備/同じSafariの復旧は未受け入れ。有料退会も未実行。
+private paid-deletion journalはnative_test_checkout_submitted_waiting_readback。
+同じtest customer/subscription/Tier C/profile/合成sessionを保持し、再seed/再Checkoutをしない。
+次はexact候補CI成功→元全表hash/設定/secret保持guard→staging配備→直接HTML/新SW照合→
+同じSafariの更新・戻り先query/Creator画面確認→退会review→exact-owned cleanup/独立照合。
+実ユーザーの移送、domain/DNS、本番Stripeと追加認証/告知mailは対象外。
+
+## Prior checkpoint: 有料退会UI向けCheckout準備（2026-10-06 JST）
+
+Worker d437と全既存Business/Auth/Master表hashを保持し、合成account1件を作成。
+実signin/register APIで無期限Tier Cの🧴🧬🧿🛰️とprofileを1件作成し、準備sessionを失効。
+別のSafari private windowで本人用とは別の合成accountに実ログインし、保有1/3・C/無期限を確認。
+プラン画面のCreator変更から、実配備APIが作成したStripe sandbox Checkoutへ進んだ。
+対象acct_1SFjhvJk0VCfiKUpのlivemode=falseをStripeのread-only WebMCPで確認した。
+
+公開テストカード4242、expiry12/30、CVC123、合成名だけを入力し、情報保存はoff。
+¥1,000/月の「申し込む」は未クリック。申込・実subscription/署名反映・有料退会は未受け入れ。
+D1の同じuserのtest customer/checkout command各1、status=session_created、plan=freeと
+subscription0をread-onlyで照合。全既存表hash/FK0とWorker versionを保持した。
+この節はテスト申込前の初期checkpoint。後続のsandbox申込結果は最新unitを参照。
+[準備の限定証拠](evidence/staging-paid-deletion-checkout-preparation-2026-10-06.json)。
+
+private journalは`/Users/kanouk/.codex/fanmark-migration-private/paid-deletion-native-2026-10-06/journal.json`。
+state=waiting_for_human_test_checkout_submission。所有fixture/合成session/Stripe test customerと
+Checkoutは保持している。本人操作前にcleanupせず、prepare/capture runnerを再実行しない。
+次は同じCheckoutの本人申込後に同じcustomer/subscription/署名receipt・Creator投影を確認し、
+有料退会画面を用意して不可逆削除/解約の本人操作へ渡す。その後Tier C返却/設定削除/監査/
+全Auth cascade・cookie失効とexact-owned cleanup/独立保持照合を行う。
+コード/配備/設定/秘密更新/実userdata/DNS変更0。文書・証拠は未commit/未push。
+
+## Prior unit: 新規管理者MFA登録の実Safari受け入れ（2026-10-06 JST）
+
+Worker d437を保持し、使い捨ての合成管理者1件だけを作成した。
+Safariのprivate windowで実ログイン後、本人が認証アプリの設定と6桁コードの確認を完了。
+実管理ダッシュボードと、Auth D1のtwoFactorEnabled=1・verified factor1件・現在generationの
+同一session/factorに紐付く期限内MFA assurance1件を照合した。factor登録をAPIで代替していない。
+先に用意したprivate windowが閉じられていたため、同じaccountで開き直した。
+
+UI logout後、認証済みsession/assuranceの失効を確認し、receiptで所有を確認した
+合成Auth/Business行だけを削除。開き直す前の残存sessionも同じ合成userのcascadeで削除した。
+別のread-only processで所有行0、全既存Business/Auth/Master表hash保持とFK0を照合。
+MFA generation242→243→244を保持し、巻き戻していない。private passwordはcleanup後に除去した。
+Worker/runtime/設定/secret変更0、追加mail0、実userdata移送0、domain/DNS変更0。
+[限定証拠](evidence/staging-admin-mfa-enrollment-native-2026-10-06.json)。
+
+新規MFA登録UIのこの残件は受け入れ済み。有料退会UI、Apple/Discord新規登録・relay、
+実スマホ/最終統合、外部callerと運用採用の未回答は保持する。六項目全体は未完了。
+最新配備sourceは既存d437、候補cc87e8fのCI37424652271は両job成功。
+今回の変更は証拠・文書だけ。旧MFA challenge/mail証拠のuiEnrollmentAccepted=falseは当時の範囲。
+完了済みprivate journal/runnerを再実行せず、同じ試験を目的なく繰り返さない。
+
+## Prior unit: バックアップ運用と受け入れ済み復旧の区別（2026-10-06 JST）
+
+リポジトリのsource exporter/encryption/R2 canary/importerと保存一式復旧証拠を監査した。
+[backup-operations.md](backup-operations.md)に用途・二つの保存形式と残る運用条件を整理。
+snapshot-export-design.mdの「credential writer未実装」、d1-import.mdの「remote一式未受け入れ」、
+full-master-recovery.mdの「combined未完了」という現在の状態と食い違う説明を修正した。
+historical証拠/未説明gate/運用未採用を成功へ書き換えない。
+
+定期Cloudflare collector/scheduler/off-host/retention/運用鍵とAuth失効方針は未採用。
+専用R2への合成往復canaryを運用ジョブと扱わず、private一式復旧runnerを再実行しない。
+既存の運用条件・外部caller・本人操作の質問は回答待ち。追加mailは許可されていない。
+今回の変更は文書だけ。新規test/remote資源/main変更/メール/userdata/DNS変更は0。
+PWA文書候補45e5a56のCI37423580863は両job成功を照合済み。今回の文書更新でruntime sourceは変更しない。
+
+## Prior unit: 旧PWAから現行frontendへのローカル更新確認（2026-10-06 JST）
+
+旧source c077fbfと候補5d616cb（CI37421614544両job成功）を同じ使い捨てlocalhost URLで配信した。
+旧Supabase clientのURL/keyだけを合成のローカル入力へ置換し、旧SW設定を保持。
+現行335 sourceファイルは変更0、旧231ファイルはこのclientだけ変更1。
+Vite/PWA/Workbox/Reactの旧・現行lockと実installed versionは一致する。
+現在のcatalog3944だけを読み、Auth/業務APIは合成応答/拒否として実サービスへ転送しない。
+旧API cacheはfixture UIで合成値を入れたもので、Supabase network requestの結果ではない。
+状態表示probeをReact root外へ挿入し、CUAの実in-app browserで操作/DOM確認した。
+
+旧SWのactive/control/旧main precacheとsupabase-cacheを確認後、同じ登録へのupdateで
+自動reloadし、現行mainとprecacheへ更新した。supabase-cacheは削除され、無関係な
+合成cacheと保存済み合成設定は保持。未保存DOM入力はreloadで失われた。
+現行画面はfixtureのmaintenance API欠落時に停止表示した。合成の正常設定DTOを
+追加し、通常reload後に現行/pwa検索画面を確認。製品の安全側の制御は変更しない。
+fixture SW登録/cache/owned設定キーを削除し、所有tabと二つのserver processを終了した。
+mainは既存version d437のGET readbackのみ。DB/配備/secret/メール/userdata/DNS変更は0。
+
+[限定ブラウザー証拠](evidence/pwa-legacy-update-local-2026-10-06.json)。
+これはローカルの旧→現行PWA protocol確認であり、実ユーザーのインストール済みPWA、
+実スマホ/standalone、全言語/全フローの最終確認は未受け入れ。六項目全体は未完了。
+
+完了済みprivate proof/画像:
+`/Users/kanouk/.codex/fanmark-migration-private/pwa-legacy-update-2026-10-06`。
+setup/build/server/proof runnerを再実行しない。所有tab7/両serverと登録/cacheは整理済み。
+MacロックをCUAで再確認。既存の本人操作/運用条件/外部callerの質問は回答待ち。
+追加mailは許可されていない。次は未完了六項目を確認し、同じ合格試験を目的なく再実行しない。
+
+## Prior unit: 現行27 Businessでの保存bundle一式復旧（2026-10-06 JST）
+
+コード候補5e037d0/CI37418737512両job成功版と、文書だけ異なる022a0d4を照合した。
+文書候補022a0d4のCI37420051154も両job成功。
+同じ暗号化保存bundle v2から、別incarnationの2組の新規3 D1/2 R2/専用Workerへ
+全Master25表/12,254行/98定義、合成Auth9表/16行/30定義、業務40表/15行とPNG2件を復旧。
+各Business targetの全27 migrationとschema定義が現行runtime profileへ一致した。
+全Master/Auth列hash・定義/FK0、正確な保存40 stream、credential commit後中断再開、
+R2 replay/画像bytes、実SDKのsession/password/TOTP/backup/停止拒否、本人profile/3所有一覧、
+画像GET・HEAD、catalog3944/参照Master4/4/5/16、単一wake1/0を確認した。
+所要132917/310412msはone-off値で、本番RTOではない。2組目は同名Worker再作成後のprivate
+identity確認に失敗したため、正確な所有資源/version/bindingを再照合し、同じ一時Workerの
+recovery gateだけを同じ権限で更新して再開した。初回HTTP応答/根本原因は未記録のため断定しない。
+2組目の所要時間にはD1作成開始から、この再開とアプリ確認までを含む。
+初回失敗と再開記録を保持し、スキーマ/データ復旧をやり直していない。
+
+全所有資源をexact receiptで削除。独立2026-10-06T06:01:29.711Zの読み取りで
+元D1/R2/Worker inventory、main全表hash/count/FK0、Auth3/7/2とWorkerd437を保持した。
+main DB書込・配備/secret変更・追加メール・実ユーザー移送・DNS変更は0。
+[現行27の限定復旧証拠](evidence/full-combined-file-remote-recovery-v27-2026-10-06.json)。
+
+これは現在のschemaでの合成一式復旧の受け入れであり、source converterの4 blocking groups、
+運用鍵/off-host/retention/失効方針の採用、本人操作と実スマホ・provider・最終統合の六項目は残る。
+以前の25 Businessの証拠は当時の結果として保持し、書き換えない。
+
+完了済みprivate journal/readbackは
+`/Users/kanouk/.codex/fanmark-migration-private/full-combined-remote-recovery-v27-2026-10-06`。
+完了runnerを再実行しない。既存の本人操作/運用条件/外部callerの質問は回答待ちで、重複して質問しない。
+
+## Prior unit: optional manual counterpart linkage with fresh source metadata (2026-10-06 JST)
+
+source-runtime-review.mjs accepts --counterparts and links every source signature/
+definition/result/language/security/volatility/binding count to the complete manual
+trace. Stale fingerprint or attributes, missing/duplicate/incomplete/oversized
+rows, approval-bearing traces and trace/output aliases are refused. Report stores
+only correspondence hashes.13 focused tests and eslint passed; frontend semantic
+map checks2/2 passed after correcting stale broadcast delivery prose.
+
+Fresh catalog-only04:15:10.854785Z from fixed projectppqgtbjykitqtiaisyji retains
+58 functions/37 bindings/four unbound trigger definitions and prior fingerprint.
+CLI with the historical complete trace links58/58 with missing0.54 pending
+semantic reviews, fullRuntimeReconciled=false and converterDeployable=false
+are preserved. The correspondence's historical feature acceptance dates are
+not updated by source hash agreement. No stored function invoked, user/Auth
+row read, main deployment or source write performed.
+[Bounded proof](evidence/source-runtime-counterpart-linkage-2026-10-06.json).
+Private query and linked report:
+`/Users/kanouk/.codex/fanmark-migration-private/source-runtime-counterpart-refresh-2026-10-06`.
+Raw definitions stay private0600; reports do not expose source bodies or prose.
+
+Mac remains locked by current CUA observation; existing unlock question was
+not duplicated. Remaining runtime/provider/operations/phone/final requirements
+are unchanged. Real-user data/domain remain deferred and no further email is
+approved. Full saved-file D1/R2 recovery below is already accepted; do not replay it.
+
+## Prior unit: complete saved bundle recovered in two real D1/R2 targets (2026-10-06 JST)
+
+Exact candidate dcb0127/CI37410960675 passed both jobs before creation. The same
+v2 archive recovered full Master25/12254/98, synthetic Auth9/16/30 and Business
+40/15 plus two PNGs into two distinct owned3 D1/2 R2/Worker incarnations.
+All hashes/definitions/FK, saved40 streams, committed-credential interruption/
+resume, R2 replay and actual SDK/application checks passed. Original session/
+unexpired assurance/password/TOTP/backup replay/suspension and owner profile/
+all3 fanmarks/linked image GET/HEAD, catalog3944/reference4/4/5/16 passed.
+Durations145407ms/105809ms include restoration/application checks, not production RTO.
+Exact receipts deleted both resource sets. Independent04:06:55.383Z preserved
+original D1/R2/Worker inventory, main all-table hashes/FK0/Auth3/7/2 and Worker8c.
+Main D1/Worker used RO monitor; R2 inventory used verified canonical OAuth GET only.
+No main writes/deploy/secret changes, real-user migration, DNS or extra email.
+[Bounded proof](evidence/full-combined-file-remote-recovery-2026-10-06.json).
+
+Completed private journal and independent-readback.json:
+`/Users/kanouk/.codex/fanmark-migration-private/full-combined-remote-recovery-2026-10-06`.
+Do not replay completed exclusive runners or recreate deleted resources.
+Source v2 archive remains unchanged. Remaining six-package conditions include
+converter4 groups, operational custody/offhost/retention/revocation adoption,
+providers/UI/actual phone and final review. Mac unlock question stays pending.
+No additional email permission; real user data and domain remain deferred.
+
+## Prior unit: full combined saved-file recovery accepted in two local native targets (2026-10-06 JST)
+
+Codee381075b48e50a32a5862793f7c89f72daf2917b adds a temporary guarded full-bundle
+Worker with five passing native checks and normal CI coverage. CI37410033281 is
+confirmed completed/success in both jobs. No remote combined resources have
+been created yet. Previous docs dab139b/CI37409008426 completed both successfully.
+
+Saved full bundle v2 recovered into two distinct local native incarnations: full
+Master25 tables/12254 rows/98 definitions, Auth9 nonempty tables/16 rows/30
+definitions, Business40 source tables/15 rows, two linked PNGs. Original three-user
+Auth fixture is preserved; a fourth synthetic credential owner joins Business.
+Business fixture's3 emoji IDs match actual full-Master IDs. Exact saved manifest/
+catalog/schema-report/40 streams are retained, never regenerated with a new run ID.
+All Master/Auth definition/column hashes and FK0, Business source streams and
+primary committed-credential interruption/resume, R2 import/replay/GET/HEAD/bytes/
+MIME/keys, full3944 catalog and single wake1/0 passed. Actual SDK original-session/
+unexpired assurance/logout/TOTP/backup replay/suspension checks and exact Business
+owner signin/profile/all3 owned fanmarks/linked images/logout passed in each target.
+Durations108759ms/105409ms include restoration/application checks, not production
+RTO. Both native runtimes disposed; source archive unchanged. Independent03:46:28Z
+RO process preserved all original archives/three-user Auth rows, main all-table
+hashes/FK0, Auth3/7/2 and Worker8c. No cloud resources created.
+[Procedure](full-combined-recovery.md) and [bounded proof](evidence/full-combined-file-native-recovery-2026-10-06.json).
+
+Private completed source:
+`/Users/kanouk/.codex/fanmark-migration-private/full-combined-file-recovery-2026-10-06-v2`
+contains archive/keys (separate directories), reports/source.json and completed
+reports/native-v3/journal.json + independent-readback.json. Do not replay exclusive
+source preparation/native runners. Reuse archive/full.aesgcm for remote. Private
+`full-combined-file-fixture.mjs` exports reopen/openMaster; use pinned Node22.6.0
+with --experimental-strip-types and a saved entrypoint. Current facade uses the
+saved Auth control.origin; its old individual-rehearsal Worker was deleted.
+
+First local attempt stopped at the storage importer's report_outside_export guard;
+native-v3 uses the required report inside reopened-storage-v3. The first prepared
+v1 envelope omitted exact business files; completed v2 contains all44 files.
+Neither attempt created cloud resources. Mac unlock request remains pending.
+Remote full-bundle recovery, operational keys/retention/revocation, providers/UI/
+phone and the six-package completion remain open. No additional email permission.
+
+## Prior unit: complete saved synthetic Auth file recovered into real D1 and Worker (2026-10-06 JST)
+
+Code159f5c1 / CI37407917794 both jobs successful. Saved v3 AES-GCM archive was
+reopened after its original runtime was disposed and restored into one newly
+created isolated D1. All9 nonempty tables/14 rows/30 schema objects/full columns
+and hashes matched with FK0 and no SQL normalization. Restore/full target hash
+verification1144ms, excluding creation/deploy/SDK behavior/cleanup/operator work.
+An existing target was refused before writes. The guarded temporary Worker used
+the actual application router and matching synthetic SDK secret. Exact D1 UUID,
+origin/incarnation/bindings/secret names and100% version were verified first.
+
+The saved session/then-unexpired same-factor assurance worked; logout revoked
+session/assurance and stale cookie. Original password/TOTP login and backup-code
+consumption/replay refusal passed; backup code alone did not authorize admin.
+Wrong password, unverified email and suspended user were refused. Signup/factor
+enrollment/deletion/generic SQL remained closed. Archive bytes stayed unchanged.
+Both owned resources were deleted by exact receipts. Independent03:24:35.917Z
+read-only process matched original D1/Worker inventory, all main Business/Auth/
+Master table hashes/FK0, original Auth3/7/2 and Worker8cbe1e5f unchanged.
+[Bounded remote proof](evidence/synthetic-auth-file-remote-recovery-2026-10-06.json).
+
+Private completed journal/readback:
+`/Users/kanouk/.codex/fanmark-migration-private/synthetic-auth-file-remote-recovery-2026-10-06`.
+Do not replay exclusive-create runners or recreate deleted targets. Archive/keys
+remain private in source v3; no real Auth export, existing DB write, main Worker
+configuration, R2, DNS or additional email operation occurred. Real operational
+key custody/off-host retention/revocation policy, final combined recovery and
+the other six-package conditions remain open. Mac unlock request is still pending.
+
+## Prior preparation: saved synthetic Auth file and guarded entrypoint (2026-10-06 JST)
+
+All9 nonempty Auth tables/14 rows/30 objects were saved with AES-GCM, source
+runtime disposed, then decrypted/recovered into a new native D1.45-statement
+restore matched all table hashes/objects/FK0. Actual original session/logout,
+password+TOTP, backup consumption/replay and unverified/suspended refusals passed.
+Wrong keys/schema/tamper and existing target refused before writes. Archive stayed
+unchanged. Wrapper five native checks pass; no remote resource created yet.
+See synthetic-auth-recovery.md and evidence/synthetic-auth-file-local-recovery-2026-10-06.json.
+
+Private source v3 preparation/local-file-proof completed; do not replay them.
+Archive/keys are separate private subdirectories under
+`/Users/kanouk/.codex/fanmark-migration-private/synthetic-auth-file-recovery-2026-10-06-v3`.
+The isolated remote run above used these saved files after exact-candidate CI.
+Earlier stdin-launched local preparations stalled before application DB creation;
+owned processes were cancelled, no cloud resource or archive was created. Use a
+saved entrypoint file and pinned Node22.6.0 for native Miniflare preparation.
+Mac unlock remains pending. Operational keys/retention and final combined/full
+six-package acceptance remain open.
+
+## Latest unit: full saved Master archive recovered into real isolated D1 (2026-10-06 JST)
+
+Code801dc78 / CI37405218853 both jobs successful. Corrected v3 run restored the
+saved AES-GCM archive into an exact-receipt-owned D1:25 tables/12254 rows/all table
+hashes/FK0 and98 objects matched after only six explicit body BEGIN corrections.
+Actual app readers returned3944 emojis and reference4/4/5/16. Restore/target
+verification27161ms. Target deleted; independent02:52:38.154Z RO readback preserved
+all Business/Auth/Master hashes, original3-DB inventory and Worker8cbe1e5f.
+No source/Supabase user migration, existing DB writes or runtime/R2/DNS change.
+See full-master-recovery.md and evidence/full-staging-master-remote-recovery-2026-10-06.json.
+
+Private v3 directory `full-master-remote-recovery-2026-10-06-v3` is completed;
+do not replay the runner or recreate deleted targets. Remote full Master proof is
+accepted. Atomic operational snapshot, off-host/durable key custody/retention,
+owner/RPO-RTO, operational Auth revocation/combined recovery and the other package conditions
+remain open. Mac unlock request is pending; six-package goal remains active.
+
+## Latest unit: isolated REST trigger preparation (2026-10-06 JST)
+
+Full remote Master restore reached rows but failed at the final trigger batch.
+A schema-only remote probe established the lowercase `begin` REST splitter bug:
+original/semicolon forms failed, uppercase body BEGIN succeeded, and all58
+triggers/all98 schema objects then matched that explicit correction. Owned D1 was
+deleted; separate RO process verified all Business/Auth/Master hashes, FK0,
+Worker8cbe1e5f and original three-DB inventory unchanged. New opt-in helper
+`d1-rest-trigger-sql.mjs` preserves all other SQL bytes, with12/12 native/transport
+regressions. Full corrected remote data restore remains open; no runtime deploy.
+See full-master-recovery.md and evidence/d1-rest-trigger-casing-2026-10-06.json.
+
+# 2026-10-05 認証メール設定をstagingへ配備
+
+## Synthetic full Auth snapshot and actual login recovery accepted locally (2026-10-06 JST)
+
+The new `npm --prefix workers/api run test:auth-recovery:d1` applies all4 current
+Auth migrations and makes every one of9 tables nonempty. Three synthetic users/
+four accounts include real bcrypt hashes, a linked synthetic Google token record,
+SDK-enrolled TOTP/encrypted backup codes, session/exact-factor assurance, generation,
+role, suspension audit and verification marker. AES-GCM JSON serialization/decryption
+then restores to a distinct local D1. All schema objects/full row columns and FK0
+match; original source stays unchanged. Indexes/triggers are restored after data
+in the single deferred-constraint batch to avoid replaying factor mutation effects.
+
+Actual Worker requests verify restored-session MFA/logout/stale-cookie refusal,
+fresh login with the original password and TOTP, backup-code login/consumption/replay refusal, and wrong
+password/unverified/suspended refusals. Backup-code login alone correctly does not
+grant the current TOTP-bound admin assurance. Wrong archive key/schema/SDK secret/
+modified ciphertext and existing target are refused before relevant writes.
+Native1/1, Worker typecheck, targeted lint and workflow isolation passed. The test
+joins normal `test:auth:d1`/`npm test`; default config excludes its separate fixture.
+[Procedure/boundaries](synthetic-auth-recovery.md) and
+[bounded proof](evidence/synthetic-auth-local-recovery-2026-10-06.json).
+
+This is a memory-envelope/local-D1 proof. Real secret custody, durable encrypted
+Auth backup, remote restore, production session/verification revocation/incarnation
+policy and final combined recovery remain open. Neither real Auth credentials nor
+Supabase rows were read. Runtime remains Worker8cbe1e5f; no deploy/secrets/domains
+changed. Mac remains locked and the existing human unlock request remains pending.
+Prior825c642/CI37401455459 is now confirmed successful in both jobs; it predates
+this new Auth recovery test, which must retain its own current CI result.
+
+## Full staging Master encrypted local recovery accepted (2026-10-06 JST)
+
+Read-only export captured all24 application Master tables plus the migration
+ledger:12,254 rows,3,944 canonical emojis,7,888 staged release records and98 schema
+objects. Decryption/restoration to isolated SQLite and Miniflare/workerd D1 matched
+every table count/hash, schema object and FK0. Tampered ciphertext was rejected.
+The actual app repositories read all3,944 active emojis and allfour reference
+masters (tiers4/languages4/active patterns5/active prices16). Separate-process
+read-only source readback matched every table and unchanged current Worker8cbe1e5f.
+No remote writes or Supabase reads occurred; retained legacy Master Auth tables
+were checked empty. Separate Auth D1 credentials were not exported.
+
+[Full Master recovery procedure](full-master-recovery.md) and
+[public bounded proof](evidence/full-staging-master-local-recovery-2026-10-06.json).
+Private archive/report/local SQLite are in
+`/Users/kanouk/.codex/fanmark-migration-private/full-master-recovery-2026-10-06-v2`;
+the one-off key is a separate private file outside that directory. Do not publish
+or attach either raw contents or keys. Do not rerun the completed proof runners:
+their exclusive-create guards deliberately refuse overwrites. Workerd was disposed.
+
+These stable multiple reads are not an atomic operational snapshot. Local restore
+timings247ms/93691ms are not production RTO. Remote full-Master recovery, Auth
+credential recovery, scheduled encrypted off-host backups, key custody/operator/
+retention/RPO-RTO and final combined integration remain open. Mac remains locked;
+the existing manual unlock question remains pending. No additional email permission
+was consumed and no additional message sent.
+
+## Catalog failure no longer blocks update registration (2026-10-06 JST)
+
+The actual main.tsx startup awaited the catalog before registering its Service
+Worker. Catalog rejection or a stalled request therefore never reached explicit
+registration/update checking. Codeb26055e starts registration after the root check,
+before catalog loading, while retaining success-only React rendering and retry/error
+without another catalog/backend fallback. The actual TSX entrypoint regression
+failed3 of5 before the fix and passes5/5 afterwards; ordinary application CI now runs
+it. Typecheck, targeted lint, staging build, generated PWA cache boundaries, workflow
+isolation and current caller-map2/2 passed.
+
+Current100% staging Worker is8cbe1e5f-5e55-4a82-a853-65ec96051db2. HTML, main JS,
+service worker and legacy-cache cleanup script match the local build byte hashes.
+Canonical vars match; broadcast selectors/recipient stay absent. /index.html's normal
+307 canonical redirect was resolved by reading /, without repeating deployment.
+A separate read-only credential verified unchanged full Auth/Business/Master table
+hashes, retained3/7/2 and FK0. Backend source is unchanged; frontend startup changed.
+[Regression and deployed artifact proof](evidence/startup-update-registration-2026-10-06.json).
+
+Native UI is pending manual Mac unlock. Real existing-client service-worker transition,
+cache retirement and final phone/PWA acceptance remain unproven. Do not invoke the old
+raw-CDP staging PWA helper for GUI automation under the current CUA-only policy. Use the
+known CUA surface after unlock; API/file proof does not replace browser acceptance.
+
+
+## Native admin MFA and one approved broadcast delivery accepted (2026-10-06 JST)
+
+A disposable staging administrator was provisioned with an existing TOTP factor
+through the real API. Native Safari required a six-digit challenge after password
+sign-in; password-only and wrong-code states had zero owned sessions/assurances.
+The wrong code showed a rejection. A correct code opened the management dashboard,
+and D1 matched one assurance to the exact user, session and factor. Native logout
+revoked both. This unit does not establish new-factor enrollment UI acceptance.
+
+After explicit human permission for one exact recipient, subject and body, native
+UI created the matching Japanese draft. Only the server fixed-recipient test-send
+selector was temporarily activated. One MFA-authenticated deployed API request sent
+one email; Resend Delivered, the approved content and D1's minimized message-ID audit
+matched. Bulk, signed webhook and frontend send selectors remained disabled. Test-send
+UI, full bulk delivery, signed webhook, retry and retention remain unaccepted.
+
+Initial version b3a770b3 was restored via rollback, but script settings still retained
+the temporary selector/recipient. Canonical config was therefore redeployed and
+independently checked: current100% version is0d9803af-84c8-4e2f-bd9b-dbb418b2555d;
+runtime source remains0ed4213. Test-send/bulk selectors, fixed recipient and broadcast
+signing secret are absent; all28 template contents match. Do not treat deployment
+version rollback alone as evidence that mutable settings were restored.
+
+Owned Auth/Business/draft/audit fixtures and plaintext test credentials were removed.
+A separate read-only process preserved Auth3/7/2 and every other Auth/Business/Master
+full-table hash, with FK0. MFA generation240→242 was retained, never rewound. Resend's
+single sent-message history is retained. CI37398046903 at a26ce6e passed both jobs.
+[Bounded acceptance](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json).
+Source/authorization reconciliation, paid deletion, provider new-signup/relay,
+operations adoption and final phone/PWA/language integration remain open.
+
+
+## Deferred identity preflight prepared (2026-10-06 JST)
+
+The remaining sequence-key gate now has an executable aggregate-only source
+preflight, `scripts/migration/identity-readiness.sql`. It is prepared for the
+final user-data stage and has not read actual source rows. All four strict
+identity-array importer tables are included: fanmarks, discoveries, favorites
+and events. Canonical duplicates block only the three unique identities;
+favorites include their owner, events preserve repeated identities. The query
+also checks the additional fanmark display-identity unique constraint. NULL,
+empty, NULL-element, dimension and lower-bound blockers are counted rather
+than repaired, merged, trimmed or skipped.
+
+The same SQL classifier ran on PostgreSQL with only typed synthetic VALUES:
+valid8 rows admitted, blocked16 rows rejected with the exact expected aggregate
+counts. Order, repetitions, historical length6, different favorite owners and
+repeated event history remain valid. The actual importer tests confirm these
+retentions and shape refusals on all four tables. Oracle/importer13 cases and
+lint pass; normal migration CI now pins the literal observations to current
+SQL hashes. No stored application function, real user row, Cloudflare config,
+Worker deployment or domain was changed.
+[Deferred preparation and bounds](evidence/deferred-identity-preflight-preparation-2026-10-06.json).
+
+Caller-map5ba5f5f / CI37396865202 completed successfully in both jobs. Its
+superseded lottery-doc52790bf / CI37396416191 was canceled, not accepted as a
+completed CI run; the runtime remains0ed4213 / Workerb3a770b3 at100%.
+The generic converter's four groups remain explicit: the identity input/data
+policy and uncopied SQL functions/RLS/triggers. This preflight does not claim
+whole-source semantic approval or start the deferred real-data migration.
+Broadcast's exact one-recipient/message approval question is pending; no send
+selector has been enabled. Native paid deletion/admin MFA, provider new-signup/
+relay, operational adoption and final integration remain open.
+
+## Current frontend caller map bound to source (2026-10-06 JST)
+
+The old mapping test compared two static documents. Current AST extraction
+still yields211 calls, but16 auth/profile/reset call locations had moved while
+the documents passed that test. A new comparison rejected these stale rows;
+the frontend table and semantic references now match current locations, kinds,
+targets, operations and dynamic expressions. All211 have exactly one semantic
+entry, with zero operation/target/expression drift. Focused mapping2/2 and the
+existing inventory extraction fixture suite pass. Ordinary migration CI runs
+both checks; no runtime/API/schema/configuration was changed or deployed.
+[Current bounded caller proof](evidence/current-frontend-callsite-refresh-2026-10-06.json).
+
+This closes a stale-evidence gap, not whole-program dataflow or full58-function/
+77-policy semantic acceptance. Existing accepted paths are retained; the four
+converter blocking groups, provider/operational/final integration gates remain.
+Runtime remains0ed4213 / Workerb3a770b3 at100%. Lottery-result UI52790bf is
+pushed; its CI37396416191 was still running at this checkpoint.
+
+## Native lottery results accepted (2026-10-06 JST)
+
+Three disposable credential users were created in staging. Actual authenticated
+registration, single return and two lottery application APIs produced the
+fixture. Only its grace deadline/license end was advanced. One loopback
+Wrangler `dev --test-scheduled` request executed the current deployed source
+with remote staging D1 bindings; archive and notification wake were disabled
+in that local invocation. The deployed Worker, its configuration and daily
+Cron were not changed. This is an actual Worker execution with remote D1,
+not a naturally triggered deployed Cron with candidates.
+
+The grace finalizer completed one candidate with no conflict, persisted its
+seed/input/selection and two-entry history, expired the old license, marked one
+entry won/one lost, and issued one active winner license. An actual deployed
+Auth POST woke the existing notification DO; all six owned outbox events were
+processed and four in-app notifications delivered, without fabricated result
+rows or manual notification dispatch.
+
+Native Safari showed the winner's active 🧷/1 of 3 and the loser’s empty/0 of 3
+dashboards. Notifications showed the winner's 2026/10/14 09:00 JST expiry and
+the loser’s two-applicant result. The winner's mark-read operation persisted
+`read_via=app`; both UI logouts left zero owned sessions. After scoped cleanup,
+independent read-only verification preserved human Auth3/7/2, all24 Master table
+hashes, original profiles/MFA/templates, anonymous history5/8, pre-existing
+lifecycle and protected-access rows, all unowned scoped hashes and FK0.
+Notification wake23→29/29 was retained. The local dev process and agent-created
+native tab were closed. No payment/provider calls were made for this test.
+[Result UI and independent cleanup](evidence/staging-lottery-result-native-ui-2026-10-06.json).
+
+Runtime remains0ed4213 / Workerb3a770b3 at100%. The preceding documentation
+commit a36b94a has CI37395116307 success in both jobs. This evidence closes
+native lottery-result display for the synthetic path. Paid deletion, native
+admin MFA, provider new-signup/relay, broadcast approval and final
+source/operations/recovery/phone/PWA/language integration remain open.
+Older lottery-result pending statements below are historical checkpoints.
+
+## Populated Free downgrade native UI accepted (2026-10-06 JST)
+
+After human approval of the prepared sandbox form, native Safari submitted the
+single Creator test Checkout (JPY1,000/month, save-information unchecked).
+Signed natural dispatch updated the exact synthetic profile to Creator. The
+return page initially retained Free while dispatch was pending; authoritative
+reload then showed Creator. This is not proof of uninterrupted automatic
+Checkout-return polling.
+
+Five S-tier fanmarks were registered via the actual owner API. Native `/plans`
+showed all five, required three selections for Free, and prevented a fourth
+selection. Final confirmation returned the excluded two and submitted actual
+test subscription cancellation. The Free dashboard showed3/3, the selected
+three active and the excluded two returning. Independent D1 reads confirmed
+Free, canceled subscription, one submitted test change command, three active
+and two returned grace licenses matching the exact selection. The signed Free
+reconciliation batch saw three active licenses and returned zero additional
+licenses; it did not duplicate the UI returns. Four real signed receipts all
+reached terminal states. The invoice's initial reconciliation retry completed
+naturally on attempt2; no manual replay or plan override was used.
+
+UI logout revoked the synthetic session. Owned Auth/Business, notification and
+billing ledger rows were removed after drain. Separate least-privilege readback
+verified Auth3/7/2, all24 Master table hashes, existing profiles/MFA/templates,
+all unowned scoped Business hashes, anonymous history5/8 and FK0. Notification
+wake advanced21→23/23 and was preserved. Stripe retains the canceled test
+customer/subscription and historical invoice/payment artifacts; no live charge
+or live account was touched. This does not accept paid-account deletion UI.
+[Populated downgrade and independent cleanup](evidence/staging-populated-plan-limit-native-ui-2026-10-06.json).
+
+The separate protected-profile/redirect fixture was already cleaned while this
+capacity account was retained (Auth4/8/3 at that earlier checkpoint). Both are
+now gone from staging D1. Runtime remains0ed4213 / Workerb3a770b3 at100%.
+Paid deletion, lottery results, admin MFA, provider new-signup/relay and final
+source/operations/recovery/phone/PWA/language integration remain open.
+Older statements below listing populated plan-limit selection as pending are
+historical checkpoints.
+
+## Native protected-profile and redirect UI accepted (2026-10-06 JST)
+
+The actual owner settings/profile APIs configured one disposable protected
+profile. Native Safari showed the password gate and rendered the exact synthetic
+Japanese name/bio after the correct code. The native viewer was the separate
+capacity fixture, not the owner or an anonymous session; signing in did not
+bypass the fanmark password. The owner API then changed the same license to a
+protected redirect without resetting the password. Password generation remained
+the same and access generation advanced. A reload showed the gate again, and
+correct entry reached the exact configured URL in the actual browser.
+
+Two successful short-selector proofs/attempts were independently observed.
+Cookie-free short/emoji reads remained locked with no profile name, bio or target
+URL; the standalone public-profile route correctly returned 404 for the protected
+profile. This is not native acceptance of a distinct profile-selector proof.
+Journal-owned Business/Auth/password/proof/attempt and unshared rate rows were
+removed. Separate least-privilege readback verified absence and unchanged
+Master24/profile/MFA/templates/wake/anonymous5/8/pre-existing access state/FK0.
+Retained Auth4/8/3 comprises original human3/7/2 plus the independent capacity
+fixture1/1/1; its session and Checkout were preserved for the next UI check.
+[Native profile/redirect and cleanup proof](evidence/staging-protected-profile-redirect-native-ui-2026-10-06.json).
+
+CI37392979553 for da15074 passed both jobs. Runtime remains0ed4213 / Worker
+b3a770b3 at100%. Populated plan-limit selection, paid deletion, lottery results,
+admin MFA and provider/operations/source/recovery/final integration remain open.
+Older statements below that still list protected-profile/redirect as pending
+are historical checkpoints. Real-user data migration and domain cutover remain
+deferred.
+
+## Native protected-text UI accepted (2026-10-06 JST)
+
+A disposable verified credential/Free profile was seeded, and the actual register
+and owner-settings APIs configured protected text on S-tier 🧷. The setup session
+was revoked before native Safari accessed the short-ID page without a Better Auth
+session. A wrong four-digit entry kept the message hidden and cleared the input;
+a correct entry rendered the exact synthetic Japanese message.
+
+The actual emoji URL resolves and redirects to `/a/:shortId` before password
+entry. It showed the password gate again and the correct entry rendered the same
+message. D1 contains one failure, two successes and two **short-selector** proofs.
+This proves both user entry paths, not separate emoji-selector verification or
+proof isolation. Cookie-free short-ID and emoji API reads remained locked with
+null text. The earlier API selector-binding evidence remains separate.
+
+Journal-owned Business/Auth rows, password config/runtime evidence, proofs,
+reservations/audits and two unshared synthetic rate buckets were removed. A
+separate least-privilege read-only process verified absence, retained Auth 3/7/2,
+all 24 Master hashes against the prior baseline, profiles/MFA/templates/wake,
+anonymous history 5/8 and FK 0. The pre-existing audit, reservation and rate bucket
+were unchanged; no shared requester bucket was reset. No provider or payment
+call, deployment, source-user migration or domain change occurred.
+[Native UI and independent cleanup proof](evidence/staging-protected-text-native-ui-2026-10-06.json).
+
+CI 37391902928 for 7988123 passed both jobs. Runtime remains 0ed4213 / Worker
+b3a770b3 at 100%. Main natural daily observation is complete; do not restart it.
+Next functional UI gates include populated plan-limit selection and paid deletion,
+lottery results and protected profile/redirect behavior. Provider new signup,
+phone/PWA/language integration and operations/source/recovery gates remain open.
+Older pending-Cron and protected-text statements below are historical checkpoints.
+
+
+## Main natural daily expiry/grace/archive accepted (2026-10-06 JST)
+
+The existing observer29527 completed successfully; it was not restarted or
+manually triggered. It received the real `0 0 * * *` invocation scheduled at
+2026-10-06T00:00:57Z (09:00:57 JST). Handler outcome is ok with zero exceptions;
+expiry and grace finalization are completed with candidates/processed/conflicts0,
+and notification archive is completed with archived/remaining/conflicts0.
+The completion version check confirms Worker b3a770b3 remains100%.
+
+A separate least-privilege read-only query confirms the exact captured time in
+both completed lifecycle D1 ledgers, and the registered daily schedule. This
+closes main natural-handler acceptance for an empty eligible set; it does not
+prove nonempty archive payload retention or replace the prior isolated populated
+archive test. No deployment, source/user migration or DNS change occurred.
+[Main daily invocation and independent readback](evidence/staging-natural-daily-2026-10-06.json).
+The observer has exit0/one accepted event and is now terminal; do not resume it.
+
+Coupon/return/lottery-entry UI evidence is pushed as bbee951 after two transient
+GitHub server failures; no force push or ref rewrite was used. CI37390439255 for
+692208d passed both jobs. Operational owner/retention/RPO-RTO policy, broadcast
+send permission, populated plan-limit/paid-deletion/protected-password UI,
+new social-provider signup/relay and final phone/PWA/language integration remain
+separate open work. Earlier daily-pending and live-process statements are
+historical checkpoints.
+
+## Native coupon, return and lottery-entry UI accepted (2026-10-06 JST)
+
+Two synthetic Free identities and one disposable coupon were prepared. Native
+Safari coupon redemption extends S-tier 🪁 from2026/10/13 to2026/11/13 (38 days);
+read-only D1 confirms exactly one completed command and one usage. The first
+fixture code exceeded the existing20-character UI limit; the unused synthetic
+code was shortened before redemption. No source-backed coupon was consumed.
+The same actual UI returned the license, showing active count0/3 and a grace
+countdown; D1 confirms grace/is_returned and a future grace deadline.
+
+The other synthetic identity opened details -> search and applied to the same
+fanmark's lottery. UI shows one applicant and a cancel button; D1 confirms its
+pending entry. UI cancellation returns to zero applicants/apply button and D1
+shows the same entry cancelled with user_request. This proves entry operations,
+not winner drawing/award/finalization. Native logout leaves zero synthetic
+sessions. The owner-return and lottery-application events processed, with one
+in-app owner-return notification delivered; wake advances19 ->21/21 and stays
+there. No provider call, payment or runtime deployment occurred.
+
+Only journal-owned coupon/usage/command, license/config/entry/audit/notification,
+Business profile and Auth rows were removed. Independent least-privilege readback
+preserves human Auth3/7/2, retained profiles/MFA, all24 Master table hashes,
+four existing coupon definitions, templates and FK0. Actual search added one
+candidate/event: anonymous history is now5/8 and is retained, with only the
+owned fanmark pointer unlinked. [Scoped UI and cleanup proof](evidence/staging-coupon-return-lottery-ui-2026-10-06.json).
+Daily observer29527 remains live for09:00 JST; CI37390439255 for692208d passed both jobs. Next functional UI work is populated plan-limit selection and paid
+account deletion, with provider/new-signup/phone/PWA/operations gates retained.
+Earlier checkpoint counts and process IDs below are historical.
+
+## Native transfer UI and independent cleanup accepted (2026-10-06 JST)
+
+After the user's explicit approval of the displayed transfer disclaimer, two
+synthetic Free identities completed native Safari issue -> recipient apply ->
+sender approval -> recipient re-login. The sender shows expired/active count0;
+the recipient shows S-tier 🪁, active1/3,7 days through2026/10/13 and inactive.
+Read-only D1 confirms completed code/approved request, old expired and new active
+licenses, the new inactive basic config and exact30-day transfer lock. Two
+transfer events reached processed and their in-app notifications delivered.
+The reissue dialog was viewed and cancelled; UI enforcement of the lock was
+not tested. Former profile/password settings were not seeded in this fixture.
+
+Both native sessions were signed out; exact synthetic session count is0. The
+cleanup helper's first ordering attempted to remove incarnation before license;
+the D1 batch rolled back and read-only scoped snapshots remained identical.
+Corrected cleanup removed only the journal-owned Business/Auth rows. Separate
+least-privilege readback preserved existing3 users/7 accounts/2 sessions, retained
+profiles/MFA, all24 Master table hashes, templates, anonymous history4/7 and FK0.
+Wake legitimately advanced17 ->19 and remains19/19; it was never reset.
+No provider send, paid Checkout or runtime deployment was performed.
+[Bounded UI and cleanup evidence](evidence/staging-transfer-ui-2026-10-06.json).
+
+The sender dashboard also rendered in JA/EN/KO/ID with matching license data,
+then returned to Japanese. This is dashboard smoke, not all translated flows or
+actual mobile-device acceptance. The current frontend callsite map now reflects
+configured Auth Resend delivery and accepted verification/reset/login, while
+keeping broadcast, administrator-initiated reset and invitation-gated signup
+acceptance separate. Runtime remains0ed4213/Worker b3a770b3 at100%.
+CI37388658554 for f7707b7 succeeded in both jobs. Daily observer29527 remains
+connected for09:00 JST; broadcast message permission and operational policy
+approval remain pending. Next UI work includes return/lottery/coupon, plan-limit
+selection and paid deletion, followed by the same final integration gates.
+Older process IDs and configuration statements below are historical.
+
+## Profile visibility, URL redirect and inactive UI accepted (2026-10-06 JST)
+
+A fresh disposable credential/Free profile was seeded; the actual Worker register
+API acquired S-tier 🪁 with a profile, then revoked its setup API session. This is
+fixture setup, not proof of normal signup/email verification. Native Safari then
+signed in and navigated dashboard -> settings -> profile edit. Display name,
+Japanese biography and Website link saved, and the actual public browser rendered
+them. The public browser retained a different human identity; separate cookie-free
+HTTP reads independently proved anonymous access to exactly the saved content.
+
+The actual settings UI hid the profile. Its reopened checkbox remained off,
+the public page displayed the private-profile message and anonymous profile API
+returned404. Republishing preserved the saved contents. URL redirect saved to
+an example URL; settings reopen and anonymous API matched, and the actual public
+browser navigated to that exact URL. Inactive mode saved, dashboard displayed
+なにもしない, public page displayed 準備中, and anonymous API returned inactive
+with no redirect/text content. No telephone-device launch or protected-password
+UI is accepted by this proof. No deployment or provider call was needed.
+
+Native UI logout changed the exact synthetic owner's current sessions1 ->0 in
+read-only D1. Only its journal-owned profile/license/fanmark/access-stat/audit/Auth
+rows were removed. Independent read-only verification preserved existing3/7/2,
+all24 Master table digests, retained profiles/MFA/templates/wake and anonymous
+history4/7 with FK0. The human mail-test account remains retained.
+[Scoped UI and cleanup evidence](evidence/staging-profile-redirect-inactive-ui-2026-10-06.json).
+CI37387435939 for e27eff3 succeeded in both jobs. Worker remains b3a770b3 at100%.
+Daily observer29527 remains live/connected for09:00 JST; its result and broadcast
+send authorization are still pending. Next functional UI work is transfer/return
+and plan-capacity/deletion, followed by the existing final integration gates.
+Earlier entries below are historical checkpoints.
+
+## Restored extension dashboard and exact owned cleanup (2026-10-06 JST)
+
+Native Safari renders the exact synthetic extension owner's dashboard with S-tier
+🧫 active through2026/11/13 (38 days), matching the previously applied D1 result.
+This is a restored-window readback; uninterrupted Checkout-return timing remains
+unobserved. UI logout shows the signed-out root. One session for that exact
+synthetic owner still existed, so exact session revocation by UI alone is not
+accepted; that session is included in owned cleanup.
+
+Earlier exec handles/processes and `/tmp` journals are no longer available. Their
+cause is unconfirmed. The exact synthetic address visible in Safari, applied
+intent/application/effect/receipt relationships and prior committed payment proof
+reconstructed ownership; the original journal bytes were not recovered.
+A new private plan in `~/.codex/fanmark-migration-private` captured scoped rows,
+24 Master table counts/full-content hashes, retained Auth/profile/MFA and anonymous
+history before cleanup. Only those exact synthetic Business/Auth rows were
+removed. A separate read-only process confirmed their absence, unchanged3/7/2
+retained Auth, Master/profile/MFA/template/wake state, history4/7 with only the
+owned fanmark pointer unlinked, FK0 and unchanged100% Worker b3a770b3.
+No provider call, paid Checkout replay, new fixture, runtime deploy or DNS change.
+[Recovered UI and cleanup evidence](evidence/staging-extension-restored-ui-cleanup-2026-10-06.json).
+The human-created mail-test account and sessions remain retained.
+
+CI37334325467 for f11abdd passed both jobs. Read-only operations at23:01 UTC had
+attention[], FK0, wake17/17 and no overdue/failed queues. The proven-stopped daily
+observer was restarted once; session29527 reports tail_started and stores its
+journal in the persistent private directory. It watches unchanged b3a770b3 for
+2026-10-06 09:00 JST, with09:04 deadline. Do not restart a silent live observer or
+deploy during this observation. Natural daily acceptance remains pending.
+
+The exact Japanese one-recipient announcement test is prepared in
+[rehearsal instructions](staging-broadcast-rehearsal.md). Separate explicit send
+permission is requested because the previously authorized address was for Auth
+confirmation/reset mail. No broadcast send/activation has occurred. Operations
+owner/retention/RPO-RTO policy remains unapproved. Earlier entries below are
+historical checkpoints; their old process IDs and `/tmp` paths are not live.
+
+## Deployed source Edge bodies verified (2026-10-06 JST)
+
+All35 ACTIVE source functions were read-only downloaded separately with stable
+before/after metadata.31 entrypoints and24 complete extracted bundles match the
+checkout; four prepared entrypoints and two shared-helper paths differ across
+61 file occurrences. Registration316 and its helpers match, binding the valid-
+configuration rule consumer review to deployed source. Broadcast36's older
+helper uses user_roles admin without current MFA; target Auth adminRole/exact-
+session MFA plus Business admin plan is an explicit authorization change.
+Billing3/local receipt/pricing preparations and manual expiry14 remain distinct
+from deployed source. [Source bodies and dispositions](source-edge-bodies-review.md).
+No source function invocation, source mutation, user-row read, provider send,
+runtime deployment or DNS change occurred. SQL/RLS/trigger/external-caller and
+whole migration acceptance remain false. Preflightddf881a CI37332214832 passed
+both jobs. Extension return UI/owned cleanup remain Mac-unlock pending; daily
+observer57805 still watches the unchanged b3a770b3 for2026-10-06 09:00 JST.
+
+## Broadcast configuration and master/queue readback (2026-10-06 JST)
+
+The read-only preflight against Worker b3a770b3 at100% confirmed the shared
+Resend key/from and Auth Resend/D1 selectors are configured. Bulk/test-send
+selectors, the fixed recipient and broadcast signing secret remain absent.
+All16 Auth and12 broadcast template content baselines match; drafts/runs/
+recipients/suppressions/webhook events/test-send audits and pending email/
+Web Push notifications are0. No provider send, D1 write or runtime deploy was
+performed. [Bounded evidence](evidence/staging-broadcast-readonly-preflight-2026-10-06.json).
+
+The reusable `scripts/migration/staging-broadcast-preflight.mjs` requires
+`--read-only` and an explicit `--expected-version=<UUID>`, verifies identified
+app-config Wrangler OAuth/account and split D1 bindings, validates read receipts,
+and exports only configuration-presence flags, template baseline state and
+aggregate counts. It does not use the least-privilege monitor credential.
+September statements that Resend itself was unconfigured are historical;
+broadcast provider acceptance remains open independently of accepted Auth mail.
+A fixed-recipient rehearsal still needs its exact draft/owned cleanup journal
+prepared and explicit message/address authorization before any send.
+
+Source notification processing delivers immediate in-app notifications only;
+other channels and delayed notifications remain pending in both source and
+target. The checked-in sender search found no separate delivery implementation,
+but does not prove external/deployed consumers absent. Do not add speculative
+email/Web Push delivery as an assumed migration requirement.
+
+Docs5776d6a CI37329575605 succeeded in both jobs. The extension payment helper
+session28440 and daily observer57805 remain alive; Mac unlock/actual returned
+UI and owned cleanup, and the2026-10-06 09:00 JST natural daily result are still
+pending. Do not replay the paid Checkout or redeploy the watched Worker.
+Earlier entries below are historical checkpoints.
+
+## Extension UI payment submitted; return UI requires Mac unlock (2026-10-05 JST)
+
+The retained3/7/2 identity/session baseline and Worker b3a770b3 at100% were
+freshly checked. A new synthetic Free owner in an independent signed-out Safari
+normal window acquired one S-tier emoji through the actual app. The extension
+dialog showed1 month / JPY2,000 and2026/10/13 ->2026/11/13. Its actual sandbox
+Checkout was submitted using Stripe's documented test-card values.
+
+Provider readback confirms test-only payment complete/paid for the exact owned
+checkout. Natural signed dispatch applied one application, one effect and one
+LICENSE_EXTENDED audit; the license is active through2026-11-13. A separate
+read-only process verified the exact ledger relationships, original retained
+identity/session digests, profiles, Master/reference history, MFA and FK0.
+Existing anonymous history3/6 is preserved; the current history is4/7.
+[Payment-only evidence](evidence/staging-extension-ui-payment-only-2026-10-05.json).
+
+The Mac locked after payment submission. The return dashboard/date and UI logout
+are not yet observed, and the journal-owned synthetic account/license/intent
+remain for that verification. Do not replay the paid checkout, create another
+fixture or declare whole extension UI/cleanup accepted. On unlock, inspect the
+current Safari window and compare its date with the already-applied D1 result;
+then remove only the journal-owned fixture and run independent cleanup readback.
+Current helper session28440 is the active extension coordinator;
+`/tmp/fanmark-stripe-license-ui-journal-2026-10-05-v7.json` is its private journal.
+The helper consumed and removed its private Stripe key input file; credentials
+are not in Git, Vite or normal logs. No runtime redeploy/user-data/DNS change.
+
+The docs-only d2e9b39 CI37326499893 completed successfully in both jobs. The
+[source rule-table review](source-availability-rule-review.md) also resolves the
+checked-in valid-configuration caller: enabled rules still return availability
+true and calculated price/payment are unused. No speculative enforcement or
+whole-source gate approval is introduced.
+Earlier entries below are historical checkpoints.
+
+## Acquisition/settings/text UI and independent cleanup accepted (2026-10-05 JST)
+
+Browser connectivity recovered. The retained IAB Google account reaches the
+staging dashboard. A separate Safari normal window was confirmed signed out
+before using a new synthetic Free owner; the retained human sessions were not
+replaced. Actual UI search/availability, acquisition of one S-tier emoji,
+settings navigation, text/name save, dashboard 1/3 and seven-day license display,
+settings reopen, and public text rendering passed. An anonymous API read without
+cookies matched the saved text. A changed unsaved draft survived same-tab reload
+while the public API still returned the prior saved text; saving that restored
+draft updated the public API. UI logout completed.
+
+The journal-owned synthetic Auth user/accounts/sessions, business profile,
+license/settings and fanmark were removed. A separate read-only process verified
+their absence, unchanged retained3 users/7 accounts/2 sessions, profiles, Master
+release/reference history, MFA and FK0. Anonymous discovery/event history was
+retained at3/6; only the pointer to the removed journal-owned fanmark was unlinked.
+No anonymous actor ownership was inferred. Notification/Stripe backlog/failure
+counts remain0 and wake remains17/17. The human-created mail test account remains.
+No billing/provider operation, runtime deploy, real-user migration or DNS change
+occurred. This accepts the bounded acquisition/text/settings/draft UI path;
+other access types, extension/over-limit/paid-deletion UI and final integration
+remain open. [Scoped UI evidence](evidence/staging-acquisition-settings-ui-2026-10-05.json).
+
+Observer6448be6 CI37323113576 completed successfully in both jobs. The existing
+read-only daily observer remains connected for2026-10-06 09:00 JST; natural
+expiry/grace/archive acceptance awaits the invocation and final version check.
+Runtime remains0ed4213 / Worker b3a770b3-8735-4b31-abdd-f4fca99e05cd at100%.
+Earlier entries below are historical checkpoints.
+
+## Email/password login after human reset accepted (2026-10-05 JST)
+
+The user logged in through the dedicated Safari private window. The app renders
+`/dashboard` and its user menu displays the approved test recipient. Read-only
+Auth D1 inspection confirms one active session for the exact journal-owned
+user, created after reset completion; the account is credential-only and its
+email remains verified. The consumed reset verification record is absent.
+No password/hash/session-token values were read. This accepts the functional
+signup, confirmation, password-reset and subsequent email/password login path.
+
+An independent baseline excluding only that exact test user/profile/accounts/
+sessions preserves the original2 users/6 accounts/1 session identity digest,
+Master history, MFA/wake and anonymous search. The approved test account and
+its new session remain retained; cleanup is pending. The IAB original Google
+session was not replaced. Full mail-test closure and migration acceptance are
+still open. No runtime deploy, production-user migration or DNS change occurred.
+[Scoped login evidence](evidence/staging-email-password-login-2026-10-05.json).
+Earlier observations below are historical checkpoints.
+
+
+## Human password reset completed; email/password login pending (2026-10-05 JST)
+
+The user submitted the new password. Read-only Auth D1 inspection confirmed
+that the exact approved test user's credential `updatedAt` advanced and its
+reset verification record was consumed. `emailVerified` remains true; password
+and hash values were not read. The test user still has zero sessions, so this
+accepts password reset only. The IAB root page retains the preexisting human
+Google session and is not evidence of test-user login. An independent baseline
+excluding only the exact approved mail-test account preserved the original
+2 users/6 accounts/1 session, Master history, MFA/wake and anonymous search.
+
+Chrome was no longer available for the isolated login check. A Safari private
+window now shows the staging login form with the approved test email filled
+and password blank. Human login with the newly chosen password, exact session
+readback and test-account cleanup remain pending. Do not replay the consumed
+reset token. No runtime deployment or production data/domain change was needed.
+[Scoped reset completion evidence](evidence/staging-email-password-reset-completion-2026-10-05.json).
+
+
+## Recovery route repaired and actual mail-link form reached (2026-10-05 JST)
+
+The delivered recovery URL correctly points to `/reset-password`, and its
+unconsumed verification record was still valid. The app router had retained an
+old Better Auth condition that sent both recovery pages to `/auth`. Runtime
+`0ed4213ac55620ec45b4d59fcc173005cb1e1de3` removes that condition, preserving
+the existing capabilities/token checks in the recovery pages. Application
+and Worker CI37298341592 both passed; local typecheck, focused lint and all15
+auth-client tests passed. Worker `b3a770b3-8735-4b31-abdd-f4fca99e05cd` is at100%.
+Both deployed JS/CSS bytes match the isolated `dist-staging` build. An initial
+readback mistakenly compared the unrelated `dist` directory; the mismatch was
+resolved read-only against the configured output, without another deployment.
+The auth gateway script, other bindings/Crons, original account identity digest,
+Master/MFA/wake/anonymous search and the approved new mail-test account are kept.
+
+The existing browser loaded the previous JS bundle initially. A normal reload
+loaded the matching new bundle. Reopening the same delivered, still-valid mail
+link now displays the Japanese new-password and confirmation fields. The IAB
+tab is visible and marked for human continuation; both fields were blank and
+no new password was entered/submitted by the agent. The preexisting IAB human
+session was not logged out or replaced. This is the rendered reset form check,
+not reset completion, relogin, all-client PWA-update or full migration acceptance.
+[Scoped route and asset evidence](evidence/staging-password-recovery-route-fix-2026-10-05.json).
+The recipient/URL token remain in private custody only. Do not replay a token
+already consumed by a subsequent human reset. Preserve the approved test
+account until its remaining password/session flow is checked.
+
+## Verification signup accepted; reset-email delivery confirmed (2026-10-05 JST)
+
+On runtime00fc6e7/Worker92413959, the approved recipient completed native signup
+and reported receiving/opening the confirmation mail. Read-only D1 inspection
+confirmed one new credential account, the exact UUID/command-owned completed
+signup attempt and Free profile, and `emailVerified=true`. The mail's callback
+returns to the staging root `/`; reaching that guest page does not mean failure
+or establish an authenticated session. The verification URL/token is not
+recorded in repository evidence and was not replayed by the agent.
+
+The app password-reset request returned200/statustrue for that exact verified
+user. Resend's `fanmark-app-staging` key-filtered Sending view lists both the
+Japanese confirmation and recovery emails as Delivered. This accepts provider
+delivery and the user's reported confirmation receipt/link, not completion of
+the password-reset/relogin flow. Reset receipt, human password entry, subsequent
+login/session behavior and exact test-account cleanup remain pending.
+[Scoped delivery and verification evidence](evidence/resend-staging-verification-delivery-2026-10-05.json).
+
+An independent read-only baseline excluded only the exact journal-owned signup
+user/profile/accounts/sessions and preserved the original2 users/6 accounts/
+1 session identity digest, all Master history, MFA/wake and anonymous search2/5.
+Keep the new approved test account until its remaining flow is checked; do not
+run helpers that assume the total Auth count is still2/6/1. No production user
+export/import, payment, DNS or runtime deployment occurred in this mail test.
+The earlier configuration snapshot below records the pre-email observation.
+
+## Resend staging configuration deployed (2026-10-05 JST)
+
+Runtime `00fc6e7c2d01cdd5ec3174e2216f401b560db383` passed both jobs of
+CI37285576515 and is deployed as Worker
+`92413959-b8ea-4b62-a841-011acaa0304c` at 100% (09:04:22 UTC).
+The user-approved sending-only key is restricted to the already verified
+`fanmark.id` domain and was saved/read back in Mac Keychain and the Worker.
+The approved private test mailbox is kept outside the repository.
+`AUTH_EMAIL_BACKEND=resend`, the staging sender, and
+`INVITATION_SIGNUP_BACKEND=d1` are active. Remote capabilities and the native
+Japanese auth screen expose signup, verification and password reset.
+Bulk broadcast and broadcast-test delivery remain disabled.
+
+The gateway now forwards the selected D1 email-template backend, topology and
+Business binding into Better Auth and includes them in its cache identity.
+All 50 Auth D1 regressions and 289 migration-boundary tests passed. Verification
+and recovery use the selected D1 copy; inactive templates fail without static
+fallback. The post-deploy readback preserves the original 2 users/6 accounts/
+1 session, all Master history, MFA/wake, anonymous discoveries2/events5,
+16 exact auth-template contents, other bindings and both Cron schedules.
+The earlier secret-only candidate was not deployed. A terminated deploy
+process had uploaded and verified the runtime candidate but had not switched
+traffic; read-only reconciliation confirmed the old live version before a
+guarded deploy of the existing candidate, without another upload.
+[Configuration and preservation evidence](evidence/resend-staging-configuration-2026-10-05.json).
+
+No email has been sent yet. Actual receipt, verification link, password reset,
+relogin and exact fixture cleanup remain unaccepted. Chrome's existing
+Fanmark mail-test tab is prepared with the approved address and blank password
+fields. The user must enter, confirm and submit the new password themselves.
+Credential custody and enabled capabilities do not establish mail acceptance.
+Production Supabase, real user migration and DNS remain outside this work.
+Earlier checkpoints below describe their observation times and do not override
+this runtime/configuration checkpoint.
+
+
+## Current candidate remote recovery (2026-10-05 JST)
+
+Candidate4c2a8c5/CI37246478014 passed both jobs and the combined local step.
+Only documentation differs from deployed runtime12fa13f/Workercc6d9da7.
+The explicit conductor restored the same40-table/15-row synthetic bundle into
+fresh25 Business/4 Auth/8 Master schemas and two split R2 buckets, then restored
+it into a second physical target/incarnation. Both accepted source hash/count,
+Master/asset equality, real app Storage GET/HEAD, FK and single-wake checks;
+primary committed-credential interruption/resume also passed. Fresh provision/
+restore took96988ms; this is not a production RTO. The Master fixture contains
+3 emojis/4 tiers and is not a backup of the full deployed Master dataset.
+Both owned target groups were cleaned. Independent00:25:38.639Z metadata reads
+found the original3 D1/3 R2/2 Worker inventory unchanged and all owned targets
+absent. Independent00:25:34.927Z app readback retained original2 users/6 accounts/
+1 session, Master history, MFA/wake/schema and anonymous search2/5 counts.
+No real user/Auth export, DNS, main runtime/selector/secret change occurred.
+Auth remains a seeded synthetic dependency user, not credential recovery.
+[Current bounded proof](evidence/isolated-combined-recovery-2026-10-05.json).
+Private journal:/tmp/fanmark-combined-remote-4c32Hd/journal.json; session34294
+exited0. Do not replay this cleaned journal. Main archive natural invocation,
+whole-app/provider/mobile/PWA acceptance and operations decisions remain open.
+
+The next license UI helperv5 is prepared but not run: native Chrome reconnection
+is still required, followed by a fresh read-only preflight. Search events are
+always anonymous, so no ownership inference or DELETE of discoveries/events
+is allowed. The helper refuses a preexisting fixture emoji sequence, unlinks
+only the journal-owned fanmark pointer, and retains anonymous history. A
+transaction guard refuses foreign/null-owner licenses, favorites via discovery
+and conflicting discovery identities;9 local SQLite cases pass, including
+rollback and source-equivalent sequence matching across case/whitespace/NULLs. This is helper preparation, not actual D1/UI acceptance. Private
+helper:/tmp/fanmark-stripe-license-ui-rehearsal-2026-10-05-v5.mjs. No v5 fixture
+or provider asset exists. Never replay cleanedv1–v4 journals.
+
+## Fresh source and browser checkpoint (2026-10-05 JST)
+
+Runtime12fa13f/Workercc6d9da7 is unchanged; documentation674d0dd/CI37245109681
+passed both jobs. Source metadata was read in four read-only transactions at
+23:39–23:40 UTC: all schema sections/locale/regex probe,58 functions,37 bindings,
+77 policies and both source Cron definitions/states match the prior records.
+The current manual58/77/37 indexes also match identities and hashes exactly.
+[source evidence](evidence/source-current-readonly-refresh-2026-10-05.json).
+Converterv43 retains four groups and full runtime/authorization/converter flags
+stay false. The unchanged13-row synthetic import was not repeated.
+The freshv4 license UI fixture was created but native Chrome CUA initialization
+failed before registration/payment; the child exited and exact journal cleanup
+succeeded. Independent23:33:34.203Z readback preserved original2 users/6 accounts/
+1 session, all owned Business counts, Master history, MFA/wake and schemas.
+Mac console was unlocked. IAB2/Resend23 is responsive at/login; native Chrome
+returns initialize timeout. Native reconnection and Resend login remain pending.
+Never replay cleaned billing journalsv1–v4. The main natural lifecycle ledger now
+shows expiry/grace completed at00:00:15 UTC with zero candidates/conflicts.
+An exact-second observer filter discarded the daily tail result, so main archive
+and complete handler outcome remain unaccepted; minute invocations were ok.
+Independent00:07:32Z reads retain2/6/1, Master/MFA/wake/schema and other counts.
+Anonymous search activity added2 discoveries/5 search events at23:41–23:42 UTC;
+provenance is unknown and rows were preserved. Do not require these tables empty
+or delete unknown activity. [Scoped daily proof](evidence/main-natural-lifecycle-ledger-2026-10-05.json).
+Operations decisions and remaining UI/provider/final integration stay open.
+
+
+## Current source preparation checkpoint (2026-10-05 JST)
+
+Runtime remains12fa13f/Workercc6d9da7; documentation7a7e717 CI37242431058
+passed both jobs. No runtime was redeployed by this preparation run.
+Converterv43 with an explicit credential descriptor on the saved
+2026-10-02T14:21:25.605664+00:00 catalog retains four blocking groups:
+sequence-key input contract, functions, RLS policies and triggers. All58
+captured function hashes match the independent October3 counterpart evidence;
+this is correspondence, not semantic approval or a new source observation.
+Current25 Business/4 Auth local schemas accepted40 checkpoints/13 synthetic
+rows, committed interruption/resume, fresh-target restore69056ms, one wake
+and credential-coverage tamper refusal. Master/R2 and real Auth credentials
+are excluded; full runtime/converter/migration flags remain false.
+[Scoped evidence](evidence/schema-current-preparation-2026-10-05.json).
+Frontend Stripe/private-price mapping and current staging schedule descriptions
+now match the accepted test-only connection and enabled daily selectors.
+Resend is at the in-app login handoff; no mail or credential change occurred.
+
+
+runtime `12fa13f` / CI37208535583両job成功・100% Worker `cc6d9da7` を維持。
+前回の記録58a066d / CI37209348857も両job成功した。Mac解除後、保持する本人IABの
+古い`/plans`は旧JSのため設定エラーが残ったが、通常reloadで新JSへ更新され、
+Free/Creator/Businessの価格0/1,000/2,000円と上限3/10/50を実画面で確認した。
+本人の有料ボタンは押していない。これは当該画面の更新で、全PWA更新の証拠ではない。
+
+別のChrome専用タブで新しい合成ownerを通常ログインし、dashboard Free/0件/上限3から
+実プラン選択→sandbox Checkoutの公式4242カード支払い→Creatorの現在プラン表示、
+実Business変更→Portalの未払い請求/保存済みtestカード確定→日割り1,000円支払い済み→
+アプリへ戻ってBusinessの現在プラン表示、Freeの警告確認→即時解約→Freeの現在表示と
+上限3、通常logout後のguest画面を確認した。自然毎分処理を待ち、D1を直接変更せず、
+支払い後の手動reloadも行っていない。provider APIと別processの読み取り専用照合は
+Business/active/2,000円、Free/canceledと一致した。正確な反映時間やtimeout toastの
+不在は測定していない。全license/延長/上限超過選択/有料退会のUI成功とは扱わない。
+
+解約通知を含む7 receiptはapplied6/ignored1・各delivery1でdrain済み。
+所有test Customerを閉じ、所有Auth/profile/契約/command/台帳等を限定cleanupした。
+独立23:01:29.999Z readbackで元の2 user/6 account/session1・40表所有件数・Master全履歴・
+MFA/wake・schemaの一致を確認した。test請求/event履歴と設定用料金を保持する。
+実課金・ユーザー移送・DNS・runtime/schema再配備はない。
+[実画面と独立照合の証拠](evidence/stripe-staging-subscription-ui-2026-10-05.json)。
+
+Chrome extensionの操作は応答せず、native操作へ切り替えた。先行v2 fixtureはCustomer/
+Checkoutを作る前にcleanup済み。六作業の完了条件はCOMPLETIONを維持し、日次自然発火、
+Resend、Apple/Discord新規登録/relay、source/converter照合と最終統合は残る。
+以下は過去のcheckpoint。
+
+# 2026-10-04 実プラン画面の設定503を修正・staging APIを確認
+
+専用合成ownerの実Chromeシークレットログインでdashboard Free/0件/上限3を確認し、
+「もっとファンマを増やす」から実`/plans`へ移動したところ、設定読取エラーを確認した。
+公開設定APIがprivateにしたtest Stripe Price IDにもpublic flagを要求して503を返していた。
+価格IDを公開読取から外し、公開設定11キー／MFA付き管理者設定19キーに分けた。
+旧sourceのpublic flag付きlive価格IDも公開応答へ返さない。管理者読取はtest/live価格IDの
+旧flag1とprivate flag0を扱い、実値を変更する監査付き更新では当該価格IDをprivateへ揃える。
+Enterpriseの厳格なprivate flag確認、料金を既定値で隠さないエラー表示は維持する。
+
+`12fa13f`はclient4件、Worker/Lifecycle13件、両typecheck、変更箇所ESLintと
+[CI37208535583](https://github.com/kanouk/fanmark-id/actions/runs/37208535583)両jobが成功。
+専用whoamiと元状態を照合後、100% Worker`cc6d9da7-b81b-45fe-b0be-6c0978570232`へ配備した。
+独立監視tokenで公開設定200/no-store・exact11キー・価格IDなし、匿名管理設定401、
+元の2 user/6 account/session1・40表所有件数・Master全履歴・MFA/wake・他binding/
+秘密14名称・毎分/日次Cron・schema不変を確認した。元のprivate test価格IDは維持する。
+決済前の合成ownerはCustomer/Checkout/請求を作る前に片付けた。初回cleanupのD1要求は
+失敗したが、CLI認証を更新した別processで同じjournalの所有fixtureだけを回復・削除し、
+独立read-only照合で元状態一致を確認した。アプリ障害とは混同しない。
+
+配備後の実画面操作はMacがロックされ、自動解除も失敗したため未実施。
+Macの手動解除を依頼済み。再確認用のprivate v2 fixture/preflight/独立readbackを準備したが、
+新fixtureはまだ開始していない。公開設定APIの回復から実画面・同一利用者の決済フローの
+成功を推定しない。[設定修正の証拠](evidence/plan-settings-public-projection-2026-10-04.json)。
+以前のStripe testサービス受け入れは過去証拠として保持し、新runtimeの全体統合成功とは
+扱わない。六作業の完了条件と実ユーザー移送・本番課金・公開domain/DNSの除外は維持する。
+以下は過去のcheckpoint。
+
+# 2026-10-04 定期請求の追加認証・同じPaymentIntentの復旧を確認
+
+runtimeは`87b61ef`/CI37200812928両job成功・Worker`ca971193`を維持。
+前回記録`440b124`のCI37205271256も両job成功した。新しい専用合成ownerの
+paid Creator契約をprovider APIで作り、アプリのBusiness変更APIで生じた未払い請求に
+公式always-authenticateのtest PaymentMethodを使った。実PaymentIntent requires_action、
+invoice open/支払い0と、実署名invoice.payment_failed/payment_action_requiredを確認。
+自然毎分処理後、D1/本人用DTOはpast_dueとinvoice.payment_action_requiredになり、
+未決済のプランはCreatorを保持した。別processのread-only照合も一致した。
+
+同じ請求のhosted画面で保存済みVisa3184の確認ボタンから公式3DS Test Pageを開き、
+COMPLETEを実行した。画面はJPY1,000の支払い済み表示になった。同じinvoice/
+PaymentIntentがpaid/succeededとなったことをprovider APIで確認し、自然署名処理後に
+Business/activeと失敗時刻/typeのNULL化を独立read-only processで確認した。
+アプリFree解約→署名反映後、所有test Customerを閉じ、全dispatch完了後に専用
+Auth/profile/契約/command/台帳/receipt/fence等だけを片付けた。独立確認で合成行0、
+元の2 user/6 account/session1、40表所有件数・Master全履歴・MFA/wakeが一致した。
+app/auth200・attention空。Webhookの10 event選択は変更しなかった。
+[定期請求の追加認証証拠](evidence/stripe-staging-invoice-authentication-2026-10-04.json)。
+
+初期契約はprovider API fixtureで、本人用HTTP sessionとhosted Stripe画面の検証。
+同一利用者のアプリ全画面、実スマホ、Resend、Apple/Discord新規登録/relay、
+日次自然発火・運用・最終統合とsource/converter照合は残る。実課金・実ユーザー
+移送・公開domain/DNS変更、コード/schema/再配備はない。六作業の完了条件は
+COMPLETIONを維持する。以下は過去のcheckpoint。
+
+# 2026-10-04 定期請求失敗・初回逆順配信・復旧を確認
+
+runtimeは`87b61ef`/CI37200812928両job成功・Worker`ca971193`を維持する。
+前回記録`7118315`のCI37203735982も両job成功。専用合成ownerのStripe test契約を
+provider APIで作成し、アプリAPIでCreatorからBusinessへ変更を要求した。
+公式拒否payment methodによる実請求の402/card_declined、未払いopenを確認。
+実署名invoice.payment_failedの自然毎分処理後、D1と本人用subscription DTOに
+past_due/失敗時刻/失敗typeが反映され、プランはCreatorのままだった。
+
+最初の成功通知だけを専用test endpointのevent選択から一時保留し、初期契約作成後に
+元の10 eventへ戻した。失敗適用後も古い成功receiptが存在しないことを別processで
+確認してからStripe CLIでその実eventを初めて配送した。delivery1/appliedとなり、
+台帳は古いsource invoiceから現在の失敗invoiceを再取得してpayment_failedを維持した。
+古い成功で失敗を消さないことを独立read-only照合でも確認した。
+その後同じ未払い請求を公式成功payment methodで支払い、実署名処理後に
+Business/active・失敗時刻/typeのNULL化を独立確認した。
+
+アプリFree即時解約の署名反映後、所有test Customerだけを閉じ、全dispatch完了後に
+専用Auth/profile/契約/command/台帳/receipt/fence等を片付けた。別processで合成行0、
+元の2 user/6 account/session1、40表所有件数・Master全履歴・MFA/wakeの一致、
+app/auth200・attention空を確認した。test請求/event履歴と設定は保持する。
+[定期請求の実サービス証拠](evidence/stripe-staging-invoice-provider-2026-10-04.json)。
+
+今回はprovider API fixtureと本人用HTTP APIの検証で、同一利用者の画面全体や
+新規app Checkoutの追加証明ではない。subscription invoice payment_action_required、
+Resend、Apple/Discord新規登録/relay、日次自然発火・運用・最終統合は残る。
+コード/schema/配備の変更、実課金・実ユーザー移送・公開domain/DNS変更はない。
+六作業の完了条件はCOMPLETIONを維持する。以下は過去のcheckpoint。
+
+# 2026-10-04 Stripe実延長・カード拒否・3DS・重複単一適用を確認
+
+runtimeは引き続き`87b61ef`/CI37200812928両job成功・Worker`ca971193`。
+前回記録head`5abbd06`のCI37202161221も両job成功した。コード/schema/配備の
+追加変更はない。専用の合成Auth userで実signinし、アプリの登録APIから
+1絵文字のSティア（内部4）を取得し、同じ延長requestの2回送信で同一Checkoutを確認。
+1か月JPY2,000のStripe hosted Checkoutで公式拒否カードの失敗表示を確認し、
+その時点の期限・application/effect/auditが未変更/0であることを確認した。
+続いて公式3DSカードのchallengeを完了し、Stripe画面で成功/3DS認証成功/拒否履歴を
+確認した。実署名checkout.session.completedを自然毎分dispatchが処理し、期限が
+2026-10-12 UTCから2026-11-12 UTCへ延び、application/effect/監査各1件になった。
+同eventのStripe Dashboard再送後もdelivery2・効果各1件、期限は同じだった。
+別processのread-only monitorで延長・重複単一適用を独立確認した。
+
+fixture所有journalをmutation前に保存し、receipt/dispatch完了後に専用Auth user/
+account/session、profile、fanmark/license/config、intent/application/effect、監査、
+receipt/dispatchを片付けた。別processで合成行0、元の2 user/6 account/session1、
+元の40表の所有件数・Master全履歴・MFA/wakeの完全一致、app/auth200・attention空を
+確認した。Stripe test支払い/event履歴、19料金/Webhook/Portal設定は残す。
+[実延長と独立照合](evidence/stripe-staging-extension-provider-2026-10-04.json)。
+
+最初のharnessは1絵文字を内部Tier1と誤指定して決済前guardで停止した。アプリの
+登録は成功しており、所有fixtureのcleanup・独立baseline一致後、実Masterの
+Tier4条件で再実行した。この検証手順の失敗も証拠へ残し、runtime変更は行わない。
+
+今回の拒否/3DSは一回払いの延長Checkoutであり、subscription invoice failure/
+payment_action_requiredやasync/expired延長、未受信eventの初回逆順配信は未確認。
+Hosted Stripe UIと合成userのHTTP sessionは別で、本人のブラウザsessionを保持した。
+同一利用者のアプリ全画面・実スマホは未受け入れ。次はsubscriptionの失敗通知・
+初回逆順配信、承認済み宛先Resend、Apple/Discord新規登録、日次自然発火・運用・
+最終統合。六作業の完了条件はCOMPLETIONを維持する。実課金・本番Stripe・
+実ユーザー移送・公開domain/DNSは変更していない。以下は過去のcheckpoint。
+
+# 2026-10-04 Stripeの実test決済・Portal・プラン変更・cleanupを確認
+
+`87b61ef`/CI37200812928はアプリ・Workerの両job成功。空POST streamのPortal拒否を
+修正してWorker `ca971193`へ配備し、4 provider/secret14名称・Cron2件と元の人の
+account/profile、Master/MFA/wakeを保持した。Portal回帰7件と型確認も成功。
+
+アプリAPIから専用合成userのtest Checkoutを作成し、同request再試行で同sessionを
+確認した。Stripe公式4242 test cardで支払いを完了し、実署名Webhookと自然毎分Cronで
+Creator ¥1,000が反映された。Business変更では追加確定が必要となり、修正後Portalに
+「テスト環境」・未処理請求を表示し、公式テストカードによる支払い確定を行って、
+Business ¥2,000/activeへの反映を確認した。アプリAPIからFree変更を要求し、
+実subscription.deletedの自然処理でFree/canceledへ反映された。
+
+古い作成eventをStripe Dashboardから再送し、delivery3・application1を独立確認した。
+Business反映後の古いevent再送でもCreatorへ戻らなかった。これは処理済みeventの
+逆順再送であり、未受信eventの初回逆順配信は未受け入れ。private flag修正前に保留した
+subscription/invoiceが自然retryで成功し、最終全7 receipt/dispatchは正常に完了した。
+
+保存済み所有journalだけを使い、解約・drain後に専用test Customer、合成Auth user/
+account/session・Business profile/commands/projection/receipts/fenceを片付けた。
+別processのread-only monitorで合成行0と元の2 user/6 account/session1、元の40表の
+所有行件数、Master全履歴、MFA/wakeが一致することを確認した。Stripe側のtest
+請求書/支払い/event履歴と設定用19料金・Webhook/Portalは保持する。
+[実サービス検証と独立readback](evidence/stripe-staging-real-provider-2026-10-04.json)。
+
+Hosted Checkout/Portalのブラウザと、合成userのHTTP sessionは別であり、既存人の
+ブラウザsessionは保持した。同一利用者によるアプリ画面全体の受入とは区別する。
+次は実延長Checkout、支払い失敗/3DS、初回逆順配信、承認済み宛先Resend、
+Apple/Discord新規登録、日次自然発火・運用・最終統合。全移行は未完了。
+実課金・本番Stripe・実ユーザー移送・公開domain/DNSは変更していない。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Stripe test-only runtime配備・Webhook有効化を確認
+
+ebfbcf6/CI37199647817はアプリ・Workerの両job成功。
+Worker b79307caに6 billing selectorと毎分Stripe dispatchを配備した。
+読み取り専用監視tokenで配備version/100%、selector、Cron2件、secret14名称を
+独立確認した。匿名Checkout401・foreign Origin403・未署名Webhook400を確認。
+配備前後で人の2 user/6 account/session1、MFA、Master generation13と全履歴、
+その他bindingとwakeを保持した。専用10 event test Webhookを有効化した。
+[配備と有効化の証拠](evidence/stripe-staging-billing-deployment-2026-10-04.json)。
+
+専用の合成userで実test Checkoutの支払い成功と署名Webhook3件の保存を確認した。
+日次Cronとは別の毎分dispatchも実行され、sourceから継承したtest Price設定の
+公開flagを安全側の照合が拒否した。test Price3件だけをCASでprivateへ修正し、
+同じID・価格を保持した。自然retryによるプラン反映を確認中。
+料金PortalはCloudflareの空POST streamを非空本文と誤認して400となるため、
+EOFを許可して実データの最初のbyteを拒否する修正と回帰試験を追加した。
+同修正のCI・配備・実Portalは未受け入れ。
+合成userのpassword/cookieをファイル・ログへ保存せず、既存人のアカウントは維持する。
+実課金・本番Stripe変更・実ユーザー移送・公開domain/DNSは行っていない。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Stripeテスト接続を設定、決済runtimeのCI・配備前
+
+本人のStripeログイン後、Fanmarkのtest accountと既存test keyの接続を確認した。
+従来のstaging設定のPriceはtest accountに存在せず、月額3件・延長16件のtest
+Product/Priceを作成した。API versionは既存と同じ2025-08-27.basil。stagingだけに
+STRIPE_SECRET_KEY_TEST/STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRETを保存し、
+Worker088becec/runtime7e6cf76・secret14名称となった。既存2 user/6 accountと
+MFA fingerprint、その他bindingsを保持した。10 eventの専用Webhookは無効で待機。
+
+Businessのtest Price 3設定とstripe_mode=testをCASで保存し、Masterは元版を保持して
+private test Price IDだけを差し替える派生版を作成した。最初の派生版でティア価格の
+単位変換誤りをreadbackが検出したため元版へrollbackし、物理centsを配備前に照合して
+修正版をpromoteした。最終generation13、元の価格・他マスター内容と全履歴を保持。
+料金ポータルはtest defaultを作成し、請求履歴/支払い方法更新のみを許可する。
+[設定と修正の証拠](evidence/stripe-staging-test-setup-2026-10-04.json)。
+
+077c30eのCIで、日次のみ・provider無効を想定する試験fixtureが現在の設定を継承して
+失敗した。fixtureを明示的に無効化し、実staging設定のStripe test-only/毎分dispatchを
+別に照合した。0e75c88では隔離local editorのprovider無効guardもStripe設定の継承で
+拒否したため、同fixtureの6 billing selectorを明示的に除外した。local Worker/25 Business・
+4 Auth・8 Master/実cookie/browser/保存・画像・所有権の通し試験が成功した。実スマホの
+検証ではない。inert rehearsalのtarget guardは緩めず、ローカルmigration289件は成功。
+次は修正後候補のCI確認・staging配備、
+その後に専用test Webhookの有効化と実Stripe Checkout/Portal/変更/延長の確認。
+毎分通知pollingはDO selectorで選択されない。日次expiry/archiveはUTC00:00のまま。
+実課金、実ユーザー移送、公開domain/DNSは後工程。Resend宛先と別Apple/Discord
+新規登録用アカウントの回答も待つ。以下は過去のcheckpoint。
+
+# 2026-10-04 監視tokenの実D1書込み拒否・後片付けを確認
+
+2f45451/CI37195682605は両job成功。専用identity確認後、新規一時D1で
+監視tokenのSELECT成功、1行INSERTの認可拒否・保存0、同一INSERTの配備権限
+positive control成功を確認した。UUID/name/作成時刻を照合して所有D1だけを削除し、
+別processの独立readbackで元の3 D1 inventoryの完全一致とprobe D1不在を確認した。
+Worker495b3ce4、設定、保持4 provider identityとsessionは不変。
+[書込み拒否の実証拠](evidence/staging-monitor-write-denial-2026-10-04.json)。
+
+先行ゼロ行UPDATEの限界を、実際の非ゼロ書込み拒否で補った。定期監視と秘密更新/
+復旧運用の全体完了は推定しない。Stripeのin-appログイン画面tab17を開き本人の
+ログイン待ち。Resendテスト宛先と別Apple/Discord新規登録用アカウントを確認中。
+これらを待つ間もsource/運用/最終統合の残項目を進める。実ユーザーデータ移送と
+公開domain/DNSは後工程。以下は過去のcheckpoint。
+
+# 2026-10-04 Apple既存account連携・session失効・再ログインを確認
+
+本人の新しいApple認証でdashboardへ復帰し、最初のcallbackと同じApple account・
+Google user・Business profileへの対応とsession1を独立readbackで確認した。
+Auth user2/account6/session1、Business profile2。元GitHub/Google credentialと
+Discord連携を保持する。通常logout/session0・/auth再読込時の未認証も確認済み。
+Worker495b3ce4/runtime7e6cf76は不変で、今回コード・資格情報・schemaは変更しない。
+[実callback/logout/reloginの証拠](evidence/apple-staging-real-auth-2026-10-04.json)。
+
+この実フローは既存Google userへの連携であり、Apple新規user/初回password setup
+とrelayは未受け入れ。Discord新規登録も残る。次はこれらとStripe sandbox、
+承認済みテスト宛先Resend、自然Cron・運用・最終統合。実ユーザーデータ移送と
+公開domain/DNS切替は後工程。以下は過去のcheckpoint。
+
+# 2026-10-04 Apple既存account連携・session失効を確認、再ログイン待ち
+
+Worker495b3ce4/runtime7e6cf76で本人の実Apple callbackがdashboardへ戻り、
+既存Google userへのApple account連携とsession所有者の一致を確認した。
+Auth user2/account6/session1、Business profile2。元のGitHub/Google identity・
+credentialとDiscord連携を保持する。通常logoutでsession0、/authの再読込も未認証。
+再ログインは開始から10分以上後にstate_mismatchで戻り、session0/account6を
+再確認した。期限切れは有力な仮説だが、cookieの具体的な失敗は取得していない。
+[実callback/logoutの証拠](evidence/apple-staging-real-auth-2026-10-04.json)。
+
+次は本人が/authのAppleボタンから開始し、続けて認証する。先にOAuthを開始して
+長時間待たない。再ログイン、新規Apple user/初回password setup、relayは未受け入れ。
+staging appで待機し、資格情報・schema・Worker配備・本番データ/DNSは変更しない。
+fdc3bf7の文書CI37193005708は両job成功。以下は過去のcheckpoint。
+
+# 2026-10-04 Apple form POST修正をstaging配備・本人パスワード入力待ち
+
+7e6cf76/CI37192167542は両job成功。保持データ/設定のguardを確認して配備し、
+100% Worker `495b3ce4-7733-40c5-82e6-c7d4c180d287`でApple由来form POSTの302、
+redirect先で不正state/cookieなしの拒否、Apple Originで他の認証操作の403を確認した。
+secret11名称・他binding/limits、GitHub/Google user2/account5（Discord連携含む）/
+session0とMaster/参照履歴・MFA/wakeの一致を配備前後と合成probe後に確認した。
+DB schema/資格情報は変更していない。独立監視はapp/auth200・attentionなし。
+[配備とremote probeの証拠](evidence/apple-form-post-deployment-2026-10-04.json)。
+
+新しいstaging開始から既に承認済みの同じApple app/scopesへ進み、本人の
+Apple Accountパスワード入力画面（tab8）に到達した。パスワードは入力していない。
+実Apple callback/provisioning/初回設定/logout/reloginはまだ未受け入れ。
+次は本人サインイン後の実callback/session確認。古いcallbackを再送しない。
+ユーザーデータ実移送/DNS切替は後工程。以下は過去のcheckpoint。
+
+# 2026-10-04 Apple callback origin拒否を再現・限定修正、配備前
+
+本人のApple認証がcallback画面の`forbidden_origin`で停止した。
+以前の合成callbackはアプリOriginを送っており、実Appleのcross-site form POSTを
+再現していなかった。テストをcookieなしのApple Origin POST→cookie付きGETへ修正し、
+修正前gatewayで403を再現した。専用path/POST/正確なApple Origin/form-urlencodedだけ
+受け付けるよう変更し、共通trustedOrigins/CORSは広げない。業務policy/schema再確認と
+SDKの元state cookie照合は保持する。OAuth66件、Auth48件、型と変更箇所ESLintが成功。
+[回帰証拠](evidence/apple-form-post-regression-2026-10-04.json)。
+CIと保持account/master/設定の再確認後にstagingへ配備する。現時点では未配備で、
+実Apple callback/初回設定/logout/reloginは未受け入れ。以下は過去のcheckpoint。
+
+# 2026-10-04 Apple staging callback・有効な資格情報を保存
+
+本人の追加保存許可後、既存Services IDへstaging domain/callbackを保存し、設定を
+開き直して本番domain/callbackとの併存とFanmark Primary App ID保持を確認した。
+Vaultの既存Fanmark用.p8とApple Keyの対応、source JWTの署名一致を検証した。
+source secretは期限切れだったため再利用せず、同じ鍵で90日有効なJWTをメモリ内生成。
+source設定/secretは変更せず、秘密鍵再発行と鍵本体のuploadも行っていない。
+JWTは標準入力だけでstaging Workerへ保存し、値を出力・Git・通常ファイルへ保存しない。
+有効期限は2027-01-02T09:08:25Z（JST 18:08）。それ以前の更新が必要で、
+更新運用・実Apple認証・relay/初回設定・logout/reloginは未受け入れ。
+
+HEAD a3dbb5c/CI37189226939両job成功のcandidateでsecret設定のみを更新した。
+Workerは100% `4bc50d76-ec1d-4565-af73-b9199e79bfa9`、runtime codeは`0fb4976`。
+GitHub/Google user2・Discord連携を含むaccount5・session1とBusiness profile2、
+Master/参照履歴・MFA/wake・他binding/CPU limitsの保存前後一致を確認した。
+secret11名称、capabilitiesはApple/Discord/GitHub/Google。独立監視はattentionなし。
+[値を含まないApple設定証拠](evidence/apple-staging-credential-installation-2026-10-04.json)。
+その後、通常logoutでApple実認証を始めるためstaging /authを開いた。
+既存試験identityは保持し、本番ユーザー移送・DNS切替はしていない。
+次は本人のApple認証、Discord新規登録、Stripe sandbox、承認済み宛先Resend、
+自然Cron・運用・最終統合。以下は過去のcheckpoint。
+
+# 2026-10-04 Apple同意後の設定準備・既存secret期限切れ
+
+本人のApple契約同意後、Certificates, Identifiers & Profilesへのアクセスを確認した。
+既存Services IDはsource Client IDと一致し、Primary App IDはFanmark。
+既存domain `auth.fanmark.id` / `fanmark.id` と本番callbackを確認した。
+staging domainと`/api/auth/callback/apple`を追加フォームへ入力したが、保存はしていない。
+具体的なcallback追加保存の承認待ち。Appleの契約同意を設定保存の承認とは扱わない。
+
+source secretを出力せずに読み、JWT payloadのsubject/audience一致を確認した。
+`exp`は2026-05-25T22:39:40Zで現在より過去。署名/Apple側の検証は未実施だが、
+この期限切れsecretはstagingへ保存しない。source provider設定は保存せず閉じた。
+repoとDownloadsの`.p8`ファイル名検索では鍵が見つからず、既存鍵の保存場所を本人へ確認中。
+秘密値は保持を解除し、出力・Git・通常ファイルへの保存はしていない。
+callback/資格情報のremote変更、Worker再配備、本番切替は行っていない。
+次はcallback承認と有効なApple資格情報の準備。既存試験ユーザーは保持する。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Discord既存account連携・失効・再ログインを受け入れ
+
+最初の本人認証は`state_mismatch`で/authへ戻った。直近の失敗URLからerror codeだけを
+確認した。期限切れは可能性の一つであり断定しない。新しい開始から同じapp・既に
+許可済みのidentify/email範囲で再認証すると、dashboardへ戻った。
+実Discord accountのsession所有者は既存Googleユーザーと一致し、元のGoogle/GitHub
+user/profile・credentialを保持している。Auth user2/account5/session1、Business profile2。
+通常ログアウトでsession0、再読込後も未認証、同じDiscordの再ログインで同じidentityと
+session1・dashboard復帰をremote readbackとブラウザで確認した。
+[Discord実認証証拠](evidence/discord-staging-real-auth-2026-10-04.json)。
+この実認証は既存Googleユーザーへのaccount連携であり、Discord新規user作成と
+初回password setupは通っていない。新規登録経路の実受け入れは未完了として保持する。
+試験identity/credentialは削除せず、旧owned行0件canaryは使わない。
+Worker `fa4ef348`/runtime code `0fb4976` は不変。直前HEAD `19e953d`の
+CI37188231327は両job成功。今回コード修正・再配備は行っていない。
+
+Appleの既存source client設定を読み取り、provider Save/secret revealはしていない。
+Apple Developerにはログイン済みだが、最新Program License Agreementへの同意前は
+Certificates, Identifiers & Profilesへ入れない。契約レビューをtab16で開き、同意ボタンは
+押していない。本人の契約確認/同意待ちで、Apple callback/資格情報は未保存。
+次はApple設定、Discord新規登録、Stripe sandbox、承認済み宛先のResend、日次自然発火、
+運用と最終統合。既存ユーザー/Auth/Storageの実移送・公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Discord callback・既存資格情報保存、本人ログイン待ち
+
+本人の具体的な承認後、移行元と一致する既存Discordアプリへstaging callbackを追加・
+保存し、再読込で本番`https://auth.fanmark.id/auth/v1/callback`と両方の存在を確認した。
+既存Client ID/SecretをSupabaseから読み、FIFOとWrangler stdinでapp stagingへ保存した。
+移行元provider設定のSaveとsecret再発行は行っていない。秘密値は出力/Git/通常ファイルへ
+保存せず、private FIFOはinstaller終了後に削除した。
+Workerは100% `fa4ef348-c19c-4c33-87b5-2183db983cfd`、runtime codeは`0fb4976`。
+設定を保存したcandidate `b08deeb`はCI37186918306両job成功。アプリ/schema再配備はない。
+保存前後の本人管理GitHub/Google account、Masterと参照履歴、MFA/wake、その他binding/
+CPU limitsの一致を確認した。secretは9名称、capabilitiesはDiscord/GitHub/Google。
+[値を含まないDiscord設定証拠](evidence/discord-staging-credential-installation-2026-10-04.json)。
+Google sessionを通常ログアウトし、stagingのDiscordボタンから実認証を開始した。
+Discord側の本人ログイン画面（tab8）で入力待ち。実callback/provisioning/初回設定と
+logout/reloginは未受け入れ。試験アカウントは保持し、旧全owned行0件canaryは使わない。
+Google/GitHubの実認証受け入れは完了。残りはDiscord実認証、Apple、Stripe sandbox、
+承認済み宛先のResend、日次自然発火、運用と最終統合。
+既存ユーザー/Auth/Storageの実移送・公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Google初回パスワード保存・失効・再ログインを受け入れ
+
+本人のパスワード保存後、credential作成とsetup flag0、dashboard到達を確認した。
+通常ログアウトでAuth session0となり、ページ再読込後も未認証だった。同じGoogleで
+再ログインし、同じuser/profile/accountを保持してsession1・dashboardへ戻ることを
+実ブラウザとremote readbackで確認した。パスワード値/hashは取得していない。
+[Google実認証の証拠](evidence/google-staging-real-auth-2026-10-04.json)。
+GitHubとGoogleの本人管理staging user2/account4・Business profile2を保持する。
+元のGitHub identity/credentialのdigestは一致し、旧全owned行0件canaryは使わない。
+Workerは`8bb6b4d9-a9e1-42c4-8963-6348e05d05ce`、runtime codeは`0fb4976`。
+直前HEAD `6bc760b`のCI37185439067は両job成功。今回コード修正・再配備は行っていない。
+次はDiscord/Apple、Stripe sandbox、承認済み宛先のResend、日次自然発火、運用と最終統合。
+既存ユーザー/Auth/Storageの実移送・公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Google実callback成功・初回パスワード入力待ち
+
+本人のGoogleログインがエラーで戻った後、新しい認証開始から同じaccount/共有範囲で
+再試行し、`/password-setup`へ到達した。認証stateは600秒で期限切れになるため、
+承認待ちによる期限切れと整合する。ただし最初のerror codeは画面で消去されており、
+原因は断定しない。認証の期限・cookie検証を緩和していない。
+実Google subject一致、provisioning完了、session1、setup flag1をremote readbackで確認。
+Googleは既存GitHub試験アカウントとは別の本人管理staging accountとして作られた。
+Auth user2/account3/session1・Business profile2を保持し、元のGitHub user/profileと
+credentialのidentity digestは一致した。パスワード値/hashは取得していない。
+[Google実callback証拠](evidence/google-staging-real-callback-2026-10-04.json)。
+現在は本人による初回パスワード入力・保存待ち。保存後のdashboard/sessionと
+Googleログアウト・同一account再ログインは未受け入れ。
+HEAD `6bc760b` のCI37185439067は両job成功。Workerは引き続き`8bb6b4d9`で、
+今回コード修正・再配備は行っていない。旧全owned行0件canaryは使わない。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Google設定保存・資格情報移送と監視tokenの実接続
+
+本人の具体的な承認後、既存Google OAuth clientへstaging callbackを追加・保存し、
+本番`https://auth.fanmark.id/auth/v1/callback`を保持した。既存secretはSupabaseの
+Google設定から読み取り、値をファイル/ログ/Gitへ入れずFIFOとWrangler stdinから
+`fanmark-app-staging`の`GOOGLE_OAUTH_CLIENT_ID/SECRET`へ保存した。
+移行元のprovider設定とsecretは変更・再発行していない。
+保存による100% Worker版は`8bb6b4d9-a9e1-42c4-8963-6348e05d05ce`。
+アプリruntime codeは受入済み`0fb4976`、監視tool candidateは`6e527b5`で
+CI37183202677の両job成功。アプリ/Worker/schemaの再配備はしていない。
+設定前後の同じ試験アカウント/認証情報・Master/料金履歴・MFA・wake・その他bindingを
+照合し保持を確認した。capabilitiesはGitHubとGoogleだけを公開する。
+[値を含まないGoogle設定証拠](evidence/google-staging-credential-installation-2026-10-04.json)。
+Googleの実認証はアカウント選択後の名前/写真/メール共有の個別承認待ちで、未受け入れ。
+Google検証開始前にGitHub sessionを通常ログアウトした。試験アカウントを削除しない。
+
+監視tokenは対象accountだけのWorkers Scripts Read/D1 Read、有効期限2026-11-04で
+発行し、Macキーチェーンへ保存した。既存entryを置き換えず、値はFIFO/プロセス
+stdin・環境だけで渡した。キーチェーンreadback後の専用CLIはexit0、attentionは空。
+[監視資格情報の証拠](evidence/dedicated-staging-monitor-credential-2026-10-04.json)。
+IAM作成画面の対象/二つのRead権限は確認済み。ゼロ行UPDATEは変更0で成功したため、
+実書込み拒否の証拠にはならず、reportのleastPrivilegeAcceptedはfalseを保持する。
+定期監視・鍵運用全体の受け入れも別条件。
+
+次はGoogleの実callback/初回設定、Discord/Apple、Stripe sandbox、承認済み宛先の
+Resend、日次自然発火（2026-10-05 09:00 JST）、運用条件と最終統合。
+既存ユーザー/Auth/Storageの実移送と公開domain/DNS切替は後工程。
+以下は過去のcheckpoint。
+
+# 2026-10-04 GitHub実認証の受け入れと監視専用token経路
+
+`0fb4976`/CI37180854336両job成功、Worker
+`07bf9d61-d9be-43db-875e-492ed6e2e7c5`へ100%配備済み。
+実GitHub callback/初回パスワード保存に加え、ログアウトでsession0・再読込後の未認証、
+同一GitHubの再ログインで同じuser/profile・session1・setup flag0を確認した。
+配備前後のアカウント/認証情報・Master/料金履歴・MFA世代を保持している。
+[実認証の証拠](evidence/github-staging-real-auth-2026-10-04.json)。
+本人管理の試験アカウントは保持し、旧全owned行0件canaryへ合わせて削除しない。
+最初の再読込は旧PWA moduleを使ったため、現行moduleの実行と配信bytes一致を確認して
+ログアウトを再検証した。通常HTML navigationの/auth・/dashboard・/pwaは200で、
+HTML指定のない要求の404は不具合ではなかった。
+[配備版のnavigation証拠](evidence/staging-navigation-2026-10-04.json)。
+
+本変更は配備用資格情報を使わない監視CLI経路とその回帰試験を追加する。
+`--read-only --monitor-token`は専用環境tokenを要求し、Wrangler/一般tokenへ戻らない。
+固定account/Worker/DBとread receiptを検証する。実tokenの作成・IAM policy・定期監視・
+秘密の保管/運用条件は別の受け入れ。アプリ/Worker/config/schemaは変更しないため、
+この監視tool変更のためのWorker再配備・合成canary反復は不要。
+Google callback追加・資格情報保存は具体的な本人承認待ち。
+日次自然発火（2026-10-05 09:00 JST）、他provider/email/Stripe/運用/最終統合は残る。
+既存ユーザー/Auth/Storageの実移送・公開ドメイン切替は後工程。
+以下は過去のcheckpoint。
+
+# 2026-10-04 GitHub初回登録・パスワード保存とログアウト修正
+
+`f2881a5`/CI37172900459の両job成功後、Worker
+`22628cfe-22a6-4047-991f-20a16244d916`で実GitHub callbackとsessionを確認した。
+本人のGitHub識別子に対応するAuthユーザー・Businessプロフィールは各1件で、
+provisioningは完了。本人が初回パスワードを保存し、credential accountの作成と
+`requires_password_setup=0`、dashboard到達を確認した。
+[資格情報を含まない証拠](evidence/github-staging-first-password-2026-10-04.json)。
+
+実ログアウトはContent-Type欠落で拒否され、sessionが残った。今回の修正は
+JSONの空objectを送信し、失効成功後だけローカル認証状態を消す。
+失敗はヘッダーの既存エラー表示へ伝え、成功表示・guest遷移を行わない。
+frontend clientから実Worker/D1を通す回帰試験は、空streamを伴うPOSTで
+修正前の415を再現し、修正後のcookie失効・session削除・旧cookie拒否を確認する。
+この修正のCI/配備と、実ブラウザのログアウト・同一GitHub再ログインはまだ未受け入れ。
+
+この本人管理のstaging試験アカウントは保持する。旧canaryの全owned行0件guardは
+適用できないため、無断で緩和・cleanupせず、限定baseline照合または隔離環境を使う。
+Google callback追加・資格情報保存は本人の具体的な承認待ち。
+日次自然発火（次回2026-10-05 09:00 JST）、残りprovider/email/Stripe/運用/最終統合は未完了。
+既存ユーザーの移送・公開ドメイン切替は後工程。
+以下は過去のcheckpoint。
+
+# 2026-10-04 日次ジョブ配備とGitHub接続の準備
+
+`b80fefc`/CI37168103288はapplication・Worker両jobが成功し、Worker
+`62052d66-41af-4595-ba15-ec042d3f7fce`へ100%配備した。独立readbackがCPU30,000ms、
+日次expiry/archiveとCron `0 0 * * *`、マスター3,944/公開行7,888・料金/履歴の保持を確認。
+app/auth200、FK0、wake17/17、滞留/失敗/open run0。
+[配備証拠](evidence/staging-daily-job-activation-2026-10-04.json)。
+mainの日次自然発火は未確認で、次回は2026-10-05 09:00 JST。
+
+ユーザーがstaging専用GitHub OAuthアプリを登録した。本人提供のClient ID/Secretを
+Wranglerのstdinから対象Worker secretsへ保存し、既存3secretを保持した。
+secret保存後のversionは`e5569745-1236-4937-bcc6-f3177b02b1c9`。
+[値を含まない証拠](evidence/github-staging-credential-installation-2026-10-04.json)。
+本変更では`AUTH_SOCIAL_BACKEND=better-auth`を準備する。資格情報はconfig/Viteへ入れず、
+local editor fixtureはprovider selectorを除く。CI・selector配備・実GitHub callback/session・
+初回password setupは未受け入れ。既存Supabase callback、実ユーザー移送、DNSは変更しない。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Workers Paidと日次ジョブ有効化の準備
+
+ユーザーのPaid有効化後、対象accountのPaid「現在のプラン」を確認した。
+[証拠](evidence/workers-paid-plan-2026-10-04.json)。Supabase管理画面にもログイン済み。
+app staging configで日次expiry/archiveとCPU設定30,000msを準備している。
+既存のremote合成smoke guardはactive jobを拒否するままで、通常CIのfixtureを
+停止baselineと運用configへ分けた。配備・実行はまだ受け入れていない。
+Stripe/Resend/OAuth実接続、鍵管理・運用担当/保存期間/RPO-RTO、最終統合は残る。
+以下は過去のcheckpoint。
+
+# 2026-10-04 通常CIの公開参照15件と運用確認手順
+
+`f5ceed0`/CI37163953832はcompleted/success、application・Worker両job成功。
+Worker logで00:12:08.8189911Zに専用public-access15/15の実行・成功を確認した。
+runtime/schema差分はなく、受入済みcode0e86688/Workerbddc0dadを再配備していない。
+PR #41の本文を最終実装・受け入れ・残件へ整理し、draftを維持する。
+
+[運用手順](OPERATIONS.md)と`staging-operations-status.mjs --read-only`を用意した。
+固定account/identity/remote三D1 binding/単一100% version/全25 migrationを確認したうえで、
+値を含まない集計とapp/auth healthを観測する。00:29:17.839Zの実行はexit0。
+appと`/api/auth/ok`が200、FK0、wake17/17、通知滞留/失敗・expiry/finalization open run・
+Stripe滞留/dead-letterが0だった。[証拠](evidence/staging-operations-observation-2026-10-04.json)。
+remoteのexpiry/archive/Stripe/broadcast send selectorは未設定。観測成功は定常運用の完了ではない。
+
+準備中、Wranglerのremote --fileがSELECTの結果ではなくimport要約を返すため、
+固定SELECTだけを--commandで実行するよう修正した。--file試行のprovider要約は
+rows written0で、業務行を書き換えるSQLはなかった。auth probeも既存契約の`/api/auth/ok`へ
+合わせた。準備時の404を実アプリの認証障害として扱わない。
+
+対象accountの契約画面でWorkers Free（現在のプラン）を確認した。
+subscriptions APIは403/10000、account settingsのusage model standardだけでは契約を
+判定できなかった。Paid変更の許可を依頼済みで、購入はしていない。
+provider設定場所/テスト送信、main日次有効化/CPU適合、担当/最小権限/鍵保管先/保存期間/
+RPO・RTO、同じ最終candidateでPC・実スマホ・言語・旧PWA/provider/job/recoveryが残る。
+実ユーザー/Auth/Storage移送、DNS、Supabase本番writer停止は行っていない。
+以下は過去のcheckpoint。
+
+# 2026-10-04 Tier C公開・保護参照のstaging受け入れ
+
+code0e86688/CI37130360266のapplication・Worker両job成功。Workerbddc0dadへ反映し、
+合成2 accountの無期限short/emoji投影一致、本人settings/password設定、locked秘匿、
+誤password拒否、正しいemoji proof/保護内容、別selector拒否、grace失効、有限期限拒否を
+実APIで確認した。journal ilxWGNはverified-and-cleaned。独立00:01:53.330Z readbackで
+Business/Auth非マスター行0、Master7888/料金/履歴保持・reference世代10/new activation0・
+wake17/17とMFA世代保持を確認。[証拠](evidence/tier-c-public-access-2026-10-04.json)。
+public15/registration26/protected13はlocal成功。0e CIにはregistration26/protected13が入り、
+専用public15は漏れていたので通常test:api-contracts-d1へ追加した。次HEADでCIを確認する。
+runtime/schema差分はなく、同じstaging試験を再実行しない。
+
+前の自動turnはモデル容量エラーで停止していた。起動済みcanaryはexit0で完走しており、
+そのプロセスを再起動していない。provider設定場所の入力待ちと、main定常ジョブ/
+Workers plan/鍵管理/運用RTO/最終PC・スマホ・言語・PWA統合が残る。
+実ユーザーデータ/Auth/Storageの実移送・ドメインは未実行。以下は過去のcheckpoint。
+
+# 2026-10-03 Tier C公開・保護参照の修正candidate
+
+無期限のactiveライセンスをemoji参照から除外するsource由来の条件を、PRODUCTに合わせて
+公開projection・パスワード検証・atomic proof発行・保護内容取得で修正した。
+複数ライセンスの曖昧さ、有限の期限、selector-bound proofと世代の確認は維持する。
+local public15/registration26/protected13、Worker typecheck・変更箇所lintを確認。
+registrationの現行schema fixtureに、active releaseと別に保持するcanonical IDを追加し、
+実sessionで取得したS/A/Cのshort/emoji参照が同じ投影を返すことを確認した。
+CIとstaging受入は次HEADで実行する。main stagingはまだWorker51db2c90/code6a1870a。
+source RPC/実ユーザーデータ・provider設定・ドメインは変更していない。
+
+前HEAD ef25b50/CI37125702795はcompleted/success、application/Worker両job成功。
+実Chromeで同一networkIdの取消しreceiptを確認してcontinueRequest拒否を扱う修正が
+Linuxでも成功した。以前のe68e6e8失敗を最新CIの状態とは扱わない。
+58関数のidentity/hash/権限と既存counterpart行を結び付けた
+[evidence](evidence/source-function-counterparts-2026-10-03.json)を追加した。
+54 classifier pendingは未実装件数ではなく、手動照合を取り込んでいない分類数。
+semantic承認/fullRuntimeReconciled/converterDeployableは引き続きfalse。
+保護お気に入り一覧は47b69c5のremote受入と変わらない実装hashを照合し、対応表の古い
+未受入表記を訂正した。実Cron archiveの受入も保持し、同じremote試験を繰り返さない。
+以下は過去のcheckpoint。
+
+# 2026-10-03 ブラウザ取消し競合の修正candidate
+
+最新`e68e6e8`/CI37124843575はcompleted/failure。Workerは成功、applicationの
+actual local Worker editor試験が`Fetch.continueRequest:-32602:invalid_interception_id`
+で失敗した。前の`dae2a70`/CI37123979783成功は保持するが、最新CI成功とはしない。
+
+Network.loadingFailed(canceled=true)の同一networkIdを確認できる場合だけ、
+continueRequestの上記拒否を正常な取消しとして扱うhelperを追加した。
+取消しreceiptがない、別ID、別method/code/kindの拒否は引き続き失敗させる。
+native6/6、変更箇所lint、check:ci、diff check成功。actual local Worker/Chromeでも
+通信をpause→AbortController取消し→Chrome receipt→無効ID拒否の順で再現し、
+fixtureの取消し1件を確認した。実API応答のみでeditor既存フロー・FK0が成功し、
+server停止/port閉鎖/local DB削除も確認した。前のCI失敗時に取消しreceiptを記録して
+いなかったため、元の1件の原因を断定しない。新HEAD CIでLinuxの回帰を確認する。
+
+実Cron archiveは前項のaccepted-and-cleanedを保持し、再実行しない。
+この変更はbrowser harness/通常CIの回帰のみ。runtime/source data/ドメインは未変更。
+
+# 2026-10-03 実Cronアーカイブと最新CIの受け入れ
+
+`dae2a70`/CI37123979783はcompleted/success、application/Worker両job成功。
+前回失敗したactual local Worker/split D1のeditor試験も成功した。
+CDPのmethod/code/固定kindの診断追加は受け入れ、秘密のraw値を出力しない。
+以前のprotocol拒否は今回再現せず、race修正とは主張しない。拒否を無視する変更はない。
+runtime/schemaは未変更で、main stagingは引き続きWorker51db2c90・code6a1870a。
+
+隔離した実Cron→archiveも受け入れ済み。全25 Businessの新しい合成D1で、
+古いdelivered/failed2件を履歴へ移し、pendingと新しいdelivered2件を残した。
+実schedule/binding、received/selected/start/completed、履歴ID/payload、FK違反0を確認。
+2回目のconductor34190はterminal/exit0、verified-and-cleaned。
+最初のfixtureのonly-archive期待値誤りによる失敗も保持し、アプリ不具合とは扱わない。
+所有した一時Worker/D1を削除、独立12:52:07.842Z metadata readで元の3 D1/2 Workersと
+一致した。[受け入れ](evidence/isolated-notification-archive-cron-2026-10-03.json)。
+同じ実Cron検証は再実行不要。main stagingの日次archive selectorは未設定。
+次は日次運用/保存期間/CPU・plan適合と、実provider設定待ちの残件。
+providerの現行OAuth signup hookと必要入力は[接続準備](staging-provider-readiness.md)。
+実ユーザーデータ・既存staging業務/Auth行・provider設定・ドメインは未変更。
+この証拠追記とconductor追加の新HEAD CIは別に追跡する。以下は過去のcheckpoint。
+
+# 2026-10-03 最新CIのブラウザ失敗を診断中
+
+`e3d5615`/CI37121269163はcompleted/failure。Worker jobは成功したが、
+actual local Worker/split D1のeditor試験が`browser_cdp_command_failed`で失敗した。
+直前の取得API追加`a2d09dd`/CI37120631839の両job成功は保持する。
+最新branchのCI成功・完了は主張しない。
+
+CDP helperの拒否診断にmethod・数値code・固定kindだけを追加した。
+raw provider message、URL、cookie、request引数は出力しない。
+手元のactual Worker/25 Business/4 Auth/8 Master/R2/Chrome試験は成功し、
+loopback server停止・port閉鎖・local DB削除を確認した。合成protocolエラーでも
+秘密値を出さないことを確認した。原因は未再現であり、race修正の証拠ではない。
+この診断変更の新HEAD CIで切り分ける。runtime再配備は不要。
+
+隔離した実Cron→archive確認は同じlive processで追跡中。20分で観測を打ち切り、
+所有した一時Worker/D1の削除とinventory照合を行う。main stagingのarchive
+selectorは依然未設定。実ユーザーデータ・ドメインは変更しない。
+
+# 2026-10-03 取得の現行schema/session検証とCI組込み
+
+取得の通常Worker CI漏れを修正し、既存21回帰と全25 Business/4 Auth/8 Master・実sessionの
+5件がlocal26/26成功。実admin signin/TOTP/停止による旧cookie拒否と、canonical ID・
+順序/肌色・全ownerお気に入り連携・有限/無期限取得を確認。typecheck/変更箇所lint成功。
+[取得API](fanmark-registration-api.md)。`a2d09dd`/CI37120631839のアプリ・Worker両job成功。
+CIのWorker logで新旧両fileと26/26の実行を確認した。runtime再デプロイは不要。
+[sequence review](source-sequence-key-review.md)は現行writer/importと3indexを照合し、
+空/NULL/shape/衝突・外部consumerの差を最後のデータ工程へ明記。generic converterのgateは保持。
+今回runtime/schema/staging deploymentは変更しない。実稼働の受入は以下の画像checkpointを保持。
+通知read3関数とwaitlist2関数の定義hash・現行経路・既存受入を照合し、古い対応表を更新した。
+legacy toggleには現行実行callerがなく、汎用RPCの互換性を推定しない。
+provider/運用/全source/最終統合は未完了。次はイベント生成・archiveの運用条件を具体化する。
+
+# 2026-10-03 画像参照の実staging受け入れ
+
+`6a1870a`/CI37118191381両job成功。11:10:37.101ZにWorker51db2c90へ反映し、
+Supabase形式を保持した合成画像をR2から編集・公開表示、変更なし保存、既存key削除する
+実API/Chrome試験を受け入れた。合成2 account/2画像は削除済み。
+独立11:15:19.120Z readbackで業務/Authの非マスター行0、Master7888/release/history/料金値保持、
+reference世代10・activation追加0、wake17/17・MFA240・secret3名称を確認した。
+[画像URL対応](storage-image-url-mapping.md)と[受入証拠](evidence/storage-image-projection-2026-10-03.json)。
+前のread-only helperは過去の受入versionを新versionと比較して停止した。元の受入journalは
+保持し、今回preflight.oldVersionとの比較へ修正した。実稼働newVersionは独立照合し、再確認が成功。
+全実行handleはterminal。実ユーザー/Storage/DNSは未変更、実スマホ/provider/運用/全sourceと
+最終統合は未完了。次はCOMPLETION項目1の契約差/残件照合。以下は過去のcheckpoint。
+
+# 2026-10-03 画像参照対応の現行checkpoint
+
+画像read DTO対応、変更なし保存時の元参照保持、既存timestamp/nested keyのowner削除を実装。localの実Worker・25 Business/4 Auth・R2・Chromeの編集/公開画像decodeと削除が成功した。typecheck/lintも成功（public-accessの既存2診断は不変）。[対応と受け入れ](storage-image-url-mapping.md)。このcandidateのCI・remote staging反映は次の工程。稼働Workerはcbb90c7/e0a4b16eのまま。実ユーザー行/objectとDNSは未変更。
+
+# Cloudflare migration handoff
+
+Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
+open and draft. CI validates the branch but does not deploy the Worker.
+The newest checkpoint below is authoritative for current deployment state;
+older sections retain their historical acceptance and failure evidence.
+
+The six current completion work packages are tracked in
+[COMPLETION.md](COMPLETION.md). This defines the finish line for the authorized
+work before real-user data and domain cutover; an individual passing test or
+staging deployment does not close the whole goal.
+
+## Current resume boundary — 2026-10-03 JST
+
+- **Accepted complete remote synthetic fixture recovery and independent cleanup**:
+  2cbf4e0/CI37115000097 completed/success in both jobs; watcher55572 exited0
+  and is consumed. Remote session28956 exited0 and is consumed. Both separately
+  created Business/Auth/Master and split-R2 targets accepted the same bundle:
+  40 source tables/15 rows across9 populated tables, source count/hash equality,
+  Master3 emojis/4 tiers, two PNGs, actual Storage GET/HEAD, physical inventories,
+  FK checks and wake1/0. Primary committed protected-credential interruption and
+  checkpoint resume passed. Auth is the fixed seeded dependency user, not Auth
+  credential backup/restore. Primary provision/restore102090ms; fresh90726ms,
+  neither is production RTO. Initial Workers returned404 (fresh also503), then
+  identity matched within bounded GET readiness. Settings and scoped credentials
+  matched; no authentication/identity check was relaxed or write retried.
+  Accepted10:16:12.536Z; both owned groups were deleted by receipt/version checks.
+  Final inventory equals the original3 D1/3 R2/2 Workers. A separate read-only
+  metadata check at10:18:30.138Z independently confirms the same original lists.
+  Private journal:/tmp/fanmark-combined-remote-KjkWWK/journal.json. The checked-in
+  value-free evidence is evidence/isolated-combined-recovery-2026-10-03.json.
+  This closes this complete remote fixture gate. It does not close source URL
+  conversion/browser delivery, production recovery operations, all source gates
+  or all six packages; converter deployable/fullMigrationReconciled remain false.
+  Existing app runtime remainscbb90c7/e0a4b16e; real source users/data and DNS are
+  unchanged. Next concrete gap: imported image URLs still name the source origin;
+  implement and verify their target mapping/rendering without altering exports.
+  Earlier failed/prepared checkpoints below are historical and superseded only
+  for the primitive/readiness/current-fixture recovery gates named here.
+
+- **Pinned-credential candidate accepted by CI/deploy; identity gate still open**:
+  ad8d7a5/CI37113804391 completed/success in both jobs; watcher92593 exited0
+  and is consumed. One remote attempt (session28828, terminal/exit1) verified
+  temporary-config identity and successfully deployed the owned Worker plus
+  its secret. It stopped before schema/data import at the following identity
+  preflight; the R2 adapter's bare Error discarded the specific failure code.
+  All three owned D1/two R2/Worker were deleted by receipts, and independent
+  09:56:06.181Z API metadata equals all original inventories. Journal:
+  /tmp/fanmark-combined-remote-h1aFb1/journal.json. The restore remains false.
+  Wrangler4.139 source confirms stdin trailing whitespace is removed; do not
+  assert a secret newline or propagation cause without observed evidence.
+  The new candidate retains stable error codes, HTTP status and allowlisted
+  transport codes only, verifies Worker binding settings, and records a bounded
+  read-only readiness sequence. Authentication/identity refusal is immediate;
+  only transport failures or404/502/503/504 may wait. The60s start budget plus
+  a final request's30s timeout is bounded; writes are never retried. Native7/7,
+  including403/503/DNS code preservation and output redaction, passes. Next:
+  candidate CI then one owned retry with these diagnostics. No app re-deploy.
+
+- **Credential-selection fix prepared, live restore still unaccepted**:
+  The conductor now pins the verified staging OAuth credential in every later
+  Wrangler child environment, checks temporary-config account membership before
+  resource creation, and records value-free CLI command/status/numeric codes.
+  Failed deploy cleanup checks exact Worker absence instead of assuming failure
+  means absence; an unreceipted remaining Worker remains unresolved. Real
+  read-only temporary-config whoami with the explicit credential confirms the
+  fanmark account. No global profile/login was changed and no remote write ran
+  during this fix. Next: this candidate's CI, then one owned synthetic rehearsal.
+
+- **Latest full remote attempt failed before data import; cleanup verified**:
+  Candidate8c17c7e/CI37112092427 passed both jobs. The first owned combined
+  remote run stopped at temporary image Worker deploy, before schema or data
+  import. Its three owned D1 databases and two empty R2 buckets were deleted.
+  Independent09:26:21.141Z API inventory equals the original D1/R2/Worker
+  inventories, and the intended temporary Worker is absent. The failed restore
+  remains unaccepted. Journal:/tmp/fanmark-combined-remote-fom0pq/journal.json.
+  A subsequent read-only whoami using the temporary /tmp config selected the
+  unrelated fragrance account, whereas the staging config had selected the
+  dedicated fanmark profile. This confirms a credential-selection defect in
+  the rehearsal tool. The deploy wrapper discarded the original CLI error, so
+  the precise provider error was not retained. Pin the already verified fanmark
+  credential for temporary-config CLI operations, verify that identity before
+  resource creation, and retain value-free command failure diagnostics before
+  a new bounded attempt. Do not request another login as a substitute for this
+  tool fix. Existing app runtime remainscbb90c7/e0a4b16e; no source data or DNS
+  changed. Earlier prepared-only statements below are historical.
+
+- **Prepared complete owned remote conductor and HTTP R2 bridge**:
+  CI37109545658 for1883880 completed/success in both jobs; watcher28442 exited0
+  and is consumed. R2 CLI/REST read-only inventory confirmed the dedicated
+  account's three existing buckets. Snapshot preparation is shared with the
+  existing local combined rehearsal; current 40-table/15-row/Master/two-image
+  regression passes1/1, fresh local restore10393ms. New temporary Worker/client
+  use only owned recovery names, token/incarnation gates and fixed synthetic
+  keys. Native HTTP R2 tests pass6/6: import/replay, conditional conflict without
+  overwrite, actual bundled app GET/HEAD, identity refusal and exact-key cleanup.
+  Native GET is legitimately chunked without Content-Length; require provider
+  metadata size and full measured body/hash, and compare a declared HTTP length
+  only when present. This fixed the new adapter's readback refusal. Focused lint
+  and syntax pass. run-isolated-combined-recovery.mjs is prepared, not remotely
+  accepted: it must wait for its exact candidate CI, then create three D1/two R2/
+  one Worker per sequential target, restore/resume/reconcile the same bundle,
+  verify FK/wake/assets, and journal receipt/version-checked cleanup plus original
+  inventory equality. Auth is a seeded synthetic dependency user, not credential
+  backup proof. Full remote result, source-URL/browser use, production RTO and
+  all six finish packages remain open. See isolated-combined-recovery.md.
+  No new remote resource or deployed runtime change occurred in this preparation.
+
+- **Accepted real isolated-D1 REST primitive and CI placement fix**:
+  1d3085f6cfb74613b863c6e26f3d41514ad4b544 CI37108741104 completed/success
+  in both jobs, including relocated combined recovery and Worker Business/Auth
+  import; watcher81236 exited0 and is consumed. The pinned private conductor
+  verified the dedicated account and original three-database API inventory,
+  created one owned recovery database, then accepted unicode/NULL/int64
+  TEXT readback, real REST batch CHECK rollback (retained rows0), and one
+  committed row after intentional client-side loss of its success response
+  with no automatic retry. Accepted08:18:42.761Z. Exact creation receipt
+  matched before DELETE; final08:18:44.233Z API inventory equals the original
+  three UUID/name/creation-time records. Private journal:
+  /tmp/fanmark-isolated-d1-probe-Tf0H2Q/journal.json; process14077 exited0
+  and is consumed. Token stayed in memory; no real source or existing staging
+  SQL ran. The conductor is now checked in with workspace-relative paths and
+  clean-or-known-temp dirty guard; npm isolated-remote tests syntax-check it.
+  This closes the actual REST primitive gate, not complete remote snapshot/R2
+  restore, source-URL/browser delivery or production RTO. Deployed runtime
+  remainscbb90c7/e0a4b16e. Next: use these accepted primitives for the full
+  owned Business/Auth/Master and split-R2 synthetic bundle recovery.
+
+- **Combined-recovery CI dependency placement correction**:
+  Candidate8bc3baa CI37108118976 is terminal: application succeeded, Worker
+  failed in the newly enabled combined-recovery step before any assertions.
+  Master artifact generation imports application catalog tools and therefore
+  requires the root @supabase/supabase-js dependency; the Worker-only job had
+  installed only workers/api dependencies. Move this cross-tree test to the
+  application job, which already installs both dependency trees. Keep the
+  Business/Auth runtime-import step in the Worker job; that step and native
+  isolated-D1 tests passed in the failed run. No application/runtime assertion
+  is removed. Watcher46948 exited1 and is consumed. New CI must prove the
+  relocated combined step before any remote-recovery resource is created.
+  Wrangler whoami independently confirmed the dedicated fanmark account;
+  the captured OAuth token was removed and no remote mutation started.
+
+- **Earlier local recovery transport and split-R2 application read fix**:
+  The combined fixture stored logical avatars/key and cover-images/key inside
+  already-separated physical buckets. The importer could read them, but actual
+  storage-r2.ts GET returned404. The new split transport retains logical source
+  identity for reconciliation while storing only the source key in the chosen
+  physical bucket; metadata/hash/conditional-create rules remain. Combined1/1
+  now proves exact one-key inventories and actual app GET/HEAD200 with matching
+  bytes/MIME/size on both primary and fresh targets. Fresh local restore10812ms
+  is synthetic, not production RTO. Source-URL rewriting/browser delivery and
+  complete remote recovery remain open. Private before/final logs:
+  /tmp/fanmark-combined-application-storage-{before,final}.log.
+  isolated-remote-d1.mjs adds a metadata-pinned prepared/REST-batch transport
+  restricted to newly owned fanmark-recovery names. Explicit remote mode,
+  canonical runtime/profile/Auth resolver and matching incarnation are required;
+  local mode refuses this remote binding. Native9 tests prove values/NULL/int64,
+  CHECK rollback, no automatic lost-ACK retry and target/result guards through
+  a simulated HTTP envelope over actual local D1. Importer20 and focused lint
+  pass. This is not actual Cloudflare REST or remote snapshot acceptance.
+  The checked-in workflow lacked Business/Auth and combined-recovery execution
+  steps despite having their npm commands. Explicit steps are now added;
+  earlier CI success did not exercise them. CI isolation passes. The prior
+  documentation headfb3fe04 CI37106463295 is completed/success in both jobs;
+  watcher49111 is terminal/exit1 and consumed, so rely on the authoritative run
+  state and do not restart it. Current deployed runtime remainscbb90c7/e0a4b16e;
+  this tool/test-only work changes no remote resource, real rows or DNS.
+  The actual REST primitive and corrected CI placement are accepted in the
+  newest checkpoint above. Still remaining: complete owned remote runner/R2
+  transport, restore/replay/independently reconcile the same bundle in fresh
+  targets, and record cleanup/RTO.
+
+- **Accepted timestamp/public-activation staging checkpoint**:
+  cbb90c795b9b735a6d9a0ca06031772b443a3d0a CI37105400187 completed with both
+  jobs successful; its single watcher36203 exited0 and was consumed. This
+  includes the repaired Chrome bootstrap and the retained Master timestamp
+  fix. Dedicated-account preflight and read-only Auth4 schema verification
+  passed, then the candidate was deployed at07:20:42.775Z as
+  e0a4b16e-d829-4016-95df-26471cd7940d at100%. Static JS/CSS byte/hash,
+  noindex/robots/sitemap, closed-provider and full retained-baseline readback
+  passed. The MFA-protected extension-price API now reads the retained UTC
+  formats instead of503. A bounded deactivate/restore canary passed:
+  public15/admin16 while inactive, public16 after restoration, anonymous401
+  and stale409; all four Master contents and Stripe IDs are preserved.
+  Existing reference audit history is retained with exactly two appended
+  activations, generation8->10. Restored active reference release is
+  e44ecbeda38fe4a5c7c7adf66e2168e181da08b9033932543f991a54a868a036.
+  Independent07:25:20.731Z readback confirms owned Business/Auth0,
+  Business25, retained emoji7888/inventory/history unchanged, wake17/17,
+  original3 secret names and expected monotonic MFA238->240. Final public
+  four-master readback at07:25:33.962Z returns4/4/5/16 at the restored version
+  with no public Stripe IDs. No source data, real provider, production route
+  or DNS changed. Private proof prefix:/tmp/fanmark-reference-cbb90c7.
+  This closes the reproduced admin503 and the remote price visibility
+  acceptance, not all six finish packages or remote Tier/pattern mutation.
+  All preflight/deploy/readback/canary processes are terminal and consumed.
+
+- **Historical browser bootstrap failure/fix, superseded by the accepted checkpoint above**:
+  d234ef8 CI37103506054's Worker job succeeded in both completed attempts.
+  Application attempts111147470619 and111148938390 failed only the first
+  Chrome bootstrap in the cold case, before navigation/application assertions;
+  the other7 UI cases passed in each attempt. The old harness discarded Chrome
+  stderr and polled DevToolsActivePort for15 seconds. The harness now captures
+  bounded stderr/exit status, waits up to30 seconds for a validated port, cleans
+  the failed isolated profile/process, and retries bootstrap once before any
+  navigation. Application assertion failures are not retried. Local UI8/8 and
+  a forced first-process exit23 followed by the real Chrome cold UI case pass;
+  Node syntax check passes. New CI/deployment passed as recorded above. No application UX or
+  validation assertion was removed. Old run37103506054 is terminal/failure;
+  watchers27252 and91655 exited1 and were consumed, so do not restart its jobs
+  again. Private logs:/tmp/fanmark-browser-bootstrap-{final,retry-proof}.log.
+  Source catalogv41 contains58 named functions; every name has an object-map
+  row. Seven obsolete generic design/test TODOs now link existing transfer,
+  password-proof/settings and invitation implementation/accepted scope instead.
+  This is evidence-linkage repair, not full source runtime/provider acceptance.
+
+- **Historical retained Master timestamp compatibility failure/fix**:
+  c7b71c6 CI37101502623 passed both jobs and was deployed as
+  70090cdc-7476-4892-8f53-ec38b21ed32e at100%. Root/static JS/CSS byte/hash
+  readback, noindex/robots/sitemap, four public reference APIs and independent
+  retained baseline verification passed. Public counts are4/4/5/16; this did
+  not test an inactive remote member. The bounded deactivate/restore canary
+  then found HTTP503 on the MFA-protected admin baseline read, before any
+  Master write. Retained rows have PostgreSQL UTC export text and earlier ISO
+  millisecond writes, while the current reader required canonical six-digit
+  ISO text. A native loading->ready fixture reproduces503 without disabling
+  immutability guards. The reader now canonicalizes these exact UTC formats
+  when building a new snapshot, preserving up to six fractional digits and
+  leaving old releases unchanged. Invalid dates/non-UTC/sub-microsecond input
+  still refuse before writing. Local reference API10/10, Worker typecheck and
+  focused lint pass; its CI/deployed acceptance is recorded above.
+  Generic import/release input validation is not relaxed.
+  The failed private canary cleaned Auth; its added synthetic admin profile
+  was not covered by the old cleanup condition. The sole leftover profile was
+  identified by empty-before state, fixed synthetic fields, username/UUID and
+  bounded run timestamp, captured in a private recovery journal and deleted
+  by its exact predicate. Independent06:25:49.704Z readback proves owned
+  Business/Auth0,25 Business migrations,Master7888/inventory/history/active
+  reference unchanged, wake17/17 and only the original3 secret names. Retained
+  MFA generation advanced236->238 during factor creation/deletion; it was not
+  reset. Private proof prefix:/tmp/fanmark-reference-c7b71c6.
+  Workers Free was also confirmed by the authenticated account plans page;
+  the owner decision on Workers Paid and provider setup remains pending.
+
+- **Public reference activation filtering and retained-history helper candidate**:
+  reference-master public reads validate the complete ready release manifest,
+  all DTOs and uniqueness before filtering Tier/pattern/extension-price members
+  to isActive=true. Languages retain source public-all scope. An all-inactive
+  valid release returns200/empty; malformed inactive members or incomplete
+  release still refuse502. Public clients accept active subsets/empty lists
+  but reject inactive/duplicate/private/malformed items. Master/admin readers
+  retain inactive members. Native API9/client8/release6, app/Worker typecheck
+  and focused lint pass. The native fixture reproduced the helper's erroneous
+  two-row activation-history assumption after multiple admin edits; the helper
+  now verifies an unchanged historical prefix and one appended audit without
+  deleting/resetting history. CI passed and this code is deployed as70090cdc;
+  public all-active/static/retained readback passed. Remote price inactive-member
+  acceptance passed in the newest checkpoint above. No source/user/remote
+  Master/provider changes ran in the deployment or failed canary.
+
+
+- **Complete source policy inventory, runtime unchanged**:
+  source-policy-counterparts.md lists all77 exact source policy identities,
+  commands/roles/expression hashes and maps them to40 reviewed current table
+  surfaces, implementation files/contracts/existing coverage. No source rows or
+  raw policy/function bodies were exported. Owner/session, participant, private
+  password, internal billing/notification and Auth D1 role/MFA differences are
+  explicit. Current frontend/Edge internal usages replace stale no-caller
+  assumptions; broad legacy row APIs are not invented. At that inventory checkpoint, selected reference
+  release DTOs included inactive pattern/price members, unlike source active-
+  only RLS. The newer filtering candidate above corrects this locally; deployed
+  acceptance and historical analytics/external consumers/functions/indices
+  remain open. This completes the policy identity inventory, not authorization or
+  package1 acceptance. Docs58ae449 CI37100997913 passed both jobs. Combined candidate0019568 CI37100329703 completed with
+  both jobs successful; original watcher91802 exited0 and was consumed.
+  Accepted deployed runtime is still c09/bce8993.
+
+
+- **Combined local recovery and credential ordering candidate**:
+  test:combined-recovery restores one SHA-bound synthetic bundle containing
+  40 Business source tables/15 rows, four Auth migrations, eight Master
+  migrations plus retained historical Auth core, published three-emoji/four-tier
+  releases, and two profile-linked PNG objects in separate avatar/cover R2
+  bindings. The second independent target reconciles the same source hashes,
+  catalog IDs/tier IDs and image bytes/MIME; R2 replay keeps one object per
+  bucket. The measured fresh-target local restore was 10182ms; whole test
+  45004ms includes ACK loss/replay and both targets. This is not production RTO.
+  A real failure in the synthetic fixture was fixed: profile/config INSERTs
+  after fanmark_password_configs changed access_generation and invalidated
+  credential coverage. Codec v5 adds these trigger dependencies to source FK
+  ordering and refuses v4 run resume; it does not weaken generation readback.
+  Combined1/1, Business/Auth-only1/1, default importer20/20, standalone native
+  R2 proof and focused lint pass. This affects local importer/tests, not the
+  deployed Worker; c09/bce8993 remains the accepted runtime. 1e803a9's
+  CI37099588552 passed both jobs and its watcher exited0. Browser image URL
+  delivery, large/remote recovery, operator custody/RTO and the final provider/
+  application integration remain open. No real Supabase Auth passwords,
+  production Storage objects or user rows were read or transferred.
+
+- **Tier consolidation and current-schema synthetic import candidate**:
+  availability/registration share fanmark-tier.ts; source-emoji-helpers-review.md
+  links the classifier, ID mapping and old raw-text counter without inventing
+  a new unused API. Local availability10/registration21 and Worker typecheck
+  pass. The importer has an explicit local canonical Business profile derived
+  independently from all25 checked-in migrations; source/descriptor/codec and
+  exact destination DDL checks remain. The runtime fingerprint binds ledger
+  and report. Business25/Auth4, synthetic40 checkpoints/13 rows, ACK-unknown
+  resume, credential transformation/deferral, missing/extra-trigger and fingerprint
+  refusal, single wake1/0 after replay, and second fresh-target recovery are
+  covered by test:business-runtime-import, now a dedicated CI step. Default
+  importer regression20 passes. The structural fixture excludes source
+  functions/policies/triggers/views and all real rows; a separate private
+  full-catalog current-profile synthetic import passed too. This is local
+  Business/Auth acceptance, not combined Master/R2/remote recovery or full
+  migration acceptance. Worker deployment remains c09/bce8993 below; this
+  candidate has not been deployed. No schema DDL, user-data or DNS mutation
+  is required for this local importer work.
+
+- **Access-helper and stale-mapping follow-up, runtime unchanged**:
+  source-access-helpers-review.md links4 exact username/role/admin/elevated-admin
+  definitions to current callers and existing profile/Auth/waitlist evidence.
+  Source is_super_admin's no-row SELECT yields NULL and bypasses IF NOT; the
+  literal five-case PostgreSQL oracle04:48:47Z confirms the decision expressions
+  without invoking a source function or reading/writing user data. Target
+  waitlist guards already refuse free/missing plans with durable denial audits
+  in the existing9 native cases. General target adminRole/MFA authority is
+  intentionally separate from source plan_type; actual admin identity mapping
+  and operator custody remain open. Object-map's wake/sleep pending statements
+  are corrected to the accepted ea309178/41cefc3 rehearsal with unchanged
+  coordinator/0024 at bce8993, retaining later processor/final-integration gates.
+  The frontend reset mapping now reflects the enabled, accepted0023 API/browser
+  flow rather than incorrectly saying no D1 endpoint exists. No Worker redeploy
+  or repeated staging fault campaign is required for this review/document work.
+
+- **Source/CI follow-up, runtime unchanged**: read-only source runtime04:12:13Z
+  and ACL04:12:13Z retain58 definitions/37 bindings/77 policies and both prior
+  fingerprints. source-trigger-counterparts.md enumerates all37 bindings and
+  separates the source's NOTICE-only security trigger from delivery, the two
+  plan-escalation guards, and the completed current-application timestamp
+  correspondence for29 bindings. Dynamic SQL, final coupon/invitation SQL
+  triggers, versioned Master no-op edits, historical import and lifecycle-claim
+  differences are recorded; no missing business timestamp was found in the
+  reviewed paths. Own-profile native10
+  now applies all25 Business/4 Auth migrations with real sessions/R2, an actual
+  invitation FK and per-case both-store FK checks; reduced/custom-guard fixture
+  removed. Local10/10/typecheck/lint pass and test:profile-d1 is added to normal
+  CI. 7a603bd CI37096588121 passed both jobs and its watcher exited0;
+  this test/docs change requires no
+  redeployment. d0e42dd docs CI37095642337 passed both jobs. Workerc09 below is
+  still the accepted runtime. Full runtime/ACL/provider/ops/import/
+  final integration remain open; no gate is cleared just by listing a writer.
+
+- **Newest accepted staging code:bce8993**, CI37094750732 both jobs success.
+  Search/favorite native17/17, search-details13/13, client12/12 and migration-
+  data278/278 pass. Four reproduced event/count failures now roll back the
+  complete discovery/favorite/event state and event-ID sequence. Explicit
+  INTEGER deltas preserve int64 counters in local tests; the two SQL-only
+  receipt assertions have hash-bound static-guard exceptions.
+- Fresh preflight04:04:32Z and read-only Auth schema04:04:56Z confirm the
+  dedicated account, owned Business/Auth0, Business ledger25/Auth ledger4,
+  retained Master inventory and MFA generation236. No schema DDL was needed.
+  Worker **c09ece05-8169-488f-bc7c-8b5a0ab653fe at100%** deployed04:05:27Z.
+  JS/CSS bytes/noindex/robots/sitemap match; real providers/email/signup stay
+  closed and anonymous session is null.
+- All four synthetic remote HTTP fault cases pass: favorite event INSERT
+  ignored, favorite-count UPDATE ignored, search event INSERT ignored, and
+  favorite-remove event INSERT ignored. Each refuses503/no-store, preserves
+  the exact rows/sequence, then retries200 after removal of its scoped trigger.
+  The control owner's favorite remains unchanged; duplicate add/remove returns
+  false without another event/count change. Journal ends
+  discovery-repair-KeQ2x4/canary.json, **verified-and-cleaned**. Its two Auth
+  identities, four discoveries, favorites/events/profiles and temporary trigger
+  are removed; both-store FK0, trigger restoration and cookie invalidation pass.
+  Legitimate event IDs advance through successful operations and are not reset.
+- Independent04:07:49.929Z readback confirms Workerc09 at100%, owned Business/
+  Auth0, ledger25, unchanged Master3944/release7888/pointer/history/inventory,
+  MFA236, wake17:17 and the same three secret names. Private acceptance:
+  /tmp/fanmark-discovery-bce8993-staging-acceptance.json. Accepted scope is these
+  reproduced search/favorite failures and listed baselines; int64 edges are
+  local proof. This does not reexecute all prior features, accept real providers/
+  phones, reconcile every source object or complete the migration.
+
+- **Prior accepted staging code:388044b**, CI37092452003 both jobs success.
+  Full25 Business/4 Auth native66/66, Auth47/47, client4/4, typecheck/lint/
+  workflow isolation/staging dry-run pass. Preflight03:22:19Z confirms Worker71d,
+  source-owned Business/Auth0, ledger25 and fixed Master/secrets/wake17:17.
+  Auth read-only03:23:03Z confirms ledger4/marker6/index4/FK0 and unchanged MFA;
+  schema was already applied, no DDL. Deployment03:23:49Z is
+  **4a8d85dd-dfc4-424b-94ff-14354ae1fc4f at100%**. JS/CSS/noindex/robots/sitemap
+  match the exact build; signup/email/four provider starts/callback GET remain
+  closed, anonymous session null, no real provider calls.
+- Six actual credential/session/HTTP cases pass: entry audit ignored/metadata
+  changed, DELETE_ACCOUNT audit ignored, user profile DELETE ignored, Auth user
+  DELETE ignored/aborted. All refuse503 and preserve exact Auth credentials/
+  sessions, then retry200 and repeat401. Four Business faults roll back the
+  exact cleanup snapshot. Two Auth faults leave accepted Business cleanup and
+  preserve the original deletion audit ID/time/metadata through retry. Entry
+  and deletion audits, cancelled entry/time/reason, grace license, retained
+  winner history/creator references/foreign role, cleared ownership and the
+  other user's valid session are read back. The fixture starts with already
+  returned grace licenses and no pending delivery event: this is not remote
+  active-return/Stripe or asynchronous-notification acceptance.
+- Journal ends **fanmark-account-deletion-audit-15KPFs/canary.json**, state
+  verified-and-cleaned, flowPassed true. All seven synthetic Auth identities,
+  source Business fixtures, temporary Business/Auth triggers and cookies are
+  removed; both-store FK0 and exact baseline creator/trigger restoration pass.
+  Independent03:29:23.044Z readback pins Worker4a at100%, owned Business/Auth0,
+  ledger25, unchanged Master canonical3944/release7888/import/active/history,
+  MFA generation236 and the same three secret names. Wake stays17:17; no reset.
+  Private acceptance: /tmp/fanmark-account-deletion-388044b-staging-acceptance.json.
+  Accepted scope is the listed account-deletion fault/retry/schema/static/
+  provider-closure/baselines, not real providers/populated billing/remote active
+  return, current editor/lottery/transfer reexecution, real phones, full source/
+  RLS/callers or whole migration.
+- **Prior accepted staging code:c6a4f9d**, both CI37090152096 jobs successful.
+  Fresh preflight02:40:55Z verifies Business ledger25/Auth owned0, retained
+  Master inventory and wake7:7. Read-only Auth schema02:41:25Z confirms existing
+  ledger4/marker6/index4/FK0 and MFA generation unchanged; no DDL applied.
+  Deployment02:41:55Z is **71d1612f-5220-4bf1-bc7f-99cc43adbbd7 at100%**.
+  Static JS/CSS/noindex/robots/sitemap match the exact build.
+- Transfer native37/37 uses full25 Business/4 Auth and real sessions/router;
+  native Master Tier remains a focused fixture. Actual remote Master Tier1
+  read and transfer duration are exercised by the new canary. Five remote
+  cases pass: one of two applicant audits ignored/metadata-changed/deleted,
+  transfer audit ignored, old profile deletion ignored. Each refuses500 with
+  exact license/config/code/request/entry/audit rollback, unchanged event IDs
+  and wake request generation; removing the own-ID scoped fault allows200
+  retry with both applicant audits, transfer audit, 30-day lock, new inactive
+  config and outbox readback. Repeated approval400 creates no additional rows.
+- Journal ends transfer-audit-5LT5tv/canary.json, verified-and-cleaned. Its
+  three Auth users, business fixtures/inboxes and temporary trigger are gone;
+  both-store FK0, exact trigger restoration and cookie invalidation pass.
+  Independent02:45:22.182Z readback confirms Worker71d at100%, owned0/ledger25,
+  unchanged Master canonical3944/release7888/import/activation/history, MFA
+  generation236 unchanged and the same three secret names. Legitimate wake
+  advances7→17 and is acknowledged17:17; it was not reset. Four provider start/
+  callback GET entries remain403/no cookie; capabilities/social/signup/email
+  stay closed. Private acceptance:
+  /tmp/fanmark-transfer-c6a4f9d-staging-acceptance.json.
+  This scope does not prove new remote OAuth users/providers, current editor/
+  lottery reexecution, real phones, full source/RLS/callers or whole migration.
+- Next: reconcile full source functions/RLS/triggers/callers and value/index
+  semantics, then lifecycle/archive/retention and ops/recovery/key custody/
+  least privilege. Real provider/CPU/plan/phone acceptance remain open.
+  Converter is not deployable; real user data/domain/DNS remain deferred.
+- Docs-only3f4faac CI37089404509 passed both jobs; no deployment was needed.
+- **Prior accepted staging code:027a949**, both CI37088432269 jobs successful.
+  Full preflight02:12:10Z verifies Business ledger25/Auth owned0 and the fixed
+  Master/secrets/wake5:5 baseline. Read-only Auth schema revalidation02:12:35Z
+  confirms existing ledger4/marker6/index4/FK0 and unchanged MFA generation; no
+  migration applied. Worker **22a49009-e962-471d-81a1-c82a49b22d7c at100%**
+  deployed02:13:36Z. Static JS/CSS/noindex/robots/sitemap match.
+- New lottery integrity canary uses actual remote credential sign-in and API:
+  ignored new-entry audit, changed reapplication metadata and deleted cancel
+  audit each refuse500, roll back the exact entry/audit baseline and preserve
+  the event set. Removing each owner-scoped fault allows200 retry with exact
+  UUID/applicant/resource/action/old-new-reason/time audit readback. Anonymous
+  requests, caller-selected owner and foreign cancellation refuse.
+  Journal ends fanmark-lottery-audit-00uR5a/canary.json, verified-and-cleaned;
+  all test triggers restored, FK0, owned Business/Auth0 and cookies invalidated.
+- Independent02:16:25.705Z readback confirms those owned-row baselines, ledger25,
+  unchanged Master canonical3944/release7888/inventory/active/history and only
+  the same three secret names. Synthetic wake advanced monotonically5→7 and
+  is acknowledged7:7; it was not reset. Current four provider starts/callbacks
+  remain403/no-cookie, capabilities no providers/email/signup, anonymous null.
+  Private acceptance: /tmp/fanmark-lottery-027a949-staging-acceptance.json.
+  This accepts only the listed lottery/schema/static/baseline scope, not real
+  providers/new OAuth users, current remote editor reexecution, real phones or
+  the entire migration. The47b editor/OAuth guard proof below is historical.
+- At the027a949 checkpoint, transfer/account-deletion integrity remained open;
+  transfer and account deletion are now accepted above in their listed scope. Then
+  continue full source runtime/authorization/caller,
+  lifecycle/archive/retention and ops/recovery. Stripe's existing transaction
+  completion guard already checks exact entry-audit fields and its native suite
+  includes suppression/corruption. Provider integration and CPU/plan remain open;
+  real user data/domain/DNS remain last.
+
+- **Prior accepted staging code:47b69c5**, both CI37085997181 jobs successful.
+  Full preflight at01:34:21Z and again after Auth update verifies the dedicated
+  account/version, Business ledger25, owned0, Master inventory, wake5:5/secrets.
+  Auth0009 applied/read back at01:35:14Z: ledger4, marker columns6, unique
+  indexes4, owned Auth0/FK0 and unchanged MFA generation. Deployment at01:37:00Z
+  is **b5a07a34-a086-4543-9569-31fa8a904def at100%**, selecting the provisioning
+  backend. Static JS/CSS/root/robots/sitemap/noindex match. Provider keys remain
+  absent: capabilities lists none, all four start/callback403, no cookie,
+  anonymous session null. This closes the candidate schema/deployment boundary.
+- Five remote seeded-marker session cases pass: absent/committed profile
+  recovery, private-marker omission, owner/profile identity, existing-credential
+  password-setup retry and preservation of API edits; wrong-profile/missing
+  account409 and deleted completed-profile500 refuse without changing rows.
+  Journal ends oauth-session-guard-BtQmD3/canary.json, verified-and-cleaned.
+  This is seeded Auth/credential proof, not remote new SDK/OAuth-user or new
+  OAuth-credential creation; those remain unproven with provider keys absent.
+- The separate combined real browser editor/favorites canary for **this47b**
+  also passes and is verified-and-cleaned, journal ends canary-Etytn8.
+  Actual signin/UUID sessions, desktop→390, failed-save rows/draft, reload/
+  retry/save/reopen/preview, public/private/cross-owner/grace refusal and both
+  users' protected redirect/text favorites/config preservation pass. Independent
+  **2026-10-03T01:44:48.995Z** readback confirms owned Business/Auth0, ledger25,
+  Master inventory unchanged, wake5:5 and secret names unchanged; new synthetic
+  incarnation tombstones remain as designed. A390px viewport is not a real phone.
+  Private acceptance: /tmp/fanmark-oauth-signup-47b69c5-staging-acceptance.json.
+- Next: full source runtime/authorization/caller reconciliation, lifecycle/
+  archive/retention and ops/recovery acceptance. Real Stripe/Resend/four OAuth
+  integration and CPU/plan fit remain open; keys/setup authorization were not
+  supplied. Do not repeat an unanswered setup/paid-operation request or send
+  real mail/billing. User-data movement and domain/DNS remain intentionally last.
+  Older boundary details below are historical; do not redeploy55b or treat its
+  former pending-schema statements as current.
+
+- Prior lottery code027a949 was deployed/accepted at its historical boundary.
+  Full25 Business/4 Auth with real sessions/router passes42/42, including27
+  audit faults/retries, races and warmed-session revocation. Local typecheck,
+  lint, migration-data278/278, CI isolation and bundle dry-run pass. Worker CI
+  includes the suite; other writers/full source reconciliation stay open.
+
+- Prior accepted staging code was **55b40e0**, both CI37083522230 jobs successful.
+  Fresh preflight00:54:45Z verified the dedicated account, old version, ledger25,
+  owned0, secrets, retained Master inventory and wake5:5. Deployment at00:56:12Z
+  is **a0fcd645-1409-473e-8816-997e87b3797e at100%**. Static JS/CSS bytes match
+  the exact build; root/robots200, sitemap404 and noindex remain. Closed-provider
+  capabilities/start/callback readback at00:57:21Z and independent readback at
+  **2026-10-03T01:00:34.127Z** prove this policy deployment and retained baselines.
+  Keys/selectors remain absent, so remote configured-provider acceptance is not
+  claimed. Private acceptance: /tmp/fanmark-oauth-policy-55b40e0-staging-acceptance.json.
+- The preceding8144df2 combined native canary is **verified-and-cleaned**. Both synthetic users
+  sign in with newly SDK-generated UUID session IDs. This proves deployed
+  session generation; its user IDs are seeded UUID fixtures, so remote new-user
+  generation is not claimed. Native actual signup15/15 separately covers new
+  user IDs and the billing actor boundary; shared bcrypt/UUID/TOTP/MFA6/6 pass.
+- Profile create/update/public/private/cross-owner refusal, desktop→390 editor,
+  failed-save D1/draft preservation, reload/retry/save/reopen/preview/exact
+  spaces, foreign-owner editor refusal, protected favorites for both users in
+  redirect/text modes and grace refusal all pass. Cleanup owned Business/Auth0
+  and retained baselines match; synthetic license incarnation tombstones remain.
+  Independent readback at **2026-10-03T00:41:56.364Z** verifies version, account,
+  ledger25, owned0, Master inventory, wake5:5 and secret names. Private acceptance
+  is /tmp/fanmark-editor-8144df2-acceptance.json; journal ends canary-Pa2CR6.
+  A390px viewport is not a real-phone/provider/full migration acceptance.
+- Accepted55b40e0 implements the server-side OAuth policy. Ten native cases reproduce
+  bypasses of social_login_enabled/invitation_mode in the prior gateway.
+  Capabilities, authorization start and callback now reread both Business D1
+  settings independently of email readiness. Missing/malformed settings or
+  read/binding failure close OAuth; no policy is cached with the Auth instance.
+  Native Auth47/47 covers the10 corrections,3 boolean encodings and the prior34
+  cases, including four-provider existing-UUID linking/MFA/session boundaries.
+  The test now applies all25 canonical Business migrations, not a reduced table
+  substitute. Its exact-head CI and deployment are accepted above; configured
+  real-provider acceptance remains separate.
+- The new OAuth provisioning candidate now implements server-owned command/
+  profile UUIDs and provider-subject markers, missing-account recovery before
+  SDK email lookup, and profile readback before session issuance. The original
+  factory supplies account identity; email/name cannot establish ownership.
+  Native54/54 applies all25 Business migrations and Auth core/0007/0008/0009;
+  all four providers create a new UUID profile/session and finish password
+  setup. All four also recover account/profile/completion pre-commit and lost-
+  ACK failures. Conflicts, bans, partial markers, feature disablement, state
+  replay, concurrent callbacks, missing/altered indexes and policy changes are
+  covered. Existing Auth47/47, credential signup15/15 and shared MFA6/6 pass.
+  The first4 failed because hooks receive /callback/:id, not the concrete URL;
+  the provider is now checked through params.id. A banned pending-user case
+  exposed plugin-before-core ordering, corrected by checking suspension before
+  repair/profile writes while retaining the core session guard. No diagnostics
+  remain in runtime. See oauth-signup-provisioning.md.
+- The deployed staging still has no Auth0009 or provisioning selector/provider credentials.
+  Checked-in app/Auth migration allowlists now include Auth0009 only in Auth,
+  and app config selects the new backend for a future guarded deployment. The
+  actual local editor's Auth fixture follows all four migrations. The initial
+  candidate CI found that generic Vitest also picked up the D1-only new file
+  without its provided Business migrations; it is now excluded there and runs
+  once through its dedicated configuration in npm test. Exact corrected CI and
+  Auth0009 remote apply/readback are required before deploying that selection.
+  Corrected generic suite56/56 and migration allowlist6/6 pass. Actual local
+  HTTPS Worker/browser compose with all25 Business/4 Auth/8 Master migrations
+  passes real form signin, failed-save D1/draft preservation, reload/retry/save,
+  public/private, cross-owner and suspension guards, zero fulfilled APIs/FK
+  violations, and scoped server/port/state cleanup. This local working-tree
+  evidence is separate from remote staging and the next exact-head CI.
+  New providers default disableSignUp=true until the selector is explicitly
+  chosen. Corrected candidate exact-head CI, guarded Auth schema apply/readback and new
+  Worker deployment remain prerequisites. No new remote acceptance is claimed.
+  Source/runtime/Auth gates and real provider acceptance remain open.
+- D1 daily read quota recovered. An over-narrow private guard expected only
+  one3944-row release, but metadata/history proves two retained ready releases
+  of3944 each plus one failed import with zero staged rows. The active release
+  remains10ec42 at generation3/action rollback; inactive d78d798 is the retained
+  rehearsal. Private guards now pin all import metadata and activation history
+  by SHA-256; no Master rows were deleted or changed. See emoji-releases.md.
+- Source seq_keyfbe91b15 literal PostgreSQL oracle7 exposes that NULL elements
+  are omitted and empty arrays are hashed, contradicting the old documentation
+  about source input invariants. Converter42/42 reproduces candidate JSON-index
+  inequality and retains seq_key_input_contract_requires_review for three
+  source indexes; full catalog remains40 tables/66 candidate indexes/not
+  deployable. No deployed schema/index changed and no actual source row read.
+  See source-sequence-key-review.md; historical import disposition stays open.
+
+- Signup now applies all 25 Business migrations and Auth core/0007/0008 with
+  the suspension selector. Native15/15 covers existing recovery/capacity paths,
+  four languages and refusal to forward forged provisioning metadata. Both
+  D1 FK checks pass after every case. A literal-only read-only PostgreSQL
+  oracle10 cases records credential defaults, OAuth setup and the separate
+  display-name helper. No source application/Auth row/function was accessed.
+  See source-signup-provisioning.md; target new OAuth-user Business provisioning
+  has native54-case implementation coverage, while staging activation and real
+  provider linking/provisioning/initial password setup acceptance remain open. Their combined real-provider acceptance and
+  provider credentials remain open/absent. Credential signup code is included in
+  accepted8144df2 staging; actual new signup/email acceptance is separate from seeded-user signin/session generation.
+
+- Edit only this managed migration worktree/branch and preserve the unrelated
+  supabase/.temp/cli-latest change. PR #41 is draft/open; CI never deploys.
+- Latest recorded staging isa0fcd645 at100%, accepted for the policy/static/closed-provider slice above.
+  Recheck identity/version/ledger25/empty owned Business/Auth/master/wake/secrets
+  before deploying new Auth code; real data and domain cutover remain excluded.
+- Private combined editor/favorites preparation and the latest expected CI are
+  in /tmp/fanmark-favorites-protected-preparation.json. Re-pin the private
+  preflight/deploy/static/smoke/final-readback scripts only after both jobs succeed for the
+  exact current HEAD. Do not reuse a stale successful run for a new HEAD.
+- Native notifications now use all25 Business migrations plus staging Auth
+  core/0007/0008 and suspension selector:53/53. Search uses the same Auth
+  selector/full Business schema:13/13. These are local proof only. Archive
+  rollback/backlog/resume/source ACL evidence is in notifications-api.md;
+  scheduled activation coverage is in TECH.md. Provider selectors remain off.
+- Owner profile native tests now use the same full25 Business/Auth core/0007/
+  0008 schema and suspension selector:9/9. Generation assertions compare the
+  before/after value; canonical config/profile inserts already increment it.
+  Warmed revoked sessions refuse GET/PATCH without changing profiles/versions,
+  another owner remains usable, and suspended signin is403/BANNED_USER. This
+  is local consumer proof, not admin-MFA/audit or remote-editor acceptance.
+- The owner editor now has a reproducible composed local test:
+  npm run test:staging-profile-editor-local. Real HTTPS loopback Worker,
+  full25 Business/3 Auth/8 Master migrations, synthetic users/catalog and actual
+  browser sign-in/save APIs passed locally. No API responses are fulfilled;
+  all external browser origins are blocked. It proves failed-save rows/draft,
+  reload/retry/D1 persistence, exact spaces, public/private reads, cross-owner
+  editor refusal and revoked-session redirect at390px. Server/local state
+  cleanup is checked. Application CI includes it. Remote combined acceptance is
+  recorded above; real-phone proof remains open; see fanmark-profile-api.md and the latest private test log.
+- The daily entrypoint replays a missed notification bridge even with expiry
+  disabled; the strengthened native case also keeps a drained queue asleep.
+  Daily replay is conditional on the invocation and available D1/DO, not a
+  one-minute guarantee or an atomic commit. Mutation/MFA repair remains valid.
+- Read-only download of source notification processor ACTIVE version209 matches
+  checked-in bytes. Its strict boolean segment comparison exposed a D1 0/1
+  decoding bug; requires_password_setup is now decoded without numeric coercion.
+  Six cases reproduce the four former failures; notifications26/26, wake20/20,
+  Worker typecheck/lint pass locally. This runtime fix is not deployed. The source
+  processor delivers only immediate in-app; global external-sender parity is open.
+- Empty payload language now uses the settings/default locale. Empty fanmark ID
+  preserves source global cooldown/max scope instead of bypassing limits. Three
+  failures were reproduced; notifications36/36, migration-data277/277, types/lint
+  pass. CI37072572541 application failed on an archive test's fixed source line;
+  the test now derives the INSERT position without dropping writer checks. New
+  exact-HEAD CI is required. Render RPC channel/JSONB/order parity remains open;
+  see notifications-api.md. No new remote D1 query/seed/deploy was performed.
+- Source PostgreSQL literal-only read-only oracle7 cases reproduces JSONB key
+  order/text/numeric output and literal REPLACE. Target renderer now preserves
+  dollar signs, JSONB formatting/order and source channel-unfiltered lookup.
+  Added four-locale/override and template fallback cases; notifications53/53,
+  wake20/20, types/lint pass locally. Ambiguous multiple-channel rows, source
+  import codecs, providers and remote acceptance remain separate open gates.
+  Oracle SQL and synthetic fixture are checked in; no source app/Auth row/function
+  was accessed by this oracle. Runtime head9bd59d1 CI37073821056 has both jobs
+  successful. Profile/wake head a8f431d CI37075997456 also has both jobs
+  successful. Subsequent composed-browser/CI changes need their own HEAD CI.
+- Read-only provider inventory at2026-10-02T22:50:13.212Z pinned dedicated
+  identity/account and100% Worker010a4d7a, then listed secret names only:
+  BETTER_AUTH_SECRET, REFERENCE_MASTER_SERVICE_SECRET, VERIFIED_ACCESS_SECRET.
+  No OAuth/Resend/Stripe required credential names were present in that list
+  or checked-in vars. Selector observation is from checked-in config, not a
+  remote plaintext-var read. Private /tmp/fanmark-staging-provider-inventory.json
+  contains the report; no D1/provider/source-row calls or writes were made.
+- Source functions/RLS/triggers/external callers, recurring lifecycle/archive,
+  retention, D1→DO replay gap, provider-backed Stripe/Resend/4 OAuth, CPU/plan
+  fit, least privilege/key custody, and real-device/end-to-end acceptance remain
+  open. The inventory/converter is not deployable solely on these local tests.
+- Real user/Auth/business/Storage migration, source-writer shutdown and domain/
+  DNS cutover stay deferred. Production Supabase is still authoritative.
+
+The following checkpoints are chronological evidence, not current deployment
+or completion claims.
+
+Scheduled-writer checkpoint: the new read-only `source-scheduled-writers.sql`
+observed two cron.job rows at2026-10-02T21:44:12.512016+00:00, session UTC/cron GMT.
+Daily expiry mention is active, minute notification mention inactive; direct
+manual-expiry/archive mentions are absent. Only operational metadata/digests
+were selected, excluding raw commands/URLs/job names/credentials and user rows.
+Scope/types/ID uniqueness/SHA-256 were validated. This does not prove successful
+invocation or exclude indirect/external callers. No jobs/functions/deployments
+changed; see `source-scheduled-writers.md` and private AdGAl7 metadata evidence.
+Recurring target activation, CPU/plan fit and archive retention remain open;
+source writer shutdown belongs to the deferred final cutover.
+
+Search evidence checkpoint: the source complete-data/public availability/secure
+availability/combined-lottery definitions were reviewed from the existing fresh
+catalog-only snapshot. Latest NULL-first license selection and earliest-blocker
+NULL-last selection are distinct source contracts. No source rows/RPCs were
+read/invoked. New native local D1 search tests apply every canonical Business
+migration (25), use real Better Auth sign-in/cookies and the actual Worker router.
+Twelve cases pass for session-bound pending entries, anonymous false/null,
+caller-ID rejection, unchanged lottery rows, perpetual and exact microsecond
+lifecycle boundaries, selection and protected config omission. The first run
+failed on a missing required tier fixture field, not an application bug.
+Worker typecheck/changed-file lint and `npm run check:ci` pass. Native search
+joins normal Worker CI; see `fanmark-search-api.md` for hashes and open gates.
+New exact-head CI is required before repinning the private deployment scripts.
+
+Prior favorite runtime head20026f7 / CI37066581254 passed both jobs at
+2026-10-02T21:29:14Z. The private editor smoke now journals discovery/config UUIDs
+and emoji identities before seed and includes protected redirect/text favorite
+checks for both accounts, disabled-content compatibility and count verification.
+Its exact-identity cleanup was exercised on all25 Business migrations in local
+SQLite: retry/partial NULL-linked seed/unrelated synthetic discovery preservation,
+FK violations0 and two retained incarnation tombstones. Missing live flag refuses
+before remote calls. This is preparation, not native remote acceptance; current
+Worker remains010a4d7a and D1 quota/full preflight/deploy/editor/favorite acceptance
+are pending. Read `/tmp/fanmark-favorites-protected-preparation.json` plus the
+private smoke and cleanup-proof files; update HEAD/CI only after the next CI passes.
+
+Protected-favorites checkpoint: reviewed fresh source definitions for seven
+favorite/discovery/search functions and two policies. The source owner-only
+favorite list still selects protected name, URL and text; native target D1
+reproduced that disclosure. The target now projects all three as SQL NULL when
+password protection is enabled, for both the license owner and another favorite
+owner. The client rejects contradictory protected DTOs. Stored configurations,
+unprotected rows, owner-edit APIs and the source/default adapter are unchanged.
+This intentionally enforces the existing verified-access decision; login does
+not bypass password verification. Native favorites 11/11, client 6/6, typechecks,
+changed-file lint, normal staging build, pinned dry-run, workflow isolation and
+eight offline editor cases pass. Native favorites are added to ordinary Worker
+CI. See `favorites-api.md` for reproduction, hashes and remaining source gates.
+Catalog HEAD effdf4b / CI37065555307 completed both jobs successfully at
+2026-10-02T21:20:59Z. The new favorite runtime change needs its own exact-head
+CI before updating private preflight/smoke pins or deploying. Current Worker
+remains 010a4d7a; D1 quota recovery/full preflight and native editor/favorite
+acceptance are outstanding. At that checkpoint the private editor smoke had no
+favorite seed/cleanup coverage; the later preparation checkpoint above records
+the extension and its local cleanup proof. No real-user/provider/domain changes occurred.
+
+Catalog read-budget follow-up: the actual local D1 repository's offset9500 /
+limit500 query over 10,000 synthetic rows read 10,000 rows before the fix and
+500 after it. Use the existing `(release_version, ordinal)` index with a bounded
+ordinal range; retain external version/offset/limit/nextOffset, expected page
+length/ordinals/DTO validation and verified immutable release behavior.
+No new index/migration is needed. Native API 7/7, full-schema release/rollback
+7/7, frontend pagination 7/7 and Worker typecheck/lint pass. Include the native
+catalog suite in `test:api-contracts-d1`/normal Worker CI. Measurement is local
+and does not attribute the current quota exhaustion or prove remote savings.
+Read `/tmp/fanmark-catalog-read-metrics.log` and `emoji-releases.md` for evidence.
+Deployment/editor acceptance remain pending; current Worker is still010a4d7a.
+Both ordinary bundle and pinned staging dry-run/workflow isolation pass. Prior
+authorization HEAD62d1672 / CI37064985605 application job succeeded; Worker was
+still running at the pre-push observation. Require both jobs on the newer
+runtime head before deployment, then refresh the private HEAD/CI pins.
+
+Latest checkpoint: HEAD `287a257` passed both jobs in CI `37063201944`, including
+all eight rendered cases and Chrome cleanup. Normal staging build and pinned
+deploy dry-run passed. Fresh identity/latest-version checks confirmed the
+dedicated account and existing `010a4d7a` at 100%, but the next Business D1 ledger
+query returned API 7500: account Free daily row-read limit exceeded. No deployment
+or canary seed was attempted. Current empty source/Auth and retained baselines
+could not be independently refreshed; retain the earlier evidence without
+claiming a new successful preflight. Workers Paid upgrade is not authorized.
+Free limits reset at 00:00 UTC/09:00 JST; see Cloudflare D1 pricing.
+Private `/tmp/fanmark-editor-preflight-command-error.json` records the exact
+failure; `/tmp/fanmark-perpetual-editor-preflight.log` is the failed preflight.
+When the quota permits, rerun the complete preflight before deployment/seed.
+
+Independent source-only progress: new `source-authorization-bindings.sql` and
+metadata-only `source-authorization-review.mjs` capture RLS/ACL/types/view options
+in one read-only transaction and distinguish 13 trigger functions from 45
+ordinary functions. The fresh `fanmark-source-authorization-AoCi1r` evidence
+contains 40 RLS-enabled tables, one security-invoker view and 77 policies; all
+58 body hashes match prior runtime evidence. EXECUTE counts exclude triggers
+for routine review and do not claim business-action access. Nine security
+validation/privacy tests pass. Notification unread-count regression verifies
+different session owners and rejects caller-selected IDs. Full policy/runtime
+acceptance remains open; see `source-authorization-review.md`. If this follow-up
+changes HEAD, update the private preflight/smoke HEAD and CI pins only after the
+new exact-head CI is green; rebuild normal staging assets before deploying.
+Local verification: notifications native D1 16/16, migration-data 266/266 with
+no skips, Worker typecheck, changed-file ESLint, workflow isolation and diff check
+pass. No remote D1 writes occurred in this quota-limited follow-up.
+
+Draft preservation follow-up: CI `37062006317` / head `ae2c568` application job
+passed, including seven rendered browser cases on the runner; Worker was still
+running at observation. Another local Chrome fixture reproduced PATCH 503
+discarding the unsaved profile draft because page `handleSave` swallowed the
+error and the form treated it as success. The page now rethrows after its toast.
+The eighth case proves retained draft/editor, same-tab reload restoration,
+successful retry and draft removal only after success. Build/typecheck/lint,
+workflow isolation and browser 8/8 pass. New-head CI and actual deployed
+save/reopen/preview are pending; current Worker remains `010a4d7a` below.
+No provider, real-user or domain changes. Before/after logs:
+`/tmp/fanmark-profile-editor-save-failure-before.log`,
+`/tmp/fanmark-profile-editor-draft-{build,browser,typecheck,eslint}.log`.
+CI `37062485010` / head `4889ec9` application assertions all passed 8/8, but
+Chrome's profile-directory cleanup raced with late child writes and failed
+ENOTEMPTY. The job therefore failed. Bounded `fs.rm` retries preserve cleanup
+and every case; no skips or successful-job claim. Latest-head CI must pass
+before deployment. Log: `/tmp/fanmark-profile-editor-draft-ci-job.log`.
+Success logs now follow completed cleanup. Local eight-case checks including
+cleanup pass. Fresh catalog-only readback `2026-10-02T20:46:32.597978+00:00`
+also matches the recorded source fingerprint: 58 functions/37 bindings,
+one external Auth binding, no events. Private `fanmark-source-bindings-KhOjiA`
+retains query/review; the four inactive definitions and 54 pending report
+linkages remain, with broad runtime/deployable gates false.
+
+Editor follow-up: actual synthetic persisted-session Chrome opening on current
+`010a4d7a` reproduced an early auth redirect ending at `/dashboard` instead of
+the edit URL. Journal `fanmark-perpetual-editor-canary-Thyl2a` ended
+`failed-and-cleaned`, source-owned Business/Auth zero and retained baseline equal.
+The new editor/hook wait for Auth restoration, preserve an internal string
+return target through Worker email sign-in, distinguish failed reads from an
+authorized null profile, and provide retry/back without an editable form.
+Obsolete reads are invalidated. Seven offline Chrome cases pass against the
+built staging UI, including actual login form, 404/network/retry and 390px
+overflow/input-space checks; API client 5/5, typecheck/lint and workflow isolation
+pass. `npm run test:staging-profile-editor-ui` now runs after the application CI
+build. New-head CI and deployed editor save/reopen/preview remain pending.
+Current Worker below is unchanged. Earlier docs head `81ba302` passed both
+jobs in `37059744542`; watcher exited 0.
+First new CI `37061182268` application failed because the browser test read an
+ignored `.env.cloudflare-staging` absent on the runner. The follow-up removes
+that dependency and explicitly builds with an empty Vite env directory,
+public staging origin and synthetic Supabase initialization values. Browser
+fixtures echo the requested pinned catalog version. Repeat local seven-case
+checks use the same isolated env setup; latest CI remains pending and nothing
+has been deployed. Rebuild the normal staging dist before deployment. Existing
+`useAuthForm` Hook lint warnings are two, with zero errors.
+Second CI `37061645755` application failed the unchanged workflow isolation
+check: the synthetic domain and multiline build violated its strict patterns.
+Follow-up keeps the checker intact, uses `https://synthetic-db.example.invalid`
+and a separate empty-dir preparation step, and restores the original build
+command. Direct `npm run check:ci` exit 0 and success output are confirmed.
+The earlier shell wrapper's final diff-check exit masked isolation failure;
+do not count it as passing evidence. Seven browser cases pass again with the
+new fixture URL. No remote deployment has occurred in this editor follow-up.
+
+Owner fanmark profiles now support perpetual Tier C in both authenticated
+context reads and INSERT/UPSERT eligibility. A new real local split-D1
+regression reproduced 404 before the fix and now passes, including creation,
+updates, unchanged entered spaces, other-owner/grace/expired refusal,
+finite-plus-perpetual ambiguity and a native grace transition at the write
+barrier with no profile/generation change. Owner profile tests pass 8/8;
+public access passes 14/14, including a future microsecond and exact/past
+expiry boundary. Settings 18/18, migration-data 257/257 with no skips, Worker
+typecheck/lint and pinned staging deploy dry-run pass. This is a target PRODUCT correction
+to the legacy finite-only editor/INSERT policy, not a live Supabase change.
+The new catalog-only profile query at `2026-10-02T20:02:54.411923+00:00`
+confirms six unchanged function hashes and the absent legacy profile
+`fanmark_id` column. Ordinary legacy RPCs have no executable repository caller
+but external use is unknown; do not classify them like unbound trigger
+functions. See `public-profile-runtime-review.md`. The source emoji/short-ID
+selection difference remains an open product gate.
+
+The profile repair head `f4bd1aaf328eb67aae8fcfd9f81f477df528e2c6` passed both
+CI jobs in `37058393397`; watcher exited 0. Guarded preflight confirmed the
+dedicated account, old `ea309178`, ledger 25, empty source/Auth and three secret
+names. Current staging is **`010a4d7a-9cd2-4683-b38f-ff6ad0dd82ec` at 100%**,
+created `2026-10-02T20:13:07.300605Z`. The notification namespace is unchanged
+and only daily Cron remains. No DB migration was reapplied. HTML/JS match the
+local staging build, catalog 3,944/noindex/session null, wake 401/403 and
+disabled Stripe 404 pass.
+
+The private journaled perpetual-profile smoke exited 0. Two real synthetic
+Better Auth sign-ins exercised NULL-end owner read/create/update, exact stored
+and public display-name spaces, native row readback, private 404, republication,
+cross-owner read/write 404 and native active-to-grace edit/public refusal with
+no unauthorized profile change. Scoped cleanup read all source-owned Business
+and eight Auth tables as zero, invalidated both sessions, retained two license
+incarnation tombstones and matched Business masters/config, public catalog,
+Master version/counts, three-store schema, Auth generation, existing
+incarnations and wake baselines. Journal `fanmark-perpetual-profile-canary-5TgapW`
+ended `verified-and-cleaned`. The first attempt refused a variation-selector
+fixture mismatch before writes; `De6f0I` is `refused-before-writes`.
+Independent readback at `2026-10-02T20:16:33.846Z` confirms current version,
+ledger 25, empty source/Auth, wake 5/5 and unchanged three secret names. Logs
+are `/tmp/fanmark-perpetual-profile-{preflight,build,deploy,http,staging-smoke-retry,final-readback}.log`.
+Perpetual editor browser/mobile acceptance is not proved by API checks.
+Next: remaining source/RLS/trigger and operational/CPU/mobile reconciliation,
+plus provider integration when configured. Real user migration and domain/DNS
+remain excluded. The previous source-audit CI `37057194961` also passed.
+
+Source runtime binding review now captures all schemas for public trigger
+functions, rather than public tables only. The linked catalog-only transaction
+at `2026-10-02T19:45:33.736244+00:00` found 58 unchanged functions and 37 triggers:
+36 public bindings plus enabled `auth.users.on_auth_user_created -> handle_new_user`.
+No public-function event bindings exist. Four exact unbound trigger definitions
+(`log_profile_cache_access`, `log_waitlist_access`, `sync_public_profile_cache`,
+`validate_display_name`) have no registered binding in any captured schema.
+They must not be reintroduced as new active D1 triggers. The ordinary helper
+`generate_safe_display_name` remains a separate RPC review item.
+
+`source-runtime-bindings.sql` is catalog-only/read-only; the value-free report
+builder verifies full scope, the known Auth binding, unique/durable metadata,
+exact known definition/type/security fingerprints and zero bindings. New,
+external, disabled or event bindings invalidate inactive classification.
+Unknown functions retain review; raw SQL is not copied into the report. CLI
+output is private/atomic and cannot overwrite source through path aliases.
+Focused tests pass 9/9; migration-data passes 257/257 with no skips and includes them. The report has
+four inactive definitions and 54 functions awaiting runtime evidence linkage
+in this report, with all registered bindings still requiring counterparts.
+Existing per-feature acceptance evidence is retained. Full runtime/deployable
+and broad converter catalog gates remain false. No runtime/source rows/schema,
+Worker version or DNS changed. See `source-runtime-review.md` for exact hashes,
+current fingerprint and repeatable commands. The previous acceptance-record
+head `24c510a` passed both jobs in `37055294792`; watcher exited 0.
+
+Notification event wake/sleep is now **staging-verified with synthetic data**.
+Repair head `41cefc3374e34b01d4a89f538ac58cf3ad4faf94` passed both CI jobs in
+`37053995420`. Guarded preflight confirmed the dedicated account, fixed old
+version, ledger 25, empty source/Auth and only three existing secret names.
+Worker `ea309178-690c-4cc3-b72e-b3619cd5b444`, created
+`2026-10-02T19:32:21.361171Z`, was 100% on workers.dev at that acceptance. SQLite namespace
+`2c27a340fd6c4248bfdbbb8d8bfb457c` is retained and only daily Cron remains.
+HTML/JS exactly match local dist, noindex/robots/session/catalog 3,944 pass,
+anonymous wake GET/POST are 401, missing Origin 403, and Stripe stays 404.
+
+The initial `49d22f73` smoke returned 503 after committing a manual event but
+was cleaned completely. A guarded native D1 probe proved one returned ID with
+`meta.changes=2` because the pending-event trigger updates the marker. It too
+was journaled and removed by exact ID/source/nonce. The repair verifies exactly
+one matching `INSERT ... RETURNING id` receipt. Full-schema workerd regression
+reproduced the old 503 and now passes 20/20, including remote-style aggregate
+metadata, actual delivery/stop, ignored inserts and missing-marker rollback.
+Notification master 6/6, Worker typecheck/lint, staging build and pinned dry-run
+pass; full CI passed before deployment. Do not reapply remote 0024/ledger 25.
+
+The pinned `--notification-alarm-roundtrip` on `ea309178` exited 0. Real
+sign-in/TOTP/session rotation/MFA accepted manual API 201. The journal captures
+an actual alarm with one pending event and generation 3/3, exact Japanese
+in-app delivery, then NULL alarm/empty queue 3/3. A native future insert proves
+a missed bridge with NULL alarm, one pending and generation 4/3; GET does not
+repair it. MFA POST arms the alarm and acknowledges 4/4 without prematurely
+processing the future event. A native due-time update plus MFA repair produces
+the second exact delivery and returns to NULL/empty 5/5. Scoped cleanup also
+observed NULL/empty 5/5, zero eight-table Auth and zero source-owned Business,
+invalidated session null, and exact retained Master/config/catalog/Auth baseline
+fingerprints. Private journal `fanmark-notification-alarm-canary-Hwogoy/canary.json`
+ended `verified-and-cleaned`, authRows 0, with two journaled fixtures. Evidence:
+`/tmp/fanmark-notification-returning-{ci,preflight,deploy,http,staging-smoke}.log`
+and deployments/version/http-readback JSON. Terminal journal updates now reuse
+the same atomic-rename helper as pre-write notification updates; syntax/lint
+checks cover that follow-up script-only improvement.
+
+The D1-to-DO commit gap remains replayable rather than atomic. Hard missed
+bridges need the next mutation or MFA repair, as now actually demonstrated.
+This closes only this notification-event scheduler rehearsal. Broader source
+functions/RLS/triggers, delayed in-app/other-channel delivery, providers, CPU,
+operational and mobile gates remain open. User data and domain/DNS stay deferred;
+provider secrets remain absent. Next: fresh source behavior reconciliation across
+remaining functions/policies/triggers and provider integration when configured.
+See `notification-worker-wake.md` for boundaries and recovery details.
+
+Administrator data reset is now staging-verified. Code head `03eee80` passed
+both CI jobs in run `37045419633`. Fresh dedicated-account preflight confirmed
+canonical Business ledger 23, empty source user/business rows and empty Auth.
+Additive Business 0023/ledger was applied; all 24 entries and the exact reset
+table/two triggers match the checked-in SQL. Fresh staging build/dry-run
+was deployed as `13dca8cf-c089-417b-8f1e-e27880a86775`, created
+`2026-10-02T18:14:03.15368Z`, 100%, workers.dev only. Reset Worker/D1 selectors
+are enabled only in staging. Canonical Node HTTP readback confirms public
+HTML/JS hashes, noindex, robots/session/catalog, anonymous reset 401,
+missing-Origin reset 403 and disabled Stripe webhook 404. An initial Python
+urllib probe returned 403; Node and actual Chrome served the staging app.
+
+The pinned `--admin-data-reset-browser` passed real sign-in, first-time TOTP,
+session rotation/MFA, eight-table atomic deletion and exact audit/receipt,
+invalid confirmation/forged actor refusal, same-ID retry retaining a later
+row, and role removal/non-admin 403 plus exact denial audit. Eight native
+BEFORE DELETE guards allowed only the journaled fixture UUIDs; their SQL was
+read back exactly. A local full-schema case proves an unrelated raced row
+rolls back the entire operation. The actual Chrome DELETE dialog rejected
+empty confirmation, accepted typed DELETE, rendered a one-row result, and its
+API response matched the actor-bound D1 receipt. Private screenshot was
+visually inspected (desktop 1280x900; mobile remains unverified).
+
+Retained configuration/Master/Auth fingerprints stayed unchanged during the
+reset; all 3,944 public catalog rows retained digest
+`629d5da3b49720f7aa33d15f157aef65ce2f76b55e000c59919624a8340b8c23`.
+Exact fixture/receipt/audit/discovery/guard and synthetic profile/Auth cleanup
+passed; the process exited 0 and recovery journal ended `verified-and-cleaned`,
+Auth rows 0. Final source Business/Auth empty and zero receipt/temporary-guard
+readback is saved in `/tmp/fanmark-reset-canary-final-readback.json`.
+Private output: `/tmp/fanmark-admin-reset-staging-smoke.log`; journal and
+screenshot: `/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-admin-reset-canary-KuFSKS/`.
+License incarnation tombstones and monotonic MFA generation are retained.
+Local D1 15/15, native guard 2/2, frontend 6/6, migration-data 244/244,
+app/Worker typecheck, ESLint, staging build/dry-run pass. Restrictive coupon/
+lifecycle history remains protective and returns 409 instead of partial
+reset. Initial broad Vitest inclusion was corrected on `23b2415`; that CI
+`37043190892` also passed both jobs. See admin-data-reset-api.md.
+
+Remaining scope includes source functions/RLS/triggers review, provider
+integration and CPU/operational fit. Stripe/Resend/OAuth credentials remain
+absent. Keep real user/Auth/Storage migration and domain/DNS deferred; no
+production Supabase write or real billing/email was performed.
+
+Master emoji mutation audits are implemented and staging-verified. Additive Master migration
+`0008_emoji_master_change_audits.sql` adds native per-change audits and a
+transaction-scoped server actor/request/time context. Missing/corrupted audits
+roll back the mutation; trusted CLI writes retain NULL actors. JSON import
+mutates up to 100 rows in one SQL statement, preserving stable UUIDs and
+creation times. Auth/Worker/Master D1 tests pass 34/34; migration data 237/237,
+emoji/reference release integrations 7/7 and 6/6, Worker typecheck and ESLint pass. Master migration selectors,
+remote release guards and release fixtures include the new migration while
+Auth selectors remain separate. The guarded TOTP staging smoke has a new
+`--emoji-master-audit-roundtrip` flag with pinned account/version/triggers,
+private recovery journal, 100-row import, 102 exact audits, public catalog
+digest and scoped Master/Auth cleanup. See emoji-master-change-audit.md.
+CI `37031840989` on code head `ff7bcb8` passed both jobs. Master migration 0008
+and its ledger were applied through a private file import; all three triggers
+match the checked-in SQL exactly and no Master migration is pending. Fresh
+build/dry-run deployed Worker `10f62b09-8592-449e-9040-4e396a395175` at 100%.
+HTTP root/robots/session/catalog/languages 200, no session, anonymous admin and
+transfer 401, disabled webhook 404, noindex and local/public JS hash match.
+The pinned synthetic canary passed real sign-in/TOTP/session rotation/MFA,
+draft create/update, rejected stale/spoofed-actor/delete requests and mixed
+100-row import, with 102 exact per-row audits and no context leak. All public
+catalog pages kept digest `629d5da3b49720f7aa33d15f157aef65ce2f76b55e000c59919624a8340b8c23`.
+Master canonical/audit/pointer baseline and empty user-owned Auth rows were
+restored; synthetic business profiles were removed. MFA generation remains
+monotonic. Initial function/Master checks passed but the old cleanup flag list
+omitted this mode, leaving one target Auth user/profile. Its private journal
+bounded exact recovery; unconditional target cleanup fixed all modes, and a
+fresh full run ended verified-and-cleaned. No credentials were logged.
+
+Business migration 0022 and the combined Master history reader are now staging
+verified. CI `37035931199` passed both jobs on code head `4279db0`. Private-file
+apply added 0022/ledger; all 23 Business ledger entries and the exact native
+trigger match the checked-in sources. Fresh build/dry-run deployed Worker
+`1eb5d9ac-815e-4957-8381-b6024dac33e8` at 100%, created
+`2026-10-02T16:51:13.579131Z`. HTTP/anonymous gates/noindex and local/public
+HTML/JS hash match. The extended TOTP canary verified 102 Master audits and the
+latest 20 exact user-detail API rows; public catalog digest stayed unchanged.
+The guarded registration canary linked the preexisting synthetic discovery and
+favorite, preserved display/counters/timestamps and read the linked favorite
+through the API. Registration/lottery/whois/R2 cover checks and scoped cleanup
+passed. Both private journals ended verified-and-cleaned; source business rows
+and user-owned Auth rows returned to zero and master baselines were retained.
+Lifecycle incarnation tombstones and monotonic MFA generations remain.
+
+Local registration suite passes 18/18 and admin history 14/14; typecheck/ESLint
+and migration-data 237/237 pass. A supplementary all-23-migration local probe
+returned no completion output and was stopped after the actual remote schema/
+trigger/canary verification. Do not use it as passing evidence. The new Master history rows now have authenticated desktop acceptance: 20
+rendered rows matched the intercepted API order/action/metadata, including 18
+latest exact Master audits; screenshot review and scoped cleanup passed. The
+new `--emoji-master-audit-browser` smoke covers this; mobile remains unverified.
+
+Waitlist denial diagnostics are now staging-verified. Code head `5744231`
+passed both CI jobs in run `37039256333`; fresh build/dry-run deployed Worker
+`4199fd09-8080-4944-8c09-6932e94913b2` at 100%, created
+`2026-10-02T17:21:06.720158Z`. HTTP/anonymous gates/noindex and local/public
+HTML/JS hash match. The pinned `--waitlist-security-roundtrip` passed authorized
+hash-list/reveal, then two 403 denials after removing only the synthetic
+caller's admin plan. D1 retained the exact resource/risk/operation-time fields.
+A version-pinned live operator tail captured only the bounded warning fields;
+both events exactly matched the D1 audit IDs/actions/times. Raw request headers,
+cookies, tokens, IP and emails were neither forwarded nor saved by the tail.
+The private recovery journal ended `verified-and-cleaned`, user-owned Auth
+rows returned to zero, and scoped waitlist/profile/audit cleanup passed. The
+owned tail process was stopped and returned exit 0 after capturing two events.
+Local waitlist suite remains 9/9. Source NOTICE has no external delivery call.
+
+The two source user-settings privilege triggers have been reviewed against
+owner profile PATCH and invitation signup: caller plan/identity/billing edits
+are rejected, and signup inserts the literal Free plan after Auth lease checks.
+Both existing local D1 suites were rerun successfully (10/10 each). See
+source-user-settings-guards.md; this does not clear the broad catalog gate or
+prove imported-user/provider authorization.
+
+Next: remaining source function/RLS/trigger review and unresolved management,
+provider/CPU/operational gates. Stripe/Resend/OAuth credentials remain absent.
+Keep real user/Auth/Storage migration and domain/DNS deferred.
+
+The preceding lottery-audit rollout used workers.dev staging Worker version
+`445dd523-232d-4766-aaef-2c8d175e5bc6` at 100%. The code baseline is `f3787d8`;
+CI run `37026002389` passed both application and Worker jobs. A fresh staging
+build and Wrangler dry-run passed before deployment. The latest deployment
+must be selected by `created_on`; Wrangler's JSON list is not newest-first.
+The preceding current version was the recorded `d2330dd1-ce17-41c0-99d2-a81b242c412d`,
+not the older first list item inspected initially.
+
+Business staging migration `0021_coupon_lottery_status_audit.sql` is applied.
+The new trigger and existing 0015/0019 triggers match checked-in SQL exactly;
+no business migration remains pending. The guarded synthetic coupon smoke
+passed: two per-entry cancellation audits with exact actor/entry/command/
+metadata/time, same-request replay with one use and two notification events,
+source-table/coupon-command cleanup, original 40-source-table/master baseline,
+and empty Auth. The direct command/trigger smoke does not establish an
+imported-user or provider-backed coupon flow. Lifecycle incarnation tombstones
+remain intentional derived runtime metadata.
+
+Normal migrations apply exited without applying 0021. The existing private
+file-import pattern then applied the SQL and ledger row together. The first
+canary verification/cleanup hit D1's long-LIKE-pattern limit, leaving synthetic
+rows; the private journal bounded recovery to its exact IDs. Event-key IN
+predicates replaced LIKE, recovery removed those rows, and a fresh full smoke
+completed with cleanup readback. The script retains private journals and
+sanitized failure diagnostics for reproducible recovery.
+
+HTTP readback passed: root/robots/session/catalog/languages 200, no session,
+anonymous admin/transfer 401 and disabled Stripe webhook 404. The local/public
+JS SHA-256 matches `dd779e2f1ef10aaf7c26f7b94100d82353ae6cf91e524af7cfbd498125a6a27d`.
+The updated authenticated transfer canary passed against the pinned new
+version: synthetic sign-in, issue/apply/reject/reapply/approve, exact per-entry
+cancellation audit and repeat-approval denial without duplicate audits. Three
+Japanese in-app notifications were delivered. Its business/Auth rows were
+removed and existing coupon/email masters and MFA generation were preserved.
+The first run hit an obsolete three-digit deadline assertion after successful
+transfer and cleaned up; the strict canonical six-digit assertion now passes.
+
+The deployed code includes transfer `c58fc5c`, finalization `6d36028`, deletion
+`ae4c351`, Stripe extension `97f963c` and coupon `bfdeb54`. Local suites passed
+11/11, 27/27, 6/6, 70/70 and 11/11 respectively. Audit INSERT errors abort their respective business batch/command. Stripe,
+finalization and coupon flows additionally verify missing/corrupted audit
+values. Tested retry/recovery cases do not duplicate effects.
+Account cleanup failure retains Auth/profile rows while prior committed
+license returns stay in grace, as documented. Migration data passes 237/237.
+
+Source-trigger review found the Master D1 emoji change-audit gap now being
+closed at the mutation/storage boundary by the local and staging evidence above.
+Source security-alert behavior is database NOTICE
+only, with no external delivery call. See the updated object map and private
+non-timestamp-trigger review; do not clear the broad catalog gate.
+
+Converter remains v43 with function/RLS/trigger scopes and credential descriptor
+still gated. Stripe, Resend and OAuth secrets remain absent; real provider
+acceptance and CPU/operational fit remain unresolved. No production Supabase
+writes, real user/Auth/Storage migration, real provider transaction, or public
+domain/DNS change occurred.
+
+The latest read-only schema catalog completed at
+`2026-10-02T14:21:25.605664Z`: 40 tables / 406 columns / 144 constraints /
+139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
+source table rows were read. Converter v43 reviews 63 exact Worker-operation
+timestamps, seven snapshot-import-only timestamps, eight versioned reference
+master timestamps, one scheduled Worker timestamp, and all 11 exact Auth
+references. All known timestamp-default operation gates are now reviewed.
+Audit writers bind operation time or derive it from guarded return/coupon
+commands; no audit timestamp UPDATE exists. Fixed-clock D1 readback covers
+lottery creation/reapplication, admin plan changes, and broadcast drafts,
+alongside existing lifecycle, email-template, and waitlist audit checks.
+
+The report remains `deployable: false`: function/RLS/trigger catalog scopes
+are still unsupported and the credential descriptor gate remains. Timestamp
+review completion is not schema-conversion completion or provider acceptance.
+Local validation covers converter 41/41, migration data 237/237, lottery D1
+12/12, admin user management 12/12, broadcast admin 11/11, Worker typecheck
+and changed-file ESLint. Both v41 CI jobs passed on `2c79c29` in run
+`37020954433`. v42 `e73396c` and v43 `096e118` are locally validated
+follow-ups included in `8d9b0fd`; run `37022024473` passed both CI jobs.
+
+The v41 license fix writes operation-time `updated_at` in active-to-grace,
+no-entry grace expiry, and lottery expiry of the old license. Commit-recovery
+readback verifies that timestamp; internal claims preserve business times.
+Source lifecycle tests passed 25/25, scheduled runner 8/8, registration 11/11,
+and transfer 9/9. v42 additionally covers profile, Enterprise, subscription,
+and broadcast creation/update times, including creation-time retention.
+Its invitation signup 10/10 and subscription/delivery integration 22/22
+passed with synthetic providers. v40 CI run `37019188514` passed both jobs.
+
+Wrangler read-only checks in the managed migration checkout confirm the
+`fanmark.id@gmail.com` account and staging secrets named only
+`BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+`VERIFIED_ACCESS_SECRET`. Stripe, Resend, and OAuth integration credentials
+remain absent; no fresh login is needed for the current CLI session.
+
+No source rows, production routing, user/Auth migration, Worker deployment,
+Cloudflare resource writes, or domain/DNS settings were changed in v43, v42, v41 or v40. The
+same boundaries held in v39, v38, and v37.
+No source rows, production routing, user/Auth migration, Worker deployment, or
+domain/DNS settings were changed in v36. The latest recorded
+workers.dev-only staging version before this rollout was
+version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
+`36991654600` exposed an intermittent 120-second
+stall in the PGlite-heavy `subscription-application.test.mjs`; running it in a
+standalone Node process resolved the hosted validation failure. CI does not
+deploy.
+
+The archive staging smoke and an exact account/Worker/D1 guard are prepared.
+The additive business migration `0020` was applied to staging and read back:
+`idx_notifications_archive_due` exists, and Wrangler reports no pending
+migrations. After CI passed, the guarded synthetic archive smoke passed against
+staging business D1 through a local scheduled Worker: two eligible rows were
+archived, four ineligible rows retained, then all synthetic notification and
+history rows were deleted and read back as zero. Business/master/public
+settings baselines were preserved and Auth remained empty. No Worker was
+deployed and the current Worker config still leaves notification archival
+disabled. The first CLI check failed to read its macOS Keychain credential
+(exit 51); a fresh `whoami --json` confirms the intended
+`fanmark.id@gmail.com` account ID.
+
+The 211-callsite inventory now has semantic mappings for all 211 static locations.
+The first 143 are: 40 Auth/Auth-MFA
+operations, 20 own/fanmark-profile operations, 11 fanmark-settings/Storage
+operations, 19 master/reference-data operations, eight search/registration
+operations, three favorites operations, ten transfer/lottery operations,
+eight Realtime subscriptions, 14 notification data/admin operations, and eight
+dashboard/analytics operations, plus two owner-license usage/downgrade reads.
+The remaining 68 are classified in
+[`frontend-callsite-map.md`](frontend-callsite-map.md). A bounded trace now
+covers the shared favorites, plan, profile, and emoji-master helpers; arbitrary
+dynamic/whole-program calls, production reconciliation, and provider acceptance
+remain open. The two owner-license reads use the session-scoped D1 API in
+Cloudflare mode. The
+extension checkout callsite is
+mapped but still gated pending staging Stripe configuration. A
+schema-only readback of the linked production Supabase project found that
+`get_unread_notification_count(uuid)` trusts a supplied UUID and grants
+execution to `anon`, exposing only the target account's unread count. A local
+Supabase hardening migration and pgTAP regression test now bind that RPC to
+`auth.uid()` and revoke anonymous execution. They passed a disposable PGlite
+behavior check, but have not been applied to Supabase; the repository's local
+Supabase DB container is unavailable in this worktree.
+
+The offline frontend report was regenerated at base `63b6018`. Exact
+211-location coverage is guarded by
+`scripts/migration/test-frontend-callsite-mapping.mjs`; the latest full
+`test:migration-data` run passes 220/220. A schema-only Supabase readback
+refreshed `supabase/remote_schema.sql` to 40 tables / 406 columns / 58
+functions / 77 policies. The five added functions, three added tables, and
+policy changes match checked-in migrations. Read-only Functions metadata
+shows 35 ACTIVE deployments; the metadata snapshot initially had 34 matching
+local entrypoints and one live-only `manual-expire-grace-licenses`. A local
+replacement is now prepared with an administrator-role and current-session
+MFA check; it is not deployed. The active version 14 still has service-role
+access without those handler checks, so its production disposition remains a
+security gate. No live function was invoked or changed.
+
+Converter v24 recognized the D1 notification archiver as the explicit writer
+for `notifications_history.archived_at`; its selector remains disabled in
+staging. The local v25 change now records only the 11 exact `auth.users(id)`
+constraints as reviewed cross-database identity/deletion dispositions; it emits
+no Auth foreign keys into D1 SQL and unknown or changed constraints remain
+blocking. The importer still requires read-only Auth D1 identity preflight
+before business writes. Converter v26 then reviewed five exact Worker-owned
+timestamps: `waitlist.created_at`, `fanmark_discoveries.first_seen_at`,
+`fanmark_discoveries.last_seen_at`, `fanmark_events.created_at`, and
+`fanmark_favorites.created_at`. These bind a canonical UTC operation time;
+exact PostgreSQL transaction-time and sub-millisecond equivalence are not
+claimed. At v26, the other 62 timestamp defaults and functions/RLS/triggers
+remained blocking. The current v27 disposition is recorded at the top of this
+handoff.
+A guarded synthetic post-write rehearsal passed on 2026-10-02: the Stripe
+effect ran once, D1 Time Travel and encrypted R2 restore preserved admin MFA
+and the avatar, and five frozen writes were rejected. Provider-backed
+acceptance and production stop/recovery targets remain open.
+
+The v26 schema-only Supabase query completed at `2026-10-02T12:10:27Z` and
+again returned 40 tables / 406 columns / 144 constraints / 139 indexes /
+58 functions / 36 triggers / 77 RLS policies / one view. Converter v26 has
+4 groups / 65 blocking locations: 62 timestamp-default operations and
+functions/RLS/triggers. It separately reports all 11 exact Auth FK dispositions,
+verifies those definitions against
+`supabase/remote_schema.sql`, and preserves the D1 importer's Auth identity
+preflight. Converter tests pass 26/26, the complete local migration suite
+passes 222/222, favorites D1 tests pass 7/7, and waitlist signup D1 tests pass
+6/6. A fresh
+40-table synthetic importer replay on the earlier 11:17 catalog passed 40/40
+checkpoints with 12 synthetic rows, six Auth identity lookups, two
+credential transforms, one durable inactive-credential deferral, exact
+timestamp readback, and conflicting-coverage rejection. It remains
+`public_rows_reconciled`; full migration reconciliation is false. It touched
+only disposable local D1 and no source rows.
+
+PR #41 head `bd7c8bd` passed both required CI jobs in run `36999647995`. The
+current read-only staging secret list still contains only Better Auth, the
+reference-master service, and verified-access secrets. Stripe test, Resend,
+and OAuth acceptance remain disabled until their staging credentials are
+configured. No provider-backed request was made.
+
+The earlier date-sensitive Stripe fixture failure is fixed; the full Stripe
+receipt suite, application build, and Worker API validation pass. CI itself
+does not deploy. The active Wrangler profile `fanmark-staging-inapp` is logged
+into the intended Fanmark.id account. A guarded deployed Cron canary passed and
+restored the staging baseline. Business, Auth, and
+emoji-master staging D1 report no unapplied migrations.
+
+The latest staging deployment retained existing schedules, bindings, and
+selectors. Read-only health/session, emoji catalog, and tier-master requests
+returned 200/no-store; the anonymous session endpoint returned no session.
+License expiry and notification archival remain disabled. The deployment did
+not apply a D1 migration or write rows or R2 objects.
+
+The app staging config retains Cron schedules `* * * * *` and `0 0 * * *`.
+`NOTIFICATION_PROCESSOR_BACKEND=d1` is configured; the expiry selector
+`LICENSE_EXPIRY_BACKEND` and Stripe/Resend/OAuth provider credentials are not.
+Thus scheduled notification processing may run when events exist, while daily
+license expiry and provider-backed integration acceptance remain disabled.
+The canary temporarily enabled the scheduled lifecycle selector, finalized one
+synthetic lottery winner, then restored the selector, baseline settings, and
+retained lifecycle state. Readback found zero fanmarks/licenses and zero
+canary lifecycle journals after cleanup. The master D1 contains 3,944 emoji
+rows at release generation 3 (`10ec42c1…`); its Worker API returned all 3,944
+unique IDs over eight pages with `no-store`. Reference-master generation 8
+serves 4 tiers, 4 languages, 5 reserved patterns, and 16 extension prices.
+The first MFA-integrated Stripe recovery attempt timed out with a pending
+synthetic receipt. A later full guarded rehearsal passed from
+`2026-10-02T07:50:30Z` to `2026-10-02T08:00:31Z`: 20 business and 3 Auth D1
+migrations, one synthetic Stripe extension applied once, admin MFA state and
+avatar surviving both D1 Time Travel and encrypted R2 restore, and five
+consecutive frozen writes rejected. An isolated diagnostics D1 recorded Cron
+receipt, job selection, Stripe dispatch completion, and freeze pauses. The
+temporary Worker, three disposable D1s, config, R2 objects, avatar, and private
+recovery artifacts were deleted and read back. This completes that synthetic
+recovery slice, not the remaining provider, production, or migration gates.
+This checkpoint does not include real user/Auth/Storage migration, production
+routing, or domain/DNS cutover, which remain deferred.
+
+The timestamp writer audit now recognizes all three generated master-seed
+INSERT paths. The emoji release staging path binds one explicit UTC
+microsecond `created_at`/`updated_at` value and checks those values on readback.
+A fresh read-only catalog audit observed 79 defaults across 40 tables, parsed
+143 literal/generated INSERT column lists with zero unparsed targets, and
+retained 12 timestamp columns without direct literal writers. Eight have a
+versioned-master replacement; converter v23 gave three snapshot-import-only
+dispositions. The current work adds a D1 notification archiver and a reviewed
+explicit timestamp disposition for `notifications_history.archived_at`. Local
+validation passes 208/208 migration-data tests, 15/15 notification D1 tests,
+five scheduled-dispatch tests, Worker typecheck, and targeted ESLint. Both CI
+jobs pass on `c5aaefe` in run `36990781789`; staging deployment remains pending.
+The checked-in source function defaults to atomically archiving delivered/failed
+notifications older than 90 days, but no checked-in invocation or schedule was
+found; this is not a live `pg_cron` readback. The staging selector remains
+absent. History purge/long-term retention and source/target transaction-time
+equivalence remain open. The migration-data suite passed 207/207 at the latest
+committed checkpoint; the current local suite passes 208/208.
+
+At the converter v23 checkpoint, three columns received an import-only disposition:
+`notification_preferences.created_at/updated_at` and `user_roles.created_at`.
+The generic importer preserves their source timestamps, and the current Worker
+has no direct insert writer for either table or preference update writer. A
+fresh 40-table synthetic replay passed 40/40 checkpoints with 12 rows and exact
+readback of both timestamp pairs. The v23 converter report at that checkpoint
+had five groups / 82 locations (11 external Auth references, 68 timestamp
+operations, and three function/RLS/trigger scopes); `deployable` and full
+migration reconciliation remain false. The current v24 follow-up below
+implements and tests the Worker writer for `notifications_history.archived_at`;
+retention policy remains open.
+
+## 2026-10-02 D1 notification archive implementation
+
+`workers/api/src/notifications-scheduled.ts` now contains a D1 equivalent of
+the checked-in `archive_old_notifications(integer)` operation. It moves only
+`delivered`/`failed` rows older than 90 days, preserves the source fields in
+`notifications_history.original_data`, uses 250-row batches with a 10-batch
+per-invocation cap, and retains source rows when an existing history record
+conflicts. Conflicts or a remaining backlog report `partial`. A partial index
+supports the archive scan. The schedule is opt-in through
+`NOTIFICATION_ARCHIVE_BACKEND=d1`; the staging config has no such selector, so
+the new operation is not deployed or running there.
+
+Synthetic D1 integration coverage checks the cutoff boundary, eligible states,
+archived JSON and timestamp, selector-disabled behavior, and conflict
+retention. Converter v24 records that `archived_at` has an explicit runtime
+writer and omits its SQL default. The writer uses one JS `Date` value expanded
+to canonical six-digit UTC text per invocation; PostgreSQL transaction-time
+microsecond identity is not claimed. Source invocation/schedule, history
+retention/deletion, live staging readback, and production operation remain
+unverified. User rows and domain/DNS cutover are still deferred.
+
+The inventory analyzer change is `b34638b`, its generated report/handoff
+evidence is `51d2b24`, and target-coverage notes are in `2a45a04`.
+
+## 2026-10-02 frontend inventory extraction follow-up
+
+The offline AST inventory now follows direct Supabase Realtime
+`channel(...).on('postgres_changes', { table })` declarations to matching
+`removeChannel(localAlias)` calls inside their lexical block. This resolves
+the previously unclassified cleanup targets to their subscribed tables;
+interpolated channel topics remain visible as expressions. Arbitrary wrappers
+and indirect calls still require manual review. The regenerated report is
+based on `b34638b`, has 211 frontend callsites and zero unresolved targets.
+This does not complete the operation-to-owner/data-class/replacement map or
+the live production reconciliation required by #30. The focused extraction
+test and all 198 migration-data tests pass.
+
+A 33-minute isolated probe deployed the actual API bundle
+(`workers/api/src/index.ts`) to disposable Worker
+`fanmark-app-cron-long-d8523502`, without D1/R2 bindings, secrets, or routes.
+Version `d95b18ec-e54a-446c-bad5-46281d6ed122` had `* * * * *` and 100%
+persisted invocation logs. The first Cron arrived at `2026-10-01T21:09:04Z`,
+about 19.5 minutes after deployment. Worker-specific tail recorded 30
+`scheduled-dispatch` diagnostic log records (received/selected for 15
+invocations); Workers invocation records returned `outcome=ok` and no
+exceptions. Notification and Stripe jobs were disabled and claimed/applied
+zero rows. The earlier 18-minute probe ended before the first observed event,
+which is consistent with delayed trigger propagation rather than an app
+handler failure.
+
+Dashboard Cron Events still displayed no rows at 32 minutes and repeated its
+up-to-30-minute delay note. The direct tail and invocation records did show
+the scheduled event and its `scheduledTime`, so Cron delivery is proven for
+the app bundle; the Past Events dashboard view remained stale/unverified.
+Cleanup deleted the Worker and config; its URL returned 404, and the D1
+inventory remained the three existing staging databases. No secrets, R2,
+real data, provider, production route, or DNS/domain setting changed.
+
+After that CI pass, the full synthetic post-write recovery completed: D1 Time
+Travel reconciliation took 18,362 ms, encrypted R2 bundle replay took 50,668
+ms, and a synthetic avatar survived both recovery paths. A storage write during
+freeze was rejected with `503 cutover_write_freeze`; temporary Workers, D1s,
+R2 objects, config, avatar, and private artifacts were deleted and read back.
+
+The guarded `npm run test:migration:staging-prewrite-resume` was rerun and
+passed in 67,990 ms. Its locally signed synthetic Stripe receipt was accepted
+once, its duplicate remained nonterminal, and it made zero Stripe API calls.
+During the Cloudflare write freeze, the disposable loopback Supabase accepted
+the synthetic owner-settings update after 33,654 ms. Cleanup restored the
+ordinary staging Worker and left zero synthetic receipts or dispatches.
+
+A read-only `wrangler secret list` at `2026-10-01T22:25:49Z` found only
+`BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+`VERIFIED_ACCESS_SECRET` on `fanmark-app-staging`. Stripe, Resend, and OAuth
+provider credentials remain external staging gates. One pre-existing local
+change, `supabase/.temp/cli-latest`, is preserved and must not be staged.
+
+Fresh read-only staging readback confirmed active Wrangler profile
+`fanmark-staging-inapp` targets the configured account. `fanmark-app-staging`
+version `842554cb-9dca-4b59-b7d1-43653fa7d69f` is at 100% after cleanup;
+Business/Auth/Master D1 report no unapplied migrations, and the three APAC R2
+staging buckets are present. `/`, `/api/auth/ok`, and `/api/emoji/catalog`
+return 200 with the expected cache/noindex headers; `/api/stripe/webhook`
+returns 404 because provider selectors remain disabled.
+
+At `2026-10-01T22:36:50Z`, a `BEGIN READ ONLY` aggregate measured PostgreSQL
+database size at 27,749,523 bytes and Storage metadata at 109 objects /
+13,285,729 bytes with no missing or invalid size metadata. No object keys,
+bodies, Auth rows, or application-row values were returned. The subsequent
+offline inventory refresh is recorded above; live mapping and production
+reconciliation remain open.
+
+The exact disposable recovery Worker was read back from Cloudflare with
+`triggers.crons=["* * * * *"]`, 100% persisted invocation logs, and scheduled
+diagnostics enabled. Its Worker-specific Observability > Invocations history
+contained seven synthetic `fetch` calls and no Cron invocation; the live stream
+also waited without receiving a scheduled event. Worker-specific
+`wrangler tail --search scheduled` had no marker, with one reconnect gap, so
+delivery versus visibility is still unresolved. A third full synthetic
+post-write recovery run started at `2026-10-01T19:44:45.036Z` and ended at
+`2026-10-01T20:06:49.350Z` with
+`synthetic_stripe_extension_dispatch_timeout`. The final deployment version
+was `0c5dee53-e9f0-4762-bc3e-22f54c48780b` at 19:46:29.635 UTC. Its D1 receipt
+remained `received/pending` with attempt count 0. The avatar byte/metadata
+readback passed; the run stopped before Time Travel bookmark creation and
+encrypted R2 bundle/replay (`r2ObjectCount=0`).
+
+Cleanup report confirmed deletion of the temporary Worker, Business/Auth D1s,
+config, and synthetic avatar. The Worker URL now returns 404, and the D1
+inventory lists only the three existing staging databases. R2 and private
+artifact cleanup flags are false because those artifacts were never created.
+No real Supabase rows, production routes, provider transactions, or DNS/domain
+settings changed. Issue #34/#37 and the complete recovery gate remain open.
+
+The recovery smoke harness now enables persisted Workers Logs and invocation
+logs on the disposable Worker from its first deployment, and records safe
+avatar readback diagnostics. A fresh synthetic post-write recovery run
+deployed its last version at 18:26:37 UTC and waited 20 minutes. Worker tail
+and Worker-specific saved logs recorded synthetic HTTP requests but no Cron
+invocation, including after the documented 15-minute propagation window. The
+receipt remained `received/pending`, attempt count 0; the run ended at
+18:47:19 UTC with `synthetic_stripe_extension_dispatch_timeout`, before Time
+Travel or encrypted backup replay. Synthetic avatar byte and metadata
+readback passed. Cleanup deleted the Worker, both disposable D1s, config, and
+avatar; an independent D1 inventory contains only the three existing staging
+databases, and the temporary Worker URL returns 404. No recovery bundle was
+created (`r2ObjectCount=0`). Cron delivery for the recovery Worker and Issue
+#34/#37's full recovery gate remain unverified; do not repeat the full drill
+until the scheduled delivery path is diagnosed.
+
+An additional disposable probe bound one newly created empty D1 to a minimal
+Worker. Its every-minute Cron produced a Worker-specific scheduled invocation
+about 15 minutes 33 seconds after deployment, with `outcome=ok`; the same
+Worker's synthetic GET had already verified its tail. This shows that new
+Worker Cron delivery works in the account and that an unused D1 binding alone
+does not suppress it. The probe Worker, D1, and local config were deleted; the
+URL returned 404 and the D1 inventory returned to the three existing staging
+databases.
+
+A subsequent full synthetic post-write recovery smoke started at 19:12:25 UTC
+and stopped at 19:34:02 UTC with `synthetic_stripe_extension_dispatch_timeout`.
+Its last deployed version was `7fb687df-4781-43df-a2e0-4068db0aec46` at
+19:13:35 UTC; the config had `* * * * *`, scheduled diagnostics, and persisted
+100% invocation logs. Worker-specific tail received no scheduled marker for
+over 20 minutes. The receipt remained `received/pending`, attempts 0. Avatar
+byte/metadata readback passed. Cleanup deleted Worker, disposable Business and
+Auth D1s, config, and avatar; the Worker URL returned 404 and only three
+staging D1s remained. `r2ObjectCount=0`: no backup bundle or private recovery
+directory had been created before the failure. The corresponding `false`
+cleanup flags mean there were no such artifacts to remove, not a cleanup
+failure. The later direct readback confirmed the recovery Worker's Cron
+schedule is registered. The 19:44–20:06 UTC retry still produced no
+attributable scheduled invocation; pause further full recovery retries until
+runtime delivery or its observation path is isolated.
+
+`AdminSettings` now edits `max_emoji_characters`; the D1 admin API's editable
+allowlist now permits that public setting. Worker version
+`3293bea8-7929-4d6f-8786-886abd39348d` is deployed to `fanmark-app-staging` at
+100%. A same-session synthetic TOTP/MFA browser canary updated the maximum from
+5 to 6 and restored 5 through the form, and also updated/restored the lifecycle
+setting. Readback after cleanup found the setting at 5, no related audit rows,
+no synthetic admin profile, and no synthetic Auth users. The MFA generation
+counter may have advanced during factor enrollment/removal.
+
+The PR and issues #33/#34/#37 have been updated with this staging evidence and
+the remaining Cron/provider gates. The PR is still draft/open; no merge or
+production cutover is authorized by those updates.
+
+Current Cloudflare checks use the explicit `fanmark-staging-inapp` profile.
+Remote Auth, Business, and emoji-master D1 report no pending migrations; the
+three staging R2 buckets are present. Stripe test-mode and Resend credentials
+remain unconfigured. A minimal new Worker Cron has fired, but the full recovery
+Worker still has no attributable scheduled invocation. The current
+Wrangler OAuth token does not list Workers Observability access; a direct
+telemetry query returned HTTP 403. No permission or secret was changed.
+
+Latest guarded post-write recovery run started at 14:11:58.740 UTC and ended at
+14:33:51.345 UTC. Its temporary Worker was deployed with an every-minute Cron;
+worker-specific `wrangler tail` received the synthetic avatar fetch but no
+scheduled invocation logs, including after 15 minutes from the final deployment
+at 14:13:22.092 UTC. The synthetic Stripe receipt stayed `received/pending`
+with `attempt_count=0` through the 20-minute wait, which ended with
+`synthetic_stripe_extension_dispatch_timeout` before Time Travel or encrypted
+R2 recovery. The prior transient D1 error 7403 did not recur. Cleanup readback
+confirmed deletion of the Worker, disposable Business/Auth D1s, temporary
+config, and synthetic avatar; only the three existing staging D1s remain. No
+recovery bundle or backup R2 object was created. A separate minimal Worker
+without D1/R2 bindings was deployed at 14:42:19.836 UTC with `* * * * *`.
+`wrangler init --from-dash` read the exact schedule back from Cloudflare,
+confirming control-plane registration. Its per-Worker tail showed no scheduled
+marker through 15 minutes. Cron Events also showed no rows, while the Dashboard
+noted that new-Worker history can take up to 30 minutes. The probe Worker was
+deleted; a deployment readback returned “Worker does not exist,” and its
+temporary local files were removed. Only the three existing staging D1s
+remain. Schedule registration succeeds, but scheduled invocation for new
+Workers remains unobserved; investigate delivery/visibility before repeating
+recovery. Issues #34/#37 remain open.
+
+Wrangler OAuth is active under the intended Cloudflare account. A direct
+read-only Cloudflare API schedule readback for `fanmark-app-staging` returned
+`* * * * *` and `0 0 * * *`, both modified at 2026-10-01 10:21:15 UTC. This
+confirms the existing staging app's schedules are registered; it does not
+resolve delivery for newly created Workers. No additional permissions or
+secrets were added.
+
+A stronger disposable probe deployed at 15:06:14 UTC using the explicitly
+selected `fanmark-staging-inapp` profile. Its Cron Schedules API returned 200
+with `* * * * *`; a synthetic GET returned 200 and appeared in the Worker
+tail. The filtered Worker-specific tail produced no Cron marker through
+15:23:15 UTC, more than 17 minutes after registration and beyond the documented
+15-minute propagation window. A post-delete schedule readback returned 404
+with code 10007, and the existing D1 list remained the same three staging
+databases. The probe had no D1/R2 bindings. A first deploy attempt without an
+explicit profile was rejected before resource creation because the temporary
+config directory selected another saved profile; subsequent commands must
+continue to pin `fanmark-staging-inapp` explicitly. Cron registration is now
+directly confirmed, while scheduled runtime delivery remains unobserved. Do
+not repeat the full recovery drill until the invocation path is understood.
+
+At 15:32 UTC, the deleted probe's Cron Events page displayed successful rows
+from 15:22:21 through 15:31:21. A freshly opened `fanmark-app-staging` Cron
+Events page displayed the exact same timestamps and CPU values, including rows
+after the probe's deletion/readback. These dashboard rows are stale, shared, or
+otherwise not attributable by Worker; they are not execution proof. The live
+tail remained the Worker-specific evidence and contained no scheduled marker.
+
+On 2026-10-02, read-only Wrangler OAuth verification still identified
+`fanmark.id@gmail.com` and the intended Fanmark.id Cloudflare account. The
+staging secret-name readback contained only `BETTER_AUTH_SECRET`,
+`REFERENCE_MASTER_SERVICE_SECRET`, and `VERIFIED_ACCESS_SECRET`; Stripe
+test-mode and Resend credentials are not configured. No secret values were
+read. Their provider canaries remain pending owner-provided staging credentials.
+
+## Persisted-log Cron probe and CI checkpoint (2026-10-02 01:40 JST)
+
+Commit `d461c33` added guarded probe coverage and `9561109` improved its failure
+and cleanup reporting. The temporary synthetic Worker
+`fanmark-cron-observability-a5f6043b` had an every-minute Cron trigger, no D1,
+R2, or secrets, persisted Workers Logs enabled with invocation logs included,
+and a synthetic `scheduled()` log marker. A GET returned 200 and appeared in
+that Worker's saved logs. After more than 15 minutes, the same Worker-specific
+log view still contained only the GET and no Cron invocation. This rules out a
+disabled log pipeline as the explanation but does not distinguish trigger
+delivery from scheduled-invocation visibility. The probe was deleted; the
+post-delete deployments readback returned Cloudflare error 10007 (Worker does
+not exist). No settings were changed on `fanmark-app-staging`, where saved
+request logging remains disabled.
+
+The probe's focused tests pass 4/4, `npm run test:migration-data` passes
+198/198, `npm run check:ci` and `npm run typecheck` pass, and targeted ESLint
+and `git diff --check` pass. Both CI jobs in run `36892893711` passed on head
+`9561109`. Repository-wide `npm run lint` still reports existing errors in
+generated and unrelated files (105 errors, 27 warnings); the touched files
+pass targeted lint. No new remote D1/R2 objects or application data were
+created. Existing staging D1 inventory remains the same three databases.
+
+Cloudflare documents a propagation delay of up to 15 minutes for Cron trigger
+changes and up to 30 minutes for new-Worker Cron history. It also documents
+persisted Workers Logs invocation records for Cron. The probe passed the
+propagation wait and verified its log settings, but its empty Cron log is not
+enough to conclude whether the handler failed to run or the dashboard did not
+surface it. See [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+and [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/).
+Do not repeat the full recovery drill until the scheduled-invocation path is
+understood. Issues #34/#37 remain open.
+
+The follow-up read-only Workers Observability telemetry query against this
+deleted synthetic Worker returned HTTP 403 `Authentication error` with the
+current Wrangler profile. Cloudflare's API reference lists `Workers
+Observability Write` as the accepted permission for this query endpoint. No
+token was printed or stored, and no saved query or Worker setting was changed.
+Direct API readback needs that permission; the browser-based Query Builder is
+another path if the account session already has access.
+
+Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
+100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
+200; `/api/auth/capabilities` reports signup, password reset, email
+verification, and social providers disabled. Stripe webhook remains 404
+because its selector/secrets are unset. Business/Auth/master staging D1s have
+no pending migrations; the canonical emoji master has 3,944 rows. Staging
+avatar, cover, and backup R2 buckets exist and are empty.
+
+The synthetic MFA admin browser canary passed sign-in, first TOTP enrollment,
+session rotation, MFA admin authorization, cross-D1 user list/detail, plan
+changes, suspension/restoration, immediate license expiry, and session revoke.
+Anonymous admin access was denied. Auth user-owned rows and business
+profile/license/audit/notification canary rows read back at zero after cleanup.
+The MFA generation counter may have advanced during factor creation/deletion.
+
+A disposable Cron probe Worker was deployed at 12:10:29 UTC, kept active for 20
+minutes, and produced no scheduled log in live `wrangler tail`; it has been
+deleted along with its temporary files. The existing staging app Cron was
+previously observed firing with the Stripe dispatcher disabled and zero claims.
+The new-Worker trigger propagation path remains unresolved, so the guarded
+post-write recovery drill has not passed.
+
+The 2026-10-01 12:56:38–13:17:53 UTC post-write retry again accepted a signed
+synthetic extension receipt but did not claim it through the dispatch path. It
+timed out with `received/pending`, `attempt_count=0`, before Time Travel or the
+encrypted R2 replay stage. Cron Events history became visible after its
+up-to-30-minute display delay, but it cannot prove this Worker ran: the same
+timestamps and CPU values appeared on the existing `fanmark-app-staging` page,
+and the temporary Worker's page also listed events from before its
+12:55:54 UTC creation. The Cron-less emoji master page had no events.
+Worker Logs were disabled and live `wrangler tail` did not capture a job
+summary. Thus both per-Worker Cron invocation and Stripe job execution remain
+unverified. A fresh settings page confirms the temporary Worker is deleted.
+The exact deletion-completion time was not captured. Cleanup independently
+confirmed the temporary Worker, both disposable D1s, config, and
+synthetic avatar were deleted; only the three existing staging D1s remain and
+the backup/avatar R2 buckets are empty. Diagnose the dispatch path with
+observable runtime output before repeating the full recovery run.
+
+`wrangler secret list` contains only `BETTER_AUTH_SECRET`,
+`REFERENCE_MASTER_SERVICE_SECRET`, and `VERIFIED_ACCESS_SECRET`. Stripe,
+Resend, and OAuth staging integration remains disabled. For the Stripe
+test-mode canary, register `STRIPE_SECRET_KEY_TEST`, the same test value as
+`STRIPE_SECRET_KEY`, and a test-mode endpoint's `STRIPE_WEBHOOK_SECRET` as
+Cloudflare staging secrets. Do not set `STRIPE_SECRET_KEY_LIVE` or paste secret
+values into chat. Resend requires `AUTH_EMAIL_BACKEND=resend`, `RESEND_API_KEY`,
+and `RESEND_FROM_EMAIL`. Social auth requires the Better Auth selector and
+Google, GitHub, Discord, or Apple client ID/secret pairs with the staging
+callback URLs configured. No Stripe API call or email was made.
+
+Cloudflare is on Workers Free (10 ms CPU maximum); Better Auth's compatible
+bcrypt sign-in path exceeds that limit. The user has been asked whether to move
+the account to Workers Paid; no billing change has been made, and password
+hashing cost must not be reduced because it preserves Supabase credential
+compatibility.
+
+Production routes, real Supabase user/Auth/Storage rows, and public domain/DNS
+have not been changed. User-data migration and domain cutover remain the final
+stage, and PR #41 has not been merged.
+
+## 2026-10-01 resumed migration checks and Cron recovery retry
+
+Fresh read-only staging probes returned 200 for `/`, `/api/auth/ok`, and
+`/api/emoji/catalog`; the Stripe webhook remained 404 with its selector unset.
+The separate emoji-master D1 read returned 3,944 canonical rows and exactly
+one active pointer at release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`; D1
+reported `changed_db=false` and zero rows written. The four public reference
+master routes returned 200/no-store with 4 tiers, 4 languages, 5 reserved
+patterns, and 16 extension-price rows, all on release
+`ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`.
+
+Under Node 22.6.0, the migration-data suite passed 191/191; Stripe webhook,
+receipt, dispatch, invoice, subscription, and portal integration passed 68/68;
+Better Auth D1 passed 27/27; auth email passed 7/7; social-provider/OAuth
+configuration passed 3/3. The loopback Supabase pre-write smoke also passed:
+synthetic email/password login, Auth UUID preservation, owner-scoped settings
+read/update/readback, and delete cascade completed in 304 ms; post-run Docker
+container/volume/network counts were all zero. This remains one local component
+of the pre-write rehearsal, not the complete Cloudflare first-write/recovery
+drill. These are synthetic/local tests and public master readbacks, not real
+provider callbacks or user-data migration. All three existing staging D1s also
+reported no pending migrations.
+
+Two guarded post-write recovery attempts reached the signed synthetic Stripe
+receipt but stopped before dispatcher invocation: its receipt stayed
+`received/pending` with zero attempts. Both runs deleted their temporary
+Worker, business/Auth D1s, and config; cleanup readback left only the three
+existing staging D1s and both staging R2 buckets at zero objects. The first
+run also exposed that the harness enabled a fake live-mode key; the harness now
+sets only `STRIPE_MODE_POLICY=test_only` and a synthetic test key. The second
+run attempted an additional Wrangler trigger update, but timed out before the
+propagation window elapsed. Cloudflare documents that a new Cron
+trigger may take up to 15 minutes to propagate; see
+[Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/).
+
+A third synthetic-only run completed at 2026-10-01 20:33 JST. The harness
+deployed the Cron trigger from its Wrangler config and observed the extension
+receipt for 20 minutes. It remained `received/pending` with zero dispatch attempts, so the
+recovery drill stopped before the Time Travel and encrypted-R2 restore stages.
+The harness removed its temporary Worker, both disposable D1s, and config;
+Cloudflare readback shows only the three pre-existing staging D1s, and both
+staging R2 buckets remain at zero objects. The private run report confirms
+cleanup. No temporary recovery bundle was created.
+
+To isolate this from an account-wide Cron outage, a live `wrangler tail` on the
+pre-existing staging app then captured a scheduled event on `* * * * *`: its
+Stripe dispatcher correctly logged `disabled` with zero claims, and the
+notification job completed with zero selected events. Thus Cron executes on
+the existing staging Worker, while invocation on the newly created disposable
+Worker remains unverified. Cloudflare says trigger changes can take up to 15
+minutes to propagate; Cron Events history for a new Worker/name can take up to
+30 minutes to appear, so the next check should inspect the disposable Worker’s
+trigger registration/history before another recovery attempt. The extra
+`wrangler triggers deploy` command used by the prior harness runs is
+documented as experimental for `wrangler versions upload`; the harness now
+relies on config-backed `wrangler deploy` and reports the precise wait phase.
+The Cloudflare dashboard also shows this account on the Workers Free plan
+(10 ms CPU maximum per invocation). This may constrain the dispatcher after
+Cron starts, but it does not explain the absence of a scheduled invocation; no
+runtime-limit error was observed. See
+[Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+and [Wrangler Workers commands](https://developers.cloudflare.com/workers/wrangler/commands/workers/).
+
+The recovery harness now reports the wait as its own phase, and keeps the
+dispatcher strictly `test_only` with no live key. The post-write recovery gate
+is still open because the synthetic receipt was never claimed/applied and the
+temporary Worker's Cron invocation remains unverified; confirmed cleanup
+means there is no residue to remove. No source
+Supabase rows, production routes, real user data, or domain/DNS state were
+accessed or changed.
+
+The fourth guarded synthetic recovery attempt (2026-10-01 22:17 JST) reproduced
+the no-claim result. Delayed Cron Events history cannot be attributed to that
+Worker; the exact evidence and cleanup readback are recorded in
+[`EXECUTION.md`](EXECUTION.md) and
+[`cutover-rehearsal.md`](cutover-rehearsal.md). PR #41 head `9f03497` has green
+application and Worker API jobs in Actions run `36863199930`. A follow-up
+diagnostic change gates scheduled-entry and selected-job logs on
+`SCHEDULED_DISPATCH_DIAGNOSTICS`; only the disposable recovery config sets it.
+Focused Node 22.6.0 typecheck, schedule-selection tests, Stripe extension
+dispatch tests, and recovery-script syntax check pass locally. The diagnostic
+change has not yet been pushed or deployed.
+
+No Supabase migration or webhook request was made. User-data/Auth/Storage
+migration and public domain/DNS cutover remain reserved for the final stage.
+
+At 2026-09-29 05:43 JST, PR #41 validation run `36480072183` passed both the
+staging application and Worker API jobs; the draft PR is `CLEAN`. A read-only
+workers.dev smoke returned 200 for `/`, `/robots.txt`, `/api/auth/ok`, and the
+anonymous session endpoint; anonymous `/api/admin/session` returned 401 and
+`/api/stripe/webhook` returned 404, all expected fail-closed behavior. This
+does not verify deployment version or D1/R2 state. Wrangler CLI still resolves
+to the fragrance.radio Cloudflare account instead of the configured fanmark.id
+staging account, so no remote migrations or deployment were run.
+
+At 2026-09-29 05:57 JST, PR #41 head `7d17e61` passed validation run
+`36482153913`; both staging application and Worker API jobs succeeded, and the
+draft PR is `CLEAN`. This includes the canonical six-digit scheduled Stripe
+timestamp regression tests. Remote D1 migrations/deployment remain blocked by
+the Wrangler account mismatch above; no remote or production state changed.
+
+A fresh read-only Supabase Edge Function inventory with the repository CLI
+2.67.1 returned 35/35 functions active. All 34 local entrypoint names and
+`verify_jwt` settings match live metadata; the only live-only function remains
+`manual-expire-grace-licenses` (v14, platform JWT enabled). No function was
+invoked and no application rows or settings were changed. External callers for
+that live-only function remain unverified; see
+[`live-observations.md`](live-observations.md).
+
+A 2026-09-29 read-only query in
+[`manual-expiry-cron-readiness.sql`](../../scripts/migration/manual-expiry-cron-readiness.sql)
+found zero scheduled commands directly targeting that live-only function.
+Invocation history, indirect database use, and external callers remain
+unverified, so the Supabase function stays active until final writer-freeze
+and retirement review.
+
+The D1 analytics summary, fanmark-details projection, coupon application,
+Stripe extension checkout, and invitation signup now compare canonical
+fixed-width UTC timestamps without millisecond rounding. Business D1 migration
+`0018` replaces the invitation-capacity trigger from applied migration `0014`,
+and `0019` replaces the coupon-application guard from applied migration `0015`.
+Five focused D1 suites pass 38/38, including one-microsecond coupon expiry,
+transfer-lock, and active-license boundary checks; Worker typecheck and PR
+validation run `36482153913` pass. Migrations `0018` and `0019` have not been
+applied remotely because Wrangler resolves to the wrong account; no remote state
+changed.
+
+The same timestamp audit found the scheduled Stripe webhook dispatcher passing
+its Worker `scheduledTime` as millisecond ISO text. It now uses the shared
+six-digit UTC formatter and rejects an invalid schedule timestamp. The
+invoice/subscription adapters now accept that fixed-width timestamp without
+rounding; before this fix, both scheduled paths returned `retryable`. Synthetic
+invoice and subscription dispatcher tests now apply the effects and read back
+the exact scheduled timestamp. Shared timestamp tests pass 6/6, the full Stripe
+webhook/D1 integration chain passes 63/63, Worker typecheck passes, and PR
+validation run `36482153913` passes. No Stripe API call, remote D1 migration, or
+deployment was attempted.
+
+A fresh schema-only query completed at 2026-09-29 03:27 JST using Supabase CLI
+2.118.0, `CI=1`, and `--yes` in a private temporary project-link directory.
+It returned 40 tables / 406 columns, 144 constraints, 139 indexes, 15 enum
+labels, one view, 58 functions, 36 non-internal triggers, and 77 RLS policies.
+No application rows or live sequence values were read.
+
+The value-free descriptor and converter v21 produce five schema/operation gate
+groups / 93 locations on this fresh catalog: 11 external Auth references, 79
+timestamp defaults, and the function, RLS policy, and trigger catalog scopes.
+V21 omits approximate millisecond D1 clock defaults; every target operation
+must supply the canonical UTC microsecond timestamp. All 79 timestamp gates
+remain open until per-operation clock coverage is verified. The report remains
+`deployable: false`; cross-database Auth foreign keys and unsupported catalog
+scopes are not emitted as D1 constraints.
+
+Under Node 22.6.0, the v21 current-catalog synthetic importer completed all 40
+checkpoints with 10 synthetic rows, transformed two active credentials,
+durably deferred one inactive-license credential, performed typed/hash
+readback, and rejected conflicting credential coverage. It reports
+`public_rows_reconciled`, while `deployable` and `fullMigrationReconciled` stay
+false. No source application rows, real credentials, or remote D1/R2 state
+were used. The D1 business migrations `0018` and `0019` remain unapplied; the
+local Wrangler CLI is authenticated to a different Cloudflare account than
+the staging config, so no remote migration or deployment was attempted.
+
+The local D1 importer now preflights every non-null `auth.users(id)` reference
+through a caller-supplied, read-only Auth D1 lookup before creating its ledger
+or writing business rows. Missing lookups and missing identities fail closed;
+optional NULL references are allowed. This verifies row-level references for
+the split-database rehearsal but does not close the external-FK schema gate or
+make the report deployable. Auth-reference tests pass 20/20; the full
+migration-data suite passes 191/191. The 40-table current-catalog synthetic
+rehearsal still reconciles all checkpoints with `deployable: false`.
+
+The D1 Stripe dispatcher now preserves Supabase's no-op behavior for the four
+Checkout Session events whose metadata is not `license_extension`. It atomically
+marks those receipts `ignored` and dispatches `completed`; subscription
+created/updated/deleted events remain the source of plan entitlement. The
+focused webhook/application integration suite passes 13/13, including all four
+Checkout event types and proof that none creates an extension application or
+license effect. A stale lease is also rejected without changing either ledger.
+This is local code only; Stripe selectors/secrets remain off, and no remote
+state changed.
+
+Dashboard read-only verification could not run because Computer Use reported
+that macOS is locked and needs manual unlock. No browser action or Cloudflare
+write occurred. The Browser Dashboard session does not update Wrangler's
+separate CLI identity.
+
+Local schema converter v19 now removes the JSONB gate because the snapshot text
+projection, exact row codec, generated D1 `json_valid()` check, and SQLite
+readback cover JSON validation and SQL-NULL/JSON-null distinction. On the last
+recorded catalog shape, this rule change calculates 6 groups / 196 locations
+(1 row-conversion / 103, 5 schema/operation / 93); that count is derived from
+the v18 report and is not a fresh Supabase schema query. The migration-data
+suite passes 190/190 under Node 22.6.0. `deployable` remains false, and this
+local code/test change did not access application rows or alter remote state.
+
+A fresh schema-only timestamp-writer audit at 2026-09-29 00:14 JST found 79
+`now()` timestamp defaults across 40 tables. It scanned 98 explicit-column
+INSERTs in Worker source, both app and business D1 migration SQL, and migration
+seed SQL: none omitted a timestamp column and none were unparsed. Twelve defaults
+in seven tables have no direct INSERT path: eight belong to the four versioned
+reference masters populated through row-release snapshots; the remaining four
+are in `notification_preferences`, `user_roles`, and `notifications_history` and
+stay in the final data/import review. This is static column coverage, not proof
+of runtime clock semantics. The active-to-grace prototype now records its
+audit timestamp from the same captured operation time. Migration data tests
+pass 188/188; license-expiry source integration passes 25/25.
+
+The guarded post-write recovery harness is being extended to apply one
+synthetic paid license-extension event through the temporary Worker's scheduled
+Stripe dispatcher. Its acknowledged, Time Travel, and encrypted R2 replay state
+now includes the resulting license, checkout intent, application/effect, audit
+row, and both the pending and applied webhook ledgers. Node 22.6.0 migration
+tests pass 188/188, the Stripe webhook/application integration suite passes
+60/60, including a new local D1 backup/clear/replay test for the applied
+extension effect and both webhook ledger states. Worker typecheck and focused
+ESLint pass. The live rerun stopped at
+preflight because Wrangler's current account does not match the staging
+configuration; it created no resource. The Wrangler OAuth consent page showed
+a different Cloudflare identity, so the flow was canceled before authorization.
+The existing local Wrangler identity is unchanged. Reauthenticate with the
+staging account before retrying. This prepared path has not passed staging and
+does not close #37. A prior canary's separate staging cleanup state remains
+unverified as recorded in `cutover-rehearsal.md`.
+
+## Resume boundary
+
+Use branch `codex/cloudflare-api-preparation` in the migration worktree. The
+original checkout contains unrelated UI work. Use Node 22.6.0 explicitly;
+the shell's default Node version differs. Workers/API/Auth/concurrency Vitest
+projects pin Vite 6.4.3 for this Node version and have passed clean `npm ci`.
+
+On 2026-09-23, the user explicitly removed the old remaining-usage stop rule and
+asked us to continue without reserving a percentage. Do not stop at 20% or 22%;
+report only an actual service limit or tool rejection.
+
+The current migration order is:
+1. Build the basic Workers app/infrastructure in local or staging environments,
+   using synthetic identities and data. Keep Supabase production as the sole
+   business-data writer until the final operation.
+2. Move only explicitly classified non-user master data, especially the
+   versioned emoji catalog. Do not copy `system_settings` wholesale.
+3. Complete integrated app/master-data rehearsal with synthetic users.
+4. Import and reconcile real Auth, business, and user-owned Storage data only in
+   the final operational phase tracked by #38. Existing Supabase sessions will
+   require users to sign in again.
+5. Switch public DNS/hostnames only after data and application reconciliation.
+   Registrar transfer is a separate decision and is not required for DNS cutover.
+
+An earlier 2026-09-23 status saying latest Supabase schema retrieval was waiting
+for terminal input referred to the choice to enter the DB password in the
+masked terminal or defer. It is historical: a linked-project read-only
+schema-only refresh completed on 2026-09-27, reading no application rows. The
+current schema-conversion checkpoint is recorded below; no terminal input is
+currently pending for that fetch.
+
+The 2026-09-28 local PWA update-transition check confirmed that the current
+`autoUpdate` behavior installs a new worker and reloads the page; a synthetic
+unsaved DOM input was lost while `localStorage` remained. A later guarded
+staging browser canary also verified updates between deployed Worker versions
+and removal of its temporary precache asset. An isolated Chrome profile then
+installed the staging PWA and launched it in a standalone app window. These
+checks close the staging workers.dev PWA update and native-launch subgates;
+authenticated flows, custom-domain behavior, and the remaining integrated
+recovery acceptance stay open. See [`static-assets.md`](static-assets.md).
+
+The 2026-09-28 application-level post-ack restore probe used a temporary
+Worker and a fresh APAC D1 with all 17 business migrations. The actual waitlist
+API wrote one synthetic business row, and Stripe webhook ingress created one
+receipt/dispatch pair; after a bookmark, later synthetic writes were removed by
+Time Travel while the acknowledged row and pending ledger pair remained.
+Restore plus exact reconciliation took 4.069 seconds. The Worker/database were
+deleted and account readback returned to the three pre-existing staging D1s.
+This closes only the narrow app-schema post-ack restore probe, not the complete
+pre/post-write drills or issue #37; see
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
+A guarded, repeatable post-write smoke is available as
+`npm run test:migration:staging-postwrite-recovery`. An earlier 2026-09-28
+business-only run applied all 17 business migrations to disposable APAC D1
+`e87563cb-78b4-48d3-8948-b163e3a5bb2c`, deployed the real Worker with only that
+D1 plus a unique Rate Limit binding, accepted one synthetic waitlist write and
+a duplicate synthetic Stripe receipt, then froze writes and restored the
+pre-later-write Time Travel bookmark. The first acknowledged row and pending
+receipt/dispatch read back with identical digest
+`488b3ecde4c5fa8c0941b839e454e82f1b7207ae0452096355d3dbf84ef8d76a`; one later
+row was absent, and the frozen mutation was rejected. Restore plus readback took
+4.530 s. The temporary Worker, D1, and config were removed; the private result
+report is outside the repository. This earlier run proved only the narrow
+app-schema path; it did not exercise Auth/R2 recovery, a complete encrypted
+backup, or a coordinated Supabase-writer freeze. The later integrated run below
+extends this evidence, and issue #37 remains open.
+
+The latest guarded post-write run (2026-09-28) extended the drill across
+Business D1, Better Auth D1, and the private staging R2 archive. It exported
+only six synthetic tables (waitlist, Stripe receipt/dispatch, Auth user,
+account, and session), placed those SQL exports inside the standard encrypted
+snapshot bundle, uploaded and hash-checked both bundle objects, then decrypted
+and verified the snapshot. After Time Travel restored the acknowledged
+Business/Auth bookmarks, the drill removed those synthetic rows and re-applied
+the SQL from R2. The acknowledged, Time Travel-restored, and R2-replayed state
+digests all matched at
+`a1b36eb8d1a4e488d95314d39bb19b7289bb425a751bb5e0a3a33f884ee67ca3`; the
+original session cookie worked after both restore paths. Time Travel restore
+plus reconciliation took 11.992 seconds and encrypted R2 replay took 28.436
+seconds. The report's bundle digest is
+`79ea0580d9b4b9770716217dfc3cfa00fa4757fc7fb4b22d7699f4668dcbb23c`.
+
+The deployed freeze route rejected five consecutive valid synthetic waitlist
+writes with 503 and accepted none; Better Auth sign-in still created a
+synthetic session while writes were frozen. A preliminary run had seen one
+202 after a single readiness probe returned 503, so the smoke now requires
+five consecutive real write rejections. The deployment-list API did not
+reconcile the temporary freeze version reported by Wrangler; this run therefore
+proves repeated behavior from the tested `workers.dev` origin, not global or
+multi-region rollout completion.
+
+Cleanup removed the temporary Worker, both disposable D1 databases, the local
+private bundle, and both R2 objects. Independent readback found the backup
+bucket empty and only the three pre-existing staging D1s. This remains a
+six-table synthetic restore slice: it is not a full Business/Auth/Storage
+backup, does not apply a Stripe business effect, and does not freeze Supabase
+writers or Cron. No production route, real user data, or domain/DNS state was
+changed. Issue #37 remains open; see
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
+A follow-up guarded run adds one synthetic avatar to that encrypted archive.
+The image survived Business/Auth Time Travel, then was deliberately deleted
+from the APAC avatar bucket and restored from the decrypted encrypted bundle;
+the public API returned matching bytes and metadata. A Storage upload during
+the write freeze returned 503 `cutover_write_freeze`. The freeze probe observed
+one early accepted synthetic waitlist request after the freeze deployment,
+then five consecutive 503 rejections; Time Travel removed the accepted
+post-bookmark fixture row. Restore/reconciliation took 10.673 seconds and
+encrypted-bundle replay took 31.019 seconds, with identical acknowledged,
+Time-Travel-restored, and R2-replayed digest
+`25280f7aee69fc5b87059043f3d00451fd696a37c9e9d64775e1835e2737c7a2`.
+Cleanup readback confirmed deletion of the temporary Worker, both D1s, config,
+both backup objects, the avatar object, and the local private bundle. This
+extends the synthetic restore slice; it does not close #37 or prove the freeze
+is globally effective at the instant a Worker deployment returns.
+
+The current worktree also centralizes D1 operation timestamps through
+`workers/api/src/utc-timestamp.ts` for availability responses, plan/extension
+checkout, availability-rule edits, notification-admin event/master writes,
+and owner fanmark-profile writes. The shared formatter contract and affected
+API suites pass 48/48, and the Worker typecheck passes. This reduces duplicated
+formatting logic but does not close the full 103-column timestamp writer and
+79-default operation inventory; schema conversion remains `deployable: false`.
+The three Stripe checkout/customer/plan-change idempotency deadlines now use
+the same formatter too; their contract suites were rerun successfully (17/17).
+Public-access logging and the Stripe webhook application default clock now use
+it as well; the public-access and Stripe webhook D1 suites pass 13/13 and
+59/59, respectively.
+The `.mjs` implementation is shared with verified-access timestamp creation
+and scheduled-license-expiry run capture; their suites pass 10/10 and 8/8.
+
+The loopback-only local Supabase smoke was rerun on 2026-09-28. It passed
+email/password Auth, UUID preservation, owner-scoped settings
+read/update/readback, and cascade cleanup in 574 ms of API calls (the earlier
+same-day run took 284 ms). It uses a disposable local project, the checked-in
+SQL migrations, and a local-only non-admin shim plus grants mirrored from
+read-only-observed metadata. Post-run Docker readback found no matching
+container, volume, or network. No linked Supabase project or Cloudflare resource
+was used. This verifies an old-path component only; it does not close the full
+pre-write cutover/recovery drill. Details are in
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
+## Browser shell check and current PR validation (2026-09-27 JST)
+
+The in-app browser loaded the deployed staging SPA root and its Japanese home
+screen, including the search controls and navigation. A separate `/auth` route
+rendered the login form. After deploying the admin return-link fix, `/admin`
+rendered the Cloudflare Auth/MFA login and its “トップに戻る” link resolved to
+the same `fanmark-app-staging.fanmark-id.workers.dev` origin. The first
+post-deploy browser read still displayed the prior link; a fresh navigation
+after the update displayed the corrected link. That initial shell check did not
+enter credentials or perform an authenticated admin operation or email send.
+Later targeted authenticated staging checks are recorded in the acceptance
+table below; broader feature and release acceptance remains open.
+
+Commit `6219e37` fixes the return URL for `workers.dev` and `pages.dev` preview
+hosts while preserving localhost and production admin-subdomain behavior.
+The focused Node 22.6 test passed 3/3; application typecheck, targeted ESLint,
+staging build, and Wrangler deploy dry-run passed. GitHub Actions run
+`36289627111` passed both required jobs: Worker API tests/typecheck/deploy
+dry-run and staging-app migration-data tests, the new return-URL test,
+typecheck, and build. The fix is deployed to staging Worker version
+`74933bd7-be29-43d0-9c34-d85f865cfc1e`; no production route, user data, R2
+object, or domain/DNS setting changed. Supabase Preview was skipped by design
+under CI isolation.
+
+Fresh anonymous HTTP verification on 2026-09-27 confirmed that browser-style
+navigation requests (`Accept: text/html,...`) return the noindex SPA shell with
+HTTP 200 for `/`, `/auth`, `/pwa`, `/plans`, and `/plan`. `/api/auth/ok` returned
+200 with `{ "ok": true }`, and the public `/api/emoji/catalog` page returned
+200 for active release `10ec42c1…`. A generic fetch request with only
+`Accept: */*` returns 404 for nested SPA routes; this is the expected static
+asset fallback boundary, not a browser-navigation failure. This readback did
+not execute client JavaScript or authenticate, and it made no writes or
+user-row reads.
+
+Staging enables the public D1 extension-price reader and Better Auth/MFA-gated D1 reference-master editor together. A complete synthetic TOTP admin Tier C edit/restore canary passed, and a separate one-month extension-price edit/restore canary passed through the deployed API. Tier C is null again; the tier-1 one-month price read back at ¥500, its pre-canary value. Anonymous writes returned 401, stale-version writes returned 409 without changing the active release, and canonical values for all four reference masters matched after each restore, including both Stripe IDs. Only the expected active-release metadata and edited-row updated_at changed. The active pointer is generation 8; the append-only history retains the canary edit/restore activations. An initial Tier canary exposed a test-harness cleanup omission; its exact synthetic rows were removed, the guard was fixed, and the repeat run completed with Auth and business canary rows at zero. The Stripe extension-checkout route remains deliberately disabled and returns 404 because server/webhook/dispatch selectors and Stripe secrets are absent; no payment was attempted. Production/default builds remain on Supabase.
+
+The user says the user base is small and planned maintenance plus individual
+support are acceptable. That can avoid overengineering for zero downtime; it is
+not acceptance of account/entitlement mislinks, secret exposure, or data that
+cannot be recovered. The old/new systems must not dual-write business rows.
+
+## 2026-09-27 local validation, staging deploy, and schema refresh
+
+Re-ran `npm run test:migration-data` under Node 22.6.0 (149/149) and the full
+`workers/api` `npm test` chain (exit 0). The prior root and Worker TypeScript
+checks, `npm run build:cloudflare-staging`, Worker Wrangler deploy dry-run, and
+`npm run check:ci` remain the latest recorded passes. These are local/synthetic
+proofs; this refresh did not change remote state.
+
+The coordinated cutover and recovery sequence is now captured in
+[`cutover-rehearsal.md`](cutover-rehearsal.md), including the single-writer
+rule, the Stripe receipt/dispatch handoff, and separate recovery behavior before
+and after Cloudflare accepts a write. This is an operator procedure, not a
+completed rehearsal: the old-writer freeze, timed final-copy drill, and both
+recovery drills remain unverified. Issue #37 stays open.
+
+The linked project is `ppqgtbjykitqtiaisyji` (`fanmark.id`). The installed
+Supabase CLI 2.67.1 can list the linked project but lacks `db query`; the
+ephemeral `npx supabase@2.118.0` CLI successfully ran the reviewed
+`schema-readiness.sql` in its read-only transaction. The 2026-09-27T00:27:21Z
+catalog has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum
+labels, one view, 58 functions, 36 triggers, and 77 RLS policies. No
+application rows were read. The private catalog and generated artifacts have
+mode 0600. Schema conversion v4 still reports 18 unresolved gates and
+`deployable: false`; a fresh synthetic current-catalog importer rehearsal
+passed all 40 checkpoints with `public_rows_reconciled`, while
+`fullMigrationReconciled` remains false. Details are in
+`schema-conversion.md` and `d1-import.md`.
+
+The source catalog and synthetic rehearsal were refreshed again at
+`2026-09-27T12:13:53Z`; the CLI required no terminal input. The descriptor-aware
+report still has 10 row-conversion groups and 8 schema/operation groups, and
+the current-catalog synthetic run reconciled four generated rows across 40
+checkpoints while rejecting a conflicting replay. No source rows or remote D1
+rows were read or written.
+
+The full-catalog fixture now also combines enabled and disabled active-license
+credentials with an inactive-license credential. Its 10 synthetic source rows
+reconciled through 40/40 table checkpoints: two credential hashes were
+transformed and the inactive credential was recorded as deferred; typed
+readback verified 3 source / 2 target / 1 deferred credential rows. Whole-
+target reconciliation, acknowledgement-loss resume, and conflicting-coverage
+rejection passed. This remains a disposable local D1 rehearsal using
+schema-only source metadata; no Supabase application rows or remote D1 rows
+were read or written.
+
+The migration-data test suite passed 160/160 under Node 22.6.0. The fake
+`psql` protocol test uses a 15-second finite subprocess limit so parallel test
+load does not cause a false timeout; it passes alone and within the suite.
+GitHub Actions run `36323205817`, attempt 2, passed both required jobs,
+including the Worker API suite, migration boundaries, all 90 Stripe receipt
+tests, both typechecks, staging build, and non-deploying Wrangler validation.
+The first attempt timed out in the Stripe PGlite snapshot test after 180
+seconds; the same file passed alone locally, the full Stripe suite passed
+locally, and an unchanged-code CI retry passed. No deployment occurred.
+
+A read-only comparison of this catalog's generated target profile with remote
+`fanmark-business-staging` found all 40 source tables and 406 source columns,
+with all converted SQLite types and nullability matching. The staging schema
+has three extra reviewed lifecycle/coupon columns and 32 extra operational
+indexes; all 66 indexes emitted from the source profile are present. The
+introspection queries wrote zero rows and reported `changed_db: false`; no
+business row values were read. This narrows the open D1 parity work to the
+remaining 18 gates and behavior verification rather than missing base columns.
+
+A fresh Wrangler `--no-data` export and local comparison at 2026-09-27 12:22
+UTC reconfirmed the target profile: 73 staging tables, 98 indexes, and 34
+triggers; all 40 source tables and 406 columns have matching converted types
+and nullability. All 66 generated source indexes are present, along with the
+three reviewed extra columns and 32 operational indexes. Wrangler reports no
+business migrations pending. No application rows were exported or written.
+
+The local D1 importer now preserves signed int64 values as canonical decimal
+text, binds them with `CAST(? AS INTEGER)`, and independently verifies exact
+text readback plus SQLite integer storage. The Miniflare fixture imports both
+signed boundaries and values beyond JavaScript's safe-integer range while
+reconciling the snapshot's bytewise primary-key order; the focused row-converter
+tests pass 6/6 and the Cloudflare D1 codec package passes 9/9. The schema gate
+remains open for application-facing D1 reads that may expose INTEGER as an
+imprecise JavaScript Number. This is synthetic importer proof, not a live-data
+import or production cutover.
+
+After that change, the refreshed private current-catalog rehearsal also passed
+40/40 table checkpoints with four synthetic rows, including
+`fanmark_events.id = 9007199254740993`; exact target text and AUTOINCREMENT
+sequence readbacks matched. An injected ACK-unknown resume and tampered-coverage
+rejection also passed. The result remains `public_rows_reconciled`, with
+`deployable` and `fullMigrationReconciled` false.
+
+A read-only Workers plan-page check showed the account on the Free plan ($0)
+with a 10 ms maximum CPU time per request. No plan change was made; production
+CPU headroom and paid-plan need remain unverified.
+
+Commit `4a6dd0a` keeps the admin-role check first and combines the user's
+2FA-enabled state, up-to-two verified-factor cardinality, and exact
+session/factor MFA assurance into one D1 read. Its synthetic staging TOTP and
+admin user list/detail canary passed on Worker version
+`1ae4ffb0-5af5-4b19-8759-f79cc201b45a`; Auth/profile/audit canary rows were
+removed and user-owned Auth tables read back empty. Wrangler tail sampled the
+authorized `GET /api/admin/session` at 4 ms CPU / 83 ms wall time (200), the
+pre-enrollment gate at 50 ms CPU / 161 ms wall time (403), and an anonymous
+request at 2 ms CPU / 2 ms wall time (401). Separate requests on this version
+sampled TOTP enable at 93 ms CPU and verification at 13 ms. These are narrow
+staging samples, not recurring-load or production evidence; the 10 ms CPU-plan
+gate remains open.
+
+A fresh read-only Supabase scheduler query found the daily
+`check-expired-licenses` Edge Function job active at `0 0 * * *` in `GMT`; the
+old every-minute notification job is inactive. Its command body was not
+recorded, and no schedules were changed. The source job must be re-read and
+stopped with in-flight work reconciled during the final writer freeze, before
+enabling Cloudflare's daily lifecycle trigger. See
+[`live-observations.md`](live-observations.md) and
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
+Current coarse weighted estimate (2026-09-29): about 53% of the full migration,
+or about 73% of the prioritized app/infrastructure/non-user master-data scope
+with synthetic staging acceptance. The latter excludes real user-data import
+and public domain/DNS cutover; this is a scope estimate, not an issue-count or
+go-live-readiness score. Synthetic registration, notification, analytics,
+return/transfer, owner settings/password, R2 profile/storage, authenticated
+administration, and staging PWA update/install checks have passed bounded
+canaries. The lifecycle settings API and rendered `AdminSettings` form now
+also pass an MFA-protected change/readback/restore canary; cleanup returned
+synthetic Auth/profile records to zero. The static audit now covers 45 frontend
+backend selectors: every source reference is typed and explicitly assigned by
+the staging build; commit `f54d930` passed both PR validation jobs and is now
+deployed to workers.dev staging as version
+`f4c99bda-ea79-468e-addd-38b8f1453f47` at 100%. Its deployed JavaScript SHA-256
+matches the local staging build. Runtime acceptance is still required. The
+manual expiry Worker route is active only for explicit admin runs; scheduled
+expiry remains disabled because `LICENSE_EXPIRY_BACKEND` is unset.
+
+The fresh schema-converter-v18 descriptor-aware catalog report has 7
+unresolved gate groups across 209 locations and remains `deployable: false`.
+The private value-free descriptor removes the missing-descriptor gate. Array
+shape and element checks now run per snapshot row for the three supported types;
+the two discovery bigint counters now use exact decimal-text API reads. JSON,
+timestamp-operation, external identity, and unsupported-catalog-scope gates
+remain. The exact event sequence now uses the verified snapshot
+and D1 watermark-import path; the final writer-freeze operation remains open.
+Generated D1 checks enforce canonical calendar dates and fixed-width UTC text. Version 11 emits
+a canonical-shaped fallback for all 79 source timestamptz `now()` defaults,
+while clock precision and transaction-time semantics remain gated for
+operation-level proof. All 40 generated tables loaded in SQLite with
+`integrity_check=ok` and no foreign-key violations.
+
+The Supabase Stripe subscription webhook now resolves customer ownership only
+from an exact stored Stripe customer mapping or checked `Customer.metadata.user_id`
+on an existing unbound account. Email-only account linking has been removed;
+live/test mode, conflicts, ambiguous mappings, and concurrent linking are
+validated by seven shared TypeScript tests. Local receipt tests and typecheck
+pass. This is a source safety fix only; the Stripe provider selectors remain
+disabled pending sandbox credentials and integrated staging acceptance.
+After the core API writes, account deletion, profile/password setup,
+administrator user actions, lifecycle/maintenance/system settings, waitlist
+admin/signup, invitation admin/signup, and extension-coupon admin/application
+writes, admin email-template updates, broadcast administration/delivery
+leases/retries, and Resend webhook event persistence also use the fixed-width
+formatter; the combined focused D1 suites pass 179/179 (with 107 tests covering
+these added paths). The full writer/default inventory remains incomplete, so
+Stripe webhook receipt/dispatch, invoice projection, and subscription
+reconciliation writes now use the same format; their synthetic D1 integration
+suite passes 59/59. These bounded suites do not close the complete timestamp
+writer/default inventory. Emoji master create/update/import, reference-master
+release creation/verification/activation, and scheduled notification
+event/lease/retry timestamps also use the fixed-width formatter; the Auth D1
+suite passes 21/21, reference-master API 6/6, and notification D1 12/12. The
+local release suites now read back six-digit `created_at`, `verified_at`,
+`updated_at`, and activation-audit timestamps (emoji release 7/7, reference
+release 5/5). Migration `0007_release_audit_timestamps.sql` binds derived audit
+times to the active pointer's canonical `updated_at`; staging migration
+selectors include that exact filename while excluding the Auth-only 0007
+migration. Wrangler applied it to staging Master D1; the follow-up list shows
+no migrations pending. A readback confirmed all four emoji/reference audit
+triggers use `NEW.updated_at`; the SELECT reported `changed_db=false` and zero
+rows written. D1-writing synthetic staging smoke scripts were also aligned to
+six-digit UTC. Worker typecheck and lifecycle/schema tests pass (16/16).
+The full `workers/api` test chain, staging Vite build, and Worker Wrangler
+dry-run also pass; the dry-run read the built assets and exited without deploy.
+GitHub Actions run `36372919441` for `165a4bf` passed both required jobs,
+including the full Worker API/local D1 chain, typecheck, staging application
+build, and Worker dry-run. The 13-gate report and coarse progress estimate
+remain unchanged. Issue #37's full writer-freeze, timed final-copy, and
+pre/post-write recovery rehearsal remains open, as do
+provider-backed Resend/Stripe acceptance, broad authenticated UI coverage, and
+Workers CPU/plan fit. Issue #38's real user-data import and public domain/DNS
+cutover are intentionally deferred final phases. No production Worker, real
+user-data import, or public domain/DNS cutover has occurred. See
+[`EXECUTION.md`](EXECUTION.md).
+
+A read-only D1 migration-list check caught the broad Auth selector matching the
+Master-only `0007_release_audit_timestamps.sql`; it was pending on Auth D1 and
+was not applied. The app and standalone Auth configs now use an explicit
+Better Auth migration allowlist, covered by a 2/2 static test. Both remote Auth
+migration lists now report no pending migration. No remote DDL or row writes
+were performed; details are in [`EXECUTION.md`](EXECUTION.md).
+
+## Unused extension coupon master seed (2026-09-27 JST)
+
+A fresh read-only Supabase projection confirmed four active coupon definitions
+with `used_count = 0` and no usage rows. Only their definition fields were
+staged into `fanmark-business-staging`; all four read back exactly with the
+pinned source content digest
+`6472e758c2896f8f83bf5a48da5a3c038b24651e5278866b177231412dda3d79`,
+`created_by` was set to NULL, and staging usage count remains zero. The source
+aggregate also reports four consumed definitions, 20 usage rows, and two
+definition/use-count mismatches; those records remain excluded for the final
+user-data reconciliation. The private export and SQL were mode 0600 and are not
+in the repository. No production setting, license, user, domain, or DNS state
+was changed. Existing staging baseline checks now accept the coupon rows only
+after this exact content and zero-usage verification. See
+[`extension-coupon-api.md`](extension-coupon-api.md).
+
+The Worker-backed own-profile hook now synchronizes successful profile changes
+across same-tab consumers and quietly revalidates on focus/visibility, replacing
+the former Supabase Realtime path without periodic D1 reads. This app-consistency
+repair does not materially change the coarse weighted progress estimate.
+
+The staging baseline checks now verify both localized email-template groups
+using a single read query and their pinned content digests. Live D1 readback
+confirmed 16 auth templates plus 12 broadcast templates; the full migration
+data suite passes 154/154. Notification processing, analytics concurrency,
+owner registration/lottery, owner-settings/password, single and bulk license
+return, transfer lifecycle, and avatar/cover R2 profile canaries passed. Their
+synthetic Auth rows and transient Business rows were removed; the bulk-return
+canary intentionally retains two synthetic license-incarnation tombstones,
+with access-version and MFA-generation state verified. These checks add
+staging evidence only; mail delivery, the integrated rehearsal, and production
+acceptance remain open.
+
+The latest Supabase read-only query selected only the three supported
+broadcast template types and returned 12 active rows across `en`, `id`, `ja`,
+`ko`; the normalized full-row digest is
+`770459e45e66f1c81ba58ea507b518f00c67004d289f5919d8c16c0f2c279f14`. A
+guarded staging-only seed wrote those rows to `fanmark-business-staging` and
+verified exact full-row readback. The 16 authentication templates were
+unchanged; a second run was a no-op. No drafts, user rows, recipient addresses,
+email sends, production routing, or domain settings were touched. The private
+source payload is not checked into Git. The broadcast UI MFA canary and the
+separate send-queue/provider design remain open; see
+`broadcast-email-admin-api.md` and `live-observations.md`.
+
+The staging search hook now writes new search aggregates through
+`POST /api/fanmarks/search/record`; regular builds still use Supabase. The
+staging Worker has a dedicated 120-request/60-second hashed-IP rate-limit
+binding. The live synthetic API canary passed on version
+`34779025-2fdd-47f2-8ac4-37e2dde02b8b`: it returned 200; D1 readback confirmed `search_count=1` and
+`fanmark_events.user_id IS NULL`, then the exact synthetic event and discovery
+rows were deleted and a final readback found zero. The local API tests,
+typechecks, staging build, Wrangler dry-run, and 147 migration-data tests pass.
+The final staging app version `47dd045f-ae0c-4b46-8138-bdd59037f7ab` omits
+session credentials from the anonymous write and was verified to serve the
+matching bundle and Worker health endpoint.
+Historical Supabase search events and user attribution remain for the final
+user-data phase. No production selector, user row, or domain/DNS was changed.
+This narrow route does not materially change the coarse progress estimate.
+
+The earlier Wrangler Keychain failure was resolved. Wrangler now authenticates
+to the intended account; staging deployment
+`cdeb759e-8e52-4b8a-9d63-6451b871c262` is active at 100%, and the isolated PWA
+and master-route checks are recorded below. PR #41 includes the PWA fix and
+refreshed evidence. Preserve the unrelated modified
+`supabase/.temp/cli-latest` file.
+
+The production-only `manual-expire-grace-licenses` function remains active in
+Supabase, version 14, with platform JWT verification enabled, and has no local
+callsite. A bounded on-demand D1 replacement route now exists at
+`POST /api/admin/license-expiry/run`; it requires a Better Auth administrator
+session with same-session MFA and shares the D1 lifecycle engine. It is not
+behaviorally identical to the legacy function: the legacy endpoint has no
+application-level administrator check, uses a strict `< now` deadline, writes
+each license/configuration/audit effect separately, ignores configuration and
+audit write errors, and returns per-license identifiers/results. It does not
+run lottery or notification effects. External callers remain unverified, so
+the Supabase function was not invoked, disabled, or changed. See
+`lifecycle-run-api.md` and the 2026-09-28 follow-up in `live-observations.md`.
+
+## Prior staging checkpoint (2026-09-27 JST, before PWA icon deployment)
+
+Weighted progress estimate at this checkpoint: about 70% of the prioritized
+basic-app/infrastructure/master-data stage and about 55–60% of the full
+migration. The live registration/auth/business/R2 rehearsal below now covers a
+major integrated path, but broader #37 acceptance, the 18 schema gates,
+production acceptance, user-data import, and final DNS cutover remain open.
+The plan/general-settings and read-only subscription-display slices are now
+staged and deployed. The profile username-availability lookup is also selected
+through D1 on staging; this narrow addition does not materially change the
+coarse weighted estimate. Self-service account deletion is now also selected
+through Better Auth/D1 on the staging build; its focused live synthetic canary
+passed, without materially changing the coarse estimate. Public waitlist
+submission is now also selected through D1 on staging; its isolated synthetic
+canary passed and does not materially change the coarse estimate.
+
+At this checkpoint, `fanmark-app-staging` was deployed at 100% as version
+`243e68a0-df6a-4e7c-b290-1ec20bdd2005` at
+`https://fanmark-app-staging.fanmark-id.workers.dev`. The split business/Auth/
+master D1 bindings and the two image R2 buckets remain isolated to this
+workers.dev app. A third, dedicated APAC Standard migration-backup bucket is
+private, empty after its synthetic round-trip, and not bound to the app Worker.
+
+The 2026-09-27 expiry/lottery staging Cron canary completed one synthetic
+active-to-grace expiry, grace finalization, lottery winner issuance, and both
+in-app notifications. The temporary every-minute lifecycle trigger and
+`LICENSE_EXPIRY_BACKEND` selector were removed by the harness; deployment
+`243e68a0-df6a-4e7c-b290-1ec20bdd2005` is the restored staging build. Readback
+confirmed zero synthetic business rows, notifications, events, lifecycle
+journals, and Auth rows; the 45 pre-existing license-incarnation tombstones
+were unchanged. No email, Stripe call, production route, real data, or DNS was
+used. The harness now checks the pinned auth-template content digest while
+allowing the expected `updated_at` advance from its edit/restore canary, and
+deletes the exact synthetic notifications before their source events.
+
+On 2026-09-28, a fresh schema-only catalog found 22 old three-digit timestamp
+expressions among the lifecycle-generation triggers. Forward migration
+`0017_lifecycle_generation_timestamp_precision.sql` repaired them in staging;
+readback matched all 24 canonical trigger definitions and found no pending
+migrations. A live synthetic D1 write produced six-digit UTC text. A follow-up
+scheduled-event canary did not complete: Wrangler returned D1 API error 7403
+during polling. The harness cleaned the synthetic rows and redeployed the
+staging configuration; version `7f7c79e9-9d12-401c-9466-2518d03b195c` is
+currently at 100%. The successful 2026-09-27 lifecycle canary remains the
+scheduler evidence; the 2026-09-28 retry does not add scheduler acceptance.
+The weighted estimates above remain about 53% end-to-end and 73% for the
+prioritized scope.
+
+The staging D1 verifier scripts now share an explicit ordered Business
+migration manifest through `0017`; their prefix checks reject unknown or
+reordered ledger entries while accepting already-applied later migrations.
+The invoice-schema verifier and its idempotent apply path passed against the
+live 18-entry ledger and read back zero invoice/billing rows. The broader
+business-extension verifier requires the private credential descriptor and
+remains unrun here.
+The migration-data suite passes 177/177 after adding the manifest regression
+tests.
+
+Read-only browser QA before the current deployment rendered the public home,
+`/auth`, and PWA search screen at `/pwa`; a direct `/plans` visit showed the
+generic missing-profile page. That browser's auth state was not independently
+isolated, so it did not prove the anonymous result. The local source wraps
+`/plans` and `/plan` with `ProtectedRoute`; a separate local staging-mode
+preview with synthetic `maintenance_mode=false` and Better Auth session `null`
+redirected both to `/auth`. Deployment `cdeb759e-8e52-4b8a-9d63-6451b871c262`
+now contains the current source bundle. Live browser-style requests return the
+noindex SPA shell for `/plans`, `/plan`, `/auth`, and `/pwa`. A fresh anonymous
+headless Chromium profile executed the deployed client: both `/plans` and
+`/plan` redirected to `/auth`, where the login form rendered.
+
+The earlier Wrangler Keychain failure was resolved. Current `wrangler whoami`
+reports `fanmark.id@gmail.com` and the intended account ID. The lockfile-pinned
+Wrangler dry-run read only the staging Worker configuration and `dist-staging`
+assets. Deployment `cdeb759e-8e52-4b8a-9d63-6451b871c262` is now active at
+100% on `fanmark-app-staging`; it uploaded the new PWA icons and built app
+assets. D1 and R2 bindings still point to the staging resources, and no D1
+migration, user-data import, or R2 object import was run by this deployment.
+
+Later on 2026-09-27 JST, a fresh Wrangler device-auth flow was approved for
+`fanmark.id@gmail.com` after the default Chrome profile proved to be the
+separate `fragrance.radio@gmail.com` account; that wrong-account consent was
+cancelled. The approved grant was limited to required User Read/Background
+Access plus Workers Write, Workers Scripts Write, and D1 Write. Wrangler 4.139.0
+then failed reading the macOS Keychain key (exit 51); 4.141.0 `whoami` failed
+the same way. `default.enc` was updated and no plaintext `default.toml` exists,
+but a secret-value read of the `wrangler/default` Keychain item also exits 51.
+No staging deployment, D1 write, production change, or domain/DNS action
+followed this auth attempt. Keep the keyring-backed credential path; do not
+switch this login to plaintext. Wrangler access is currently blocked on
+resolving the local Keychain read failure.
+
+A fresh anonymous headless Chromium profile also verified that the deployed
+service worker is active and controls `/pwa`; its Workbox precache contains
+both install icons. With network emulation disabled, reloading `/pwa` served
+the app shell and showed the expected catalog-network retry screen. API routes
+remain uncached, so this does not establish offline catalog/search support.
+Native install/standalone launch, service-worker update transitions, and
+authenticated flows remain unverified.
+
+Read-only master-D1 verification on 2026-09-27 used the staging config and the
+remote `fanmark-emoji-master-staging` database. Wrangler reported no pending
+migrations. The active emoji catalog API returned 200 with 3,944 records and
+release `10ec42c1…`; the reference-master APIs all returned 200 on release
+`ba598c61…` (4 tiers, 4 languages, 5 reserved patterns, 16 extension-price
+rows). Direct pointer and row-count queries reported `changed_db: false` and
+zero rows written. This verifies the Cloudflare staging master projections
+and Worker routes. A fresh, explicit-eight-column, read-only Supabase export
+then matched all 3,944 rows in the active Cloudflare release after canonical
+normalization. `recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`,
+`identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`,
+and version `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`
+matched. The active pointer remains generation 3/action `rollback`; readback
+reported `changed_db=false` and zero rows written. This closes current emoji
+master source-row parity for the staging release. No source rows were imported
+or written during comparison; Auth/business user data remains empty.
+
+On 2026-09-27, the staging build added `POST /api/me/account/delete`, selected
+only by `VITE_ACCOUNT_DELETION_BACKEND=worker` and
+`ACCOUNT_DELETION_BACKEND=d1`. It requires an authenticated same-origin Better
+Auth session, exact `DELETE` confirmation, and current password; checks
+source-FK and license/transfer blockers before Stripe; uses exact customer links; returns eligible active
+licenses including indefinite Tier C; then cleans user-owned business rows
+before deleting the Auth user. Stripe cancellation fails closed when a linked
+customer cannot be mapped to exactly one mode and every nonterminal
+subscription cannot be confirmed canceled. Direct `/api/auth/delete-user` and
+callback paths remain closed. Worker account-deletion D1 tests pass 4/4,
+Stripe tests 4/4, the complete Worker suite passes, the frontend client tests
+are included in migration-data (130/130), staging build and Wrangler dry-run
+pass. Staging version `e64d6cd4-1cb0-4592-a4a2-276a648adf06` passed a live
+synthetic Better Auth sign-in and deletion (200/200); remote readback showed
+zero synthetic Auth user/account/session rows and zero user-owned business
+rows. The deletion audit was observed, then the exact synthetic audit row was
+removed after verification. No message or Stripe request ran; there were no
+linked billing rows or Stripe selectors/secrets. Production/default selectors
+remain on Supabase; no real user data, production route, or domain/DNS changed.
+
+On 2026-09-27, a staging frontend-selector audit found the build omitted
+`VITE_LANGUAGE_READ_BACKEND`, `VITE_PUBLIC_ACCESS_READ_BACKEND`, and
+`VITE_REFERENCE_MASTER_READ_BACKEND`, leaving those SPA reads on their default
+Supabase paths despite the deployed Worker APIs. The staging build now selects
+all three through Worker/D1; a migration-data regression test now requires an
+explicit value for every typed frontend backend selector. The app was deployed
+as version `49bbff45-dd2c-43d7-bf89-7ebc3babc266`. The live JavaScript asset hash matched
+the locally built asset and contained all three `worker` values; the language,
+tier, and reserved-pattern routes returned 4, 4, and 5 rows with `no-store`.
+The root remained 200/noindex and an absent synthetic public lookup returned
+404. This changed only static assets; no D1 rows, R2 objects, production route,
+user data, or DNS was changed. Node 22.6 staging build, 19 public/reference
+client contract tests, and the full migration-data suite (126/126) pass.
+Recent, availability, public-access, auth, profile, owned-fanmark,
+fanmark-profile, fanmark-settings, fanmark-search details, authenticated
+fanmark-whois details, fanmark-return,
+favorites, notifications, verified-access, maintenance and lifecycle settings,
+emoji/reference master, and R2 routes use their explicit Worker/D1/R2
+selectors on staging. The authenticated subscription display is selected
+through `VITE_SUBSCRIPTION_BACKEND=worker` and reads only the signed-in user's
+D1 subscription projection; Stripe IDs are omitted and the route is read-only.
+The user-owned subscription table remains empty in staging; Stripe selectors
+and secrets remain unset. `GET /api/me/username-availability` derives its
+owner from Better Auth and reads only the candidate-name availability boolean
+from business D1. A synthetic live profile/R2 smoke verified own-name and
+available-candidate checks, anonymous rejection, owner-ID injection rejection,
+and cleanup to zero Auth/profile rows and absent R2 objects. The general
+plan/config API is also selected through
+`VITE_SYSTEM_SETTINGS_BACKEND=worker`; its exact 18-row source projection is
+staged and digest-verified in business D1. A synthetic administrator completed
+MFA-gated settings read/update, stale-write rejection, restoration, and audit
+cleanup. The Auth user-owned rows returned to zero; the monotonic
+`mfaGeneration` singleton reads 60 and remains retained. Live
+owner-settings/protected-access and single-return smokes
+passed after deployment.
+
+Live synthetic Better Auth accounts exercised profile GET/PATCH, owned list,
+fanmark-profile GET/PATCH, favorite add/list/remove, notification list/unread/read,
+and R2 avatar upload/public-read/owner-delete. An unauthenticated profile request returned 401. All
+synthetic Auth/business rows, including the generated favorite discovery, were
+deleted and exact-ID/composite readback returned zero. The owner API client/Worker suites pass 31/31; storage Worker/client suites
+pass 12/12 and Worker typecheck passes. This proves those API paths against staging
+D1, not the complete application, full notification-source/channel parity, or
+business operation/security parity. No real user data, production routing, Stripe
+transaction, or domain/DNS setting was changed. The fresh schema-converter-v11 report remains `deployable: false` with 13
+unresolved groups across 226 locations; real user-data and domain work stay in
+the final phases. The 2026-09-28 read-only ledger readback confirmed business
+migrations `0000` through `0016`; staging business D1 also has the Stripe ingress/extension
+tables, all empty, while Stripe selectors and secrets remain disabled. A
+workers.dev Cron is enabled every minute for the D1 notification processor;
+the lifecycle and Stripe handlers remain disabled by their unset selectors.
+The business baseline has 10 global notification rules, 40 localized in-app
+templates, and 16 localized auth email templates (`signup`, `recovery`,
+`magiclink`, and `email_change`), four disabled availability rules, and 20
+explicitly allowlisted system settings. The 18 plan/pricing/feature settings
+match the private Supabase projection digest in D1; the baseline public
+settings remain `grace_period_days=1` and `max_emoji_characters=5`. User-owned
+business tables and Auth tables read back empty after the latest synthetic
+canaries. The latest redeploy selects the D1 analytics writer/read APIs and
+their SPA adapters. Its workers.dev canary recorded exactly one synthetic
+access despite four duplicates, verified the owner analytics DTOs, and removed
+the synthetic Auth/business rows; all 40 ordinary business tables read back at
+zero. Protected-access extensions retain their documented synthetic audit,
+reservation, rate-limit, policy, and incarnation-tombstone state. Master D1 serves the original
+emoji release at activation generation 3 after a staging-only promotion/rollback
+rehearsal; reference-master release generation 8 remains active.
+
+On 2026-09-27, the integrated registration smoke passed against the current
+workers.dev staging app after the preflight learned to recognize only the exact
+16-row auth email-template baseline by content digest. Registration, Better
+Auth session use, R2 cover upload/public read, profile save, lottery apply and
+cancel, anonymous/owner details, and rejection paths passed. Cleanup read back
+zero ordinary business rows, zero synthetic Auth rows, and an absent R2 object;
+the template baseline matched before and after. This does not complete all of
+#37 or verify email delivery, Stripe, production, or imported-user behavior.
+
+Admin password reset is now wired in the same staging deployment through
+`POST /api/admin/users/:userId/password-reset`, same-session admin MFA, and
+Better Auth's reset-token sender. The endpoint keeps reset credentials inside
+Better Auth and returns no email or link. `wrangler secret list` shows no
+Resend API/from secrets, so the route returns 503 before target lookup or
+audit when delivery is unavailable. The anonymous route probe returned 401;
+no reset email was attempted. Local Worker route/provider tests and the full
+Worker suite pass; authenticated staging mail acceptance remains gated on a
+secure Resend setup and synthetic mailbox.
+
+The 2026-09-26 redeploy had no pending business, Auth, or master D1 migrations.
+Read-only post-deploy checks returned SPA `/` 200, `/api/auth/ok` 200,
+emoji catalog 200, all four reference masters 200/no-store with 4/4/5/16
+rows, and unauthenticated `/api/admin/session` 401. A single public
+`grace_period_days=1` configuration row was separately copied from the exact
+Supabase public setting before deploy; no user data was written. It remains
+staging-only. Later deployed synthetic Cron canaries confirmed delivery for all
+10 migrated in-app rules plus the exercised return and transfer event paths;
+all generated canary rows were removed. Remaining unexercised notification
+event sources/channels, Stripe, signup and OAuth, email delivery, recurring
+production fit, production routing, user-data import, and custom-domain/DNS
+migration are still open.
+
+On 2026-09-26, a deployed workers.dev Cron canary completed the scheduled
+grace-expiry lottery against synthetic D1 rows. It verified the expired
+license, one active winner license, saved lottery inputs/plan, audit, and both
+notification events. The canary immediately redeployed the staging config
+with `triggers.crons: []` and no `LICENSE_EXPIRY_BACKEND`; remote readback
+confirmed `grace_period_days=1`, all non-settings business tables and lifecycle
+journals empty, Auth user tables empty, and retained lifecycle state unchanged.
+That lifecycle canary was followed by notification-processor deployments that
+re-enabled the shared every-minute Cron. At that checkpoint Worker version
+`1413b726-0930-45f4-b779-67865fffa24d` was active at 100%; the deployed
+synthetic notification and analytics canaries passed with exact cleanup. The lifecycle selector
+remains unset, so lifecycle processing is still disabled. Notification event
+source parity, production fit, and integrated operational parity remain open.
+See `docs/migration/license-expiry-proof.md` and
+`docs/migration/notifications-api.md`.
+
+The latest deployed admin user-directory read canary exercised MFA-protected
+email and profile-field search plus user detail on split Auth/business D1. The
+email substring lookup now uses literal `instr(lower(...), ?)`, avoiding the
+remote D1 `LIKE` pattern failure. Anonymous list/detail requests returned 401.
+After cleanup, Auth user/account/session/verification/two-factor/admin-role/MFA
+assurance rows and business profile/license/audit rows all read back at zero;
+the monotonic `mfaGeneration` singleton remains at 1 by design. Worker version
+`9db2a730-a8e2-49ad-b980-4441368c681e` is active at 100%.
+
+The same Worker version also adds the MFA-protected admin plan update. Its D1
+batch changes `user_settings`, inserts the admin audit record, and creates or
+removes Enterprise overrides atomically. A synthetic staging canary changed
+Free→Enterprise→Max→Free, read back the exact override fields/actor, and
+restored the baseline. Independent remote checks found zero Auth users,
+accounts, sessions, verification rows, factors, roles, assurances, business
+profiles, Enterprise settings, licenses, or audits; `mfaGeneration` remains 1.
+Plan changes are now routed to D1 in the staging SPA. Suspension, password
+reset, and immediate-expiry mutations remain disabled. These were synthetic
+staging checks; user-data import, production routing, and domain/DNS remain
+unperformed.
+
+## Verified implementation checkpoint
+
+| Area | Saved change | Evidence and limit |
+| --- | --- | --- |
+| Integrated registration/auth/business/R2 staging rehearsal | Current worktree + workers.dev staging | The synthetic registration smoke passed login/session use, registration, R2 cover upload/public read/owner delete, profile save, lottery apply/cancel, anonymous versus owner details, and rejection paths. It verified all 16 auth email-template rows against the pinned digest before and after, then read back zero ordinary business rows, zero user-owned Auth rows, and no R2 object. No email, Stripe, production, real user data, or DNS was used. Broader #37 acceptance remains open. |
+| Self-service account deletion | Current worktree + workers.dev staging | The staging-selected Worker requires a Better Auth session, same-origin request, exact confirmation, and current password; it preflights source-FK and license-transfer blockers before exact D1 billing links, returns eligible licenses, removes account-owned D1 state, and deletes Auth last. Local D1 tests 5/5 and Stripe mode/cancellation tests 4/4 pass; the complete Worker test chain, migration-data 130/130, staging build, and Wrangler dry-run pass. Live synthetic sign-in and deletion returned 200/200; exact remote readback showed zero synthetic Auth user/account/session rows and zero user-owned business rows. Its deletion audit was read back and then removed. No Stripe call, email, real user data, production route, or DNS was used. Production remains on Supabase; cross-system recovery/order and populated-account billing acceptance remain open. See `docs/migration/account-deletion-api.md`. |
+| Credential transform target profile | Current worktree | Exact local DDL is bound to the source catalog, lifecycle/generation schema, and descriptor. The special six-column writer atomically applies transformed/disabled rows for active licenses. Inactive/returned rows now atomically receive metadata-only `deferred_inactive` coverage and checkpoint advancement, with no destination row/hash; a synthetic ACK-unknown restart and full reconciliation test passes. The credential schema/import suite passes 11/11. The fresh v21 catalog rehearsal completes all 40 checkpoints with 10 synthetic rows, including transformed, deferred, and conflicting-coverage cases; no live user data was read. Row-conversion gates are closed for this synthetic rehearsal; `deployable` and `fullMigrationReconciled` remain false with 5 schema/operation groups across 93 locations. See `docs/migration/credential-import-integration.md` and [the v21 report](docs/migration/schema-conversion.md#fresh-v21-catalog-and-full-synthetic-replay-2026-09-29-jst). |
+| License expiry source-shaped integration | Current worktree + deployed staging Cron canary | Local source-shaped suite passes 25 checks; lottery selection 10 and scheduler contract 8 pass. The remote staging canary completed one synthetic winner through an actual workers.dev scheduled event, then restored the baseline setting, removed synthetic rows/journals, and preserved retained lifecycle state. The latest Worker routes `0 0 * * *` only to lifecycle and `* * * * *` to notifications/Stripe dispatch. Staging declares both triggers but keeps `LICENSE_EXPIRY_BACKEND` unset, so daily lifecycle invocations return disabled before D1 access. A separate earlier local `--test-scheduled` rerun hit `ECONNRESET`; the deployed lifecycle Cron run supplies the live scheduler evidence. Production CPU/plan fit, recurring activation, and user-row cutover remain open. See `docs/migration/license-expiry-proof.md` and `docs/migration/lottery-selection.md`. |
+| Credential descriptor/row path | `59a02f1` + current worktree | Six-column mapping, exact `credential-to-bcrypt` codec, manifest/descriptor/target binding, private one-use credential input, prepared hash reuse, atomic artifact/coverage/checkpoint write, and typed readback are integrated. Disabled rows on active licenses transform to bcrypt; inactive/returned rows are durably deferred without writing a target credential. |
+| Credential import projection | `ddcbfea` + current worktree | Projection preserves source row/hash/PK evidence while withholding plaintext from generic bindings. The current full-catalog synthetic rehearsal passed after an injected ACK-unknown stop; no real credential was read or imported. |
+| PostgreSQL event sequence and encrypted backup | Current worktree + synthetic APAC R2 staging destination | Snapshot format 4 captures and verifies the reviewed `fanmark_events.id` sequence definition, exact decimal `lastValue`, and `isCalled`; local D1 import reads back the seeded next ID for called and unused cases. The Git-external archive is one AES-256-GCM ciphertext with hidden source names/counts. A fresh Node process restored a persisted synthetic bundle; a separate canary uploaded the encrypted bundle to a private APAC R2 bucket, downloaded/hash-checked/restored it, deleted both objects, and read the bucket back empty. The full migration-data suite passes 125/125 with no skips. Synthetic only: no live sequence/user rows were read or migrated. Independent key custody, least-privilege destination credentials, retention policy, complete Auth/Storage backup, source freeze, and production restore remain open. See `docs/migration/snapshot-export-design.md` and `docs/migration/d1-import.md`. |
+| Local Better Auth/D1 proof | `docs/migration/auth-feasibility.md` | Better Auth 1.7.5 + bcryptjs 3.0.3 verified synthetic `$2a$10$`/`$2b$10$` password, UUID/session, and TOTP flows under workerd. No real Auth rows or hashes were exported. |
+| Application Worker Auth and emoji admin route | Staging Worker + conditional Auth wiring | `/api/auth/*` reaches Better Auth through dedicated `AUTH_DB`; admin routes require role and current-session MFA assurance. The synthetic TOTP/admin canary passed on prior deployed version `1413b726-0930-45f4-b779-67865fffa24d`; it exercised sign-in, enrollment, session rotation, and gated admin reads, then removed all synthetic Auth rows. Current version `bc5ad53e-5f08-492b-81fb-8046c9be9600` adds conditional Resend verification/reset and four existing-account OAuth providers. Live capabilities return all email/signup flags false and no providers; sign-up, reset, social sign-in, and OAuth callback probes return 403. Email/OAuth selectors and secrets remain unset; no message or provider callback ran. Broader admin authorization, user/Auth import, and CPU plan fit remain open. See `docs/migration/auth-feasibility.md` and `live-observations.md`. |
+| R2 image Storage API | Current worktree + staging Worker/SPA; new uploads enabled on workers.dev staging only | APAC buckets `fanmark-avatars-staging` and `fanmark-cover-images-staging` are bound to the current app Worker with `STORAGE_BACKEND=r2`; `VITE_STORAGE_BACKEND=r2` is in the staging build. Local Worker tests 5/5 and client tests 7/7 pass. Live synthetic PNG upload, public read, owner delete, and post-delete 404 passed; no canary object remains. Existing Supabase objects were not copied and production remains on its default Supabase selector. See `docs/migration/storage-r2-app-api.md`. |
+| Owner-scoped dashboard list API | Current worktree + staging Worker/SPA; enabled on workers.dev staging only | `GET /api/me/fanmarks` derives the only `user_id` predicate from Better Auth and returns the bounded dashboard DTO. `OWNED_FANMARKS_BACKEND=d1` and `VITE_OWNED_FANMARKS_BACKEND=worker` are active in staging; the live synthetic account received its one owned row, then that row was deleted and read back as zero. Four split-D1 tests and four client tests pass. No user rows were imported. |
+| Analytics page and D1 read path | Current worktree + workers.dev staging | The guarded `npm run test:staging-fanmark-analytics-ui` canary used one synthetic event and an isolated headless Chrome profile. The rendered `/analytics` page displayed total access `1` and unique visitors `1`, and the browser read both Worker analytics endpoints. Four concurrent duplicate writes were suppressed; anonymous reads returned 401. Cleanup and independent readback returned all synthetic business and Auth rows to zero. No historical analytics rows, real data, production route, or domain/DNS changed. |
+| Better Auth own-profile API | Current worktree + staging Worker/SPA; enabled on workers.dev staging only | `GET/PATCH /api/me/profile` uses session identity and omits billing/invitation fields; writes allow only display name, language, and a same-owner R2 avatar URL. The live synthetic account read and updated its display name/language; cleanup left no profile row. Five Worker integration and four client contract tests pass. Wider profile and upload flows remain split across Supabase and Cloudflare. |
+| Notifications inbox API and event processor | Current worktree + staging Worker/SPA; inbox and processor enabled on workers.dev staging only | Session-scoped list/unread/read-one/read-all routes use bounded DTOs. The deployed workers.dev Cron processed synthetic return/favorite events and all three transfer events (`transfer_requested`, `transfer_rejected`, `transfer_approved`), with one delivered Japanese in-app notification for each intended owner/requester. A separate canary ran all 10 migrated in-app master rules through the Cron and confirmed one delivered Japanese notification per rule, then removed every synthetic row. `NOTIFICATION_PROCESSOR_BACKEND=d1` and a one-minute Cron are active on staging. The Worker-backed header preview now refreshes every 30 seconds in the foreground and pauses in background tabs; Supabase selection retains Realtime. Email/Web Push, unexercised source-specific events, production recurring fit, and populated-user CPU/authorization review remain open. See `docs/migration/notifications-api.md`. |
+| Notification admin and logs | Master editor, payload-minimized read routes, and manual event creation deployed to workers.dev staging | Deployment `938f880d-f3db-46d5-9634-60612e4e2814` includes the MFA-gated D1 rule/template editor, event log, and delivery log. A synthetic admin completed TOTP/MFA; the canary read 10/40 masters and both logs. Anonymous requests returned 401, notification payloads were omitted, and delivery user IDs were truncated to eight characters. On 2026-09-27 a separate MFA-authorized manual-event POST canary passed: the deployed Cron produced one delivered Japanese in-app notification for a synthetic recipient, then event, notification, profile, and Auth rows were removed and read back at zero. No real user rows were touched. See `docs/migration/notifications-api.md`. |
+| Invitation code admin API | Current worktree + workers.dev staging | The staging screen selector and `INVITATION_ADMIN_BACKEND=d1` are active. A same-session MFA canary passed list/create/CAS edit/stale-write rejection/disable/delete; exact D1 readback found zero invitation rows afterward. DTOs omit creator IDs. Worker tests pass 5/5 and client tests 4/4. Invitation data has not been imported; signup, validation/consumption, and mode-setting stay closed. See `docs/migration/invitation-admin-api.md`. |
+| Owner fanmark profile API | Current worktree + staging Worker/SPA; enabled on workers.dev staging only | `GET/PATCH /api/me/fanmarks/{fanmarkId}/profile` resolves the active license from Better Auth identity. Live synthetic GET/PATCH passed and its profile row was removed; same-origin R2 profile URLs now enforce correct bucket and owner. An integrated cover upload/read/profile-save/foreign-path rejection/delete canary passed on current staging; five Worker and five client tests pass. See `docs/migration/fanmark-profile-api.md`. |
+| Owner fanmark settings API and protected access | Current worktree + staging Worker/SPA; enabled on workers.dev staging only | Both settings selectors and `VERIFIED_ACCESS_BACKEND=d1` are active in staging. Live synthetic settings GET/PATCH returned 200/200; unauthenticated access and wrong password returned 401; valid verification returned 204 and protected content returned 200. Runtime evidence matched the password generation, no password/hash was returned, and cleanup read back zero canary rows. Worker/client settings suites pass 6/6 and 5/5; source-profile and verified-access suites pass. See `docs/migration/fanmark-settings-api.md` and `live-observations.md`. |
+| Fanmark single and bulk return APIs | Current worktree + staging Worker/SPA; enabled on workers.dev staging only | `POST /api/me/fanmarks/return` and `/bulk-return` use Better Auth identity and business D1; both guard active ownership and active/applied transfer codes, transition licenses to grace, and best-effort write audit/owner/favorite events. Bulk accepts 1–50 distinct license IDs and returns 207 on partial success. Synthetic staging returned 207 for one success plus one blocked license, then 200 after removing the second test transfer code. Cleanup read back zero rows across 40 source business tables and user-owned Auth tables; access-version state and singleton MFA generation were unchanged. The retained license-incarnation registry is now 21 rows (16 earlier rows and five synthetic anti-reuse tombstones accumulated during return canaries); no access-version rows remain. Local Worker suite passes 17/17 and client suite 7/7. Notification delivery remains separate. See `docs/migration/fanmark-return-api.md` and `live-observations.md`. |
+| Favorites API | Current worktree + staging Worker/SPA; enabled on workers.dev staging only | `GET/POST/DELETE /api/me/favorites` resolves emoji IDs against active Master D1 and uses business D1 for owner rows. Live synthetic add/list/remove passed; the favorite, event, and newly-created discovery rows were removed and composite readback was zero. Four Worker and four client tests pass. No historical favorites were imported. See `docs/migration/favorites-api.md`. |
+| Emoji master D1 staging/API/frontend | Current worktree + APAC staging D1/Worker | Two independent read-only exports of the 3,944-row public master matched. A staging-only release with unchanged UUID/emoji/codepoint identities was promoted then rolled back using the guarded remote runner; activation history reads generation 1 promotion, generation 2 promotion, generation 3 rollback. Original release `10ec…` is active and the API returns 3,944 rows. Canonical `emoji_master` remains at 3,944 rows; the temporary non-user release stays inactive for immutable audit history. Migration-data tests pass 93/93 and the Miniflare release suite passes 7/7. See `docs/migration/emoji-releases.md` and `live-observations.md`. |
+| Other non-user reference masters | Current worktree + APAC staging D1/Worker | Migrations `0004` and `0006` are applied; active generation 8 has 4 tiers, 4 languages, 5 reserved patterns, and 16 extension prices. All four public routes return HTTP 200/no-store and omit Stripe IDs. The private HMAC route is deployed. A synthetic TOTP admin completed Tier C null→1→null and tier-1 one-month price ¥500→¥501→¥500 through the deployed MFA API; anonymous writes returned 401, stale CAS returned 409, and all four masters plus Stripe IDs matched after restore. Auth/profile business canary rows returned to zero after cleanup. Stripe extension checkout remains disabled and returns 404 until server/webhook/dispatch selectors and secrets are configured. Production/default pricing remains on Supabase. See `docs/migration/reference-master-data.md` and `live-observations.md`. |
+| Availability against versioned reference release | Current worktree | Added a separate Miniflare integration suite that applies the checked-in `0004` reference-master migration, stages/activates a synthetic release, and exercises the real `fanmark_tiers` active view through the Worker availability route. It verifies integer-cent storage/USD response conversion, selection of a second tier, and inactive-tier behavior. The older focused availability suite remains in place for validation and lifecycle boundaries. Three integration cases, eight focused availability cases, and three reference-master API cases pass; Worker typecheck, targeted ESLint, CI isolation check, and `git diff --check` pass. No remote D1/R2 write, user data, production deployment, or DNS change. |
+| Public access reads | Current worktree + staging Worker/SPA | `PUBLIC_ACCESS_BACKEND=d1` and `VITE_PUBLIC_ACCESS_READ_BACKEND=worker` are active on workers.dev staging. Emoji normalization uses `MASTER_DB`; fanmark/license/config/profile projections use `FANMARK_DB`. Local split-D1 tests pass 11/11. Live synthetic routes returned 200/no-store and their canary rows were removed. `VERIFIED_ACCESS_BACKEND=d1` and its frontend selector are also active on staging; the synthetic protected-read smoke passed, but real imported hash compatibility and CPU fit remain unverified. Paired analytics write/read APIs are active in staging; historical analytics remain in Supabase. Owner/history details use the separate staging endpoint recorded below. No production traffic was switched. See `docs/migration/public-access-contract.md`. |
+| WhoIs owner/history details | Current worktree + workers.dev staging | `VITE_FANMARK_DETAILS_BACKEND=worker` and `FANMARK_DETAILS_BACKEND=d1` select `/api/fanmarks/details`. Local Worker D1 tests pass 3/3, including a two-owner history fixture, and frontend contract tests pass 4/4. On version `82413f00-f60e-4a01-aeb0-2a071e01178a`, a synthetic owner browser rendered one history row from the Worker API; after clearing the session cookie, the anonymous view showed the login prompt with no history rows or owner name. Independent cleanup readback found zero synthetic business/Auth rows. User IDs, email, and license IDs are omitted. Imported-row parity and production routing remain open; no real user data was read. See `docs/migration/fanmark-details-api.md`. |
+| Public access and owner analytics APIs | Current worktree + staging Worker/SPA | The staging SPA and Worker select D1 for `POST /api/fanmarks/access` and the session-scoped `/api/me/analytics/*` reads. A dedicated Cloudflare Rate Limiting binding allows 120 requests per client-IP key per 60 seconds; the Worker hashes the key and does not persist the IP. Local tests cover 429 and missing, failing, or malformed limiter responses before writes. On current staging version `82413f00-f60e-4a01-aeb0-2a071e01178a`, the rendered `/analytics` canary recorded one event, suppressed four concurrent duplicates, displayed total access and unique visitors as `1`, verified both Worker reads and anonymous 401, and removed all synthetic Auth/business rows. Historical analytics remain in Supabase; user data, production traffic, and domain/DNS were untouched. Raw referrer/user-agent retention, populated-user authorization, and production CPU/plan fit remain open. See `docs/migration/fanmark-access-analytics-api.md`. |
+| D1 role separation | Current worktree + APAC staging | `D1_TOPOLOGY=split` selects business `FANMARK_DB`, Better Auth `AUTH_DB`, and emoji/reference `MASTER_DB`, failing closed for missing bindings. Business staging has 40 source-shaped tables plus applied lifecycle/credential/access extensions; its application baseline contains 10/40 global notification masters, four disabled availability rules, and the two explicitly allowlisted public settings `grace_period_days=1` and `max_emoji_characters=5`. User-owned business/Auth rows are empty. The separate protected-access tables retain documented synthetic canary telemetry and license-incarnation tombstones. Master D1 has 3,944 canonical emoji rows and active release, with reference-master generation 8. The source refresh has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 36 triggers, 77 policies, 58 functions, and one view. Snapshot format 4 fingerprints eight scopes and validates the reviewed event sequence state. Fresh schema converter v22 has 5 blocking schema/operation groups across 85 locations (11 external Auth references, 71 timestamp-default operations, plus function/RLS/trigger catalog scopes) and remains `deployable: false`; generated date and timestamp checks preserve canonical values on imports and later writes, while exact runtime clock ownership is still a gate; four exact GIN definitions have reviewed query-contract dispositions. No real rows or live event sequence state were migrated. |
+| Lifecycle settings API | Current worktree + staging Worker/SPA | Public `GET /api/system/lifecycle` reads only the public `grace_period_days` row through split business D1; `PATCH /api/admin/system-settings/lifecycle` requires administrator role and current-session MFA. Supabase public value `1` was read-only verified and copied as one staging config row. Client 4/4, combined settings D1 9/9, full standard suites 30/30 and 10/10 pass. A new synthetic staging TOTP canary verified anonymous 401, authenticated temporary update, invalid value 400, public no-store readback, restoration to `1`, and empty user-owned Auth tables after cleanup. The API canary and rendered AdminSettings browser form both updated the setting from `1` to synthetic `2`, read it back through D1, restored `1`, and removed synthetic Auth/profile rows. The value is at baseline; `updated_at` advanced and the MFA generation counter may have advanced during factor enrollment/removal. The shared staging Cron is active for notifications; `LICENSE_EXPIRY_BACKEND` remains unset, so lifecycle execution is disabled. See `docs/migration/lifecycle-settings-api.md`. |
+| Plan and general system settings | Current worktree + workers.dev staging | An exact allowlist of 18 non-user Supabase settings was added to the two existing settings (20 total). Source and D1 canonical digests match `d1f809c44dcc26152acb3432907e1cad81a599d495fd9f3e48b75ea1e3beb16f`; the public GET returns exactly 17 public keys and omits both private Enterprise settings. Public GET and SPA returned 200/no-store; anonymous admin GET returned 401/no-store. A synthetic Better Auth administrator passed TOTP/MFA read/update, exact D1 readback, stale-write rejection, baseline restoration, audit-value minimization, and audit cleanup. Worker tests 5/5, client tests 4/4, migration-data 124/124, typechecks, staging build, and dry-run pass. Deployed at 100% as version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6`. Browser UI acceptance and payment behavior remain open; production stays on Supabase. See `docs/migration/system-settings-api.md`. |
+| Availability-rule administration | Current worktree + workers.dev staging | `AdminPatternRules` selects the MFA-protected D1 API only in staging. Four explicit source rules were seeded with `created_by=NULL`, remained disabled, and were read/edit/CAS-restored by the deployed TOTP canary. Worker tests 4/4 and frontend tests 5/5 pass. This does not move Stripe enforcement or other admin CRUD. See `docs/migration/availability-rules-admin-api.md`. |
+| App staging deployment at frontend-selector checkpoint | APAC `fanmark-app-staging` Worker + Static Assets | Version `f4c99bda-ea79-468e-addd-38b8f1453f47` was at 100% after the frontend-selector staging deploy; its static asset hash matches the local build; split D1, both image R2 bindings, and separate access-analytics rate limiter remain. PR #41 commit `2ecbb25` adds a 30-second foreground refresh to the Worker-backed subscription view while keeping focus/visibility refresh and Supabase Realtime behavior. A synthetic subscription canary on prior version `c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65` changed the rendered state to inactive after 29,589 ms; its API/browser cleanup returned synthetic subscription/profile/Auth rows to zero. An earlier 2026-09-28 readback verified version `82413f00-f60e-4a01-aeb0-2a071e01178a` at 100%; its rendered analytics canary showed one event and one unique visitor after suppressing four duplicates, returned anonymous 401, and cleaned synthetic Auth/business rows to zero. Earlier staging versions added the notification-preview foreground refresh and same-tab/focus/visibility own-profile synchronization. No real user-data imports, production routing, or domain/DNS changes occurred. The separate `fanmark-migration-backups-staging` bucket is APAC Standard, private, has no custom domain or r2.dev access, and is not bound to the app; its encrypted synthetic upload/download/restore/delete canary returned it to zero objects. Business migrations through `0016` and Auth migration `0008_auth_user_suspension.sql` are applied; all eight user-owned Auth tables, including status audit, read back empty after the latest TOTP canary. The 16 localized auth email master rows remain readback-verified against their pinned content/seed digests. MFA-gated user list/detail, plan, suspension/restoration, immediate license expiry, password-reset mutation, system settings, subscription display, profile username availability, and account deletion use split D1/Better Auth. Subscription display reads only the signed-in user's row and omits Stripe IDs; the user-owned subscription table is empty after the synthetic canary. Resend secrets remain absent, so password-reset delivery is closed with 503 before audit; no email was attempted. Prior live canary verified suspension, current-session revocation, restoration, immediate expiry, four config deletions, two audit rows, one notification event, and repeat safety, then cleaned synthetic rows. Post-run readback found zero user settings/licenses/favorites/notifications/user events/expiry audits/four config types and zero Auth user-owned rows; 45 license-incarnation tombstones remain as retained synthetic anti-reuse state. Signup and email delivery remain disabled because delivery is not configured; OAuth providers remain unset. The every-minute Cron remains for notification/Stripe dispatch; the separate daily lifecycle trigger is configured with its execution selector unset. A separate synthetic account-deletion canary passed and was cleaned; the expiry/lottery Cron canary also restored its exact baseline. No real user data, production routing, or domain/DNS changed. Reset-mail acceptance, remaining app/API inventory, Stripe sandbox/integrated acceptance, key custody/retention policy, real user/Auth/object import, production routing, and domain/DNS remain open. |
+| Broadcast email admin browser acceptance | Current worktree + workers.dev staging, version `21f0be9e-2099-49d8-b975-a3a61604c12e` | A synthetic administrator signed in through the deployed Better Auth UI and completed TOTP/MFA. The D1-backed 一括メール screen rendered its staging-only banner and zero baseline; the UI created a synthetic draft, showed the saved draft in history, and previewed its exact subject/body. Test-send and bulk-send buttons were disabled. After logout, readback found zero canary Auth user/account/session/factor/role/assurance rows and zero profile/draft/audit rows; private credentials and TOTP artifacts were removed. No email or real user data was sent or copied, and production routing/domain/DNS were unchanged. This closes the broadcast-screen browser canary only; provider delivery, bulk queue semantics, and broader authenticated UI acceptance remain open. |
+| Authenticated master-data admin screens | Current worktree + workers.dev staging, version `21f0be9e-2099-49d8-b975-a3a61604c12e` | A synthetic administrator signed in through the deployed Better Auth UI and completed TOTP/MFA. Read-only navigation loaded the emoji master with active release `10ec42c1…` and 79 pages, system settings, plan settings, 10 notification rules and 10 grouped notification templates (4 locale variants each), and the signup-confirmation email template in JA/EN/KO/ID. No controls were saved, no manual notification or email was sent, and no user/event-log screens were opened. After logout, exact D1 readback found zero synthetic Auth users/accounts/sessions/factors/admin roles/MFA assurances and zero profile/audit rows; temporary credentials and helper state were removed. No production routing or domain/DNS changed. This verifies these screens' authenticated rendering and reads only; write flows and broader acceptance remain open. |
+| Lifecycle target schema | `01a1507`, `8034735` | Exact source/extension DDL and fingerprint consistency; actual 40-table catalog applied to empty local D1. No production rows. |
+| Credential incarnation authority | `7cf0fe6` | Missing retained authority is rejected by reads and final SQL; credential suite 19 passed. Isolated proof schema. |
+| Lifecycle/access-generation and protected-access integration | Current worktree + workers.dev staging | 24 triggers invalidate proofs on license/password and source-backed fanmark selector, basic/redirect/messageboard/profile changes. The Worker verifier reads the same 40-table source profile and checks descriptor-bound credential provenance. Dedicated D1 and full source-profile tests pass; the frontend contract is covered. Deployed synthetic settings/protected-access canary passed and cleaned all rows. The selectors are active on staging only. Real source password-format compatibility, Cloudflare CPU and multi-instance checks, deployed-origin security review, and full browser acceptance remain open. |
+
+These checks ran on Node 22.6.0 without skips. The combined Supabase CI/deploy
+workflow remains manually disabled because it also applies Supabase production
+migrations on main. A separate `.github/workflows/cloudflare-migration-validation.yml`
+now runs the migration-data tests, staging application build, complete Worker
+suite, typecheck, and non-deploying Worker dry-run on PR/main-push/manual events.
+The local isolation checker requires that workflow to stay secret-free and
+without Supabase or remote-deploy commands; a hosted run is still pending.
+
+The protected-access implementation separately binds license incarnation and
+password/access generations. The full source-profile test now rejects stale
+proofs and reads synthetic protected text through the connected Worker route.
+The older isolated proof suite remains historical supporting evidence; it is
+not a substitute for the current source-shaped integration or the outstanding
+staging/password-compatibility gates.
+
+
+A subsequent bounded unit added `credential-import-projection.mjs`: canonical
+snapshot records are checked with the existing row converter and record hash/PK
+contract, then split into five ordinary bindings and a one-use opaque transform
+input. Parent verification passed 74 migration-data tests, actual 40-table
+metadata plus one synthetic row, and CI isolation checks. The generic importer
+is still guarded. The integration design now requires a single six-column
+INSERT assembled with the prepared hash, preserving NOT NULL and avoiding a
+second trigger increment; deferred rows remain whole in the private source.
+
+## Next implementation sequence
+
+Staging follow-up completed on 2026-09-23 and advanced on 2026-09-24. The
+current app Worker is `c9d51d92-3b7a-49e9-b152-b210d24a36f1`; it binds separate
+business, Auth, and master D1 databases plus two R2 buckets. Live smoke checks
+passed for noindex, Better Auth health/session, the emoji and all three
+reference-master APIs, anonymous admin denial, and R2 reads. Synthetic
+sign-in/session/logout/wrong-password and first-time TOTP/admin-authorization
+cycles passed, then all Auth user-owned tables returned to zero. The MFA
+generation singleton advanced monotonically from 0 to 2 through the synthetic
+factor create/delete lifecycle. The deployed Cloudflare-staging JavaScript matches
+the local build and selects Better Auth for email login; broader business flows and avatar upload still retain Supabase paths; the
+own-profile API is now explicitly selected for staging. The live
+public schema was refreshed on 2026-09-24; at this historical checkpoint the
+business D1 remained empty while the full synthetic operation/security rehearsal was built. The same deployment
+now connects the emoji-master admin UI to MFA-protected canonical draft APIs;
+the active emoji release remained unchanged during a live edit/restore smoke.
+
+A bounded recent-fanmarks API slice now connects the search screen to the
+shared Worker loader and preserves both the public short ID and fanmark ID.
+Local Supabase/D1 contracts, frontend typecheck/build, and app Worker dry-run
+pass. At that checkpoint the recent backend was not selected; subsequent staging
+updates enabled the recent route and are recorded below.
+
+The public short-ID/emoji/profile read routes have a frontend adapter behind
+`VITE_PUBLIC_ACCESS_READ_BACKEND=worker`. The `/a/:shortId`, emoji-path, QR,
+and published-profile reads use the reviewed Worker projection when selected;
+errors do not fall back to Supabase. Seven client tests and 11 split-D1 Worker
+tests pass. The selector is enabled only in the workers.dev staging build.
+Synthetic live staging reads returned 200/no-store for short-ID, emoji, and
+published-profile routes; the canary rows were removed and read back as zero.
+The default Supabase path retains password verification. At this earlier
+public-read checkpoint, access analytics and owner/history details still
+remained on Supabase. The separate
+`VITE_VERIFIED_ACCESS_BACKEND=worker` selector is still off, so password-
+protected Worker reads fail closed. This is not a production public-access
+cutover. See `docs/migration/public-access-contract.md` and
+`docs/migration/verified-access-design.md`.
+
+On 2026-09-24, a descriptor-bound codec slice was added: credential-bearing
+schema conversion no longer selects ordinary `text`, and the same descriptor
+is required by snapshot verification, row validation, and target-profile
+fingerprinting. The generic importer's private run/checkpoint/report identity
+also records its digest while the pre-write credential guard stays enabled.
+The schema-conversion and importer report/ledger versions are now 2, preventing
+older codec or checkpoint state from resuming under the changed policy.
+The migration-data suite passes 85 tests, the lifecycle/credential-schema
+integration passes 9 tests, the Worker suite passes 30 tests, and Worker
+TypeScript checking passes. The integrated credential row INSERT, artifact
+preparation/application, coverage write, and checkpoint atomicity remain open.
+R2 bucket enumeration after user activation confirmed the two expected staging
+buckets; this was a read-only check and copied no objects.
+
+1. Continue the #33/#34 application and infrastructure stage. The current
+   `fanmark-app-staging` workers.dev deployment is version
+   `f4c99bda-ea79-468e-addd-38b8f1453f47` at 100%, with split Auth/business/
+   master D1 and staging R2 bindings. Synthetic canaries cover selected
+   registration, owner, access, notification, admin, and PWA routes, but the
+   static audit of 45 backend selectors still requires complete runtime
+   acceptance. Fresh converter v21 remains `deployable: false` with 5
+   schema/operation groups across 93 locations; function/trigger/RLS parity,
+   external Auth references, operation-level timestamp ownership, remaining API
+   inventory, and representative CPU-plan fit remain open. No production route
+   is enabled.
+2. #36, the versioned non-user emoji master path, is closed. Its 3,944-record
+   release is active in the separate APAC master D1; the other reference
+   masters, notification rules/templates, localized auth email templates, and
+   the reviewed settings allowlist also have staging readback. Production
+   selectors remain on Supabase; no user-owned master/history rows were copied.
+3. Continue #37's integrated synthetic rehearsal. The pre-write fallback canary
+   keeps only the workers.dev app frozen while a disposable loopback Supabase
+   accepts a synthetic owner-settings write; its latest measured acknowledgement
+   was 31,937 ms after Cloudflare rejected the write. Narrow app-schema
+   post-write restore probes also passed. These do not stop a linked Supabase
+   writer/Cron, restore Auth or R2, apply a Stripe business effect, or prove the
+   full sequence. Stripe sandbox, Resend delivery, four OAuth callbacks, and
+   complete auth/storage recovery remain unverified.
+4. Continue #35's migration tooling with synthetic artifacts only. The fresh
+   v21 replay completes all 40 table checkpoints with 10 synthetic rows,
+   transforms two synthetic credentials, durably defers one inactive-license
+   credential, and verifies typed/hash readback. The encrypted public snapshot
+   and private APAC R2 round-trip passed with synthetic data. Actual
+   Auth/business/Storage export/import remains deferred to #38; independent key
+   custody, least-privilege backup access, and retention policy remain open.
+5. Keep #38's real user/Auth/object import and public domain/DNS switch in the
+   final phase, after the synthetic application and recovery gates pass. The
+   current task does not import real rows or switch public hostnames.
+
+The generic importer fails closed for credential-bearing snapshots unless the
+exact private descriptor selects the dedicated transformed-row path. The
+current-catalog synthetic replay verified that path for two credentials and
+recorded an inactive credential as deferred; this is not evidence for real
+credential compatibility or a complete user-data import.
+
+## Remaining external and release gates (read back 2026-09-28)
+
+- The `workers.dev` app Worker is version
+  `f4c99bda-ea79-468e-addd-38b8f1453f47` at 100%. Wrangler 4.142.0 read-only
+  ledger queries confirmed business migrations `0000`–`0016` (17 rows), Auth
+  migrations `0003`, `0007`, `0008`, and master migrations `0000`–`0007` (8
+  rows). Each query returned `changed_db=false` and `rows_written=0`. This
+  confirms schema/seed migrations only; it does not prove full function/RLS/
+  trigger parity or real user-row reconciliation.
+- Fresh schema converter v21 reports `deployable: false` with 5 schema/operation
+  groups across 93 locations; the 40-table current-catalog synthetic replay
+  reconciles its checkpoints but does not close external Auth references,
+  per-operation timestamp ownership, or function/RLS/trigger catalog scopes.
+  Runtime acceptance for the 45
+  frontend selectors, full current API inventory, complete operation-level
+  timestamp/default proof, and representative populated-data CPU/load fit
+  remain open.
+- A fresh read-only Supabase Edge Function list returned 35 active functions:
+  all 34 local entrypoints match, plus live-only `manual-expire-grace-licenses`;
+  no local-only slugs exist. The 16 previously unconfigured local JWT flags
+  were made explicit to mirror the observed live `verify_jwt=false` values; a
+  second read found no local/live JWT mismatch. No function was invoked and no
+  remote configuration changed. The version/JWT matrix is in
+  [`live-observations.md`](live-observations.md).
+- Workers Free is still the selected plan. Staging CPU samples for sign-in,
+  TOTP, and lifecycle work exceeded its published 10 ms/request limit. A
+  production-safe plan or measured optimization is still required; no account
+  plan or billing setting was changed. Cloudflare documents Workers Paid at a
+  $5/month minimum, so that is an account-owner cost decision rather than an
+  implicit migration step. See [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+  and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
+- The staging Worker secret-name readback contained only
+  `BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+  `VERIFIED_ACCESS_SECRET`. No secret values were read. Stripe sandbox/live
+  keys and webhook signing secret, Resend API key/sender, and client ID/secret
+  pairs for Apple, Google, GitHub, and Discord are absent. Consequently Stripe
+  checkout/webhook acceptance, real mail delivery, and OAuth callback/provider
+  acceptance remain unverified. Their source integrations and fail-closed
+  staging behavior are implemented; provider setup and exact callback
+  registration are still needed.
+- Avatar/cover R2 upload/read/delete works on staging. The separate encrypted
+  backup bucket is private and empty after synthetic round-trip cleanup.
+  Independent backup-key custody, least-privilege ACL, retention/deletion
+  policy, and complete Auth/Storage backup/restore remain open.
+- The integrated synthetic pre-write fallback passed. The post-write Time
+  Travel drill covers a disposable business D1, one waitlist write, and a
+  pending Stripe receipt; it does not cover Auth, R2, applied Stripe business
+  effects, or a coordinated Supabase writer/Cron freeze. Full integrated
+  recovery remains open.
+- The actual user/Auth/object import and public domain/DNS switch remain in
+  #38's final phase. No production route, production data, OAuth provider,
+  Stripe account, or public DNS was changed. Keep PR #41 draft until the
+  synthetic app/provider/recovery gates are accepted.
+
+The superseded early local-only owner-list checkpoint below is retained as
+history; current staging D1 and Worker state is recorded in the tables above.
+
+Detailed evidence and limitations are in [EXECUTION.md](EXECUTION.md),
+[credential integration](credential-import-integration.md),
+[lifecycle integration](lifecycle-schema-integration.md), and the corresponding
+validation documents. Source values, private compatibility reports, and secret
+material remain outside Git and must not be copied into issue/PR descriptions.
+
+## Business schema and master-data checkpoint (2026-09-25 JST)
+
+`fanmark-app-staging` is now version
+`3733c771-2903-40cd-8bdc-5a0f94412c82`, with both existing R2 buckets bound.
+Auth health/root noindex and read-only R2 route checks passed; the public
+missing-object request returned 404 and the unauthenticated upload returned
+401. Both R2 buckets are present and bound. Master D1 has migration `0006` and
+reference release generation 2 with 29 rows across four masters. All four live
+master API routes return 200 with `no-store`; extension-price DTOs omit Stripe
+IDs. The schema snapshot is now format 3 and fingerprints 40-table DDL plus
+triggers, RLS, functions, and views. Schema conversion v4 has 18 blocking
+gates (10 row-conversion and 8 schema/operation) and remains non-deployable.
+The later structural bootstrap applied 40 application tables and 66 indexes to
+the previously empty business D1; it applied no rows and does not close those
+gates. Migration-data tests pass 90/90 and D1 importer tests 13/13. No user rows, Storage objects,
+production service, or domain/DNS state changed. See `docs/migration/live-observations.md`.
+
+The fresh 2026-09-25 gate report splits into ten row-conversion groups and
+eight schema/operation groups. The latter include untranslated view/function/
+trigger/RLS behavior, external Auth references, timestamp defaults, three
+checks, and four GIN indexes. The source event sequence state remains an import
+gate. A live read-only
+query before the bootstrap found only Cloudflare's internal `_cf_KV`; the
+structural DDL is now recorded separately in `live-observations.md`. No user
+data was applied. See
+[`schema-generator.md`](schema-generator.md) for the exact gate boundary.
+
+The 2026-09-25 private full-catalog `test:license-expiry-source` run passes 20
+checks on the 40-table D1 profile, including the no-pending grace finalizer and
+the delayed-cron two-tick ordering. `test:lifecycle-schema` passes 9/9 and
+`test:license-expiry-scheduled` passes 8/8; Worker typecheck, targeted ESLint,
+and `git diff --check` pass. This does not complete lottery selection/winner
+issuance, transfer cleanup, notification delivery, the importer, or live Cron.
+Details are in `docs/migration/lifecycle-schema-integration.md`.
+
+The local favorites vertical is now implemented behind disabled selectors.
+Synthetic split-D1 tests cover active-release skin-tone normalization,
+owner-scoped listing, duplicate add/remove behavior, favorite-count updates,
+event writes, and CORS/auth gates; the browser adapter and details-page state
+have matching contract tests and wiring. The converter now recognizes
+`seq_key(uuid[])` as an index on canonical JSON text, but the saved private gate
+report has not been rerun and D1 event sequence state remains unresolved. The
+business staging D1 now has schema only; only local synthetic favorites rows
+were read or written and no Worker deployment was performed. See
+`docs/migration/favorites-api.md`.
+
+## Notifications inbox API (2026-09-25 JST)
+
+The notification inbox routes and frontend selector are active on the
+workers.dev staging app. Better Auth session identity is the only owner source;
+list, unread count, one-row read, and bulk read use bounded DTOs and owner-scoped
+SQL. Six synthetic Worker integration tests and four frontend client contract
+tests pass, and a live synthetic account exercised the routes before cleanup.
+The separately gated D1 event processor passed one synthetic scheduled run
+against staging D1 through a local Worker; the event and generated in-app
+notification were cleaned and the prior baseline was restored. No deployed
+processor selector or Cron is active. Remaining event-source parity, email/Web
+Push, and recurring Cron are open. Business staging has no imported user rows.
+R2 remains enabled for existing staging bindings; production and domain/DNS are
+unchanged. Details are in
+[`notifications-api.md`](notifications-api.md).
+
+The owner fanmark profile read/write vertical is active on staging behind
+`VITE_FANMARK_PROFILE_BACKEND=worker`. It covers the edit and preview screens
+and uses Better Auth session identity for ownership. The owner-settings API is
+also active on staging; synthetic GET/PATCH/password/protected-access checks
+passed and its live rows were cleaned up. `FanmarkMessageboardPreview` now uses
+the same owner-only settings GET instead of calling `get_fanmark_complete_data`
+directly. User rows remain absent from business D1, and full app/data parity is
+still open. See `fanmark-profile-api.md` and `fanmark-settings-api.md`.
+
+The 2026-09-25 local verification corrected the Workers test split: profile,
+notifications, and favorites integration suites use their dedicated Vitest
+configs. The dedicated suites and default Worker suite pass. Static Assets
+expects the current recent-fanmarks DTO (`fanmarkId` and `shortId`); its 14
+integration cases and Wrangler HTTP smoke pass. Full results are recorded in
+[`EXECUTION.md`](EXECUTION.md).
+
+
+## Staging deployment before owner API activation (2026-09-25 JST)
+
+After the empty business-schema bootstrap, `fanmark-app-staging` was deployed
+to its workers.dev URL as version
+`3733c771-2903-40cd-8bdc-5a0f94412c82`. The staging frontend bundle contains
+the same-origin Worker base URL. Staging explicitly selects D1 for recent
+fanmarks, availability, and public short-ID/emoji/profile reads; owner/profile
+write selectors remain disabled. The business database contains schema only
+after removal of the temporary canary rows.
+
+A temporary synthetic business fixture with two active licenses and one grace
+license verified `GET /api/fanmarks/recent`: active ordering, limit 1/2, DTO
+IDs/emoji/short IDs, grace exclusion, no-store, and invalid-limit rejection.
+The script deleted all six inserted rows; subsequent remote counts for
+`fanmarks` and `fanmark_licenses` were both zero. `POST
+/api/fanmarks/availability` used a canonical public emoji-master ID and returned
+a valid available tier-4 DTO with exact CORS origin and no-store. After the
+canary, the recent endpoint returned an empty list as expected. All seven
+Better Auth user-owned tables also read back zero.
+
+Node 22.6.0 validation passed: migration-data 90/90; frontend and Worker
+typechecks; default Worker 26/26 plus verified-access 9/9; recent D1 6/6 and
+client 9/9; availability D1 8/8, split reference-master availability 3/3, and
+client 6/6; synthetic profile 5/5, owned-fanmarks 4/4, scheduled expiry 8/8,
+and public-access client 7/7; staging build, Wrangler dry-run, and
+`git diff --check`. No user data, production service, or domain/DNS changed.
+The schema-conversion report still has 18 unresolved gates and remains
+`deployable: false`; the rest of the app is not yet cut over.
+
+## Public access staging verification (2026-09-25 JST)
+
+The staging Worker is version `3733c771-2903-40cd-8bdc-5a0f94412c82`. The
+frontend public-read selector and Worker D1 backend are enabled only on the
+workers.dev staging app. A temporary synthetic fanmark with a published
+profile returned HTTP 200 and `Cache-Control: no-store` through short-ID,
+emoji-ID, and public-profile endpoints. The emoji lookup used the canonical
+emoji in `MASTER_DB` while the business D1 `emoji_master` table had zero rows;
+this caught and fixed a split-D1 repository binding error. The four synthetic
+business rows were deleted and exact-ID readback found zero in all four
+tables. The business database remains schema-only.
+
+The split-D1 public-access Worker suite passes 11/11, Worker typecheck and
+targeted ESLint pass, staging build and Wrangler dry-run pass, and the corrected
+Worker was redeployed. Password-verification selection remains disabled;
+production reads, user data, and domain/DNS are unchanged.
+
+## Current owner API staging verification (2026-09-25 JST)
+
+The app config now selects D1 for profile, owned fanmarks, owner fanmark
+profile, favorites, and notifications. The staging SPA build script records the
+matching `VITE_*_BACKEND=worker` values so subsequent staging builds keep the
+Worker selectors. `fanmark-app-staging` version
+`70cb8111-2a25-4e43-8662-e59dfd8add8d` passed Wrangler deploy and dry-run with
+split business/Auth/master D1 and both R2 buckets.
+
+A temporary verified Better Auth account exercised profile GET/PATCH, owned
+fanmark listing, owner fanmark profile GET/PATCH, favorite add/list/remove,
+and notification list/unread/read operations. An unauthenticated profile call
+returned 401. The first synthetic account fixture used the wrong Better Auth
+`accountId` and was rejected; it was cleaned up, then the fixture was corrected
+to use the synthetic user ID. The successful canary deleted the session, user,
+profile, license, fanmark, notification, favorite, event, and discovery rows;
+remote exact-ID/composite readback found zero. Local focused client/Worker tests
+pass 31/31 across seven suites. Event generation/delivery, the rest of the
+settings/save flows, full business parity, real data, production routing, and
+domain/DNS remain open. See `live-observations.md` and the feature API notes.
+
+## Fanmark registration Worker slice (2026-09-25 JST)
+
+Added `POST /api/fanmarks/register` in
+`workers/api/src/fanmark-registration-d1-api.ts` and routed all four existing
+frontend registration callers through the explicit
+`VITE_FANMARK_REGISTRATION_BACKEND` selector. Supabase remains the default;
+the Cloudflare staging build selects the Worker and the staging Worker selects
+business D1. The adapter verifies the submitted ordered emoji IDs against the
+ready active catalog release, derives skin-tone-neutral identity IDs on the
+server, reads the active tier, then atomically writes the fanmark, initial
+license, license-scoped basic/redirect/text/profile config, and audit record.
+The D1 mutation rechecks active-license, grace-window, and expired-grace pending
+lottery guards so competing requests cannot both acquire the same identity.
+
+Node 22.6 verification passed: frontend registration API 6/6, Worker D1
+registration 8/8, frontend and Worker typechecks, CI isolation check, staging
+build, Wrangler deploy dry-run, and `git diff --check`. Staging deployment
+`29dd848d-604c-4405-9bf5-58aff04a00f2` is at 100% on
+`fanmark-app-staging`. A live synthetic owner registered the active catalog's
+rose emoji as tier 4; duplicate registration returned 409, unauthenticated
+registration returned 401, and readback showed the active license, basic
+config, profile, and audit record. Cleanup readback returned zero for the
+synthetic Auth user/account/session, fanmark/license/config/profile/audit rows,
+and all 40 business tables. No Supabase rows, production route, or domain/DNS
+state changed.
+
+This is a staging app-operation proof only. It does not prove imported-user
+behavior or production parity. The existing source registration function does
+not enforce its computed `requiresPayment` result; this implementation keeps
+that observed behavior and does not call Stripe. Bulk return, transfer and
+winner-draw/finalization operations, notification delivery, remaining schema
+and credential gates, and full cross-feature rehearsal remain open. Details are in
+[`fanmark-registration-api.md`](fanmark-registration-api.md).
+
+## Fanmark lottery application and cancellation slice (2026-09-25 JST)
+
+Implemented D1 routes for lottery application and cancellation and routed
+`useLotteryEntry.tsx` through the explicit `VITE_FANMARK_LOTTERY_BACKEND`
+selector. Supabase remains the default. The D1 application path requires one
+live grace license, one applicant settings row, enforces plan capacity with a
+guarded insert/update, blocks duplicate pending entries, and reuses cancelled
+entries. Cancellation verifies ownership and updates only a pending entry.
+Both state transitions write the source trigger-equivalent audit log in the
+same D1 batch. Notification-event enqueue remains best effort, matching the
+source function.
+
+Local evidence: Worker D1 suite 11/11 and frontend API suite 6/6; frontend and
+Worker typechecks pass. The suite includes same-entry concurrency, audit-failure
+rollback, notification-failure behavior, default and configured limits, and
+synthetic owner/status checks. Staging Worker deployment
+`513d9cba-2424-4528-814a-3b1d83425b73` is at 100%. Its canary applied for the
+rose fanmark (200), rejected a duplicate (400), cancelled the entry (200), and
+rejected an unauthenticated application (401). Cleanup readback found zero
+synthetic user/settings, fanmark/license/entry/audit/event, and Auth
+user/account/session rows; all 40 business tables returned to zero. Winner
+selection/license issuance, full user-data import, production routing, and
+domain/DNS remain out of scope.
+
+## Latest migration checkpoint (2026-09-25 JST)
+
+The current Supabase public schema refresh is already complete; it was not
+waiting for terminal input. The earlier Docker-blocked attempt is superseded.
+Cloudflare staging has the lottery journal schema extension with exact
+readback. A one-shot synthetic scheduled-event canary verified winner
+finalization against staging D1; its run/item journals and all 40 business
+tables were cleaned, and the retained incarnation registry matched its
+pre-canary snapshot. The app's scheduled backend remains disabled and no Cron
+trigger is configured. Transfer and lottery finalization now have staging
+synthetic proofs. Continue with remaining API/schema gates; keep real
+user/Auth/object import and domain/DNS cutover for the last stage.
+
+## Earlier checkpoint: Stripe extension settlement precondition (2026-09-25 JST)
+
+The paid extension Checkout creator now records its expected positive JPY total
+in Session metadata and sets `allow_zero_total=false`, matching the Product rule
+that free Admin extensions bypass Stripe. The webhook extension path requires
+a complete payment-mode Session with `payment_status=paid`; an unpaid completed
+Session waits for the asynchronous settlement event, which now reaches the same
+extension branch. Failed and expired asynchronous Sessions do not grant time.
+New Sessions with a changed amount or currency fail closed. Legacy paid Sessions
+without the expected-total metadata remain accepted during the compatibility
+window.
+
+Node 22.6 billing tests pass 70/70, the experiment TypeScript check passes,
+Deno checks pass for both changed Edge Functions, and `git diff --check` passes.
+This was the checkpoint before the receipt/effect transaction below.
+
+## Stripe extension receipt-to-effect transaction (2026-09-25 JST)
+
+The four extension Checkout Session event types now pass through the verified
+raw-byte receipt ingress and then `apply_stripe_extension_receipt`. The local
+PostgreSQL migration adds one effect row per live/test Checkout Session. Its
+single transaction extends an eligible current license, cancels pending
+lottery entries, writes both license and lottery-cancellation audits, enqueues
+one cancellation notification per applicant, and terminalizes the application,
+receipt, and dispatch together. Paid amount and JPY currency are checked
+against new Session metadata; unpaid completion waits for async settlement,
+while failed/expired sessions and late payments are denied. Duplicate events
+and separate events for the same Session cannot grant twice. A changed owner,
+tier, returned/expired status, transfer lock, or conflicting Session metadata
+fails closed.
+
+Local evidence: the focused receipt/settlement/effect suites pass 35/35;
+PGlite covers audit and notification rollback, notification payloads, and role ACLs. Deno checks pass for the
+webhook, checkout creator, and shared modules; the Stripe experiment
+typecheck, CI workflow-isolation check, and `git diff --check` pass. The new
+migration has been executed only in isolated PGlite tests. It has not been
+applied to Supabase or D1, and neither Edge Function was deployed. No Stripe
+endpoint configuration, production data, user/Auth/object data, or domain/DNS
+was changed.
+
+Still open for #32: checkout intents and Stripe API idempotency keys, other
+billing webhook event paths, independent Postgres concurrency testing, and D1
+porting are also open.
+A payment received after a failed/expired Checkout is dead-lettered without a
+license grant, but there is no automatic refund or operator alert. Add and test
+a monitored reconciliation workflow before enabling this path in production.
+
+## Search details API on staging (2026-09-25 JST)
+
+The `useFanmarkSearch` detail lookup now has an explicit Worker/D1 path at
+`POST /api/fanmarks/search/details`. The frontend uses the Worker only when
+`VITE_FANMARK_SEARCH_BACKEND=worker`; the staging Worker also requires
+`FANMARK_SEARCH_BACKEND=d1` and `AUTH_BACKEND=better-auth`. The Worker derives
+lottery-entry identity from the Better Auth session and returns an allowlisted
+search projection without redirect URLs, message text, or password settings.
+`record_fanmark_search` remains on Supabase until user-derived data is migrated.
+
+`fanmark-app-staging` version
+`e3d47df4-eb20-4ade-8857-398cde3aab0d` is deployed at 100%. Business D1 reports
+no pending migrations. The live anonymous details request returned 200 with
+`{schemaVersion:1,result:null}` because staging has no imported fanmark rows;
+Better Auth health returned 200 and unauthenticated admin returned 401. Root
+typecheck/staging build, Worker typecheck/dry-run, frontend API tests 5/5,
+Worker default tests 30/30, and verified-access tests 10/10 passed. Synthetic
+Worker tests also cover signed-in and anonymous lottery projections, protected
+field omission, and invalid-origin/input rejection. Live signed-in detail
+projection is not yet demonstrated against populated D1. Real user/Auth/object
+data and domain/DNS remain deferred; the search-history write is not migrated.
+
+## Stripe Checkout intent and idempotency checkpoint (2026-09-25 JST)
+
+The extension Checkout path now accepts one browser-generated request ID per
+purchase intent and keeps it in `sessionStorage` across a tab reload. Before
+Stripe is called, a service-only PostgreSQL function records the authenticated
+owner, eligible license, fanmark/tier, months, Price ID, and positive JPY
+amount. Replays reuse that immutable price snapshot and the same
+intent-derived Stripe idempotency key. A returned Session ID is attached under
+a live/test uniqueness constraint; a retry retrieves an already attached
+open Session. Signed webhook metadata must match the intent, target, Price ID,
+amount, and mode before application. Successful return clears the browser
+request ID so a later intentional extension gets a new one.
+
+An unbound intent is allowed to call Stripe only within a conservative
+20-hour window. Stripe documents that it may prune idempotency keys after they
+are at least 24 hours old; once the local window ends, a missing Session ID
+requires reconciliation and the code refuses to start another Checkout
+Session. [Stripe idempotency reference](https://docs.stripe.com/api/idempotent_requests).
+
+Local evidence: the full Stripe receipt experiment passes 90/90, including PGlite
+checks for request replay, changed terms, pinned price after master-price
+changes, Session binding, owner rejection, reconciliation timeout, webhook
+matching, and client ACL. Root TypeScript, Deno checks, the Stripe experiment
+typecheck, workflow-isolation check, targeted ESLint with the file's existing
+unrelated lint violations suppressed, and `git diff --check` pass. The normal
+ESLint run still reports existing `any` uses and hook-dependency warnings in
+`FanmarkDashboard.tsx`, outside this change. The SQL ran only in PGlite; no
+Supabase migration was applied, no Edge Function was deployed, and no Stripe
+or production state was changed. R2 was enabled by the user, but this Stripe
+slice does not use R2.
+
+Still open for #32: monitored reconciliation for late payments and lost
+responses past the local window, non-extension webhook paths, independent
+Postgres concurrency coverage, dispatch processing, and billing-effect
+application. The D1 receipt/dispatch schema, signature-verifying ingress, and
+claim/renew/retry lease primitives pass 20/20 local Miniflare tests. The route
+is behind an unset selector and signing secret; its migration remains
+unapplied remotely and the route is not deployed. See
+`docs/migration/stripe-d1-ingress-validation.md`. Do not treat the Stripe
+stage as deployable or migration-complete yet.
+
+## R2 avatar and profile API integration proof (2026-09-25 JST)
+
+The profile D1 integration fixture now binds local Miniflare R2. Its synthetic
+Better Auth test runs avatar upload, public byte readback, profile URL save and
+readback, rejection of another user's object path, owner delete, profile URL
+clear, and final object/profile readback. The integrated profile suite passes
+6/6; the existing standalone R2 API suite passes 5/5 and Worker typecheck
+passes. The same end-to-end sequence passed against workers.dev staging with a
+temporary `example.invalid` account. The final Auth/profile row counts were all
+zero, and the public object URL returned 404 after cleanup. Both staging R2
+buckets and Worker selectors are active, while existing user rows/objects
+remain deferred to the user-data stage and production remains on Supabase.
+
+After the user enabled R2, a fresh account inventory confirmed both staging
+buckets exist. The staging smoke now also uploads a synthetic cover image,
+reads identical bytes from its public URL, deletes it as the owner, and checks
+404 after cleanup. Avatar and cover flows both passed with matching SHA-256;
+the synthetic D1 rows returned to zero. Worker storage tests pass 5/5,
+storage-client tests pass 7/7, script syntax and targeted ESLint pass. The
+existing Supabase Storage objects are still reserved for the final user-data
+phase.
+
+The Worker fanmark-profile PATCH now validates same-origin R2 image paths
+before D1 writes: cover URLs must use `cover-images`, profile images must use
+`avatars`, and both must be under the signed-in owner's prefix. Other owners,
+the wrong bucket, and non-public object routes are rejected; external legacy
+URLs stay accepted. The source-shaped Miniflare profile suite passes 5/5, the
+frontend client suite passes 5/5, and Worker typecheck passes. Staging version
+`a6b0a110-9169-4921-9cdc-60e51a521714` passed a synthetic cover image/profile
+canary with 201 upload, 200 public read and same-owner save, 400 cross-owner and
+wrong-bucket rejection, 204 owner delete, and 404 after cleanup. Synthetic
+Auth and source business rows returned to zero.
+
+## Active emoji release availability alignment (2026-09-25 JST)
+
+The D1 availability repository now reads IDs and emoji strings only from the
+active ready emoji release, matching registration and favorites. It no longer
+uses the mutable canonical `emoji_master` table for request-time identity.
+Focused D1 tests prove stale canonical values do not affect the result,
+canonical-only retired IDs are rejected, and a missing active pointer fails
+closed. The dedicated split-D1 integration applies the real emoji activation
+and reference-master migrations and passes 4/4 cases; the focused availability
+suite passes 10/10. The Worker default suite passes 30/30, both TypeScript
+checks, the staging SPA build, lint, and Wrangler dry-run pass.
+
+Staging version `b381e0b3-7e03-41c2-a217-aeb1d5c5cf68` is deployed at 100%.
+Read-only live checks returned root/auth health 200, the active emoji release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed` with
+3,944 records, and availability 200 for one ID obtained from that release.
+The check made no business or master D1 write. Production routing, user-data
+import, and domain/DNS remain deferred.
+
+## Maintenance settings Worker slice (2026-09-25 JST)
+
+The staging app now selects the dedicated Worker maintenance-settings API.
+Only `maintenance_mode`, `maintenance_message`, and `maintenance_end_time`
+are exposed; other `system_settings` keys, including billing values, are not
+returned. The admin PATCH uses the existing Better Auth admin authorization
+path, which requires the session-bound MFA assurance. The settings are not
+copied wholesale from Supabase. Missing public keys default to maintenance-off
+and empty display values. Worker errors do not fall back to Supabase, and the
+gate keeps general users out when the maintenance configuration cannot be read.
+
+Client tests pass 4/4, the dedicated D1 Worker suite 5/5, Worker default suites
+30/30, verified-access suites 10/10, both typechecks, targeted ESLint, the
+Cloudflare staging build, Wrangler dry-run, and `git diff --check` pass. Staging
+version `b7b208c7-68f8-4918-bfd9-b785ef66003d` returned the three expected
+defaults with `no-store`; an anonymous PATCH returned 401, and a subsequent
+GET matched the prior state. This live check did not perform an authorized
+PATCH, create settings rows, alter maintenance mode, or prove an authenticated
+admin browser flow. The Supabase production selector remains the default.
+
+## Lifecycle settings Worker slice (2026-09-25 JST)
+
+The grace-period configuration now has a dedicated read/write path. The
+dashboard reads the public setting from `GET /api/system/lifecycle`; the
+administrator console writes it through
+`PATCH /api/admin/system-settings/lifecycle`, guarded by the existing
+Better Auth role and current-session MFA check. Both screens use the same hook
+and backend selector. Staging received exactly one public
+`grace_period_days=1` setting row after a direct read-only Supabase check
+returned that same value. No other setting or user row was copied.
+
+Client tests 4/4, the combined maintenance/lifecycle Worker settings suite
+9/9, Worker standard suites 30/30, verified-access 10/10, both typechecks,
+focused ESLint (excluding pre-existing dashboard findings), staging build,
+Wrangler dry-run, and `git diff --check` pass. After deployment
+`bf951bd0-4aee-42f2-a9a7-997beffe06de`, live anonymous lifecycle GET returned
+200/no-store with only `{grace_period_days:1}`; anonymous admin PATCH returned
+401. Root/noindex and Better Auth health returned 200. Authenticated admin
+read/write remains untested.
+
+A rerun of the staging scheduler canary with baseline-setting preservation lost
+the local Wrangler test-scheduled connection (`ECONNRESET`). Its cleanup
+restored the setting; direct readback showed zero licenses, zero lifecycle
+journal/effect rows, and 22 retained incarnation tombstones. That rerun is not
+a scheduled-event pass. The scheduler selector and Cron trigger stay disabled
+until the bounded check succeeds.
+
+The linked Supabase catalog was refreshed read-only on 2026-09-26 through the
+Management API. It still has 40 base tables and 406 table columns; the 411
+`information_schema` total includes five columns from its one view. The fresh
+converter output still has 18 blocking gates and `deployable: false`, while all
+40 table names and 406 column names match the staging baseline. A read-only
+notification-master export contains 10 in-app rules and 40 active in-app
+templates across four locales; `created_by` was excluded. Its idempotent seed
+SQL has now been applied to business D1 and exact readback matched the private
+source snapshot across every projected field. Rules/templates are 10/40,
+`created_by` is NULL, notification preferences/events/notifications, user
+settings, fanmarks, and licenses are zero, and the one public lifecycle setting
+remains intact. The dedicated verifier and source digest are recorded in
+`docs/migration/notifications-api.md`. Wrangler's earlier 7403 error did not
+recur on the successful read/write path.
+
+The D1 notification event processor is now implemented behind the unset
+`NOTIFICATION_PROCESSOR_BACKEND=d1` selector and shares the Worker scheduled
+entrypoint. Synthetic local D1 tests verify template rendering, immediate and
+delayed in-app status, and no duplicate processing on a later poll. Staging has
+no Cron trigger and the selector remains unset, so generation has not been
+activated or deployed. One failed audit, reservation, and resource rate-limit
+bucket from the documented 2026-09-25 synthetic protected-access canary remain
+in the dedicated access-security tables; they contain only digests and counts,
+not raw IP or password data, and were preserved.
+
+## Stripe extension application D1 slice (2026-09-26 JST)
+
+Added `0007_stripe_extension_application_staging.sql` and
+`stripe-webhook-d1-application.ts`. A verified Checkout receipt must match a
+private D1 intent, positive expected JPY amount, current owner/license/tier,
+and transfer state. The single D1 batch extends the license, cancels pending
+lottery entries, writes event/audit rows, and terminalizes the application,
+receipt, and dispatch. Unpaid, expired, and asynchronously failed sessions do
+not grant time; same-session and competing-receipt replays converge on one
+effect. The Miniflare suite passes 7/7, including forced audit rollback.
+
+The paired Worker Checkout endpoint and scheduled dispatcher are now
+implemented locally. Checkout reads the active versioned price from Master D1,
+checks Better Auth ownership and transfer state, persists the private request
+intent before the Stripe request, and reuses the Session through a stable
+idempotency key. The scheduled path applies extension receipts, retries
+transient errors, and dead-letters subscription/invoice and other unsupported
+events for review. The expanded D1 suites pass 30/30; checkout integration
+passes 4/4 and client contract tests pass 5/5.
+
+The frontend selector, API selector, webhook selector, dispatch selector, and
+Cron remain off in staging. Migrations `0006` and `0007` were subsequently
+applied to the isolated staging business D1; all six new tables read back
+empty, as did `fanmarks`, `fanmark_licenses`, and `user_settings`. No real
+Stripe API call, user data, production routing, R2 object, or DNS changed.
+Subscription/invoice effects, operator reconciliation, and a sandbox staging
+rehearsal remain open before any billing cutover.
+
+## Transfer-generated notification events through the deployed Cron (2026-09-26 JST)
+
+Extended and ran `scripts/migration/staging-fanmark-transfer-smoke.mjs` against
+the current workers.dev app. The synthetic owner issued a transfer code; a
+second synthetic user applied, the owner rejected that request, and the same
+code was reapplied and approved. `transfer_rejected` reached `processed` and
+delivered one Japanese notification to the requester. The subsequent
+`transfer_requested` and `transfer_approved` events each reached `processed`
+and delivered exactly one Japanese notification to the owner/requester.
+
+Cleanup deleted notification rows before their event rows, then removed the
+synthetic transfer, fanmark, license, audit, user settings, Better Auth users,
+accounts, and sessions. Independent readback returned zero for all those rows,
+including notifications/events/audits; the MFA generation baseline was
+unchanged. The active transfer lifecycle was tested only with synthetic
+staging identities. No real user data, production resource, or domain/DNS
+setting changed.
+
+## WhoIs detail endpoint and R2 revalidation (2026-09-26 JST)
+
+Added `/api/fanmarks/details` and selected it in the staging frontend with
+`VITE_FANMARK_DETAILS_BACKEND=worker`. Anonymous D1 reads return only the
+public overview; Better Auth session reads may include bounded ownership
+history, account display names, and the caller's derived favorite, owner, and
+lottery state. The DTO excludes user IDs, email addresses, and license IDs.
+Unset selectors retain the existing Supabase path. The Worker and frontend
+contract tests pass 3/3 and 4/4, typechecks and staging build pass, and the
+full Worker package suite passes 84 tests.
+
+Deployed staging version `44d56b91-dbcf-46ce-ac9a-900431b143f9`. Readback
+confirmed the SPA and Better Auth health endpoints return 200, while an
+absent whois short ID returns `{ "schemaVersion": 1, "result": null }`. The
+extended registration smoke used a temporary Better Auth identity and fanmark
+to verify anonymous redaction and authenticated one-row ownership/lottery
+history. It removed the synthetic rows and read back zero business rows. A
+separate R2 profile smoke uploaded, publicly read, and deleted a synthetic
+image from both avatar and cover buckets; both objects returned 404 after
+cleanup, and Auth/business synthetic row counts returned zero. No real user
+data, production route, or domain/DNS state changed.
+
+## Latest non-user configuration checkpoint (2026-09-26 JST)
+
+The public registration maximum and availability-rule administration are now
+connected on workers.dev staging. Staging contains exactly four explicitly
+seeded availability rules (all disabled, `created_by=NULL`) and two
+allowlisted public settings: `grace_period_days=1` and
+`max_emoji_characters=5`. The rule editor uses the MFA-protected Worker API;
+staging registration reads its configured maximum from business D1. These
+changes do not establish billing/Stripe parity.
+
+At that configuration checkpoint, the app version was `00ebddee-9f63-4840-abc8-f00dfe847ff5` at 100%.
+The live admin CAS/TOTP canary and synthetic registration/lottery/details/R2
+canary passed, including rejection of six emoji IDs, and removed synthetic
+Auth, business, and object rows. The full Worker package suite passes 88/88,
+registration D1 tests 10/10, migration-data tests 93/93, and frontend/Worker
+typechecks, baseline checks, staging build, and Wrangler dry-run pass. Schema
+conversion remains `deployable: false`; user/Auth
+and Storage object imports, Stripe, remaining admin/event routes, production
+traffic, and domain/DNS remain open.
+
+## OGP Worker staging slice (2026-09-26 JST)
+
+`workers/api/src/ogp.ts` serves crawler metadata for `/a/:shortId` and the
+legacy `/:emojiPath` route from the shared public D1 access/profile projections,
+plus bounded escaped SVG at `/api/ogp-image`. Emoji paths require exactly one
+active spelling match and emit the canonical short-ID URL; ambiguous matches
+receive generic metadata. Password-protected profile names are not read.
+Browser navigation continues through Static Assets to the SPA. Crawler HTML
+uses `no-store` and `Vary: user-agent`; staging adds `X-Robots-Tag: noindex,
+nofollow`.
+
+Deployed `fanmark-app-staging` version
+`4988be1e-5f1b-4839-8f3f-511d0a4238f6` to the existing workers.dev origin.
+Live checks passed for absent short-ID and emoji-path crawler fallbacks,
+browser SPA navigation for an emoji path, SVG image generation, oversized-input
+rejection, and existing Auth health. No D1 row or R2 object was written.
+Synthetic published/protected profile rendering, duplicate rejection, escaping,
+and browser-navigation fallback passed in the local D1 suite (13 tests); live
+staging currently has no public fanmark row, so profile rendering is not claimed
+as a remote canary. Full Worker suite, staging build, Worker/frontend
+typechecks, lint, Wrangler dry-run, and `git diff --check` passed. Production
+OGP, user data, and domain/DNS remain open.
+
+## Snapshot sequence-state rehearsal (2026-09-26 JST)
+
+Snapshot format 4 now includes `sequenceStates`. The exporter binds the sole
+reviewed `public.fanmark_events_id_seq` to `public.fanmark_events.id`, records
+the exact decimal `lastValue` and `isCalled`, and rejects unexpected sequence
+definitions. The offline verifier checks the manifest against the catalog.
+The local D1 importer seeds AUTOINCREMENT after row import, reads back
+`sqlite_sequence` as exact decimal text, and records source/imported/prior/target
+watermarks. Synthetic Miniflare tests confirm next IDs after both a called
+sequence and an unused sequence. The combined migration-data suite passes
+111/111 with the importer now included in CI's command. The source sequence is
+not part of PostgreSQL MVCC, so a final real-data capture must freeze event
+writers. No source event rows or live sequence value were read, no remote D1
+was written, and schema conversion remains blocked with 18 gates.
+
+## R2 and staging master readback (2026-09-26 JST)
+
+After the user enabled R2, read-only Wrangler checks confirmed the authenticated
+Cloudflare account and both staging buckets, `fanmark-avatars-staging` and
+`fanmark-cover-images-staging`. The staging app config already binds both and
+selects `STORAGE_BACKEND=r2`; prior synthetic staging uploads/readbacks/deletes
+covered both buckets. This confirms staging readiness only: no existing
+Supabase Storage objects were copied.
+
+Read-only aggregate queries against `fanmark-emoji-master-staging` returned
+3,944 canonical emoji rows, one active-release pointer, three import journal
+rows, and 7,888 release-staging rows. Reference master has two releases and one
+active pointer; its staged language/tier/extension-price/reserved-pattern row
+counts are 8/8/16/10. These counts do not inspect Auth or user rows. No remote
+write was made.
+
+The fresh linked public catalog remains 40 tables and 406 columns. Its local
+synthetic D1 rehearsal now completes three synthetic source rows through all
+40 table checkpoints, an injected acknowledgement-unknown stop, resume, typed
+readback, foreign-key check, and a tampered-coverage rejection. The final state
+is `public_rows_reconciled`; `deployable` and `fullMigrationReconciled` remain
+false. Miniflare D1 rejects the extra `PRAGMA integrity_check` diagnostic with
+`SQLITE_AUTH`, so the rehearsal relies on the importer's full per-table/hash
+readback and the supported foreign-key check. No real source rows or remote D1
+were used.
+
+At the 2026-09-26 check, the workers.dev deployment was version
+`7a2a780d-3fed-476b-a84e-905fc6d29aad` at 100%. At that checkpoint,
+read-only migration checks showed no pending migrations on business, Auth, or
+master D1. The local staging build's HTML-referenced JavaScript and CSS matched
+the deployed assets byte-for-byte. Anonymous session/profile/admin guards,
+public lifecycle settings, emoji catalog, and missing R2-object responses
+returned the expected status codes.
+
+Live synthetic registration rehearsal passed on that staging app: tier-4
+registration, five-emoji limit, duplicate/anonymous denial, lottery apply,
+duplicate/cancel, anonymous and authenticated detail redaction, owner-checked
+cover upload/read/save/delete, and zero-row cleanup in business/Auth with the
+R2 object returning 404. The transfer rehearsal issued, rejected, reapplied,
+and approved a transfer; Cron processed three events and delivered three
+localized notifications. Its synthetic business/Auth rows were removed and
+the MFA generation baseline was unchanged. No real user data or DNS was
+changed.
+
+The normal migration-data suite passes 116/116, lifecycle schema suite 14/14,
+and the expanded Worker package suite 148/148. Focused R2 API, emoji release,
+reference release, and reference API suites pass 5/5, 7/7, 5/5, and 6/6.
+Frontend/Worker typechecks and Cloudflare staging build pass. Dedicated D1 API
+contract suites are now included in the standard Worker test command, using
+their isolated Miniflare configurations.
+
+Two more synthetic canaries passed on this deployment. The access-analytics
+canary recorded one event, suppressed four concurrent duplicates, verified the
+owner's aggregate and summary, rejected an anonymous read with 401, and cleaned
+Auth/business rows back to zero. The bulk-return canary verified partial return
+(207) while a transfer lock existed, then successful return (200) after removing
+the synthetic lock. Audit and notification-event effects were present exactly
+once per license; cleanup returned user/business rows to zero, retained only
+the two expected synthetic incarnation tombstones, and left MFA generation
+unchanged. Its cleanup check now uses the shared staging-baseline exclusion so
+the four seeded availability rules are not miscounted as test residue. No real
+user data, production route, external email, R2 object, or DNS state changed.
+
+## Stripe invoice projection checkpoint (2026-09-26 JST)
+
+The current worktree adds a D1 port of the existing Basil non-granting invoice
+projection, plus additive business migration `0008`. It re-fetches the source
+invoice and current subscription/latest invoice under a per-customer generation
+fence, requires the exact D1 customer and subscription mapping, and never
+matches by email. The atomic D1 batch updates only the existing subscription's
+payment-failure fields and terminalizes its private application ledger, fence,
+receipt, and dispatch. Plan type, license rights, notifications, and Stripe
+objects are not changed. Dynamic lease checks happen after provider retrieval;
+the Stripe client uses 10-second request timeouts and disables SDK retries.
+
+Nine Miniflare tests cover failure/action-required/paid state, stale event
+ordering both ways, missing mapping, concurrent and expired fences, rollback
+then retry, scheduled processing, a provider call that outlives the receipt
+lease, and the disabled-by-default scheduled path. The complete Stripe
+ingress/application/projection suite passes 39/39; Worker typecheck and
+Wrangler dry-run pass. Migration `0008` is applied to the empty APAC
+`fanmark-business-staging` database. Worker version
+`68a2e0bf-3236-444c-9c7a-a46294037855` is deployed at 100% to workers.dev
+staging. Stripe API/signing secrets and all Stripe selectors remain unset;
+subscription entitlement reconciliation, free-plan returns, production
+billing, and Stripe operational rehearsal remain open.
+
+## Extension coupon D1 staging slice (2026-09-26 JST)
+
+Business migration `0015_extension_coupon_application.sql` is applied to
+`fanmark-business-staging`; Wrangler reports no pending migrations. Readback
+confirmed the command table, guard/apply triggers, unique usage index, and
+lottery-entry index. At this checkpoint, coupon, usage, and command tables were
+all empty.
+
+The staging app uses Better Auth for the owner redemption API and the
+admin-role/MFA-protected coupon CRUD and usage API. Worker version
+`09cb56d8-e0c2-4a4e-af40-d6506922e9a6` is active at 100% on workers.dev.
+Read-only smoke checks returned 200 for `/` and `/api/auth/ok`, and 401 for
+anonymous redemption and anonymous coupon administration. Production/default
+selectors stay on Supabase; this deployment imported no user, license, coupon,
+or usage rows and did not change production or domain/DNS.
+
+Focused D1 application tests pass 7/7, coupon-admin tests 4/4, frontend
+contracts 10/10, and the complete Worker `npm test` command passes after the
+final concurrency retry change. Root and Worker typechecks, CI isolation,
+staging build, deploy dry-run, and `git diff --check` pass. This is API/schema
+staging acceptance with synthetic local fixtures, not successful redemption
+against imported data. Continue #34's remaining app/API inventory and #37's
+synthetic integrated rehearsal. Keep real user-data migration and public
+domain/DNS as the final operational phase.
+
+## 2026-09-26 checkpoint: Admin user directory read path
+
+PR #41 now contains local MFA-gated D1 list/detail APIs for the admin user
+directory, a same-origin frontend adapter, and a Cloudflare-staging read-only
+screen mode. Synthetic split-D1 tests cover profile/email filtering, session
+last-sign-in projection, license counts, enterprise settings, recent fanmarks,
+factor presence, audit metadata redaction, rejected MFA, and invalid requests.
+Frontend contract tests verify cookie credentials, no-store behavior,
+same-origin enforcement, and malformed-response rejection. Both typechecks and
+the dedicated suites pass.
+
+Deployed `fanmark-app-staging` version
+`54c932cf-9589-4dc6-9409-7651ba0648a5` to
+`https://fanmark-app-staging.fanmark-id.workers.dev`. Read-only probes returned
+200 for `/` and `/api/auth/ok`; anonymous `POST /api/admin/users` returned 401
+with `no-store`. The full Worker test command, Worker typecheck, frontend/root
+checks, staging build, and Wrangler deploy passed. No authenticated admin
+session or user-row mutation was used, and this deployment did not change
+production or domain/DNS.
+
+An authenticated synthetic staging TOTP canary has since passed the D1
+user-list/detail, plan-mutation, suspension/restoration, and immediate-license-
+expiry routes, including anonymous denial, session revocation, exact D1
+readback, lifecycle/audit/notification effects, repeat safety, and cleanup.
+These API paths are covered in
+[`EXECUTION.md`](EXECUTION.md). Browser UI acceptance remains open. Password-
+reset delivery remains closed until Resend is configured; no email was sent.
+Production and imported-user acceptance remain open.
+
+## 2026-09-26 local checkpoint: auth email template D1 path
+
+The worktree now contains an MFA-gated D1 auth-template editor, a same-origin
+frontend client, D1-backed Better Auth verification/reset copies, and a
+16-row staging seed plus exact readback verifier. The local Worker tests pass
+7/7 for auth email and 4/4 for the admin D1 API; the client tests pass 3/3 and
+both typechecks pass. `magiclink` and `email_change` masters are editable, while
+the currently wired Better Auth sender covers signup verification and recovery.
+
+This slice is not deployed. Saved Wrangler credentials now return Cloudflare
+authentication error 10000, and the browser OAuth session exposed only the
+other Cloudflare account. Do not authorize that account for this migration.
+After the user signs into the `bfc2890741f0b3fb236e2d755b6c9adc` account,
+recheck D1 baseline, seed and compare the exact 16 master rows, then deploy the
+staging Worker and SPA. No email or user data was sent or imported.
+
+## Plan and general system settings staging (2026-09-27 JST)
+
+The exact 18-key non-user configuration projection is present in staging
+business D1 and matches the private Supabase export's pinned canonical digest.
+The original two explicitly allowlisted settings remain, for an exact 20-row
+manifest. The Worker public route and staging SPA use D1; the public API returns
+exactly 17 public keys, omits the two private Enterprise keys, and anonymous
+admin settings reads return 401. A synthetic Better Auth administrator passed
+the same-session MFA admin read/update canary, stale-write rejection, exact
+readback, restoration, audit minimization, and cleanup. The admin UI itself has
+not been browser-driven. Auth user-owned rows read back empty and the
+monotonic `mfaGeneration` singleton is retained at 60.
+
+Version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6` is active at 100% on
+`fanmark-app-staging`. Live checks returned SPA 200, public API 200/no-store,
+and anonymous admin API 401/no-store. Migration-data tests pass 124/124,
+settings Worker tests 5/5, settings client tests 4/4, both typechecks and the
+staging build pass. No production route, Stripe operation, real user/Auth row,
+Storage object, or domain/DNS setting was changed. Authenticated admin
+acceptance, Stripe/integrated coverage, production, real user-data import, and
+domain cutover remain open. See `docs/migration/system-settings-api.md`.
+
+## Auth email-template edit/restore on staging (2026-09-27 JST)
+
+The explicit `--auth-email-template-edit-roundtrip` MFA smoke passed against
+`fanmark-app-staging`. It authenticated a synthetic TOTP administrator, read
+the 16 allowlisted auth templates, rejected an anonymous edit (401), changed
+only the Japanese signup subject, rejected a stale write (409), and restored
+the original subject/body/button through the same Worker API. A direct D1
+readback confirmed every template's content and non-editable fields matched
+baseline; only the edited row's `updated_at` advanced. The two canary audit rows
+and synthetic auth identity/profile were removed and read back at zero. No
+Resend API key or sender secret is configured, and this API path does not send
+email; no message was sent.
+
+The first run revealed that the new standalone action was missing from the
+shared synthetic target cleanup condition. The exact `example.invalid` Auth
+row/profile were removed by ID, all user-owned staging tables were read back
+empty, and the cleanup guard was fixed before the successful rerun. Worker
+email-template D1 tests pass 4/4, frontend client tests 3/3, script syntax and
+`git diff --check` pass. This is staging-only API acceptance; browser UI review,
+production, imported users, and domain/DNS cutover remain open.
+
+## Waitlist admin list/reveal on staging (2026-09-27 JST)
+
+Draft PR #41 adds the staging-selected Worker/D1 implementation of restricted
+waitlist admin reads. A live synthetic canary passed sign-in, same-session
+TOTP/MFA authorization, anonymous denial, email-hash-only listing, and explicit
+email reveal with an `EMAIL_ACCESS` audit row whose metadata contains no
+address. It ran against staging version
+`676be6eb-f0fb-4741-8f84-4880fbb9052f`. The exact waitlist entry, temporary
+admin profile, audit rows, and synthetic Auth identities were removed; direct
+readback returned the waitlist, business profiles, audit canary rows, and all
+user-owned Auth tables to zero. The monotonic MFA generation counter remains
+retained and may have advanced.
+
+The first live run exposed two gaps in the smoke harness cleanup: the list
+access audit stores a null resource ID, and this standalone action had omitted
+the common synthetic target user's cleanup branch. Exact synthetic rows were
+removed after ID/marker verification, both cleanup conditions were fixed, and
+the repeat canary exited successfully with empty-table readback. Waitlist D1
+route tests pass 6/6 and frontend API client tests pass 5/5; CI run
+`36270707064` passed both Worker and staging-app validation jobs. No real
+waitlist data was imported; at that checkpoint, public submission still used
+Supabase. No production route or domain/DNS was changed. See
+`docs/migration/waitlist-admin-api.md`.
+
+## Public waitlist signup on staging (2026-09-27 JST)
+
+The staging frontend now selects `POST /api/waitlist` through
+`VITE_WAITLIST_SIGNUP_BACKEND=worker`; the Worker requires its explicit D1
+selector, split business D1, and a 120-per-60-second Rate Limiting binding.
+The route normalizes email casing/whitespace, accepts duplicates with the same
+generic 202 result, and rejects an untrusted Origin. A synthetic
+`example.invalid` canary verified OPTIONS 204, invalid-Origin 403, first and
+duplicate POST 202, exact normalized D1 storage, and deletion of only its own
+marked row. Remote readback returned zero waitlist rows after cleanup. The
+initial smoke harness invocation failed during Wrangler preflight before a
+request; D1 remained empty. The harness now calls the lockfile-installed
+Wrangler CLI and the repeated staging canary passed.
+
+Worker `fanmark-app-staging` version
+`9c54ceda-b840-482b-bc43-4c22e9c18923` is deployed at 100%. The workers.dev
+root returned 200/noindex and its JavaScript asset SHA-256
+`bf8ec6a3534ca8f83f6f43a0fbef12bc66dfc22e83e68c4a26a95d5e80aff953` matched
+local `dist-staging`. The complete Worker CI job, staging-app CI job, Worker
+typecheck, frontend typecheck, migration-data tests (139 assertions), targeted
+lint, standard production build, and staging build passed; CI run
+`36272821613` passed both required jobs. The regular app build still defaults
+to Supabase; no real waitlist entries, production route, email, or domain/DNS
+were used. Rate Limiting is only a coarse staging guard; its IP key may group
+users behind shared networks and its counters are per Cloudflare location.
+See `docs/migration/waitlist-signup-api.md`.
+
+## Broadcast email D1 draft-only slice (2026-09-27 JST)
+
+The local branch now includes MFA/admin-plan guarded Worker endpoints for
+listing broadcast drafts and active broadcast templates, estimating recipients
+from business D1, and creating a draft with a server-derived creator ID and an
+atomic minimized audit row. The Cloudflare staging frontend selector is set to
+Worker in the build config. Standard/default builds still use Supabase. Both
+bulk delivery and test delivery are disabled in Worker mode; there is no Worker
+send route or Supabase fallback from that mode.
+
+The isolated Worker API tests pass 6/6 and the full Worker chain completed with
+exit 0. The latest root migration-data suite passes 147/147 tests.
+Frontend API contract tests pass 4/4, frontend and Worker typechecks pass,
+staging build passes, selector coverage passes, and targeted ESLint plus
+`git diff --check` pass. The live Supabase template rows were subsequently
+queried in a read-only transaction and exactly seeded/read back in business
+staging; see the current checkpoint above. An authenticated browser canary
+remains open.
+
+This draft-only API slice made no email, user-data, production-routing, remote
+D1, R2-object, or domain/DNS change. A later staging Worker deployment and PR
+update are recorded in the current checkpoint above; they still did not perform
+a D1 migration, user-data import, or R2 object import. The unrelated
+`supabase/.temp/cli-latest` change remains unstaged.
+
+The Cloudflare staging build now explicitly disables the legacy
+`AdminDataReset` control with `VITE_ADMIN_DATA_RESET_BACKEND=disabled`. That
+screen would otherwise invoke the Supabase function that deletes fanmarks,
+licenses, configs, profiles, and favorites; the standard build still defaults
+to its existing Supabase behavior. The staging mode contract test, frontend
+typecheck, staging build, Wrangler dry-run, and targeted lint pass. This keeps
+the staging admin page from crossing into the live Supabase data plane while
+user-data migration is deferred.
+
+## Broadcast email fixed-recipient test-send implementation (2026-09-27 JST)
+
+The Worker now has a separately gated test-send route for broadcast drafts.
+It requires the explicit `BROADCAST_TEST_SEND_BACKEND=resend` selector, a
+server-configured fixed recipient, Resend credentials, Better Auth
+administrator MFA, and the business-D1 admin plan. It accepts only draft IDs,
+language, and a UUID request ID; it never accepts a recipient address from the
+browser. Subject and body text are HTML-escaped, and the minimized audit record
+omits the recipient. Bulk delivery remains disabled, and the frontend
+test-send selector defaults off. The open dialog preserves its idempotency key
+for a retry after an uncertain provider response.
+
+The Resend adapter was exercised only with injected fetch/provider mocks. The
+Worker and SPA were deployed to `fanmark-app-staging`, version
+`0ef26792-edb2-4d66-9b94-7a208d4d7f4a`, with the test-send selectors off; the
+fixed recipient and Resend key/from are unset, and no email was sent. Read-only
+smoke returned SPA 200/noindex, Better Auth health 200/no-store, and 401/no-store
+for unauthenticated broadcast listing and test-send POST.
+
+An authenticated staging canary then provisioned a synthetic Better Auth
+administrator, completed sign-in and same-session TOTP/MFA, read the 12 active
+broadcast templates, checked a future-date recipient estimate of zero, and
+created/read back one marked draft. Test-send returned 503 with the provider
+selector absent; the bulk-send route returned 404. The canary removed its
+synthetic Auth identity, target/profile, draft, and audit rows; direct final
+readback returned all Auth user-owned tables and business `user_settings`,
+`broadcast_emails`, and `audit_logs` to zero. The first harness attempt stopped
+at an incorrect empty-profile precondition; its exact synthetic target rows
+were cleaned by ID, the target-profile baseline and cleanup guard were fixed,
+and the repeated canary passed. No email was sent. Authenticated browser UI
+review remains open. Production routes, R2 objects, and domain/DNS were not
+changed. The unrelated `supabase/.temp/cli-latest` modification remains outside
+the commit.
+
+Validation on this worktree: broadcast Worker tests 10/10; the complete Worker
+test chain exited 0; frontend broadcast API tests 5/5; frontend and Worker
+typechecks, targeted ESLint, Cloudflare staging build, app-staging Wrangler
+dry-run, and `git diff --check` passed. The staging build does not set the
+test-send frontend selector, and the deployed Worker config omits the
+test-send selector. Wrangler's staging secret list contains no Resend API key.
+
+## Local cutover write-freeze guard (2026-09-27 JST)
+
+The Worker now has a separate `CUTOVER_WRITE_FREEZE` guard for the synthetic
+writer-handoff rehearsal. Staging defaults it to `false`. When enabled, the
+guard blocks mutating API requests before route dispatch and pauses all Worker
+scheduled jobs; unknown non-empty selector values fail closed. It permits only
+the explicitly listed administrator email sign-in/session/TOTP/logout routes
+and Stripe webhook receipt intake. Unlisted Better Auth routes, including GET
+OAuth callbacks, remain blocked because those requests can create sessions.
+The guard does not stop Supabase application writes or Supabase Cron; source
+writers still need their separately authorized final-operation freeze.
+
+Under Node 22.6.0, the focused Worker suite passed 15/15 tests, Worker
+TypeScript checking and app-staging Wrangler `--dry-run` passed, and
+`git diff --check` passed. This was the initial local-only checkpoint; the
+subsequent staging deployment and rehearsal are recorded below. It does not
+close the full staging recovery rehearsal or any live cutover gate.
+
+## Staging write-freeze and receipt rehearsal (2026-09-27 JST)
+
+PR #41 commits `8f7a490` and `2175c82` add the fail-closed, default-off Worker
+freeze guard. Both migration CI jobs passed on run `36292579695`. The ordinary
+staging deployment is version `31d7d859-6ad7-42e7-9e9b-61f7d7792f2c`, with
+`CUTOVER_WRITE_FREEZE=false`. Anonymous post-deploy reads returned 200 for the
+SPA root, Better Auth health, and emoji catalog; the deployed JavaScript bundle
+SHA-256 matched the local staging build exactly.
+
+A short synthetic rehearsal temporarily deployed version
+`1ee62b78-6614-4a25-93b3-ef9d3f443844` with the freeze enabled and only the D1
+Stripe receipt selector enabled. A mutation request was rejected before route
+validation with 503 `cutover_write_freeze`; the login preflight returned 204.
+A locally signed, synthetic `customer.updated` event was durably accepted with
+HTTP 200. Replaying it returned `duplicate_nonterminal`; remote business-D1
+readback found one receipt and one pending dispatch with delivery count 2.
+There was no Stripe API key, external Stripe call, or email-send selector.
+
+The exact synthetic receipt and dispatch were deleted by event ID and their
+final remote counts are both zero. The one-off `STRIPE_WEBHOOK_SECRET` was
+deleted and the Worker was restored to version
+`21f0be9e-2099-49d8-b975-a3a61604c12e`: freeze is `false`, the Stripe webhook
+selector is absent, and only the three pre-existing Better Auth/reference/
+verified-access secrets remain. Post-restore reads returned 200 for the SPA
+and Auth health; an invalid empty waitlist request returned its ordinary 400,
+and the disabled Stripe endpoint returned 404. All three staging D1
+configurations still report no migrations to apply.
+
+The scheduled-handler unit test verifies that freeze skips scheduled work. The
+Cron pause log was not captured during this initial rehearsal; the live Cron
+pause was verified in a follow-up staging observation below. The pause
+deployment did not change the Cron schedules, production routes, user rows,
+email, or domain/DNS.
+
+The latest read-only source catalog refresh completed at
+`2026-09-27T09:40:27Z` and read catalog metadata only: 40 tables, 406 columns,
+144 constraints, and 139 indexes. After unwrapping the Supabase CLI's
+`rows[0].jsonb_build_object` envelope and supplying the value-free credential
+descriptor, the mode-0600 conversion report still has 18 gate groups and
+`deployable=false`: 10 row-conversion groups (227 locations) and 8
+schema/operation groups (101 locations). The row groups cover arrays, bigint,
+credential transformation, dates, exact decimals, JSON, money cents, sequence
+state, timestamp precision, and UUID validation. The schema/operation groups
+cover external Auth references, timestamp defaults, the four untranslated
+catalog scopes (functions, RLS policies, triggers, and views), three CHECK
+translations, and four unsupported index methods. The source-shaped synthetic
+D1 import/restart rehearsal passed with four generated rows, all 40 table
+checkpoints completed, public rows reconciled, and conflicting replay rejected;
+`deployable` and `fullMigrationReconciled` correctly remain false. The private
+catalog, generated DDL, and report remain outside Git with mode `0600`. This
+does not materially change the coarse weighted estimate of about 60% for the
+full migration and 70–75% for the prioritized app/infrastructure/master-data
+stage; the complete old-writer freeze and both recovery drills remain open.
+
+The earlier macOS Keychain error is no longer the current blocker: fresh
+`wrangler whoami` succeeds for `fanmark.id@gmail.com` and the intended account,
+with credentials retained in the encrypted/keyring-backed store.
+
+## Stripe migration validation checkpoint (2026-09-27 JST)
+
+The isolated `experiments/stripe-receipts` suite now passes 90/90 on Node
+22.6.0, with its TypeScript contract check and the workflow-isolation check
+passing. The Cloudflare migration validation workflow now runs that suite and
+typecheck. The suite test files run serially to avoid the hosted-runner stall;
+commit `2348670` passed both migration CI jobs in run `36311897378`. A stale
+bigint assertion was aligned with the exact decimal-text import codec; the
+JavaScript read-precision gate remains open. A transfer-lock test now uses a
+future fixture date. Issue #32 remains open: the current
+Supabase Webhook still handles subscription and invoice events outside the full
+durable reconciliation path. No Stripe API call, Supabase migration, staging
+write, real user data, production routing, or domain/DNS change was made.
+
+## Manual lifecycle API staging acceptance (2026-09-27 JST)
+
+PR #41 now contains the separate manual lifecycle selector, its staging
+zero-candidate canary, and the edge empty-body fix through commit `713cccc`.
+Workers.dev staging version `4988d9d0-b4ec-44d1-9ccc-00ac501aac36` selects
+`LIFECYCLE_RUN_BACKEND=d1` with the explicit staging target, schema digest, and
+four-page bound. `LICENSE_EXPIRY_BACKEND` remains unset; both Cron schedules
+remain configured, and scheduled lifecycle execution stays disabled.
+
+The authenticated synthetic TOTP/admin canary returned HTTP 200 with
+aggregate-only zero candidates in both lifecycle phases. It read back exactly
+one completed zero-count run journal per phase with the expected target and
+schema digest, then removed both. Independent APAC-primary D1 readbacks found
+zero profiles, fanmarks, licenses, lifecycle journals/items/effect guards, and
+all seven user-owned Auth tables; both readbacks reported `changed_db=false`
+and `rows_written=0`. The temporary synthetic administrator was removed. The
+MFA generation counter is retained and may have advanced as intended. The first
+staging call returned 400 because the runtime surfaced an empty POST as a
+zero-byte stream; the handler now accepts only an EOF zero-byte stream within
+one second and retains rejection for any payload.
+
+The manual API proof does not materially change the coarse weighted estimate
+of about 60% of the full migration and about 75% of the prioritized
+app/infrastructure/master-data stage. User/Auth/object import and domain/DNS
+cutover remain deferred. Latest migration-data boundaries pass 160/160. In CI
+run `36314570636`, both the Worker API and staging application jobs passed,
+including Worker API/D1 tests, Worker typecheck/bundle dry-run, migration data
+boundaries, Stripe receipt/billing tests, app typecheck, and staging build.
+Local lifecycle API tests pass 5/5 with Worker typecheck and staging dry-run.
+No real user data, production route, email, or domain/DNS state was changed.
+
+## Workers Free CPU fit measurement (2026-09-27 UTC)
+
+Using `wrangler tail` without changing deployment configuration, staging
+version `4988d9d0-b4ec-44d1-9ccc-00ac501aac36` reported CPU time for requests
+to `fanmark-app-staging`. Read-only public requests measured 2 ms for
+`GET /api/auth/ok`, 2 ms for `GET /api/fanmarks/recent?limit=1`, and 5–11 ms
+across five `GET /api/emoji/catalog` requests (all HTTP 200). An unauthenticated
+`GET /api/me/subscription` returned 401 at 0 ms.
+
+The synthetic admin/TOTP/lifecycle canary passed and cleaned its synthetic
+Auth, profile, audit, and business rows. Tail samples included 164 ms for
+first-time `POST /api/auth/two-factor/enable`, 30 ms for
+`POST /api/auth/two-factor/verify-totp`, 29 ms for the empty manual lifecycle
+run, and 8–47 ms for successful admin user/status/plan operations. These were
+HTTP-successful staging requests; a successful occasional overage does not
+prove the Free plan will tolerate recurring production traffic. Cloudflare's
+current published Free limit is 10 ms/request and documents only occasional
+over-limit flexibility. The plan was not changed. Production CPU fit remains a
+release gate: reduce consistently expensive paths and repeat the sample, or
+have the account owner enable a suitable Workers plan before production
+acceptance. No billing, production, user-data, email, or domain/DNS change was
+made. Detailed evidence is in [`live-observations.md`](live-observations.md).
+
+
+## Stripe test CI follow-up (2026-09-27 UTC)
+
+The initial TSX/plain-JavaScript split passed all 90 tests locally and in an
+Ubuntu Node 22.6 container, but GitHub Actions run `36320827030` remained in the
+Stripe test step for more than four minutes and was canceled; the app job still
+did not verify the change. The runner now launches each suite in its own Node
+process, with a 180-second per-file timeout and TSX loaded only by the four
+TypeScript-importing suites. Local Stripe tests, Stripe typecheck, app
+typecheck, admin auth URL tests (3/3), and staging build pass. Fresh GitHub
+Actions verification is pending.
+
+## CI verification follow-up (2026-09-27 13:12 UTC)
+
+Commit 14bebed passed GitHub Actions run 36321290841. Both the Cloudflare Worker
+API job and the staging application job succeeded, including the per-file
+Stripe test runner, migration-data boundaries, typechecks, and staging build.
+The workflow performed no deployment.
+
+## Broadcast email delivery design checkpoint (2026-09-27 JST)
+
+Reviewed the remaining Supabase `send-broadcast-email` contract and the current
+Worker draft/test-send API. The Cloudflare bulk-send architecture is now
+recorded in [`broadcast-email-delivery-design.md`](broadcast-email-delivery-design.md):
+an immutable Auth-user/language snapshot with no email-address copy into
+Business D1, an MFA-authorized send command, a durable leased recipient queue,
+stable per-recipient Resend idempotency, verified delivery events, and
+aggregate-only admin responses. It preserves the existing service-notice
+contract and keeps all bulk-send selectors off. Resend's documented 24-hour
+idempotency window sets a hard boundary for automatic retries; an uncertain
+send after that window requires operator reconciliation.
+
+This is a design checkpoint only: no queue migration, send route, scheduler,
+webhook, provider secret, recipient snapshot, or email was created or changed.
+Implementation and synthetic crash/replay tests remain open. Queue-record
+retention and production activation still require an operator policy. This
+does not change the coarse weighted progress estimate of about 60% for the
+full migration and 75% for the prioritized app/infrastructure/master-data
+stage.
+
+## Broadcast queue implementation checkpoint (2026-09-27 JST)
+
+The local branch now adds Business D1 migration `0016_broadcast_email_delivery.sql`,
+an MFA/admin-plan-gated idempotent `POST /api/admin/broadcast-emails/send`, and
+a default-off minute-Cron snapshot processor. The API freezes the draft filter
+and active language templates, queues a run without invoking Resend, and returns
+aggregate status only. The snapshot processor reads Auth IDs (not email fields),
+applies Business D1 filter/settings page by page, stores only user ID and
+language, defaults missing unfiltered language settings to Japanese, and uses a
+lease plus cursor compare-and-swap to resume. More than 10,000 matching
+recipients fails closed. Permanent bounces and complaints create address-free
+suppression rows; transient bounces do not. Integration tests apply the
+migration to Miniflare and cover these boundaries. No migration was deployed,
+no real Auth audience was queried, and no provider request was made.
+
+Evidence in the local worktree: `npm run test:broadcast-email-delivery-d1`
+(3/3), `npm run test:broadcast-email-admin-d1` (10/10), scheduler routing
+(4/4), and Worker TypeScript typecheck pass. Remaining broadcast work is actual
+Resend dispatch with bounded retries/idempotency, verified webhook ingestion,
+end-to-end crash/replay tests, and UI activation. All bulk selectors remain
+disabled; queue retention and uncertain-send operator policy remain open.
+
+## Broadcast delivery implementation and UI checkpoint (2026-09-28 JST)
+
+This checkpoint supersedes the earlier implementation checkpoint above. The
+local migration worktree now includes the Resend dispatcher, signed webhook
+handler, address-free Auth-ID queue, and a default-off bulk-send control in the
+Cloudflare admin UI. The UI requires `VITE_BROADCAST_SEND_BACKEND=worker`; the
+Worker independently requires the D1 selectors, split topology, and provider
+configuration. The retry path retains one idempotency key and HMAC fingerprint
+per recipient; changed Auth email or payload stops in `needs_review` instead of
+retrying different content. Terminal completion audit and webhook deduplication
+are idempotent.
+
+Focused verification passes: broadcast delivery Miniflare integration 8/8,
+admin API 10/10, scheduled routing 4/4, frontend broadcast API contract 6/6,
+Worker typecheck, app typecheck, migration-data suite 161/161, Cloudflare
+staging build, and Wrangler Worker dry-run. The complete Worker `npm test` chain
+also passed after the final 8/8 delivery integration was added.
+The tests include stable-payload retry, changed-email pause, lost acknowledgement
+after committed page state, the 24-hour idempotency stop, lease exclusion,
+signature/tamper/staleness rejection, event replay, permanent suppression, and
+one-time completion audit.
+
+Business staging D1 migration `0016_broadcast_email_delivery.sql` was applied
+as a structure-only change. Readback found no pending migration, no foreign-key
+errors, no email/address column in the recipient queue, and zero profile,
+broadcast, delivery-run, recipient, suppression, or webhook-event rows. The
+staging Worker was deployed to workers.dev as version
+`4cf9657f-bee3-42bb-aa89-802e9ed0aa89`; its Resend and bulk/test-send selectors
+remain disabled, and no provider secrets are configured. Anonymous smoke
+returned 200 for `/` and `/api/auth/ok`, and 401 for the protected list/send
+routes. No real Auth audience was read and no email was sent.
+
+The authenticated synthetic staging canary then verified the deployed send
+route: test-send and bulk-send both returned the expected selector-disabled
+503s, and direct readback found zero profiles, drafts, delivery runs, recipients,
+suppressions, webhook events, or broadcast audits after cleanup. The synthetic
+Auth identity/session/TOTP rows were removed and all user-owned Auth tables
+returned to empty; the monotonic MFA generation counter was preserved. No
+recipient snapshot or provider request occurred.
+
+Still open are authenticated browser review of the new send control, queue
+retention and uncertain-send operator policy, full staging recovery/cutover
+drills, Stripe business-effect/sandbox reconciliation, and the deferred real
+user/Auth/object import and domain/DNS cutover.
+
+## Staging write-freeze scheduled pause verification (2026-09-28 JST)
+
+Deployed a brief workers.dev-only staging version
+`68f3a92a-ebc7-4de6-a364-5e675f37b561` with `CUTOVER_WRITE_FREEZE=true` to close
+the earlier missing Cron evidence. Read-only Auth health remained 200, an
+administrator API POST returned 503 `cutover_write_freeze` before route
+validation, and the sign-in OPTIONS preflight remained 204. `wrangler tail`
+captured the `* * * * *` event and the log
+`{"job":"scheduled-dispatch","status":"paused","reason":"cutover_write_freeze"}`.
+
+Restored the ordinary config immediately in version
+`e61343d4-fc5d-41d0-9630-c8394d882039`; it reports `CUTOVER_WRITE_FREEZE=false`.
+Post-restore reads returned 200 for the SPA and Auth health, and 401 for the
+unauthenticated admin route, proving the freeze response no longer applies.
+Business staging still has zero profiles, broadcast drafts, delivery runs,
+recipients, suppressions, or webhook events; only the three pre-existing
+Better Auth/reference/verified-access secrets are present. No source freeze,
+real user row, Stripe call, email, production route, or public domain/DNS was
+changed.
+
+## Frozen Stripe receipt continuity staging canary (2026-09-28 JST)
+
+Added guarded script
+[`staging-stripe-receipt-freeze-smoke.mjs`](../../scripts/migration/staging-stripe-receipt-freeze-smoke.mjs)
+and ran it with its explicit staging-write, exact-account, exact-D1, and no-Stripe-API
+flags. The script uses a random temporary signing secret and never configures a
+Stripe API key or dispatcher. Temporary workers.dev version
+`625895a0-931c-4c12-8f18-8ee54d063223` enabled only the D1 webhook receipt
+selector while `CUTOVER_WRITE_FREEZE=true`.
+
+A mutation request returned 503 `cutover_write_freeze`, sign-in OPTIONS returned
+204, and the synthetic signed `customer.updated` webhook returned `accepted`.
+Replaying the same bytes returned `duplicate_nonterminal`. Readback showed one
+receipt (`delivery_count=2`, status `received`) and one pending dispatch. The
+freeze kept scheduled dispatch paused, so the event had no billing effect and
+made no Stripe API request. The full script sequence measured 29,130 ms; this
+is not a cutover RTO because source writers were not stopped and no business
+write authority changed.
+
+Cleanup deleted the synthetic receipt/dispatch and temporary webhook secret,
+then restored normal staging as Worker version
+`4c23f796-fa12-419d-85fb-9a905a5f7ceb`. Independent readback found zero Stripe
+receipts/dispatches, user profiles, broadcast runs, or recipients; the only
+secrets are the three pre-existing Better Auth/reference/verified-access
+secrets. `/`, Auth health, the disabled webhook, and an unauthenticated admin
+mutation returned 200, 200, 404, and 401 respectively. Stripe sandbox business
+effects, coordinated source-writer freeze, and both recovery drills remain
+unverified.
+
+## Broadcast delivery pause visibility (2026-09-28 JST)
+
+The D1 admin list now projects only the fixed `needs_review` delivery state
+from a broadcast's stored error marker. This change is deployed to staging
+Worker version `30ce0b27-fb72-4400-a8b6-6d86b46b5167`. The Cloudflare admin UI displays
+“要確認・送信停止中” and explains that automatic retry has stopped. The API
+does not return raw provider/error details; tests include a synthetic
+address-like value and provider body and assert that both remain hidden. The
+focused admin API tests pass 11/11, delivery integration tests pass 8/8, both
+app/Worker typechecks and the Cloudflare staging build pass. Targeted ESLint
+and `git diff --check` pass. Manual visual browser review could not run because
+the host Mac was locked. The authenticated synthetic staging canary confirmed
+bulk/test send return selector-disabled 503s, the paused delivery state is
+visible without raw details, and all synthetic Auth/business rows are removed.
+Independent APAC-primary D1 readbacks found zero profiles, drafts, delivery
+runs, recipients, suppressions, webhook events, Auth users, accounts, sessions,
+TOTP factors, roles, and MFA assurances. The SPA and Auth health returned 200;
+the static staging bundle contains the pause warning. No Resend secret or email
+was used. Provider-backed delivery, queue retention/reconciliation policy, and
+production acceptance remain open.
+
+## Schema converter v5 query-contract review (2026-09-28 JST)
+
+The reviewed Supabase schema-only query completed against the linked project;
+the catalog timestamp is `2026-09-27T16:02:02Z`. It returned the same 40 tables,
+406 columns, 144 constraints, 139 indexes, 15 enum labels, one view, 58
+functions, 36 non-internal triggers, and 77 RLS policies. No application rows
+were read. The CLI envelope was unwrapped into mode-0600 files outside Git.
+
+The fresh schema-converter-v5 report now has 17 unresolved gate groups: 10
+row-conversion groups and 7 schema/operation groups. It records the four exact
+live GIN definitions as `omitted_after_query_contract_review`. The source and
+Worker query audit found no array containment/overlap or full-text query; exact
+normalized-ID equality is covered by a D1 UNIQUE constraint, and emoji admin
+search remains substring matching. An unknown or changed GIN definition is
+still blocked. The report remains `deployable: false`; this conversion run did
+not receive the private credential descriptor and still requires the explicit
+descriptor before the dedicated password transform can proceed.
+
+The focused schema-converter suite passes 12/12 under Node 22.6.0. Converter
+v5 did not modify the existing staging D1 schema or data. No Supabase
+application rows, real user data, production routes, provider, or domain/DNS
+were changed. Full schema/operation gates and synthetic cutover recovery drills
+remain open.
+
+A follow-up attempt to complete the pending authenticated browser review used
+the Computer Use path. macOS reports Accessibility and Screenshots permissions
+as granted, but Orca still returns `permission_denied` when reading the Codex
+window's accessibility tree. No browser content or staging UI was changed by
+that attempt; the visual review remains open.
+
+## Schema converter v6 and recent-list parity (2026-09-28 JST)
+
+The current read-only schema catalog was refreshed at `2026-09-27T16:14:11Z`;
+it retains the same 40 tables, 406 columns, 144 constraints, 139 indexes, 15
+enum labels, one view, 58 functions, 36 triggers, and 77 RLS policies. No
+application rows were read. Converter v6 fingerprints the single
+`recent_active_fanmarks` definition and records its replacement by the tested
+D1 recent-list query. Changed, malformed, or additional views stay gated. The
+fresh private report has 16 gate groups (10 row-conversion and 6
+schema/operation), 96 schema/operation locations, and `deployable: false`.
+The credential descriptor remains intentionally absent from this run.
+
+The Supabase RPC and D1 Worker now share the source-supported 1..50 recent-list
+limit; the landing-page UI continues to request 20. Converter tests passed
+13/13, migration-data 163/163, recent Worker API tests 15/15, D1 repository
+tests 6/6, the full Worker `npm test` chain, both typechecks, CI
+workflow-isolation check, staging build, Worker deploy dry-run, and
+`git diff --check` passed on Node 22.6.0. The private catalog, SQL, and report
+are mode 0600 outside Git. No live application rows, remote D1, production
+state, or domain/DNS were changed. The prior coarse estimate remains about 60% for the
+full migration and 75% for the prioritized scope; this narrow gate closure
+does not materially change it.
+
+## Current staging Worker rollout (2026-09-28 JST)
+
+The tested branch is deployed to the isolated `fanmark-app-staging` Worker as
+version `708ff90b-abec-405d-9dd0-6a0d14cafe3c`. The exact staging config keeps
+split business/Auth/master D1 bindings, R2 buckets, noindex, and the workers.dev
+hostname. Wrangler reported no migrations pending. The SPA and Better Auth
+health routes returned 200; `GET /api/fanmarks/recent?limit=50` returned 200
+with zero items; an anonymous broadcast-admin read returned 401; the disabled
+Stripe webhook returned 404.
+
+The delivery migration's four remote tables exist and all have zero rows. The
+staging secret-name inventory has no Resend or Stripe credentials, and the
+broadcast send selector remains unset. The staging deployment therefore adds
+the tested code without enabling email or billing effects. No real user data,
+production route, D1 row, R2 object, or domain/DNS setting was read or changed.
+GitHub Actions run `36333924986` for the docs follow-up passed both Cloudflare
+staging-app and Worker API jobs; Supabase Preview was skipped by the isolation
+rule. The same Worker and migration suites passed locally before deployment.
+
+## Isolated D1 post-ack Time Travel drill (2026-09-28 JST)
+
+Created disposable APAC D1 `fanmark-recovery-drill-20260928-1`
+(`56bdf369-3c44-4361-a943-051b6430a0d1`) with no Worker binding. It contained
+only synthetic rows for one acknowledged business effect and its applied
+Stripe receipt/completed dispatch. After recording the post-ack bookmark, added
+three later synthetic rows and restored the earlier bookmark. Readback found
+exactly the acknowledged effect and ledgers with the original SHA-256; the
+later rows were gone, and explicit queries found zero orphan dispatches or
+missing receipts. The restore was confined to this disposable database.
+
+Wrangler's remote SQL API rejected `PRAGMA foreign_key_check` and
+`PRAGMA integrity_check` with `SQLITE_AUTH`; no full remote integrity check is
+claimed. A precise elapsed-time measurement was not captured. The temporary
+database was deleted after readback, and a new D1 inventory showed only the
+three pre-existing staging databases. No existing staging database, Worker,
+Supabase resource, real user data, R2 object, provider, production route, or
+domain/DNS setting was changed. This proves the D1 restore primitive only; the
+pre-write path and end-to-end application recovery/ledger reconciliation in
+issue #37 remain open. Cloudflare documents D1 Time Travel restore as an
+in-place overwrite of the target database: https://developers.cloudflare.com/d1/reference/time-travel/.
+
+## Schema converter v7: source-locale regex proof (2026-09-28 JST)
+
+The read-only `schema-readiness.sql` catalog now records a locale-bound probe
+for the exact invitation-code, settings-key, and waitlist-email CHECKs. The
+linked Supabase refresh observed 40 tables / 406 columns and
+`en_US.UTF-8`; the probe tested all 1,112,063 valid Unicode scalar values with
+zero matches outside each expected ASCII class. It read no application rows.
+Converter v7 embeds that proof in its private report and emits equivalent D1
+CHECKs only when the proof matches the catalog locale. Its email expression
+also rejects non-letter characters after the final TLD dot, closing a synthetic
+false-positive in the prior GLOB expression. A read-only PostgreSQL sample
+matched the SQLite cases for valid addresses, dotted subdomains, invalid TLD
+characters, and trailing newlines.
+
+The fresh private report now has 15 unresolved gate groups (10 row-conversion,
+5 schema/operation) across 320 locations; `deployable` remains `false`.
+Converter tests pass 13/13, snapshot-export tests 19/19, and
+`npm run test:migration-data` passes 163/163 on Node 22.6.0. The generated
+40-table DDL loads in local SQLite with 66 indexes, no foreign-key violations,
+and `integrity_check=ok`. The catalog, SQL, and report are mode `0600` outside
+Git. The proof and DDL were not applied to any remote D1; real user data,
+production routes, and domain/DNS remain untouched. The prior GitHub Actions
+run `36338168509` passed both Cloudflare staging-app and Worker API jobs on
+commit `43b318d`; Supabase Preview was skipped by design.
+
+## Schema converter v8: UUID import validation (2026-09-28 JST)
+
+Snapshot verification and the D1 importer both use the catalog-bound row
+converter for UUID columns. It now requires exact-width UUID text, canonicalizes
+valid uppercase values to lowercase, and rejects malformed input (including a
+trailing newline) before a D1 binding is produced. A local D1 test confirms an
+import ledger created with an older row-codec version cannot resume under the
+updated contract. The schema-conversion version is now 8 and the import codec
+version is 3.
+
+Regenerating from the current private 2026-09-28 schema-only catalog produces
+14 unresolved groups (9 row-conversion and 5 schema/operation) across 227
+locations; `deployable` remains `false`. The 40-table generated SQL is byte-for-
+byte identical to v7, so this change affects only validation/readiness metadata
+and import fencing. The catalog/report/SQL remain mode `0600` outside Git, and
+the DDL was not applied to remote D1. No source application rows were read;
+real user-data import and domain/DNS cutover remain deferred.
+
+Focused Node 22.6.0 tests pass: value/row/schema-converter 26/26 and local D1
+importer 18/18. The complete `npm run test:migration-data` suite passes 166/166
+on Node 22.6.0. GitHub Actions run `36344541475` on commit `6a78e02` passed both
+required Cloudflare Worker API and staging-application jobs; Supabase Preview
+was skipped by the workflow-isolation design.
+
+## Repeat staging authentication and lifecycle canary (2026-09-28 JST)
+
+Read-only `wrangler deployments list` showed `fanmark-app-staging` version
+`708ff90b-abec-405d-9dd0-6a0d14cafe3c` at 100%. The pinned staging smoke
+verified that the Auth-owned tables were empty before provisioning synthetic
+identities. It then passed email/password sign-in, first-time TOTP enrollment,
+TOTP verification with session rotation, same-session administrator
+authorization, and the MFA-protected manual lifecycle endpoint with zero
+candidates. Cron expiry remained disabled. Cleanup removed the synthetic Auth,
+business profile, audit, and lifecycle rows; the smoke's final Auth readback
+found every user-owned table empty. The monotonic MFA generation counter was
+preserved and may have advanced.
+
+The attempt to collect per-request CPU via `wrangler tail` returned no
+invocation records, so this run provides no CPU measurement and does not close
+the Workers plan-fit gate. This was staging-only synthetic activity: no
+Supabase or production resource, real user data, email, Stripe operation,
+R2 object, production route, or domain/DNS setting was changed.
+
+## Staging auth/lifecycle CPU follow-up and PR validation (2026-09-28 JST)
+
+Repeated the same guarded staging TOTP/admin/lifecycle canary while a ready
+`wrangler tail` stream captured only request path, status, and per-invocation
+CPU/wall time. On Worker version
+`708ff90b-abec-405d-9dd0-6a0d14cafe3c`, `/` used 1 ms CPU (200) and
+`/api/auth/ok` used 2 ms (200). Synthetic email/password sign-in used 128 ms
+(200), the first-time TOTP gate used 45 ms (403), TOTP enrollment used 88 ms
+(200), TOTP verification used 17 ms (200), authenticated admin assurance
+used 4 ms (200), and the MFA-protected empty lifecycle run used 32 ms (200).
+Session reads measured 4 and 29 ms in separate requests. These are individual
+staging samples, not a load test or production guarantee. Cloudflare's
+[current Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+list 10 ms per HTTP request on Free and 30 seconds by default on Paid (up to
+5 minutes); infrequent Free overages may succeed, while consistent over-limit
+work can be terminated. No plan or billing change was made, so CPU-plan fit
+remains an explicit release gate.
+
+The repeat canary passed sign-in, first-time TOTP, session rotation,
+same-session admin authorization, and the manual lifecycle endpoint. Cron
+expiry stayed disabled; cleanup and independent readback found every
+user-owned Auth table empty. The monotonic MFA generation counter may have
+advanced. Only synthetic staging identity/state was used.
+
+PR #41 commit `457ecca` passed GitHub Actions run `36339923139`: both the
+staging-application and Worker API jobs succeeded. The app job includes the
+full migration-data, Stripe receipt/billing, typecheck, admin URL, and staging
+build checks. The PGlite snapshot export test now runs before the other
+database-heavy Stripe suites; the CI run verifies the reordered full suite.
+
+## Current-schema v8 synthetic import replay (2026-09-28 JST)
+
+The linked Supabase `schema-readiness.sql` query completed at
+`2026-09-27T19:52:51Z` without a terminal prompt and read catalogs only. The
+40-table/406-column source shape, 144 constraints, 139 indexes, 58 functions,
+36 non-internal triggers, and 77 RLS policies remain present. Under Node
+22.6.0, the refreshed catalog passed the source-shaped D1 rehearsal after
+converter v8: 10 synthetic rows traversed all 40 table checkpoints; 2 active
+credentials were transformed, 1 inactive credential was explicitly deferred,
+the injected acknowledgement-unknown restart converged, and tampered coverage
+was rejected. Status is `public_rows_reconciled`; `deployable` and
+`fullMigrationReconciled` remain false. This closes a fresh-schema replay check
+only; it does not import source application rows or close the remaining
+schema/operation gates.
+
+The catalog lived in a mode-0600 temporary file outside Git and was removed
+after the local Miniflare rehearsal. No remote D1/R2, production route, or
+domain/DNS setting was changed.
+
+## Authenticated subscription projection canary (2026-09-28 JST)
+
+Added `scripts/migration/staging-subscription-display-smoke.mjs` and ran it
+against the workers.dev staging app with a synthetic Better Auth user and two
+synthetic subscription rows. The anonymous request returned 401; the signed-in
+owner first received `subscription: null`, then only the owner's active
+projection. The response omitted Stripe customer/subscription/price IDs and
+used `Cache-Control: no-store`. After a synthetic D1 update, a fresh GET
+returned the updated period end and amount. Cleanup read back zero canary
+subscription rows and zero canary Auth user/account/session/factor/role rows. A separate
+aggregate read-only check then confirmed `user_subscriptions` and every checked
+Auth user-owned table remained at zero; both D1 reads reported `changed_db=false`.
+
+The canary made no Stripe API request and touched no real user data, production
+resource, or domain/DNS setting. It verifies the authenticated API and its
+read-after-update behavior; the rendered UI's 30-second foreground polling and
+Stripe sandbox acceptance remain open.
+
+## Integrated synthetic pre-write fallback rehearsal (2026-09-28 JST)
+
+Added the explicitly guarded `npm run test:migration:staging-prewrite-resume`
+to keep the workers.dev Worker frozen while a disposable loopback Supabase
+project exercises the source-shaped recovery write. A non-writing invalid-body
+probe waits until the frozen version is active; then a valid unique synthetic
+waitlist request returns 503 and leaves no D1 marker. The isolated Supabase
+flow passed synthetic password sign-in, UUID preservation, owner-scoped
+`user_settings` update/readback, and cleanup. The first acknowledged
+owner-scoped `user_settings` update took 30,472 ms after the frozen Cloudflare
+rejection, including local Docker/Supabase startup; this is not a production
+downtime/RTO measure.
+
+The frozen staging webhook accepted and deduplicated one synthetic receipt,
+leaving one pending dispatch and no Stripe API/business effect. Cleanup removed
+the temporary marker, receipt/dispatch, secret, local containers/volumes/network,
+and restored ordinary staging Worker version
+`e54b22c6-b19d-4172-be71-445e2a29b52a`. Independent readback reported zero
+waitlist, receipt, dispatch, profile, and Auth-owned rows; health and auth routes
+returned 200, webhook 404, and anonymous admin 401. No linked Supabase writer,
+real user data, production route, or domain/DNS was changed.
+
+This verifies only the isolated pre-write fallback subgate. The coordinated
+source-writer/Cron freeze, complete final-copy timing, applied Stripe business
+effect, post-write application restore, recurring CPU-plan fit, and other issue
+#37/#38 gates remain open.
+
+Follow-up rerun on 2026-09-28 passed with temporary Worker version
+`71094a8b-6cbb-4f42-afcd-47a5957dc69a`; the ordinary staging Worker was
+restored as `6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100%. The first
+loopback owner-settings update completed 31,937 ms after the frozen Cloudflare
+rejection, and total harness time was 75,970 ms. Final receipt/dispatch counts
+were zero and the script reported no Stripe API calls; a separate
+deployment/secret readback confirmed the restored version and only the three
+pre-existing staging secrets.
+
+## Rendered subscription foreground-poll canary (2026-09-28 JST)
+
+The opt-in `npm run test:migration:staging-subscription-ui-poll` passed on the
+isolated workers.dev staging app. It creates a random synthetic Better Auth
+user, profile, owner subscription, and decoy subscription; authenticates a
+temporary headless Chrome profile; opens `/profile`'s Plan section; and checks
+the rendered active state. After only the synthetic owner row changed to
+`canceled`, the page showed the localized inactive state after the next
+foreground 30-second poll (29,440 ms).
+
+Script cleanup verified zero synthetic subscription, profile, Auth user,
+account, session, verification, factor, role, and assurance rows. No Stripe API
+or email was called, and no real user data, production resource, or domain/DNS
+setting changed. This proves one UI poll transition; it is not worst-case
+latency/load evidence and does not close Stripe sandbox or the remaining #37
+integration/recovery acceptance.
+
+## Anonymous search-record canary (2026-09-28 JST)
+
+The guarded `npm run test:migration:staging-fanmark-search-record` passed
+against the exact workers.dev staging app and split D1 databases. Its
+three-emoji synthetic request produced one discovery and one anonymous search
+event; the exact rows were removed and reread as zero. The event autoincrement
+sequence advanced and remains advanced. This is staging-path proof for new
+anonymous search activity only. Historical searches and attribution remain in
+the deferred user-data stage; issue #37 and integration acceptance stay open.
+
+## Broadcast send-control browser review (2026-09-28 JST)
+
+The guarded `npm run test:migration:staging-broadcast-email-ui` passed on the
+deployed workers.dev staging app. A synthetic MFA administrator opened the
+broadcast tab in a temporary headless Chrome profile; the exact synthetic draft
+appeared, both test-send and send-start controls were visibly disabled, and the
+Cloudflare-mode notice explained that state. No send control was clicked.
+Selector-disabled API checks and the synthetic paused-delivery projection also
+passed. Cleanup and independent readback confirmed zero synthetic Auth rows,
+profiles, drafts, audits, delivery runs, or recipients. No email/provider call,
+real user data, production route, or domain/DNS setting was touched. This closes
+the browser-review gap for disabled controls, not provider-backed delivery or
+the full #37 integration/recovery rehearsal.
+
+## Fresh schema descriptor replay (2026-09-28 JST)
+
+A separate private linked-project query completed at
+`2026-09-27T20:56:46.804464Z` and read schema catalogs only. The catalog retained
+40 tables and the same counts recorded in `schema-conversion.md`. Converter v8
+reported 14 unresolved gates after applying the value-free credential
+descriptor. The synthetic 40-table local D1 replay passed with 10 synthetic
+rows, two transformed credentials, one deferred inactive credential, and all
+checkpoints. `public_rows_reconciled` is the limited result; deployability and
+full migration reconciliation remain false. All temporary files were removed.
+No source rows or remote D1/R2 were touched.
+
+## Admin user-management mutation browser acceptance (2026-09-28 JST)
+
+`npm run test:migration:staging-admin-user-ui` passed against the isolated
+workers.dev app after deploying Worker version
+`92b30cf6-1432-4e02-a790-956f193799dc`; it was rerun successfully against the
+current version `82413f00-f60e-4a01-aeb0-2a071e01178a` on 2026-09-28. A
+synthetic MFA administrator used the rendered management screen to change a
+profile Free→Max→Free and suspend then restore it. The restored list row showed
+`Free / 有効`; business D1 contained Free with no Enterprise override, Auth D1
+showed `banned=0` and null ban metadata, and the UI suspend/restore audit
+entries were present. The rerun also fixed test readback to compare expiry
+instants rather than exact timestamp strings because D1 returns microsecond
+precision while the submitted ISO value has millisecond precision.
+
+The same complete canary passed its TOTP, MFA-gated admin API, immediate
+license-expiry, and cleanup checks. Its final readback returned all synthetic
+Auth user-owned tables, both temporary profiles, admin audit records, test
+license/configuration rows, and expiry notification artifacts to zero. No
+email or payment provider call was made. This closes the admin mutation
+browser subgate only; #37 still needs provider-backed acceptance and the full
+integrated recovery sequence. Real user-data import and domain/DNS cutover
+remain deferred to the final phase.
+
+## Deployed PWA update transition (2026-09-28 JST)
+
+The guarded `npm run test:migration:staging-pwa-update` check deployed a
+temporary precache marker to isolated staging, verified the live service-worker
+update and automatic `/pwa` reload, retained a synthetic `localStorage` value,
+discarded an unsaved DOM field, then removed the marker and restored the normal
+staging build. Worker versions were
+`f19d38cb-6708-4aa9-87f1-a58a2166337e` (canary) and
+`c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65` (restored). The removed asset returned
+404 and was absent from the restored service worker and Workbox precache. The
+isolated browser profile and synthetic storage were cleaned. Native install
+and standalone launch were subsequently verified in an isolated Chrome profile
+and app window, documented in `static-assets.md`. No real user, production, or
+domain/DNS resource was involved. Full evidence is in
+[`static-assets.md`](static-assets.md).
+
+## Native staging PWA install and standalone launch (2026-09-28 JST)
+
+Chrome on macOS offered installation for the staging workers.dev `/pwa` route.
+After installing, launching the `fanmark.id` Chrome app opened the search screen
+in a standalone window without browser address controls. The profile was
+anonymous and temporary. The generated app bundle and profile were moved to the
+Trash after the check. This closes only the staging-origin native install and
+standalone-launch subgate; it does not verify authenticated flows, another
+browser or OS, custom-domain behavior, or the full #37 recovery rehearsal.
+
+## Schema converter v9 and current-catalog replay (2026-09-28 JST)
+
+Converter v9 emits a D1 `CHECK` for PostgreSQL `date` columns that accepts only
+canonical `YYYY-MM-DD` values for real calendar days in years 0001–9999. This
+keeps the row codec's date validation in force for later writes as well as
+imports. The refreshed catalog report drops the date-only import gate: 13
+groups across 226 locations remain and `deployable` is still false.
+
+The v9 schema-converter suite passes 14/14 and row-conversion passes 7/7. A
+fresh-catalog synthetic local D1 replay also passed: 10 source-shaped synthetic
+rows, two transformed credentials, one deferred credential, all 40 table
+checkpoints, and conflict rejection. Status remains
+`public_rows_reconciled`; this is not a source-row import or full-recovery
+rehearsal. The catalog and generated DDL stayed outside Git; no remote D1/R2,
+production route, real user data, or domain/DNS state was changed.
+
+## Schema converter v10 and D1 timestamp write guard (2026-09-28 JST)
+
+Converter v10 adds a D1 `CHECK` to source `timestamp with time zone` columns.
+It requires canonical `YYYY-MM-DDTHH:mm:ss.ffffffZ` text, a real calendar date
+in years 0001–9999, and valid time fields. The current schema-only catalog has
+103 timestamp columns across 40 tables; generated DDL changes for all 40 table
+blocks. The gate report remains 13 groups across 226 locations, including
+`timestamp_import_precision`, because a schema check does not prove that every
+application write supplies the correct timestamp.
+
+Schema-converter tests pass 15/15, row-conversion tests 7/7, and the migration
+data suite 168/168 under Node 22.6.0. The Miniflare D1 importer suite passes
+18/18 and confirms that an impossible leap date and millisecond-only text are
+rejected on later D1 `UPDATE`s while the stored canonical timestamp remains
+unchanged. The fresh
+catalog synthetic D1 replay passes with 10 synthetic rows, two transformed
+credentials, one deferred credential, all 40 checkpoints, and conflict
+rejection. Its status remains `public_rows_reconciled`; `deployable` and
+`fullMigrationReconciled` remain false. No source application rows, remote
+D1/R2, production route, real user data, or domain/DNS setting was changed.
+
+Core Worker write paths for registration, return, transfer, lottery, settings,
+favorites, access analytics, and notification read state now share a
+fixed-width UTC microsecond formatter. Their seven focused D1 suites pass
+72/72 locally, and their frontend API contract tests pass 44/44. This covers
+those APIs' generated timestamps; the 79
+`now()`-default operation gates and the full 103-column timestamp-operation
+gate remain open until the rest of the D1 writers are audited and verified.
+
+## Schema converter v11 `now()` fallback representation (2026-09-28 JST)
+
+Version 11 emits a canonical-shaped UTC D1 default for all 79 source timestamptz
+`now()` expressions. The SQLite unit test and Miniflare D1 importer test pass;
+the latter applies generated DDL, omits the timestamp on insert, and reads
+back a 27-character `...SSS000Z` value. The converter retains
+`timestamp_default_requires_operation` because the clock has only millisecond
+resolution and SQLite does not reproduce PostgreSQL transaction-time
+semantics. Non-timestamptz `now()` defaults stay omitted and gated.
+
+The converter version bump invalidates older snapshot manifests; re-export is
+required before a later verification/import. A fresh schema-only catalog report
+without the credential descriptor has 13 open groups / 226 locations (8
+row-conversion and 5 schema/operation) and remains `deployable: false`. The
+v11 DDL parses into all 40 tables with clean SQLite integrity and foreign-key
+checks. The converter suite passes 16/16 and the synthetic D1 importer suite
+passes 19/19 under Node 22.6.0 locally; the full migration-data suite passes
+170/170.
+
+## Version 11 descriptor-aware fresh-catalog replay (2026-09-28 JST)
+
+Refreshed the linked Supabase schema with the reviewed read-only catalog query,
+then ran converter v11 and the current-catalog synthetic D1 importer under
+Node 22.6.0. The report retains 13 unresolved groups / 226 locations: 8
+row-conversion groups / 133 locations and 5 schema/operation groups / 93
+locations; `deployable` remains false. The importer completed 40/40 table
+checkpoints for 10 synthetic rows, transformed two synthetic credentials,
+durably deferred one inactive credential, verified typed/hash readback, and
+rejected conflicting coverage. Status is only `public_rows_reconciled`; no
+source application rows or remote D1/R2 state were accessed or changed.
+
+## Rendered analytics page canary (2026-09-28 JST)
+
+The new `npm run test:staging-fanmark-analytics-ui` command passed against the
+workers.dev staging SPA and split D1 databases. A synthetic owner generated
+one access event; four concurrent duplicates were suppressed. An isolated
+headless Chrome profile signed in and opened `/analytics`; the rendered page
+showed total access `1` and unique visitors `1`, and its performance entries
+confirmed reads from both `/api/me/analytics` Worker endpoints. Anonymous
+analytics reads returned 401. Script cleanup and independent D1 readback
+returned synthetic business and Auth rows to zero, and the temporary browser
+profile was removed. No historical analytics, real user data, production
+route, or domain/DNS was touched. This closes only the analytics-page browser
+subgate; the coarse weighted migration estimate and the broader #37 rehearsal
+remain unchanged.
+
+The latest source Auth settings read shows signup enabled, email confirmation
+required, and email/Apple/Google/GitHub/Discord provider toggles enabled. The
+staging Worker has no Resend or OAuth provider credentials, so target email
+delivery and real OAuth callbacks are still unverified. Code-derived staging
+callback URIs are recorded in `EXECUTION.md`; provider-console registration
+and one-provider-at-a-time browser acceptance remain external gates for #31.
+The current coarse progress estimate remains about 53% end-to-end and 73% of
+the prioritized app/infrastructure/non-user-master scope. The latest
+schema-only refresh strengthened conversion evidence but did not make D1
+deployable or change that estimate.
+
+The 2026-09-28 worktree also adds a regression check that compares all 34 local
+Supabase Edge Function slugs and their explicit `verify_jwt` values against the
+read-only 35-function live inventory. The only unmatched entry remains the
+live-only `manual-expire-grace-licenses`. The standalone check and the full
+migration-data suite pass (173/173); this validates gateway-config parity, not
+handler authorization or external callers. The estimate above is unchanged.
+
+A subsequent synthetic protected-access browser canary passed on the
+workers.dev staging SPA at 390x844: locked text was withheld, the wrong
+four-digit password returned 401, the correct password returned 204, and the
+page rendered the protected text only after a `no-store` read. The proof cookie
+was HttpOnly/Secure/SameSite=Lax, and cleanup returned canary Auth, business,
+proof, reservation, and access-audit rows to zero. The API-only owner-settings
+canary passed again as well. This closes one rendered text-password subgate;
+the approximate 53% full-migration / 73% prioritized-scope estimates are
+unchanged because credential compatibility, CPU fit, recovery, provider-backed
+acceptance, user-data import, and domain/DNS remain open.
+
+## Rendered `/profile` R2 avatar UI canary (2026-09-28 JST)
+
+The staging R2 profile smoke now drives `/auth` and `/profile` in an isolated
+headless Chrome profile at 390x844. It signs in through the real form using a
+synthetic Better Auth user, observes the Worker email-login request, and
+verifies the session cookie is HttpOnly, Secure, and SameSite=Lax. It selects a
+CRC-valid 1x1 PNG through the page's file input, verifies Worker upload/public
+read/profile requests, and waits for Chrome to decode the rendered avatar at
+1x1. The page's remove control then clears the profile URL and deletes the R2
+object; a subsequent public GET returns 404. The smoke also retains direct API
+checks for anonymous denial, owner-path enforcement, and both R2 buckets.
+
+The first browser attempt caught an invalid header-only PNG fixture. That
+fixture is now a complete decodable image. The local Worker/R2 API tests also
+now apply Auth migration `0008_auth_user_suspension.sql`, matching the test
+configuration's active user-status backend; the suite passes 5/5. The live run
+completed with zero synthetic profile/Auth rows and zero avatar/cover objects.
+No existing Supabase object, real user row, production route, or domain/DNS
+state changed. This closes the staging browser/image-decoding subgate only; the
+broader profile/settings cutover and existing Storage object migration remain
+in their previously assigned stages. The weighted estimates stay about 53%
+end-to-end and 73% for the prioritized app/infrastructure/non-user-master
+scope because the open schema, CPU, provider, recovery, and final migration
+gates are unchanged. The rerun completed through the `/auth` form, and PR #41
+CI passed both the staging-app and Worker-API jobs.
+
+## Perpetual Tier C plan-capacity correction (2026-09-28 JST)
+
+The D1 lottery-entry API and grace-expiry finalizer now count an unreturned,
+active license with `license_end IS NULL` toward its owner's plan limit. This
+matches the product cap for lifetime Tier C and prevents awarding a new license
+when a perpetual license already fills the final slot. Regression tests cover
+both application-time capacity and a perpetual license appearing after a
+winner plan is prepared. The source Supabase route still uses its older strict
+end-date filter; production remains on Supabase pending final cutover. Local
+lottery tests pass 12/12, lifecycle/finalizer integration passes 25/25, Worker
+typecheck and targeted ESLint pass. A workers.dev staging Cron canary using
+synthetic data verified `current_count=3`, `limit=3`, a lost lottery entry,
+and no winner license. Cleanup restored the staging schedule/backend and
+settings, removed synthetic rows/journals, left Auth rows unchanged, and
+preserved the retained lifecycle snapshot. The local scheduled-test transport
+path reset before execution; its cleanup also returned staging to baseline.
+The prior CI timeout was reproduced only when PGlite ran inside Node's
+`--test` harness (5/15 latest trials). The migration runner now executes that
+integration in a standalone process; it passed 15/15 repetitions and the full
+Stripe receipt suite passed locally on Node 22.6.0. Fresh GitHub Actions run
+`36394318652` passed both the staging application and Worker API jobs, including
+typecheck and Worker bundle dry-run.
+The current weighted estimates remain about 53% end-to-end and 73% for the
+prioritized app/infrastructure/master scope; the outstanding gates remain
+substantial.
+
+## Supabase-format synthetic sign-in follow-up (2026-09-28 JST)
+
+The staging Auth/R2 browser canary now seeds a synthetic `$2a$10$` bcrypt
+credential (including a non-ASCII password) and signs in through the deployed
+`/auth` form. The session endpoint returned the exact synthetic UUID, and the
+cookie retained HttpOnly/Secure/SameSite=Lax. The same run completed the
+profile-avatar R2 upload, decoded render, profile save/clear, UI deletion, and
+public 404 readback. Cleanup left zero synthetic Auth user/account/session and
+profile rows, with no avatar or cover objects remaining. This is evidence for
+the observed Supabase bcrypt prefix on a synthetic account only; no real
+credential or user row was read or moved. MFA/OAuth, real-user reconciliation,
+and CPU-plan fit remain open. Overall progress estimates remain about 53%
+end-to-end and 73% for the prioritized app/infrastructure/master scope.
+
+Wrangler Tail measured the successful `/api/auth/sign-in/email` request at
+143 ms CPU / 229 ms wall time on Worker version
+`5e75e611-6145-48c3-a35e-daa2a3f9da5d`; avatar uploads measured 4–8 ms CPU.
+The 143 ms request is far above Workers Free's 10 ms HTTP limit. Cloudflare
+notes that isolates may infrequently exceed the configured limit, so one
+successful request is not evidence of recurring fit. Paid usage starts at
+$5/month; no plan or billing setting changed. This remains an account-owner
+cost gate unless the credential path can be optimized and remeasured.
+
+## Synthetic dual-D1 post-write recovery (2026-09-28 JST)
+
+The guarded staging recovery script now exercises separate disposable business
+and Auth D1 databases behind a temporary API Worker. It applied/read back all
+17 business and 3 allowlisted Auth migrations; a synthetic-only login wrote a
+session. After acknowledged waitlist, pending Stripe receipt, and Auth state
+were bookmarked, the Worker accepted later synthetic writes, froze mutations,
+and both D1s were restored. The pre-bookmark digest matched; the later waitlist
+row/session disappeared, and the original session cookie still resolved to
+the same synthetic UUID. Restore/reconciliation took 13.660 seconds. All
+temporary Worker/D1/config resources were deleted and readback left the three
+pre-existing staging databases only.
+
+The rehearsal exposed Cloudflare D1's remote `incomplete input` bug for
+lowercase trigger-body `begin`; local SQLite passed. The six Auth triggers now
+use uppercase `BEGIN`, both migration folders are pinned to LF with
+`.gitattributes`, and a regression test covers the format. See
+[Workers SDK issue #15314](https://github.com/cloudflare/workers-sdk/issues/15314).
+
+This was the earlier D1-only checkpoint. Later encrypted R2 and synthetic
+avatar recovery slices are recorded in
+[`cutover-rehearsal.md`](cutover-rehearsal.md); together they still cover only
+six synthetic tables and one avatar, not a complete Business/Auth/Storage
+backup. An applied Stripe business effect and a coordinated Supabase-writer/
+Cron freeze remain open. Issue #37 remains open. The coarse estimates remain
+about 53% end-to-end and 73% for the prioritized app/infrastructure/master-data
+scope.
+
+## Latest staging lifecycle-Cron retry (2026-09-28 JST)
+
+The guarded synthetic lottery-Cron retry reached the cleanup path but exited
+with `staging_cron_disable_failed`. The harness attempted to redeploy its
+baseline Worker configuration and clean the synthetic fixture; it did not
+produce a successful post-run deployment or D1 cleanup readback. Those staging
+states are therefore unverified. The stored Wrangler OAuth profile resolves
+to a different Cloudflare account than the staging configuration. The open
+Dashboard route uses the configured account ID, but D1 Studio returns 404/
+unauthorized, so no authenticated D1/deployment readback was possible.
+
+Read-only public probes of the workers.dev origin still returned 200 for `/`
+and `/api/auth/ok`, 401 for anonymous `/api/admin/session`, 200/null for
+`/api/auth/get-session`, and 404 for the disabled Stripe webhook. This confirms
+basic route health only; it does not verify the Cron triggers, Worker version,
+or synthetic-row cleanup. Before another staging canary, restore the intended
+Cloudflare account context and verify the active deployment, configured Cron
+triggers, and zero canary rows. The retry and its limits are recorded in
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
+The harness now preserves sanitized Cron-restore and synthetic-cleanup error
+summaries, with email addresses redacted. Node 22.6.0 syntax checking, the
+five-case lifecycle-target suite, two diagnostic-redaction tests, and the
+179-test migration-data suite pass. No real user data, production route, or
+domain/DNS state was accessed or changed.
+
+## Synthetic OAuth callback contract extension (2026-09-28 JST)
+
+Local Worker/D1 tests now complete synthetic code-exchange callbacks for all
+four configured social providers. Verified provider identities link to the
+existing synthetic UUID and create sessions without creating extra users. A
+verified but unknown Google email is rejected because social signup is
+disabled; an unverified Google email matching the existing UUID is not linked.
+The denial callback and a tampered state are rejected for all four providers.
+Apple's `form_post` callback redirect is included. The full auth D1 suite
+passes 27/27, provider configuration tests 3/3, and Worker typecheck and focused
+ESLint pass. Provider HTTP calls were stubbed, so real credentials,
+browser callbacks, and provider-console redirect registration remain open.
+This does not change the weighted progress estimate or close Issue #31. No
+remote D1, deployment, real user data, or domain/DNS state was changed.
+
+## Exact money and credential-import gate closure (2026-09-28 JST)
+
+Schema conversion no longer blocks the two explicitly mapped `numeric(10,2)`
+money columns: row conversion accepts canonical PostgreSQL text only and uses
+integer cents over the exact source range; generated D1 checks reject fractional
+or out-of-range integer bindings. Existing availability-rule and
+reference-master Worker paths return or accept checked USD values at their API
+boundaries. Migration-data passes 182/182, with focused API suites passing
+19/19 across availability-rule admin, availability/reference-master,
+reference-master release, and reference-master administration.
+
+The descriptor-aware v13 schema report also closes the dedicated credential
+transform requirement: the current-catalog synthetic rehearsal already used
+the exact profile-bound importer for transformed and deferred credential rows.
+Missing descriptors still block conversion, and the importer still rejects a
+credential-bearing snapshot without its exact target profile before report,
+ledger, or target writes. This does not migrate real credential rows.
+
+The current v14 schema shape has 10 unresolved gates / 222 locations
+(5 row-conversion / 129, 5 schema/operation / 93), still
+`deployable: false`. The 53% end-to-end and 73% prioritized-scope estimates
+remain coarse. Money, credential-transform, and exact lottery-weight conversion
+now have dedicated tested paths; no Supabase user rows were migrated and no
+production D1, route, or domain/DNS state changed. Schema conversion is now
+version 14 and the D1 import codec version is 4. Old snapshots fail version
+verification; an in-progress old-codec run cannot resume and needs a fresh
+empty rehearsal target. No existing ledger should be edited to bypass the guard.
+
+## Exact lottery-weight decimal conversion (2026-09-28 JST)
+
+The v14 converter assigns `fanmark_lottery_entries.lottery_probability` a
+dedicated `lottery-weight-positive-decimal-text` codec only when the current
+catalog confirms the exact non-null column and validated `positive_probability`
+CHECK. The shared 256-character limit is used by both the migration row codec
+and the exact BigInt weighted-selection engine. The row converter rejects
+zero/negative values, noncanonical text, and over-limit values before a D1
+binding is produced; every other unreviewed unconstrained numeric remains
+blocked. A fresh private v14 report on the current schema has 10 groups / 222
+locations (5 row-conversion / 129, 5 schema/operation / 93) and still reports
+`deployable: false`.
+
+A linked `BEGIN READ ONLY` aggregate over the single probability column found
+no noncanonical/nonpositive or over-limit values. It returned no row IDs or
+probability values and was not saved. The source table's current
+`positive_probability` CHECK remains the import authority; future snapshots
+are independently rejected if a value no longer fits the exact Worker codec.
+No user rows were exported or imported. `npm run test:migration-data` passes
+183/183; the Worker lottery API passes 12/12, lifecycle source integration
+passes 25/25, Worker typecheck passes, and schema/row-conversion/snapshot tests
+pass. The stricter converter schema version and importer codec version prevent
+old snapshots/checkpoints from being resumed under the changed value contract.
+
+## Exact event sequence import profile and schema converter v15 (2026-09-28 JST)
+
+The sole current source `nextval` primary key is `fanmark_events.id`, backed by
+`public.fanmark_events_id_seq`. Snapshot format 4 requires its state, validates
+the exact sequence owner and definition, and the D1 importer sets and verifies
+the monotonic `sqlite_sequence` watermark after row import. It also preserves
+`is_called=false`. Schema converter v15 therefore removes the stale
+`sequence_state_import_required` gate only for that exact profile; unsupported
+sequence defaults and target definitions remain blocked. A fresh linked, read-only
+schema catalog conversion at 2026-09-28 14:25 UTC reports 9 gates / 221
+locations (4 row-conversion / 128, 5 schema/operation / 93) and remains
+`deployable: false`.
+
+The actual PostgreSQL sequence state was not read for this change. It must be
+captured in the final source-writer freeze because sequence advancement is not
+MVCC-consistent. Existing export/verify/import tests cover called and unused
+sequence states, exact 64-bit watermarks, D1 readback, and the next event ID. No
+source rows, live sequence values, remote D1, production route, or domain/DNS
+state changed.
+
+
+## Internal bigint event key and schema converter v16 (2026-09-28 JST)
+
+The latest schema-only catalog contains three PostgreSQL bigint columns:
+`fanmark_discoveries.favorite_count`, `fanmark_discoveries.search_count`, and
+`fanmark_events.id`. The two counters are projected to the Worker API as numeric
+values, so their full-range precision gates remain. A source-code audit found
+that Worker code inserts into `fanmark_events` but never selects or returns its
+generated ID. Snapshot row import keeps its exact signed 64-bit decimal text,
+and the v4 sequence-state path restores its next value. Schema converter v16
+therefore suppresses the bigint read-precision gate for that ID only when the
+exact reviewed sequence profile is present. Unknown sequence profiles remain
+gated.
+
+A fresh linked, read-only schema catalog conversion at 2026-09-28 14:30 UTC
+reports 9 groups / 220 locations (4 row-conversion / 127, 5 schema/operation /
+93), still `deployable: false`. The bigint gate now lists only the two exposed
+counters. No application rows were read; no live sequence state or user rows
+were read or imported.
+
+
+## Snapshot-validated array schema gate and converter v17 (2026-09-28 JST)
+
+The current row envelope records each supported PostgreSQL array's SQL-NULL
+state, dimension count, and first lower bound. Its converter rejects nested or
+non-1-based arrays and invalid elements, while preserving order, duplicates,
+element NULLs, and empty arrays. One shared type list now binds the schema
+converter, row converter, and scalar codec to `text[]`, `uuid[]`, and
+`smallint[]`. Unsupported array element types remain blocked.
+
+A fresh linked, read-only catalog query at 2026-09-28 14:43 UTC returned 40
+tables / 406 columns; all nine arrays use the three supported types. The v17
+report removes the array gate's nine locations: 8 unresolved groups / 211
+locations (3 row-conversion / 118, 5 schema/operation / 93), still
+`deployable: false`. Focused schema/row tests pass 27/27, and the complete
+migration-data suite passes 185/185 with no skips. No source application rows
+or live sequence values were read.
+
+## Current master D1 console readback (2026-09-29 JST)
+
+Authenticated Dashboard D1 Studio read-only queries against
+`fanmark-emoji-master-staging` returned 3,944 `emoji_master` rows, one active
+release pointer, and release version
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`, matching
+the previously recorded master release. This is a count and pointer readback,
+not a fresh full-row hash comparison. It confirms Dashboard access to this
+master database only; the stored Wrangler CLI profile still resolves to a
+different account, and the lifecycle-Cron retry's cleanup/deployment state
+remains unverified. The coarse weighted estimates remain about 53% end-to-end
+and 73% for the prioritized app/infrastructure/non-user-master-data scope.
+No user rows, production routes, or domain/DNS state were read or changed.
+
+The current workers.dev app probes also returned 200 for `/` and
+`/api/auth/ok`; the emoji catalog returned 200/no-store with 3,944 entries and
+the same release hash. All three public reference-master routes returned
+200/no-store at release `ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`.
+Anonymous admin session returned 401, unauthenticated session returned `null`,
+and the disabled Stripe webhook returned 404. These read-only probes confirm
+public route health and anonymous denial, not authenticated business
+operations or the lifecycle-Cron cleanup state.
+
+## Business D1 staging canary cleanup readback (2026-09-29 JST)
+
+Authenticated Dashboard D1 Studio access to `fanmark-business-staging` is now
+available. The failed synthetic lifecycle-Cron canary left one marked fixture;
+its canary fanmark, license, settings, configs, lottery rows, and linked
+lifecycle records have now been removed. Readback found zero rows for the
+canary fanmark/license IDs and synthetic usernames, zero canary lifecycle
+run/item/guard rows, and `grace_period_days=1` restored. The related lifecycle
+tables now contain 0 access-version rows and 90 retained incarnation rows.
+
+The first manual license-delete attempt was rejected by the lifecycle trigger
+because its required synthetic incarnation row had already been removed; that
+attempt made no license change. The canary incarnation was restored at its
+insert-time default, with a matching synthetic access-version row recreated to
+satisfy the delete guard. The lifecycle trigger removed the access-version row
+and incremented the incarnation during license deletion; that synthetic
+tombstone was removed afterward. Final ID-based readback confirmed cleanup.
+This supersedes the earlier statement that D1 cleanup was unverified, but it
+does not verify the deployed Worker version or
+its active Cron configuration. Wrangler still resolves to the wrong account,
+and direct Dashboard navigation to the Worker list did not load, so no new
+Cron run or deployment was attempted. Real user/Auth/object import and
+domain/DNS cutover remain deferred.
+
+## Stripe invoice webhook dispatch wiring (2026-09-29 JST)
+
+The signed Supabase webhook now sends the three invoice payment event types
+through durable receipt acceptance, an exact-ID dispatch lease, current Stripe
+invoice/subscription reconciliation, and fenced atomic application of the
+invoice projection and payment fields. Terminal duplicates return 200 without
+provider reads; a busy lease or retryable failure returns 503. The database
+function is in
+`supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql`.
+
+The PGlite invoice-projection suite passes 28/28, and the full receipt package
+test command, typecheck, Deno check, and targeted ESLint pass. No Supabase
+migration was applied and no webhook deployed. This does not close Issue #32:
+subscription, checkout, and deletion event paths remain to be migrated. User
+data/Auth/object import and domain/DNS cutover remain deferred. The Wrangler
+account mismatch still blocks remote staging verification.
+
+## 2026-09-29 PR validation and current staging readback
+
+PR #41 head `d7b4e50179b80173532b0f976650894c473fc9ce` passed both required
+jobs in GitHub Actions run `36489162577`: Cloudflare staging application and
+Worker API. Supabase Preview was skipped by design. This validates the checked-in
+build, local D1 contracts, typecheck, and dry-run; it does not deploy the PR.
+
+Unauthenticated GET checks at `2026-09-28T21:53Z` returned 200 for `/`,
+`/api/auth/ok`, `/api/emoji/catalog`, and the four public reference-master
+routes (tiers, languages, reserved patterns, extension prices). Each public
+reference-master response included `Cache-Control: no-store`; response bodies
+were discarded after header and size checks. No user data or business operation
+was accessed. This confirms route health only, not authenticated operations,
+active Worker version, or Cron configuration.
+
+Read-only `wrangler auth list` shows only `default` and `koan-client-room`;
+creating the named `fanmark-staging` profile did not complete. `wrangler
+whoami` resolves `default` to account ID `3ed61145d70e5e8bd639970082b79fa5`,
+while `wrangler.app-staging.jsonc` targets
+`bfc2890741f0b3fb236e2d755b6c9adc`. The account mismatch remains an explicit
+block on Wrangler writes. Do not reuse the expired consent flow or write through
+the default profile; authenticate a fresh profile and verify its account ID
+first. No D1, R2, Worker, Stripe, production, user-data, or domain/DNS state was
+changed by the profile attempt.
+
+## Stripe Basil subscription-period compatibility (2026-09-29 JST)
+
+The pinned Stripe API version is `2025-08-27.basil`, where subscription billing
+periods are read from each `SubscriptionItem`, not the removed top-level
+Subscription fields. Both the Supabase normalization slice and Worker D1
+reconciliation now fail closed unless the expected single item has valid,
+ordered periods; a non-null legacy top-level period is rejected. The receipt
+package suite (including 10 subscription projection cases) and typecheck pass;
+the Worker Stripe-ingress suite passes 64 tests and its typecheck passes.
+
+At this checkpoint, validation was local only: the Supabase webhook had not yet
+been wired to the subscription projection, and no staging/deployed Stripe path
+was exercised. Issue #32 remained open; no remote database, Worker, or Stripe
+state changed.
+
+## Supabase subscription receipt and fenced application (2026-09-29 JST)
+
+The signed Supabase webhook now sends `customer.subscription.created`,
+`customer.subscription.updated`, and `customer.subscription.deleted` through
+durable receipt acceptance, an exact-ID dispatch lease, the customer
+generation fence, and one PostgreSQL application transaction. The transaction
+binds metadata-mapped customers, writes the current active-subscription set,
+selects the highest active plan, clears failure fields for the active updated
+subscription, and terminalizes the application/receipt/dispatch. Deletion
+keeps a canceled tombstone; when no active paid plan remains, the same
+transaction sets Free and returns the newest excess unexpired licenses with
+the existing audit and owner/favorite notification behavior. Active transfers,
+row-ownership conflicts, and stale fence generations prevent the whole effect
+from committing.
+
+The implementation is in
+[`stripe-subscription-application`](../../supabase/functions/_shared/stripe-subscription-application/index.ts)
+and migration
+[`20260929210000_add_stripe_subscription_projection.sql`](../../supabase/migrations/20260929210000_add_stripe_subscription_projection.sql).
+The subscription application PGlite suite passes 8/8, projection tests pass
+11/11, customer-mapping tests pass 8/8, and the complete Stripe receipt test
+package passes. TypeScript package typecheck, Deno check/lint, and focused
+format checks for new files pass. This is local evidence only: no Supabase
+migration was applied, no webhook was deployed, and no live Stripe event or
+user data was read or changed. Issue #32 and remote staging rehearsal remain
+open. The coarse progress estimates remain about 53% end-to-end and 73% for the
+prioritized app/infrastructure/non-user-master-data scope; user/Auth/object
+import and domain/DNS cutover remain deferred. The Wrangler account mismatch
+still blocks remote writes.
+
+This supersedes the earlier subscription interim-slice notes above: those
+created/updated and deleted branches no longer use separate REST writes.
+
+## Supabase subscription current-state reconciliation slice (2026-09-29 JST)
+
+The Supabase webhook's `customer.subscription.created/updated` branch now uses
+the pinned Basil snapshot adapter to retrieve the current Subscription and the
+customer's active subscription set. It validates mode-specific Price IDs,
+single-item billing data, and item-level period timestamps before writing the
+current subscription row; plan state is selected from the highest active plan,
+so delayed event snapshots no longer directly choose a plan or provide periods.
+The old top-level Subscription period reads are removed.
+
+This entry records the earlier current-state reconciliation slice and is
+superseded by the preceding `Supabase subscription receipt and fenced
+application` checkpoint: the created/updated/deleted paths were subsequently
+connected to durable receipt/dispatch handling and the fenced application
+transaction. The tests listed here validate only that earlier slice. Neither
+checkpoint applied a Supabase migration, made an external Stripe API request,
+deployed a webhook, or moved real user data.
+
+## Current Wrangler account and business D1 migration readback (2026-09-29 JST)
+
+The earlier account mismatch is resolved for this managed worktree. A fresh
+`fanmark-staging-inapp` Wrangler profile is bound to this checkout, and
+`wrangler whoami` confirms the intended `fanmark.id@gmail.com` account and
+staging account ID `bfc2890741f0b3fb236e2d755b6c9adc`. The old `default`
+profile still points to a different account and is not used for migration
+commands.
+
+The account-pinned read-only inventory listed all three staging D1 databases
+and the three expected R2 buckets. Auth and emoji-master D1 have no pending
+migrations. Business D1 had `0018_invitation_capacity_timestamp_precision.sql`
+and `0019_extension_coupon_timestamp_precision.sql` pending. Invitation code
+and attempt rows, coupon-use rows, and coupon-application commands were each
+zero; the four non-user coupon master records were present. The focused local
+test suites passed 10/10 invitation signup cases and 8/8 coupon-application
+cases.
+
+Both migrations were applied to the APAC staging business D1. Wrangler reported
+both successful and now reports no pending migration. Readback matches the
+checked-in trigger definitions; the same five table counts remain 0, 0, 4, 0,
+0. This is staging schema validation only. No Supabase migration, Worker
+deployment paired with these DDL changes, Stripe secret/config change,
+application-row import, production route, or domain/DNS change occurred. The
+subsequent staging Worker deployment is recorded below. The coarse progress
+estimate remains about 53% end-to-end and 73% for the prioritized
+app/infrastructure/non-user master-data scope; these two trigger migrations do
+not materially change it.
+
+## PR #41 current application staging deployment (2026-09-29 JST)
+
+The latest checked-in application Worker is deployed to the APAC
+`fanmark-app-staging` workers.dev service as version
+`f6c3ee8d-baca-4938-853c-1ba3b1eaaa62` at 100%. Local staging build, Worker
+typecheck, and Wrangler dry-run passed. The deployed JavaScript asset
+`/assets/index-B6IkPHSy.js` is byte-for-byte equal to the local build at
+2,499,186 bytes (SHA-256
+`c3cb8dcd9a722255414e4c48c841a12de36455a9ae2907ed5535b10765001b74`).
+
+Read-only smoke returned 200 for `/`, `/robots.txt`, `/api/auth/ok`, and
+`/api/emoji/catalog`; health and catalog responses are `no-store`. Anonymous
+admin session returned 401, and the Stripe webhook route remains 404 with
+selectors/secrets disabled. After deployment, the notification event/inbox
+tables and Stripe receipt/dispatch/application/plan/extension tables all read
+zero rows. Cron remains configured for notifications/dispatch each minute and
+the daily lifecycle schedule; the lifecycle execution selector remains unset.
+No email, payment, real user-data import, production route, or domain/DNS was
+used or changed. The app deployment adds runtime readback evidence but does
+not materially change the coarse 53% end-to-end / 73% prioritized-scope
+estimate.
+
+## 2026-10-02 checkpoint: Cron delivery and full synthetic recovery
+
+The app-bundle Cron probe ran for 33 minutes. Its first scheduled invocation
+arrived about 19.5 minutes after deployment, followed by repeated successful
+invocations. Cloudflare's dashboard Past Events view remained empty, so use
+Worker-specific invocation logs as evidence. The probe Worker was deleted and
+its URL returned 404.
+
+After CI run `36928505518` passed both required jobs on `c73f121`, the guarded
+`npm run test:migration:staging-postwrite-recovery` passed in 27m 1s. It
+verified 20 business and 3 Auth D1 migrations, synthetic Stripe extension
+application, D1 Time Travel reconciliation (18,362 ms), and encrypted R2
+bundle replay (50,668 ms). The synthetic avatar survived Time Travel and was
+restored from the encrypted bundle; frozen upload returned
+`503 cutover_write_freeze`. Cleanup readback confirmed deletion of the
+temporary Worker, both D1 databases, config, R2 objects, synthetic avatar,
+and private recovery artifacts. Report:
+`/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-postwrite-recovery-f323d41439810681.json`.
+
+This closes the Cron-delivery uncertainty and advances #37's synthetic
+recovery evidence, but #37 remains open pending its broader integration
+acceptance. #32/#34 provider sandbox acceptance still needs staging Stripe
+and Resend credentials set directly in Cloudflare. Continue app/infrastructure
+and non-user master/import work; reserve real Auth/Storage/user rows and
+public domain/DNS cutover for #38. No production route, live payment, email
+delivery, real user data, or domain/DNS was changed.
+
+## 2026-10-02 checkpoint: fresh catalog and importer replay
+
+The linked Supabase catalog-only query completed at `2026-10-01T22:10:49Z`.
+It returned 40 tables / 406 columns, 144 constraints, 139 indexes, 15 enum
+labels, one view, 58 functions, 36 non-internal triggers, and 77 RLS policies.
+It ran `schema-readiness.sql` under `BEGIN READ ONLY`, queried no application
+rows, and stored its private response only in a mode-0700 temporary directory.
+
+Converter v21 with the value-free credential descriptor reports zero
+row-conversion gates and five schema/operation groups / 93 locations: 11
+external Auth references, 79 timestamp-default operations, and three
+unsupported catalog scopes (functions, RLS policies, triggers). The
+deployable/full-reconciliation flags remain false. Node 22.6.0 current-catalog
+synthetic replay completed 10 rows / 40 checkpoints, transformed two active
+credentials, durably deferred one inactive credential, verified typed/hash
+readback, and rejected conflicting coverage. No actual user rows or credentials
+were read or imported. Issue #35 remains open for the five schema/operation
+gates and full readiness; #36's non-user emoji-master staging distribution is
+closed. Provider sandbox acceptance remains gated on staging secrets, while
+#38 still owns real Auth/Storage/user-data migration and domain/DNS cutover.
+
+## 2026-10-02 resumed migration: lifecycle Tier lookup uses Master D1
+
+The lottery finalizer previously joined `fanmarks` to `fanmark_tiers` inside
+business D1. Split staging keeps the live reference release in Master D1, so a
+business database with an empty legacy Tier table could incorrectly use the
+30-day fallback when issuing a lottery winner's replacement license.
+`runScheduledLicenseExpiry` now passes its explicit Master D1 binding to both
+the scheduled and MFA-admin lifecycle paths. The finalizer reads the Tier
+duration from the active versioned master view and stores it in the durable
+lottery input. When this input has not yet been saved, a missing master binding
+fails before the claim is taken. Retries use the frozen input; non-lottery
+expiry does not require a reference master.
+
+The full source-shaped Miniflare suite passed 25/25, including a separate
+synthetic master adapter returning 47 days with no Tier row in business D1 and
+a missing-master no-claim check. Worker TypeScript typecheck and
+`git diff --check` passed. This was local synthetic validation only; no Cloudflare
+deployment, remote D1 write, real user row, production route, or domain/DNS
+change occurred. The scheduled expiry selector remains disabled in staging.
+
+## 2026-10-02 resumed migration: reviewed v22 reference-master timestamps
+
+Converter v22 now records the eight `now()` defaults on `fanmark_tiers`,
+`languages`, `reserved_emoji_patterns`, and
+`fanmark_tier_extension_prices` as `versioned_reference_master_replacement`.
+The source-shaped import binds canonical source timestamps, there are no direct
+Worker or migration SQL insert writers to those base tables, and app reads and
+admin edits use the active versioned Master D1 release. D1 continues to omit
+these defaults. A source audit test guards the writer assumption, and the
+converter test ensures unrelated timestamp defaults remain blocking.
+
+On the catalog observed at `2026-10-01T23:36:56Z`, the timestamp-default gate
+count falls from 79 to 71; five schema/operation groups / 85 locations remain,
+including external Auth references and unsupported functions, RLS, and trigger
+scopes. The report stays `deployable: false`. Focused converter and writer-audit
+tests pass 25/25. A v22 current-catalog synthetic importer replay also passed
+40/40 checkpoints with 10 synthetic rows, two transformed credentials, and one
+deferred inactive credential; conflicting coverage was rejected and
+`fullMigrationReconciled` remains false. No application data, remote schema,
+deployment, or public route was changed.
+
+The wider static writer audit at `2026-10-01T23:41:40Z` included Worker code,
+all D1 migration SQL, and migration scripts/SQL. Across 79 timestamp defaults
+in 40 tables, it parsed 140 literal `INSERT` column lists. Twelve defaults had
+no supported literal writer: the eight reviewed versioned reference-master
+columns plus four user-scoped columns in notification preferences, archived
+history, and user roles. Three generated `INSERT` statements for `emoji_master`,
+`extension_coupons`, and `email_templates` remain unparsed. Operation/value
+coverage is incomplete; this static scan does not establish timestamp precision
+or transaction-time semantics.
+
+## 2026-10-02 staging checkpoint: isolated MFA recovery passed
+
+The MFA-only guarded recovery command passed without Cron or Stripe dispatch.
+It verified Better Auth TOTP/admin authorization, synthetic waitlist and avatar
+state, write freeze, D1 Time Travel, and encrypted R2 backup/replay. Time
+Travel reconciliation took 14.148 seconds; bundle replay took 49.247 seconds.
+All temporary Worker/D1/config/R2/avatar/private artifacts were deleted, and
+independent readback found only the three expected staging D1s plus an empty
+recovery bucket. This closes only the MFA/Auth + waitlist/Storage recovery
+slice; Stripe integration and the complete #37 acceptance remain open. Issue
+#35 still has five schema/operation blocker groups / 85 locations and the
+catalog remains non-deployable. Keep real user/Auth/Storage migration and
+domain/DNS cutover deferred to #38.
+
+## 2026-10-02 resumed migration: Cron recovery and Realtime operation map
+
+The full synthetic post-write recovery and disposable Cron diagnostics are
+recorded in `docs/migration/EXECUTION.md`. The run passed: 5 scheduled-event
+receipts, 3 selected dispatches, 3 Stripe job completions, and 2 write-freeze
+pauses were observed; the synthetic extension was applied once, survived D1
+Time Travel and encrypted R2 replay, and all disposable resources were removed.
+No Stripe API call, live user data, production route, or domain/DNS change was
+used. The earlier attempt timed out while waiting for a synthetic Cron receipt;
+that does not establish its exact cause.
+
+CI run [`36981863610`](https://github.com/fanmark-id/actions/runs/36981863610)
+passed both jobs on `5b826c9`: Worker API/D1 tests, typecheck and dry-run passed
+in 6 minutes; staging migration boundaries, Stripe contracts, application
+typecheck and build passed in 4m3s. `git diff --check` also passes for the
+current documentation update.
+
+`docs/migration/repository-inventory.md` now classifies all 8 Realtime
+callsites by owner, data class, Cloudflare replacement and parity: notification
+surfaces use bounded D1 APIs with 30-second polling, profiles use local update
+events plus focus/visibility refresh, and subscriptions use read-only D1
+projection refresh. 203 frontend callsites remain to be classified. This
+source-level slice does not prove live production configuration or data parity.
+Continue with the remaining non-user-data inventory and master/infrastructure
+gates. Keep actual user/Auth/Storage migration and domain/DNS cutover for #38.
+
+## 2026-10-02 local MFA guard for the live-only Supabase expiry function
+
+The read-only deployed inventory still reports `manual-expire-grace-licenses`
+ACTIVE at version 14 with `verify_jwt=true`. Its downloaded source showed that
+the gateway accepts a JWT but the handler used the service-role client without
+an application admin-role or MFA check. A local replacement is now checked in
+with `verify_jwt=true`, POST-only handling, an admin role check, and Supabase's
+current-session AAL2 verification against the exact request token. The MFA
+check fails closed on AAL1, missing assurance, API errors, or network errors.
+
+The local handler rechecks the status and captured expiry cutoff on each
+update, pages candidates by ID, records the acting admin in audit metadata,
+and reports per-license config/audit failures rather than counting them as
+successful. The legacy operation remains non-transactional and still has no
+repository callsite; external invocations and schedules have not been ruled
+out. The local replacement is prepared but not deployed, and live version 14
+remains unchanged pending that operational review.
+
+Node's focused MFA assurance suite passed 3/3; the function inventory/config
+contract passed for all 35 deployed names and confirmed the prepared
+replacement is not deployed. `deno check` passed for the new Edge Function,
+application typecheck and targeted ESLint passed, and
+`npm run test:migration-data` passed 218/218. CI run `37000774332` passed both
+jobs before these code changes; CI for this update remains required. No
+Supabase function, database, Cloudflare resource, user row, production route,
+or domain/DNS setting changed.
+
+## 2026-10-02 staged notification archive canary
+
+`npm run test:staging-notification-archive-smoke` passed using a local
+scheduled Worker with a temporary `NOTIFICATION_ARCHIVE_BACKEND=d1` selector
+and the APAC staging business D1. The guarded preflight matched the 40-table
+schema, archive index, notification/reference/email/coupon master baselines,
+public settings, and empty Auth/user-owned tables. Six unique synthetic rows
+covered delivered, failed, pending, cancelled, recent-delivered, and sent
+cases. The two due delivered/failed rows moved to history with exact source
+payload and six-digit UTC archive timestamps; four ineligible rows remained.
+Cleanup and baseline readback passed with zero synthetic notification/history
+rows. No Worker deployment, Cron/selector setting, Supabase source row,
+production route, or domain/DNS state changed.
+
+## 2026-10-03 scheduled provider activation coverage
+
+Stripe webhook ingress only persists receipt/dispatch rows; Stripe dispatch
+and broadcast snapshot/delivery are routed by `* * * * *`. The current
+notification-DO baseline registers only the daily Cron and keeps these provider
+dispatch selectors off. Enabling a selector alone would leave its queue without
+this scheduled execution path.
+
+Added `scheduled-job-coverage.mjs` and `npm run check:cloudflare-schedules`
+to compare enabled jobs in the base Wrangler config against registered triggers
+and the actual Worker router. Cloudflare validation CI runs this check, and
+workflow isolation requires the step. It covers notification Cron fallback,
+Stripe dispatch, broadcast delivery, and default/custom expiry/archive schedules.
+A minute Cron for Stripe/broadcast does not select notification polling with the
+DO backend. Receipt-only frozen rehearsal and draft-only broadcast editing do
+not need dispatch. Existing strict staging baseline/secrets guards are unchanged
+and must be reconciled separately before provider activation.
+
+Under Node 22.6.0 the first migration-suite run passed 276/276. After adding
+a CLI failure-exit case, the focused coverage/selector suite passed 15/15
+(11 coverage and 4 selector cases). Config CLI, workflow isolation, targeted
+ESLint, and diff checks passed. CI `37068708453` for prior HEAD `a19d7e9`
+passed both jobs; this new change still requires CI. This proves local
+configuration coverage only, not remote Cron delivery, provider acceptance,
+or production readiness. No remote Cron/selector/secret, deployed Worker,
+source user row, or domain/DNS state changed. Combined remote profile-editor
+and protected-favorites acceptance remains pending after the previous D1
+daily-read quota rejection; no deploy/seed before the full guarded preflight.
+
+## 2026-10-03 full-schema notifications and archive authorization
+
+Replaced the reduced notifications fixture with all 25 canonical Business
+migrations, including FK constraints and the 0024 wake triggers. Synthetic
+notifications now reference real terminal events/disabled rules, and processor
+fixtures supply the canonical required timestamps. Extracted the existing
+checked-in SQL tokenizer for use by both notifications and search suites.
+The first full-schema run exposed one response-size fixture without parent
+rows; after fixing that seed, the existing API/processor checks passed.
+
+Expanded archival checks to all 19 original fields, nested JSON, exact cutoff
+and 1us before it, a delete-failure trigger proving insertion/deletion rollback
+and successful retry, identical prior-history replay without timestamp rewrite,
+and a 2,501-row backlog processed as 2,500 then 1. The first backlog assertion
+incorrectly expected five batches; actual configured batches are 10 x 250.
+This was corrected without changing the archiver. Node 22.6.0 native
+notifications passed 19/19, shared-tokenizer search regression passed 12/12,
+Worker typecheck, targeted ESLint, and diff checks passed.
+
+The existing source catalog observed 2026-10-02T21:03:48.240925+00:00 confirms
+archive RPC effective EXECUTE is false for anon/authenticated and true for
+service_role. The history SELECT policy uses is_admin(), whose definition
+checks auth.uid() and user_settings.plan_type=admin. Raw grants alone do not
+prove RLS access. The target retains an internal archiver; no history-body HTTP
+reader exists. Corrected object-map text that had described an admin reader
+as if implemented. The archive definition/policy hashes and remaining custom
+cutoff/external invocation gates are recorded in notifications-api.md.
+
+This validates local notifications with the full Business schema and the
+reviewed source authorization boundary. It does not prove all source callsites,
+provider/email/Web Push behavior, recurring archive/retention operations, or
+production fit. No remote Worker/Cron/selector/secret, Supabase user row,
+real data migration, or domain/DNS state changed. Exact new-HEAD CI and guarded
+remote editor/favorites acceptance remain required; remote D1 writes stay
+pending the previous daily-read-limit rejection and full baseline preflight.
+
+## 2026-10-03 align native notification/search Auth fixtures with staging
+
+The previous full-Business-schema notification/search suites used only the
+Auth core and omitted the staging suspension selector. Both now apply Auth
+core/0007 signup marker/0008 suspension migrations and select
+AUTH_USER_STATUS_BACKEND=d1. Added warmed-session checks after synthetic
+suspension and native session revocation. The old cookie cannot read/list/count
+or mark notifications read; all notification rows stay unchanged and another
+user's session still works. Public search remains available as anonymous,
+preserving aggregate lottery count while withholding the former owner's entry
+ID. Both paths reject a new suspended-user signin with BANNED_USER/403 and
+create zero sessions.
+
+Node 22.6.0 native notifications passed 20/20 and search 13/13; Worker typecheck,
+changed-file lint and diff checks passed. The fixtures emulate the committed
+stop/revocation state; the existing admin-user-management suite separately
+verifies MFA, audit and the transaction. No runtime application code,
+remote deployment/config/rows, source data or domain/DNS state changed. This
+closes the local API boundary with the staging Auth selector, not full Auth,
+provider acceptance, import parity or production readiness. Current deployed
+Worker remains the previous 010a4d7a. New exact-HEAD CI and D1 quota/full
+preflight/native editor/favorite acceptance remain required.
+
+2026-10-06 告知配送の順序不具合: 現行25 Businessで恒久bounce/苦情の後着成功上書き、通常イベントによる別未送信行の停止、完了runの集計未更新を調べ、5件の失敗を再現。追加0025と再集計修正後、全26 Businessを使う13配送テストと現行Business/Auth import 1件、typecheck/eslintを通過。[限定証拠](evidence/broadcast-terminal-outcomes-2026-10-06.json)。候補eeb4f6a/CI37414547662両job成功後、全26 Businessの一時実D1/Workerで署名イベント8シナリオ（恒久bounce/苦情/一時bounce/failed × ACK前後）と不正署名・改変・期限・未対応eventの未書込、重複単一event/audit、FK0を確認。所有D1/Workerを削除し元inventory/元main全表hash/Workerを独立保持照合した。main stagingへ0025とWorker b3ce17ce-cd56-464c-8694-2215dce51b39を適用し、追加ledger1件以外の全表hash、既存秘密設定、他の全schema、公開asset4件、broadcast disabledを確認。現在の保存baselineはprivate broadcast-terminal-remote-2026-10-06/staging-install.jsonのbaselineで、旧25の記録を上書きしない。Resend実署名配送、bulk/送信UI/retentionは未受け入れ。過去の全結合復旧は25 Businessの証拠として保持する。
+
+2026-10-06 告知署名通知の発生順: 26 Businessで通常の失敗/成功の順序逆転による4件の誤判定を再現。追加0026とroot created_at検証により、受信日時とは別にUTC offset/小数秒の全桁を保持し、発生日時・同時刻IDで通常結果を選ぶ。恒久bounce/苦情の優先は維持する。全27 Businessの配送22件、Business/Auth import1件、監視5件とtypecheck/eslintを通過。[限定証拠](evidence/broadcast-provider-chronology-2026-10-06.json)。候補a5a2b75/CI37416934627両job成功後、全27 Businessの隔離実D1/専用Workerで従来の8件と発生順8件の署名HTTPシナリオを確認。発生順/逆順・ACK保存前後で最新結果と小数秒全桁が一致し、重複は単一receipt、無効日時は未書込だった。所有D1/Workerを削除し元inventoryとmain全表hash/旧Workerを保持した。mainへ0026とWorker 0605e4ed-38d2-4e09-967e-3c3f3c99910dを適用し、ledger27、追加ledger1件以外の全表hash・既存秘密設定・公開asset4件と変更2定義/他schema保持を独立照合した。現在の保存baselineはprivate broadcast-chronology-remote-2026-10-06/staging-install.jsonのbaselineであり、旧26/25の証拠を上書きしない。追加メール0、実Resend通知・bulk/UI/retentionや全体移行へ受け入れを拡張しない。
+
+2026-10-06 表示言語のHTML属性: in-app DOM接続で新規tabの現行トップを確認し、EN/KO/IDの本文切替後もhtml langがjaのままという3件の不一致を観測。選択言語effectにdocument lang同期を追加し、typecheck・eslint(error0/warning1)・staging buildを通過。ブラウザー表示言語をJAへ戻し、別read-only processで元全表hash/Workerを保持した。候補5e037d0/CI37418737512両job成功後、Worker d4375d19-5024-4bf6-9cd7-1e5d399ce7b5へ通常設定で配備。公開asset4件のbytes/hash、既存秘密設定・canonical vars・ledger27と全表hashを保持し、既存Worker runtime a5a2b75からの変更0を確認。既存IAB検証tabを通常reloadして新entryを確認し、JA/EN/KO/IDすべてで本文とhtml lang一致、最後にJAへ復元した。別read-only processで全表hash/FK0と100% versionを保持照合した。[限定証拠](evidence/staging-language-metadata-2026-10-06.json)。全言語の通し操作・実スマホ・native GUIの残件は保持する。
+
+## 2026-10-09 JST: staging backup policy adopted, native adapter and key custody
+
+The user answered 「その案でOK、まだ未確認」. The backup operating policy is
+approved: owner=user; daily/30 days; encrypted private dedicated R2; archive and
+SDK recovery keys in Mac Keychain + Vault `10_sensitive`; revoke local
+sessions/MFA assurances/verification on restore; RPO24h/RTO4h are targets.
+Physical smartphone acceptance remains unconfirmed. No additional approval is
+required for the authorized staging implementation. Production users/DNS stay
+in the final separate phase.
+
+Fresh read-only preflight matched all retained D1 table hashes/Auth3 users,
+7 accounts,2 sessions and the full five-binding scope. Main was cc6d75c4;
+companion remained a7c8f421. The scope hashes the account/Worker/sorted binding
+identity envelope, not the collector's sourceIds JSON. Recompute that exact
+format; never reset the existing DO scope to a sourceIds-only digest.
+
+`staging-backup.ts`/named `StagingBackupService` connect the existing census,
+owner fence and five-store collector to a dedicated R2 archive + durable daily
+attempt receipt. No public HTTP operation route is added. Incomplete/unknown
+ACK attempts refuse replay; collection and writes settle before release. A
+crash leaves the owner fence and receipt for manual inspection. Retention only
+removes exact old verified archives after current successful archive readback.
+Failed/incomplete archives need operator handling. The new scheduler candidate
+uses 04:15 JST but its deployed config must have disabled selector/no Cron
+until technical admission. Actual source capture admission remains pending.
+
+Native local11 assertions and existing writer-drain6 passed. Tests cover RPC,
+old counted writer completion/new writer refusal, other-owner protection,
+claim ACK loss, source-error redaction/release, duplicate slot, stored-file
+five-store restore with source sessions preserved/target sessions revoked,
+SDK-key escrow/AAD, retention boundary/foreign prefix and Cron failure. R2
+source in this local fixture is empty. This is not actual retained-source
+backup/remote operational restore/physical-phone acceptance.
+
+Created dedicated `fanmark-backups-staging`; independently checked managed
+public URL disabled/custom domains0. Generated archive key with exclusive
+Vault0600 write and exclusive UUID Keychain item, then compared readbacks.
+Neither repository nor R2 contains the key. Real SDK escrow is pending native
+RPC deployment. Existing SDK key is not rotated. Vault remote Sync is not
+claimed. Evidence: staging-backup-adapter-local-2026-10-09.json and
+staging-backup-provision-2026-10-09.json. Private live state resides under
+`~/.codex/fanmark-migration-private/operational-backup-2026-10-09`.
+
+Next: CI/readback of inactive staging adapter, seal/verify actual SDK key and
+store encrypted escrow in both approved key stores; resolve initial uncounted
+legacy-writer termination and external-writer exclusion; then first actual
+source archive, same-key isolated remote restore, daily Cron and failure
+monitoring acceptance. Do not turn permission, current active0, matching
+recaptures, elapsed time or platform-runtime-update grace into legacy drain.
+
+### Same phase: native inactive rollout, SDK escrow and current blocker
+
+Implementation b32fb9cfec0cebcdcf4547f318fdf579e1db7ed2 / CI37810140113 both jobs
+succeeded. Main is 79e75f89-8121-4d4a-8ec0-1df4f9f94383 at100%; native named RPC
+verified actual revision/key/source IDs/schema/scope. Actual SDK secret remains
+in its original Worker binding; encrypted escrow was decrypted/hash-verified
+and read back from both Mac Keychain and Vault0600. AES key also matches both
+stores. Dedicated R2 remains private. Scheduler fanmark-backup-staging installed
+with disabled selector/crons0. Source capture admission stays pending.
+
+Native writer status observed active27, owner=null, drained=false. It does not
+prove27 live operations or27 safely expired tickets. DO records must not be
+reset or TTL-cleared. The first private status assertion incorrectly required
+active0 for an inactive adapter readback; corrected observation preserves27
+and leaves capture unaccepted. Need investigation/closure, not permission to
+ignore the count. Initial pretracking writers remain a separate prerequisite.
+
+First predeployment private guard used */* for a known SPA route, got404, and
+was corrected to text/html after observing all six deployed/local hashes match.
+No deployment/secret mutation occurred in that failed guard. First probe
+postdeploy check did not retain HTTP status; don't infer its status or cause.
+The existing probe/version was independently read and reused; no duplicate
+app/probe deploy or archive-key secret upload or SDK escrow call occurred.
+Temporary probe is now deleted and absent in independent account inventory.
+
+Separate readonly process matched all retained tables/Auth3 users,7 accounts,
+2 sessions/FK0; public six files and DO namespaces unchanged; main pending
+admission and scheduler Cron0 independently checked. Private root rollout.json
+state verified_inactive and final-independent-readback.json are canonical.
+Old failedPhase in the raw journal is historical, not current work status.
+No source backup file, actual operational restore, daily Cron or alert accepted.
+
+CUA inventory showed no app-origin tabs in in-app/connected Chrome surfaces.
+Safari is running but OS/provider reports Mac locked and automatic unlock
+failed. AppleScript inventory timed out and is not evidence of absence. Asked
+the user once asynchronously to unlock; no reply yet. Wait for manual unlock
+before browser closure work. Preserve unrelated Chrome perfume-production
+work, Stripe tab, Resend tab and unrelated Safari windows. Smartphone remains
+unconfirmed. Source users/DNS/live Stripe still untouched.
+
+### 2026-10-09: Mac unlock後のwriter調査
+
+Safariのスタートページのみと、接続済みChrome/in-appにsource appタブなしを確認。
+既存main79e75f89のreadonly内部RPCでactive30→30→30→31→30を観測し、probe除去済み。
+記録をリセット/expireしていない。増加原因と帰属は不明。
+HTTP/Cronのenter〜leave全promiseのwaitUntil登録と、新規ticketの開始時刻/version集計を追加。
+local終了追跡8/通知21/backup11/停止Cron16件成功。remote配備は後続CI/観測待ち。
+詳細は[backup operations](backup-operations.md)末尾。
+
+### 上記修正のnative結果
+
+e53558b/CI37856413174は両job成功。main97826bffを100%配信。
+配備直前active34、配備後8種類GETでlegacy34・attributed0を観測。
+既存全表hash/Auth3・7・2/FK0/111 binding/2 namespaceを独立保持照合した。
+最初のguardはJSON項目順を差分扱いしたため停止し、値の独立比較で回復した。
+app再配備は1回、probeは除去済み。capture pending・backup Cron0。
+旧記録34の原因/終了、初回旧writer/実source backup/remote復旧/監視は未受け入れ。
+[限定証拠](evidence/staging-writer-lifecycle-remote-2026-10-09.json)。
+
+### 2026-10-09: new staging resource candidate, not yet routed
+
+旧ticket34を消さず、全5 storeを別resourceへ分離するcandidateを用意した。
+新3D1のschema、非ユーザーMaster25表/12,254行、Business共通6表/106行、Auth user/session0、
+旧全表保持、他Workerから新resourceへのbindingなし、R2公開無効を独立確認した。
+一時initializer削除済み。新Authの六つのMFA triggerはBEGIN大文字化のみの差を確認し、
+実DDL hashをpinした。旧Authのgeneration/sessionを新Authへコピーしていない。
+新namespace V2と、旧DOが新bindingへ書けないobject ID照合を追加し、
+writer9/通知22/recovery-set16/backup11・型検査/eslintを確認した。
+staging configは新resourceの配備前candidateで、main実環境は97826bff/旧5 storeのまま。
+詳細とidentityは[backup operations](backup-operations.md)末尾と
+[candidate evidence](evidence/staging-resource-scope-v2-candidate-2026-10-09.json)。
+次はCI→新scope配備→binding/namespace/初回writer/external writerの独立確認→
+admission採用→実archive/同運用鍵の隔離復旧→定期Cron/監視。実ユーザー/DNSは最後。
+
+### 2026-10-09: fresh scopeの実配備・初回運用保存と隔離復旧
+
+205b168/[CI37866060471](https://github.com/kanouk/fanmark-id/actions/runs/37866060471)は
+両job成功。新5 store/V2 namespaceをa8e55756へ配備し、全binding・旧namespace保持・
+公開6 asset・7回の内部状態と6 GETを照合した。新scopeのlegacy/未終了ticketは0、
+旧全表hash/Auth3・7・2は保持。probeは除去済み。旧ticket34を終了・削除していない。
+別Workerに新5 storeへのbindingがないこととbootstrap終了を確認後、admissionだけを
+採用した1b57012dへ配備。mainの実configとチェックイン済みconfigをwriters-verified-v1へ
+揃えた。旧scopeにこのadmissionを適用しない。rollback configは旧store/classとpending
+admissionを選び、V2 migration/namespaceも保持する形でprivateに保存した。
+
+UTC2026-10-09のconditional claim/owner停止で、共通collectorによる全5 storeの2回capture・
+暗号化保存・読戻し/復号/各hash・owner解除を実行。保存は8.56秒、6,739,307 bytes。
+同じR2保存物と、Keychain/Vaultで一致する採用鍵/SDK escrowから別3D1/2R2へ復旧した。
+復旧は14,591ms、全store hash一致、FK0、session/assurance/verification0。
+独立したprocessで暗号化ファイルを開き、Auth9/Business80/Master25の全回復表をRESTで
+読み戻して行数/全行hashを照合した。別readonly WorkerでR2の空集合と保存archiveの
+exact hash/bytesを照合し、所有したtarget3D1/3R2と全operator/probeを削除した。
+復旧前のinventory・旧全表hash・main versionを保持確認。source archiveとprivate fileは保持。
+
+保存元のAuth user/credential/sessionは0、画像R2も空。今回の運用鍵を使う実保存/復旧は
+マスター/共通設定と空のAuth/画像領域での受け入れであり、実Supabase利用者・既存の
+認証情報/画像を復旧した証拠にはしない。復旧時の失効選択は採用したが、非ゼロの
+失効/SDK再ログインは既存のlocal合成/隔離証拠と区別する。14.6秒を本番RTO保証にしない。
+
+読み取り専用監視tokenで新Business27 ledger/FK0/queue等のattention0と公開200を確認した。
+定期backup Workerの実Cronはまだ0。日次候補は09:05 JST（5 0 UTC）へ変更した。
+00:00 UTCのlifecycle batchと分け、今回00:56 UTCの初回保存から次のUTC日付00:05への
+間隔を24時間未満にするためで、同UTC slotの再実行はしない。local backup11件成功。
+自然の定期実行、失敗通知/担当者への実通知、残るprovider/端末の最終統合は未受け入れ。
+[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)。
+
+### CIの招待登録用Chrome起動を診断可能にする（2026-10-09）
+
+826845bのCI37867947682はWorker job成功、アプリjobは画面操作前の
+`DevToolsActivePort`待機20秒で停止した。Chrome stderrを保存していなかったため、
+起動失敗の具体原因を推定しない。専用profileの起動だけを最大30秒・2回へ限定し、
+失敗時は専用processの終了とprofile除去を確認後に再起動する。画面遷移/登録/招待消費の
+assertionやアプリ操作は再試行しない。起動stderrとexit/signalはprivate journalに保存する。
+外部通信proxyとowned cleanupを保持し、実built UI/Workerのlocal登録検証を実行する。

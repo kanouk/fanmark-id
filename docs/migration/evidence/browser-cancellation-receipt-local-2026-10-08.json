@@ -1,0 +1,52 @@
+{
+  "format": "fanmark-browser-cancellation-receipt-local-v1",
+  "date": "2026-10-08",
+  "parentHead": "e9c9b1a41fb526a4f3a9201ff292e1bff4a68f52",
+  "failedCi": {
+    "id": 37655931604,
+    "application": "failure",
+    "step": "Test invitation-gated signup with actual local Worker",
+    "reason": "invalid_interception_id without matching cancellation within prior receipt budget",
+    "rootCauseConfirmed": false
+  },
+  "sourceSha256": {
+    "scripts/migration/browser-request-interception.mjs": "36d7fc1a0a8ce1ff7f54af92cb76fe9dde73ba288641fb52e8c09b1ac18fd573",
+    "scripts/migration/test-browser-request-interception.mjs": "c0a452f3e96a936d58aec5b6152d46bbcae20864d91ea065ed932cf0a9a2c2b6",
+    "scripts/migration/test-invitation-signup-local-browser.mjs": "832eba7015860bca221e08ff24c2a4d4b2ac57657d95b5f848ba6d8c658c7069"
+  },
+  "changes": {
+    "receiptBudgetMs": 2000,
+    "matchingNetworkReceiptStillRequired": true,
+    "waitForAllInterceptionTasks": true,
+    "redactedFailureCorrelation": true
+  },
+  "local": {
+    "cancellationContractTests": 7,
+    "contracts": "success",
+    "actualBrowserWorkerD1": "verified",
+    "browserInterceptionErrors": 0,
+    "verifiedCanceledBrowserRequests": 7,
+    "realBrowserPasswordLogin": true,
+    "logoutRevokesSession": true,
+    "ownedBrowserStopped": true,
+    "localServerStopped": true,
+    "localRuntimeDisposed": true,
+    "realProviderCalls": 0,
+    "realEmailsSent": 0,
+    "foreignKeyViolations": 0
+  },
+  "remote": {
+    "resourcesCreated": 0,
+    "mainDeployments": 0,
+    "mainWrites": 0,
+    "emailsSent": 0,
+    "productionWrites": 0,
+    "userMigration": false,
+    "dnsCutover": false
+  },
+  "limits": [
+    "Linux CI not yet accepted after this change",
+    "Local success does not establish the original Linux failure cause",
+    "Full staging migration remains incomplete"
+  ]
+}

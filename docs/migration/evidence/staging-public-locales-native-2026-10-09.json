@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-public-home-auth-locales",
+  "observedAt": "2026-10-09T04:56:04.785Z",
+  "scope": {
+    "stagingOnly": true,
+    "anonymousDesktop": true,
+    "physicalPhoneAccepted": false,
+    "authenticatedJourneyAccepted": false,
+    "fullMigrationAccepted": false,
+    "sourceUsersMigrated": false,
+    "productionDomainChanged": false
+  },
+  "candidate": {
+    "sourceHead": "84a65a31e83d6fe70bca3b29cb1447f6b86d8896",
+    "runtimeSourceHead": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+    "workerVersion": "6afcaee0-a5bd-4bba-8c95-756c69731bdb",
+    "ci": {
+      "runId": "37884992658",
+      "application": "success",
+      "worker": "success"
+    },
+    "sourceCodeChanged": false,
+    "settingsChanged": false
+  },
+  "nativeUi": {
+    "browser": "Chrome",
+    "initialSession": "logged_out",
+    "locales": [
+      {
+        "locale": "ja",
+        "homeUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/",
+        "authUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/auth",
+        "localizedHeadingAndControlsObserved": true,
+        "providerButtonsVisible": 4,
+        "credentialsEntered": false
+      },
+      {
+        "locale": "en",
+        "homeUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/",
+        "authUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/auth",
+        "localizedHeadingAndControlsObserved": true,
+        "providerButtonsVisible": 4,
+        "credentialsEntered": false
+      },
+      {
+        "locale": "ko",
+        "homeUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/",
+        "authUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/auth",
+        "localizedHeadingAndControlsObserved": true,
+        "providerButtonsVisible": 4,
+        "credentialsEntered": false
+      },
+      {
+        "locale": "id",
+        "homeUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/",
+        "authUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/auth",
+        "localizedHeadingAndControlsObserved": true,
+        "providerButtonsVisible": 4,
+        "credentialsEntered": false
+      }
+    ],
+    "actualHomeLoginLink": {
+      "locale": "id",
+      "destination": "/auth"
+    },
+    "recoveryEntry": {
+      "locale": "ja",
+      "destination": "/forgot-password",
+      "returnLink": "/auth",
+      "emailSubmitted": false
+    },
+    "anonymousProtectedRoute": {
+      "requested": "/plans",
+      "result": "/auth"
+    },
+    "localeRestored": "ja",
+    "captureNote": "Loading screen retained privately; not used as accepted evidence. Completed heading explicitly awaited for recapture.",
+    "ownedAnonymousTabClosed": true,
+    "ownerIabSessionTouched": false,
+    "providerAuthorizationAttempted": false,
+    "screenshotsAndSnapshots": [
+      {
+        "name": "ja-home.txt",
+        "sha256": "8f79e6e6727f3503154e14953284464f6b35987c2d04c0cf8d9ee45dc74150d6",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ja-home.png",
+        "sha256": "a1a99e59ccf75f9908eae5a222451e0d3639fc8a393d5c5e79583c2e20de3ff3",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ja-auth.txt",
+        "sha256": "addad49437d4957d7e9d49308643f4fd1b03e6b03ff0abecc1a79e925ab6c495",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ja-auth.png",
+        "sha256": "456f500ad0e145c86c966fb59ee281caa93007c3cab5c77bfa5aaee9f2f1e150",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "en-home-ready.txt",
+        "sha256": "46f4c2be36881203cf8ae21a2f33703b69dbfdb72e05e8af6652ed352a0e1cf4",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "en-home-ready.png",
+        "sha256": "5edbd477fe39761b679e1c849a01962c3998a1dbd34e41a1ac3c1c902f231e7f",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "en-auth.txt",
+        "sha256": "2ef509b55efa87efeb351d262367c475ac7c50cf156ac0676525874641419d9d",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "en-auth.png",
+        "sha256": "df9e80347160c79d722dfab06d7524a5315c0e50f28c59ebc66b31b4e5225954",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ko-home.txt",
+        "sha256": "4b3171b7e06f0e12a0e48fe9670d7ca506c57d4fc69ba005006785c559a11539",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ko-home.png",
+        "sha256": "b50ede1ef0b745f418a074bc255cb1356be00ac4cc7ccd9e2aa9bd53d0a4d789",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ko-auth.txt",
+        "sha256": "59d09cdb824905bd1eb095bcf12a05894a12b510fdc0b3e96eb37b21b97dd539",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ko-auth.png",
+        "sha256": "9a96a8d4255fb36f9a619b174520b483ebcdf6c047bcac8c1b08dd2345b51af9",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "id-home.txt",
+        "sha256": "d92d782c43f9c433239263013390e0a68f8a80a75b3759f131e0398b0d6c545c",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "id-home.png",
+        "sha256": "92e21b776ebc9185df39249ce195b6a720fe1dc0e1e5f93b00c5819299d254b5",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "id-auth.txt",
+        "sha256": "2bea4cc95e5db20f3d4aecf8870792a0855a5c35f0d0cc99a2f047a26c909127",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "id-auth.png",
+        "sha256": "3cb4853045b1f7c4432c7324c1bfd390a71f1fa3a9182cf2f4f10e01f96eb6d8",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ja-recovery.txt",
+        "sha256": "3a464a1912bfa631b44bf23fa1842e35e49e3f4bbbe8ce44663c714f5b588e4b",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "ja-recovery.png",
+        "sha256": "0dd2735791f8d8d846f91aa05c1f8d2493b187b638141d475a3f32665b381f92",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "anonymous-plans-guard.txt",
+        "sha256": "abafda378fc7574b89d49dbee1fd5e4290cf2168c66873d6a695386c9a2e27db",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "anonymous-plans-guard.png",
+        "sha256": "456f500ad0e145c86c966fb59ee281caa93007c3cab5c77bfa5aaee9f2f1e150",
+        "visibility": "private local evidence"
+      }
+    ]
+  },
+  "publicAssetReadback": {
+    "checkedAt": "2026-10-09T04:53:39.725Z",
+    "version": "6afcaee0-a5bd-4bba-8c95-756c69731bdb",
+    "publicAssetHashes": {
+      "/": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+      "/index.html": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+      "/plans?checkout=success": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+      "/sw.js": "0d38775b5b106211fce11da5e959bda10b41cbeb24a071ca512530b4fe0b03e6",
+      "/clear-legacy-api-cache.js": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6",
+      "/assets/index-DgYC5YD0.js": "81735f15d322ae1dc75439200ba902ea75d9ad8071f73dee9aa2eb92dd316d7d"
+    },
+    "settingsChanged": false,
+    "sourceRowsRead": false,
+    "sourceDataWritten": false
+  },
+  "operations": {
+    "fixtureCreated": false,
+    "applicationPostCommandSubmitted": false,
+    "configurationWrites": false,
+    "emailSent": 0,
+    "stripeCalls": 0,
+    "sourceRowsRead": false
+  },
+  "boundaries": [
+    "Home/auth localization and one anonymous recovery/protected-route entry only; search-result transactions and authenticated license/billing/admin journeys are not accepted by this check.",
+    "Four provider buttons were displayed; provider authentication was not attempted.",
+    "Desktop Chrome is not physical phone, standalone PWA or whole four-language translation completeness."
+  ]
+}

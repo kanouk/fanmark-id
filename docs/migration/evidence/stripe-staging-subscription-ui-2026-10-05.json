@@ -1,0 +1,952 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-04T23:01:29.999Z",
+  "scope": "Same synthetic user, zero owned licenses: actual desktop subscription screen -> sandbox Checkout/Portal -> Creator/Business/Free projection and cleanup. Not whole application acceptance.",
+  "runtimeSourceHead": "12fa13f3c99712f7cae9b814d8fd1a9813b48108",
+  "workerVersion": "cc6d9da7-b81b-45fe-b0be-6c0978570232",
+  "runtimeCIRun": 37208535583,
+  "runtimeCIBothJobsSuccess": true,
+  "previousDocumentationCIRun": 37209348857,
+  "previousDocumentationCIBothJobsSuccess": true,
+  "browserControl": {
+    "nativeChromeDedicatedTab": true,
+    "incognitoClaimed": false,
+    "humanIABSessionPreserved": true,
+    "extensionAutomationUnresponsive": true,
+    "testPasswordOrCardSavedToBrowser": false
+  },
+  "repairedPlansUI": {
+    "accepted": true,
+    "humanSessionNormalReload": true,
+    "oldAsset": "/assets/index-_LDlBDCB.js",
+    "newAsset": "/assets/index-JenqL4HF.js",
+    "pricesJPY": {
+      "free": 0,
+      "creator": 1000,
+      "business": 2000
+    },
+    "limits": {
+      "free": 3,
+      "creator": 10,
+      "business": 50
+    },
+    "humanPaidActionPerformed": false,
+    "wholePWAUpdateAccepted": false
+  },
+  "actualScreenFlow": {
+    "syntheticSigninAndFreeDashboardAccepted": true,
+    "freeToCreatorUIAndSandboxCheckoutAccepted": true,
+    "creatorCurrentPlanScreenAccepted": true,
+    "businessChangeUIAndPortalRoundTripAccepted": true,
+    "businessProrationTestPaymentJPY": 1000,
+    "businessCurrentPlanScreenAccepted": true,
+    "freeDowngradeWarningAndConfirmationAccepted": true,
+    "freeCurrentPlanScreenAndDashboardLimit3Accepted": true,
+    "syntheticLogoutGuestScreenAccepted": true,
+    "manualProjectionOrProfileRewrite": false,
+    "manualDispatchInvoked": false,
+    "postPaymentManualPageReloadRequired": false,
+    "preciseLatencyOrAbsenceOfTimeoutToastAccepted": false,
+    "phases": [
+      {
+        "phase": "owned_free_fixture_prepared",
+        "freeProfile": true,
+        "realProviderMutations": false,
+        "browserSessionNotYetCreated": true,
+        "observedAt": "2026-10-04T22:53:47.552Z"
+      },
+      {
+        "phase": "native_signin_attempt",
+        "plan": "free",
+        "checkouts": [],
+        "providerSubscriptions": [],
+        "local": [],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": null
+        },
+        "receipts": [],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:54:19.340Z"
+      },
+      {
+        "phase": "actual_ui_creator_checkout_opened",
+        "plan": "free",
+        "checkouts": [],
+        "providerSubscriptions": [],
+        "local": [],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": null
+        },
+        "receipts": [],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:54:50.592Z"
+      },
+      {
+        "phase": "actual_ui_creator_checkout_ready",
+        "plan": "free",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "open",
+            "paymentStatus": "unpaid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": false
+          }
+        ],
+        "providerSubscriptions": [],
+        "local": [],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": null
+        },
+        "receipts": [],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:55:16.867Z"
+      },
+      {
+        "phase": "actual_ui_creator_checkout_returned",
+        "plan": "free",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "active",
+            "amount": 1000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": null
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:55:54.722Z"
+      },
+      {
+        "phase": "actual_ui_creator_pending_projection",
+        "plan": "free",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "active",
+            "amount": 1000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": null
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:56:08.979Z"
+      },
+      {
+        "phase": "creator_ui_after_natural_dispatch",
+        "plan": "creator",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "active",
+            "amount": 1000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [
+          {
+            "status": "active",
+            "amount": 1000,
+            "payment_failure_at": null,
+            "payment_failure_type": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "active",
+            "product_id": "prod_VNYUonUkUcODVH",
+            "current_period_start": "2026-10-04T22:55:39.000000Z",
+            "current_period_end": "2026-11-04T22:55:39.000000Z",
+            "amount": 1000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:56:25.931Z"
+      },
+      {
+        "phase": "actual_ui_business_portal_opened",
+        "plan": "creator",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "past_due",
+            "amount": 2000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [
+          {
+            "status": "active",
+            "amount": 1000,
+            "payment_failure_at": null,
+            "payment_failure_type": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "active",
+            "product_id": "prod_VNYUonUkUcODVH",
+            "current_period_start": "2026-10-04T22:55:39.000000Z",
+            "current_period_end": "2026-11-04T22:55:39.000000Z",
+            "amount": 1000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:56:49.956Z"
+      },
+      {
+        "phase": "actual_ui_business_payment_confirmed",
+        "plan": "creator",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "active",
+            "amount": 2000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [
+          {
+            "status": "past_due",
+            "amount": 2000,
+            "payment_failure_at": null,
+            "payment_failure_type": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "past_due",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T22:56:33.000000Z",
+            "current_period_end": "2026-11-04T22:56:33.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:57:26.966Z"
+      },
+      {
+        "phase": "business_ui_natural_projection",
+        "plan": "creator",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "active",
+            "amount": 2000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [
+          {
+            "status": "past_due",
+            "amount": 2000,
+            "payment_failure_at": null,
+            "payment_failure_type": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "past_due",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T22:56:33.000000Z",
+            "current_period_end": "2026-11-04T22:56:33.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:58:00.556Z"
+      },
+      {
+        "phase": "actual_ui_business_current_plan",
+        "plan": "business",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "active",
+            "amount": 2000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [
+          {
+            "status": "active",
+            "amount": 2000,
+            "payment_failure_at": null,
+            "payment_failure_type": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "active",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T22:56:33.000000Z",
+            "current_period_end": "2026-11-04T22:56:33.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:58:36.247Z"
+      },
+      {
+        "phase": "actual_ui_free_cancel_requested",
+        "plan": "business",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "canceled",
+            "amount": 2000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [
+          {
+            "status": "active",
+            "amount": 2000,
+            "payment_failure_at": null,
+            "payment_failure_type": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "active",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T22:56:33.000000Z",
+            "current_period_end": "2026-11-04T22:56:33.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.deleted",
+            "status": "received",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:58:55.511Z"
+      },
+      {
+        "phase": "actual_ui_free_after_natural_dispatch",
+        "plan": "free",
+        "checkouts": [
+          {
+            "mode": "subscription",
+            "status": "complete",
+            "paymentStatus": "paid",
+            "amountTotal": 1000,
+            "currency": "jpy",
+            "subscriptionPresent": true
+          }
+        ],
+        "providerSubscriptions": [
+          {
+            "status": "canceled",
+            "amount": 2000,
+            "currency": "jpy"
+          }
+        ],
+        "local": [
+          {
+            "status": "canceled",
+            "amount": 2000,
+            "payment_failure_at": null,
+            "payment_failure_type": null
+          }
+        ],
+        "projection": {
+          "schemaVersion": 1,
+          "subscription": {
+            "status": "canceled",
+            "product_id": "prod_VNYVvJC6kKXhs0",
+            "current_period_start": "2026-10-04T22:56:33.000000Z",
+            "current_period_end": "2026-11-04T22:56:33.000000Z",
+            "amount": 2000,
+            "currency": "jpy",
+            "interval": "month",
+            "interval_count": 1,
+            "cancel_at_period_end": false,
+            "payment_failure_at": null,
+            "next_payment_attempt": null,
+            "payment_failure_type": null
+          }
+        },
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          },
+          {
+            "event_type": "customer.subscription.deleted",
+            "status": "applied",
+            "delivery_count": 1,
+            "last_error_code": null
+          }
+        ],
+        "humanIdentitiesPreserved": true,
+        "observedAt": "2026-10-04T22:59:30.893Z"
+      },
+      {
+        "phase": "owned_fixture_cleanup",
+        "fixtureRemoved": true,
+        "humanIdentitiesPreserved": true,
+        "providerTestOnly": true,
+        "providerHistoryRetained": true,
+        "receiptEvidence": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "checkout.session.completed",
+            "status": "ignored",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.deleted",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          }
+        ],
+        "observedAt": "2026-10-04T23:01:15.100Z"
+      }
+    ]
+  },
+  "independentReadbacks": [
+    {
+      "observedAt": "2026-10-04T22:54:41.482Z",
+      "label": "native_free_plans_ready",
+      "readOnlyMonitorUsed": true,
+      "rowsWritten": 0,
+      "humanUsers": 2,
+      "humanAccounts": 6,
+      "humanSessions": 1,
+      "humanIdentityAndMFAPreserved": true,
+      "ownedSessionCount": 2,
+      "ownedChromeSessionCount": 1,
+      "plan": "free",
+      "customerPresent": false,
+      "subscriptions": [],
+      "foreignKeyViolations": 0,
+      "fullStripeRehearsalAccepted": false,
+      "fullMigrationAccepted": false
+    },
+    {
+      "observedAt": "2026-10-04T22:58:17.483Z",
+      "label": "business_paid_return",
+      "readOnlyMonitorUsed": true,
+      "rowsWritten": 0,
+      "humanUsers": 2,
+      "humanAccounts": 6,
+      "humanSessions": 1,
+      "humanIdentityAndMFAPreserved": true,
+      "ownedSessionCount": 2,
+      "ownedChromeSessionCount": 1,
+      "plan": "business",
+      "customerPresent": true,
+      "subscriptions": [
+        {
+          "status": "active",
+          "amount": 2000,
+          "payment_failure_at": null,
+          "payment_failure_type": null
+        }
+      ],
+      "foreignKeyViolations": 0,
+      "fullStripeRehearsalAccepted": false,
+      "fullMigrationAccepted": false
+    },
+    {
+      "observedAt": "2026-10-04T22:59:47.127Z",
+      "label": "free_cancel_return",
+      "readOnlyMonitorUsed": true,
+      "rowsWritten": 0,
+      "humanUsers": 2,
+      "humanAccounts": 6,
+      "humanSessions": 1,
+      "humanIdentityAndMFAPreserved": true,
+      "ownedSessionCount": 2,
+      "ownedChromeSessionCount": 1,
+      "plan": "free",
+      "customerPresent": true,
+      "subscriptions": [
+        {
+          "status": "canceled",
+          "amount": 2000,
+          "payment_failure_at": null,
+          "payment_failure_type": null
+        }
+      ],
+      "foreignKeyViolations": 0,
+      "fullStripeRehearsalAccepted": false,
+      "fullMigrationAccepted": false
+    }
+  ],
+  "cleanup": {
+    "observedAt": "2026-10-04T23:01:29.999Z",
+    "workerVersion": "cc6d9da7-b81b-45fe-b0be-6c0978570232",
+    "readOnlyMonitorUsed": true,
+    "humanAccountAndProfilePreserved": true,
+    "authCounts": {
+      "users": 2,
+      "accounts": 6,
+      "sessions": 1
+    },
+    "allOriginalOwnedBusinessTableCountsRestored": true,
+    "masterInventoryAndAllReferenceHistoryPreserved": true,
+    "mfaAndWakePreserved": true,
+    "schemasUnchanged": true,
+    "syntheticAuthAndBusinessRemoved": true,
+    "fullMigrationAccepted": false
+  },
+  "providerTestCustomerDeleted": true,
+  "providerTestInvoiceEventHistoryRetained": true,
+  "businessScreenProof": {
+    "localFileName": "fanmark-business-current-proof-2026-10-05.png",
+    "sha256": "7c9aee20fa04a7bb7bbfd392cf12b059c4024b60bbba1d648826311a13350de9",
+    "cropPurpose": "Exclude unrelated browser tabs/bookmarks; preserve complete three plan cards and current Business marker."
+  },
+  "sameUserSubscriptionAppUIAccepted": true,
+  "sameUserWholeApplicationAccepted": false,
+  "fullStripeRehearsalAccepted": false,
+  "fullMigrationAccepted": false,
+  "remainingUIBoundaries": [
+    "license acquisition/settings/extension with subscription",
+    "over-limit downgrade selection",
+    "paid account deletion",
+    "same final candidate mobile/languages/PWA/provider/jobs/recovery"
+  ],
+  "productionChanged": false,
+  "realPaymentsPerformed": false,
+  "realUserDataMigrated": false,
+  "domainChanged": false,
+  "runtimeOrSchemaRedeployed": false
+}

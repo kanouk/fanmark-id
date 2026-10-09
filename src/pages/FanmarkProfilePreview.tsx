@@ -6,6 +6,7 @@ import { Loader2, ExternalLink, User, ArrowLeft, Edit, Share2, Eye } from 'lucid
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { getOwnerEmojiProfile, type EmojiProfile } from '@/hooks/useEmojiProfile';
+import { getFanmarkProfileBackend, getOwnerFanmarkProfileContext } from '@/lib/fanmark-profile-api';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import {
   FiInstagram,
@@ -94,6 +95,21 @@ export default function FanmarkProfilePreview() {
       setLoading(true);
 
       try {
+        if (getFanmarkProfileBackend() === 'worker') {
+          const context = await getOwnerFanmarkProfileContext(fanmarkId);
+          setCachedFanmark(prev => prev || {
+            user_input_fanmark: context.fanmark.user_input_fanmark,
+            fanmark: context.fanmark.fanmark || context.fanmark.user_input_fanmark,
+            emoji_ids: context.fanmark.emoji_ids,
+            display_name: context.fanmark.fanmark_name,
+            short_id: context.fanmark.short_id,
+          });
+          setLicenseId(context.licenseId);
+          setProfile(context.profile);
+          setLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase.rpc('get_fanmark_complete_data', {
           fanmark_id_param: fanmarkId
         });
@@ -136,6 +152,7 @@ export default function FanmarkProfilePreview() {
   // Load owner profile once license is resolved (preview ignores public flag)
   useEffect(() => {
     const loadOwnerProfile = async () => {
+      if (getFanmarkProfileBackend() === 'worker') return;
       if (!licenseId) {
         setLoading(false);
         return;

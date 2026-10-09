@@ -1,0 +1,65 @@
+{
+  "observedAt": "2026-10-08T08:59:17.941Z",
+  "scope": "Actual JA verification email after target-only one-hour copy correction",
+  "workerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+  "runtimeImplementationCommit": "450ec085821b8fb8d491ec5ac0bf69067863eb22",
+  "runtimeSourceCommit": "85866014c8079e407ab480ed6f2c9a0ae6663971",
+  "priorCorrectionEvidence": "staging-auth-verification-copy-2026-10-08.json",
+  "recipient": "User-approved numbered staging alias test02",
+  "authApi": {
+    "path": "/api/auth/send-verification-email",
+    "status": 200,
+    "maximumSendAttempts": 1
+  },
+  "provider": {
+    "name": "Resend",
+    "messagesObserved": 1,
+    "status": "Delivered",
+    "jaCopyClaimsHours": 1,
+    "twentyFourHourCopyPresent": false
+  },
+  "link": {
+    "origin": "https://fanmark-app-staging.fanmark-id.workers.dev",
+    "path": "/api/auth/verify-email",
+    "lifetimeSeconds": 3600,
+    "callbackPath": "/auth?verified=1",
+    "opened": false
+  },
+  "fixture": {
+    "emailOnlyUser": true,
+    "credentialAccountsCreated": 0,
+    "passwordsCreated": 0,
+    "sessionsCreated": 0,
+    "exactOwnedUserAndProfileRemoved": true,
+    "numberedAliasNotReusedBeforeTokenExpiry": true
+  },
+  "independentReadback": {
+    "at": "2026-10-08T08:59:17.941Z",
+    "separateProcess": true,
+    "readCredentialOnly": true,
+    "workerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+    "allBaselineHashesEqual": true,
+    "businessTables": 79,
+    "authTables": 10,
+    "masterTables": 25,
+    "authUsers": 3,
+    "authAccounts": 7,
+    "authSessions": 2,
+    "foreignKeyViolations": 0,
+    "settingsMatched": true,
+    "namespacesMatched": true,
+    "ownedEmailOnlyFixtureAbsent": true,
+    "newPasswordCount": 0,
+    "newAccountCount": 0,
+    "newSessionCount": 0
+  },
+  "actualCorrectedJaMessageAndProviderDeliveryAccepted": true,
+  "humanMailboxReceiptAccepted": false,
+  "newSignupOrLoginAcceptance": false,
+  "otherThreeLanguagesActualProviderDeliveryAccepted": false,
+  "resendSignedBroadcastWebhookAccepted": false,
+  "runtimeConfigSchemaAndTemplatesChanged": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false
+}

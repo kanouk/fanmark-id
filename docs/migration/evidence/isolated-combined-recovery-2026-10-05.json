@@ -1,0 +1,287 @@
+{
+  "schemaVersion": 1,
+  "scope": "Current candidate synthetic Business/Auth dependency/Master/split R2 remote restore into two fresh isolated targets; no real user migration.",
+  "testedHead": "4c2a8c590edca303d93a03e0d88dcccb4db5865b",
+  "runtimeHead": "12fa13f3c99712f7cae9b814d8fd1a9813b48108",
+  "onlyDocumentationDiffersFromDeployedRuntime": true,
+  "ciRun": 37246478014,
+  "ciBothJobsSuccess": true,
+  "acceptedAt": "2026-10-05T00:25:02.079Z",
+  "independentInventoryObservedAt": "2026-10-05T00:25:38.639Z",
+  "bundleSHA256": "fc64138c1b8ca2f3fd58de5bd0c4c42eb1a8125f04dbbc2801a1f95338231954",
+  "remoteSyntheticBundleAccepted": true,
+  "sourceTableCount": 40,
+  "sourceRowCount": 15,
+  "nonEmptySourceTableCount": 9,
+  "sourceTableCountsAndHashes": [
+    [
+      "audit_logs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "broadcast_emails",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "email_templates",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "emoji_master",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "enterprise_user_settings",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "extension_coupons",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_availability_rules",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_tier_extension_prices",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_tiers",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmarks",
+      3,
+      "e8c8020d75ea1a16503241064cb64874f03a2e38d8e5d1dce42804a3f3427a13"
+    ],
+    [
+      "invitation_codes",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "languages",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "notification_events",
+      1,
+      "8bb438d8c6b64089e4ccc13fff1dd0f2a3d2daf39e3eeba8fcc810a6427404a5"
+    ],
+    [
+      "notification_preferences",
+      1,
+      "c97bb8de2e25125c9a138e597628bb0584391ccf15f5775027b65c3c9a473c68"
+    ],
+    [
+      "notification_rules",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "notification_templates",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "notifications_history",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "reserved_emoji_patterns",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "system_settings",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "user_roles",
+      1,
+      "a94079c893d399ef242034e12c0fad044a1ac148aae3011d530f513ec38d5137"
+    ],
+    [
+      "user_subscriptions",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "waitlist",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_discoveries",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_licenses",
+      3,
+      "5e17c88ff81829d13aff24e51ede9ad1dc605871ce1e44e837f051dd8444c600"
+    ],
+    [
+      "notifications",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "user_settings",
+      1,
+      "7a8a1a7a0e9f488fe3e66e311003076115a032db889b6324a719ccdccd5c30ad"
+    ],
+    [
+      "extension_coupon_usages",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_access_daily_stats",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_access_logs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_basic_configs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_events",
+      1,
+      "950b96c5538ece05fe9139e034c35d12795da4445dcc939bbf86f28db24631df"
+    ],
+    [
+      "fanmark_favorites",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_lottery_entries",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_messageboard_configs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_profiles",
+      1,
+      "cc48d70d790d1727a5a39fb25d0065f1503cde4746665e925a9b51cccfacac0f"
+    ],
+    [
+      "fanmark_redirect_configs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_transfer_codes",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_lottery_history",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_password_configs",
+      3,
+      "cefc9f6469f835605c4a73fdb45dba6aa336a27475ad5ebad49b9653e1dd742f"
+    ],
+    [
+      "fanmark_transfer_requests",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ]
+  ],
+  "businessMigrationCount": 25,
+  "authMigrationCount": 4,
+  "authRestorationMode": "one seeded synthetic dependency user; not credential backup",
+  "auxiliary": {
+    "bundleSHA256": "fc64138c1b8ca2f3fd58de5bd0c4c42eb1a8125f04dbbc2801a1f95338231954",
+    "emojiVersion": "7b91ba34829d1db697e74e22e5b8c4bbfb93204736a5fe44d3d748fdc622ee97",
+    "referenceVersion": "345d60ef0fac854d6bcc4792af0d406076dc3670dc9b29f89d6feaff8314e6ef",
+    "masterEmojiCount": 3,
+    "masterTierCount": 4,
+    "masterMigrationCount": 8,
+    "retainedMasterAuthCore": true,
+    "r2ObjectCount": 2,
+    "linkedAssetsVerified": true,
+    "physicalBucketKeysVerified": true,
+    "applicationStorageReadVerified": true
+  },
+  "targets": [
+    {
+      "phase": "primary",
+      "acceptedAt": "2026-10-05T00:22:59.951Z",
+      "syntheticProvisionAndRestoreDurationMs": 100335,
+      "committedCredentialInterruptionObserved": true,
+      "cleanupVerified": true
+    },
+    {
+      "phase": "restored",
+      "acceptedAt": "2026-10-05T00:24:48.295Z",
+      "syntheticProvisionAndRestoreDurationMs": 96988,
+      "committedCredentialInterruptionObserved": false,
+      "cleanupVerified": true
+    }
+  ],
+  "twoPhysicalTargetsAndIncarnationsDistinct": true,
+  "foreignKeyViolations": 0,
+  "notificationWake": {
+    "requestedGeneration": 1,
+    "acknowledgedGeneration": 0,
+    "scope": "each isolated target; no active notification dispatcher"
+  },
+  "originalInventoryEqualsFinal": true,
+  "independentInventoryEqualsOriginal": true,
+  "existingResourceCounts": {
+    "d1": 3,
+    "r2": 3,
+    "workers": 2
+  },
+  "mainWorkerVersion": "cc6d9da7-b81b-45fe-b0be-6c0978570232",
+  "mainWorkerUnchanged": true,
+  "existingAccountMasterMfaWakeAndSearchCountsPreserved": true,
+  "preservationObservedAt": "2026-10-05T00:25:34.927Z",
+  "preservedAuthCounts": {
+    "users": 2,
+    "accounts": 6,
+    "sessions": 1
+  },
+  "preservedAnonymousSearchCounts": {
+    "fanmark_discoveries": 2,
+    "fanmark_events": 5
+  },
+  "realUserDataMigrated": false,
+  "sourceOrRealAuthExported": false,
+  "dnsChanged": false,
+  "converterDeployable": false,
+  "authCredentialBackupRestoreAccepted": false,
+  "fullMasterDatasetBackupAccepted": false,
+  "sourceUrlBrowserDisplayProvedByThisRun": false,
+  "productionRtoAccepted": false,
+  "sameCandidateWholeApplicationAccepted": false,
+  "fullMigrationAccepted": false
+}

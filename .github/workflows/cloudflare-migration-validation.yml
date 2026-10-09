@@ -1,0 +1,137 @@
+name: Cloudflare migration validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-migration-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: Validate Cloudflare staging application
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install application dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Worker dependencies used by migration tests
+        run: npm ci --prefix workers/api
+
+      - name: Ensure SQLite schema-validation CLI
+        timeout-minutes: 5
+        run: |
+          if ! command -v sqlite3 >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --yes --no-install-recommends sqlite3
+          fi
+          sqlite3 --version
+
+      - name: Verify workflow isolation
+        run: npm run check:ci
+
+      - name: Verify configured scheduled jobs have Cron triggers
+        run: npm run check:cloudflare-schedules
+
+      - name: Test migration data boundaries
+        run: npm run test:migration-data
+
+      # Master artifact generation also imports the application's catalog tools.
+      # This job installs both application and Worker dependency trees.
+      - name: Test combined Business Auth Master and split R2 recovery
+        run: npm --prefix workers/api run test:combined-recovery
+
+      - name: Install Stripe receipt migration test dependencies
+        run: npm ci --prefix experiments/stripe-receipts
+
+      - name: Test Stripe receipt, billing, and invoice migration contracts
+        run: npm --prefix experiments/stripe-receipts test
+
+      - name: Type check Stripe receipt migration contracts
+        run: npm --prefix experiments/stripe-receipts run typecheck
+
+      - name: Test admin return URL behavior
+        run: npm run test:admin-auth-url
+
+      - name: Test startup update checks during catalog failure
+        run: npm run test:app-startup
+
+      - name: Test old-client hashed asset preservation
+        run: npm run test:staging-asset-retention
+
+      - name: Test main login MFA and session completion
+        run: npm run test:auth-login-mfa
+      - name: Plan projection confirmation
+        run: npm run test:plan-projection-polling
+
+      - name: Verify extension checkout confirmation
+        run: npm run test:stripe-extension-checkout-api
+
+      - name: Test invitation-gated signup with actual local Worker
+        run: npm run test:staging-invitation-signup-local
+
+      - name: Type check application
+        run: npm run typecheck
+
+      - name: Prepare empty staging build environment
+        run: mkdir -p "$RUNNER_TEMP/fanmark-ui-fixture-env"
+
+      - name: Build Cloudflare staging application
+        env:
+          FANMARK_VITE_ENV_DIR: ${{ runner.temp }}/fanmark-ui-fixture-env
+          VITE_FANMARK_API_BASE_URL: https://fanmark-app-staging.fanmark-id.workers.dev
+          VITE_AUTH_API_BASE_URL: https://fanmark-app-staging.fanmark-id.workers.dev
+          VITE_SUPABASE_URL: https://synthetic-db.example.invalid
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_fixture_only
+        run: npm run build:cloudflare-staging
+
+      - name: Test rendered owner profile editor
+        run: npm run test:staging-profile-editor-ui
+
+      - name: Test owner editor with actual local Worker and split D1
+        run: npm run test:staging-profile-editor-local
+
+  worker:
+    name: Validate Cloudflare Worker API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workers/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: workers/api/package-lock.json
+
+      - name: Install Worker dependencies
+        run: npm ci
+
+      - name: Test Worker API and local D1 contracts
+        run: npm test
+
+      - name: Test current Business and Auth runtime import
+        run: npm run test:business-runtime-import
+
+      - name: Type check Worker API
+        run: npm run typecheck
+
+      - name: Validate Worker bundle without deployment
+        run: npm run build:dry-run

@@ -1,12 +1,13 @@
 import {
-  EmojiMasterRecord,
+  type EmojiMasterRecord,
   primeEmojiMasterCache,
   convertEmojiSequenceToIds,
   convertEmojiIdsToSequence,
   convertEmojiIdsToNormalizedIds,
   convertEmojiSequenceToNormalizedIds,
 } from "../src/lib/emoji-master-utils.ts";
-import { canonicalizeEmojiString } from "../src/lib/emojiConversion";
+import { emojiCatalogEntries, emojiToId } from "../src/data/emojiCatalog.ts";
+import { canonicalizeEmojiString, installEmojiCatalog } from "../src/lib/emojiConversion.ts";
 
 const sampleRecords: EmojiMasterRecord[] = [
   {
@@ -168,6 +169,7 @@ const canonicalizationCases = [
 ];
 
 const main = async () => {
+  installEmojiCatalog(emojiCatalogEntries, emojiToId);
   console.log("⚙️  Priming emoji master cache with sample records...");
   primeEmojiMasterCache(sampleRecords);
 

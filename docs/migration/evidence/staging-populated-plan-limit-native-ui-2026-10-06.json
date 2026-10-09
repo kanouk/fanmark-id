@@ -1,0 +1,78 @@
+{
+  "observedAt": "2026-10-06T00:37:43.498Z",
+  "workerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "runtimeSourceCommit": "0ed4213ac55620ec45b4d59fcc173005cb1e1de3",
+  "scope": "Stripe test subscription with populated Free downgrade native UI and owned staging cleanup",
+  "uiChecks": {
+    "nativeSigninAccepted": true,
+    "checkoutSandboxAmountYen": 1000,
+    "independentPreparedReadbackAccepted": true,
+    "sandboxCheckoutHumanApprovalReceived": true,
+    "independentCreatorReadbackAccepted": true,
+    "fiveActualRegisterApiLicensesCreated": true,
+    "nativeCreatorVisibleAfterAuthoritativeReload": true,
+    "nativeFiveOptionsThreeSelectionCapObserved": true,
+    "independentDowngradedReadbackAccepted": true,
+    "nativeFreePlanVisibleAfterSelection": true,
+    "nativeFreeDashboardThreeOfThree": true,
+    "nativeSelectedThreeActiveAndExcludedTwoReturning": true,
+    "finalUiLogout": true
+  },
+  "creatorCheckoutSubmittedOnce": true,
+  "checkoutLivemode": false,
+  "licensesBeforeSelection": 5,
+  "selectedLicenseCount": 3,
+  "returnedGraceLicenseCount": 2,
+  "canceledTestSubscription": true,
+  "naturalSignedWebhookAccepted": true,
+  "receiptAndDispatchTerminalCounts": {
+    "receipts": 4,
+    "dispatches": 4
+  },
+  "receiptEvents": [
+    {
+      "type": "invoice.payment_succeeded",
+      "status": "applied",
+      "deliveryCount": 1
+    },
+    {
+      "type": "checkout.session.completed",
+      "status": "ignored",
+      "deliveryCount": 1
+    },
+    {
+      "type": "customer.subscription.created",
+      "status": "applied",
+      "deliveryCount": 1
+    },
+    {
+      "type": "customer.subscription.deleted",
+      "status": "applied",
+      "deliveryCount": 1
+    }
+  ],
+  "applicationAndOwnedAuthBusinessRowsAbsent": true,
+  "retainedAuthCounts": {
+    "users": 3,
+    "accounts": 7,
+    "sessions": 2
+  },
+  "masterFull24TableDigestsUnchanged": true,
+  "unownedScopedBusinessDigestsUnchanged": true,
+  "existingProfilesAndMfaUnchanged": true,
+  "anonymousHistoryCounts": {
+    "discoveries": 5,
+    "events": 8
+  },
+  "wakeAcknowledgedAndNotReset": true,
+  "wakeGeneration": 23,
+  "foreignKeyViolations": 0,
+  "independentReadOnlyReadback": true,
+  "stripeTestCustomerAndHistoricalInvoicesRetained": true,
+  "paidAccountDeletionUiAccepted": false,
+  "fullMigrationAccepted": false,
+  "invoiceReceiptNaturalRetryAttempts": 2,
+  "freeWebhookDidNotRepeatUiReturns": true,
+  "freeWebhookRemainingActiveLicenseCount": 3,
+  "freeWebhookAdditionalReturnedCount": 0
+}

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "scope": "Native editing and explicit refresh/reopen of one inactive synthetic invitation code",
+  "worker": "fanmark-app-staging",
+  "workerVersion": "471faabe-3aff-4312-ba22-cd326dc821e1",
+  "runtimeHead": "bdc23da03136d9ae7ad3e509f23ebceb71b0d522",
+  "startedAt": "2026-10-06T14:29:30.967Z",
+  "finishedAt": "2026-10-06T14:33:54.622Z",
+  "fixtures": {
+    "syntheticAdmins": 1,
+    "credentialAccounts": 1,
+    "existingTotpFactors": 1,
+    "inactiveInvitationCodes": 1
+  },
+  "authentication": {
+    "nativeExistingFactorChallengeAccepted": true,
+    "sameSessionVerifiedFactorAssuranceConfirmed": true,
+    "nativeCredentialCreationOrChange": false,
+    "passwordSaveDeclined": true,
+    "nativeLogoutAccepted": true,
+    "sessionsAfterLogout": 0,
+    "assurancesAfterLogout": 0
+  },
+  "nativeEditing": {
+    "maxUsesBefore": 10,
+    "maxUsesAfter": 1,
+    "codeUnchanged": true,
+    "usedCount": 0,
+    "expiresAtUnchanged": null,
+    "inactiveThroughout": true,
+    "globalInvitationModeChanged": false,
+    "perksExactMatch": true,
+    "emojiAndLiteralDollarAmpersandPreserved": true,
+    "updatedAtAdvanced": true,
+    "saveToastObserved": true,
+    "explicitReloadButtonUsed": true,
+    "editingDialogReopenedValuesMatched": true,
+    "nativeSubmitClicks": 1,
+    "screenshotSha256": "b7c650e16a3c7282985c8875f837bea933a027c186ba99febb2d809f34f1dc8e"
+  },
+  "cleanup": {
+    "exactOwnedRowsRemoved": {
+      "invitation_codes": 1,
+      "user_settings": 1,
+      "user": 1,
+      "audit_logs": 2,
+      "verification": 0
+    },
+    "auditBoundary": "Opening invitation management also reads the empty waitlist and creates ADMIN_CHECK/AUTHORIZED_WAITLIST_ACCESS audits. Exact actor UUID, action, timestamp, resource and metadata were pinned before removal; unrelated audits preserved.",
+    "ownedAuthCascadeRowsAbsent": true,
+    "ownedRowsRemaining": 0,
+    "allPreexistingTableRowHashesPreserved": true,
+    "foreignKeyViolations": 0,
+    "authBaseline": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "masterTableCount": 25,
+    "mfaGenerationIncrement": 2,
+    "generationsNotRewound": true,
+    "workerVersionUnchanged": true,
+    "syntheticCredentialsRemoved": true,
+    "independentReadOnlyProcessAt": "2026-10-06T14:33:54.622Z"
+  },
+  "additionalEmails": 0,
+  "signupOrInvitationUseRequests": 0,
+  "runtimeRedeployed": false,
+  "secretsChanged": false,
+  "sourceWrites": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false,
+  "remainingBoundary": "Accepts editing an inactive synthetic code, not native issuance/activation/deletion, invitation-required signup/consumption, or full admin/final integration."
+}

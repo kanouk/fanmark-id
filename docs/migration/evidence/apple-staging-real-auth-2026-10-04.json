@@ -1,0 +1,58 @@
+{
+  "observedAt": "2026-10-04T10:30:58.958Z",
+  "worker": "fanmark-app-staging",
+  "version": "495b3ce4-7733-40c5-82e6-c7d4c180d287",
+  "runtimeCodeHead": "7e6cf76d86aa231a09af674b09212893857faf58",
+  "stage": "relogin",
+  "appleActualCallbackAccepted": true,
+  "appleAccountSessionOwnerMatched": true,
+  "accountDisposition": "linked_existing_google_user",
+  "originalProvisioningProvider": "google",
+  "appleNewUserProvisioningAccepted": false,
+  "passwordSetupRequired": false,
+  "credentialAccountExists": true,
+  "sessionCount": 1,
+  "retainedGithubAndGoogleIdentitiesPreserved": true,
+  "sameAppleIdentityAsCallback": true,
+  "authCounts": {
+    "users": 2,
+    "accounts": 6,
+    "sessions": 1
+  },
+  "businessProfiles": 2,
+  "passwordValuesOrHashesRead": false,
+  "identifiersEmailsTokensExported": false,
+  "readOnlyReceiptsAccepted": true,
+  "existingUserDataMigrated": false,
+  "productionDomainChanged": false,
+  "initialError": {
+    "code": "forbidden_origin",
+    "appleFormPostGatewayFixed": true
+  },
+  "retainedDiscordIdentityPreserved": true,
+  "realLogoutAccepted": true,
+  "loggedOutSessionCount": 0,
+  "reloadRemainedUnauthenticated": true,
+  "repeatAppleLoginAccepted": true,
+  "controlledTestAccountsRetained": true,
+  "newAppleFirstPasswordSetupAccepted": false,
+  "newSignupAndRelayRehearsalStillRequired": true,
+  "repeatLoginError": {
+    "code": "state_mismatch",
+    "callbackTime": "2026-10-04T10:27:28.120Z",
+    "passwordHandoffTime": "2026-10-04T10:17:08Z",
+    "elapsedMinutesAtLeast": 10,
+    "stateCookieMaxAgeSeconds": 300,
+    "stateVerificationMaxAgeSeconds": 600,
+    "expiryHypothesis": true,
+    "exactCookieFailureNotCaptured": true,
+    "freshRetrySucceeded": true
+  },
+  "observations": {
+    "callback": "2026-10-04T10:14:46.265Z",
+    "logout": "2026-10-04T10:15:20.391Z",
+    "failedRetryReadback": "2026-10-04T10:28:43.113Z",
+    "relogin": "2026-10-04T10:30:58.958Z"
+  },
+  "fullMigrationAccepted": false
+}

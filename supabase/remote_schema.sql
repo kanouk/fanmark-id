@@ -66,64 +66,128 @@ CREATE TYPE "public"."user_role" AS ENUM (
 ALTER TYPE "public"."user_role" OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[]) RETURNS boolean
+CREATE OR REPLACE FUNCTION "public"."activate_notification_worker"() RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO ''
     AS $$
 DECLARE
-  auth_user_id uuid;
-  normalized_ids uuid[];
-  discovery_id uuid;
-  linked_fanmark_id uuid;
+  notification_job_id bigint;
+  notification_job_active boolean;
 BEGIN
-  SELECT auth.uid() INTO auth_user_id;
-  IF auth_user_id IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
-  END IF;
+  -- Serialize wake/sleep decisions so a concurrent insert cannot be lost while
+  -- the worker is deciding to deactivate itself.
+  PERFORM pg_catalog.pg_advisory_xact_lock(724561839104227);
 
-  normalized_ids := public.normalize_emoji_ids(input_emoji_ids);
-  IF normalized_ids IS NULL OR array_length(normalized_ids, 1) = 0 THEN
-    RAISE EXCEPTION 'Invalid emoji ids';
-  END IF;
+  SELECT jobid, active
+    INTO notification_job_id, notification_job_active
+  FROM cron.job
+  WHERE jobname = 'process-notification-events-every-minute';
 
-  discovery_id := public.upsert_fanmark_discovery(input_emoji_ids, false);
-
-  SELECT fanmark_id INTO linked_fanmark_id
-  FROM public.fanmark_discoveries
-  WHERE id = discovery_id;
-
-  INSERT INTO public.fanmark_favorites (
-    user_id,
-    discovery_id,
-    fanmark_id,
-    normalized_emoji_ids
-  )
-  VALUES (
-    auth_user_id,
-    discovery_id,
-    linked_fanmark_id,
-    normalized_ids
-  )
-  ON CONFLICT (user_id, seq_key(normalized_emoji_ids))
-  DO NOTHING;
-
-  IF NOT FOUND THEN
+  IF notification_job_id IS NULL THEN
+    RAISE WARNING 'Notification worker cron job was not found';
     RETURN false;
   END IF;
 
-  UPDATE public.fanmark_discoveries
-  SET favorite_count = favorite_count + 1
-  WHERE id = discovery_id;
-
-  INSERT INTO public.fanmark_events (event_type, user_id, discovery_id, normalized_emoji_ids)
-  VALUES ('favorite_add', auth_user_id, discovery_id, normalized_ids);
+  IF NOT notification_job_active THEN
+    PERFORM cron.alter_job(notification_job_id, active := true);
+  END IF;
 
   RETURN true;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Notification event creation must not break a user-facing operation when
+    -- the scheduler is temporarily unavailable.
+    RAISE WARNING 'Failed to activate notification worker: %', SQLERRM;
+    RETURN false;
 END;
 $$;
 
 
-ALTER FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[]) OWNER TO "postgres";
+ALTER FUNCTION "public"."activate_notification_worker"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."activate_notification_worker"() IS 'Activates the one-minute notification cron job after pending work is queued.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."activate_notification_worker_on_pending_event"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  PERFORM public.activate_notification_worker();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."activate_notification_worker_on_pending_event"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."activate_notification_worker_on_pending_event"() IS 'Trigger function that wakes the notification cron job without failing event creation.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[], "input_display_fanmark" "text") RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  auth_user_id uuid;
+  normalized_ids uuid[];
+  discovery_id uuid;
+  linked_fanmark_id uuid;
+begin
+  select auth.uid() into auth_user_id;
+  if auth_user_id is null then
+    raise exception 'Authentication required';
+  end if;
+
+  normalized_ids := public.normalize_emoji_ids(input_emoji_ids);
+  if normalized_ids is null or array_length(normalized_ids, 1) = 0 then
+    raise exception 'Invalid emoji ids';
+  end if;
+
+  discovery_id := public.upsert_fanmark_discovery(input_emoji_ids, false);
+
+  select fanmark_id into linked_fanmark_id
+  from public.fanmark_discoveries
+  where id = discovery_id;
+
+  insert into public.fanmark_favorites (
+    user_id,
+    discovery_id,
+    fanmark_id,
+    normalized_emoji_ids,
+    display_fanmark
+  )
+  values (
+    auth_user_id,
+    discovery_id,
+    linked_fanmark_id,
+    normalized_ids,
+    input_display_fanmark
+  )
+  on conflict (user_id, seq_key(normalized_emoji_ids))
+  do nothing;
+
+  if not found then
+    return false;
+  end if;
+
+  update public.fanmark_discoveries
+  set favorite_count = favorite_count + 1
+  where id = discovery_id;
+
+  insert into public.fanmark_events (event_type, user_id, discovery_id, normalized_emoji_ids)
+  values ('favorite_add', auth_user_id, discovery_id, normalized_ids);
+
+  return true;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[], "input_display_fanmark" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."archive_old_notifications"("days_old" integer DEFAULT 90) RETURNS integer
@@ -414,6 +478,7 @@ ALTER FUNCTION "public"."classify_fanmark_tier"("input_emoji_ids" "uuid"[]) OWNE
 
 CREATE OR REPLACE FUNCTION "public"."count_fanmark_emoji_units"("input" "text") RETURNS integer
     LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   normalized text;
@@ -496,6 +561,59 @@ $$;
 ALTER FUNCTION "public"."create_notification_event"("event_type_param" "text", "payload_param" "jsonb", "source_param" "text", "dedupe_key_param" "text", "trigger_at_param" timestamp with time zone) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."deactivate_notification_worker_if_idle"() RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  notification_job_id bigint;
+  notification_job_active boolean;
+BEGIN
+  -- This is the same lock used by activate_notification_worker(). Whichever
+  -- transaction wins, the later transaction rechecks committed queue state.
+  PERFORM pg_catalog.pg_advisory_xact_lock(724561839104227);
+
+  -- Future trigger_at values remain pending, so the existing at-most-one-minute
+  -- delivery behavior is preserved when delayed events are introduced.
+  IF EXISTS (
+    SELECT 1
+    FROM public.notification_events
+    WHERE status = 'pending'
+  ) THEN
+    RETURN false;
+  END IF;
+
+  SELECT jobid, active
+    INTO notification_job_id, notification_job_active
+  FROM cron.job
+  WHERE jobname = 'process-notification-events-every-minute';
+
+  IF notification_job_id IS NULL THEN
+    RAISE WARNING 'Notification worker cron job was not found';
+    RETURN false;
+  END IF;
+
+  IF notification_job_active THEN
+    PERFORM cron.alter_job(notification_job_id, active := false);
+  END IF;
+
+  RETURN true;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Fail open: leaving the job active retains the pre-change retry behavior.
+    RAISE WARNING 'Failed to deactivate notification worker: %', SQLERRM;
+    RETURN false;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."deactivate_notification_worker_if_idle"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."deactivate_notification_worker_if_idle"() IS 'Deactivates the notification cron job only when no pending events remain.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."generate_safe_display_name"("user_email" "text", "user_id" "uuid") RETURNS "text"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -546,46 +664,47 @@ $$;
 ALTER FUNCTION "public"."generate_transfer_code_string"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_fanmark_by_emoji"("input_emoji_ids" "uuid"[]) RETURNS TABLE("id" "uuid", "user_input_fanmark" "text", "emoji_ids" "uuid"[], "fanmark_name" "text", "access_type" "text", "target_url" "text", "text_content" "text", "status" "text", "is_password_protected" boolean, "short_id" "text")
+CREATE OR REPLACE FUNCTION "public"."get_fanmark_by_emoji"("input_emoji_ids" "uuid"[]) RETURNS TABLE("id" "uuid", "user_input_fanmark" "text", "display_fanmark" "text", "emoji_ids" "uuid"[], "fanmark_name" "text", "access_type" "text", "target_url" "text", "text_content" "text", "status" "text", "is_password_protected" boolean, "short_id" "text")
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
+declare
   normalized_ids uuid[];
-BEGIN
-  IF input_emoji_ids IS NULL OR array_length(input_emoji_ids, 1) = 0 THEN
-    RETURN;
-  END IF;
+begin
+  if input_emoji_ids is null or array_length(input_emoji_ids, 1) = 0 then
+    return;
+  end if;
 
   normalized_ids := public.normalize_emoji_ids(input_emoji_ids);
 
-  IF normalized_ids IS NULL OR array_length(normalized_ids, 1) = 0 THEN
-    RETURN;
-  END IF;
+  if normalized_ids is null or array_length(normalized_ids, 1) = 0 then
+    return;
+  end if;
 
-  RETURN QUERY
-  SELECT
+  return query
+  select
     f.id,
     f.user_input_fanmark,
+    fl.display_fanmark,
     f.emoji_ids,
-    COALESCE(bc.fanmark_name, f.user_input_fanmark) AS fanmark_name,
-    COALESCE(bc.access_type, 'inactive') AS access_type,
+    coalesce(bc.fanmark_name, f.user_input_fanmark) as fanmark_name,
+    coalesce(bc.access_type, 'inactive') as access_type,
     rc.target_url,
-    mc.content AS text_content,
+    mc.content as text_content,
     f.status,
-    COALESCE(pc.is_enabled, false) AS is_password_protected,
+    coalesce(pc.is_enabled, false) as is_password_protected,
     f.short_id
-  FROM fanmarks f
-  LEFT JOIN fanmark_licenses fl ON f.id = fl.fanmark_id
-    AND fl.status = 'active'
-    AND fl.license_end > now()
-  LEFT JOIN fanmark_basic_configs bc ON fl.id = bc.license_id
-  LEFT JOIN fanmark_redirect_configs rc ON fl.id = rc.license_id
-  LEFT JOIN fanmark_messageboard_configs mc ON fl.id = mc.license_id
-  LEFT JOIN fanmark_password_configs pc ON fl.id = pc.license_id
-  WHERE f.normalized_emoji_ids = normalized_ids
-    AND f.status = 'active';
-END;
+  from fanmarks f
+  left join fanmark_licenses fl on f.id = fl.fanmark_id
+    and fl.status = 'active'
+    and fl.license_end > now()
+  left join fanmark_basic_configs bc on fl.id = bc.license_id
+  left join fanmark_redirect_configs rc on fl.id = rc.license_id
+  left join fanmark_messageboard_configs mc on fl.id = mc.license_id
+  left join fanmark_password_configs pc on fl.id = pc.license_id
+  where f.normalized_emoji_ids = normalized_ids
+    and f.status = 'active';
+end;
 $$;
 
 
@@ -597,39 +716,39 @@ CREATE OR REPLACE FUNCTION "public"."get_fanmark_by_short_id"("shortid_param" "t
     SET "search_path" TO 'public'
     AS $$
 BEGIN
-    RETURN QUERY
-    SELECT
-        f.id,
-        f.short_id,
-        f.user_input_fanmark,
-        fl.display_fanmark,
-        f.emoji_ids,
-        COALESCE(bc.fanmark_name, f.user_input_fanmark) AS fanmark_name,
-        COALESCE(bc.access_type, 'inactive') AS access_type,
-        rc.target_url,
-        mc.content AS text_content,
-        f.status,
-        COALESCE(pc.is_enabled, false) AS is_password_protected,
-        fl.id AS license_id,
-        fl.status AS license_status,
-        fl.license_end,
-        fl.grace_expires_at,
-        fl.is_returned
-    FROM fanmarks f
-    LEFT JOIN LATERAL (
-        SELECT fl_inner.*
-        FROM fanmark_licenses fl_inner
-        WHERE fl_inner.fanmark_id = f.id
-          AND fl_inner.status = 'active'
-        ORDER BY fl_inner.license_end DESC NULLS LAST
-        LIMIT 1
-    ) fl ON TRUE
-    LEFT JOIN fanmark_basic_configs bc ON fl.id = bc.license_id
-    LEFT JOIN fanmark_redirect_configs rc ON fl.id = rc.license_id
-    LEFT JOIN fanmark_messageboard_configs mc ON fl.id = mc.license_id
-    LEFT JOIN fanmark_password_configs pc ON fl.id = pc.license_id
-    WHERE f.short_id = shortid_param
-      AND f.status = 'active';
+  RETURN QUERY
+  SELECT
+    f.id,
+    f.short_id,
+    f.user_input_fanmark,
+    fl.display_fanmark,
+    f.emoji_ids,
+    COALESCE(bc.fanmark_name, f.user_input_fanmark) AS fanmark_name,
+    COALESCE(bc.access_type, 'inactive') AS access_type,
+    rc.target_url,
+    mc.content AS text_content,
+    f.status,
+    COALESCE(pc.is_enabled, false) AS is_password_protected,
+    fl.id AS license_id,
+    fl.status AS license_status,
+    fl.license_end,
+    fl.grace_expires_at,
+    fl.is_returned
+  FROM fanmarks f
+  LEFT JOIN LATERAL (
+    SELECT fl_inner.*
+    FROM fanmark_licenses fl_inner
+    WHERE fl_inner.fanmark_id = f.id
+      AND fl_inner.status = 'active'
+    ORDER BY fl_inner.license_end DESC NULLS LAST
+    LIMIT 1
+  ) fl ON TRUE
+  LEFT JOIN fanmark_basic_configs bc ON fl.id = bc.license_id
+  LEFT JOIN fanmark_redirect_configs rc ON fl.id = rc.license_id
+  LEFT JOIN fanmark_messageboard_configs mc ON fl.id = mc.license_id
+  LEFT JOIN fanmark_password_configs pc ON fl.id = pc.license_id
+  WHERE f.short_id = shortid_param
+    AND f.status = 'active';
 END;
 $$;
 
@@ -637,169 +756,171 @@ $$;
 ALTER FUNCTION "public"."get_fanmark_by_short_id"("shortid_param" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_fanmark_complete_data"("fanmark_id_param" "uuid" DEFAULT NULL::"uuid", "emoji_ids_param" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS TABLE("id" "uuid", "user_input_fanmark" "text", "emoji_ids" "uuid"[], "normalized_emoji" "text", "short_id" "text", "access_type" "text", "status" "text", "created_at" timestamp with time zone, "updated_at" timestamp with time zone, "fanmark_name" "text", "target_url" "text", "text_content" "text", "is_password_protected" boolean, "current_owner_id" "uuid", "license_end" timestamp with time zone, "has_active_license" boolean, "license_id" "uuid", "current_license_status" "text", "current_grace_expires_at" timestamp with time zone, "is_blocked_for_registration" boolean, "next_available_at" timestamp with time zone, "lottery_entry_count" bigint, "has_user_lottery_entry" boolean, "user_lottery_entry_id" "uuid")
+CREATE OR REPLACE FUNCTION "public"."get_fanmark_complete_data"("fanmark_id_param" "uuid" DEFAULT NULL::"uuid", "emoji_ids_param" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS TABLE("id" "uuid", "user_input_fanmark" "text", "display_fanmark" "text", "emoji_ids" "uuid"[], "normalized_emoji" "text", "short_id" "text", "access_type" "text", "status" "text", "created_at" timestamp with time zone, "updated_at" timestamp with time zone, "fanmark_name" "text", "target_url" "text", "text_content" "text", "is_password_protected" boolean, "current_owner_id" "uuid", "license_end" timestamp with time zone, "has_active_license" boolean, "license_id" "uuid", "current_license_status" "text", "current_grace_expires_at" timestamp with time zone, "is_blocked_for_registration" boolean, "next_available_at" timestamp with time zone, "lottery_entry_count" bigint, "has_user_lottery_entry" boolean, "user_lottery_entry_id" "uuid")
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
+declare
   emoji_sequence text;
   normalized_input text;
   missing_count int;
   current_user_id uuid;
-BEGIN
+begin
   current_user_id := auth.uid();
-  
-  IF fanmark_id_param IS NULL AND (emoji_ids_param IS NULL OR array_length(emoji_ids_param, 1) = 0) THEN
-    RETURN;
-  END IF;
 
-  IF fanmark_id_param IS NULL THEN
-    WITH resolved AS (
-      SELECT em.emoji, ids.ord
-      FROM unnest(emoji_ids_param) WITH ORDINALITY AS ids(id, ord)
-      LEFT JOIN public.emoji_master em ON em.id = ids.id
+  if fanmark_id_param is null and (emoji_ids_param is null or array_length(emoji_ids_param, 1) = 0) then
+    return;
+  end if;
+
+  if fanmark_id_param is null then
+    with resolved as (
+      select em.emoji, ids.ord
+      from unnest(emoji_ids_param) with ordinality as ids(id, ord)
+      left join public.emoji_master em on em.id = ids.id
     )
-    SELECT
-      COUNT(*) FILTER (WHERE emoji IS NULL),
-      string_agg(emoji, '' ORDER BY ord)
-    INTO missing_count, emoji_sequence
-    FROM resolved;
+    select
+      count(*) filter (where emoji is null),
+      string_agg(emoji, '' order by ord)
+    into missing_count, emoji_sequence
+    from resolved;
 
-    IF missing_count > 0 OR emoji_sequence IS NULL OR emoji_sequence = '' THEN
-      RETURN;
-    END IF;
+    if missing_count > 0 or emoji_sequence is null or emoji_sequence = '' then
+      return;
+    end if;
 
     normalized_input := translate(
       emoji_sequence,
       chr(127995) || chr(127996) || chr(127997) || chr(127998) || chr(127999),
       ''
     );
-  END IF;
+  end if;
 
-  RETURN QUERY
-  SELECT
+  return query
+  select
     f.id,
     f.user_input_fanmark,
+    latest.display_fanmark,
     f.emoji_ids,
     f.normalized_emoji,
     f.short_id,
-    COALESCE(bc.access_type, 'inactive') AS access_type,
+    coalesce(bc.access_type, 'inactive') as access_type,
     f.status,
     f.created_at,
     f.updated_at,
     bc.fanmark_name,
     rc.target_url,
-    mc.content AS text_content,
-    COALESCE(pc.is_enabled, false) AS is_password_protected,
-    latest.user_id AS current_owner_id,
+    mc.content as text_content,
+    coalesce(pc.is_enabled, false) as is_password_protected,
+    latest.user_id as current_owner_id,
     latest.license_end,
-    CASE
-      WHEN latest.status = 'active' AND (latest.license_end IS NULL OR latest.license_end > now()) THEN true
-      ELSE false
-    END AS has_active_license,
-    latest.id AS license_id,
-    latest.status AS current_license_status,
-    latest.grace_expires_at AS current_grace_expires_at,
-    CASE
-      WHEN latest.status = 'active' AND (latest.license_end IS NULL OR latest.license_end > now()) THEN true
-      WHEN latest.status = 'grace' AND COALESCE(latest.grace_expires_at, latest.license_end) > now() THEN true
-      ELSE false
-    END AS is_blocked_for_registration,
-    CASE
-      WHEN latest.status = 'grace' AND COALESCE(latest.grace_expires_at, latest.license_end) > now() THEN COALESCE(latest.grace_expires_at, latest.license_end)
-      WHEN latest.status = 'active' AND (latest.license_end IS NULL OR latest.license_end > now()) THEN latest.license_end
-      ELSE NULL
-    END AS next_available_at,
-    COALESCE(lottery_info.entry_count, 0) AS lottery_entry_count,
-    COALESCE(lottery_info.has_entry, false) AS has_user_lottery_entry,
-    lottery_info.user_entry_id AS user_lottery_entry_id
-  FROM fanmarks f
-  LEFT JOIN LATERAL (
-    SELECT fl.*
-    FROM fanmark_licenses fl
-    WHERE fl.fanmark_id = f.id
-    ORDER BY (fl.license_end IS NULL) DESC, fl.license_end DESC
-    LIMIT 1
-  ) AS latest ON true
-  LEFT JOIN fanmark_basic_configs bc ON latest.id = bc.license_id
-  LEFT JOIN fanmark_redirect_configs rc ON latest.id = rc.license_id
-  LEFT JOIN fanmark_messageboard_configs mc ON latest.id = mc.license_id
-  LEFT JOIN fanmark_password_configs pc ON latest.id = pc.license_id
-  LEFT JOIN LATERAL (
-    SELECT
-      COUNT(*) AS entry_count,
-      BOOL_OR(fle.user_id = current_user_id) AS has_entry,
-      (SELECT fle2.id FROM fanmark_lottery_entries fle2 
-       WHERE fle2.fanmark_id = f.id 
-         AND fle2.user_id = current_user_id 
-         AND fle2.entry_status = 'pending' 
-       LIMIT 1) AS user_entry_id
-    FROM fanmark_lottery_entries fle
-    WHERE fle.fanmark_id = f.id
-      AND fle.entry_status = 'pending'
-  ) AS lottery_info ON true
-  WHERE
-    (fanmark_id_param IS NOT NULL AND f.id = fanmark_id_param)
-    OR
-    (fanmark_id_param IS NULL AND normalized_input IS NOT NULL AND f.normalized_emoji = normalized_input);
-END;
+    case
+      when latest.status = 'active' and (latest.license_end is null or latest.license_end > now()) then true
+      else false
+    end as has_active_license,
+    latest.id as license_id,
+    latest.status as current_license_status,
+    latest.grace_expires_at as current_grace_expires_at,
+    case
+      when latest.status = 'active' and (latest.license_end is null or latest.license_end > now()) then true
+      when latest.status = 'grace' and coalesce(latest.grace_expires_at, latest.license_end) > now() then true
+      else false
+    end as is_blocked_for_registration,
+    case
+      when latest.status = 'grace' and coalesce(latest.grace_expires_at, latest.license_end) > now() then coalesce(latest.grace_expires_at, latest.license_end)
+      when latest.status = 'active' and (latest.license_end is null or latest.license_end > now()) then latest.license_end
+      else null
+    end as next_available_at,
+    coalesce(lottery_info.entry_count, 0) as lottery_entry_count,
+    coalesce(lottery_info.has_entry, false) as has_user_lottery_entry,
+    lottery_info.user_entry_id as user_lottery_entry_id
+  from fanmarks f
+  left join lateral (
+    select fl.*
+    from fanmark_licenses fl
+    where fl.fanmark_id = f.id
+    order by (fl.license_end is null) desc, fl.license_end desc
+    limit 1
+  ) as latest on true
+  left join fanmark_basic_configs bc on latest.id = bc.license_id
+  left join fanmark_redirect_configs rc on latest.id = rc.license_id
+  left join fanmark_messageboard_configs mc on latest.id = mc.license_id
+  left join fanmark_password_configs pc on latest.id = pc.license_id
+  left join lateral (
+    select
+      count(*) as entry_count,
+      bool_or(fle.user_id = current_user_id) as has_entry,
+      (select fle2.id from fanmark_lottery_entries fle2
+       where fle2.fanmark_id = f.id
+         and fle2.user_id = current_user_id
+         and fle2.entry_status = 'pending'
+       limit 1) as user_entry_id
+    from fanmark_lottery_entries fle
+    where fle.fanmark_id = f.id
+      and fle.entry_status = 'pending'
+  ) as lottery_info on true
+  where
+    (fanmark_id_param is not null and f.id = fanmark_id_param)
+    or
+    (fanmark_id_param is null and normalized_input is not null and f.normalized_emoji = normalized_input);
+end;
 $$;
 
 
 ALTER FUNCTION "public"."get_fanmark_complete_data"("fanmark_id_param" "uuid", "emoji_ids_param" "uuid"[]) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_fanmark_details_by_short_id"("shortid_param" "text") RETURNS TABLE("fanmark_id" "uuid", "user_input_fanmark" "text", "emoji_ids" "uuid"[], "normalized_emoji" "text", "short_id" "text", "fanmark_created_at" timestamp with time zone, "current_license_id" "uuid", "current_owner_username" "text", "current_owner_display_name" "text", "current_license_start" timestamp with time zone, "current_license_end" timestamp with time zone, "current_license_status" "text", "current_grace_expires_at" timestamp with time zone, "current_is_returned" boolean, "is_currently_active" boolean, "first_acquired_date" timestamp with time zone, "first_owner_username" "text", "first_owner_display_name" "text", "license_history" "jsonb", "is_favorited" boolean, "lottery_entry_count" bigint, "has_user_lottery_entry" boolean, "user_lottery_entry_id" "uuid", "current_owner_id" "uuid")
+CREATE OR REPLACE FUNCTION "public"."get_fanmark_details_by_short_id"("shortid_param" "text") RETURNS TABLE("fanmark_id" "uuid", "user_input_fanmark" "text", "display_fanmark" "text", "emoji_ids" "uuid"[], "normalized_emoji" "text", "short_id" "text", "fanmark_created_at" timestamp with time zone, "current_license_id" "uuid", "current_owner_username" "text", "current_owner_display_name" "text", "current_license_start" timestamp with time zone, "current_license_end" timestamp with time zone, "current_license_status" "text", "current_grace_expires_at" timestamp with time zone, "current_is_returned" boolean, "is_currently_active" boolean, "first_acquired_date" timestamp with time zone, "first_owner_username" "text", "first_owner_display_name" "text", "license_history" "jsonb", "is_favorited" boolean, "lottery_entry_count" bigint, "has_user_lottery_entry" boolean, "user_lottery_entry_id" "uuid", "current_owner_id" "uuid")
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
-  fanmark_record RECORD;
+declare
+  fanmark_record record;
   current_user_id uuid;
-BEGIN
+begin
   current_user_id := auth.uid();
 
-  SELECT f.id, f.user_input_fanmark, f.emoji_ids, f.normalized_emoji, f.short_id, f.created_at
-    INTO fanmark_record
-  FROM public.fanmarks f
-  WHERE f.short_id = shortid_param
-    AND f.status = 'active';
+  select f.id, f.user_input_fanmark, f.emoji_ids, f.normalized_emoji, f.short_id, f.created_at
+    into fanmark_record
+  from public.fanmarks f
+  where f.short_id = shortid_param
+    and f.status = 'active';
 
-  IF NOT FOUND THEN
-    RETURN;
-  END IF;
+  if not found then
+    return;
+  end if;
 
-  RETURN QUERY
-  WITH latest_license AS (
-    SELECT 
-      fl.id AS license_id,
+  return query
+  with latest_license as (
+    select
+      fl.id as license_id,
       fl.user_id,
       fl.status,
       fl.grace_expires_at,
       fl.is_returned,
+      fl.display_fanmark,
       us.username,
       us.display_name,
       fl.license_start,
       fl.license_end
-    FROM public.fanmark_licenses fl
-    LEFT JOIN public.user_settings us ON fl.user_id = us.user_id
-    WHERE fl.fanmark_id = fanmark_record.id
-    ORDER BY fl.license_end DESC
-    LIMIT 1
+    from public.fanmark_licenses fl
+    left join public.user_settings us on fl.user_id = us.user_id
+    where fl.fanmark_id = fanmark_record.id
+    order by fl.license_end desc
+    limit 1
   ),
-  first_license AS (
-    SELECT 
-      fl.license_start AS first_date,
-      us.username AS first_username,
-      us.display_name AS first_display_name
-    FROM public.fanmark_licenses fl
-    LEFT JOIN public.user_settings us ON fl.user_id = us.user_id
-    WHERE fl.fanmark_id = fanmark_record.id
-    ORDER BY fl.license_start ASC
-    LIMIT 1
+  first_license as (
+    select
+      fl.license_start as first_date,
+      us.username as first_username,
+      us.display_name as first_display_name
+    from public.fanmark_licenses fl
+    left join public.user_settings us on fl.user_id = us.user_id
+    where fl.fanmark_id = fanmark_record.id
+    order by fl.license_start asc
+    limit 1
   ),
-  history AS (
-    SELECT 
+  history as (
+    select
       jsonb_agg(
         jsonb_build_object(
           'license_start', fl.license_start,
@@ -811,37 +932,38 @@ BEGIN
           'display_name', us.display_name,
           'status', fl.status,
           'is_initial_license', fl.is_initial_license
-        ) ORDER BY fl.license_start DESC
-      ) AS history_data
-    FROM public.fanmark_licenses fl
-    LEFT JOIN public.user_settings us ON fl.user_id = us.user_id
-    WHERE fl.fanmark_id = fanmark_record.id
+        ) order by fl.license_start desc
+      ) as history_data
+    from public.fanmark_licenses fl
+    left join public.user_settings us on fl.user_id = us.user_id
+    where fl.fanmark_id = fanmark_record.id
   ),
-  favorite_status AS (
-    SELECT EXISTS (
-      SELECT 1
-      FROM public.fanmark_favorites ff
-      WHERE ff.fanmark_id = fanmark_record.id
-        AND ff.user_id = current_user_id
-    ) AS is_fav
+  favorite_status as (
+    select exists (
+      select 1
+      from public.fanmark_favorites ff
+      where ff.fanmark_id = fanmark_record.id
+        and ff.user_id = current_user_id
+    ) as is_fav
   ),
-  lottery_info AS (
-    SELECT
-      COUNT(*) AS entry_count,
-      BOOL_OR(fle.user_id = current_user_id) AS has_entry,
-      (SELECT fle2.id 
-       FROM public.fanmark_lottery_entries fle2 
-       WHERE fle2.fanmark_id = fanmark_record.id 
-         AND fle2.user_id = current_user_id 
-         AND fle2.entry_status = 'pending' 
-       LIMIT 1) AS user_entry_id
-    FROM public.fanmark_lottery_entries fle
-    WHERE fle.fanmark_id = fanmark_record.id
-      AND fle.entry_status = 'pending'
+  lottery_info as (
+    select
+      count(*) as entry_count,
+      bool_or(fle.user_id = current_user_id) as has_entry,
+      (select fle2.id
+       from public.fanmark_lottery_entries fle2
+       where fle2.fanmark_id = fanmark_record.id
+         and fle2.user_id = current_user_id
+         and fle2.entry_status = 'pending'
+       limit 1) as user_entry_id
+    from public.fanmark_lottery_entries fle
+    where fle.fanmark_id = fanmark_record.id
+      and fle.entry_status = 'pending'
   )
-  SELECT 
+  select
     fanmark_record.id,
     fanmark_record.user_input_fanmark,
+    ll.display_fanmark,
     fanmark_record.emoji_ids,
     fanmark_record.normalized_emoji,
     fanmark_record.short_id,
@@ -855,26 +977,26 @@ BEGIN
     ll.status,
     ll.grace_expires_at,
     ll.is_returned,
-    CASE WHEN ll.status = 'active' AND ll.license_end > now() THEN true ELSE false END AS is_currently_active,
+    case when ll.status = 'active' and ll.license_end > now() then true else false end as is_currently_active,
 
     fl.first_date,
     fl.first_username,
     fl.first_display_name,
 
-    COALESCE(h.history_data, '[]'::jsonb),
-    COALESCE(fs.is_fav, false),
-    
-    COALESCE(li.entry_count, 0)::bigint,
-    COALESCE(li.has_entry, false),
+    coalesce(h.history_data, '[]'::jsonb),
+    coalesce(fs.is_fav, false),
+
+    coalesce(li.entry_count, 0)::bigint,
+    coalesce(li.has_entry, false),
     li.user_entry_id,
     ll.user_id
-  FROM (SELECT 1) AS dummy
-  LEFT JOIN latest_license ll ON TRUE
-  LEFT JOIN first_license fl ON TRUE
-  LEFT JOIN history h ON TRUE
-  LEFT JOIN favorite_status fs ON TRUE
-  LEFT JOIN lottery_info li ON TRUE;
-END;
+  from (select 1) as dummy
+  left join latest_license ll on true
+  left join first_license fl on true
+  left join history h on true
+  left join favorite_status fs on true
+  left join lottery_info li on true;
+end;
 $$;
 
 
@@ -897,27 +1019,28 @@ $$;
 ALTER FUNCTION "public"."get_fanmark_ownership_status"("fanmark_license_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_favorite_fanmarks"() RETURNS TABLE("favorite_id" "uuid", "discovery_id" "uuid", "favorited_at" timestamp with time zone, "fanmark_id" "uuid", "normalized_emoji_ids" "uuid"[], "emoji_ids" "uuid"[], "sequence_key" "uuid", "availability_status" "text", "search_count" bigint, "favorite_count" bigint, "short_id" "text", "fanmark_name" "text", "access_type" "text", "target_url" "text", "text_content" "text", "current_owner_username" "text", "current_owner_display_name" "text", "current_license_start" timestamp with time zone, "current_license_end" timestamp with time zone, "current_license_status" "text", "is_password_protected" boolean)
+CREATE OR REPLACE FUNCTION "public"."get_favorite_fanmarks"() RETURNS TABLE("favorite_id" "uuid", "discovery_id" "uuid", "favorited_at" timestamp with time zone, "fanmark_id" "uuid", "display_fanmark" "text", "normalized_emoji_ids" "uuid"[], "emoji_ids" "uuid"[], "sequence_key" "uuid", "availability_status" "text", "search_count" bigint, "favorite_count" bigint, "short_id" "text", "fanmark_name" "text", "access_type" "text", "target_url" "text", "text_content" "text", "current_owner_username" "text", "current_owner_display_name" "text", "current_license_start" timestamp with time zone, "current_license_end" timestamp with time zone, "current_license_status" "text", "is_password_protected" boolean)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
+declare
   auth_user_id uuid;
-BEGIN
-  SELECT auth.uid() INTO auth_user_id;
-  IF auth_user_id IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
-  END IF;
+begin
+  select auth.uid() into auth_user_id;
+  if auth_user_id is null then
+    raise exception 'Authentication required';
+  end if;
 
-  RETURN QUERY
-  SELECT
-    ff.id AS favorite_id,
+  return query
+  select
+    ff.id as favorite_id,
     ff.discovery_id,
-    ff.created_at AS favorited_at,
+    ff.created_at as favorited_at,
     d.fanmark_id,
+    ff.display_fanmark,
     ff.normalized_emoji_ids,
     d.emoji_ids,
-    seq_key(d.normalized_emoji_ids) AS sequence_key,
+    seq_key(d.normalized_emoji_ids) as sequence_key,
     d.availability_status,
     d.search_count,
     d.favorite_count,
@@ -925,31 +1048,31 @@ BEGIN
     bc.fanmark_name,
     bc.access_type,
     rc.target_url,
-    mc.content AS text_content,
-    us.username AS current_owner_username,
-    us.display_name AS current_owner_display_name,
-    fl.license_start AS current_license_start,
-    fl.license_end AS current_license_end,
-    fl.status AS current_license_status,
-    COALESCE(pc.is_enabled, false) AS is_password_protected
-  FROM public.fanmark_favorites ff
-  JOIN public.fanmark_discoveries d ON d.id = ff.discovery_id
-  LEFT JOIN public.fanmarks f ON f.id = d.fanmark_id
-  LEFT JOIN LATERAL (
-    SELECT fl_inner.*
-    FROM public.fanmark_licenses fl_inner
-    WHERE fl_inner.fanmark_id = f.id
-    ORDER BY fl_inner.license_end DESC NULLS LAST
-    LIMIT 1
-  ) fl ON true
-  LEFT JOIN public.user_settings us ON us.user_id = fl.user_id
-  LEFT JOIN public.fanmark_basic_configs bc ON bc.license_id = fl.id
-  LEFT JOIN public.fanmark_redirect_configs rc ON rc.license_id = fl.id
-  LEFT JOIN public.fanmark_messageboard_configs mc ON mc.license_id = fl.id
-  LEFT JOIN public.fanmark_password_configs pc ON pc.license_id = fl.id
-  WHERE ff.user_id = auth_user_id
-  ORDER BY ff.created_at DESC;
-END;
+    mc.content as text_content,
+    us.username as current_owner_username,
+    us.display_name as current_owner_display_name,
+    fl.license_start as current_license_start,
+    fl.license_end as current_license_end,
+    fl.status as current_license_status,
+    coalesce(pc.is_enabled, false) as is_password_protected
+  from public.fanmark_favorites ff
+  join public.fanmark_discoveries d on d.id = ff.discovery_id
+  left join public.fanmarks f on f.id = d.fanmark_id
+  left join lateral (
+    select fl_inner.*
+    from public.fanmark_licenses fl_inner
+    where fl_inner.fanmark_id = f.id
+    order by fl_inner.license_end desc nulls last
+    limit 1
+  ) fl on true
+  left join public.user_settings us on us.user_id = fl.user_id
+  left join public.fanmark_basic_configs bc on bc.license_id = fl.id
+  left join public.fanmark_redirect_configs rc on rc.license_id = fl.id
+  left join public.fanmark_messageboard_configs mc on mc.license_id = fl.id
+  left join public.fanmark_password_configs pc on pc.license_id = fl.id
+  where ff.user_id = auth_user_id
+  order by ff.created_at desc;
+end;
 $$;
 
 
@@ -1169,11 +1292,21 @@ CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     AS $$
 DECLARE
   generated_username TEXT;
+  is_oauth_user BOOLEAN;
 BEGIN
   -- Generate username: user_ + first 8 chars of UUID
   generated_username := COALESCE(
     NEW.raw_user_meta_data ->> 'username',
     'user_' || substring(NEW.id::text, 1, 8)
+  );
+
+  is_oauth_user := (
+    COALESCE(NEW.raw_app_meta_data ->> 'provider', '') <> ''
+    AND (NEW.raw_app_meta_data ->> 'provider') <> 'email'
+  ) OR (
+    NEW.raw_user_meta_data ? 'iss'
+    OR NEW.raw_user_meta_data ? 'provider'
+    OR NEW.raw_user_meta_data ? 'provider_id'
   );
 
   INSERT INTO public.user_settings (
@@ -1193,7 +1326,10 @@ BEGIN
     COALESCE((NEW.raw_user_meta_data ->> 'plan_type')::user_plan, 'free'),
     COALESCE((NEW.raw_user_meta_data ->> 'preferred_language')::user_language, 'ja'),
     NEW.raw_user_meta_data ->> 'invited_by_code',
-    COALESCE((NEW.raw_user_meta_data ->> 'requires_password_setup')::boolean, false)
+    CASE
+      WHEN is_oauth_user THEN true
+      ELSE COALESCE((NEW.raw_user_meta_data ->> 'requires_password_setup')::boolean, false)
+    END
   );
   RETURN NEW;
 END;
@@ -1668,6 +1804,7 @@ ALTER FUNCTION "public"."mark_notification_read"("notification_id_param" "uuid",
 
 CREATE OR REPLACE FUNCTION "public"."normalize_emoji_ids"("input_ids" "uuid"[]) RETURNS "uuid"[]
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   normalized_ids uuid[];
@@ -1751,6 +1888,54 @@ $$;
 
 
 ALTER FUNCTION "public"."notify_security_breach"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."prevent_user_settings_insert_escalation"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF auth.role() = 'service_role' THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.plan_type = 'admin' AND NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Only administrators can assign the admin plan';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."prevent_user_settings_insert_escalation"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."prevent_user_settings_privilege_escalation"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  caller_is_admin boolean := false;
+BEGIN
+  IF auth.role() = 'service_role' THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT public.is_admin() INTO caller_is_admin;
+
+  IF NOT caller_is_admin THEN
+    IF NEW.plan_type IS DISTINCT FROM OLD.plan_type THEN
+      RAISE EXCEPTION 'Only administrators can modify plan_type';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."prevent_user_settings_privilege_escalation"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."record_fanmark_search"("input_emoji_ids" "uuid"[]) RETURNS "uuid"
@@ -2022,6 +2207,7 @@ ALTER FUNCTION "public"."search_fanmarks_with_lottery"("input_emoji_ids" "uuid"[
 
 CREATE OR REPLACE FUNCTION "public"."seq_key"("normalized_ids" "uuid"[]) RETURNS "uuid"
     LANGUAGE "plpgsql" IMMUTABLE STRICT
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   hash text;
@@ -2190,7 +2376,7 @@ BEGIN
         WHERE fl.id = license_uuid 
           AND fl.user_id = auth.uid() 
           AND fl.status = 'active' 
-          AND fl.license_end > now()
+          AND (fl.license_end IS NULL OR fl.license_end > now())
     ) THEN
         RAISE EXCEPTION 'Unauthorized: User does not have active license';
     END IF;
@@ -2344,6 +2530,46 @@ CREATE TABLE IF NOT EXISTS "public"."audit_logs" (
 
 
 ALTER TABLE "public"."audit_logs" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."broadcast_emails" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "subject" "text" NOT NULL,
+    "body_text" "text" NOT NULL,
+    "email_type" "text" DEFAULT 'broadcast_announcement'::"text" NOT NULL,
+    "recipient_filter" "jsonb" DEFAULT '{}'::"jsonb",
+    "total_recipients" integer DEFAULT 0,
+    "sent_count" integer DEFAULT 0,
+    "failed_count" integer DEFAULT 0,
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "created_by" "uuid",
+    "scheduled_at" timestamp with time zone,
+    "started_at" timestamp with time zone,
+    "completed_at" timestamp with time zone,
+    "error_details" "jsonb",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "broadcast_emails_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'scheduled'::"text", 'sending'::"text", 'completed'::"text", 'failed'::"text", 'cancelled'::"text"])))
+);
+
+
+ALTER TABLE "public"."broadcast_emails" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."email_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "email_type" "text" NOT NULL,
+    "language" "text" DEFAULT 'ja'::"text" NOT NULL,
+    "subject" "text" NOT NULL,
+    "body_text" "text" NOT NULL,
+    "button_text" "text" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."email_templates" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."emoji_master" (
@@ -2566,7 +2792,8 @@ CREATE TABLE IF NOT EXISTS "public"."fanmark_favorites" (
     "discovery_id" "uuid" NOT NULL,
     "fanmark_id" "uuid",
     "normalized_emoji_ids" "uuid"[] NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "display_fanmark" "text"
 );
 
 
@@ -2590,6 +2817,7 @@ CREATE TABLE IF NOT EXISTS "public"."fanmark_licenses" (
     "is_returned" boolean DEFAULT false NOT NULL,
     "is_transferred" boolean DEFAULT false NOT NULL,
     "transfer_locked_until" timestamp with time zone,
+    "display_fanmark" "text",
     CONSTRAINT "fanmark_licenses_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'grace'::"text", 'expired'::"text"])))
 );
 
@@ -2705,6 +2933,7 @@ CREATE TABLE IF NOT EXISTS "public"."fanmark_tier_extension_prices" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "stripe_price_id" "text",
+    "stripe_price_id_live" "text",
     CONSTRAINT "fanmark_tier_extension_prices_months_check" CHECK (("months" >= 1)),
     CONSTRAINT "fanmark_tier_extension_prices_price_check" CHECK (("price_yen" >= 0)),
     CONSTRAINT "fanmark_tier_extension_prices_tier_check" CHECK (("tier_level" >= 1))
@@ -2712,6 +2941,10 @@ CREATE TABLE IF NOT EXISTS "public"."fanmark_tier_extension_prices" (
 
 
 ALTER TABLE "public"."fanmark_tier_extension_prices" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."fanmark_tier_extension_prices"."stripe_price_id_live" IS 'Stripe Price ID for live/production mode';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."fanmark_tiers" (
@@ -2811,6 +3044,21 @@ CREATE TABLE IF NOT EXISTS "public"."invitation_codes" (
 
 
 ALTER TABLE "public"."invitation_codes" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."languages" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "code" "text" NOT NULL,
+    "label" "text" NOT NULL,
+    "native_label" "text" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."languages" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."notification_events" (
@@ -2964,7 +3212,7 @@ CREATE OR REPLACE VIEW "public"."recent_active_fanmarks" WITH ("security_invoker
  SELECT "fl"."id" AS "license_id",
     "fl"."fanmark_id",
     "f"."short_id" AS "fanmark_short_id",
-    COALESCE("f"."normalized_emoji", "f"."user_input_fanmark") AS "display_emoji",
+    "fl"."display_fanmark" AS "display_emoji",
     "fl"."created_at" AS "license_created_at"
    FROM ("public"."fanmark_licenses" "fl"
      JOIN "public"."fanmarks" "f" ON (("f"."id" = "fl"."fanmark_id")))
@@ -3062,7 +3310,10 @@ CREATE TABLE IF NOT EXISTS "public"."user_subscriptions" (
     "amount" integer,
     "currency" "text",
     "interval" "text",
-    "interval_count" integer
+    "interval_count" integer,
+    "payment_failure_at" timestamp with time zone,
+    "next_payment_attempt" timestamp with time zone,
+    "payment_failure_type" "text"
 );
 
 
@@ -3070,6 +3321,18 @@ ALTER TABLE "public"."user_subscriptions" OWNER TO "postgres";
 
 
 COMMENT ON COLUMN "public"."user_subscriptions"."price_id" IS 'Stripe Price ID associated with the active subscription';
+
+
+
+COMMENT ON COLUMN "public"."user_subscriptions"."payment_failure_at" IS 'Timestamp when Stripe payment failure was recorded';
+
+
+
+COMMENT ON COLUMN "public"."user_subscriptions"."next_payment_attempt" IS 'Stripe next_payment_attempt from invoice for recovery schedule';
+
+
+
+COMMENT ON COLUMN "public"."user_subscriptions"."payment_failure_type" IS 'Stripe event type that triggered the failure state (invoice.payment_failed/action_required)';
 
 
 
@@ -3093,6 +3356,21 @@ ALTER TABLE ONLY "public"."fanmark_events" ALTER COLUMN "id" SET DEFAULT "nextva
 
 ALTER TABLE ONLY "public"."audit_logs"
     ADD CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."broadcast_emails"
+    ADD CONSTRAINT "broadcast_emails_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."email_templates"
+    ADD CONSTRAINT "email_templates_email_type_language_key" UNIQUE ("email_type", "language");
+
+
+
+ALTER TABLE ONLY "public"."email_templates"
+    ADD CONSTRAINT "email_templates_pkey" PRIMARY KEY ("id");
 
 
 
@@ -3296,6 +3574,16 @@ ALTER TABLE ONLY "public"."invitation_codes"
 
 
 
+ALTER TABLE ONLY "public"."languages"
+    ADD CONSTRAINT "languages_code_key" UNIQUE ("code");
+
+
+
+ALTER TABLE ONLY "public"."languages"
+    ADD CONSTRAINT "languages_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."notification_events"
     ADD CONSTRAINT "notification_events_pkey" PRIMARY KEY ("id");
 
@@ -3471,6 +3759,14 @@ CREATE INDEX "idx_audit_logs_user_id" ON "public"."audit_logs" USING "btree" ("u
 
 
 
+CREATE INDEX "idx_broadcast_emails_created_at" ON "public"."broadcast_emails" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_broadcast_emails_status" ON "public"."broadcast_emails" USING "btree" ("status");
+
+
+
 CREATE INDEX "idx_daily_stats_fanmark_date" ON "public"."fanmark_access_daily_stats" USING "btree" ("fanmark_id", "stat_date");
 
 
@@ -3560,6 +3856,10 @@ CREATE INDEX "idx_invitation_codes_active" ON "public"."invitation_codes" USING 
 
 
 CREATE INDEX "idx_invitation_codes_code" ON "public"."invitation_codes" USING "btree" ("code");
+
+
+
+CREATE INDEX "idx_languages_active" ON "public"."languages" USING "btree" ("is_active", "sort_order");
 
 
 
@@ -3679,6 +3979,10 @@ CREATE UNIQUE INDEX "user_settings_stripe_customer_id_key" ON "public"."user_set
 
 
 
+CREATE OR REPLACE TRIGGER "activate_notification_worker_on_pending_event" AFTER INSERT OR UPDATE OF "status", "trigger_at" ON "public"."notification_events" FOR EACH ROW WHEN (("new"."status" = 'pending'::"text")) EXECUTE FUNCTION "public"."activate_notification_worker_on_pending_event"();
+
+
+
 CREATE OR REPLACE TRIGGER "audit_emoji_master_changes" AFTER INSERT OR DELETE OR UPDATE ON "public"."emoji_master" FOR EACH ROW EXECUTE FUNCTION "public"."log_emoji_master_changes"();
 
 
@@ -3692,6 +3996,14 @@ CREATE OR REPLACE TRIGGER "security_alert_trigger" AFTER INSERT ON "public"."aud
 
 
 CREATE OR REPLACE TRIGGER "trg_link_fanmark_discovery" AFTER INSERT ON "public"."fanmarks" FOR EACH ROW EXECUTE FUNCTION "public"."link_fanmark_discovery_trigger"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_broadcast_emails_updated_at" BEFORE UPDATE ON "public"."broadcast_emails" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_email_templates_updated_at" BEFORE UPDATE ON "public"."email_templates" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -3759,6 +4071,10 @@ CREATE OR REPLACE TRIGGER "update_invitation_codes_updated_at" BEFORE UPDATE ON 
 
 
 
+CREATE OR REPLACE TRIGGER "update_languages_updated_at" BEFORE UPDATE ON "public"."languages" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_lottery_entries_updated_at" BEFORE UPDATE ON "public"."fanmark_lottery_entries" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
@@ -3796,6 +4112,19 @@ CREATE OR REPLACE TRIGGER "update_user_settings_updated_at" BEFORE UPDATE ON "pu
 
 
 CREATE OR REPLACE TRIGGER "update_user_subscriptions_updated_at" BEFORE UPDATE ON "public"."user_subscriptions" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "user_settings_prevent_insert_escalation" BEFORE INSERT ON "public"."user_settings" FOR EACH ROW EXECUTE FUNCTION "public"."prevent_user_settings_insert_escalation"();
+
+
+
+CREATE OR REPLACE TRIGGER "user_settings_prevent_privilege_escalation" BEFORE UPDATE ON "public"."user_settings" FOR EACH ROW EXECUTE FUNCTION "public"."prevent_user_settings_privilege_escalation"();
+
+
+
+ALTER TABLE ONLY "public"."broadcast_emails"
+    ADD CONSTRAINT "broadcast_emails_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
 
 
@@ -4033,6 +4362,14 @@ CREATE POLICY "Admins can manage all user roles" ON "public"."user_roles" USING 
 
 
 
+CREATE POLICY "Admins can manage broadcast emails" ON "public"."broadcast_emails" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
+CREATE POLICY "Admins can manage email templates" ON "public"."email_templates" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
 CREATE POLICY "Admins can manage emoji master" ON "public"."emoji_master" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
@@ -4097,15 +4434,11 @@ CREATE POLICY "Allow read events" ON "public"."fanmark_events" FOR SELECT USING 
 
 
 
-CREATE POLICY "Anyone can join waitlist" ON "public"."waitlist" FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can join waitlist" ON "public"."waitlist" FOR INSERT TO "anon", "authenticated" WITH CHECK ((("email" IS NOT NULL) AND ("length"(TRIM(BOTH FROM "email")) > 3) AND ("email" ~~ '%_@_%._%'::"text")));
 
 
 
 CREATE POLICY "Anyone can view active availability rules" ON "public"."fanmark_availability_rules" FOR SELECT USING (("is_available" = true));
-
-
-
-CREATE POLICY "Anyone can view active fanmark licenses for recent activity" ON "public"."fanmark_licenses" FOR SELECT USING (("status" = 'active'::"text"));
 
 
 
@@ -4122,14 +4455,6 @@ CREATE POLICY "Anyone can view active tiers" ON "public"."fanmark_tiers" FOR SEL
 
 
 CREATE POLICY "Anyone can view public settings" ON "public"."system_settings" FOR SELECT USING (("is_public" = true));
-
-
-
-CREATE POLICY "Authenticated users can validate active coupons" ON "public"."extension_coupons" FOR SELECT USING ((("auth"."uid"() IS NOT NULL) AND ("is_active" = true) AND (("expires_at" IS NULL) OR ("expires_at" > "now"())) AND ("used_count" < "max_uses")));
-
-
-
-CREATE POLICY "Authenticated users can validate transfer codes" ON "public"."fanmark_transfer_codes" FOR SELECT USING ((("auth"."uid"() IS NOT NULL) AND ("status" = 'active'::"text")));
 
 
 
@@ -4173,6 +4498,10 @@ CREATE POLICY "Issuers can view their own transfer codes" ON "public"."fanmark_t
 
 
 
+CREATE POLICY "Languages are publicly readable" ON "public"."languages" FOR SELECT USING (true);
+
+
+
 CREATE POLICY "Only admins can manage all licenses" ON "public"."fanmark_licenses" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
@@ -4190,6 +4519,10 @@ CREATE POLICY "Only admins can manage invitation codes" ON "public"."invitation_
 
 
 CREATE POLICY "Only admins can manage tiers" ON "public"."fanmark_tiers" USING ("public"."is_admin"());
+
+
+
+CREATE POLICY "Only admins can modify languages" ON "public"."languages" USING ("public"."is_admin"());
 
 
 
@@ -4234,6 +4567,10 @@ CREATE POLICY "System can manage all transfer requests" ON "public"."fanmark_tra
 
 
 CREATE POLICY "System can manage notification events" ON "public"."notification_events" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
+CREATE POLICY "System can read email templates" ON "public"."email_templates" FOR SELECT USING (("auth"."role"() = 'service_role'::"text"));
 
 
 
@@ -4299,10 +4636,6 @@ CREATE POLICY "Users can update their own settings" ON "public"."user_settings" 
 
 
 
-CREATE POLICY "Users can validate invitation codes" ON "public"."invitation_codes" FOR SELECT TO "authenticated" USING ((("is_active" = true) AND (("expires_at" IS NULL) OR ("expires_at" > "now"()))));
-
-
-
 CREATE POLICY "Users can view their own audit logs" ON "public"."audit_logs" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
@@ -4344,6 +4677,12 @@ CREATE POLICY "Waitlist access only through secure functions" ON "public"."waitl
 
 
 ALTER TABLE "public"."audit_logs" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."broadcast_emails" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."email_templates" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."emoji_master" ENABLE ROW LEVEL SECURITY;
@@ -4418,6 +4757,9 @@ ALTER TABLE "public"."fanmarks" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."invitation_codes" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."languages" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."notification_events" ENABLE ROW LEVEL SECURITY;
 
 
@@ -4461,14 +4803,21 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[]) TO "anon";
-GRANT ALL ON FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[]) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[]) TO "service_role";
+REVOKE ALL ON FUNCTION "public"."activate_notification_worker"() FROM PUBLIC;
 
 
 
-GRANT ALL ON FUNCTION "public"."archive_old_notifications"("days_old" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."archive_old_notifications"("days_old" integer) TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."activate_notification_worker_on_pending_event"() FROM PUBLIC;
+
+
+
+GRANT ALL ON FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[], "input_display_fanmark" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[], "input_display_fanmark" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."add_fanmark_favorite"("input_emoji_ids" "uuid"[], "input_display_fanmark" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."archive_old_notifications"("days_old" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."archive_old_notifications"("days_old" integer) TO "service_role";
 
 
@@ -4503,9 +4852,13 @@ GRANT ALL ON FUNCTION "public"."count_fanmark_emoji_units"("input" "text") TO "s
 
 
 
-GRANT ALL ON FUNCTION "public"."create_notification_event"("event_type_param" "text", "payload_param" "jsonb", "source_param" "text", "dedupe_key_param" "text", "trigger_at_param" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."create_notification_event"("event_type_param" "text", "payload_param" "jsonb", "source_param" "text", "dedupe_key_param" "text", "trigger_at_param" timestamp with time zone) TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."create_notification_event"("event_type_param" "text", "payload_param" "jsonb", "source_param" "text", "dedupe_key_param" "text", "trigger_at_param" timestamp with time zone) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."create_notification_event"("event_type_param" "text", "payload_param" "jsonb", "source_param" "text", "dedupe_key_param" "text", "trigger_at_param" timestamp with time zone) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."deactivate_notification_worker_if_idle"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."deactivate_notification_worker_if_idle"() TO "service_role";
 
 
 
@@ -4575,20 +4928,17 @@ GRANT ALL ON FUNCTION "public"."get_unread_notification_count"("user_id_param" "
 
 
 
-GRANT ALL ON FUNCTION "public"."get_waitlist_email_by_id"("waitlist_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_waitlist_email_by_id"("waitlist_id" "uuid") TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."get_waitlist_email_by_id"("waitlist_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_waitlist_email_by_id"("waitlist_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_waitlist_secure"("p_limit" integer, "p_offset" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_waitlist_secure"("p_limit" integer, "p_offset" integer) TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."get_waitlist_secure"("p_limit" integer, "p_offset" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_waitlist_secure"("p_limit" integer, "p_offset" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "anon";
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."handle_new_user"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 
 
@@ -4637,8 +4987,7 @@ GRANT ALL ON FUNCTION "public"."link_fanmark_discovery"("new_fanmark_id" "uuid",
 
 
 
-GRANT ALL ON FUNCTION "public"."link_fanmark_discovery_trigger"() TO "anon";
-GRANT ALL ON FUNCTION "public"."link_fanmark_discovery_trigger"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."link_fanmark_discovery_trigger"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."link_fanmark_discovery_trigger"() TO "service_role";
 
 
@@ -4649,26 +4998,22 @@ GRANT ALL ON FUNCTION "public"."list_recent_fanmarks"("p_limit" integer) TO "ser
 
 
 
-GRANT ALL ON FUNCTION "public"."log_emoji_master_changes"() TO "anon";
-GRANT ALL ON FUNCTION "public"."log_emoji_master_changes"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."log_emoji_master_changes"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_emoji_master_changes"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."log_lottery_entry_changes"() TO "anon";
-GRANT ALL ON FUNCTION "public"."log_lottery_entry_changes"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."log_lottery_entry_changes"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_lottery_entry_changes"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."log_profile_cache_access"() TO "anon";
-GRANT ALL ON FUNCTION "public"."log_profile_cache_access"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."log_profile_cache_access"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_profile_cache_access"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."log_waitlist_access"() TO "anon";
-GRANT ALL ON FUNCTION "public"."log_waitlist_access"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."log_waitlist_access"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_waitlist_access"() TO "service_role";
 
 
@@ -4691,9 +5036,18 @@ GRANT ALL ON FUNCTION "public"."normalize_emoji_ids"("input_ids" "uuid"[]) TO "s
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_security_breach"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_security_breach"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_security_breach"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_security_breach"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."prevent_user_settings_insert_escalation"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."prevent_user_settings_insert_escalation"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."prevent_user_settings_privilege_escalation"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."prevent_user_settings_privilege_escalation"() TO "service_role";
 
 
 
@@ -4727,8 +5081,7 @@ GRANT ALL ON FUNCTION "public"."seq_key"("normalized_ids" "uuid"[]) TO "service_
 
 
 
-GRANT ALL ON FUNCTION "public"."sync_public_profile_cache"() TO "anon";
-GRANT ALL ON FUNCTION "public"."sync_public_profile_cache"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."sync_public_profile_cache"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."sync_public_profile_cache"() TO "service_role";
 
 
@@ -4739,8 +5092,7 @@ GRANT ALL ON FUNCTION "public"."toggle_fanmark_favorite"("fanmark_uuid" "uuid") 
 
 
 
-GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "anon";
-GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."update_updated_at_column"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "service_role";
 
 
@@ -4784,6 +5136,18 @@ GRANT ALL ON FUNCTION "public"."verify_fanmark_password"("fanmark_uuid" "uuid", 
 GRANT ALL ON TABLE "public"."audit_logs" TO "anon";
 GRANT ALL ON TABLE "public"."audit_logs" TO "authenticated";
 GRANT ALL ON TABLE "public"."audit_logs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."broadcast_emails" TO "anon";
+GRANT ALL ON TABLE "public"."broadcast_emails" TO "authenticated";
+GRANT ALL ON TABLE "public"."broadcast_emails" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."email_templates" TO "anon";
+GRANT ALL ON TABLE "public"."email_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."email_templates" TO "service_role";
 
 
 
@@ -4937,6 +5301,12 @@ GRANT ALL ON TABLE "public"."invitation_codes" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."languages" TO "anon";
+GRANT ALL ON TABLE "public"."languages" TO "authenticated";
+GRANT ALL ON TABLE "public"."languages" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."notification_events" TO "anon";
 GRANT ALL ON TABLE "public"."notification_events" TO "authenticated";
 GRANT ALL ON TABLE "public"."notification_events" TO "service_role";
@@ -5039,11 +5409,3 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
-
-
-
-
-
-
-
-RESET ALL;

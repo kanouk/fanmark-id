@@ -2,19 +2,67 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useTranslation } from '@/hooks/useTranslation';
 import { Clock, PlayCircle } from 'lucide-react';
+import {
+  getLifecycleRunBackend,
+  LifecycleRunApiError,
+  runLicenseExpiryInWorker,
+  type LifecycleRunResult,
+} from '@/lib/lifecycle-run-api';
+
+type LegacyExpirationResult = {
+  cloudflareLifecycleRun?: LifecycleRunResult;
+  processed?: number;
+  details?: {
+    found?: { total?: number };
+    active_to_grace?: number;
+    grace_to_expired?: number;
+  };
+  licenses_to_grace?: number;
+  licenses_to_expired?: number;
+  elapsed_ms?: number;
+  errors?: unknown;
+};
+
+function record(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function displayError(value: unknown, index: number): { key: number; message: string } {
+  const error = record(value);
+  const type = typeof error.type === 'string' ? error.type : 'unknown';
+  const detail = typeof error.error === 'string' ? error.error : '詳細情報がありません';
+  return { key: index, message: `${type}: ${detail}` };
+}
 
 export const AdminExpirationTest = () => {
   const { toast } = useToast();
-  const { t } = useTranslation();
   const [isRunning, setIsRunning] = useState(false);
-  const [lastResult, setLastResult] = useState<any>(null);
+  const [lastResult, setLastResult] = useState<LegacyExpirationResult | null>(null);
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
 
   const runExpirationCheck = async () => {
     setIsRunning(true);
     try {
+      if (getLifecycleRunBackend() === 'worker') {
+        const result = await runLicenseExpiryInWorker();
+        setLastResult({ cloudflareLifecycleRun: result });
+        setLastRunAt(new Date());
+        const processed = result.activeToGrace.processed + result.graceFinalization.processed;
+        const conflicts = result.activeToGrace.conflicts + result.graceFinalization.conflicts;
+        toast({
+          title: result.status === 'completed'
+            ? conflicts > 0 ? '失効処理完了（競合あり）' : '失効処理完了'
+            : '失効処理は継続中',
+          description: result.status === 'completed'
+            ? `${processed}件を処理しました。競合 ${conflicts} 件。`
+            : `${processed}件を処理しました。ページ上限に達したため、同じ処理を再実行して続きを進めてください。`,
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('check-expired-licenses', {
         body: { manual_trigger: true }
       });
@@ -23,17 +71,22 @@ export const AdminExpirationTest = () => {
         throw error;
       }
 
-      setLastResult(data);
+      const result = data as LegacyExpirationResult | null;
+      setLastResult(result);
       setLastRunAt(new Date());
       toast({
         title: '失効処理完了',
-        description: `${data.licenses_to_grace || 0}件が失効処理中に、${data.licenses_to_expired || 0}件が失効になりました`,
+        description: `${result?.licenses_to_grace || 0}件が失効処理中に、${result?.licenses_to_expired || 0}件が失効になりました`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error running expiration check:', error);
+      const message = error instanceof Error ? error.message : '失効処理の実行に失敗しました';
+      const description = error instanceof LifecycleRunApiError && error.kind === 'http' && error.status === 503
+        ? 'Cloudflare側の手動実行は現在無効か、実行できない状態です。Supabaseには切り替えず、設定とWorkerの状態を確認してください。'
+        : message;
       toast({
         title: 'エラーが発生しました',
-        description: error.message || '失効処理の実行に失敗しました',
+        description,
         variant: 'destructive',
       });
     } finally {
@@ -41,15 +94,26 @@ export const AdminExpirationTest = () => {
     }
   };
 
-  const processedCount = lastResult?.processed ?? lastResult?.details?.found?.total ?? 0;
-  const activeToGrace = lastResult?.details?.active_to_grace ?? lastResult?.licenses_to_grace ?? 0;
-  const graceToExpired = lastResult?.details?.grace_to_expired ?? lastResult?.licenses_to_expired ?? 0;
-  const elapsedSeconds = lastResult?.elapsed_ms ? Math.round(lastResult.elapsed_ms / 1000) : null;
-  const errorCount = Array.isArray(lastResult?.errors)
-    ? lastResult.errors.length
-    : lastResult?.errors
-      ? 1
-      : 0;
+  const cloudflareResult = lastResult?.cloudflareLifecycleRun;
+  const processedCount = cloudflareResult
+    ? cloudflareResult.activeToGrace.processed + cloudflareResult.graceFinalization.processed
+    : lastResult?.processed ?? lastResult?.details?.found?.total ?? 0;
+  const activeToGrace = cloudflareResult
+    ? cloudflareResult.activeToGrace.processed
+    : lastResult?.details?.active_to_grace ?? lastResult?.licenses_to_grace ?? 0;
+  const graceToExpired = cloudflareResult
+    ? cloudflareResult.graceFinalization.processed
+    : lastResult?.details?.grace_to_expired ?? lastResult?.licenses_to_expired ?? 0;
+  const elapsedSeconds = cloudflareResult
+    ? Math.round(cloudflareResult.elapsedMs / 1000)
+    : lastResult?.elapsed_ms ? Math.round(lastResult.elapsed_ms / 1000) : null;
+  const errorCount = cloudflareResult
+    ? cloudflareResult.activeToGrace.conflicts + cloudflareResult.graceFinalization.conflicts
+      : Array.isArray(lastResult?.errors)
+      ? lastResult.errors.length
+      : lastResult?.errors
+        ? 1
+        : 0;
 
   const summaryItems = [
     {
@@ -119,15 +183,14 @@ export const AdminExpirationTest = () => {
           ))}
         </dl>
 
-        {lastResult?.errors && Array.isArray(lastResult.errors) && lastResult.errors.length > 0 && (
+        {Array.isArray(lastResult?.errors) && lastResult.errors.length > 0 && (
           <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
             <p className="font-semibold">エラー詳細</p>
             <ul className="mt-2 space-y-1">
-              {lastResult.errors.map((err: any, index: number) => (
-                <li key={`${err.id ?? index}-${err.type ?? 'error'}`}>
-                  {err.type ?? 'unknown'}: {err.error ?? '詳細情報がありません'}
-                </li>
-              ))}
+              {lastResult.errors.map((error, index) => {
+                const item = displayError(error, index);
+                return <li key={item.key}>{item.message}</li>;
+              })}
             </ul>
           </div>
         )}

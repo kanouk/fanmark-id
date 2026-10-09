@@ -1,0 +1,27 @@
+{
+  "format": "fanmark-staging-natural-monitor-observation-v1",
+  "status": "observation_ended_without_acceptance",
+  "worker": "fanmark-backup-monitor-staging",
+  "version": "8298289e-d9b6-4dd4-8ce4-4a51457c5afe",
+  "cron": "35 * * * *",
+  "startedAt": "2026-10-09T02:05:08.727Z",
+  "finishedAt": "2026-10-09T02:45:08.080Z",
+  "deadline": "2026-10-09T02:45:00.000Z",
+  "manualInvocation": false,
+  "runtimeRedeployed": false,
+  "nativeScheduledEventsObserved": 0,
+  "naturalExecutionAccepted": false,
+  "connectionPingPongIndependentlyConfirmed": true,
+  "postObservationVersionAndCronMatched": true,
+  "storedLogsQuery": {
+    "dry": true,
+    "status": 403,
+    "currentCredentialScopeInsufficient": true,
+    "broaderCredentialCreated": false,
+    "reference": "https://developers.cloudflare.com/api/resources/workers/subresources/observability/subresources/telemetry/methods/query/"
+  },
+  "notes": [
+    "No matching scheduled event was received in this connected tail. This is not proof of no execution or runtime failure.",
+    "Current registration remains hourly. Preserve the current version, Cron and archive; do not replay the already claimed daily slot."
+  ]
+}

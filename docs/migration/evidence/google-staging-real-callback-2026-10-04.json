@@ -1,0 +1,30 @@
+{
+  "observedAt": "2026-10-04T07:29:59.666Z",
+  "worker": "fanmark-app-staging",
+  "version": "8bb6b4d9-a9e1-42c4-8963-6348e05d05ce",
+  "runtimeCodeHead": "0fb4976d98baee0b41eecb610beb33f5feee7f22",
+  "googleActualCallbackAccepted": true,
+  "googleSubjectMatched": true,
+  "googleProvisioningCompleted": true,
+  "googleSessionCount": 1,
+  "googlePasswordSetupRequired": true,
+  "googlePasswordSetupAccepted": false,
+  "distinctControlledStagingAccount": true,
+  "retainedGithubIdentityAndCredentialPreserved": true,
+  "authCounts": {
+    "users": 2,
+    "accounts": 3,
+    "sessions": 1
+  },
+  "businessProfiles": 2,
+  "readOnlyReceiptsAccepted": true,
+  "passwordValuesOrHashesRead": false,
+  "secretValuesExported": false,
+  "initialError": {
+    "exactCodeCaptured": false,
+    "stateExpiryHypothesis": true,
+    "stateValiditySeconds": 600,
+    "freshRetrySucceeded": true
+  },
+  "browserPath": "/password-setup"
+}

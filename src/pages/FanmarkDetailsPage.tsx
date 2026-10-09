@@ -1,4 +1,4 @@
-import { useParams, Navigate, useNavigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useFanmarkDetails } from '@/hooks/useFanmarkDetails';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -23,6 +23,7 @@ export default function FanmarkDetailsPage() {
   const { user } = useAuth();
   const { t, language } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
 
   if (!shortId) {
     return <Navigate to="/" replace />;
@@ -242,7 +243,7 @@ export default function FanmarkDetailsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 px-4 sm:px-6 pb-6">
-                {details.license_history && details.license_history.length > 0 ? (
+                {details.history_available && details.license_history && details.license_history.length > 0 ? (
                   <table className="mt-3 w-full divide-y divide-border text-xs sm:text-sm">
                     <thead className="bg-muted/50 text-muted-foreground">
                       <tr>
@@ -290,10 +291,17 @@ export default function FanmarkDetailsPage() {
                     })}
                   </tbody>
                 </table>
-              ) : (
+              ) : details.history_available ? (
                 <p className="rounded-2xl border border-dashed border-primary/20 bg-muted/40 p-6 text-sm text-muted-foreground">
                   {t('fanmarkDetails.noHistory')}
                 </p>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-primary/20 bg-muted/40 p-6 text-center">
+                  <p className="text-sm text-muted-foreground">{t('fanmarkDetails.historySignInPrompt')}</p>
+                  <Button className="mt-4 rounded-full" onClick={() => navigate('/auth', { state: { from: location.pathname } })}>
+                    {t('auth.login')}
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

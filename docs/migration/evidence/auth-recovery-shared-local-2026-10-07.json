@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-06T15:02:28.619540+00:00",
+  "scope": "Shared Auth D1 capture/encryption/empty-target restore and explicit local-session/challenge policy; local synthetic SDK/D1 only",
+  "codeSha256": {
+    "workers/api/src/auth-d1-recovery.ts": "d4a08a2bf1407817c93c3440482abdfa2c3c26db0517452b60c23923e4bc246d",
+    "workers/api/test/auth-recovery-d1.test.ts": "105fa9bfe4c642ecb7752ec15989c4646d0b9aac700598ab091410698db3c28c",
+    "workers/api/wrangler.auth-recovery-test.jsonc": "375e087926705889ba8ff0f311f6a46aa5098bed84a95c4e7ba82fda300b1d2a"
+  },
+  "nativeSuite": {
+    "command": "npm --prefix workers/api run test:auth-recovery:d1",
+    "passedCases": 1,
+    "failedCases": 0,
+    "sourceTables": 9,
+    "sourceRows": 14,
+    "sourceSchemaObjects": 30,
+    "targetDatabases": 3,
+    "exactFidelityAccepted": true,
+    "passwordTotpBackupLoginAndReplayRefusalAccepted": true,
+    "missingSessionPolicyRefusedBeforeRestore": true,
+    "sessionPreservationOutsideIsolatedModeRefused": true,
+    "revokedTables": [
+      "session",
+      "mfaAssurance",
+      "verification"
+    ],
+    "allOtherTablesPreservedExactly": true,
+    "oldSessionAndAdminAssuranceRefused": true,
+    "freshPasswordAndExistingTotpAcceptedAfterRevocation": true,
+    "realD1RestoreRollbackOnInvalidInsertedColumn": true,
+    "migrationLedgerOnlyTargetRefused": true,
+    "realCommitThenLostAckPreserved": true,
+    "lostAckBlindReplayRefused": true,
+    "wrongArchiveAndSdkKeysSchemaTamperAndWeakerAesRefused": true,
+    "sourceUnchanged": true,
+    "foreignKeyViolations": 0
+  },
+  "checks": {
+    "workerTypecheckPassed": true,
+    "focusedEslintPassed": true,
+    "workflowIsolationPassed": true,
+    "sourceRuntimeLinkageTestsPassed": 13,
+    "sourceCounterpartMetadataMatchedFunctions": 58
+  },
+  "operationalPolicyAdopted": false,
+  "publicRecoveryRouteAdded": false,
+  "collectorOrSchedulerActivated": false,
+  "archiveFormatChanged": false,
+  "combinedBundleV2CompatibilityInferred": false,
+  "remoteWrites": 0,
+  "realUserOrCredentialExportPerformed": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "workerRedeployed": false,
+  "secretsChanged": false,
+  "fullMigrationAccepted": false,
+  "remainingBoundary": "This shared privileged primitive is not a complete adopted backup system. Operator custody, archive/SDK key custody, off-host collection/retention, cross-store consistent capture, provider-token revocation and final combined recovery under adopted policy remain open."
+}

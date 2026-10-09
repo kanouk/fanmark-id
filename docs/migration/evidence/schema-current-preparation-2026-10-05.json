@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-04T23:17:53.626Z",
+  "finishedAt": "2026-10-04T23:23:17.676Z",
+  "scope": "Current converter on saved source metadata; isolated local synthetic Business/Auth import, resume and fresh-target restore. Not full-source parity or production readiness.",
+  "testedPreparationHead": "7a7e717cb0e2b3774b89a8a34463248ab6d8cf9a",
+  "previousDocumentationCI": 37242431058,
+  "previousDocumentationCIBothJobsSuccess": true,
+  "runtimeHead": "12fa13f3c99712f7cae9b814d8fd1a9813b48108",
+  "sourceCatalogObservedAt": "2026-10-02T14:21:25.605664+00:00",
+  "freshSourceRead": false,
+  "sourceOrRealAuthRowsRead": false,
+  "remoteWrites": false,
+  "runtimeRedeployed": false,
+  "sourceCounts": {
+    "tableCount": 40,
+    "columnCount": 406,
+    "constraintCount": 144,
+    "indexCount": 139,
+    "enumLabelCount": 15
+  },
+  "sourcePublicTableTriggerCatalogCount": 36,
+  "knownAuthTableBindingReviewedSeparately": true,
+  "functionHashesMatchedToOctober3Counterparts": 58,
+  "functionDefinitionMismatches": 0,
+  "functionHashMatchInfersSemanticApproval": false,
+  "converterVersion": 43,
+  "explicitFanmarkPasswordCredentialDescriptor": true,
+  "stageReadiness": {
+    "rowConversion": {
+      "ready": true,
+      "gateGroupCount": 0,
+      "affectedLocationCount": 0,
+      "gateCodes": []
+    },
+    "schemaAndOperations": {
+      "ready": false,
+      "gateGroupCount": 4,
+      "affectedLocationCount": 6,
+      "gateCodes": [
+        "seq_key_input_contract_requires_review",
+        "unsupported_catalog_scope"
+      ]
+    }
+  },
+  "gates": [
+    {
+      "code": "seq_key_input_contract_requires_review",
+      "severity": "blocking",
+      "reason": "Canonical JSON indexing is a candidate for non-empty NULL-free UUID sequences; source seq_key skips NULL elements and accepts empty arrays. Review every writer/import disposition and source definition before accepting this replacement.",
+      "locations": [
+        {
+          "kind": "index",
+          "table": "fanmark_discoveries",
+          "name": "fanmark_discoveries_seq_key_idx"
+        },
+        {
+          "kind": "index",
+          "table": "fanmark_favorites",
+          "name": "fanmark_favorites_user_seq_idx"
+        },
+        {
+          "kind": "index",
+          "table": "fanmarks",
+          "name": "fanmarks_seq_key_idx"
+        }
+      ]
+    },
+    {
+      "code": "unsupported_catalog_scope",
+      "severity": "blocking",
+      "reason": "The catalog input includes functions, but this converter does not translate or verify that scope.",
+      "locations": [
+        {
+          "kind": "catalog",
+          "name": "functions"
+        }
+      ]
+    },
+    {
+      "code": "unsupported_catalog_scope",
+      "severity": "blocking",
+      "reason": "The catalog input includes rls_policies, but this converter does not translate or verify that scope.",
+      "locations": [
+        {
+          "kind": "catalog",
+          "name": "rls_policies"
+        }
+      ]
+    },
+    {
+      "code": "unsupported_catalog_scope",
+      "severity": "blocking",
+      "reason": "The catalog input includes triggers, but this converter does not translate or verify that scope.",
+      "locations": [
+        {
+          "kind": "catalog",
+          "name": "triggers"
+        }
+      ]
+    }
+  ],
+  "syntheticLocalImport": {
+    "canonicalBusinessSchema": true,
+    "runtimeSchemaFingerprint": "86960157e94fe800d45523b129ceced7b77d10602592508d4997f7075b4c9ea0",
+    "businessMigrationCount": 25,
+    "tableCount": 40,
+    "sourceRowCount": 13,
+    "authMigrationCount": 4,
+    "runtimeSchemaGuardRejected": true,
+    "runtimeFingerprintTamperRejected": true,
+    "freshTargetRestoreVerified": true,
+    "freshTargetRestoreDurationMs": 69056,
+    "notificationWakeAfterReplay": {
+      "requestedGeneration": 1,
+      "acknowledgedGeneration": 0
+    },
+    "transformedCredentialCount": 2,
+    "deferredCredentialCount": 1,
+    "syntheticAuthIdentityLookupCount": 15,
+    "importOnlyTimestampReadback": true,
+    "checkpointCount": 40,
+    "completedCheckpointCount": 40,
+    "status": "public_rows_reconciled",
+    "deployable": false,
+    "fullMigrationReconciled": false,
+    "conflictRejected": true
+  },
+  "limitations": [
+    "Only 13 synthetic source rows; not every source table populated.",
+    "Auth user is a synthetic seeded dependency; not an Auth credential backup/restore.",
+    "This run excludes Master/R2; their prior combined proofs remain separate.",
+    "Saved catalog was not refreshed; final source drift check remains required.",
+    "Manual function, RLS and trigger correspondence is not consumed by the generic converter."
+  ],
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "fullMigrationAccepted": false
+}

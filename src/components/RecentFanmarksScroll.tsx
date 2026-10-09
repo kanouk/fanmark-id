@@ -2,42 +2,51 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from '@/hooks/use-toast';
-
-interface RecentFanmark {
-  id: string;
-  emoji: string;
-  created_at: string;
-}
+import {
+  loadRecentFanmarks,
+  mapRecentFanmarkRpcRows,
+  type RecentFanmark,
+} from '@/lib/recent-fanmarks';
 
 export function RecentFanmarksScroll() {
   const [fanmarks, setFanmarks] = useState<RecentFanmark[]>([]);
   const { t } = useTranslation();
 
   useEffect(() => {
-    fetchRecentFanmarks();
-  }, []);
+    const controller = new AbortController();
+    let isMounted = true;
 
-  const fetchRecentFanmarks = async () => {
-    try {
-      // Use the public RPC so anonymous visitors can read recent activity under RLS.
-      const { data, error } = await supabase.rpc('list_recent_fanmarks', { p_limit: 20 });
+    const fetchFanmarks = async () => {
+      try {
+        const formattedFanmarks = await loadRecentFanmarks({
+          signal: controller.signal,
+          fallback: async () => {
+            // Keep the current public RPC until the Worker is explicitly configured.
+            const { data, error } = await supabase
+              .rpc('list_recent_fanmarks', { p_limit: 20 })
+              .abortSignal(controller.signal);
 
-      if (error) throw error;
+            if (error) throw error;
+            return mapRecentFanmarkRpcRows(data);
+          },
+        });
 
-      if (data) {
-        const formattedFanmarks = data.map((item) => ({
-          id: item.license_id || item.fanmark_id,
-          emoji: item.display_emoji || '❓',
-          created_at: item.license_created_at
-        }));
-        
+        if (!isMounted || controller.signal.aborted) return;
         // 2セット用意してシームレスにループさせる
         setFanmarks([...formattedFanmarks, ...formattedFanmarks]);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error('Error fetching recent fanmarks:', error);
       }
-    } catch (error) {
-      console.error('Error fetching recent fanmarks:', error);
-    }
-  };
+    };
+
+    void fetchFanmarks();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, []);
 
   if (fanmarks.length === 0) return null;
 

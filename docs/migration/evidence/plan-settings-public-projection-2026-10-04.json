@@ -1,0 +1,66 @@
+{
+  "observedAt": "2026-10-04T14:25:57.443Z",
+  "scope": "Cloudflare staging public plan settings regression",
+  "candidateHead": "12fa13f3c99712f7cae9b814d8fd1a9813b48108",
+  "ciRun": 37208535583,
+  "ciAccepted": true,
+  "before": {
+    "runtimeHead": "87b61ef74e434e44396e5b5ec67fcc737c85dadf",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "actualChromeIncognitoLoginAccepted": true,
+    "dashboardPlan": "free",
+    "ownedFanmarks": 0,
+    "limit": 3,
+    "actualPlansErrorObserved": true,
+    "publicSettingsHTTPStatus": 503,
+    "testStripeCustomerCreated": false,
+    "paymentAttempted": false
+  },
+  "fix": {
+    "publicSettingCount": 11,
+    "adminSettingCount": 19,
+    "stripePriceIdsAdminOnly": true,
+    "legacyPriceIdVisibilityAcceptedForAdmin": true,
+    "priceIdUpdatesNormalizePrivate": true,
+    "enterpriseVisibilityRemainsStrict": true,
+    "sourceOrMasterHistoryRewritten": false,
+    "fallbackPricingOnError": false
+  },
+  "localValidation": {
+    "clientTestsPassed": 4,
+    "workerAndLifecycleTestsPassed": 13,
+    "applicationTypecheckPassed": true,
+    "workerTypecheckPassed": true,
+    "targetedESLintPassed": true
+  },
+  "originalFixtureCleanup": {
+    "completed": true,
+    "independentReadOnlyVerification": true,
+    "authUsers": 2,
+    "authAccounts": 6,
+    "authSessions": 1,
+    "originalBusinessCountsPreserved": true,
+    "masterAllHistoryPreserved": true,
+    "mfaAndWakePreserved": true,
+    "foreignKeyViolations": 0
+  },
+  "stagingDeploymentAccepted": true,
+  "actualRepairedPlansUIAccepted": false,
+  "sameUserWholeAppAccepted": false,
+  "fullStripeRehearsalAccepted": false,
+  "fullMigrationAccepted": false,
+  "productionChanged": false,
+  "realUserDataMigrated": false,
+  "domainChanged": false,
+  "ciConclusions": [
+    "success",
+    "success"
+  ],
+  "deployedWorkerVersion": "cc6d9da7-b81b-45fe-b0be-6c0978570232",
+  "publicSettingsHTTPStatusAfter": 200,
+  "publicSettingCountAfter": 11,
+  "priceIdsAbsentFromPublicResponse": true,
+  "anonymousAdminSettingsHTTPStatus": 401,
+  "actualRepairedPlansUIPendingReason": "Mac is locked; native browser could not unlock automatically. Human unlock requested.",
+  "stagingSchemasChanged": false
+}

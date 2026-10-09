@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "scope": "fresh metadata-only runtime catalog linked to the complete manual current-application function counterpart trace; no semantic approval inferred",
+  "sourceObservedAt": "2026-10-06T04:15:10.854785+00:00",
+  "sourceProjectRef": "ppqgtbjykitqtiaisyji",
+  "runtimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+  "runtimeFingerprintMatchesPriorObservation": true,
+  "counts": {
+    "functions": 58,
+    "triggerBindings": 37,
+    "externalTriggerBindings": 1,
+    "eventTriggerBindings": 0,
+    "reviewedUnboundTriggerDefinitions": 4,
+    "pendingFunctionReviews": 54
+  },
+  "counterpartTrace": {
+    "functionCount": 58,
+    "missingFunctionCount": 0,
+    "traceSha256": "f2af3e7bbb7661f57d22724b56017c964cf84ecb8580845b76624be45e0f9426",
+    "semanticApprovalInferred": false,
+    "boundary": "Exact source identity, definition, attributes and binding count matched to manual correspondence; feature/provider/operational acceptance and converter gates remain separate."
+  },
+  "manualTrace": {
+    "path": "docs/migration/evidence/source-function-counterparts-2026-10-03.json",
+    "sha256": "dfb35788aa2fb453cd7552634aec20319fe51a304cbd201be4943e68fd8e088f",
+    "historicalObservationPreserved": true,
+    "featureAcceptanceDatesNotUpdatedByThisLinkage": true
+  },
+  "implementation": {
+    "file": "scripts/migration/source-runtime-review.mjs",
+    "sha256": "53d2d6d6cce771e004c4a362c0a993dbebd4313cc14d3cfccd881e067a68cf60",
+    "focusedTestsPassed": 13,
+    "focusedTestsFailed": 0,
+    "eslintPassed": true,
+    "sourceDefinitionAttributesAndBindingsMismatchRefused": true,
+    "missingDuplicateApprovalBearingOrOversizedTraceRefused": true,
+    "inputAndTraceOutputAliasesRefused": true,
+    "sourceBodiesAndCounterpartProseExcludedFromReport": true
+  },
+  "sourceOrAuthRowsRead": false,
+  "sourceFunctionsInvoked": false,
+  "sourceWritesPerformed": false,
+  "mainWorkerChanged": false,
+  "converterGatesWaived": false,
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "remainingBoundary": "Functions/RLS/triggers generic conversion, historical identity checks, external legacy consumers, feature/provider/operations and final integration retain separate requirements."
+}
