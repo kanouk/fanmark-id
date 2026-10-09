@@ -17,6 +17,15 @@
 [初回保存・復旧](evidence/staging-resource-scope-v2-operational-2026-10-09.json)、
 [backup operations](backup-operations.md)末尾を優先する。以下は過去の状態を含む。
 
+## Discord新規identityの実callback（2026-10-09 JST）
+
+新scopeのAuth/account/profile0から実Discord認証を開始し、Auth user1・Discord account1・
+Free profile1を同じownerで作成、provisioning completed・FK0を独立readで確認した。
+実画面は`/password-setup`へ到達。初回パスワードの入力・保存は本人へ引き継ぎ、
+保存後のcredential/flag、logoutと同一identity再loginはまだ未確認。
+[限定証拠](evidence/discord-new-identity-callback-native-2026-10-09.json)。
+Apple新規identity/relay・実端末・全体統合と最終データ/DNSは未実行。
+
 ## 日次backup監視の候補（2026-10-09 JST）
 
 初回source保存・隔離復旧/cleanupは前節のnative証拠。次の候補では別monitor、固定本人

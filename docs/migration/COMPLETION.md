@@ -19,6 +19,15 @@
 [初回保存・復旧](evidence/staging-resource-scope-v2-operational-2026-10-09.json)、
 [backup operations](backup-operations.md)末尾を優先する。以下は過去の状態を含む。
 
+## Discord新規identityの実callback（2026-10-09 JST）
+
+新scopeのAuth/account/profile0から実Discord認証を開始し、Auth user1・Discord account1・
+Free profile1を同じownerで作成、provisioning completed・FK0を独立readで確認した。
+実画面は`/password-setup`へ到達。初回パスワードの入力・保存は本人へ引き継ぎ、
+保存後のcredential/flag、logoutと同一identity再loginはまだ未確認。
+[限定証拠](evidence/discord-new-identity-callback-native-2026-10-09.json)。
+Apple新規identity/relay・実端末・全体統合と最終データ/DNSは未実行。
+
 ## 告知の定期配信を検証用1名で受け入れ（2026-10-08 JST）
 
 番号付きの本人所有テスト宛先1名を、free/jaと過去の閉じた登録日範囲で限定した。
@@ -996,7 +1005,7 @@ local復旧約4.94秒はproduction RTOではない。新caseと小fixture回帰�
 ## 完了までに閉じる六つの作業
 
 バックアップ運用について、受け入れ済みのsource暗号化/R2 canary/現行schemaの一式復旧と、
-未採用の担当・鍵・off-host定期保存・retention・RPO/RTO・Auth失効方針を
+採用済みの担当・鍵・off-host保存/30日retention・RPO/RTO目標・Auth失効方針と、未確認の自然定期処理を
 [運用監査](backup-operations.md)に分けた。合成復旧の再試験を運用採用の代わりにしない。
 
 | 作業 | 現在の証拠と不足 | 今回の完了条件 | 対応Issue |
