@@ -19,6 +19,28 @@
 [初回保存・復旧](evidence/staging-resource-scope-v2-operational-2026-10-09.json)、
 [backup operations](backup-operations.md)末尾を優先する。以下は過去の状態を含む。
 
+## 告知の51名snapshot境界（2026-10-09 JST）
+
+独立した実D12個と限定Workerで、現行27 Businessと新scopeと同一のAuth全schemaを照合し、
+専用呼出終了control表を追加して、合成51名・4言語の宛先snapshotを実行した。50件→1件→空ページで完了→idleとなり、
+全51 ID/言語、cursor、件数、lease解除と重複0を各段階でreadbackした。queueにメール本文/
+宛先列はなく、FK0。Resend資格情報・sender/dispatch route・Cronを持たず、実送信0。
+所有D12個/Workerを削除し、別readonly processで削除・main version/binding保持を確認した。
+[限定証拠](evidence/broadcast-snapshot-boundary-native-2026-10-09.json)。
+これは50件境界のsnapshot受け入れで、51名の実配送や送信UIを受け入れたとは扱わない。
+最新0cd462b/[CI37871947020](https://github.com/kanouk/fanmark-id/actions/runs/37871947020)は両job成功。
+
+## Resendの実バウンス・苦情通知（2026-10-09 JST）
+
+公式検証宛先へ恒久バウンス・苦情の2通だけを送信し、通常stagingの既存署名Webhookへ
+sent/bounced、sent/complained/deliveredの計5件が記録された。同じprovider IDの実D1 viewは
+`bounced/permanent_bounce`と`suppressed/complaint`。苦情後の配送済み通知で停止判定を消さない。
+main再配備・設定変更・実利用者宛先への送信は0、FK0。
+[限定証拠](evidence/resend-real-terminal-simulations-2026-10-09.json)。
+これは実providerの検証宛先→署名受信→有効状態の照合であり、告知recipient/runはこの2通へ
+接続していない。複数名の配送、送信UI、recipientの再集計・停止連携、運用retry/retentionは
+別条件として残す。Discord初回パスワード保存と自然monitor/dailyも未確認。
+
 ## Discord新規identityの実callback（2026-10-09 JST）
 
 新scopeのAuth/account/profile0から実Discord認証を開始し、Auth user1・Discord account1・

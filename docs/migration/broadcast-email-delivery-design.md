@@ -16,8 +16,22 @@ and real signed Resend sent/delivered reconciliation were accepted together.
 The request-ID repeat returned the same run without another provider attempt.
 After exact-owned cleanup, the bulk/test-send selectors are disabled again;
 the approved signed receiver and signing secret remain enabled. Native send UI,
-multiple recipients/page boundaries, actual provider retries and bounce/complaint
-outcomes remain distinct unaccepted gates. See
+multi-recipient dispatch and operator retry/retention remain distinct gates.
+On 2026-10-09, an isolated native Cloudflare Worker with exact full Business/Auth
+schemas (plus a separate private call-settlement table) snapshotted 51 synthetic users across four languages: 50, then 1, then
+an empty completion page and an idle repeat. Every ID/language, cursor, count
+and lease was read back, with no duplicate or email address in the queue.
+No Resend credentials, sender/dispatch route or Cron were bound; actual email
+sending was zero. Owned resources were removed and independently verified.
+This accepts the snapshot page boundary, not 51-recipient dispatch or send UI.
+[Native snapshot evidence](evidence/broadcast-snapshot-boundary-native-2026-10-09.json).
+On 2026-10-09, two official Resend simulator messages produced real signed
+permanent-bounce and complaint receipts in staging. The native effective-event
+view retained bounced/permanent_bounce and suppressed/complaint, including a
+delivery event after the complaint. No queued recipient/run was attached to
+these two messages, so recipient reconciliation and suppression linkage remain
+separate from this provider-ingress acceptance. See
+[real terminal simulations](evidence/resend-real-terminal-simulations-2026-10-09.json). See
 [the bounded real delivery evidence](evidence/staging-broadcast-single-recipient-2026-10-08.json)
 and [the signed receiver/replay evidence](evidence/staging-resend-signed-webhook-2026-10-08.json).
 Auth verification/reset mail acceptance remains separate.
