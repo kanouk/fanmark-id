@@ -538,6 +538,8 @@
     "checkoutCanceled": "Checkout canceled",
     "checkoutCanceledDescription": "Your plan was not changed. Feel free to try again whenever you’re ready.",
     "refreshRequired": "If plan doesn't update, please refresh the page",
+    "projectionDelayed": "The plan update has not been confirmed yet. Please check again shortly.",
+    "checkAgain": "Check plan update again",
     "features": {
       "limit": "Own up to {limit} fanmarks simultaneously"
     },

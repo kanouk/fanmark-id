@@ -22,6 +22,7 @@
     "test:stripe-extension-checkout-api": "node --experimental-strip-types --test src/lib/stripe-extension-checkout-api.test.ts",
     "test:stripe-customer-portal-api": "node --experimental-strip-types --test src/lib/stripe-customer-portal-api.test.ts",
     "test:stripe-plan-checkout-api": "node --experimental-strip-types --test src/lib/stripe-plan-checkout-api.test.ts",
+    "test:plan-projection-polling": "node --test scripts/test-plan-projection-polling.mjs",
     "test:stripe-plan-change-api": "node --experimental-strip-types --test src/lib/stripe-plan-change-api.test.ts",
     "test:storage-api": "node --experimental-strip-types --test src/lib/storage-api.test.ts",
     "test:cloudflare-reference-master": "node --experimental-strip-types --test supabase/functions/_shared/cloudflare-reference-master.test.ts",

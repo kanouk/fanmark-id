@@ -76,6 +76,8 @@ jobs:
 
       - name: Test main login MFA and session completion
         run: npm run test:auth-login-mfa
+      - name: Plan projection confirmation
+        run: npm run test:plan-projection-polling
 
       - name: Verify extension checkout confirmation
         run: npm run test:stripe-extension-checkout-api

@@ -39,7 +39,11 @@ This command never writes `user_settings.plan_type` or subscription projection
 rows. Those change only after the signed Stripe event is processed by the
 existing receipt/dispatch/reconciliation pipeline. A response means the
 provider command was submitted; the UI polls the authoritative profile until
-the webhook projection arrives.
+the webhook projection arrives. Confirmation runs for up to 90 seconds across the
+one-minute dispatch schedule, serializing profile/subscription read batches. On
+timeout the UI retains the pending plan and command request ID, blocks another
+plan selection, and offers a read-only confirmation retry. It neither resubmits
+the command nor reports an unconfirmed change as complete.
 
 ## Verification and deployment boundary
 
@@ -74,3 +78,19 @@ Stripe's canceled test customer and invoice/payment history remain.
 [Bounded populated UI proof](evidence/staging-populated-plan-limit-native-ui-2026-10-06.json).
 Paid-account deletion, imported-user parity and actual-phone acceptance remain
 separate. Earlier pending whole-UI statements above are historical checkpoints.
+
+## Known display-delay correction (2026-10-09 JST)
+
+The previous native paid flow stopped confirming Free before the natural minute
+dispatch applied the signed cancellation. The UI now confirms for up to 90 seconds
+and offers a read-only retry afterward. Four actual-module tests cover a delayed
+projection, a bounded timeout without storage-driven automatic restart, read-only
+retry for both checkout/change, and serialized slow or failing read batches.
+
+On normal staging version 49e191a8, one disposable JA desktop user completed
+Creator Checkout → Business Portal confirmation → Free cancellation → logout,
+with no manual reload or retry click. Seven signed receipts and dispatches
+completed, including a naturally retried invoice reconciliation. Exact-owned
+cleanup left all current and retained store hashes unchanged. Test provider
+history remains; no live payment, source user migration, or domain change occurred.
+[Bounded native proof](evidence/staging-plan-projection-sync-native-2026-10-09.json).

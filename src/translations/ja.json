@@ -530,6 +530,8 @@
     "checkoutCanceled": "決済をキャンセルしました",
     "checkoutCanceledDescription": "プランは変更されませんでした。必要であれば再度お試しください。",
     "refreshRequired": "プラン情報が更新されない場合は、ページを再読み込みしてください",
+    "projectionDelayed": "プランへの反映をまだ確認できていません。時間をおいて再確認してください。",
+    "checkAgain": "プランの反映を再確認",
     "features": {
       "limit": "同時に {limit} 個のファンマを保有"
     },

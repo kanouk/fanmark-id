@@ -2,13 +2,26 @@
 
 ## 現在のチェックポイント（2026-10-09 JST）
 
-通常stagingは`3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74`を100%配信する。
-API sourceはc1cc1e2のまま。今回のfrontend修正は伝言板のpreview/空本文と
-お気に入り登録日の4言語表示。Asia/Tokyoと取得後の再取得を保持し、直前2世代の
-hash付き公開bundleも保持した。bulk/test送信は無効、署名受信・113 binding・
-4 DO namespace・backup/monitorのversionと周期・既存データを保持した。
-前候補6ebae6fの[CI37893801719](https://github.com/kanouk/fanmark-id/actions/runs/37893801719)は両job成功。
-この修正候補の最新CIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
+通常stagingは`49e191a8-d85e-4ccd-a343-5387439edaac`を100%配信する。
+API sourceはc1cc1e2のまま。今回のfrontend修正は、決済/プラン変更後の確認を
+最長90秒にし、時間切れ後も読取だけを再試行する。確定前に変更を再送しない。
+直前4世代のhash付き公開bundle、bulk/test送信無効、署名受信・113 binding・
+4 DO namespace・backup/monitorのversionと周期・現行/旧D1全表hashを保持した。
+直前96b5893の[CI37902130472](https://github.com/kanouk/fanmark-id/actions/runs/37902130472)は両job成功。
+最新候補のCIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
+
+
+通常49e191a8では同じ専用JA Chrome accountでログイン→Creatorのsandbox Checkout→
+PortalでBusiness差額確定→警告確認/Free即時解約→logoutを、手動reload0回・再確認クリック0回で
+一巡した。51.291秒時点でも待機を続け、次の観測97.002秒時点ではFree表示へ追随していた。
+これは観測時刻であり正確な反映時間の測定ではない。署名receipt7件/dispatch7件完了、
+Checkout command1・変更command2・session1→0を照合した。専用user/operatorの除去後、
+現行/旧D1の全表hash差分0/FK0と設定/asset/namespaceを独立照合した。テスト購読は解約済みで
+provider履歴は保持する。読取の90秒上限・時間切れ後の再確認・通信を重ねない条件は
+実画面moduleのlocal4件、移行308件・型検査/lint/build・callsite/asset保持5件で確認した。
+[プラン反映修正と有料フローの限定証拠](evidence/staging-plan-projection-sync-native-2026-10-09.json)。
+この証拠はJA desktopのプラン課金であり、全言語/実スマホ/PWA/provider初回identityや
+全六工程の受け入れではない。
 
 通常d074b5ddの別合成account3件でEN/KO/IDも、実ログイン→取得前のお気に入り→
 無期限Tier C取得→伝言板保存→再読込なしの所有/リンク反映→公開本文→返却→logoutを

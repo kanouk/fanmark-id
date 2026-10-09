@@ -538,6 +538,8 @@
     "checkoutCanceled": "결제를 취소했습니다",
     "checkoutCanceledDescription": "요금제가 변경되지 않았습니다. 필요하면 다시 시도하세요.",
     "refreshRequired": "요금제가 업데이트되지 않으면 페이지를 새로고침하세요",
+    "projectionDelayed": "요금제 변경이 아직 확인되지 않았습니다. 잠시 후 다시 확인해 주세요.",
+    "checkAgain": "요금제 변경 다시 확인",
     "features": {
       "limit": "동시에 {limit}개의 팬마크를 보유"
     },

@@ -1,10 +1,23 @@
 ## 現在のチェックポイント（2026-10-09 JST）
 
-通常stagingは`e9f7c04f-6f05-47cd-8700-ab78329ee387`を100%配信する。API sourceは
+通常stagingは`49e191a8-d85e-4ccd-a343-5387439edaac`を100%配信する。API sourceは
 c1cc1e2のまま。bulk/test送信は無効、署名受信・113 binding・4 DO namespace・
-backup/monitorのversionと周期・現行/旧D1全表hashを保持した。直前3世代の公開bundleも保持する。
+backup/monitorのversionと周期・現行/旧D1全表hashを保持した。直前4世代の公開bundleも保持する。
 最新候補のCIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
-直前5e78396bの[CI37897922217](https://github.com/kanouk/fanmark-id/actions/runs/37897922217)は両job成功。
+直前96b5893の[CI37902130472](https://github.com/kanouk/fanmark-id/actions/runs/37902130472)は両job成功。
+
+
+通常49e191a8では同じ専用JA Chrome accountでログイン→Creatorのsandbox Checkout→
+PortalでBusiness差額確定→警告確認/Free即時解約→logoutを、手動reload0回・再確認クリック0回で
+一巡した。51.291秒時点でも待機を続け、次の観測97.002秒時点ではFree表示へ追随していた。
+これは観測時刻であり正確な反映時間の測定ではない。署名receipt7件/dispatch7件完了、
+Checkout command1・変更command2・session1→0を照合した。専用user/operatorの除去後、
+現行/旧D1の全表hash差分0/FK0と設定/asset/namespaceを独立照合した。テスト購読は解約済みで
+provider履歴は保持する。読取の90秒上限・時間切れ後の再確認・通信を重ねない条件は
+実画面moduleのlocal4件、移行308件・型検査/lint/build・callsite/asset保持5件で確認した。
+[プラン反映修正と有料フローの限定証拠](evidence/staging-plan-projection-sync-native-2026-10-09.json)。
+この証拠はJA desktopのプラン課金であり、全言語/実スマホ/PWA/provider初回identityや
+全六工程の受け入れではない。
 
 新しい5 store/V2の通常3cd3c8b6では、専用JA Chrome accountのログイン→Tier C取得→
 Stripe sandbox Checkout/Creator→Portal差額確定/Business→警告確認/Free即時解約→返却0/3→

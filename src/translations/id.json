@@ -537,6 +537,8 @@
     "checkoutCanceled": "Checkout dibatalkan",
     "checkoutCanceledDescription": "Paket Anda tidak diubah. Silakan coba lagi kapan saja Anda siap.",
     "refreshRequired": "Jika paket tidak diperbarui, silakan segarkan halaman",
+    "projectionDelayed": "Perubahan paket belum terkonfirmasi. Silakan periksa kembali sebentar lagi.",
+    "checkAgain": "Periksa perubahan paket lagi",
     "features": {
       "limit": "Miliki hingga {limit} fanmark secara bersamaan"
     },
