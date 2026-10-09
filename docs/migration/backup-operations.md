@@ -367,3 +367,8 @@ pending・backup Cron0を保持する。CI後の新scope配備と独立readback�
 間はremote binding guardで停止し、旧Businessを新scopeの健全性として報告しない。
 actual commandの5回帰で異なるbindingのquery前拒否・書込receipt拒否・資格情報不足時の
 CLI fallback禁止・新BusinessだけのSELECTを確認した。実monitor readbackは配備後に行う。
+
+最初の新scope CI37865665138では、旧fixtureを現行configから複製していた6 assertionsが
+DB/class/incarnationの差で失敗した。旧rehearsal guardは緩めず、3 guard試験のfixtureを
+元の3 DB/通知classへ明示的に戻し、現行selector試験だけ新incarnationをpinした。
+現行configのlegacy rehearsal拒否は保持する。全migration-data307件がlocalで成功した。

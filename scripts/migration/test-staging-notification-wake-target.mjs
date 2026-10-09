@@ -4,6 +4,16 @@ import test from "node:test";
 import { isStagingNotificationWakeTarget, stagingNotificationScheduleMode } from "./staging-notification-wake-target.mjs";
 const deployed = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
 const current = structuredClone(deployed);
+// These old rehearsal guards stay pinned to their original stores. Project the
+// historical fixture explicitly; never widen them to the new live data scope.
+const historicalDatabases = {
+  FANMARK_DB: ["fanmark-business-staging", "d4bb0c48-f24a-491f-8693-fa393ab0b873"],
+  AUTH_DB: ["fanmark-auth-staging", "2116bc43-32ab-4e3e-b762-9378df88b95f"],
+  MASTER_DB: ["fanmark-emoji-master-staging", "160376b0-bde6-4d5f-8969-96deb5ae1183"],
+};
+current.d1_databases = current.d1_databases.map(database => ({ ...database,
+  database_name: historicalDatabases[database.binding][0], database_id: historicalDatabases[database.binding][1],
+}));
 delete current.vars.LICENSE_EXPIRY_BACKEND;
 delete current.vars.NOTIFICATION_ARCHIVE_BACKEND;
 delete current.vars.STRIPE_DISPATCH_BACKEND;
@@ -14,7 +24,7 @@ delete current.vars.AUTH_EMAIL_BACKEND;
 delete current.vars.RECOVERY_DRAIN_BACKEND;
 delete current.vars.RECOVERY_DRAIN_SCOPE_DIGEST;
 delete current.vars.RECOVERY_WRITE_FREEZE;
-current.durable_objects.bindings = current.durable_objects.bindings.filter(binding => binding.name === "NOTIFICATION_WAKE");
+current.durable_objects.bindings = [{ name: "NOTIFICATION_WAKE", class_name: "NotificationWakeCoordinator" }];
 current.migrations = current.migrations.filter(migration => migration.tag === "notification-wake-v1");
 current.triggers.crons = ["0 0 * * *"];
 const candidate = {

@@ -136,7 +136,7 @@ test("the exact sequence-backed fanmark event bigint key stays internal to SQL",
 test("Paid staging enables bounded daily lifecycle and archive while inert rehearsals refuse it", () => {
   const vars = appStagingConfig.vars ?? {};
   assert.equal(vars.LIFECYCLE_RUN_BACKEND, "d1");
-  assert.equal(vars.LICENSE_EXPIRY_TARGET_INCARNATION, "fanmark-business-staging-lifecycle-v1");
+  assert.equal(vars.LICENSE_EXPIRY_TARGET_INCARNATION, "fanmark-business-staging-lifecycle-v2-e434eb11");
   assert.equal(vars.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST, lifecycleSchemaDigest());
   assert.equal(vars.LICENSE_EXPIRY_MAX_PAGES, "4");
   assert.equal(vars.LICENSE_EXPIRY_BACKEND, "d1");

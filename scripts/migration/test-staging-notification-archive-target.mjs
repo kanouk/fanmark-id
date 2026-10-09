@@ -7,6 +7,16 @@ import { isStagingNotificationArchiveTarget } from "./staging-notification-archi
 const deployed = JSON.parse(await readFile(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
 // Rehearsals require an explicitly inert fixture; active staging remains refused.
 const config = structuredClone(deployed);
+// These old rehearsal guards stay pinned to their original stores. Project the
+// historical fixture explicitly; never widen them to the new live data scope.
+const historicalDatabases = {
+  FANMARK_DB: ["fanmark-business-staging", "d4bb0c48-f24a-491f-8693-fa393ab0b873"],
+  AUTH_DB: ["fanmark-auth-staging", "2116bc43-32ab-4e3e-b762-9378df88b95f"],
+  MASTER_DB: ["fanmark-emoji-master-staging", "160376b0-bde6-4d5f-8969-96deb5ae1183"],
+};
+config.d1_databases = config.d1_databases.map(database => ({ ...database,
+  database_name: historicalDatabases[database.binding][0], database_id: historicalDatabases[database.binding][1],
+}));
 delete config.vars.LICENSE_EXPIRY_BACKEND;
 delete config.vars.NOTIFICATION_ARCHIVE_BACKEND;
 delete config.vars.STRIPE_DISPATCH_BACKEND;
@@ -15,7 +25,7 @@ delete config.vars.AUTH_EMAIL_BACKEND;
 delete config.vars.RECOVERY_DRAIN_BACKEND;
 delete config.vars.RECOVERY_DRAIN_SCOPE_DIGEST;
 delete config.vars.RECOVERY_WRITE_FREEZE;
-config.durable_objects.bindings = config.durable_objects.bindings.filter(binding => binding.name === "NOTIFICATION_WAKE");
+config.durable_objects.bindings = [{ name: "NOTIFICATION_WAKE", class_name: "NotificationWakeCoordinator" }];
 config.migrations = config.migrations.filter(migration => migration.tag === "notification-wake-v1");
 config.triggers.crons = ["0 0 * * *"];
 const identity = {
