@@ -4,6 +4,34 @@
 Business/Auth/Master D1とavatar/cover/backup R2。実ユーザー移送、DNS切替、
 Supabase writer停止は最後の別工程とする。本書の作成から運用受け入れを推定しない。
 
+## 現行対象と保持領域（2026-10-09 JST）
+
+現在のapp stagingはincarnation `e434eb11-9351-498b-8855-8bec0fed7a7b` の別領域を使う。
+旧 `fanmark-business-staging` / `fanmark-auth-staging` と旧Master/画像/DOは保持領域であり、
+現行の保存・観測・復旧先と混同しない。固定configのIDとremote bindingが一致することを
+操作前に確認する。任意のDB名へ置換してこの手順を実行しない。
+
+| 役割 | 現行resource名 | ID |
+| --- | --- | --- |
+| `FANMARK_DB` | `fanmark-recovery-staging-v2-e434eb11-business` | `c99c9f7e-b234-400e-aa89-8d15a168abcc` |
+| `AUTH_DB` | `fanmark-recovery-staging-v2-e434eb11-auth` | `2d1a775e-e584-4ce6-baf2-946efc62ff99` |
+| `MASTER_DB` | `fanmark-recovery-staging-v2-e434eb11-master` | `02681378-5528-45a9-8093-76805a4705c9` |
+| `AVATARS_BUCKET` | `fanmark-avatars-staging-v2-e434eb11` | — |
+| `COVER_IMAGES_BUCKET` | `fanmark-covers-staging-v2-e434eb11` | — |
+| `STAGING_BACKUP_BUCKET` | `fanmark-backups-staging` | — |
+
+通知は `NotificationWakeCoordinatorV2`、writerは `RecoveryWriterCoordinatorV2`。
+旧34 ticketは保持し、TTLや強制closeで終了扱いにしない。
+17:52 JSTの通常49e191a8では、上記binding一致、27 Business migration、Master25表、
+Auth1/1/1とDiscord1 account、初回password setup待ち1プロフィールを読み取りで確認した。
+公開app/auth healthは200で、固定aggregate観測のattentionは空。これは現時点の
+健康状態であり、日次保存の自然実行・本人初回password・provider全体の受け入れではない。
+[対象と読み取り証拠](evidence/staging-target-identity-readonly-2026-10-09.json)。
+backup/monitorの版と周期も同時に照合した。初回運用保存/隔離復旧・鍵/Vault遠隔保存と
+毎時monitorの限定受け入れ、未確認の自然dailyは[backup operations](backup-operations.md)を参照する。
+
+## 過去の隔離試験の証拠
+
 合成Authの保存済みAES-GCMファイルは、159f5c1/CI37407917794両job成功後、
 隔離実D1と専用Workerで全9非空表/14行/30定義・全列hash/FK0と元password/TOTPの
 再ログインまで復旧を受け入れた。target復旧/照合1144msは本番RTOではない。
@@ -23,7 +51,7 @@ node scripts/migration/staging-operations-status.mjs --read-only
 ```
 
 このコマンドは固定staging configとWranglerのidentity、remoteの三つのD1 binding、
-単一100% deployment、全25 Business migrationを確認してから集計する。
+単一100% deployment、現在の `BUSINESS_MIGRATION_SEQUENCE`（27 Business migration）を確認してから集計する。
 修復・provider接続・ユーザー行のexportは行わない。Cloudflare OAuth tokenは
 子プロセスの出力からメモリ内で受け取り、ログやファイルに保存しない。
 API/CLI失敗は固定codeと処理段階だけを表示する。出力にはsecret値、通知payload、
