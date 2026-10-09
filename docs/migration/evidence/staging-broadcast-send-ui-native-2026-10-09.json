@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-staging-broadcast-send-ui",
+  "acceptedAt": "2026-10-09T04:34:21.035Z",
+  "scope": {
+    "stagingOnly": true,
+    "officialResendSimulatorOnly": true,
+    "syntheticAdminAndRecipient": true,
+    "realSupabaseUsersMigrated": false,
+    "productionDomainChanged": false,
+    "fullMigrationAccepted": false
+  },
+  "candidate": {
+    "sourceHead": "037f845f2d42bad714e5c500f2ea638d0c00ce25",
+    "runtimeSourceHead": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+    "sourceChanged": false,
+    "schemaChanged": false,
+    "priorCi": {
+      "head": "037f845f2d42bad714e5c500f2ea638d0c00ce25",
+      "runId": "37882429413",
+      "application": "success",
+      "worker": "success"
+    },
+    "activeVersion": "fa1826ee-2c9f-4eaf-a0b6-2ec6251d2a0a",
+    "restoredVersion": "6afcaee0-a5bd-4bba-8c95-756c69731bdb",
+    "temporaryFrontendSelector": "VITE_BROADCAST_SEND_BACKEND=worker",
+    "temporaryServerSelector": "BROADCAST_SEND_BACKEND=d1",
+    "otherFrontendSelectorsPreserved": true,
+    "normalAssetsRestored": {
+      "/": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+      "/index.html": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+      "/plans?checkout=success": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+      "/sw.js": "0d38775b5b106211fce11da5e959bda10b41cbeb24a071ca512530b4fe0b03e6",
+      "/clear-legacy-api-cache.js": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6",
+      "/assets/index-DgYC5YD0.js": "81735f15d322ae1dc75439200ba902ea75d9ad8071f73dee9aa2eb92dd316d7d"
+    }
+  },
+  "nativeUi": {
+    "browser": "Chrome",
+    "initialSession": "logged_out",
+    "loginViaActualUi": true,
+    "mfaViaActualUi": true,
+    "draftCreatedViaActualUi": true,
+    "filter": {
+      "plan_types": [
+        "free"
+      ],
+      "languages": [
+        "ja"
+      ],
+      "registered_after": "2002-01-01",
+      "registered_before": "2002-01-03"
+    },
+    "estimatedRecipients": 1,
+    "previewMatchedPersistedDraft": true,
+    "finalSendAction": "native AX button click after two undispatched CDP input deadlines and read-only runCount0 checks",
+    "apiDraftCreate": false,
+    "apiSend": false,
+    "manualCronInvocations": 0,
+    "terminalStatus": "completed",
+    "success": 1,
+    "failure": 0,
+    "logout": "管理者ログイン form displayed",
+    "ownerIabUsedForSyntheticLogin": false,
+    "otherBrowserSessionTouched": false,
+    "dateEntry": "native keyboard ArrowUp/ArrowDown committed the date control after locator fill",
+    "screenshots": [
+      {
+        "name": "native-draft-filter-review.png",
+        "sha256": "4fbbef5d417b56dd97d7f745419bd8f10d8b404b5c7f2e688076c47568d35d24",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "native-preview.png",
+        "sha256": "7dbda4c392e0784c1568f6f33b1075e5aa2ed773d0a912bd980b277058d12137",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "native-review.png",
+        "sha256": "e8c95ed7a91d5e3b4392f65760556409f60f52cf0c041d003c78ff9852f0d116",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "native-command-result.png",
+        "sha256": "5bde38528c44a4f95ae08144ec9de0eeb7fa460fc693080946cac080c087d7b5",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "native-delivered.png",
+        "sha256": "b40bcd57271595580735982c42b09f4b38d779f656a3af7eaf61d043f2fed2bc",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "native-delivery-details.png",
+        "sha256": "f2cd54d62c2ef127caee46f191178e2dc6cd4661ba6ec0f0ab30d561481a1ba6",
+        "visibility": "private local evidence"
+      },
+      {
+        "name": "native-signout.png",
+        "sha256": "f0fb4adf2765fa568a31a8634f5d6434673eeb6e042aba0ddc5c2223316af877",
+        "visibility": "private local evidence"
+      }
+    ]
+  },
+  "persistedReadback": {
+    "at": "2026-10-09T04:26:34.052Z",
+    "runId": "f42847a8-bda4-4d9d-b997-bca3a9289c9d",
+    "status": "completed",
+    "startedAt": "2026-10-09T04:26:15.000000Z",
+    "completedAt": "2026-10-09T04:26:21.304000Z",
+    "recipientCount": 1,
+    "recipientStatus": "delivered",
+    "attemptCount": 1,
+    "providerIds": 1,
+    "signedEvents": [
+      "email.delivered",
+      "email.sent"
+    ],
+    "campaign": {
+      "status": "completed",
+      "total_recipients": 1,
+      "sent_count": 1,
+      "failed_count": 0
+    },
+    "suppressions": 0,
+    "completionAudits": 1,
+    "auditActions": [
+      "BROADCAST_DRAFT_CREATE",
+      "BROADCAST_EMAIL_SEND_QUEUED",
+      "BROADCAST_EMAIL_SENT",
+      "STAGING_FIXTURE_BOOTSTRAP"
+    ],
+    "snapshotLeaseReleased": true,
+    "recipientLeaseReleased": true
+  },
+  "cleanup": {
+    "finishedAt": "2026-10-09T04:30:40.630Z",
+    "ownedUsersAndProfilesRemoved": 2,
+    "ownedCredentialFactorRoleSessionsQueueAuditsRemoved": true,
+    "operatorDeleted": true,
+    "currentSchemaHashes": {
+      "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+      "business": "598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2",
+      "master": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56"
+    },
+    "schemaVerifiedAt": "2026-10-09T04:32:05.684Z",
+    "retainedStoreTableHashesUnchanged": true,
+    "currentOtherTableHashesUnchanged": true,
+    "foreignKeyViolations": 0,
+    "allowedDifferences": [
+      "auth.mfaGeneration",
+      "business.broadcast_delivery_webhook_events"
+    ],
+    "minimalSignedReceiptDelta": 2,
+    "mfaGenerationNotReset": true,
+    "normalPublicAssetsEqual": true,
+    "resourceBindingsPreserved": true,
+    "imageObjectWrites": 0,
+    "imageObjectContentHashComparisonPerformed": false
+  },
+  "independentConfiguration": {
+    "checkedAt": "2026-10-09T04:34:21.035Z",
+    "workers": {
+      "fanmark-app-staging": {
+        "version": "6afcaee0-a5bd-4bba-8c95-756c69731bdb",
+        "percentage": 100,
+        "crons": [
+          "0 0 * * *",
+          "* * * * *"
+        ]
+      },
+      "fanmark-backup-staging": {
+        "version": "c0c5de89-5c4c-45dc-bd47-e919fa074004",
+        "percentage": 100,
+        "crons": [
+          "5 0 * * *"
+        ]
+      },
+      "fanmark-backup-monitor-staging": {
+        "version": "8298289e-d9b6-4dd4-8ce4-4a51457c5afe",
+        "percentage": 100,
+        "crons": [
+          "35 * * * *"
+        ]
+      }
+    },
+    "sourceDataWritten": false,
+    "settingsChanged": false,
+    "mainBindingCount": 113,
+    "mainDurableObjectBindings": 2,
+    "accountDurableObjectNamespaces": 4,
+    "receiveOnly": true,
+    "operatorDeleted": true
+  },
+  "boundaries": [
+    "One official delivered simulator recipient; this UI run did not test provider retry or additional languages.",
+    "Two CDP input deadlines occurred before dispatch; read-only run/audit counts were zero before the single native AX Send click.",
+    "Actual lost transport responses, provider 429/outages and production queue retention are not accepted by this test.",
+    "Human OAuth initial-password completion, physical phone/PWA, natural daily backup and final integration remain separate."
+  ]
+}

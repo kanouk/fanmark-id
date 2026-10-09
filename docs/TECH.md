@@ -595,3 +595,13 @@ sent/delivered・本人受信を確認した。12:35:05 JSTの自然monitorは�
 delivered/集計1/1/0へ復帰した。初回完了監査は不変。source/runtime/通常assetは変更せず、
 送信selectorを停止へ戻して専用fixture/operatorを除去した。実通信失敗/429・送信UI・本番retention
 は未受け入れ。[限定証拠](migration/evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json)。
+
+### 2026-10-09 告知の実送信UI
+
+別Chromeの専用合成管理者で実ログイン/MFA、下書き作成、Free/ja/過去登録日の対象1件、
+保存本文のpreview、確認画面からのnative送信1回を受け入れた。APIによる下書き/送信代行・
+手動Cronは0。自然Cronと署名sent/delivered、D1/画面の完了・成功1/失敗0を照合した。
+ログアウト後、通常asset/受信専用構成へ復元し、専用fixture/operatorを除去。現行/旧storeの
+schema/hash/FK、3 Worker/Crons・binding・公開assetの独立照合に成功。本人IABは保持し、
+残す差分は署名receipt2件と単調増加MFA generationのみ。runtime/schemaは変更していない。
+[限定証拠](migration/evidence/staging-broadcast-send-ui-native-2026-10-09.json)。本番queue retentionと全体統合は残る。

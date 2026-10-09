@@ -321,4 +321,21 @@ unchanged. Receive-only settings were restored, exact-owned fixtures/operator
 removed, and independent current/retained hash and FK checks passed. Only
 minimal signed receipts and monotonic MFA generation remain changed.
 See [controlled state / actual retry evidence](evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json).
-Native Send UI and production queue retention adoption remain separate.
+At this checkpoint, native Send UI and production queue retention adoption remained separate.
+
+### 2026-10-09: actual native Send UI acceptance
+
+A separate Chrome session used a synthetic admin to sign in, pass TOTP MFA,
+create a draft, select Free/ja with a closed historical registration range,
+verify the visible estimate of one and preview the persisted content. One native
+AX confirmation click queued the run. Two earlier CDP input deadlines were
+confirmed undispatched with independent run/audit counts of zero. No API draft
+creation/send substitute or manual Cron was used. Natural Cron and two real
+signed sent/delivered receipts completed one attempt with native D1 and UI
+totals 1/1/0. Actual UI logout was followed by restoration of the original
+assets and receive-only configuration, exact-owned fixture/operator cleanup,
+and independent current/retained schema/hash/FK and configuration checks.
+Only two minimal signed receipts and monotonic MFA generation remain changed.
+The owner IAB session was preserved. No source runtime or schema changed.
+Production queue retention, human OAuth setup, physical phone/PWA and final
+integration remain separate. [Native UI evidence](evidence/staging-broadcast-send-ui-native-2026-10-09.json).

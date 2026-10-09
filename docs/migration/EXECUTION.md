@@ -1,8 +1,8 @@
 ## 現在のチェックポイント（2026-10-09 13時台 JST）
 
-通常stagingは`e33aa8c5-d13c-42a5-9745-a2e191325871`を100%配信する。
-runtime sourceはc1cc1e2のまま。文書候補e5dd44aの
-[CI37880263746](https://github.com/kanouk/fanmark-id/actions/runs/37880263746)は両job成功。
+通常stagingは`6afcaee0-a5bd-4bba-8c95-756c69731bdb`を100%配信する。
+runtime sourceはc1cc1e2のまま。文書候補037f845の
+[CI37882429413](https://github.com/kanouk/fanmark-id/actions/runs/37882429413)は両job成功。
 bulk/test送信は無効へ戻し、署名受信・113 binding・4 DO namespace・6公開assetを保持した。
 
 公式Resend宛先51件の自然Cron配送は49 delivered・1 permanent bounce・1 complaint、
@@ -18,7 +18,18 @@ attempt1→2・同じprovider ID・同じ本文fingerprint/初回日時/24時間
 operatorを除去し、独立readonly照合で差分はminimal署名receiptと単調増加MFA generationだけ。
 旧store全表hash・現行3 storeのschema/その他表hash・FK0を保持した。
 [合成状態注入後の実provider再試行](evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json)。
-実network失敗/429/outage、送信UI、本番queue retentionの受け入れへ広げない。
+このretry証拠を実network失敗/429/outage、本番queue retentionの受け入れへ広げない。
+
+追加の告知UI検証では、別Chromeの専用合成管理者で実ログイン/MFA、下書き作成、
+Free/ja/過去登録日の対象1件、保存済み本文のプレビュー、確認画面からの送信を行った。
+送信ボタンのnative操作は1回で、APIによる下書き作成/送信代行と手動Cronは0。
+自然毎分Cronと実署名sent/deliveredにより、D1と実画面の完了・成功1/失敗0を照合した。
+ログアウト後に通常asset/受信専用構成へ戻し、専用2 user/profile・資格情報/MFA・queue/監査と
+operatorを除去。独立照合で現行3 store schema/その他表hash・旧store全表hash・FK0、
+3 Workerのversion/Cron・113 binding・4 namespace・6公開assetの保持を確認した。
+差分はminimal署名receipt2件と単調増加MFA generationのみ。画像への書込みは0で、
+この検証ではR2画像object全内容のhash照合は行っていない。本人のIAB sessionは保持した。
+[実送信UIの限定証拠](evidence/staging-broadcast-send-ui-native-2026-10-09.json)。
 
 バックアップは運用鍵による初回保存・同鍵隔離復旧14,591ms・30日処理receipt・通知の本人受信を
 受け入れ済み。日次09:05 JSTと毎時35分の別monitorを登録・独立照合した。
@@ -29,7 +40,7 @@ UTC10/09の保存は再実行せずarchive/鍵を変更していない。初回�
 現在状態へ当てはめない。現行Auth/profileには新規Discord identity1件があり、本人の
 初回パスワード保存はまだ未確認。Vaultのremote Syncも未確認。
 
-送信UI・運用retention、Discord初回設定/logout/relogin、Apple新規identity/relay、
+運用retention、Discord初回設定/logout/relogin、Apple新規identity/relay、
 自然daily、実スマホ/PWA、source/converter照合と同じ最終candidateの六工程は残る。
 実Supabase利用者データと本番DNS切り替えは最後の別工程。以下は過去の状態を含む。
 
