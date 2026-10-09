@@ -285,14 +285,14 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/hooks/useExtensionCouponAdmin.ts:183` | table | `user_settings` | `table.select` |  |
 | `src/hooks/useFanmarkByShortId.ts:57` | rpc | `get_fanmark_by_short_id` | `rpc` |  |
 | `src/hooks/useFanmarkDetails.tsx:93` | rpc | `get_fanmark_details_by_short_id` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:148` | rpc | `list_recent_fanmarks` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:254` | auth | `auth` | `auth.getUser` |  |
-| `src/hooks/useFanmarkSearch.tsx:287` | rpc | `check_fanmark_availability` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:301` | rpc | `record_fanmark_search` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:334` | rpc | `get_fanmark_complete_data` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:517` | edge | `register-fanmark` | `edge_function_invoke` |  |
-| `src/hooks/useFanmarkSearch.tsx:559` | rpc | `check_fanmark_availability` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:569` | rpc | `get_fanmark_complete_data` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:150` | rpc | `list_recent_fanmarks` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:256` | auth | `auth` | `auth.getUser` |  |
+| `src/hooks/useFanmarkSearch.tsx:289` | rpc | `check_fanmark_availability` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:303` | rpc | `record_fanmark_search` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:336` | rpc | `get_fanmark_complete_data` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:519` | edge | `register-fanmark` | `edge_function_invoke` |  |
+| `src/hooks/useFanmarkSearch.tsx:562` | rpc | `check_fanmark_availability` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:572` | rpc | `get_fanmark_complete_data` | `rpc` |  |
 | `src/hooks/useInvitationAdmin.ts:37` | table | `invitation_codes` | `table.select` |  |
 | `src/hooks/useInvitationAdmin.ts:81` | table | `invitation_codes` | `table.insert` |  |
 | `src/hooks/useInvitationAdmin.ts:110` | table | `invitation_codes` | `table.update` |  |
@@ -497,7 +497,7 @@ were imported. Those identity records remain deferred to #38.
 | `src/hooks/usePasswordReset.tsx:34,47,83` | Validate a recovery session/token and set a new password. | Password credential and short-lived recovery token. | Worker mode requires the Better Auth reset token and calls its reset-password API; the Supabase session/setSession/updateUser path remains conditional on Supabase mode. Resend-gated delivery is unverified. |
 | `src/pages/PasswordSetup.tsx:89` | Complete the first-password setup gate. | Password credential and own-account setup state. | Better Auth `setupPassword` updates the credential and owner profile through the Worker; the Supabase password/profile updates remain the legacy branch. Synthetic API contract is tested. |
 | `src/pages/Profile.tsx:135` | Change the signed-in user's password. | Current/new password credential. | Better Auth `changePassword` uses the authenticated session; the Supabase `updateUser` call runs only in Supabase mode. |
-| `src/hooks/useFanmarkSearch.tsx:254`; `src/lib/profile-utils.ts:27`; `src/hooks/useSubscription.tsx:84` | Read current user/session before protected profile, search, or subscription behavior. | Private identity and session. | Worker-backed profile/search/subscription APIs derive the owner from Better Auth cookies; no client-supplied user ID selects the account. Existing user projections remain in their deferred data phase. |
+| `src/hooks/useFanmarkSearch.tsx:256`; `src/lib/profile-utils.ts:27`; `src/hooks/useSubscription.tsx:84` | Read current user/session before protected profile, search, or subscription behavior. | Private identity and session. | Worker-backed profile/search/subscription APIs derive the owner from Better Auth cookies; no client-supplied user ID selects the account. Existing user projections remain in their deferred data phase. |
 | `src/components/AdminBroadcastEmail.tsx:246,285,319` | Read the current administrator session before email-management actions. | Restricted administrator identity. | Worker calls use same-origin Better Auth cookies, then each admin API independently checks role and MFA assurance. Broadcast delivery remains disabled until reviewed Resend/provider selectors are configured. |
 
 All 40 direct Auth/Auth-MFA callsites now have a retention or replacement
@@ -578,11 +578,11 @@ the Auth slice above.
 
 | Callsite(s) | Operation and owner | Cloudflare replacement and remaining boundary |
 | --- | --- | --- |
-| `src/components/RecentFanmarksScroll.tsx:25`; `src/hooks/useFanmarkSearch.tsx:148` | Read recent public fanmarks for the landing view and search suggestions. | The shared `/api/fanmarks/recent` projection is selected in staging and sends no session credentials. Existing production/default builds retain Supabase. Staging HTTP readback passed; it does not prove parity before user-owned fanmark rows are imported. |
-| `src/hooks/useFanmarkSearch.tsx:287,559` | Check whether one or more canonical emoji IDs can be acquired. | The staging Worker resolves IDs through the active Master D1 release and evaluates synthetic business D1 state; requests carry no auth cookies. It preserves the public result contract and fails closed without Supabase fallback. This is advisory availability, not authorization or payment enforcement. |
-| `src/hooks/useFanmarkSearch.tsx:301` | Record a completed anonymous search in discovery aggregates. | The staging Worker batches `search_count`/`last_seen_at` with a search event, sets `user_id=NULL`, and rate-limits by a hashed client-IP key. A synthetic staging canary passed and its rows were removed. Historical user-attributed Supabase events remain deferred. |
-| `src/hooks/useFanmarkSearch.tsx:334,569` | Read a candidate fanmark, license status, and pending lottery state for the current search. | Staging `POST /api/fanmarks/search/details` uses Better Auth to derive the optional owner and returns an allowlisted bounded projection. The client cannot choose a user ID; private settings and content are excluded. Synthetic owner/anonymous integration paths are documented separately. |
-| `src/hooks/useFanmarkSearch.tsx:517` | Register or acquire the selected fanmark. | `VITE_FANMARK_REGISTRATION_BACKEND=worker` sends this operation to the owner-bound D1 registration API, which reads the active emoji/tier masters and writes dependent fanmark/license/settings/profile/audit rows atomically. Integrated synthetic staging readback and cleanup passed; production stays on Supabase. |
+| `src/components/RecentFanmarksScroll.tsx:25`; `src/hooks/useFanmarkSearch.tsx:150` | Read recent public fanmarks for the landing view and search suggestions. | The shared `/api/fanmarks/recent` projection is selected in staging and sends no session credentials. Existing production/default builds retain Supabase. Staging HTTP readback passed; it does not prove parity before user-owned fanmark rows are imported. |
+| `src/hooks/useFanmarkSearch.tsx:289,562` | Check whether one or more canonical emoji IDs can be acquired. | The staging Worker resolves IDs through the active Master D1 release and evaluates synthetic business D1 state; requests carry no auth cookies. It preserves the public result contract and fails closed without Supabase fallback. This is advisory availability, not authorization or payment enforcement. |
+| `src/hooks/useFanmarkSearch.tsx:303` | Record a completed anonymous search in discovery aggregates. | The staging Worker batches `search_count`/`last_seen_at` with a search event, sets `user_id=NULL`, and rate-limits by a hashed client-IP key. A synthetic staging canary passed and its rows were removed. Historical user-attributed Supabase events remain deferred. |
+| `src/hooks/useFanmarkSearch.tsx:336,572` | Read a candidate fanmark, license status, and pending lottery state for the current search. | Staging `POST /api/fanmarks/search/details` uses Better Auth to derive the optional owner and returns an allowlisted bounded projection. The client cannot choose a user ID; private settings and content are excluded. Synthetic owner/anonymous integration paths are documented separately. |
+| `src/hooks/useFanmarkSearch.tsx:519` | Register or acquire the selected fanmark. | `VITE_FANMARK_REGISTRATION_BACKEND=worker` sends this operation to the owner-bound D1 registration API, which reads the active emoji/tier masters and writes dependent fanmark/license/settings/profile/audit rows atomically. Integrated synthetic staging readback and cleanup passed; production stays on Supabase. |
 
 The API contracts and staging evidence are in [search APIs](fanmark-search-api.md),
 [availability validation](availability-validation.md),
