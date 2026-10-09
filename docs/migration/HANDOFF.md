@@ -1,3 +1,13 @@
+## 現在のチェックポイント（2026-10-09 JST）
+
+通常stagingのmainは`1b57012d-e5fe-4821-adaf-6e30ad7d6b0c`。新3D1/2R2とV2 DOへ
+分離し、旧全表/旧namespace/未判定ticket34を保持した。CI205b168の両job成功後、
+新scope限定で初回暗号化R2保存・同運用鍵での隔離復旧14,591ms・独立全表/R2照合と
+所有targetのcleanupを確認した。保存元Auth user/credential/session0・画像R2空。
+実Cron0、失敗監視/通知・残るprovider/最終端末統合は未受け入れ。実ユーザー/DNSは最後。
+最新の[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)と
+[backup operations](backup-operations.md)末尾を優先する。以下の詳細には過去の状態も含む。
+
 ## 告知の定期配信を検証用1名で受け入れ（2026-10-08 JST）
 
 番号付きの本人所有テスト宛先1名を、free/jaと過去の閉じた登録日範囲で限定した。
@@ -8098,3 +8108,35 @@ staging configは新resourceの配備前candidateで、main実環境は97826bff/
 [candidate evidence](evidence/staging-resource-scope-v2-candidate-2026-10-09.json)。
 次はCI→新scope配備→binding/namespace/初回writer/external writerの独立確認→
 admission採用→実archive/同運用鍵の隔離復旧→定期Cron/監視。実ユーザー/DNSは最後。
+
+### 2026-10-09: fresh scopeの実配備・初回運用保存と隔離復旧
+
+205b168/[CI37866060471](https://github.com/kanouk/fanmark-id/actions/runs/37866060471)は
+両job成功。新5 store/V2 namespaceをa8e55756へ配備し、全binding・旧namespace保持・
+公開6 asset・7回の内部状態と6 GETを照合した。新scopeのlegacy/未終了ticketは0、
+旧全表hash/Auth3・7・2は保持。probeは除去済み。旧ticket34を終了・削除していない。
+別Workerに新5 storeへのbindingがないこととbootstrap終了を確認後、admissionだけを
+採用した1b57012dへ配備。mainの実configとチェックイン済みconfigをwriters-verified-v1へ
+揃えた。旧scopeにこのadmissionを適用しない。rollback configは旧store/classとpending
+admissionを選び、V2 migration/namespaceも保持する形でprivateに保存した。
+
+UTC2026-10-09のconditional claim/owner停止で、共通collectorによる全5 storeの2回capture・
+暗号化保存・読戻し/復号/各hash・owner解除を実行。保存は8.56秒、6,739,307 bytes。
+同じR2保存物と、Keychain/Vaultで一致する採用鍵/SDK escrowから別3D1/2R2へ復旧した。
+復旧は14,591ms、全store hash一致、FK0、session/assurance/verification0。
+独立したprocessで暗号化ファイルを開き、Auth9/Business80/Master25の全回復表をRESTで
+読み戻して行数/全行hashを照合した。別readonly WorkerでR2の空集合と保存archiveの
+exact hash/bytesを照合し、所有したtarget3D1/3R2と全operator/probeを削除した。
+復旧前のinventory・旧全表hash・main versionを保持確認。source archiveとprivate fileは保持。
+
+保存元のAuth user/credential/sessionは0、画像R2も空。今回の運用鍵を使う実保存/復旧は
+マスター/共通設定と空のAuth/画像領域での受け入れであり、実Supabase利用者・既存の
+認証情報/画像を復旧した証拠にはしない。復旧時の失効選択は採用したが、非ゼロの
+失効/SDK再ログインは既存のlocal合成/隔離証拠と区別する。14.6秒を本番RTO保証にしない。
+
+読み取り専用監視tokenで新Business27 ledger/FK0/queue等のattention0と公開200を確認した。
+定期backup Workerの実Cronはまだ0。日次候補は09:05 JST（5 0 UTC）へ変更した。
+00:00 UTCのlifecycle batchと分け、今回00:56 UTCの初回保存から次のUTC日付00:05への
+間隔を24時間未満にするためで、同UTC slotの再実行はしない。local backup11件成功。
+自然の定期実行、失敗通知/担当者への実通知、残るprovider/端末の最終統合は未受け入れ。
+[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)。

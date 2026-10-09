@@ -11,7 +11,7 @@
 | 項目 | 採用内容・現在の状態 |
 | --- | --- |
 | 担当 | サービス所有者 |
-| 周期・保存期間 | 1日1回、30日。04:15 JSTを候補時刻とする。Cronはまだ登録していない。 |
+| 周期・保存期間 | 1日1回、30日。09:05 JST（5 0 UTC）を候補時刻とする。実Cronはまだ0。 |
 | 保存先 | 専用R2 `fanmark-backups-staging`を作成。managed/public URL無効、custom domainなしをAPIで照合。 |
 | 鍵 | 新規AES-256鍵をMacキーチェーンとVault `10_sensitive/secret-keys/fanmark-cloudflare-staging-backup`へ保存・一致照合。保存ファイルは0600。R2へ鍵を保存しない。Vaultの遠隔Sync完了は今回の検証に含めない。 |
 | SDK鍵 | 通常Worker内部で運用鍵により暗号化し、別のescrowとしてキーチェーンとVaultへ保存する。生のSDK鍵をRPC応答・ログへ出さず、既存鍵を変更しない。通常Workerの内部RPCで取得し、復号/hash検証後にキーチェーンとVaultへ保存・読戻し照合済み。 |
@@ -22,7 +22,8 @@
 `StagingBackupService`は内部service binding専用のnamed RPC。通常HTTP routerから
 capture/鍵/停止操作を呼べない。source binding集合から導出したscopeとschemaをpinし、
 独立したwriter終了確認後だけ`STAGING_BACKUP_ADMISSION=writers-verified-v1`を選べる。
-現在は`pending-writer-verification`。運用許可やactive=0を終了確認の代わりにしない。
+現行main1b57012dの新5 store/V2 scope限定で`writers-verified-v1`を採用した。
+旧scopeのticket34は未判定のまま保持する。運用許可やactive=0だけを終了確認の代わりにしない。
 
 1. UTC日付のR2 conditional claimを作り、owner UUIDで新規writerを停止する。
 2. 計測済み既存処理の終了を最大20回/約20秒待つ。capture/writeをtimeoutとraceして残さない。
@@ -372,3 +373,35 @@ CLI fallback禁止・新BusinessだけのSELECTを確認した。実monitor read
 DB/class/incarnationの差で失敗した。旧rehearsal guardは緩めず、3 guard試験のfixtureを
 元の3 DB/通知classへ明示的に戻し、現行selector試験だけ新incarnationをpinした。
 現行configのlegacy rehearsal拒否は保持する。全migration-data307件がlocalで成功した。
+
+### 2026-10-09: fresh scopeの実配備・初回運用保存と隔離復旧
+
+205b168/[CI37866060471](https://github.com/kanouk/fanmark-id/actions/runs/37866060471)は
+両job成功。新5 store/V2 namespaceをa8e55756へ配備し、全binding・旧namespace保持・
+公開6 asset・7回の内部状態と6 GETを照合した。新scopeのlegacy/未終了ticketは0、
+旧全表hash/Auth3・7・2は保持。probeは除去済み。旧ticket34を終了・削除していない。
+別Workerに新5 storeへのbindingがないこととbootstrap終了を確認後、admissionだけを
+採用した1b57012dへ配備。mainの実configとチェックイン済みconfigをwriters-verified-v1へ
+揃えた。旧scopeにこのadmissionを適用しない。rollback configは旧store/classとpending
+admissionを選び、V2 migration/namespaceも保持する形でprivateに保存した。
+
+UTC2026-10-09のconditional claim/owner停止で、共通collectorによる全5 storeの2回capture・
+暗号化保存・読戻し/復号/各hash・owner解除を実行。保存は8.56秒、6,739,307 bytes。
+同じR2保存物と、Keychain/Vaultで一致する採用鍵/SDK escrowから別3D1/2R2へ復旧した。
+復旧は14,591ms、全store hash一致、FK0、session/assurance/verification0。
+独立したprocessで暗号化ファイルを開き、Auth9/Business80/Master25の全回復表をRESTで
+読み戻して行数/全行hashを照合した。別readonly WorkerでR2の空集合と保存archiveの
+exact hash/bytesを照合し、所有したtarget3D1/3R2と全operator/probeを削除した。
+復旧前のinventory・旧全表hash・main versionを保持確認。source archiveとprivate fileは保持。
+
+保存元のAuth user/credential/sessionは0、画像R2も空。今回の運用鍵を使う実保存/復旧は
+マスター/共通設定と空のAuth/画像領域での受け入れであり、実Supabase利用者・既存の
+認証情報/画像を復旧した証拠にはしない。復旧時の失効選択は採用したが、非ゼロの
+失効/SDK再ログインは既存のlocal合成/隔離証拠と区別する。14.6秒を本番RTO保証にしない。
+
+読み取り専用監視tokenで新Business27 ledger/FK0/queue等のattention0と公開200を確認した。
+定期backup Workerの実Cronはまだ0。日次候補は09:05 JST（5 0 UTC）へ変更した。
+00:00 UTCのlifecycle batchと分け、今回00:56 UTCの初回保存から次のUTC日付00:05への
+間隔を24時間未満にするためで、同UTC slotの再実行はしない。local backup11件成功。
+自然の定期実行、失敗通知/担当者への実通知、残るprovider/端末の最終統合は未受け入れ。
+[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)。

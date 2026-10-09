@@ -3,7 +3,8 @@ type SchedulerEnv = {
   STAGING_BACKUP_SCHEDULE?: string;
   BACKUP_SERVICE: { run(slot: string): Promise<BackupReceipt>; prune(slot: string): Promise<{ deleted: number }> };
 };
-export const STAGING_BACKUP_CRON = "15 19 * * *"; // 04:15 JST, once per UTC date.
+// After the 00:00 UTC lifecycle batch, and one attempt per UTC date.
+export const STAGING_BACKUP_CRON = "5 0 * * *"; // 09:05 JST.
 export default {
   fetch() { return new Response(null, { status: 404 }); },
   async scheduled(event: ScheduledController, env: SchedulerEnv) {

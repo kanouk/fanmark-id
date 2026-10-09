@@ -1,5 +1,15 @@
 # ユーザーデータ・ドメイン移行前の完了判定
 
+## 現在のチェックポイント（2026-10-09 JST）
+
+通常stagingのmainは`1b57012d-e5fe-4821-adaf-6e30ad7d6b0c`。新3D1/2R2とV2 DOへ
+分離し、旧全表/旧namespace/未判定ticket34を保持した。CI205b168の両job成功後、
+新scope限定で初回暗号化R2保存・同運用鍵での隔離復旧14,591ms・独立全表/R2照合と
+所有targetのcleanupを確認した。保存元Auth user/credential/session0・画像R2空。
+実Cron0、失敗監視/通知・残るprovider/最終端末統合は未受け入れ。実ユーザー/DNSは最後。
+最新の[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)と
+[backup operations](backup-operations.md)末尾を優先する。以下の詳細には過去の状態も含む。
+
 ## 告知の定期配信を検証用1名で受け入れ（2026-10-08 JST）
 
 番号付きの本人所有テスト宛先1名を、free/jaと過去の閉じた登録日範囲で限定した。
@@ -1180,3 +1190,14 @@ main97826bffではHTTP/Cronのwriter lifecycleをcontextへ登録し、新規tic
 現行mainは97826bff/旧scope。新configは配備前でbackup admission pending/Cron0。
 実運用archive/隔離復旧/定期運用は未受け入れ。
 詳細は[backup operations](backup-operations.md)末尾と[candidate evidence](evidence/staging-resource-scope-v2-candidate-2026-10-09.json)。
+
+### 2026-10-09: fresh stagingの実保存・運用鍵での隔離復旧
+
+205b168/CI37866060471両job成功。新5 store/V2を配備・独立確認した後、main1b57012dで
+fresh scope限定のadmissionを採用し、初回6,739,307 bytesの暗号化R2保存・復号/全hash/owner
+解除を確認した。保存物から別3D1/2R2への復旧14,591ms・FK0・全回復表/R2の独立照合を
+確認し、全所有target/operatorを除去した。旧全表と旧namespace/未判定ticket34は保持。
+保存元Auth user/credential/session0、画像R2空での受け入れ。本番利用者移送の証拠ではない。
+日次候補09:05 JSTのlocal11件成功、実Cron0/失敗通知未受け入れ。残るprovider/端末と
+六工程全体は未完了。詳細は[backup operations](backup-operations.md)末尾と
+[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)。
