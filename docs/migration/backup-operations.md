@@ -451,3 +451,21 @@ UTC10/10 00:05（09:05 JST）予定。UTC10/09 captureを再送しない。
 [限定証拠](evidence/staging-backup-monitor-adoption-native-2026-10-09.json)。
 保存元Auth/画像が空という初回復旧の範囲は変わらない。広域障害・本番RPO/RTO保証・
 Vault遠隔Sync・残るprovider/実端末と最終統合まで完了したとは扱わない。
+
+### 2026-10-09 11:45 JST: natural monitor observation remained unaccepted
+
+The existing connected Wrangler tail observed 02:05:08–02:45 UTC, including
+the registered 02:35 slot, but no matching scheduled event was received.
+WebSocket ping/pong confirmed connection; independent registration readback
+still matched monitor version 8298289e, Cron 35 * * * * and private bindings.
+No manual scheduled invocation or monitor deployment was used. Absence in this
+tail is not proof of a runtime failure or missed execution. A dry stored-log
+query was denied with API403 under the current credential scope; no broader
+credential was created. Preserve the current schedules and archive; do not
+replay the 10/09 slot. Natural monitor and next 10/10 09:05 JST daily acceptance
+remain open. The concurrent 51-recipient app test changed only the app's send
+selector temporarily; monitor runtime/Cron, archive identity and alert-only
+entry point remained unchanged. Main is now 6af713aa, receive-only, with exact
+source schema hashes preserved and all tracked fixture writes settled.
+
+[限定観測記録](evidence/staging-natural-backup-monitor-observation-2026-10-09.json)。

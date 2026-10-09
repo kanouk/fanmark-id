@@ -36,6 +36,28 @@ separate from this provider-ingress acceptance. See
 and [the signed receiver/replay evidence](evidence/staging-resend-signed-webhook-2026-10-08.json).
 Auth verification/reset mail acceptance remains separate.
 
+On 2026-10-09, the current main staging Worker completed a closed-date,
+four-language 51-recipient campaign using only official Resend simulator
+addresses. The MFA command deduplicated, natural minute Cron snapshotted and
+dispatched, and 103 real signed receipts reconciled 49 delivered, one permanent
+bounce and one complaint to current totals 51/49/2. A delivery after the complaint
+did not clear its suppression. Every provider attempt count was one; this does
+not accept actual provider retry or native send UI. Bootstrap and cleanup used
+the same main V2 writer namespace without changing source schema. After returning
+to receive-only, all 52 owned users/profiles, campaign queue/suppressions/audits
+and the private operator were removed. An independent read-only process matched
+the source schemas and all other current/retained table hashes; only minimal
+signed receipts and monotonic MFA generation remained changed.
+See [51-recipient native delivery](evidence/staging-broadcast-multi-recipient-native-2026-10-09.json).
+
+The bounded staging test retains fixtures and proof until known terminal signed
+reconciliation. Unknown/review outcomes are retained for investigation by the
+service owner rather than manually released or cleaned. Existing retries use
+the same payload/idempotency key, at most five attempts within the 24-hour
+provider window; no retry occurred here. This records staging test handling,
+not adoption of a production queue retention/deletion policy. No real audience
+or additional message was sent to test retry or suppression exclusion.
+
 The additional Business migration `0025_broadcast_delivery_terminal_outcomes.sql`
 fixes event ordering in both webhook insertion and provider-ID attachment. A
 complaint takes precedence over a permanent bounce; either takes precedence over

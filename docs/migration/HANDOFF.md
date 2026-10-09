@@ -1,21 +1,34 @@
-## 現在のチェックポイント（2026-10-09 JST）
+## 現在のチェックポイント（2026-10-09 11:50 JST）
 
-通常stagingは`98160d0f-1326-4285-ab2b-1de5d35cfbd7`を100%配信する。
-`c1cc1e2`の[CI37869826082](https://github.com/kanouk/fanmark-id/actions/runs/37869826082)は両job成功。
-新5 store/V2 scopeの初回暗号化保存・同鍵の隔離復旧14,591msとcleanupを保持し、
-30日保存処理の完了receipt（削除0件）、監視の正常判定、固定本人宛先への通知1通を確認した。
-実署名sent/deliveredと本人の「来てます」で受信まで受け入れた。既存binding/secret・
-旧store/namespace/未判定ticket34を保持し、保存元の差分はこの通知の署名event2件だけ。
+通常stagingは`6af713aa-d5b8-4e21-a0b2-7780d269178b`を100%配信する。
+runtime sourceはc1cc1e2のまま。直前の文書候補c195d45の
+[CI37873718998](https://github.com/kanouk/fanmark-id/actions/runs/37873718998)は両job成功。
+bulk/test送信は無効へ戻し、既存署名受信・113 binding・4 DO namespace・6公開assetを保持した。
 
-日次backup `5 0 * * *`（09:05 JST）と別monitor `35 * * * *`を実登録し、
-独立API読取で100%配備・binding・Cron・公開HTTP無効を照合した。canonical configも
-同じselector/周期へ合わせた。最初の自然dailyは10/10 09:05 JSTの予定。
-登録は自然実行の証明ではなく、自然monitor/dailyはまだ未確認。UTC10/09のcaptureを再実行しない。
-保存元Auth user/credential/session0・画像R2空。Apple/Discord新規identity/relay、告知UI等、
-実スマホ/PWA・同じ最終candidateの六工程は未完了。実ユーザー/DNSは最後。
-[監視採用の限定証拠](evidence/staging-backup-monitor-adoption-native-2026-10-09.json)、
-[初回保存・復旧](evidence/staging-resource-scope-v2-operational-2026-10-09.json)、
-[backup operations](backup-operations.md)末尾を優先する。以下は過去の状態を含む。
+閉じた過去日付のFree/4言語を使い、公式Resend検証宛先51件だけへのMFA送信要求・
+同一request IDの重複排除・自然毎分Cronの宛先抽出/配送を確認した。
+49件delivered・1件permanent bounce・1件complaint、実署名通知103件、
+run completed・集計51/49/2・配信停止2件・初回完了監査1件を照合した。
+complaint後のdeliveredで停止は解除されない。全provider attemptは1回で、実retryは未確認。
+実source schemaを変えず、bootstrap/cleanupを同じV2 writer追跡で実施した。
+専用user/profile52件・actor資格情報/MFA・draft/run/recipient/suppression/監査とoperatorを除去し、
+独立readonly照合で残る差分はminimal署名receipt103件と単調増加MFA generationだけと確認した。
+旧store全表hash、現行3 storeのschema/その他表hash、FK0を保持した。
+[51件の実配送・cleanup](evidence/staging-broadcast-multi-recipient-native-2026-10-09.json)。
+これは実送信APIとprovider/queue集計の受け入れであり、送信UI・実retry・本番retentionの
+受け入れに広げない。宛先は公式simulatorで、本人Gmailの受信検証ではない。
+
+バックアップは運用鍵による初回保存・同鍵隔離復旧14,591ms・30日処理receiptと通知の本人受信を
+受け入れ済み。日次09:05 JSTと毎時35分の独立monitorを登録・独立照合した。
+接続済みtailで11:35 JSTを含む11:05〜11:45を観測したが、対応する自然monitor eventは取得できなかった。
+観測なしを実行失敗/未実行の証明にしない。自然monitor/dailyは未受け入れで、最初の自然dailyは
+10/10 09:05 JST予定。UTC10/09の保存は再実行しない。monitor自体のversion/Cronは保持した。
+初回archive時のAuth user/session0と画像空を、現在のAuth状態へ当てはめない。
+現行Auth/profileには新規Discord identity1件があり、本人の初回パスワード保存はまだ未確認。
+
+送信UI、実retry/運用retention、Discord初回設定/logout/relogin、Apple新規identity/relay、
+自然monitor/daily、実スマホ/PWA、source/converter照合と同じ最終candidateの六工程は残る。
+実Supabase利用者データと本番DNS切り替えは最後の別工程。以下は過去の状態を含む。
 
 ## 告知の51名snapshot境界（2026-10-09 JST）
 
