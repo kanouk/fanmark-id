@@ -1,5 +1,12 @@
 ## 現在のチェックポイント（2026-10-09 JST）
 
+2026-10-09 22:20 JST、本人の明示的なlogout後のメール/password再ログイン成功報告を受け、
+新しく作られたDiscord identity1件のcredential保存・同じAuth/business owner・setup flag解除を照合した。
+以前の唯一sessionは消え、credential保存後の新しいsession1件とprovisioning completedを確認した。
+初回password保存/logout/同一identityメールpassword再loginを限定受け入れた。現在のDiscord identityは
+2件で、以前の設定待ち1件は保持する。password/hash/tokenは読まず、古いcookieの再送検証は行っていない。
+[Discord初回設定と再ログインの証拠](evidence/discord-staging-first-password-relogin-2026-10-09.json)。
+
 通常stagingは`49e191a8-d85e-4ccd-a343-5387439edaac`を100%配信する。API sourceは
 c1cc1e2のまま。bulk/test送信は無効、署名受信・113 binding・4 DO namespace・
 backup/monitorのversionと周期・現行/旧D1全表hashを保持した。直前4世代の公開bundleも保持する。
@@ -36,7 +43,7 @@ profile取得の失敗でパスワード未設定と推測して移動する挙�
 新versionで有料フローや本人の初回password設定を再度完了した証拠には広げない。
 
 残件はsourceの4 converter group/外部read consumer、旧writer ticketの扱い、翌日09:05 JSTの
-日次backup自然発火、Discord新規identityの初回password/logout/relogin、Apple新規identity/relay、
+日次backup自然発火、Apple新規identity/relay、
 実スマホ/PWAと最終統合。実user移送・DNSは最後の別工程。以下は過去の限定証拠。
 
 通常d074b5ddの別合成account3件でEN/KO/IDも、実ログイン→取得前のお気に入り→
