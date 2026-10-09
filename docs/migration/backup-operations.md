@@ -362,3 +362,8 @@ source archiveの初回運用保存、同鍵の隔離復旧、定期Cron/監視�
 現行mainは97826bffの旧scopeのまま。新configは配備前のcandidateで、admissionは
 pending・backup Cron0を保持する。CI後の新scope配備と独立readbackを先に行う。
 [candidate evidence](evidence/staging-resource-scope-v2-candidate-2026-10-09.json)。
+
+新scope用の読み取り専用監視も3 D1の固定ID/Business名を更新した。実配備が旧scopeの
+間はremote binding guardで停止し、旧Businessを新scopeの健全性として報告しない。
+actual commandの5回帰で異なるbindingのquery前拒否・書込receipt拒否・資格情報不足時の
+CLI fallback禁止・新BusinessだけのSELECTを確認した。実monitor readbackは配備後に行う。

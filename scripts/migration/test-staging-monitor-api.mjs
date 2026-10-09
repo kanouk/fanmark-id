@@ -119,4 +119,6 @@ test('the actual monitor command reads a fixed deployment and aggregate health w
   assert.equal(report.ledgerEntries, BUSINESS_MIGRATION_SEQUENCE.length);
   assert.deepEqual(report.attention, []);
   assert.equal(result.requests.filter(row => row.path.endsWith('/query')).length, 2);
+  assert.ok(result.requests.filter(row => row.path.endsWith('/query')).every(row =>
+    row.path === '/client/v4/accounts/bfc2890741f0b3fb236e2d755b6c9adc/d1/database/c99c9f7e-b234-400e-aa89-8d15a168abcc/query'));
 });

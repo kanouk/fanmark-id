@@ -14,9 +14,9 @@ const account = 'bfc2890741f0b3fb236e2d755b6c9adc';
 const worker = 'fanmark-app-staging';
 const origin = 'https://fanmark-app-staging.fanmark-id.workers.dev';
 const databases = {
-  FANMARK_DB: 'd4bb0c48-f24a-491f-8693-fa393ab0b873',
-  AUTH_DB: '2116bc43-32ab-4e3e-b762-9378df88b95f',
-  MASTER_DB: '160376b0-bde6-4d5f-8969-96deb5ae1183',
+  FANMARK_DB: 'c99c9f7e-b234-400e-aa89-8d15a168abcc',
+  AUTH_DB: '2d1a775e-e584-4ce6-baf2-946efc62ff99',
+  MASTER_DB: '02681378-5528-45a9-8093-76805a4705c9',
 };
 let token;
 let stage = 'configuration';
@@ -43,6 +43,8 @@ async function observe() {
   for (const [binding, id] of Object.entries(databases)) {
     assert.equal(config.d1_databases.find(row => row.binding === binding)?.database_id, id);
   }
+  const businessDatabaseName = 'fanmark-recovery-staging-v2-e434eb11-business';
+  assert.equal(config.d1_databases.find(row => row.binding === 'FANMARK_DB')?.database_name, businessDatabaseName);
   if (monitorTokenMode) {
     stage = 'monitor_token';
     token = process.env.FANMARK_STAGING_MONITOR_API_TOKEN;
@@ -87,7 +89,7 @@ async function observe() {
   }
   stage = 'schema_ledger';
   const ledger = monitorTokenMode ? await monitorApi.readBusinessLedger()
-    : cli(['d1', 'execute', 'fanmark-business-staging', '--remote', '--json',
+    : cli(['d1', 'execute', businessDatabaseName, '--remote', '--json',
       '--command', 'SELECT name FROM d1_migrations ORDER BY id']);
   assert.equal(ledger[0]?.success, true);
   assert.deepEqual(ledger[0].results.map(row => row.name), [...BUSINESS_MIGRATION_SEQUENCE]);
@@ -96,7 +98,7 @@ async function observe() {
     .replace(/^--[^\n]*$/gmu, '').trim();
   assert.ok(/^SELECT\s/iu.test(sql) && sql.endsWith(';') && !sql.slice(0, -1).includes(';'));
   const result = monitorTokenMode ? await monitorApi.readBusinessCounts()
-    : cli(['d1', 'execute', 'fanmark-business-staging', '--remote', '--json', '--command', sql]);
+    : cli(['d1', 'execute', businessDatabaseName, '--remote', '--json', '--command', sql]);
   assert.equal(result.length, 1);
   assert.equal(result[0]?.success, true);
   assert.equal(result[0].results.length, 1);
