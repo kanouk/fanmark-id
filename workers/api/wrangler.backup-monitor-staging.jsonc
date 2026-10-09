@@ -13,7 +13,7 @@
     {
       "binding": "BACKUP_ALERT_SERVICE",
       "service": "fanmark-app-staging",
-      "entrypoint": "StagingBackupService"
+      "entrypoint": "StagingBackupAlertService"
     }
   ],
   "r2_buckets": [

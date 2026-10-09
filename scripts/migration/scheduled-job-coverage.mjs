@@ -23,7 +23,8 @@ export function validateStagingBackupJobCoverage(main, scheduler, monitor) {
     if (config.vars.RECOVERY_DRAIN_SCOPE_DIGEST !== main.vars.RECOVERY_DRAIN_SCOPE_DIGEST)
       throw new Error("staging_backup_job_scope_mismatch");
     const binding = name === "fanmark-backup-staging" ? "BACKUP_SERVICE" : "BACKUP_ALERT_SERVICE";
-    if (JSON.stringify(config.services) !== JSON.stringify([{ binding, service: "fanmark-app-staging", entrypoint: "StagingBackupService" }]))
+    const entrypoint = name === "fanmark-backup-staging" ? "StagingBackupService" : "StagingBackupAlertService";
+    if (JSON.stringify(config.services) !== JSON.stringify([{ binding, service: "fanmark-app-staging", entrypoint }]))
       throw new Error("staging_backup_job_service_mismatch");
     if (active) {
       if (main.vars.STAGING_BACKUP_ALERT_BACKEND !== "resend-v1" || main.vars.STAGING_BACKUP_ADMISSION !== "writers-verified-v1")

@@ -11,3 +11,8 @@ export class StagingBackupService extends WorkerEntrypoint<StagingBackupEnv & Ba
   prune(slot: string) { return pruneStagingBackups(this.env, slot); }
   alert(input: BackupAlert) { return sendStagingBackupAlert(this.env, input); }
 }
+
+/** Separate capability for the monitor: it cannot invoke capture, retention, status or key escrow. */
+export class StagingBackupAlertService extends WorkerEntrypoint<BackupAlertEnv> {
+  alert(input: BackupAlert) { return sendStagingBackupAlert(this.env, input); }
+}

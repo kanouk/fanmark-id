@@ -1,7 +1,7 @@
 import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from "./notification-wake";
 export { NotificationWakeCoordinator, NotificationWakeCoordinatorV2 } from "./notification-wake";
 export { RecoveryWriterCoordinator, RecoveryWriterCoordinatorV2 } from "./recovery-writer-drain";
-export { StagingBackupService } from "./staging-backup-service";
+export { StagingBackupService, StagingBackupAlertService } from "./staging-backup-service";
 import {
   createSupabaseRecentFanmarksRepository,
   mapRecentFanmarkRows,

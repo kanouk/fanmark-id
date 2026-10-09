@@ -28,7 +28,7 @@ test('independent native monitor detects missing, failed, stale and incomplete r
     env:{...Object.fromEntries(Object.entries(vars).map(([name,value])=>[name,{type:'text',value}])),
       STAGING_BACKUP_BUCKET:{type:'r2',name:'isolated-monitor-control'},
       SERVICE:{type:'worker',worker:'monitor-native-fixture',exportName:'StagingBackupService'},
-      BACKUP_ALERT_SERVICE:{type:'worker',worker:'monitor-native-fixture',exportName:'StagingBackupService'}},
+      BACKUP_ALERT_SERVICE:{type:'worker',worker:'monitor-native-fixture',exportName:'StagingBackupAlertService'}},
     manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:compiled.outputFiles[0].text}}}},
     dev:{outboundService:{type:'fetcher',async handler(request){
       assert.equal(request.url,'https://api.resend.com/emails');assert.equal(request.method,'POST');
@@ -55,6 +55,12 @@ test('independent native monitor detects missing, failed, stale and incomplete r
       assert.deepEqual(await request('monitor',{mode:'disabled'},409),{error:'staging_backup_monitor_disabled'});
       assert.deepEqual(await request('monitor',{mode:'wrong-cron'},409),{error:'staging_backup_monitor_cron_invalid'});
       assert.equal(sends.length,0);
+    });
+    await t.test('monitor RPC cannot invoke capture, retention, status or encrypted key escrow',async()=>{
+      const {denied}=await request('forbidden-monitor-rpc');
+      assert.deepEqual(Object.keys(denied).sort(),['prune','run','sealAuthKey','status']);
+      for(const reason of Object.values(denied))assert.match(reason,/does not implement/u);
+      assert.equal(sends.length,0);assert.equal((await bucket.list()).objects.length,0);
     });
     await t.test('healthy receipt requires private archive HEAD and settled retention, without email',async()=>{
       await seed();await bucket.put(receipt.objectKey,archive);
@@ -123,7 +129,7 @@ test('backup monitor candidate pins the active stores and has no source DB, imag
   assert.equal(monitor.d1_databases,undefined);assert.equal(monitor.durable_objects,undefined);
   assert.equal(monitor.vars.STAGING_BACKUP_KEY,undefined);assert.equal(monitor.vars.BETTER_AUTH_SECRET,undefined);
   assert.deepEqual(monitor.r2_buckets,[{binding:'STAGING_BACKUP_BUCKET',bucket_name:'fanmark-backups-staging'}]);
-  assert.deepEqual(monitor.services,[{binding:'BACKUP_ALERT_SERVICE',service:'fanmark-app-staging',entrypoint:'StagingBackupService'}]);
+  assert.deepEqual(monitor.services,[{binding:'BACKUP_ALERT_SERVICE',service:'fanmark-app-staging',entrypoint:'StagingBackupAlertService'}]);
   assert.ok(['disabled','hourly-v1'].includes(monitor.vars.STAGING_BACKUP_MONITOR));
   assert.deepEqual(monitor.triggers.crons,monitor.vars.STAGING_BACKUP_MONITOR==='disabled'?[]:['35 * * * *']);
 });

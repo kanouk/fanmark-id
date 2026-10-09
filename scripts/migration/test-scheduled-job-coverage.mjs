@@ -50,6 +50,7 @@ test("backup/monitor activation requires matching scope, transport admission and
     c => { c.hourly.vars.STAGING_BACKUP_SOURCE_IDS = "{}"; },
     c => { c.hourly.d1_databases = [{ binding: "AUTH_DB", database_id: "unowned" }]; },
     c => { c.hourly.services[0].service = "other-project"; },
+    c => { c.hourly.services[0].entrypoint = "StagingBackupService"; },
   ]) {
     const c = structuredClone({ main, daily, hourly }); change(c);
     assert.throws(() => validateStagingBackupJobCoverage(c.main, c.daily, c.hourly), /staging_backup_/u);

@@ -11,7 +11,7 @@
 ## 日次backup監視の候補（2026-10-09 JST）
 
 初回source保存・隔離復旧/cleanupは前節のnative証拠。次の候補では別monitor、固定本人
-宛先の失敗通知、retentionの永続完了receiptを追加する。local native21件とschedule guard
+宛先の失敗通知、retentionの永続完了receiptを追加する。local native22件とschedule guard
 12件を検証。候補は未配備、Cronは0のまま。UTC2026-10-09の保存を再実行しない。
 CI後に同じsource/binding/secretを保持してmainを配備し、当日の期限処理だけを一度
 実行・照合する。実通知/配送を確認した後にdaily09:05 JSTと毎時35分monitorを採用する。

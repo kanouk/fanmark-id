@@ -571,7 +571,7 @@ Cloudflare stagingの新scopeは全5 storeを別resourceとし、通知/終了�
 要求し、それ以前は前日を確認する。receiptのsource/schema/key ID、owner、verified/released、
 時刻、24時間の経過、archive HEADの存在/容量、retention終了を照合する。本文の再復号は
 capture側の完了検証で行い、毎時monitorはarchiveのhash再計算や復号をしない。
-monitorはsource bindingも運用秘密鍵も持たず、失敗通知だけmainのbinding専用RPCへ委ねる。
+monitorはsource bindingも運用秘密鍵も持たず、失敗通知だけmainの通知専用`StagingBackupAlertService`へ委ねる。通常のcapture/retention/status/鍵escrowの4 RPCはこのentrypointには存在せず、local workerdの実RPCでmethod未実装として拒否されることを確認した。
 
 `staging-backup-alert.ts`の宛先は本人が許可した`fanmark.id+staging-test05@gmail.com`へ固定。
 メッセージにraw例外、credential、source行、provider応答を入れない。scope/UTC date/codeの

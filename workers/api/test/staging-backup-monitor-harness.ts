@@ -1,5 +1,5 @@
 /** Local-only monitor/alert fixture. Never deploy or bind actual staging resources. */
-export { StagingBackupService } from "../src/staging-backup-service";
+export { StagingBackupService, StagingBackupAlertService } from "../src/staging-backup-service";
 import monitor, { inspectStagingBackup, type BackupMonitorEnv } from "../src/staging-backup-monitor";
 import { sendStagingBackupAlert, type BackupAlert, type BackupAlertEnv } from "../src/staging-backup-alert";
 import scheduler from "../src/staging-backup-scheduler";
@@ -12,6 +12,16 @@ export default {
     try {
       if (input.path === "inspect") return Response.json(await inspectStagingBackup(env, input.now));
       if (input.path === "alert") return Response.json(await env.SERVICE.alert(input.alert!));
+      if (input.path === "forbidden-monitor-rpc") {
+        const service = env.BACKUP_ALERT_SERVICE as unknown as {
+          run(slot: string): Promise<unknown>; status(slot: string): Promise<unknown>; sealAuthKey(): Promise<unknown>; prune(slot: string): Promise<unknown> };
+        const denied: Record<string, string> = {};
+        for (const method of ["run", "status", "sealAuthKey", "prune"] as const) {
+          try { await service[method](new Date().toISOString().slice(0, 10)); }
+          catch (error) { denied[method] = (error as Error).message; }
+        }
+        return Response.json({ denied });
+      }
       if (input.path === "claim-ack-loss") {
         const bucket = env.STAGING_BACKUP_BUCKET!;
         const uncertain = new Proxy(bucket, { get(target, property) {
