@@ -129,8 +129,8 @@ export default function FanmarkMessageboardPreview() {
 
   // プレビュー内容を決定（優先順位: location state > DB の内容 > デフォルト）
   const message = locationState?.previewContent !== undefined
-    ? (locationState.previewContent || 'メッセージがありません')
-    : (fanmark?.text_content || 'メッセージがありません');
+    ? (locationState.previewContent || t('messageBoard.noMessage'))
+    : (fanmark?.text_content || t('messageBoard.noMessage'));
 
   // URLをリンクに変換する関数
   const linkifyText = (text: string) => {

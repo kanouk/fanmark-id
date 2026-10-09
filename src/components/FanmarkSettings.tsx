@@ -915,7 +915,7 @@ export const FanmarkSettings = ({
                       className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
                     >
                       <Eye className="h-4 w-4" />
-                      プレビュー
+                      {t('messageBoard.preview')}
                     </Button>
                   </div>
                 </div>

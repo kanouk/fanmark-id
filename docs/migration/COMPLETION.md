@@ -2,12 +2,25 @@
 
 ## 現在のチェックポイント（2026-10-09 JST）
 
-通常stagingは`d074b5dd-b69a-4e50-b847-8770383dc0ea`を100%配信する。
-API sourceはc1cc1e2のまま。frontendは取得成功後のお気に入り再取得を追加し、
-直前のhash付き公開bundleを保持した。bulk/test送信は無効、署名受信・113 binding・
+通常stagingは`3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74`を100%配信する。
+API sourceはc1cc1e2のまま。今回のfrontend修正は伝言板のpreview/空本文と
+お気に入り登録日の4言語表示。Asia/Tokyoと取得後の再取得を保持し、直前2世代の
+hash付き公開bundleも保持した。bulk/test送信は無効、署名受信・113 binding・
 4 DO namespace・backup/monitorのversionと周期・既存データを保持した。
-修正前の権限対応表af5ed00の[CI37889243811](https://github.com/kanouk/fanmark-id/actions/runs/37889243811)は両job成功。
+前候補6ebae6fの[CI37893801719](https://github.com/kanouk/fanmark-id/actions/runs/37893801719)は両job成功。
 この修正候補の最新CIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
+
+通常d074b5ddの別合成account3件でEN/KO/IDも、実ログイン→取得前のお気に入り→
+無期限Tier C取得→伝言板保存→再読込なしの所有/リンク反映→公開本文→返却→logoutを
+一巡した。各専用user/fanmark/operatorを除去し、現行/旧D1の他全表hash・FK0と
+設定/asset/namespaceを独立照合した。差分はrequested=acknowledgedの通知wakeだけ。
+[3言語の主要フロー](evidence/staging-core-journeys-en-ko-id-native-2026-10-09.json)。
+その途中で日本語固定preview/空本文とKO/IDの英語日付を実画面で観測し修正した。
+修正後3cd3c8b6では4言語の変更箇所、previewからの下書き保持、保存・返却・logoutと
+exact-owned cleanupを確認した。[表示修正の限定証拠](evidence/staging-core-locale-display-fix-native-2026-10-09.json)。
+この新versionの全業務を4言語で一巡した証拠へは広げない。typecheck/build、
+生成PWAのAPI cache境界とcallsite/旧asset保持5件は成功。変更3 TSXのlintは
+Favorites既存の未変更any1件で失敗し、変更前にも同じ行があることを確認した。
 
 同じd074b5dd・別の専用合成Free account・日本語Chromeで、実ログイン→取得前の
 お気に入り登録→無期限Tier C取得→伝言板設定保存→再読込なしの所有状態/リンク反映→
@@ -17,7 +30,7 @@ API sourceはc1cc1e2のまま。frontendは取得成功後のお気に入り再�
 検証用user/fanmark/operatorを除去し、独立readonly照合で現行/旧storeの他全表hash・FK0・
 現在asset/設定を確認した。差分は通知wake generationだけで、requested/acknowledgedは一致。
 [主要フローと旧client復帰の限定証拠](evidence/staging-core-journey-native-2026-10-09.json)。
-これは合成desktopの主要フローであり、有料/provider初回設定・全言語・実スマホ/PWAと
+この日本語の証拠単独は合成desktopの主要フローであり、有料/provider初回設定・実スマホ/PWAと
 六工程全体の受け入れではない。実ユーザー移送・DNS・Stripe/mail・画像writeは0。
 
 公式Resend宛先51件の自然Cron配送は49 delivered・1 permanent bounce・1 complaint、
@@ -1095,7 +1108,7 @@ local復旧約4.94秒はproduction RTOではない。新caseと小fixture回帰�
 | 3. 実サービスとのテスト接続 | GitHubは0fb4976/CI37180854336両job・Worker07bf9d61で実callback/provisioning/初回password保存/logout/session失効/同一identity再loginを受け入れた。Googleのcallback保存・既存資格情報のstaging保存とGoogle/GitHub capabilitiesはWorker8bb6b4d9で確認済み。Googleも実callback/provisioning/本人の初回password保存/logout/session失効/同一identity再loginを受け入れた。DiscordもWorkerfa4ef348で実callbackによる既存Google userへの連携・session失効・同一identity再loginを受け入れた。新規Discord user作成/初回設定は未確認。Appleは本人の契約同意・callback追加許可後に本番設定を保持してstaging URLを保存し、Vaultの既存鍵で更新した90日有効なsecretを保存した。初回実callbackのorigin拒否を限定修正し、7e6cf76/CI37192167542両job成功後のWorker495b3ce4でremote form POSTとstate拒否を確認した。実Apple callbackで既存Google userへの連携とsession失効・同一account再ログインを確認した。Apple新規user/初回設定/relayは未受け入れ。Stripeはtest料金19件・専用10 event Webhook（testのみ有効）・test default Portalを作成し、test key/署名secretをstagingへ保存した。Business test Price/modeとMasterのprivate test Price派生版を照合済み。87b61ef/CI37200812928両job成功・Workerca971193でtest Checkout→Creator、Portal支払い確定→Business、Free即時解約→署名反映、重複単一適用・処理済みeventの逆順再送・自然retryと専用合成userのcleanupを確認した。同じWorkerで実登録→Sティア1か月JPY2,000延長、拒否時未延長、3DS成功、実署名自然処理とdelivery2/効果各1・cleanupの独立照合も受け入れた。定期請求の実拒否/past_due、未受信の古い成功eventをdelivery1で初回逆順配送して失敗状態を維持、成功支払いからBusiness/activeと失敗状態クリア、解約/cleanup・独立保持照合も受け入れた。定期請求の実payment_action_required投影、保存済みカードのhosted3DS完了、同じInvoice/PaymentIntentの成功復旧・独立cleanupも受け入れた。12fa13f/Workercc6d9da7で同一合成userの実signin/プラン選択/Checkout→Creator/Portal支払い→Business/警告確認→Free/logoutと独立cleanupを受け入れた。移管の発行/申請/承認、クーポン延長/返却、抽選申込/取消/結果、実test購読からの5件→Free3件の上限選択、有料退会は個別native UIの証拠がある。有料延長の途切れないCheckout復帰と、所有合成licenseの移管lock中の再発行表示は8586601/Workerf6d162c5で受け入れた。短時間の成功toast自体は未捕捉。同じ最終candidateの全フローは未受け入れ。Resendの実登録・メール確認・再設定・変更後のログインは上記の限定証拠で受け入れ済み。本人の既存メール検証accountは保持する。追加の管理reset/告知test各1通はnative送信・Delivered・監査一致を確認し、専用合成actor/draftのみcleanup済み。bulk/実署名provider通知は別条件。Apple/Discord/GitHub/Googleを公開する。  2026-10-09の公式検証51名はMFA API/自然Cron/実署名103件をつなぎ、集計51/49/2・停止2件・cleanupを受け入れた。その51件では送信UIと実retryは未確認。[限定証拠](evidence/staging-broadcast-multi-recipient-native-2026-10-09.json)。後続の公式1件では受理後状態の合成注入から実Resend再試行を確認し、同じprovider ID/本文/窓と初回監査の不変・cleanupを受け入れた。[実再試行の限定証拠](evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json)。別Chromeの実ログイン/MFA・下書き/preview/確認/送信1回・自然Cron・実署名配送とUI成功1/失敗0・logout/cleanupも受け入れた。[実送信UIの限定証拠](evidence/staging-broadcast-send-ui-native-2026-10-09.json)。初期運用の保持・owner調査方針を[運用書](broadcast-operations.md)で採用済み。実際の削除/窓外解決の実行はこの決定の証拠に含めない。 | Stripe sandboxのCheckout/Portal/変更/延長/署名Webhook・重複/逆順/再試行、テスト宛先の認証メール、4 providerの開始/callback/初回設定を確認する。Apple relayも含む。必要なprovider資格情報・テスト設定・テスト送信の許可が必要。本番課金・本番宛先送信は行わない。 | #31, #32, #34, #37 |
 | 4. ジョブ・運用・復旧 | 通知DOの起動/排出/停止・復旧、期限処理の合成一回実行、archive smoke、Time Travel/R2 replayの個別証拠はある。隔離実Cronでarchive2件/残す2件・履歴payload/FK・cleanupを受け入れ、独立inventoryも一致した。mainの日次expiry/archive・Paid/CPU30,000msは有効化・配備/readback済みで、2026-10-05 09:00:15 JSTの自然expiry/graceは対象0/競合0・完了台帳を確認した。旧監視の秒完全一致による取りこぼしを修正し、10月6日09:00:57 JSTのmain expiry/grace/archive自然実行は完了/例外0/競合0/残り0で受け入れた。対象0件のhandler観測と隔離環境の有データarchive試験は分ける。監視専用tokenを二つのRead権限・対象account限定・期限11/4で発行し、Macキーチェーン保管と専用CLIの実readを受け入れた。新規一時D1のSELECT成功・非ゼロINSERT認可拒否・同一SQLの配備権限positive controlを確認し、所有D1の削除と独立inventory一致も受け入れた。Authの共通capture/暗号化/空target復旧と明示失効方式を実装し、合成SDK/native D1の失効後login・rollback・lost-ACK保持/再実行拒否を確認した。[限定証拠](evidence/auth-recovery-shared-local-2026-10-07.json)。Business/Masterもnative共通復旧を追加し、R2は新規7 bucket/Workerでclass補完なしの8項目と全資源cleanup/inventory一致を受け入れた。[R2の限定証拠](evidence/r2-recovery-shared-remote-2026-10-08.json)。共通一式collectorは新規6 D1/5 R2/WorkerでMacの保存fileから全desired hash/FK/明示session失効とcleanupを受け入れた（小さい合成fixture）。[限定証拠](evidence/recovery-set-isolated-remote-2026-10-08.json)。新5 store/V2の運用鍵による初回保存・同鍵隔離復旧、30日期限処理receipt、通知の実配送/本人受信とdaily/monitor実登録を受け入れた。担当・鍵保管・失効方式・RPO24h/RTO4h目標は採用済み。12:35:05 JSTの自然monitorは正常/例外0で受け入れた。[自然監視](evidence/staging-natural-backup-monitor-accepted-2026-10-09.json)。鍵/暗号化SDK escrowのMarkdownをremote Syncから取得し、ローカル全bytes一致とJSON原本/Keychain保持を確認した。[遠隔鍵保管](evidence/staging-backup-vault-sync-custody-2026-10-09.json)。自然dailyと最終運用全体は未確認。[採用の限定証拠](evidence/staging-backup-monitor-adoption-native-2026-10-09.json)。 | 起動条件/周期/再開/監視、保存期間、担当と権限、秘密の保管・交換、停止時間/復旧時間目標を確定し、合成障害から復旧を実測する。測定で有料planが必要なら設定前に明示する。 | #30, #34, #37 |
 | 5. 移送器の合成データ受け入れ | 最新27 Business/4 Authで、同じ暗号化保存bundleから全Master25表/12,254行/98定義、合成Auth9表/16行/30定義、業務40表/15行と分離R2画像2件を2組の新規実D1/R2へ復旧。各Business targetの全27 migration/schemaが現行runtime profileに一致し、全hash/FK0、commit後中断再開、R2 replayと実SDK/owner/catalog/画像を確認。全所有資源削除と独立inventory/main全表hash/Auth3/7/2/Worker d437保持を確認。所要132917/310412msは本番RTOではない。[限定証拠](evidence/full-combined-file-remote-recovery-v27-2026-10-06.json)。実ユーザー移送は0。source converterの4 blocking groups/deployable=falseは保持。運用鍵/非公開R2/30日保存/失効方針を採用し初回実保存・復旧と定期ジョブ登録、自然の毎時監視正常を確認した。自然日次保存・最終運用は未確認。 | source全schemaの残る4分類を判断し、運用鍵/保存先/失効方針を採用した最終構成で未説明差分0と所要時間を記録する。合成復旧から実ユーザーidentityの移送成立を推定しない。 | #35, #37 |
-| 6. 最終統合と引き渡し | desktop・390px viewportのeditor/favorites、API/static/PWA/noindexなどの個別証拠がある。旧source→現行frontendのローカル実ブラウザーで、SW更新/自動reload/旧API cache退役・合成設定保持と現行PWA画面を確認した。現行Workerの同じSafariでJA/EN/KO/IDのアプリ内通知配信・本文・優先言語反映・個別既読と独立cleanupを受け入れた。現行6afcaee0の匿名Chromeでは4言語のhome/認証表示と再設定/保護route導線を受け入れた。[限定証拠](evidence/staging-public-locales-native-2026-10-09.json)。全言語の全利用フロー、実スマホ・実ユーザーのインストール済みPWAを含む最終通し確認は未完了。PR #41はdraft。 | 同じ最終candidateで主要利用フロー、provider、ジョブ、PC/スマホ、言語、旧client更新、障害/復旧を一巡する。実行結果と残すデータ/DNS工程の手順を更新し、PRの最終差分・CIをレビュー可能にする。 | #33, #37 |
+| 6. 最終統合と引き渡し | desktop・390px viewportのeditor/favorites、API/static/PWA/noindexなどの個別証拠がある。旧source→現行frontendのローカル実ブラウザーで、SW更新/自動reload/旧API cache退役・合成設定保持と現行PWA画面を確認した。現行Workerの同じSafariでJA/EN/KO/IDのアプリ内通知配信・本文・優先言語反映・個別既読と独立cleanupを受け入れた。当時6afcaee0の匿名Chromeでは4言語のhome/認証表示と再設定/保護route導線を受け入れた。[限定証拠](evidence/staging-public-locales-native-2026-10-09.json)。通常d074b5ddでJAに続きEN/KO/IDの合成ログイン後の取得・設定・お気に入り・公開伝言・返却・logoutを一巡し、各cleanupを受け入れた。[3言語の主要フロー](evidence/staging-core-journeys-en-ko-id-native-2026-10-09.json)。実画面で観測したpreview/空本文/KO・ID日付を修正し、3cd3c8b6で4言語の変更箇所と下書き保持・cleanupを確認した。[表示修正](evidence/staging-core-locale-display-fix-native-2026-10-09.json)。全言語の全利用フロー、実スマホ・実ユーザーのインストール済みPWAを含む最終通し確認は未完了。PR #41はdraft。 | 同じ最終candidateで主要利用フロー、provider、ジョブ、PC/スマホ、言語、旧client更新、障害/復旧を一巡する。実行結果と残すデータ/DNS工程の手順を更新し、PRの最終差分・CIをレビュー可能にする。 | #33, #37 |
 
 ## 進行方法
 

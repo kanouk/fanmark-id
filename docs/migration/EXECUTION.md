@@ -1,11 +1,24 @@
 ## 現在のチェックポイント（2026-10-09 JST）
 
-通常stagingは`d074b5dd-b69a-4e50-b847-8770383dc0ea`を100%配信する。
-API sourceはc1cc1e2のまま。frontendは取得成功後のお気に入り再取得を追加し、
-直前のhash付き公開bundleを保持した。bulk/test送信は無効、署名受信・113 binding・
+通常stagingは`3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74`を100%配信する。
+API sourceはc1cc1e2のまま。今回のfrontend修正は伝言板のpreview/空本文と
+お気に入り登録日の4言語表示。Asia/Tokyoと取得後の再取得を保持し、直前2世代の
+hash付き公開bundleも保持した。bulk/test送信は無効、署名受信・113 binding・
 4 DO namespace・backup/monitorのversionと周期・既存データを保持した。
-修正前の権限対応表af5ed00の[CI37889243811](https://github.com/kanouk/fanmark-id/actions/runs/37889243811)は両job成功。
+前候補6ebae6fの[CI37893801719](https://github.com/kanouk/fanmark-id/actions/runs/37893801719)は両job成功。
 この修正候補の最新CIは[PR #41](https://github.com/kanouk/fanmark-id/pull/41)のchecksで確認する。
+
+通常d074b5ddの別合成account3件でEN/KO/IDも、実ログイン→取得前のお気に入り→
+無期限Tier C取得→伝言板保存→再読込なしの所有/リンク反映→公開本文→返却→logoutを
+一巡した。各専用user/fanmark/operatorを除去し、現行/旧D1の他全表hash・FK0と
+設定/asset/namespaceを独立照合した。差分はrequested=acknowledgedの通知wakeだけ。
+[3言語の主要フロー](evidence/staging-core-journeys-en-ko-id-native-2026-10-09.json)。
+その途中で日本語固定preview/空本文とKO/IDの英語日付を実画面で観測し修正した。
+修正後3cd3c8b6では4言語の変更箇所、previewからの下書き保持、保存・返却・logoutと
+exact-owned cleanupを確認した。[表示修正の限定証拠](evidence/staging-core-locale-display-fix-native-2026-10-09.json)。
+この新versionの全業務を4言語で一巡した証拠へは広げない。typecheck/build、
+生成PWAのAPI cache境界とcallsite/旧asset保持5件は成功。変更3 TSXのlintは
+Favorites既存の未変更any1件で失敗し、変更前にも同じ行があることを確認した。
 
 同じd074b5dd・別の専用合成Free account・日本語Chromeで、実ログイン→取得前の
 お気に入り登録→無期限Tier C取得→伝言板設定保存→再読込なしの所有状態/リンク反映→
@@ -15,7 +28,7 @@ API sourceはc1cc1e2のまま。frontendは取得成功後のお気に入り再�
 検証用user/fanmark/operatorを除去し、独立readonly照合で現行/旧storeの他全表hash・FK0・
 現在asset/設定を確認した。差分は通知wake generationだけで、requested/acknowledgedは一致。
 [主要フローと旧client復帰の限定証拠](evidence/staging-core-journey-native-2026-10-09.json)。
-これは合成desktopの主要フローであり、有料/provider初回設定・全言語・実スマホ/PWAと
+この日本語の証拠単独は合成desktopの主要フローであり、有料/provider初回設定・実スマホ/PWAと
 六工程全体の受け入れではない。実ユーザー移送・DNS・Stripe/mail・画像writeは0。
 
 公式Resend宛先51件の自然Cron配送は49 delivered・1 permanent bounce・1 complaint、

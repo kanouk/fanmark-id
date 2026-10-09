@@ -171,6 +171,8 @@
   "messageBoard": {
     "title": "전언판",
     "previewTitle": "전언판 미리보기",
+    "preview": "미리보기",
+    "noMessage": "메시지가 없습니다",
     "messageFromOwner": "팬마크 소유자로부터 메시지가 도착했습니다",
     "passwordProtection": "비밀번호 보호",
     "passwordProtectedMessage": "이 전언판은 비밀번호로 보호됩니다",

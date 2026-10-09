@@ -1,0 +1,115 @@
+{
+  "scope": "Native desktop confirmation of three localized display defects, not complete migration",
+  "ui": {
+    "observedAt": "2026-10-09T07:13:15.699Z",
+    "tab": "956551382",
+    "version": "3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74",
+    "device": "Chrome desktop",
+    "loginAccepted": true,
+    "acquisitionAccepted": true,
+    "locales": [
+      "ja",
+      "en",
+      "ko",
+      "id"
+    ],
+    "localizedPreviewButtonsAccepted": true,
+    "localizedEmptyPreviewAccepted": true,
+    "previewDraftReturnAccepted": true,
+    "settingsSaveAccepted": true,
+    "localizedFavoriteDatesAccepted": true,
+    "dateTimeZone": "Asia/Tokyo",
+    "observedDates": {
+      "ja": "2026年10月9日",
+      "en": "October 9th, 2026",
+      "ko": "2026년 10월 9일",
+      "id": "9 Oktober 2026"
+    },
+    "returnAccepted": true,
+    "logoutAccepted": true,
+    "affectedDisplayCasesAccepted": true,
+    "fullFourLocaleJourneyOnThisVersionAccepted": false,
+    "wholeTranslationAccepted": false,
+    "wholeMigrationAccepted": false,
+    "physicalPhonePwaAccepted": false,
+    "providerNewIdentityAccepted": false
+  },
+  "normalVersion": "3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74",
+  "previousVersion": "d074b5dd-b69a-4e50-b847-8770383dc0ea",
+  "backendSource": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "cleanup": {
+    "syntheticUsersRemoved": 1,
+    "syntheticFanmarksRemoved": 1,
+    "operatorRemoved": true,
+    "currentAndRetainedOldTableHashesHeld": true,
+    "foreignKeyChecksPassed": true,
+    "changedTables": [
+      "business.notification_worker_wake_state"
+    ],
+    "wakeRequestedAcknowledgedEqual": true
+  },
+  "deployment": {
+    "bindingsAndExistingDataHeld": true,
+    "backupAndMonitorVersionsAndSchedulesHeld": true,
+    "assetsMatched": {
+      "/": "4bf10738cbef685a9309a73ce141fdbeb32a8dc4dee3320ca02541873109584f",
+      "/index.html": "4bf10738cbef685a9309a73ce141fdbeb32a8dc4dee3320ca02541873109584f",
+      "/plans?checkout=success": "4bf10738cbef685a9309a73ce141fdbeb32a8dc4dee3320ca02541873109584f",
+      "/sw.js": "6d4e44f12c8543e5478415d036abb481a8a50f0dad2aeb3956f051caec3f3b03",
+      "/clear-legacy-api-cache.js": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6",
+      "/assets/index-B55f34l0.js": "3515ffebb1f07b8014b53e8f20b151f49f9152aea14ef71e85493cef2261203b"
+    },
+    "retainedTwoPublicBundleHashes": {
+      "/assets/index-BAb0qenK.js": "717c00d851d7fd3c0302a012e35f824cc681f88d6f68727af40a953757ece888",
+      "/assets/index-DgYC5YD0.js": "81735f15d322ae1dc75439200ba902ea75d9ad8071f73dee9aa2eb92dd316d7d"
+    },
+    "frontendPatchSha256": "5a4f463808eac239d9e165602743ddfafc2f935b1ccf81c59f02893915f6f023"
+  },
+  "validation": {
+    "typecheck": "passed",
+    "cloudflareStagingBuild": "passed",
+    "builtPwaApiCacheBoundary": "passed",
+    "callsiteAndAssetRetentionTests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "changedTsxLint": {
+      "passed": false,
+      "preexistingUnchangedError": "Favorites.tsx no-explicit-any line69"
+    }
+  },
+  "fixtureSetup": {
+    "initialInspectReturned404": true,
+    "deploymentAndBindingsIndependentlyConfirmed": true,
+    "actorAbsentBeforeBootstrap": true,
+    "duplicateDeployment": false,
+    "singleConfirmedBootstrap": true
+  },
+  "privateJournalSha256": "3667fc47bdc09cff6549c2e7a4414af03f0939c14ed2fb59e5087f635d14db1d",
+  "privateDeploymentJournalSha256": "a15fd7f3b657c1a7a0eb05d184ca311a7047f6a0484958047ae3c275d5d8e5de",
+  "screenshots": {
+    "ja-empty-preview.png": "d214689bd83219246661092f7ab53a57acf65e40881b971e018a05d561768ec4",
+    "ko-favorite-date.png": "edbdbd53e97363f965c73deb3e4ddcffc1b689c33acecbea7826e5cd2d6f476e",
+    "id-empty-preview.png": "fca724da50ff2cf31d5a7917cbecb7f2317e3f6e813f43ac299513fd21e3f3c8",
+    "en-favorite-date.png": "bae4968e5400325a4e4d69c704c433670657d6a9db3834fe8896b68b5c9720db",
+    "ko-empty-preview.png": "3caf3eb3a3696f0655e3f7a0e37fcd83fc6bf2e40296adc5d807d98e4304b415",
+    "id-favorite-date.png": "86d1b6dc4693f4e1ee95b478ea54ba563cca9310d8e18e6c50089cdc769010c9",
+    "logout.png": "bdc0181c375655039bee484cfe26658ad11a93c5bc8797af51704725664bb644",
+    "en-empty-preview.png": "ecaf3adfdce9e0fbad79418b93114acc3db578929fd4af57ee5c9355f38a6ec4",
+    "id-settings.png": "40d3ed8f4ee9297dead9040545bb5b3a7fe93656a4022cd821d42b30029d64b0",
+    "ja-favorite-date.png": "422449c216fcc1795ca6025dbc08733a4273820604ef4eb7a57eb25db3fec248",
+    "ja-settings.png": "fd9bae4abde7ee0fc506bff10b08d0f0bee89d8a5c8eaa45ed63455a6fa0f85f",
+    "en-settings.png": "213b5360b806f4e6b8bb0f72e5a8b3fcc688284e3d7bda10415c033b359759a4",
+    "returned.png": "b6114d3295346320edf190aaba3c08ee29ee8245f94c5693139b454658fd546c",
+    "preflight.png": "7acfb9a5bd10578940196eb84c1af66f4095f9881b78a9195341e1b1f15718da",
+    "ko-settings.png": "1a6b600877f2f73496663243a446314d3823d27165df2ce4e901104cc5020b75"
+  },
+  "realUserMigration": false,
+  "domainCutover": false,
+  "imageWrites": 0,
+  "stripeCalls": 0,
+  "emailsSent": 0,
+  "physicalPhonePwaAccepted": false,
+  "fullFourLocaleJourneyOnThisVersionAccepted": false,
+  "wholeMigrationAccepted": false
+}

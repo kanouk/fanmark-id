@@ -171,6 +171,8 @@
   "messageBoard": {
     "title": "Papan Pesan",
     "previewTitle": "Pratinjau Papan Pesan",
+    "preview": "Pratinjau",
+    "noMessage": "Tidak ada pesan",
     "messageFromOwner": "Anda telah menerima pesan dari pemilik fanmark",
     "passwordProtection": "Perlindungan Kata Sandi",
     "passwordProtectedMessage": "Papan pesan ini dilindungi kata sandi",

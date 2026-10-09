@@ -171,6 +171,8 @@
   "messageBoard": {
     "title": "伝言板",
     "previewTitle": "伝言板のプレビュー",
+    "preview": "プレビュー",
+    "noMessage": "メッセージがありません",
     "messageFromOwner": "ファンマオーナーからメッセージが届いています",
     "passwordProtection": "パスワード保護",
     "passwordProtectedMessage": "この伝言板はパスワードで保護されています",
