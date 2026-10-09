@@ -1,35 +1,35 @@
-## 現在のチェックポイント（2026-10-09 12:36 JST）
+## 現在のチェックポイント（2026-10-09 13時台 JST）
 
-通常stagingは`6af713aa-d5b8-4e21-a0b2-7780d269178b`を100%配信する。
-runtime sourceはc1cc1e2のまま。文書候補9a0f3ecの
-[CI37876823680](https://github.com/kanouk/fanmark-id/actions/runs/37876823680)は両job成功。
-bulk/test送信は無効へ戻し、既存署名受信・113 binding・4 DO namespace・6公開assetを保持した。
+通常stagingは`e33aa8c5-d13c-42a5-9745-a2e191325871`を100%配信する。
+runtime sourceはc1cc1e2のまま。文書候補e5dd44aの
+[CI37880263746](https://github.com/kanouk/fanmark-id/actions/runs/37880263746)は両job成功。
+bulk/test送信は無効へ戻し、署名受信・113 binding・4 DO namespace・6公開assetを保持した。
 
-閉じた過去日付のFree/4言語を使い、公式Resend検証宛先51件だけへのMFA送信要求・
-同一request IDの重複排除・自然毎分Cronの宛先抽出/配送を確認した。
-49件delivered・1件permanent bounce・1件complaint、実署名通知103件、
-run completed・集計51/49/2・配信停止2件・初回完了監査1件を照合した。
-complaint後のdeliveredで停止は解除されない。全provider attemptは1回で、実retryは未確認。
-実source schemaを変えず、bootstrap/cleanupを同じV2 writer追跡で実施した。
-専用user/profile52件・actor資格情報/MFA・draft/run/recipient/suppression/監査とoperatorを除去し、
-独立readonly照合で残る差分はminimal署名receipt103件と単調増加MFA generationだけと確認した。
-旧store全表hash、現行3 storeのschema/その他表hash、FK0を保持した。
-[51件の実配送・cleanup](evidence/staging-broadcast-multi-recipient-native-2026-10-09.json)。
-これは実送信APIとprovider/queue集計の受け入れであり、送信UI・実retry・本番retentionの
-受け入れに広げない。宛先は公式simulatorで、本人Gmailの受信検証ではない。
+公式Resend宛先51件の自然Cron配送は49 delivered・1 permanent bounce・1 complaint、
+実署名通知103件・集計51/49/2・配信停止2件を照合し、専用52 user/profileとqueue/operatorを
+除去済み。[51件の限定証拠](evidence/staging-broadcast-multi-recipient-native-2026-10-09.json)。
+その51件はすべてattempt1で、retryの証明には使わない。
 
-バックアップは運用鍵による初回保存・同鍵隔離復旧14,591ms・30日処理receiptと通知の本人受信を
-受け入れ済み。日次09:05 JSTと毎時35分の独立monitorを登録・独立照合した。
-12:35:05 JSTの自然monitorがoutcome=ok・例外0・当日slot正常で完了した。
-登録済みscheduled入口・100%保存ログと、観測前後の同じversion/Cronを照合した。
+追加の公式delivered宛先1件では初回ACKと署名配信成功を確認した後、同じV2 writerを使う
+単一Business batchで「受理後に応答を失った場合のpending状態」を合成注入した。
+通信障害そのものやAPI応答の偽装は行っていない。自然毎分Cronが実Resendへ再試行し、
+attempt1→2・同じprovider ID・同じ本文fingerprint/初回日時/24時間窓・delivered・集計1/1/0・
+初回完了監査の不変を照合した。専用2 user/profile・資格情報/MFA・draft/run/recipient/監査と
+operatorを除去し、独立readonly照合で差分はminimal署名receiptと単調増加MFA generationだけ。
+旧store全表hash・現行3 storeのschema/その他表hash・FK0を保持した。
+[合成状態注入後の実provider再試行](evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json)。
+実network失敗/429/outage、送信UI、本番queue retentionの受け入れへ広げない。
+
+バックアップは運用鍵による初回保存・同鍵隔離復旧14,591ms・30日処理receipt・通知の本人受信を
+受け入れ済み。日次09:05 JSTと毎時35分の別monitorを登録・独立照合した。
+12:35:05 JSTの自然monitorはoutcome=ok・例外0・当日slot正常。
 [自然監視の限定証拠](evidence/staging-natural-backup-monitor-accepted-2026-10-09.json)。
-先の11:05〜11:45の観測では対応eventを取得できなかったが、失敗の証拠にはせず記録を保持する。
-日次backupの自然captureはまだ未受け入れ。最初の自然dailyは10/10 09:05 JST予定。
-UTC10/09の保存は再実行せず、archive/鍵/設定を変更していない。
-初回archive時のAuth user/session0と画像空を、現在のAuth状態へ当てはめない。
-現行Auth/profileには新規Discord identity1件があり、本人の初回パスワード保存はまだ未確認。
+日次backupの自然captureは未受け入れで、最初の自然dailyは10/10 09:05 JST予定。
+UTC10/09の保存は再実行せずarchive/鍵を変更していない。初回保存時のAuth0と画像空を
+現在状態へ当てはめない。現行Auth/profileには新規Discord identity1件があり、本人の
+初回パスワード保存はまだ未確認。Vaultのremote Syncも未確認。
 
-送信UI、実retry/運用retention、Discord初回設定/logout/relogin、Apple新規identity/relay、
+送信UI・運用retention、Discord初回設定/logout/relogin、Apple新規identity/relay、
 自然daily、実スマホ/PWA、source/converter照合と同じ最終candidateの六工程は残る。
 実Supabase利用者データと本番DNS切り替えは最後の別工程。以下は過去の状態を含む。
 

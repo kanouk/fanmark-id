@@ -586,3 +586,12 @@ sent/delivered・本人受信を確認した。12:35:05 JSTの自然monitorは�
 [自然監視の限定証拠](migration/evidence/staging-natural-backup-monitor-accepted-2026-10-09.json)。自然dailyの実行は未確認であり、
 登録だけで定期動作を受け入れない。最初の自然dailyは10/10 09:05 JSTの予定。
 [採用の限定証拠](migration/evidence/staging-backup-monitor-adoption-native-2026-10-09.json)。
+
+
+### 2026-10-09 告知の実provider再試行
+
+公式simulator1件の初回受理/署名配信後に、同じ追跡writerで受理後pending状態だけを合成注入した。
+自然Cronの実Resend再試行は同じprovider ID・本文HMAC・初回日時/24時間窓を保持し、attempt2で
+delivered/集計1/1/0へ復帰した。初回完了監査は不変。source/runtime/通常assetは変更せず、
+送信selectorを停止へ戻して専用fixture/operatorを除去した。実通信失敗/429・送信UI・本番retention
+は未受け入れ。[限定証拠](migration/evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json)。

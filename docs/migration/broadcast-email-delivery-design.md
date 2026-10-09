@@ -303,3 +303,22 @@ configuration enables this receiver but leaves bulk and test sending disabled.
 This does not accept bulk audience delivery, actual bounce/complaint/failure/
 suppression events, operational retry/retention policy, or full migration.
 [Scoped evidence](evidence/staging-resend-signed-webhook-2026-10-08.json).
+
+### 2026-10-09: controlled post-acceptance state and real provider retry
+
+One official delivered simulator recipient was first accepted and reconciled by
+real signed receipts. A tracked, exact-owned Business batch then injected the
+pending/null-provider-id/provider_network_error state while retaining the
+payload fingerprint, first attempt time, 24-hour window and completion audit.
+The next natural minute Cron called real Resend again: attempt count changed
+from one to two, the same provider ID returned, and persisted signed receipts
+reconciled delivered with totals 1/1/0. The first completion audit was unchanged.
+This accepts real idempotent provider replay after a controlled state fault;
+the first ACK was observed, so actual lost transport responses, 429 and outages
+are not claimed. No API response was replaced. No provider or Auth signing
+secret was copied to the operator. Source schema and normal frontend stayed
+unchanged. Receive-only settings were restored, exact-owned fixtures/operator
+removed, and independent current/retained hash and FK checks passed. Only
+minimal signed receipts and monotonic MFA generation remain changed.
+See [controlled state / actual retry evidence](evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json).
+Native Send UI and production queue retention adoption remain separate.
