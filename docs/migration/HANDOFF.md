@@ -8150,3 +8150,12 @@ exact hash/bytesを照合し、所有したtarget3D1/3R2と全operator/probeを�
 間隔を24時間未満にするためで、同UTC slotの再実行はしない。local backup11件成功。
 自然の定期実行、失敗通知/担当者への実通知、残るprovider/端末の最終統合は未受け入れ。
 [限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)。
+
+### CIの招待登録用Chrome起動を診断可能にする（2026-10-09）
+
+826845bのCI37867947682はWorker job成功、アプリjobは画面操作前の
+`DevToolsActivePort`待機20秒で停止した。Chrome stderrを保存していなかったため、
+起動失敗の具体原因を推定しない。専用profileの起動だけを最大30秒・2回へ限定し、
+失敗時は専用processの終了とprofile除去を確認後に再起動する。画面遷移/登録/招待消費の
+assertionやアプリ操作は再試行しない。起動stderrとexit/signalはprivate journalに保存する。
+外部通信proxyとowned cleanupを保持し、実built UI/Workerのlocal登録検証を実行する。

@@ -37,6 +37,41 @@ async function child(args,cwd=root,env=process.env){return new Promise((resolve,
   proc.on('error',reject);proc.on('close',async status=>{await privateWrite('build-'+randomUUID()+'.log',output);
     status===0?resolve():reject(new Error('local_build_failed'));});
 });}
+async function startOwnedChrome(chromePath,profile,proxyArguments){
+  // Retry only process startup, before CDP, navigation, registration or invitation consumption.
+  report.chromeStartupFailures=[];
+  for(let attempt=1;attempt<=2;attempt++){
+    await mkdir(profile,{mode:0o700});
+    const owned=spawn(chromePath,[...proxyArguments,'--headless=new','--no-sandbox','--disable-dev-shm-usage',
+      '--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run',
+      '--no-default-browser-check','--ignore-certificate-errors',`--user-data-dir=${profile}`,'--remote-debugging-port=0','about:blank'],
+    {stdio:['ignore','ignore','pipe']});
+    chrome=owned;let stderr='',spawnError;
+    owned.stderr.on('data',chunk=>{stderr=(stderr+chunk.toString()).slice(-4000);});
+    owned.once('error',error=>{spawnError=error.message;});
+    try{
+      const deadline=Date.now()+30000;
+      while(Date.now()<deadline){
+        try{const port=(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split(/\r?\n/u)[0];
+          if(/^\d+$/u.test(port)&&Number(port)>0&&Number(port)<=65535)return port;
+        }catch{}
+        if(spawnError||owned.exitCode!==null||owned.signalCode!==null)throw Error(spawnError??'chrome_exited_before_debugging_port');
+        await delay(100);
+      }
+      throw Error('chrome_debugging_port_startup_timeout');
+    }catch(error){
+      if(owned.exitCode===null&&owned.signalCode===null){owned.kill('SIGTERM');
+        for(let i=0;i<20&&owned.exitCode===null&&owned.signalCode===null;i++)await delay(100);
+        if(owned.exitCode===null&&owned.signalCode===null){owned.kill('SIGKILL');
+          for(let i=0;i<20&&owned.exitCode===null&&owned.signalCode===null;i++)await delay(100);}}
+      assert.ok(owned.exitCode!==null||owned.signalCode!==null,'owned_chrome_startup_cleanup_failed');
+      await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+      report.chromeStartupFailures.push({attempt,error:error.message,exitCode:owned.exitCode,signal:owned.signalCode,
+        stderr:stderr.replace(/ws:\/\/\S+/gu,'[local-debugging-endpoint]')});await checkpoint();
+      if(attempt===2)throw Error('chrome_startup_failed_inspect_journal');
+    }
+  }
+}
 async function value(expression){const result=await cdp.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});
   assert.ok(!result.exceptionDetails,'browser_evaluation_failed');return result.result?.value;}
 async function wait(expression,predicate,timeout=20_000){const deadline=Date.now()+timeout;while(Date.now()<deadline){
@@ -160,12 +195,10 @@ try{
   assert.ok(helper.startsWith('function cdpConnection('));await privateWrite('cdp-helper.mjs',helper+'\nexport {cdpConnection};\n');
   const {cdpConnection}=await import(path.join(temp,'cdp-helper.mjs'));
   const chromePath=[process.env.FANMARK_STAGING_CHROME,'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome','/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].filter(Boolean).find(existsSync);assert.ok(chromePath);
-  const profile=path.join(temp,'chrome-profile');await mkdir(profile,{mode:0o700});
+  const profile=path.join(temp,'chrome-profile');
   egressProxy=await createLocalBrowserEgressProxy(origin,receipt=>browserDenied.push(receipt.hostname));
-  chrome=spawn(chromePath,[...egressProxy.chromeArguments,'--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--disable-component-update',
-    '--disable-default-apps','--no-first-run','--no-default-browser-check','--ignore-certificate-errors',`--user-data-dir=${profile}`,'--remote-debugging-port=0','about:blank'],{stdio:'ignore'});
-  let debugPort;for(let i=0;i<200;i++){assert.equal(chrome.exitCode,null);try{debugPort=(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];if(/^\d+$/u.test(debugPort))break;}catch{}await delay(100);}
-  assert.ok(debugPort);const pages=await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
+  const debugPort=await startOwnedChrome(chromePath,profile,egressProxy.chromeArguments);
+  const pages=await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
   cdp=cdpConnection(pages.find(page=>page.type==='page').webSocketDebuggerUrl);await cdp.opened;
   await cdp.send('Page.enable');await cdp.send('Runtime.enable');await cdp.send('Network.enable');
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:1280,height:960,deviceScaleFactor:1,mobile:false});
