@@ -1,8 +1,8 @@
-## 現在のチェックポイント（2026-10-09 13時台 JST）
+## 現在のチェックポイント（2026-10-09 JST）
 
 通常stagingは`6afcaee0-a5bd-4bba-8c95-756c69731bdb`を100%配信する。
-runtime sourceはc1cc1e2のまま。文書候補037f845の
-[CI37882429413](https://github.com/kanouk/fanmark-id/actions/runs/37882429413)は両job成功。
+runtime sourceはc1cc1e2のまま。文書候補84a65a3の
+[CI37884992658](https://github.com/kanouk/fanmark-id/actions/runs/37884992658)は両job成功。
 bulk/test送信は無効へ戻し、署名受信・113 binding・4 DO namespace・6公開assetを保持した。
 
 公式Resend宛先51件の自然Cron配送は49 delivered・1 permanent bounce・1 complaint、
@@ -39,6 +39,13 @@ operatorを除去。独立照合で現行3 store schema/その他表hash・旧st
 UTC10/09の保存は再実行せずarchive/鍵を変更していない。初回保存時のAuth0と画像空を
 現在状態へ当てはめない。現行Auth/profileには新規Discord identity1件があり、本人の
 初回パスワード保存はまだ未確認。Vaultのremote Syncも未確認。
+
+現行6afcaee0の匿名ChromeではJA/EN/KO/IDのhomeと認証画面の見出し・フォーム・4 providerボタン、
+homeからのログインリンク、日本語の再設定画面と戻り、匿名/plans→/authを確認した。
+入力・provider認証・メール・Stripe呼出し・fixture作成・設定変更は0。ゲスト言語を日本語へ戻し、
+専用タブを閉じ、本人IABを保持。現行6公開assetのhash一致も照合した。
+[公開導線4言語の限定証拠](evidence/staging-public-locales-native-2026-10-09.json)。
+これは匿名desktopの表示/導線であり、ログイン後の全フロー、翻訳全件、実スマホ/PWAは未受け入れ。
 
 運用retention、Discord初回設定/logout/relogin、Apple新規identity/relay、
 自然daily、実スマホ/PWA、source/converter照合と同じ最終candidateの六工程は残る。
