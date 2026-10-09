@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-policy-target-acceptance-linkage",
+  "observedAt": "2026-10-09T05:26:20.026Z",
+  "documentationHeadBeforeChange": "5b2c9a5a5d312e02c56cad46fbfeea6a918ac74c",
+  "runtimeSourceHead": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "sourceIdentityScope": {
+    "newSourceCatalogObservation": false,
+    "sourceRowsRead": false,
+    "sourcePolicyCount": 77,
+    "appendixIdentityRowsUnchanged": true,
+    "appendixSha256": "f75c511cbfc11a2b1cddd5399a1b2dc0f1789892de56a6da0b040192379758cc",
+    "sourceAuthorizationFingerprintRetained": "8e9859a0fe06eb1e7b123f55f3cde2c1ae482081ed6912dd9dbc53a7452cd273",
+    "conservativePendingClassificationCount": 54,
+    "wholeSourceAuthorizationAccepted": false
+  },
+  "linkedExistingAcceptance": {
+    "C02": [
+      {
+        "path": "docs/migration/evidence/staging-broadcast-send-ui-native-2026-10-09.json",
+        "sha256": "8e9d28275d2a8e1e8b35cab5aebe87cbcf6e28ece42ad5c6c38cb7ea456e7d2d"
+      },
+      {
+        "path": "docs/migration/evidence/staging-broadcast-multi-recipient-native-2026-10-09.json",
+        "sha256": "4be5855dd509cbf0c2a30a781eb6b16d911858e5aa285cfc484775ce13c89c67"
+      },
+      {
+        "path": "docs/migration/evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json",
+        "sha256": "75925a23ef42bc6b323130c69170a9074a357edf8819bcf8c5fadf8d898828c2"
+      }
+    ],
+    "C27": [
+      {
+        "path": "docs/migration/evidence/staging-invitation-signup-native-2026-10-08.json",
+        "sha256": "00ec6e561fedf7f3181c4f81f3b8d875e266be1a0aca600dab9d0840504174d8"
+      }
+    ],
+    "C39": [
+      {
+        "path": "docs/migration/evidence/staging-native-paid-deletion-accepted-2026-10-06.json",
+        "sha256": "d52455460ed4b766791b0b943cc69944c7e80c83c451376b672921925fe0434d"
+      }
+    ]
+  },
+  "freshTargetReadback": {
+    "observedAt": "2026-10-09T05:26:20.026Z",
+    "version": "6afcaee0-a5bd-4bba-8c95-756c69731bdb",
+    "settingsReadOnly": true,
+    "selectors": {
+      "NOTIFICATION_ARCHIVE_BACKEND": "d1",
+      "LICENSE_EXPIRY_BACKEND": "d1",
+      "NOTIFICATION_WAKE_BACKEND": "durable-object"
+    },
+    "anonymousPublicReference": {
+      "status": 200,
+      "master": "reserved_emoji_patterns",
+      "releaseVersion": "0a0408e795b8e899abb0e12d6a977d55ff654d34d369da520f7f9b155a44b4cb",
+      "items": 5,
+      "allReturnedItemsActive": true,
+      "uniqueIds": 5,
+      "sha256": "c50962e2cd86c89f8977eec6c790d8ff5f218d63e9b5e2266cda17d6b8ee3085",
+      "inactiveRowsPresentInThisObservation": false,
+      "inactiveRowRemoteRejectionAccepted": false
+    },
+    "sourceCatalogObserved": false,
+    "sourceRowsRead": false,
+    "d1Mutation": false,
+    "settingsWritten": false,
+    "emailsSent": 0,
+    "allAuthorizationEquivalent": false,
+    "fullMigrationAccepted": false
+  },
+  "privateReadbackSha256": "1788b705727893fe8e6d3db2ac9f3729a42443f650946c99396c3f75e058b8f4",
+  "observerScriptSha256": "064f461cc51eab12a4ee21edd7f847cf729be9180ca2e60a438886553b09faa8",
+  "boundaries": {
+    "testReplay": false,
+    "newEmails": 0,
+    "newDeletion": false,
+    "d1R2Mutation": false,
+    "configurationWrite": false,
+    "wholePolicyEquivalence": false,
+    "externalConsumerDecisionReceived": false,
+    "inactiveRemoteNegativeFilterAccepted": false,
+    "fullMigrationAccepted": false,
+    "userMigrationPerformed": false,
+    "domainCutoverPerformed": false
+  }
+}

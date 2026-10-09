@@ -5,6 +5,24 @@ Reviewed against branch `0019568` on 2026-10-03 JST. This links every one of the
 legacy row surface. It does not declare full source authorization equivalence,
 provider acceptance, production readiness or external-client compatibility.
 
+## Later accepted target evidence linked (2026-10-09 JST)
+
+C02/C27/C39 now link the already accepted native broadcast send/delivery/retry,
+Japanese invitation signup, and paid-deletion/signed-cancellation evidence.
+The original source identities/attributes and all77 appendix rows are retained.
+This replaces stale acceptance placeholders, not source policy semantics or
+the54 conservative classifier dispositions. No new source catalog or user rows
+were read and no delivery/deletion test was replayed.
+
+A fresh read of normal staging6afcaee0 also confirms archive/expiry selectors
+are d1 and notification wake is durable-object. Anonymous reserved-pattern read
+returns a no-store selected-release projection with five unique active rows.
+There were no inactive rows in this observation; it is not a remote negative
+filter test. Existing native inactive/manifest tests retain their own scope.
+[Bounded target read and evidence linkage](evidence/source-policy-acceptance-refresh-2026-10-09.json).
+External/direct consumers and same-final-candidate integration remain open;
+full source authorization equivalence is not asserted.
+
 ## Source identity and interpretation
 
 The metadata-only authorization report observed the linked source at
@@ -55,7 +73,7 @@ Target: MFA campaign list/create/update and controlled delivery actions; interna
 
 Implementation: [broadcast-email-admin-d1-api.ts](../../workers/api/src/broadcast-email-admin-d1-api.ts), [broadcast-email-delivery-d1.ts](../../workers/api/src/broadcast-email-delivery-d1.ts). Contracts: [broadcast-email-admin-api.md](broadcast-email-admin-api.md), [broadcast-email-delivery-design.md](broadcast-email-delivery-design.md). Coverage: [broadcast-email-admin-d1.test.ts](../../workers/api/test/broadcast-email-admin-d1.test.ts), [broadcast-email-delivery-d1.integration.mjs](../../workers/api/test/broadcast-email-delivery-d1.integration.mjs).
 
-Difference or remaining condition: Source broad ALL becomes bounded campaign commands. The approved fixed-recipient test-send API was accepted with native draft creation, Resend Delivered and matching D1 audit; see [the bounded delivery evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json). Native fixed-recipient test-send UI is accepted with Delivered/audit/restore/cleanup in [the later native evidence](evidence/staging-main-auth-mfa-admin-mail-native-2026-10-07.json). Bulk, actual signed delivery/retry and retention remain unaccepted.
+Difference or remaining condition: Source broad ALL becomes bounded campaign commands. The approved fixed-recipient test-send API was accepted with native draft creation, Resend Delivered and matching D1 audit; see [the bounded delivery evidence](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json). Native fixed-recipient test-send UI is accepted with Delivered/audit/restore/cleanup in [the later native evidence](evidence/staging-main-auth-mfa-admin-mail-native-2026-10-07.json). The later [native Send UI](evidence/staging-broadcast-send-ui-native-2026-10-09.json), [51-recipient signed delivery](evidence/staging-broadcast-multi-recipient-native-2026-10-09.json), and [controlled ACK-state retry](evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json) accept their dedicated synthetic/official-provider scopes with cleanup. [Initial hold/owner-investigation policy](broadcast-operations.md) is recorded. These do not authorize production sending, record deletion, uncertain-window release or a general source ALL API.
 
 ### C03: email_templates (2 policies)
 
@@ -305,7 +323,7 @@ Target: MFA management; public token validation and internal transactional signu
 
 Implementation: [invitation-admin-d1-api.ts](../../workers/api/src/invitation-admin-d1-api.ts), [invitation-signup-d1-api.ts](../../workers/api/src/invitation-signup-d1-api.ts). Contracts: [invitation-admin-api.md](invitation-admin-api.md), [invitation-signup-api.md](invitation-signup-api.md). Coverage: [invitation-admin-d1.test.ts](../../workers/api/test/invitation-admin-d1.test.ts), [invitation-signup-d1.test.ts](../../workers/api/test/invitation-signup-d1.test.ts).
 
-Difference or remaining condition: Validation is a bounded RPC counterpart, not public list access. Email/signup provider acceptance remains pending.
+Difference or remaining condition: Validation is a bounded RPC counterpart, not public list access. A Japanese invitation-required signup with invalid/valid code interaction, exactly-once consumption, Free/JA provisioning, actual mail verification/login/logout and owned cleanup is accepted in [native signup](evidence/staging-invitation-signup-native-2026-10-08.json). New Apple/Discord identities, relay and all-language/full-auth acceptance remain separate.
 
 ### C28: languages (2 policies)
 
@@ -375,7 +393,7 @@ Target: Internal conflict-safe archive retains full original data; no HTTP histo
 
 Implementation: [notifications-scheduled.ts](../../workers/api/src/notifications-scheduled.ts). Contracts: [notifications-api.md](notifications-api.md). Coverage: [notifications-d1.test.ts](../../workers/api/test/notifications-d1.test.ts).
 
-Difference or remaining condition: Source archiver has a separate service-role execution grant. Archive selector is absent in staging; retention/operations and legacy admin history-reader disposition remain open.
+Difference or remaining condition: Source archiver has a separate service-role execution grant. The fresh normal-staging read confirms archive selector=d1. Earlier natural archive execution and isolated nonempty archive tests are recorded in [notifications](notifications-api.md); the new-scope next natural daily and legacy admin history-reader disposition remain open. Enabling the selector is not proof of archival of current-user rows.
 
 ### C35: reserved_emoji_patterns (1 policies)
 
@@ -385,7 +403,7 @@ Target: Selected-release public DTO and MFA reference management; no current reg
 
 Implementation: [reference-master-d1-repository.ts](../../workers/api/src/reference-master-d1-repository.ts), [reference-master-admin-d1-repository.ts](../../workers/api/src/reference-master-admin-d1-repository.ts). Contracts: [reference-master-data.md](reference-master-data.md), [availability-contract.md](availability-contract.md). Coverage: [reference-master-d1-api.test.ts](../../workers/api/test/reference-master-d1-api.test.ts).
 
-Difference or remaining condition: The current candidate filters inactive patterns, preserving source active-only SELECT while keeping full release storage. Deployed-candidate acceptance remains open. Admin management is a release workflow; lack of a source admin row policy does not prohibit service-role writes.
+Difference or remaining condition: The current candidate filters inactive patterns, preserving source active-only SELECT while keeping full release storage. The current normal-staging anonymous read confirms a selected-release/no-store projection of five unique active patterns. It contains no inactive rows, so it does not extend existing [native inactive/manifest tests](../../workers/api/test/reference-master-d1-api.test.ts) into a remote-negative claim. External/legacy callers and final integration remain separate. Admin management is a release workflow; lack of a source admin row policy does not prohibit service-role writes.
 
 ### C36: system_settings (3 policies)
 
@@ -425,7 +443,7 @@ Target: Session own minimal read DTO; signed Stripe projection/command paths onl
 
 Implementation: [subscription-d1-api.ts](../../workers/api/src/subscription-d1-api.ts), [stripe-subscription-reconciliation-d1.ts](../../workers/api/src/stripe-subscription-reconciliation-d1.ts). Contracts: [stripe-plan-change-api.md](stripe-plan-change-api.md), [stripe-invoice-projection-validation.md](stripe-invoice-projection-validation.md). Coverage: [subscription-d1-api.test.mjs](../../workers/api/test/subscription-d1-api.test.mjs), [stripe-subscription-reconciliation-d1.integration.mjs](../../workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs).
 
-Difference or remaining condition: No arbitrary subscription-row mutation/general admin row-reader. Signature, livemode and account identity checks replace service-role ingress. Actual sandbox Checkout/Portal, signed projection, duplicate/out-of-order/retry and refusal/3DS recovery are accepted within [the provider evidence](evidence/stripe-staging-real-provider-2026-10-04.json) and [the same-user subscription UI](evidence/stripe-staging-subscription-ui-2026-10-05.json). Paid deletion and final integrated UI remain unaccepted.
+Difference or remaining condition: No arbitrary subscription-row mutation/general admin row-reader. Signature, livemode and account identity checks replace service-role ingress. Actual sandbox Checkout/Portal, signed projection, duplicate/out-of-order/retry and refusal/3DS recovery are accepted within [the provider evidence](evidence/stripe-staging-real-provider-2026-10-04.json) and [the same-user subscription UI](evidence/stripe-staging-subscription-ui-2026-10-05.json). [Native paid deletion](evidence/staging-native-paid-deletion-accepted-2026-10-06.json) also accepts the dedicated synthetic account’s Stripe test cancellation, Auth/business removal, Tier C grace return and signed cancellation completion, with one operator retry-availability adjustment explicitly recorded. Final integrated UI remains unaccepted.
 
 ### C40: waitlist (2 policies)
 
