@@ -564,7 +564,7 @@ Cloudflare stagingの新scopeは全5 storeを別resourceとし、通知/終了�
 最初の新アプリ処理から計測する。受け入れは[backup operations](migration/backup-operations.md)。
 
 
-### ステージングbackup監視の候補（2026-10-09）
+### ステージングbackup監視の採用（2026-10-09）
 
 日次captureは`staging-backup-schedule.ts`の`5 0 * * *`（09:05 JST）。別Workerの
 `staging-backup-monitor.ts`は`35 * * * *`で、00:05 UTCから30分の猶予後は当日receiptを
@@ -579,5 +579,9 @@ conditional R2 claim後にproviderへ一度だけ要求する。2xx/idはprovide
 配送/受信の証明ではない。不明claim/送信ACK/receipt保存は自動再送しない。dailyの保存/
 期限処理が失敗した場合は通知の成功に関係なくCronを失敗にし、別monitorもreceiptを検出する。
 Cloudflare/R2/Resend/内部service自体の広域障害はこの経路のみでは通知を保証しない。
-設定と実Cronの一致は`validateStagingBackupJobCoverage()`で検査する。現在は全selectorが
-disabled、Cron0であり、native配備・期限処理・実通知・自然Cronを受け入れてから運用化する。
+設定と実Cronの一致は`validateStagingBackupJobCoverage()`で検査する。mainのalertは`resend-v1`、
+schedulerは`daily-v1`/`5 0 * * *`、monitorは`hourly-v1`/`35 * * * *`で実登録済み。
+既存secret/bindingを保持し、native期限処理（削除0件）・正常監視判定・通知1通の署名
+sent/delivered・本人受信を確認した。自然monitor/dailyの実行は未確認であり、
+登録だけで定期動作を受け入れない。最初の自然dailyは10/10 09:05 JSTの予定。
+[採用の限定証拠](migration/evidence/staging-backup-monitor-adoption-native-2026-10-09.json)。

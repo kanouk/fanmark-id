@@ -431,3 +431,23 @@ lintを確認する。通常mainは1b57012d、既存backup schedulerはdisabled/
 運用化後の停止はdaily/monitorのselectorをdisabled、Cronを空に戻し、mainのalert selectorも
 disabledへ戻す。archive・鍵・claim・未終了ownerはその操作で削除しない。過去のruntimeへ
 戻す場合もV2 namespaceのmigration履歴を保つ。
+
+### 2026-10-09: 実配備・通知受信・日次/毎時の登録を受け入れ
+
+前節の未配備候補をc1cc1e2/CI37869826082両job成功後に採用した。mainは98160d0f。
+既存111 bindingの値を保ち、alert selector/固定宛先の2 bindingだけを追加した。
+同じUTC10/09 archiveへ30日期限処理のsettled receiptを追加（削除0件）し、保存を再実行せず、
+監視evaluatorの正常判定を確認した。通知専用内部RPCからdelivery-testを1回送信し、
+Resend署名sent/deliveredの同じprovider IDと本人の「来てます」を確認した。
+これは通知経路の受け入れであり、実backup故障を誘発した証拠ではない。
+
+monitorを先に、その後dailyを登録。dailyは`daily-v1`/`5 0 * * *`、monitorは
+`hourly-v1`/`35 * * * *`。独立読取で各100% version、全binding/周期、workers.devとpreviewの
+無効を照合した。mainの既存secret/4 namespace/6 asset、旧全表hashを保持し、新sourceは
+この通知の署名event2件だけを許容して他の全表hashを照合した。temporary operatorは削除。
+canonical configも実登録へ合わせた。自然monitor/dailyは未確認。次の自然dailyは
+UTC10/10 00:05（09:05 JST）予定。UTC10/09 captureを再送しない。
+
+[限定証拠](evidence/staging-backup-monitor-adoption-native-2026-10-09.json)。
+保存元Auth/画像が空という初回復旧の範囲は変わらない。広域障害・本番RPO/RTO保証・
+Vault遠隔Sync・残るprovider/実端末と最終統合まで完了したとは扱わない。

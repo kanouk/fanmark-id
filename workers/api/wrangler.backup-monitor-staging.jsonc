@@ -23,14 +23,16 @@
     }
   ],
   "vars": {
-    "STAGING_BACKUP_MONITOR": "disabled",
+    "STAGING_BACKUP_MONITOR": "hourly-v1",
     "RECOVERY_DRAIN_SCOPE_DIGEST": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
     "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"2d1a775e-e584-4ce6-baf2-946efc62ff99\",\"business\":\"c99c9f7e-b234-400e-aa89-8d15a168abcc\",\"master\":\"02681378-5528-45a9-8093-76805a4705c9\",\"avatars\":\"fanmark-avatars-staging-v2-e434eb11\",\"covers\":\"fanmark-covers-staging-v2-e434eb11\"}",
     "STAGING_BACKUP_SCHEMA_HASHES": "{\"auth\":\"3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b\",\"business\":\"598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2\",\"master\":\"32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56\"}",
     "STAGING_BACKUP_KEY_ID": "staging-backup-89ca6819-a159-4db8-aa7d-733315a9a0ef"
   },
   "triggers": {
-    "crons": []
+    "crons": [
+      "35 * * * *"
+    ]
   },
   "observability": {
     "enabled": true

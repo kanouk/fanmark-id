@@ -17,11 +17,13 @@
     }
   ],
   "vars": {
-    "STAGING_BACKUP_SCHEDULE": "disabled",
+    "STAGING_BACKUP_SCHEDULE": "daily-v1",
     "RECOVERY_DRAIN_SCOPE_DIGEST": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773"
   },
   "triggers": {
-    "crons": []
+    "crons": [
+      "5 0 * * *"
+    ]
   },
   "observability": {
     "enabled": true

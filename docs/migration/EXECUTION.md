@@ -1,12 +1,21 @@
 ## 現在のチェックポイント（2026-10-09 JST）
 
-通常stagingのmainは`1b57012d-e5fe-4821-adaf-6e30ad7d6b0c`。新3D1/2R2とV2 DOへ
-分離し、旧全表/旧namespace/未判定ticket34を保持した。CI205b168の両job成功後、
-新scope限定で初回暗号化R2保存・同運用鍵での隔離復旧14,591ms・独立全表/R2照合と
-所有targetのcleanupを確認した。保存元Auth user/credential/session0・画像R2空。
-実Cron0、失敗監視/通知・残るprovider/最終端末統合は未受け入れ。実ユーザー/DNSは最後。
-最新の[限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)と
-[backup operations](backup-operations.md)末尾を優先する。以下の詳細には過去の状態も含む。
+通常stagingは`98160d0f-1326-4285-ab2b-1de5d35cfbd7`を100%配信する。
+`c1cc1e2`の[CI37869826082](https://github.com/kanouk/fanmark-id/actions/runs/37869826082)は両job成功。
+新5 store/V2 scopeの初回暗号化保存・同鍵の隔離復旧14,591msとcleanupを保持し、
+30日保存処理の完了receipt（削除0件）、監視の正常判定、固定本人宛先への通知1通を確認した。
+実署名sent/deliveredと本人の「来てます」で受信まで受け入れた。既存binding/secret・
+旧store/namespace/未判定ticket34を保持し、保存元の差分はこの通知の署名event2件だけ。
+
+日次backup `5 0 * * *`（09:05 JST）と別monitor `35 * * * *`を実登録し、
+独立API読取で100%配備・binding・Cron・公開HTTP無効を照合した。canonical configも
+同じselector/周期へ合わせた。最初の自然dailyは10/10 09:05 JSTの予定。
+登録は自然実行の証明ではなく、自然monitor/dailyはまだ未確認。UTC10/09のcaptureを再実行しない。
+保存元Auth user/credential/session0・画像R2空。Apple/Discord新規identity/relay、告知UI等、
+実スマホ/PWA・同じ最終candidateの六工程は未完了。実ユーザー/DNSは最後。
+[監視採用の限定証拠](evidence/staging-backup-monitor-adoption-native-2026-10-09.json)、
+[初回保存・復旧](evidence/staging-resource-scope-v2-operational-2026-10-09.json)、
+[backup operations](backup-operations.md)末尾を優先する。以下は過去の状態を含む。
 
 ## 日次backup監視の候補（2026-10-09 JST）
 
