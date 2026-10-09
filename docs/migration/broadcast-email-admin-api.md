@@ -230,3 +230,14 @@ cursor without duplicates, and retry past Resend's 24-hour idempotency boundary
 pauses without a provider call. Authenticated browser review of the updated
 disabled controls now passes; production release, queue-retention/operator
 policy, and provider-backed acceptance remain open.
+
+
+## 2026-10-09 initial Cloudflare operator policy
+
+[The hold and investigation runbook](broadcast-operations.md) records the owner,
+minimum30-day terminal hold and review, unresolved/idempotency/suppression holds,
+and the absence of a supported manual resume route. No automatic purge or
+post-window resend is introduced. The hold/review policy is adopted for the initial Cloudflare release under the
+existing noncritical-work authorization. Production sending/deletion/release
+is not performed or authorized by that preservation decision. A new resume
+API or automatic purge is not required by this runbook.

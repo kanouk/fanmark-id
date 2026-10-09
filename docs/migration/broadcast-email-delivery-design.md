@@ -247,14 +247,24 @@ calls. Remote registration/deployment was accepted on 2026-10-08; see the scoped
 - provider secrets and webhook secrets are absent from source, build artifacts,
   logs, and reports.
 
-## Remaining operator policy
+## Operator policy for the initial Cloudflare release
 
-The recipient-queue retention period and who may release a send paused after an
-uncertain provider response are operational policies. Do not delete recipient
-evidence or auto-retry beyond the provider idempotency window until those
-policies are recorded. This policy gate does not block local implementation or
-synthetic testing; it blocks provider-backed real delivery and production
-acceptance.
+The [hold and investigation runbook](broadcast-operations.md) adopts the service
+owner as investigator, a minimum30-day terminal-record hold followed by owner
+review, continued holds for unresolved/idempotency/suppression evidence, and
+no forced post-window retry or automatic purge. The existing authorization to
+continue noncritical migration work covers this preservation policy; it does
+not authorize production sending, user-record deletion or forced recipient
+release. The retention and investigator decisions are recorded, rather than
+left as a separate approval wait.
+
+A new resume API or automatic purge is not added as a migration requirement.
+Unknown provider outcomes remain held for owner investigation. Any future
+release/deletion change must preserve request identity, deduplication and
+suppression, with exact evidence and a separately reviewable implementation.
+Controlled owned-fixture cleanup remains a separate approved test operation.
+Production cutover and actual operation retain their existing verification
+scope; no production delivery is accepted by this policy record.
 
 ## Local implementation checkpoint (2026-09-27 JST)
 

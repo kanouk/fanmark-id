@@ -623,3 +623,13 @@ Macの`scripts/migration/staging-backup-key-custody.mjs sync-note <keyId> <vault
 戻り値`remoteSyncVerified=false`はローカル保存だけの結果で、遠隔完了を推定しない。
 Obsidian Syncの選択noteの履歴とexact version取得/byte照合が遠隔完了の別証拠となる。
 JSON等の未対応添付をVault全体で許可する設定変更は行わない。
+
+
+### 告知送信の停止後の運用（2026-10-09）
+
+[停止・調査・保管手順](migration/broadcast-operations.md)は、ownerによる調査、
+完了記録の最低30日保持/その後レビュー、未解決/重複防止/署名receipt/suppressionの保持を
+記録する。現行管理UI/APIに手動resumeや未知provider IDのリンク機能はなく、窓外の
+結果不明は停止を維持する。既存の非クリティカルな移行作業の継続許可に基づき、初期運用の保持・調査方針を採用する。
+保持方針をTTL/purgeの実装や本番削除承認へ換算しない。
+この記録に伴うruntime・schema・selector変更は0。

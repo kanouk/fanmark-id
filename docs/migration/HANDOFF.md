@@ -1,8 +1,8 @@
 ## 現在のチェックポイント（2026-10-09 JST）
 
 通常stagingは`6afcaee0-a5bd-4bba-8c95-756c69731bdb`を100%配信する。
-runtime sourceはc1cc1e2のまま。文書候補84a65a3の
-[CI37884992658](https://github.com/kanouk/fanmark-id/actions/runs/37884992658)は両job成功。
+runtime sourceはc1cc1e2のまま。Macの鍵保管ツール候補859ac57の
+[CI37887131924](https://github.com/kanouk/fanmark-id/actions/runs/37887131924)は両job成功。
 bulk/test送信は無効へ戻し、署名受信・113 binding・4 DO namespace・6公開assetを保持した。
 
 公式Resend宛先51件の自然Cron配送は49 delivered・1 permanent bounce・1 complaint、
@@ -54,7 +54,11 @@ homeからのログインリンク、日本語の再設定画面と戻り、匿�
 [公開導線4言語の限定証拠](evidence/staging-public-locales-native-2026-10-09.json)。
 これは匿名desktopの表示/導線であり、ログイン後の全フロー、翻訳全件、実スマホ/PWAは未受け入れ。
 
-運用retention、Discord初回設定/logout/relogin、Apple新規identity/relay、
+初期Cloudflare運用の告知記録は完了後の最終活動から最低30日・その後ownerレビュー、未解決/重複防止/
+抑止記録は保持継続とする。窓外の強制再送・自動purge・不確定状態の解除は行わない。
+[停止・調査・保管手順](broadcast-operations.md)を記録した。既存の非クリティカル作業の継続許可に基づく保持方針は採用済み。実際の削除/強制再送は行わず、手動resume APIや自動purgeを追加必須項目にはしない。
+
+Discord初回設定/logout/relogin、Apple新規identity/relay、
 自然daily、実スマホ/PWA、source/converter照合と同じ最終candidateの六工程は残る。
 実Supabase利用者データと本番DNS切り替えは最後の別工程。以下は過去の状態を含む。
 
