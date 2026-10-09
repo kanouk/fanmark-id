@@ -1,7 +1,7 @@
 /** Mac operator tool: keep archive keys off R2 and outside the checkout. Never emit a secret. */
 import {randomBytes,createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {mkdir,open,readFile,stat} from 'node:fs/promises';
+import {mkdir,open,readFile,stat,lstat} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 export const archiveKeyService='fanmark-app-staging-backup-archive-key';
@@ -61,9 +61,35 @@ export async function saveStagingBackupAuthEscrow({keyId,vaultDirectory,escrow})
     throw Error('backup_auth_escrow_vault_readback_failed');
   return {keyId,authKeyId:escrow.authKeyId,encrypted:true,keychainVerified:true,vaultVerified:true};
 }
+/** Obsidian Sync may exclude JSON attachments. Publish only this completed custody record as a note. */
+export async function saveStagingBackupVaultSyncNote({keyId,vaultDirectory}){
+  identity(keyId,vaultDirectory);
+  const source=path.join(vaultDirectory,keyId+'.json');
+  const info=await lstat(source);
+  if(!info.isFile()||info.mode%512!==0o600)throw Error('backup_custody_source_permissions_invalid');
+  const bytes=await readFile(source);const record=JSON.parse(bytes.toString('utf8'));
+  if(record.format!=='fanmark-staging-backup-key-custody-v1'||record.keyId!==keyId||
+    !/^[a-f0-9]{64}$/u.test(record.archiveKeyHex)||
+    record.authKeyEscrow?.format!=='fanmark-staging-auth-key-escrow-v1'||record.authKeyEscrow.keyId!==keyId)
+    throw Error('backup_custody_record_incomplete');
+  if(security(['find-generic-password','-s',archiveKeyService,'-a',keyId,'-w'])!==record.archiveKeyHex||
+    security(['find-generic-password','-s',authEscrowService,'-a',keyId,'-w'])!==JSON.stringify(record.authKeyEscrow))
+    throw Error('backup_custody_keychain_mismatch');
+  const filename=path.join(vaultDirectory,keyId+'.md');
+  const content='# fanmark staging backup key custody\n\n秘密情報。公開・リポジトリへの追加は禁止。ステージング専用。\n\n```json\n'+
+    JSON.stringify(record,null,2)+'\n```\n';
+  const handle=await open(filename,'wx',0o600);
+  try{await handle.writeFile(content);await handle.sync();}finally{await handle.close();}
+  if((await readFile(filename,'utf8'))!==content||(await stat(filename)).mode%512!==0o600||
+    !bytes.equals(await readFile(source)))throw Error('backup_custody_sync_note_readback_failed');
+  return {keyId,vaultFilename:filename,localVerified:true,sourcePreserved:true,keychainMatched:true,
+    noteSha256:digest(content),remoteSyncVerified:false};
+}
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   try{
-    if(process.argv[2]!=='create')throw Error('usage_create_keyId_vaultDirectory');
-    console.log(JSON.stringify(await createStagingBackupKey({keyId:process.argv[3],vaultDirectory:process.argv[4]})));
+    const action=process.argv[2];
+    if(action!=='create'&&action!=='sync-note')throw Error('usage_create_or_sync_note_keyId_vaultDirectory');
+    console.log(JSON.stringify(await (action==='create'?createStagingBackupKey:saveStagingBackupVaultSyncNote)(
+      {keyId:process.argv[3],vaultDirectory:process.argv[4]})));
   }catch{console.error(JSON.stringify({error:'backup_key_custody_failed_inspect_owned_vault_and_keychain'}));process.exitCode=1;}
 }

@@ -605,3 +605,21 @@ delivered/集計1/1/0へ復帰した。初回完了監査は不変。source/runt
 schema/hash/FK、3 Worker/Crons・binding・公開assetの独立照合に成功。本人IABは保持し、
 残す差分は署名receipt2件と単調増加MFA generationのみ。runtime/schemaは変更していない。
 [限定証拠](migration/evidence/staging-broadcast-send-ui-native-2026-10-09.json)。本番queue retentionと全体統合は残る。
+
+
+### 2026-10-09 バックアップ鍵のVault遠隔保管
+
+Vault全体が同期済みでも、鍵JSONは未対応添付として遠隔履歴0だった。既存JSON/キーチェーンの
+一致を確認し、この完成済み鍵・暗号化SDK escrowだけを0600のMarkdownにも保存した。
+遠隔履歴1件のexact versionを取得し、ローカル1,651 bytesと全バイト一致を照合した。
+元JSON/鍵を変更せず、既存noteへの再実行は上書きを拒否。同期設定と他Vaultファイルは変更0。
+[鍵の遠隔保管の限定証拠](migration/evidence/staging-backup-vault-sync-custody-2026-10-09.json)。
+これは選択した鍵・escrowの遠隔保管であり、自然daily・別端末での復旧・全体移行は未受け入れ。
+
+Macの`scripts/migration/staging-backup-key-custody.mjs sync-note <keyId> <vaultDirectory>`は、
+完成済み0600のJSONとキーチェーンのarchive鍵/暗号化SDK escrowの一致を確認した後だけ、
+同じ`10_sensitive`ディレクトリへMarkdownを排他的に作成する。原本は保持し、noteの
+ローカル一致と0600を検査する。既存noteは上書きせず、secret値を出力しない。
+戻り値`remoteSyncVerified=false`はローカル保存だけの結果で、遠隔完了を推定しない。
+Obsidian Syncの選択noteの履歴とexact version取得/byte照合が遠隔完了の別証拠となる。
+JSON等の未対応添付をVault全体で許可する設定変更は行わない。

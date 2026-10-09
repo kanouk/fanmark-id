@@ -38,7 +38,14 @@ operatorを除去。独立照合で現行3 store schema/その他表hash・旧st
 日次backupの自然captureは未受け入れで、最初の自然dailyは10/10 09:05 JST予定。
 UTC10/09の保存は再実行せずarchive/鍵を変更していない。初回保存時のAuth0と画像空を
 現在状態へ当てはめない。現行Auth/profileには新規Discord identity1件があり、本人の
-初回パスワード保存はまだ未確認。Vaultのremote Syncも未確認。
+初回パスワード保存はまだ未確認。
+
+Vault全体が同期済みでも、鍵JSONは未対応添付として遠隔履歴0だった。既存JSON/キーチェーンの
+一致を確認し、この完成済み鍵・暗号化SDK escrowだけを0600のMarkdownにも保存した。
+遠隔履歴1件のexact versionを取得し、ローカル1,651 bytesと全バイト一致を照合した。
+元JSON/鍵を変更せず、既存noteへの再実行は上書きを拒否。同期設定と他Vaultファイルは変更0。
+[鍵の遠隔保管の限定証拠](evidence/staging-backup-vault-sync-custody-2026-10-09.json)。
+これは選択した鍵・escrowの遠隔保管であり、自然daily・別端末での復旧・全体移行は未受け入れ。
 
 現行6afcaee0の匿名ChromeではJA/EN/KO/IDのhomeと認証画面の見出し・フォーム・4 providerボタン、
 homeからのログインリンク、日本語の再設定画面と戻り、匿名/plans→/authを確認した。

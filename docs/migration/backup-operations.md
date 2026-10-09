@@ -3,6 +3,15 @@
 実ユーザーデータの移送とドメイン切り替えは最後の別工程とする。
 過去の節は当時の検証範囲。以下の2026-10-09の方針採用と実装状況を優先する。
 
+## 鍵の遠隔Syncを受け入れ（2026-10-09 14:05 JST）
+
+Vault全体が同期済みでも、鍵JSONは未対応添付として遠隔履歴0だった。既存JSON/キーチェーンの
+一致を確認し、この完成済み鍵・暗号化SDK escrowだけを0600のMarkdownにも保存した。
+遠隔履歴1件のexact versionを取得し、ローカル1,651 bytesと全バイト一致を照合した。
+元JSON/鍵を変更せず、既存noteへの再実行は上書きを拒否。同期設定と他Vaultファイルは変更0。
+[鍵の遠隔保管の限定証拠](evidence/staging-backup-vault-sync-custody-2026-10-09.json)。
+これは選択した鍵・escrowの遠隔保管であり、自然daily・別端末での復旧・全体移行は未受け入れ。
+
 ## 自然の定期監視を受け入れ（2026-10-09 12:35 JST）
 
 同じWorker `8298289e-d9b6-4dd4-8ce4-4a51457c5afe`の実Cron `35 * * * *`が
@@ -12,8 +21,7 @@ receiptのidentity/状態、source/schema/key、archive HEADの容量、fence解
 観測前後のversion/Cronと100%保存ログ設定を照合し、観測processはexit0で終了した。
 [限定証拠](evidence/staging-natural-backup-monitor-accepted-2026-10-09.json)。
 11:35枠のevent未取得は失敗の証拠にせず、元記録を保持する。archive/鍵/設定変更0、
-UTC10/09 slot再実行0、実ユーザー移送/DNS変更0。次の日次captureの自然実行、Vault遠隔Syncと
-最終運用は残る。
+UTC10/09 slot再実行0、実ユーザー移送/DNS変更0。次の日次captureの自然実行と最終運用は残る。鍵の遠隔Syncは上の後続検証で受け入れた。
 
 ## 採用したステージング方針（2026-10-09 JST）
 
@@ -25,7 +33,7 @@ UTC10/09 slot再実行0、実ユーザー移送/DNS変更0。次の日次capture
 | 担当 | サービス所有者 |
 | 周期・保存期間 | 1日1回、30日。09:05 JST（5 0 UTC）を実登録済み。自然の初回日次captureは10/10 09:05 JST待ち。 |
 | 保存先 | 専用R2 `fanmark-backups-staging`を作成。managed/public URL無効、custom domainなしをAPIで照合。 |
-| 鍵 | 新規AES-256鍵をMacキーチェーンとVault `10_sensitive/secret-keys/fanmark-cloudflare-staging-backup`へ保存・一致照合。保存ファイルは0600。R2へ鍵を保存しない。Vaultの遠隔Sync完了は今回の検証に含めない。 |
+| 鍵 | 新規AES-256鍵をMacキーチェーンとVault `10_sensitive/secret-keys/fanmark-cloudflare-staging-backup`へ保存・一致照合。保存ファイルは0600。R2へ鍵を保存しない。元JSONは保持し、同期対象Markdownのexact遠隔versionを取得して全bytes一致を確認済み。 |
 | SDK鍵 | 通常Worker内部で運用鍵により暗号化し、別のescrowとしてキーチェーンとVaultへ保存する。生のSDK鍵をRPC応答・ログへ出さず、既存鍵を変更しない。通常Workerの内部RPCで取得し、復号/hash検証後にキーチェーンとVaultへ保存・読戻し照合済み。 |
 | 復旧 | session/MFA assurance/verificationを失効。認証情報・業務情報・マスター・画像の復旧は既存共通形式v1を使用する。 |
 | RPO/RTO | 24時間/4時間を目標とする。実測または保証ではない。 |
@@ -47,7 +55,7 @@ capture/鍵/停止操作を呼べない。source binding集合から導出した
 終了を確認した上でoperatorが復旧する。TTLでwriterやownerを消す機能はない。
 失敗時の保存物は隔離して手動処理する必要があり、期限処理の完全自動化とは扱わない。
 失敗Cronと永続receiptを監視し、前日以前の成功日時と併せてRPO超過を判断する。
-別の毎時35分monitorと固定宛先の通知専用内部RPCは配備済み。通知の実署名sent/delivered・本人受信と、12:35:05 JSTの自然監視正常/例外0を受け入れた。日次captureの自然実行とVault遠隔Syncは未確認。
+別の毎時35分monitorと固定宛先の通知専用内部RPCは配備済み。通知の実署名sent/delivered・本人受信と、12:35:05 JSTの自然監視正常/例外0を受け入れた。日次captureの自然実行は未確認。選択した鍵/escrowの遠隔Syncは上の限定証拠で受け入れた。
 
 native local検証11件で、RPC接続、既存writer終了待ち/新writer拒否、他ownerの保護、
 claim応答喪失、失敗の秘匿、同日の重複拒否、暗号化Auth鍵の復号、R2保存fileからの
