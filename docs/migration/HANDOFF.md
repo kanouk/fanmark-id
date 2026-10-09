@@ -1,8 +1,8 @@
-## 現在のチェックポイント（2026-10-09 11:50 JST）
+## 現在のチェックポイント（2026-10-09 12:36 JST）
 
 通常stagingは`6af713aa-d5b8-4e21-a0b2-7780d269178b`を100%配信する。
-runtime sourceはc1cc1e2のまま。直前の文書候補c195d45の
-[CI37873718998](https://github.com/kanouk/fanmark-id/actions/runs/37873718998)は両job成功。
+runtime sourceはc1cc1e2のまま。文書候補9a0f3ecの
+[CI37876823680](https://github.com/kanouk/fanmark-id/actions/runs/37876823680)は両job成功。
 bulk/test送信は無効へ戻し、既存署名受信・113 binding・4 DO namespace・6公開assetを保持した。
 
 閉じた過去日付のFree/4言語を使い、公式Resend検証宛先51件だけへのMFA送信要求・
@@ -20,14 +20,17 @@ complaint後のdeliveredで停止は解除されない。全provider attemptは1
 
 バックアップは運用鍵による初回保存・同鍵隔離復旧14,591ms・30日処理receiptと通知の本人受信を
 受け入れ済み。日次09:05 JSTと毎時35分の独立monitorを登録・独立照合した。
-接続済みtailで11:35 JSTを含む11:05〜11:45を観測したが、対応する自然monitor eventは取得できなかった。
-観測なしを実行失敗/未実行の証明にしない。自然monitor/dailyは未受け入れで、最初の自然dailyは
-10/10 09:05 JST予定。UTC10/09の保存は再実行しない。monitor自体のversion/Cronは保持した。
+12:35:05 JSTの自然monitorがoutcome=ok・例外0・当日slot正常で完了した。
+登録済みscheduled入口・100%保存ログと、観測前後の同じversion/Cronを照合した。
+[自然監視の限定証拠](evidence/staging-natural-backup-monitor-accepted-2026-10-09.json)。
+先の11:05〜11:45の観測では対応eventを取得できなかったが、失敗の証拠にはせず記録を保持する。
+日次backupの自然captureはまだ未受け入れ。最初の自然dailyは10/10 09:05 JST予定。
+UTC10/09の保存は再実行せず、archive/鍵/設定を変更していない。
 初回archive時のAuth user/session0と画像空を、現在のAuth状態へ当てはめない。
 現行Auth/profileには新規Discord identity1件があり、本人の初回パスワード保存はまだ未確認。
 
 送信UI、実retry/運用retention、Discord初回設定/logout/relogin、Apple新規identity/relay、
-自然monitor/daily、実スマホ/PWA、source/converter照合と同じ最終candidateの六工程は残る。
+自然daily、実スマホ/PWA、source/converter照合と同じ最終candidateの六工程は残る。
 実Supabase利用者データと本番DNS切り替えは最後の別工程。以下は過去の状態を含む。
 
 ## 告知の51名snapshot境界（2026-10-09 JST）

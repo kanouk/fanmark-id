@@ -3,6 +3,18 @@
 実ユーザーデータの移送とドメイン切り替えは最後の別工程とする。
 過去の節は当時の検証範囲。以下の2026-10-09の方針採用と実装状況を優先する。
 
+## 自然の定期監視を受け入れ（2026-10-09 12:35 JST）
+
+同じWorker `8298289e-d9b6-4dd4-8ce4-4a51457c5afe`の実Cron `35 * * * *`が
+`2026-10-09T03:35:05Z`に到着し、当日slot `2026-10-09`を正常と判定、例外0で完了した。
+receiptのidentity/状態、source/schema/key、archive HEADの容量、fence解除、30日保存処理の
+完了を読み取る監視であり、保存bytesの復号や現行source行照合は行わない。正常時のalert呼出はない。
+観測前後のversion/Cronと100%保存ログ設定を照合し、観測processはexit0で終了した。
+[限定証拠](evidence/staging-natural-backup-monitor-accepted-2026-10-09.json)。
+11:35枠のevent未取得は失敗の証拠にせず、元記録を保持する。archive/鍵/設定変更0、
+UTC10/09 slot再実行0、実ユーザー移送/DNS変更0。次の日次captureの自然実行、Vault遠隔Syncと
+最終運用は残る。
+
 ## 採用したステージング方針（2026-10-09 JST）
 
 ユーザー回答「その案でOK、まだ未確認」により、バックアップ運用案を採用した。
@@ -11,7 +23,7 @@
 | 項目 | 採用内容・現在の状態 |
 | --- | --- |
 | 担当 | サービス所有者 |
-| 周期・保存期間 | 1日1回、30日。09:05 JST（5 0 UTC）を候補時刻とする。実Cronはまだ0。 |
+| 周期・保存期間 | 1日1回、30日。09:05 JST（5 0 UTC）を実登録済み。自然の初回日次captureは10/10 09:05 JST待ち。 |
 | 保存先 | 専用R2 `fanmark-backups-staging`を作成。managed/public URL無効、custom domainなしをAPIで照合。 |
 | 鍵 | 新規AES-256鍵をMacキーチェーンとVault `10_sensitive/secret-keys/fanmark-cloudflare-staging-backup`へ保存・一致照合。保存ファイルは0600。R2へ鍵を保存しない。Vaultの遠隔Sync完了は今回の検証に含めない。 |
 | SDK鍵 | 通常Worker内部で運用鍵により暗号化し、別のescrowとしてキーチェーンとVaultへ保存する。生のSDK鍵をRPC応答・ログへ出さず、既存鍵を変更しない。通常Workerの内部RPCで取得し、復号/hash検証後にキーチェーンとVaultへ保存・読戻し照合済み。 |
@@ -35,7 +47,7 @@ capture/鍵/停止操作を呼べない。source binding集合から導出した
 終了を確認した上でoperatorが復旧する。TTLでwriterやownerを消す機能はない。
 失敗時の保存物は隔離して手動処理する必要があり、期限処理の完全自動化とは扱わない。
 失敗Cronと永続receiptを監視し、前日以前の成功日時と併せてRPO超過を判断する。
-別の毎時monitorと固定宛先の内部RPC通知は実装した候補。まだnative配備・実配送・受信を受け入れていない。
+別の毎時35分monitorと固定宛先の通知専用内部RPCは配備済み。通知の実署名sent/delivered・本人受信と、12:35:05 JSTの自然監視正常/例外0を受け入れた。日次captureの自然実行とVault遠隔Syncは未確認。
 
 native local検証11件で、RPC接続、既存writer終了待ち/新writer拒否、他ownerの保護、
 claim応答喪失、失敗の秘匿、同日の重複拒否、暗号化Auth鍵の復号、R2保存fileからの
@@ -445,7 +457,7 @@ monitorを先に、その後dailyを登録。dailyは`daily-v1`/`5 0 * * *`、mo
 `hourly-v1`/`35 * * * *`。独立読取で各100% version、全binding/周期、workers.devとpreviewの
 無効を照合した。mainの既存secret/4 namespace/6 asset、旧全表hashを保持し、新sourceは
 この通知の署名event2件だけを許容して他の全表hashを照合した。temporary operatorは削除。
-canonical configも実登録へ合わせた。自然monitor/dailyは未確認。次の自然dailyは
+canonical configも実登録へ合わせた。自然monitorは12:35:05 JSTに正常/例外0で受け入れた。自然dailyは未確認。次の自然dailyは
 UTC10/10 00:05（09:05 JST）予定。UTC10/09 captureを再送しない。
 
 [限定証拠](evidence/staging-backup-monitor-adoption-native-2026-10-09.json)。

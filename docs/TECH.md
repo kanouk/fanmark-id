@@ -582,6 +582,7 @@ Cloudflare/R2/Resend/内部service自体の広域障害はこの経路のみで�
 設定と実Cronの一致は`validateStagingBackupJobCoverage()`で検査する。mainのalertは`resend-v1`、
 schedulerは`daily-v1`/`5 0 * * *`、monitorは`hourly-v1`/`35 * * * *`で実登録済み。
 既存secret/bindingを保持し、native期限処理（削除0件）・正常監視判定・通知1通の署名
-sent/delivered・本人受信を確認した。自然monitor/dailyの実行は未確認であり、
+sent/delivered・本人受信を確認した。12:35:05 JSTの自然monitorは同一version/Cronで正常・例外0。
+[自然監視の限定証拠](migration/evidence/staging-natural-backup-monitor-accepted-2026-10-09.json)。自然dailyの実行は未確認であり、
 登録だけで定期動作を受け入れない。最初の自然dailyは10/10 09:05 JSTの予定。
 [採用の限定証拠](migration/evidence/staging-backup-monitor-adoption-native-2026-10-09.json)。
