@@ -505,3 +505,11 @@ ownerだけを解除し、archiveを作らず、実処理の終了後にactive0�
 既存slotのreceiptを改変/削除/再試行しない。ticketの時刻・runtimeだけでは終了を証明できず、
 削除/TTL/namespace再作成による見かけ上の成功にはしない。自然daily成功は依然未受け入れ。
 [限定証拠](evidence/staging-natural-daily-failure-2026-10-11.json)。
+
+診断修正50b459bはCI38112481346両job成功後、通常main6f1dad73へ配備した。
+全113 binding・3D1スキーマ/件数・8公開ファイル/catalog・別daily/monitor version/Cronを
+保持照合した。source credential行の読取、remote D1 write、失敗slotの再試行は0。
+内部statusは旧49e191a8に帰属する未終了ticket1件/ownerなしを保持する。
+実失敗通知は10/10・10/11ともR2 provider-acceptedと署名sent/deliveredを確認した。
+本人受信の新しい報告、ticket発生/終了の特定、自然daily成功は未受け入れ。
+[修正配備と通知照合](evidence/staging-emoji-backup-diagnostics-deploy-2026-10-11.json)。

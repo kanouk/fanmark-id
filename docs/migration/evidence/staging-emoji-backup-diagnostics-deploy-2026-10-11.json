@@ -1,0 +1,86 @@
+{
+  "format": "fanmark-staging-composite-emoji-backup-diagnostics-deploy-v1",
+  "observedAt": "2026-10-11T04:56:47.908Z",
+  "sourceHead": "50b459bdab49692cb993d467c47c05175e3c5020",
+  "ci": {
+    "runId": 38112481346,
+    "conclusion": "success",
+    "bothJobsPassed": true
+  },
+  "previousVersion": "49e191a8-d85e-4ccd-a343-5387439edaac",
+  "mainVersion": "6f1dad73-74f7-4ae4-b998-e9e83c63b69c",
+  "unchanged": {
+    "bindings": 113,
+    "publicFiles": 8,
+    "allThreeD1SchemasAndTableCounts": true,
+    "activeCatalog": true,
+    "backupAndMonitorVersionsAndSchedules": true
+  },
+  "validation": {
+    "authNativeTests": 52,
+    "backupNativeTests": 23,
+    "workerTypecheck": true,
+    "changedCodeLint": true,
+    "stagingDryRun": true
+  },
+  "postDeploymentWriters": {
+    "owner": null,
+    "scope": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
+    "active": 1,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 1,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 1,
+      "oldestEnteredAt": 1791571310884,
+      "runtimeRevisions": {
+        "49e191a8-d85e-4ccd-a343-5387439edaac": 1
+      }
+    }
+  },
+  "actualFailureAlerts": [
+    {
+      "slot": "2026-10-10",
+      "alertState": "provider-accepted",
+      "events": [
+        {
+          "event_type": "email.sent",
+          "created_at": "2026-10-10T00:06:25.338000Z"
+        },
+        {
+          "event_type": "email.delivered",
+          "created_at": "2026-10-10T00:06:26.355000Z"
+        }
+      ]
+    },
+    {
+      "slot": "2026-10-11",
+      "alertState": "provider-accepted",
+      "events": [
+        {
+          "event_type": "email.sent",
+          "created_at": "2026-10-11T00:06:22.179000Z"
+        },
+        {
+          "event_type": "email.delivered",
+          "created_at": "2026-10-11T00:06:22.892000Z"
+        }
+      ]
+    }
+  ],
+  "boundaries": {
+    "sourceCredentialRowsRead": false,
+    "remoteD1Writes": false,
+    "manualBackupInvocations": 0,
+    "failedSlotsReplayed": 0,
+    "ticketsRemoved": 0,
+    "namespacesReset": 0,
+    "operatorWorkersRemoved": true,
+    "naturalDailySuccessAccepted": false,
+    "normalEmojiPublicationAccepted": false,
+    "userDataMigrationPerformed": false,
+    "domainCutoverPerformed": false
+  }
+}

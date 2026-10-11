@@ -1,3 +1,19 @@
+## 2026-10-11: 入力検証・診断記録の修正を通常stagingへ反映
+
+50b459b/[CI38112481346](https://github.com/kanouk/fanmark-id/actions/runs/38112481346)は
+アプリ/Worker両job成功。通常mainは`6f1dad73-74f7-4ae4-b998-e9e83c63b69c`を100%配信する。
+APIの変更は正しい合成絵文字の取込とbackup failureの固定診断情報だけ。
+113 binding・3D1全schema/表件数・8公開ファイル/active catalog・backup/monitorのversion/周期を
+配備前後で照合した。credential行は読まず、remote D1 write/backup再実行は0。
+新mainの内部statusでも未終了ticketは旧49e191a8の1件、ownerなしを確認し、operatorを除去した。
+日次10/10・10/11の失敗通知はprovider-acceptedと署名sent/deliveredで両日照合した。
+これはprovider配送の確認で、本人の今回の受信報告や自然daily成功の確認ではない。
+
+Auth native52・backup native23、型/lint/dry-runとCIは成功。通常Masterへの新版公開、
+未終了writerの解決/自然daily成功、Apple新規identity/relay、実端末/最終統合は残る。
+候補の下記記録は配備前の過去checkpointとして保持する。
+[配備と限定読戻し](evidence/staging-emoji-backup-diagnostics-deploy-2026-10-11.json)。
+
 ## 絵文字更新経路の確認（2026-10-11 JST）
 
 Unicodeテキスト→converter CSV/JSON→管理画面のマスターimport→UUID付きDB export→
