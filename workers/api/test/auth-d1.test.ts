@@ -1908,6 +1908,41 @@ describe("emoji master change audit parity", () => {
     await expectEmptyContext();
   });
 
+  it("imports repeated codepoints in family, skin-tone and kiss sequences, preserves IDs and rejects sequence mismatches", async () => {
+    const emojis = ["👨‍👩‍👦‍👦", "👨🏿‍🤝‍👨🏼", "👩‍❤️‍💋‍👩"];
+    const records = emojis.map((emoji, index) => ({ ...input, emoji,
+      shortName: `audit_sequence_${index}`,
+      codepoints: [...emoji].map(character => character.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")),
+    }));
+    const ids: string[] = [];
+    try {
+      expect(await repository().import(records)).toEqual({ importedCount: 3 });
+      for (const record of records) {
+        const row = await master().prepare("SELECT id, codepoints FROM emoji_master WHERE emoji = ?")
+          .bind(record.emoji).first<{ id: string; codepoints: string }>();
+        ids.push(row!.id);
+        expect(JSON.parse(row!.codepoints)).toEqual(record.codepoints);
+      }
+      expect(await repository().import(records.map(record => ({ ...record, shortName: `${record.shortName}_updated` }))))
+        .toEqual({ importedCount: 3 });
+      for (let index = 0; index < records.length; index++) {
+        expect(await master().prepare("SELECT id FROM emoji_master WHERE emoji = ?").bind(records[index].emoji).first())
+          .toEqual({ id: ids[index] });
+        expect(await audits(ids[index])).toHaveLength(2);
+      }
+      const baseline = await audits(ids[0]);
+      for (const codepoints of [records[0].codepoints.slice(1), [...records[0].codepoints].reverse()]) {
+        await expect(repository().import([{ ...records[0], codepoints }]))
+          .rejects.toMatchObject({ code: "emoji_codepoints_mismatch", status: 400 });
+      }
+      expect(await audits(ids[0])).toEqual(baseline);
+      await expectEmptyContext();
+    } finally {
+      for (const emoji of emojis) await master().prepare("DELETE FROM emoji_master WHERE emoji = ?").bind(emoji).run();
+      for (const id of ids) await master().prepare("DELETE FROM fanmark_emoji_master_change_audits WHERE resource_id = ?").bind(id).run();
+    }
+  });
+
   it("audits trusted direct insert/update/delete with a NULL actor and preserves deletion history", async () => {
     const id = crypto.randomUUID();
     await master().prepare(`INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory,

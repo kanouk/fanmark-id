@@ -1,0 +1,63 @@
+{
+  "format": "fanmark-staging-natural-daily-readback-v1",
+  "observedAt": "2026-10-11T04:35:33.239Z",
+  "mainVersion": "49e191a8-d85e-4ccd-a343-5387439edaac",
+  "daily": [
+    {
+      "slot": "2026-10-10",
+      "state": "failed",
+      "startedAt": "2026-10-10T00:05:58.956Z",
+      "finishedAt": "2026-10-10T00:06:21.654Z",
+      "fenceReleased": true,
+      "error": "capture_failed"
+    },
+    {
+      "slot": "2026-10-11",
+      "state": "failed",
+      "startedAt": "2026-10-11T00:05:53.476Z",
+      "finishedAt": "2026-10-11T00:06:18.178Z",
+      "fenceReleased": true,
+      "error": "capture_failed"
+    }
+  ],
+  "writers": {
+    "owner": null,
+    "scope": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
+    "active": 1,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 1,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 1,
+      "oldestEnteredAt": 1791571310884,
+      "runtimeRevisions": {
+        "49e191a8-d85e-4ccd-a343-5387439edaac": 1
+      }
+    }
+  },
+  "interpretation": {
+    "drainBlockedCurrently": true,
+    "historicalFailurePhaseKnown": false,
+    "ticketOriginKnown": false,
+    "ticketAgeDoesNotAuthorizeRemoval": true
+  },
+  "boundaries": {
+    "manualBackupInvocations": 0,
+    "slotReplays": 0,
+    "sourceRowsRead": false,
+    "sourceDataWritten": false,
+    "ticketsRemoved": 0,
+    "namespacesReset": 0,
+    "archiveDeleted": false,
+    "operatorWorkersRemoved": true
+  },
+  "candidateValidation": {
+    "authNativeTests": 52,
+    "backupNativeTests": 23,
+    "workerTypecheck": true,
+    "changedCodeLint": true,
+    "runtimeDeployed": false
+  }
+}

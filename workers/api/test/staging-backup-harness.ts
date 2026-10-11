@@ -28,6 +28,9 @@ export default {
           await new Promise(resolve => setTimeout(resolve, 1200));
           await env.FANMARK_DB!.prepare("UPDATE user_settings SET display_name='settled-native-writer'").run();
         }); return Response.json({ written: true });
+        case "pending-writer": await withRecoveryWriter(env, async () => {
+          await new Promise(resolve => setTimeout(resolve, 25_000));
+        }); return Response.json({ settled: true });
         case "blocked": return Response.json(await runStagingBackup({ ...env, STAGING_BACKUP_ADMISSION: admission }, slot));
         case "failure": {
           // Fault only at the source binding; the real fence/R2 journal still execute in workerd.

@@ -1,3 +1,23 @@
+## 2026-10-11: 自然日次バックアップ失敗と候補修正
+
+10日・11日のUTC00:05台に作成されたR2 receiptは両方failed/capture_failed、owner解除済み。
+通常main49e191a8の内部read-only statusでは、新V2 scopeにactive1/legacy0/attributed1、
+開始2026-10-09T18:41:50.884Zの記録が残る。現時点のdrainを妨げるが、過去receiptは
+工程を記録しておらず、両日の具体原因や記録のHTTP/Cron経路・終了は未特定。
+Cloudflareの保存ログは無効で、REST保存ログ読取も403だった。時間だけで終了と扱わない。
+両owned status inspectorは除去済み。source row読取/書込、backup再実行、ticket削除/
+namespace交換は0。実user/DNSは最後の別工程を維持する。
+
+候補は絵文字importの誤ったコードポイント重複拒否を修正し、正しい合成表記のUUID保持/
+監査/順序不一致拒否をnative検証した。またbackup failureに固定された工程・理由と待機
+件数のみを保存する。未知例外の本文は保存しない。Auth native52・backup native23、
+Worker型検査・変更code lintは成功。CI/通常runtime配備はこの候補証拠では未確認。
+[自然日次の限定証拠](evidence/staging-natural-daily-failure-2026-10-11.json)。
+
+残件は約5群: source/converter照合と外部read consumer、通常split Masterの公開手順、
+終了未確認writerと日次backupの復旧/自然成功、Apple新規identity/relay、実スマホ/PWAと
+同じ最終candidateの統合確認。scope内進捗約80%は工学的な概算で、完了件数比ではない。
+
 ## 絵文字更新経路の確認（2026-10-11 JST）
 
 Unicodeテキスト→converter CSV/JSON→管理画面のマスターimport→UUID付きDB export→

@@ -3,7 +3,7 @@ import type { Env } from "./repository";
 import { RECOVERY_SET_STORES, collectRecoverySet, openRecoverySet,
   type RecoverySetArchive, type RecoverySetContext } from "./recovery-set";
 import { d1RecoveryDigest } from "./d1-store-recovery";
-import { assertRecoveryWriterFence, claimRecoveryWriterFence, inspectRecoveryWriters,
+import { RecoveryWriterDrainError, assertRecoveryWriterFence, claimRecoveryWriterFence, inspectRecoveryWriters,
   releaseRecoveryWriterFence } from "./recovery-writer-drain";
 
 export interface StagingBackupEnv extends Env {
@@ -22,11 +22,27 @@ export type BackupReceipt = {
   sourceIds: RecoverySetContext["sourceIds"]; schemaHashes: RecoverySetContext["schemaHashes"];
   objectKey?: string; archiveHash?: string; bytes?: number; captureId?: string;
   fenceReleased: boolean; error?: "capture_failed" | "release_failed";
+  failure?: { stage: "claim-fence" | "drain" | "collect" | "archive-write" | "archive-readback" | "archive-verify";
+    reason: "drain_pending" | "fence_lost" | "identity_mismatch" | "archive_exists" | "readback_missing" |
+      "readback_mismatch" | "writer_unavailable" | "unexpected_error"; activeWriters?: number };
   retention?: { days: 30; deleted: number; finishedAt: string };
 };
 const PREFIX = "recovery/v1/", DAY = 86_400_000;
 const ID = /^[A-Za-z0-9:_-]{1,128}$/u, HASH = /^[a-f0-9]{64}$/u;
-function fail(code: string): never { throw new Error("staging_backup_" + code); }
+class StagingBackupError extends Error {
+  constructor(readonly code: string) { super("staging_backup_" + code); }
+}
+function fail(code: string): never { throw new StagingBackupError(code); }
+function failureReason(error: unknown): NonNullable<BackupReceipt["failure"]>["reason"] {
+  if (error instanceof RecoveryWriterDrainError) return "writer_unavailable";
+  if (error instanceof StagingBackupError) {
+    switch (error.code) {
+      case "drain_pending": case "fence_lost": case "identity_mismatch": case "archive_exists":
+      case "readback_missing": case "readback_mismatch": return error.code;
+    }
+  }
+  return "unexpected_error";
+}
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Matches the existing staging census identity format, including account/Worker and binding names. */
@@ -113,12 +129,16 @@ export async function runStagingBackup(env: StagingBackupEnv, slot: string, now 
   const save = async () => { await bucket.put(receiptKey(slot), JSON.stringify(receipt), { storageClass: "Standard",
     httpMetadata: { contentType: "application/json" } }); };
   let attemptedFence = false;
+  let stage: NonNullable<BackupReceipt["failure"]>["stage"] = "claim-fence";
+  let activeWriters: number | undefined;
   try {
     attemptedFence = true;
     await claimRecoveryWriterFence(env, receipt.owner);
+    stage = "drain";
     // Poll for at most 20 seconds. Do not detach or race any collection/write against a timeout.
     for (let i = 0; ; i++) {
       const writers = await inspectRecoveryWriters(env);
+      activeWriters = writers.active;
       if (writers.owner !== receipt.owner) fail("fence_lost");
       if (writers.drained) break;
       if (i >= 20) fail("drain_pending");
@@ -128,21 +148,28 @@ export async function runStagingBackup(env: StagingBackupEnv, slot: string, now 
       if (!equal(ids, context.sourceIds)) fail("identity_mismatch");
       await assertRecoveryWriterFence(env, receipt.owner);
     } };
+    stage = "collect";
     receipt.state = "collecting"; await save();
     const archive = await collectRecoverySet(bindings, context, key, guard);
+    stage = "archive-write";
     const bytes = JSON.stringify(archive);
     receipt.objectKey = PREFIX + "archives/" + slot + "/" + receipt.owner + ".json";
     receipt.archiveHash = await rawHash(bytes); receipt.bytes = new TextEncoder().encode(bytes).length;
     if (!await bucket.put(receipt.objectKey, bytes, { onlyIf: { etagDoesNotMatch: "*" }, storageClass: "Standard",
       httpMetadata: { contentType: "application/json" } })) fail("archive_exists");
     receipt.state = "stored"; await save();
+    stage = "archive-readback";
     const stored = await bucket.get(receipt.objectKey); if (!stored) fail("readback_missing");
     const readback = await stored.text(); if (await rawHash(readback) !== receipt.archiveHash) fail("readback_mismatch");
+    stage = "archive-verify";
     const opened = await openRecoverySet(JSON.parse(readback) as RecoverySetArchive, context, key);
     await guard.assertHeld(context.sourceIds);
     receipt.captureId = opened.manifest.captureId; receipt.state = "verified";
-  } catch {
+  } catch (error) {
     receipt.state = "failed"; receipt.error = "capture_failed";
+    // Persist only a typed allowlist and a count; never source errors, SQL, rows or credentials.
+    receipt.failure = { stage, reason: failureReason(error),
+      ...(stage === "drain" && activeWriters !== undefined ? { activeWriters } : {}) };
   } finally {
     // Every operation above settled first. An isolate crash leaves the owner fence + nonterminal receipt intact.
     // Even an uncertain claim ACK can be inspected/released safely: no unawaited capture task exists here.

@@ -489,3 +489,19 @@ entry point remained unchanged. Main is now 6af713aa, receive-only, with exact
 source schema hashes preserved and all tracked fixture writes settled.
 
 [限定観測記録](evidence/staging-natural-backup-monitor-observation-2026-10-09.json)。
+
+### 2026-10-11: 自然日次は起動したが未受け入れ
+
+UTC10/10 00:05:58.956→00:06:21.654、10/11 00:05:53.476→00:06:18.178の
+日次receiptをR2から読戻し、両方failed/capture_failed・停止owner解除済みと確認した。
+日次/monitorの登録versionと周期は保持される。通常49e191a8のbinding-only statusで、
+新scopeに9日18:41:50.884Zからの終了未確認ticket1件を観測した。現在のdrainを妨げる。
+23〜25秒という失敗時間は20秒のdrain待機と整合するが、既存receiptには具体工程がなく、
+過去ログは無効のため、両日の原因やticketの発生/終了を断定しない。
+
+候補修正はfailureに固定stageとtyped allowlist reason、drain時のactiveWriters件数を保存する。
+source/SQL/例外本文/credentialはreceiptへ入れない。native testはtimeout時にwriterを保持し、
+ownerだけを解除し、archiveを作らず、実処理の終了後にactive0になることを確認した。
+既存slotのreceiptを改変/削除/再試行しない。ticketの時刻・runtimeだけでは終了を証明できず、
+削除/TTL/namespace再作成による見かけ上の成功にはしない。自然daily成功は依然未受け入れ。
+[限定証拠](evidence/staging-natural-daily-failure-2026-10-11.json)。

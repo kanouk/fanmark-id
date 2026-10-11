@@ -44,6 +44,7 @@ test('native staging backup RPC fences writers, verifies private R2 archive, rev
       const owner=randomUUID();await request('claim',{owner});
       await request('rpc-run',{},409);const failed=await request('rpc-status');
       assert.equal(failed.receipt.state,'failed');assert.equal(failed.writers.owner,owner);
+      assert.deepEqual(failed.receipt.failure,{stage:'claim-fence',reason:'writer_unavailable'});
       assert.equal((await bucket.list({prefix:prefix+'archives/'})).objects.length,0);
       await request('rpc-run',{},409);await request('release',{owner});
       // Fixture-only reset after the failed operation and original fence both settled.
@@ -52,7 +53,20 @@ test('native staging backup RPC fences writers, verifies private R2 archive, rev
     await t.test('source error is redacted and the owned fence releases only after awaited failure',async()=>{
       await request('failure',{},409);const status=await request('rpc-status');assert.equal(status.receipt.state,'failed');
       assert.equal(status.receipt.error,'capture_failed');assert.equal(status.receipt.fenceReleased,true);assert.equal(status.writers.owner,null);
+      assert.deepEqual(status.receipt.failure,{stage:'collect',reason:'unexpected_error'});
       assert.ok(!JSON.stringify(status).includes('fixture-email-password'));await request('writer');
+      await bucket.delete(prefix+'runs/'+slot+'.json');
+    });
+    await t.test('drain timeout records only the pending count and preserves the still-running writer',async()=>{
+      const pending=request('pending-writer');
+      for(let i=0;i<30;i++){if((await request('writers')).active===1)break;if(i===29)assert.fail('writer did not enter');await new Promise(r=>setTimeout(r,20));}
+      await request('rpc-run',{},409);const failed=await request('rpc-status');
+      assert.equal(failed.receipt.state,'failed');assert.equal(failed.receipt.fenceReleased,true);
+      assert.deepEqual(failed.receipt.failure,{stage:'drain',reason:'drain_pending',activeWriters:1});
+      assert.equal(failed.writers.owner,null);assert.equal(failed.writers.active,1);
+      assert.equal((await bucket.list({prefix:prefix+'archives/'})).objects.length,0);
+      await pending;assert.equal((await request('writers')).active,0);
+      // Local fixture only, after the owned writer has demonstrably settled.
       await bucket.delete(prefix+'runs/'+slot+'.json');
     });
     await t.test('lost R2 claim acknowledgement leaves a lock for inspection and prevents replay',async()=>{

@@ -36,6 +36,14 @@ and the pending normal split-Master publication work remain unchanged.
 
 ## 2026-10-11: current split Master export
 
+The administrator import now accepts repeated codepoints when the complete
+ordered sequence matches the emoji string. The previous uniqueness check
+rejected 534 valid records in the accepted 3,944-record snapshot, including
+family, mixed-skin-tone and kiss sequences. Native D1 regression coverage checks
+these imports, stable UUIDs on reimport, transactional audits and refusal of
+reordered/truncated sequences. This correction does not import the Unicode
+18.0 candidate or publish a release.
+
 The owner recalled the Unicode-text → catalog → Supabase-master update process.
 Repository code resolves it as Unicode text → converter CSV/JSON → administrator
 master import → UUID-bearing database export → frontend catalog generator. The

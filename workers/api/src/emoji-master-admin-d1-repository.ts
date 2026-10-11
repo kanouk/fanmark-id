@@ -97,8 +97,7 @@ function stringArray(value: unknown, maximumItems: number, maximumLength: number
 
 function validateCodepointSequence(emoji: string, codepoints: string[]): void {
   if (
-    codepoints.length === 0 || codepoints.some((value) => !CODEPOINT_RE.test(value)) ||
-    new Set(codepoints).size !== codepoints.length
+    codepoints.length === 0 || codepoints.some((value) => !CODEPOINT_RE.test(value))
   ) {
     fail("invalid_emoji_record");
   }
