@@ -1,3 +1,12 @@
+## 2026-10-11: Apple既存user連携を限定確認
+
+本人の認証・password設定完了報告、Chrome dashboardと現行V2 D1の読戻しで、
+AppleはDiscord起点の既存userへ紐付き、credential各1、profile一致、設定済みを確認した。
+新Apple identity作成・private relayは未確認のまま。通常UI logoutは完了し、
+メールpassword再loginを本人へ引き渡した段階で、再loginは未受け入れ。
+[限定証拠](evidence/staging-apple-existing-link-readback-2026-10-11.json)。
+自然daily backup成功、通常Masterの新版公開、実端末/最終統合も引き続き未受け入れ。
+
 ## 2026-10-11: 入力検証・診断記録の修正を通常stagingへ反映
 
 50b459b/[CI38112481346](https://github.com/kanouk/fanmark-id/actions/runs/38112481346)は
@@ -1362,12 +1371,3 @@ fresh scope限定のadmissionを採用し、初回6,739,307 bytesの暗号化R2�
 日次候補09:05 JSTのlocal11件成功、実Cron0/失敗通知未受け入れ。残るprovider/端末と
 六工程全体は未完了。詳細は[backup operations](backup-operations.md)末尾と
 [限定native結果](evidence/staging-resource-scope-v2-operational-2026-10-09.json)。
-## 2026-10-11: Apple既存user連携を限定確認
-
-本人の認証・password設定完了報告、Chrome dashboardと現行V2 D1の読戻しで、
-AppleはDiscord起点の既存userへ紐付き、credential各1、profile一致、設定済みを確認した。
-新Apple identity作成・private relayは未確認のまま。通常UI logoutは完了し、
-メールpassword再loginを本人へ引き渡した段階で、再loginは未受け入れ。
-[限定証拠](evidence/staging-apple-existing-link-readback-2026-10-11.json)。
-自然daily backup成功、通常Masterの新版公開、実端末/最終統合も引き続き未受け入れ。
-
