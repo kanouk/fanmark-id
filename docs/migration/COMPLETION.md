@@ -1,3 +1,17 @@
+## 絵文字更新経路の確認（2026-10-11 JST）
+
+Unicodeテキスト→converter CSV/JSON→管理画面のマスターimport→UUID付きDB export→
+catalog生成の経路を確認した。旧generatorはSupabaseの既知read consumerである。
+本人の「多分ほかにはなかった」は不確実として保持し、外部consumer不在や旧RPC廃止の
+根拠にはしない。現行split Masterのread-only exporterを追加し、Node22.6.0で3,944件の
+全公開列・UUID/emoji/codepoint・release hashが公開APIと一致した。生成/旧版identity照合/
+local artifact検証も成功した。[限定証拠](evidence/staging-emoji-pipeline-export-2026-10-11.json)。
+
+管理画面はD1 draftへimportできるが、通常split Masterへ新releaseを公開するrunnerと
+writer/backup fenceへの組込みは残る。既存remote CLIは古い隔離bootstrap専用で、ガードを
+緩めて通常Masterへ使わない。今回DB書込み・Unicode更新・activation・runtime deployは0。
+実ユーザー/DNS移行は引き続き最後の別工程。詳細は[更新経路](emoji-releases.md#2026-10-11-current-split-master-export)。
+
 # ユーザーデータ・ドメイン移行前の完了判定
 
 ## 現在のチェックポイント（2026-10-09 JST）

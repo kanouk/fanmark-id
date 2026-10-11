@@ -8,6 +8,57 @@ deploy a Worker. An isolated remote D1 now holds the verified public emoji
 master and its active release; the workers.dev staging API serves it by default.
 Production application routing and custom-domain cutover remain separate gates.
 
+## 2026-10-11: current split Master export
+
+The owner recalled the Unicode-text → catalog → Supabase-master update process.
+Repository code resolves it as Unicode text → converter CSV/JSON → administrator
+master import → UUID-bearing database export → frontend catalog generator. The
+converter only writes local files; the legacy generator reads Supabase but does
+not write it. Cloudflare administrator imports already write the canonical
+`MASTER_DB` draft and preserve existing UUIDs by emoji.
+
+`staging-emoji-master-export.mjs` now bridges that draft to the existing local
+release builder without Supabase credentials. Use exactly Node **22.6.0**:
+
+```sh
+node --experimental-strip-types scripts/migration/staging-emoji-master-export.mjs \
+  --read-only --output /private/path/new-emoji-records.json
+node --experimental-strip-types scripts/generate-emoji-catalog.ts \
+  --input /private/path/new-emoji-records.json --output /private/path/emojiCatalog.ts
+```
+
+The fixed current staging Worker/DB identity is verified before the single
+public-master SELECT and the Worker binding is verified again afterward. Only
+the eight catalog fields are emitted; JSON columns are decoded into arrays.
+The SELECT receipt must report zero writes. The exporter bounds responses,
+refuses malformed/duplicate identities, uses an exclusive 0600 output file,
+and never activates a release. An optional `--expected-active HASH` pins the
+active version observed with the draft. Credentials come from the existing
+read-only monitor Keychain item (or `FANMARK_STAGING_MONITOR_API_TOKEN`); failure
+prints only a fixed diagnostic. No OAuth or broader writer token is acquired.
+
+Pinned-runtime verification found all 3,944 draft records equal to all active
+public API records, including every UUID/emoji/codepoint sequence and the full
+release manifest. No draft update, Unicode refresh, DB write or activation was
+performed. [Bounded evidence](evidence/staging-emoji-pipeline-export-2026-10-11.json).
+Node24's ICU collation changes generated module bytes even for identical records;
+the exporter therefore rejects other runtimes before credential/network access.
+Keep the existing generator's ordering contract and use the pinned runtime.
+
+**Normal split-Master publication remains pending.** Existing
+`emoji-master-release-remote-stage.mjs` / `remote-activate.mjs` require the old
+isolated `FANMARK_DB` topology and an empty Auth schema. Their guards must not be
+weakened or used against the normal populated split stores. The next update path
+must bind the current `MASTER_DB`, verify the previous artifact and identity
+continuity, stage/read back the immutable new release, and activate with an
+expected-current-version comparison under the writer/backup fence. Draft editing
+or a successful local export/build does not complete that publishing operation.
+
+The owner's “probably no other consumer” is uncertain evidence. The legacy emoji
+generator is a known Supabase reader; unrelated external consumers remain
+unconfirmed. This does not retire any source RPCs. Export guard tests run in
+`test:migration-data`; generator/release verification also uses the pinned Node.
+
 ## 2026-10-03: bound catalog page reads by immutable ordinals
 
 The read-only API preserves its version/offset/limit/nextOffset JSON contract.
@@ -53,7 +104,8 @@ ready releaseのいずれかに含まれるUUIDは、UUID・絵文字・コー�
 変更をSQLite triggerでも拒否する。削除はAPI・UIの両方で拒否し、公開履歴と
 参照先の別レビューを必要とする。canonical draftを変えてもactive pointerと
 公開releaseの内容は変わらない。新しい公開版は成果物作成、identity continuity
-照合、remote readback、明示的activationの既存release手順を経る。
+照合、remote readback、明示的activationを必要とする。通常split Masterの公開用
+runnerは未整備で、旧隔離bootstrap CLIは流用しない。
 
 ローカル検証では認証なし/MFA不足、session束縛、create/update/import、CAS競合、
 公開identity拒否、削除拒否をMiniflareで確認し、draft変更後もactive APIが元の
