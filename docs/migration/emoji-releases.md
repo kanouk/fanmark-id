@@ -8,6 +8,32 @@ deploy a Worker. An isolated remote D1 now holds the verified public emoji
 master and its active release; the workers.dev staging API serves it by default.
 Production application routing and custom-domain cutover remain separate gates.
 
+## Proposed periodic Unicode source check (2026-10-11)
+
+Use the owner's suggested official source,
+<https://www.unicode.org/Public/emoji/latest/emoji-test.txt>, for update detection.
+A monthly fetch is a proposed cadence; no recurring job has been created. Save
+raw bytes, the header version, retrieval time and SHA-256 in a new candidate
+directory before conversion. Keep accepted `data/emoji/` files and D1 releases
+unchanged until the review/import/publication steps complete. Repeat checks
+should compare the previous downloaded hash and avoid duplicate notifications.
+
+The one-off fetch identifies itself as Emoji 18.0. Existing repository source
+identifies itself as 17.0. Conversion with the existing variation handling yields
+3,963 candidates versus the current accepted Master snapshot's 3,944: 19 added,
+0 removed, and 0 existing codepoint changes. Names/keywords change for 3 entries;
+sort orders change for 3,933. These are draft comparison results, not a UUID-bearing
+release artifact or an accepted upgrade. Do not manufacture UUIDs from this file.
+The current normal Master import must retain IDs for existing emoji, after which
+the UUID-bearing exporter and old-release continuity verification can be used.
+
+The official 18.0 overview still displays a preliminary-draft status, despite
+its dated release heading. A moving `latest` path and file header alone therefore
+do not establish final-release acceptance. Confirm upstream release status and
+retain exact reviewed bytes before publishing. Existing remote bootstrap guards
+and the pending normal split-Master publication work remain unchanged.
+[One-off bounded evidence](evidence/unicode-latest-candidate-review-2026-10-11.json).
+
 ## 2026-10-11: current split Master export
 
 The owner recalled the Unicode-text → catalog → Supabase-master update process.

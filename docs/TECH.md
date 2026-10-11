@@ -121,6 +121,7 @@ source/target schema照合は、この明示したキーワード補正だけを
 combined復旧で実Storage GET/HEADとbytes/MIME/sizeを検証する。
 
 ## 絵文字マスタ更新（Unicode emoji-test.txt）
+- 更新検出元の候補は <https://www.unicode.org/Public/emoji/latest/emoji-test.txt>。月1回の取得を検討し、raw bytes・header version・SHA-256を版別候補へ保存して差分を確認する。定期jobは未作成。動く`latest`を直接受け入れ済みデータへ上書きせず、正式release状態とUUID continuityを確認してからMaster import/公開へ進める。[今回の候補確認](migration/emoji-releases.md#proposed-periodic-unicode-source-check-2026-10-11)。
 - Cloudflareの公開カタログAPIは、検証済み不変releaseの`ordinal`範囲を既存indexで読む。外部offset形式を保ち、SQL OFFSETによる前方走査を避ける。ページの連番/件数とクライアントの全カタログ検証は維持する。読み取りbudgetとnative検証は`docs/migration/emoji-releases.md`。
 1. Unicode 公式から `emoji-test.txt` を取得して `data/emoji/` に保存する。  
    - 例:  
