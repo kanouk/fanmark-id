@@ -1,3 +1,14 @@
+## 2026-10-11: Apple既存アカウント連携の読戻し
+
+本人のApple認証・パスワード設定完了報告後、Chromeのdashboard到達と現行V2 Auth/Businessを
+読戻した。Apple accountはDiscord起点の既存userへ紐付き、credential account各1、
+profile ID一致、signup completed、requires_password_setup=0だった。資格情報の値は読まない。
+新しいApple user作成でもprivate relayでもなく、両条件は未受け入れを維持する。
+Chromeの当該sessionを通常UIでlogoutし、メール・パスワード再loginを本人へ引き渡した。
+[限定読戻し](evidence/staging-apple-existing-link-readback-2026-10-11.json)。
+docs head cdb818fのCI38113297358も両job成功。日次backupの失敗・通常Master新版公開・
+実端末/最終統合・最後の実user/DNSの境界は変わらない。
+
 ## 2026-10-11: 入力検証・診断記録の修正を通常stagingへ反映
 
 50b459b/[CI38112481346](https://github.com/kanouk/fanmark-id/actions/runs/38112481346)は
