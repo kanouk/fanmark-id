@@ -381,6 +381,8 @@ Business追加`0026_broadcast_delivery_provider_time.sql`は告知Webhookにnull
 バックアップ用の新規書き込み停止は `recovery-write-freeze.ts` の `RECOVERY_WRITE_FREEZE` を使う。HTTP全入口・fetch後wake・Cron診断を含むjob・通知DOのD1処理を止め、alarmは再開用時刻だけ保持する。既存cutover停止とは独立し、default-off、不明値は停止側。既に動いている処理のdrainと外部writer停止は別条件で、このflagだけをrecovery collectorのguardにしない。詳細は `docs/migration/backup-operations.md`。
 
 writerの終了確認は `recovery-writer-drain.ts` と `RecoveryWriterCoordinator` の内部DO bindingを使う。明示したselector/scopeだけでHTTP・Cron・通知DOをticket管理し、claim後の新規処理とactive>0のassertを拒否する。ticketにTTLを設けず、HTTPのwake・Cronの全job終了まで記録を保持する。HTTP/Cronはenterからleaveまでの同じpromiseをcontextへ登録し、応答前にもawaitする。新規ticketにはDOでの開始時刻と呼出元のversion metadataを保存し、inspectは上限付きの件数・最古時刻・version別集計を返す。旧boolean ticketは帰属不明として保持し、時刻・versionで削除しない。コードの既定はoff。通常stagingには専用binding/namespaceと計測selectorを追加済みで、並行HTTP・signin/signout・同versionの自然毎分Cronを限定受け入れした。旧scopeの34 ticketは帰属不明のまま保持する。別5 store/V2 scopeでは停止owner取得・運用鍵での初回整合保存/隔離復旧を限定受け入れた。旧scopeのdrain成立や自然daily保存の証明には使わない。最初から計測したwriterに限るため、旧versionの初回drain・外部writer停止・整合captureと運用採用は別条件。契約は `docs/migration/backup-operations.md`。
+
+処理自身が全作業を終了した後のleaveだけを、同じticketで最大3回再試行する（失敗時100/200ms待ち、新stubを取得）。enter・業務処理は再実行しない。新規ticketのkindはHTTP/Cron/通知wake/通知alarmの固定分類で、inspectは分類別件数だけを返す。旧ticketはunknownとして残し、URL・method・利用者・資格情報は保存しない。全試行失敗は従来どおり停止・未終了状態を維持する。
 現在の通常Cloudflare stagingでは、`wrangler.app-staging.jsonc`が
 別の3 D1/2 R2と`NotificationWakeCoordinatorV2`/`RecoveryWriterCoordinatorV2`を選ぶ。
 旧class/namespaceは保持する。DOの固定object IDが現在のbindingと一致する場合だけ

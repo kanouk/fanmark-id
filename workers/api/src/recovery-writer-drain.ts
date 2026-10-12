@@ -6,12 +6,17 @@ const NAME = "recovery-writers-v1";
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 const HASH = /^[0-9a-f]{64}$/u;
 const REVISION = /^[A-Za-z0-9:_-]{1,128}$/u;
+const WRITER_KINDS = ["unknown", "http", "scheduled", "notification-wake", "notification-alarm"] as const;
+export type RecoveryWriterKind = typeof WRITER_KINDS[number];
+function validKind(value: unknown): value is RecoveryWriterKind {
+  return typeof value === "string" && WRITER_KINDS.includes(value as RecoveryWriterKind);
+}
 type Fence = { owner: string; scope: string };
 export type RecoveryWriterStatus = { owner: string | null; scope: string; active: number; drained: boolean };
-type WriterTicket = { enteredAt: number; runtimeRevision: string | null };
+type WriterTicket = { enteredAt: number; runtimeRevision: string | null; kind?: RecoveryWriterKind };
 export type RecoveryWriterInspection = RecoveryWriterStatus & { initialized: boolean; tickets: {
   scanned: number; complete: boolean; legacy: number; attributed: number;
-  oldestEnteredAt: number | null; runtimeRevisions: Record<string, number>;
+  oldestEnteredAt: number | null; runtimeRevisions: Record<string, number>; kinds: Record<string, number>;
 } };
 
 export class RecoveryWriterDrainError extends Error {
@@ -32,13 +37,13 @@ function scopeFor(env: Env): string {
   return env.RECOVERY_DRAIN_SCOPE_DIGEST!;
 }
 
-async function command(env: Env, operation: string, id: string): Promise<RecoveryWriterStatus> {
+async function command(env: Env, operation: string, id: string, kind: RecoveryWriterKind = "unknown"): Promise<RecoveryWriterStatus> {
   const scope = scopeFor(env);
   const stub = env.RECOVERY_DRAIN!.get(env.RECOVERY_DRAIN!.idFromName(NAME));
   try {
     const response = await stub.fetch(`${ORIGIN}/${operation}`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, scope,
-        ...(operation === "enter" ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null } : {}) }),
+        ...(operation === "enter" ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null, kind } : {}) }),
     });
     if (response.status !== 200) throw new RecoveryWriterDrainError();
     const value = await response.json() as RecoveryWriterStatus;
@@ -49,16 +54,28 @@ async function command(env: Env, operation: string, id: string): Promise<Recover
   } catch { throw new RecoveryWriterDrainError(); }
 }
 
+async function leaveCompletedWriter(env: Env, id: string): Promise<void> {
+  // Only this caller's settled operation can retry its idempotent leave. Never
+  // replay enter/work or reconcile another caller's unresolved ticket here.
+  for (let attempt = 0; ; attempt++) {
+    try { await command(env, "leave", id); return; }
+    catch (error) {
+      if (attempt === 2) throw error;
+      await new Promise(resolve => setTimeout(resolve, 100 * 2 ** attempt));
+    }
+  }
+}
+
 /** Tickets never expire: a crashed or unacknowledged writer blocks capture rather than falsely draining. */
 export async function withRecoveryWriter<T>(env: Env, operation: () => Promise<T>,
-  context?: Pick<ExecutionContext, "waitUntil">): Promise<T> {
+  context?: Pick<ExecutionContext, "waitUntil">, kind: RecoveryWriterKind = "unknown"): Promise<T> {
   if (!recoveryWriterTrackingSelected(env)) return operation();
   const id = crypto.randomUUID();
   const lifecycle = (async () => {
     // A lost enter response never permits the operation to run. Its ticket is retained.
-    await command(env, "enter", id);
+    await command(env, "enter", id, kind);
     try { return await operation(); }
-    finally { await command(env, "leave", id); }
+    finally { await leaveCompletedWriter(env, id); }
   })();
   // Register before awaiting enter: protect the complete lifecycle, including leave,
   // during the platform's limited disconnect grace. This is not a completion guarantee.
@@ -104,13 +121,15 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
       return new Response(null, { status: 404 });
     }
     if (Number(request.headers.get("content-length") ?? 0) > 384) return new Response(null, { status: 400 });
-    let input: { id: string; scope: string; runtimeRevision?: string | null };
+    let input: { id: string; scope: string; runtimeRevision?: string | null; kind?: RecoveryWriterKind };
     try {
       const text = await request.text();
       if (text.length > 384) return new Response(null, { status: 400 });
       input = JSON.parse(text);
       const keys = Object.keys(input ?? {}).sort().join(",");
-      if (!input || !(keys === "id,scope" || (url.pathname === "/enter" && keys === "id,runtimeRevision,scope")) ||
+      if (!input || !(keys === "id,scope" || (url.pathname === "/enter" &&
+          ["id,runtimeRevision,scope", "id,kind,runtimeRevision,scope"].includes(keys))) ||
+          (input.kind !== undefined && !validKind(input.kind)) ||
           (input.runtimeRevision !== undefined && input.runtimeRevision !== null &&
             (typeof input.runtimeRevision !== "string" || !REVISION.test(input.runtimeRevision))) ||
           !UUID.test(input.id) || !HASH.test(input.scope) ||
@@ -136,16 +155,20 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
           const entries = await storage.list<true | WriterTicket>({ prefix: "writer:", limit: 1001 });
           const tickets: RecoveryWriterInspection["tickets"] = { scanned: entries.size,
             complete: entries.size <= 1000, legacy: 0, attributed: 0, oldestEnteredAt: null,
-            runtimeRevisions: Object.create(null) as Record<string, number> };
+            runtimeRevisions: Object.create(null) as Record<string, number>,
+            kinds: Object.create(null) as Record<string, number> };
           for (const value of entries.values()) {
-            if (value === true) { tickets.legacy++; continue; }
+            if (value === true) { tickets.legacy++; tickets.kinds.unknown = (tickets.kinds.unknown ?? 0) + 1; continue; }
             if (!value || !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0 ||
                 (value.runtimeRevision !== null &&
-                  (typeof value.runtimeRevision !== "string" || !REVISION.test(value.runtimeRevision)))) return { status: 409 };
+                  (typeof value.runtimeRevision !== "string" || !REVISION.test(value.runtimeRevision))) ||
+                (value.kind !== undefined && !validKind(value.kind))) return { status: 409 };
             tickets.attributed++;
             tickets.oldestEnteredAt = Math.min(tickets.oldestEnteredAt ?? value.enteredAt, value.enteredAt);
             const revision = value.runtimeRevision ?? "unavailable";
             tickets.runtimeRevisions[revision] = (tickets.runtimeRevisions[revision] ?? 0) + 1;
+            const kind = value.kind ?? "unknown";
+            tickets.kinds[kind] = (tickets.kinds[kind] ?? 0) + 1;
           }
           if (tickets.scanned > active || (tickets.complete && tickets.scanned !== active)) return { status: 409 };
           return { status: 200, body: { owner, scope: input.scope, active,
@@ -156,7 +179,8 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
         if (url.pathname === "/enter") {
           if (fence || entered || active === Number.MAX_SAFE_INTEGER) return { status: 409 };
           active++;
-          await storage.put(key, { enteredAt: Date.now(), runtimeRevision: input.runtimeRevision ?? null });
+          await storage.put(key, { enteredAt: Date.now(), runtimeRevision: input.runtimeRevision ?? null,
+            kind: input.kind ?? "unknown" });
         } else if (url.pathname === "/leave") {
           if (entered) {
             if (active === 0) return { status: 409 };

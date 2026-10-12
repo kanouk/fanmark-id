@@ -109,7 +109,7 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
       } catch { return new Response(null, { status: 503 }); }
     }
     if (request.url !== INTERNAL_URL || request.method !== "POST") return new Response(null, { status: 404 });
-    try { await withRecoveryWriter(this.env, () => this.reconcile(Date.now())); return new Response(null, { status: 204 }); }
+    try { await withRecoveryWriter(this.env, () => this.reconcile(Date.now()), undefined, "notification-wake"); return new Response(null, { status: 204 }); }
     catch { return new Response(null, { status: 503 }); }
   }
 
@@ -128,7 +128,7 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
       await this.reconcile(Date.now());
       console.log(JSON.stringify({ job: "notification-events-alarm", ...summary,
         alarmScheduled: (await this.ctx.storage.getAlarm()) !== null }));
-    }); } catch (error) {
+    }, undefined, "notification-alarm"); } catch (error) {
       // The persisted next alarm remains. No payload, request or provider error is logged.
       console.error(JSON.stringify({ job: "notification-events-alarm", status: error instanceof RecoveryWriterDrainError ? "paused" : "failed",
         code: error instanceof RecoveryWriterDrainError ? "recovery_writer_unavailable" : "notification_processor_failed" }));

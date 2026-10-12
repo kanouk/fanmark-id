@@ -34,7 +34,7 @@ it("inspects the native census without initializing, fencing or changing writer 
   expect(await stored()).toEqual([]);
   expect(await inspectRecoveryWriters(runtime)).toEqual({ owner: null, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST,
     active: 0, drained: false, initialized: false, tickets: { scanned: 0, complete: true, legacy: 0,
-      attributed: 0, oldestEnteredAt: null, runtimeRevisions: {} } });
+      attributed: 0, oldestEnteredAt: null, runtimeRevisions: {}, kinds: {} } });
   expect(await stored()).toEqual([]);
 
   const entered = signal(), finish = signal();
@@ -245,6 +245,77 @@ it("reports legacy and attributed tickets without expiring, removing or exposing
   expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
   await expect(assertRecoveryWriterFence(runtime, owner)).rejects.toThrow("recovery_writer_unavailable");
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ tickets: { legacy: 1, attributed: 0 } });
+});
+
+it("retries only completed leave with fresh stubs after a transient failure before commit", async () => {
+  let leaves = 0, stubs = 0, operations = 0;
+  const retrying = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { stubs++; return { async fetch(input: string, init: RequestInit) {
+      if (input.endsWith('/leave') && ++leaves === 1) throw new Error('synthetic unavailable');
+      return gate.fetch(input, init);
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await withRecoveryWriter(retrying, async () => {
+    operations++;
+    await db.prepare('INSERT INTO drain_fixture VALUES (20)').run();
+  }, undefined, 'http');
+  expect(operations).toBe(1); expect(leaves).toBe(2); expect(stubs).toBe(3);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0 });
+  expect((await db.prepare('SELECT COUNT(*) n FROM drain_fixture WHERE id=20').first())?.n).toBe(1);
+});
+
+it("survives a lost leave acknowledgement without decrementing another still-running writer", async () => {
+  const entered = signal(), finish = signal();
+  const other = withRecoveryWriter(runtime, async () => { entered.resolve(); await finish.promise; }, undefined, 'scheduled');
+  await entered.promise;
+  let leaves = 0, operations = 0;
+  const lostAck = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      const response = await gate.fetch(input, init);
+      if (input.endsWith('/leave') && ++leaves === 1) throw new Error('synthetic lost acknowledgement');
+      return response;
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await withRecoveryWriter(lostAck, async () => { operations++; }, undefined, 'http');
+  expect(operations).toBe(1); expect(leaves).toBe(2);
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ tickets: { kinds: { scheduled: 1 } } });
+  await expect(assertRecoveryWriterFence(runtime, owner)).rejects.toThrow('recovery_writer_unavailable');
+  finish.resolve(); await other; await assertRecoveryWriterFence(runtime, owner);
+});
+
+it("bounds failed leave retries and keeps the unresolved ticket and backup refusal", async () => {
+  let leaves = 0, operations = 0;
+  const failed = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      if (input.endsWith('/leave')) { leaves++; throw new Error('synthetic unavailable'); }
+      return gate.fetch(input, init);
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await expect(withRecoveryWriter(failed, async () => { operations++; }, undefined, 'notification-alarm'))
+    .rejects.toThrow('recovery_writer_unavailable');
+  expect(operations).toBe(1); expect(leaves).toBe(3);
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
+  const before = await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ tickets: { kinds: { 'notification-alarm': 1 } } });
+  expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
+  await expect(assertRecoveryWriterFence(runtime, owner)).rejects.toThrow('recovery_writer_unavailable');
+});
+
+it("attributes older tickets to unknown and rejects invalid kind metadata without changing storage", async () => {
+  const id = '00000000-0000-4000-8000-000000000011';
+  await runInDurableObject(gate, async (_instance, state) => {
+    await state.storage.put({ scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1,
+      ['writer:'+id]: { enteredAt: 1, runtimeRevision: 'old' } });
+  });
+  const before = await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 1, tickets: { kinds: { unknown: 1 } } });
+  expect((await gate.fetch('https://recovery-writer.internal/enter', { method: 'POST', body: JSON.stringify({
+    id: owner, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, runtimeRevision: 'new', kind: '/private/path' }) })).status).toBe(400);
+  expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
 });
 
 it("rejects a legacy object without changing its census when the binding points to a fresh object", async () => {

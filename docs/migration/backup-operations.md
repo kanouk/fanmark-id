@@ -1,3 +1,15 @@
+## 2026-10-13: 終了通知の限定再試行と処理分類（候補）
+
+12日の自然dailyはdrain_pending/activeWriters=1で失敗した。旧recordの呼出経路と終了は未特定。
+候補は処理自身のoperationがsettleした後のleaveだけを同一IDで最大3回再試行する。
+各試行は新stubを取得し、失敗時の待機は100/200ms。enter・業務処理・メール送信の再試行はしない。
+leaveの前commit失敗とcommit後ACK喪失を区別したnative試験で、別の実行中writerの件数を
+減らさず、全試行失敗ではticketを保持してbackupを拒否することを確認する。
+新ticketは固定kind（http/scheduled/notification-wake/notification-alarm/unknown）を持ち、
+inspectは分類件数のみを返す。以前のboolean/時刻版ticketはunknownとして保持し、分類を推測しない。
+時間による終了扱い・既存ticket削除・namespace交換・失敗slot再実行は含まない。
+これは再発防止候補で、既存1件の解決や自然daily成功を意味しない。
+
 # バックアップと復旧の現在の境界
 
 実ユーザーデータの移送とドメイン切り替えは最後の別工程とする。
