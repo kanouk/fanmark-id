@@ -2,8 +2,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { generateCatalog, generateModuleSource, validateRecords } from './generate-emoji-catalog.ts';
-import type { EmojiMasterRecord } from './generate-emoji-catalog.ts';
+import { generateCatalog, generateModuleSource, validateRecords } from './emoji-catalog-core.ts';
+import type { EmojiMasterRecord } from './emoji-catalog-core.ts';
 
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const canonical = (value: unknown): string => {
