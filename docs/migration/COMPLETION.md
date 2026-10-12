@@ -1,3 +1,14 @@
+## 2026-10-13: V3通知の実HTTP・MFA・自動alarmを確認
+
+通常main `cc7710d2`の新V3 namespaceで、専用合成adminのsignin→MFA enrollment拒否→
+実TOTP enrollment/verify→手動イベント201→自動alarm→日本語in-app配信1件→本人inbox API→既読→停止を確認した。
+wake世代0/0→1/1、pending1→processed、最終alarmなし/queue空、retry0。実メールとprovider callbackは0。
+logout後のsession/MFA assurance失効と、exact-owned Auth/profile/event/notificationの除去を確認した。
+別readonly processでowned rowsなし、3D1 schema/FK0、公開Master8列・共通6表hash保持を照合した。
+MFA世代+2/wake世代+1は履歴として保持。正常HTTP処理後のwriter active0/ownerなし/完全走査も確認し、一時probeを除去した。
+[限定V3実通知証拠](evidence/staging-v3-notification-roundtrip-2026-10-13.json)。
+これはprogrammatic統合で、画面・新規signup/Apple・実スマホ・自然daily・全体移行の受け入れではない。
+
 ## 現在の確認結果（2026-10-13 JST）
 
 通常ステージングは独立したV3の保存先とDO名前空間を使用し、旧V2の検証データと終了未確認ticketは保持する。

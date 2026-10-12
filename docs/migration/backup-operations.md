@@ -1,3 +1,14 @@
+## 現行V3の運用確認（2026-10-13 JST）
+
+通常sourceは独立V3の3D1/2画像R2/private archiveと2つのDO namespaceへ切替済み。
+運用鍵の手動保存・隔離復旧・全table hash/FK照合・owned復旧資源除去・30日保持を確認し、
+09:05 JSTのschedulerと毎時35分の別monitorを新scopeへ更新した。03:35:30 JSTの自然monitorは正常。
+[V3運用証拠](evidence/staging-resource-scope-v3-operational-2026-10-13.json)。
+実HTTPの通知/MFA検証後もactive writer0・ownerなし・完全走査を確認した。
+[後続通知とwriterの確認](evidence/staging-v3-notification-roundtrip-2026-10-13.json)。
+V3の自然dailyは未確認。旧V2のunknown ticket・failed receipt・2検証アカウントは保持し、終了済みと扱わない。
+以下のcandidate/旧sourceの記録は当時の履歴。
+
 ## 2026-10-13: writer終了通知の再試行と処理分類を配備
 
 04f9860/CI38267514229はアプリ・Worker両job成功。通常mainは

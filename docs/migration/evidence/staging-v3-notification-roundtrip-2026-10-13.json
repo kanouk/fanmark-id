@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-12T19:13:20.923263+00:00",
+  "scope": "One exact-owned synthetic administrator, real HTTP MFA and manual in-app event, real V3 alarm and authenticated inbox API; no rendered UI or signup/provider claim",
+  "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+  "sourceApiCommit": "a6f600b45852c0e3996c407fa4e244c93d79c5d5",
+  "notificationClass": "NotificationWakeCoordinatorV3",
+  "notificationNamespace": "20d77a0894694ef3970cc3888cfaf342",
+  "fixturePreparation": "Four exact-owned synthetic Auth/profile rows only; no human credential reads",
+  "mfaEnrollmentGate": true,
+  "manualEventCreationHttp": 201,
+  "beforeWake": {
+    "nextAlarmAt": null,
+    "requestedGeneration": 0,
+    "acknowledgedGeneration": 0,
+    "pendingEvents": 0,
+    "processingEvents": 0
+  },
+  "afterCreateWake": {
+    "nextAlarmAt": 1791831778031,
+    "requestedGeneration": 1,
+    "acknowledgedGeneration": 1,
+    "pendingEvents": 1,
+    "processingEvents": 0
+  },
+  "event": {
+    "status": "processed",
+    "retryCount": 0
+  },
+  "delivery": {
+    "count": 1,
+    "channel": "in_app",
+    "status": "delivered",
+    "literalTemplateBodyMatched": true
+  },
+  "authenticatedInboxApi": true,
+  "readAccepted": true,
+  "finalWake": {
+    "nextAlarmAt": null,
+    "requestedGeneration": 1,
+    "acknowledgedGeneration": 1,
+    "pendingEvents": 0,
+    "processingEvents": 0
+  },
+  "logoutRevokedSyntheticSession": true,
+  "independentReadback": {
+    "state": "verified_independent_owned_cleanup",
+    "observedAt": "2026-10-12T19:07:05.029Z",
+    "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+    "ownedFixtureAbsent": true,
+    "masterUnchanged": true,
+    "commonUnchanged": true,
+    "foreignKeyViolations": 0,
+    "retainedMfaGenerationDelta": 2,
+    "retainedWakeGenerationDelta": 1
+  },
+  "postHttpWriters": {
+    "owner": null,
+    "scope": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+    "active": 0,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 0,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 0,
+      "oldestEnteredAt": null,
+      "runtimeRevisions": {},
+      "kinds": {}
+    }
+  },
+  "statusProbeDeleted": true,
+  "additionalEmails": 0,
+  "providerCallbacks": 0,
+  "humanCredentialRowsRead": false,
+  "sourceSupabaseRowsRead": false,
+  "existingAccountMutations": 0,
+  "mainDeployments": 0,
+  "realUserMigration": false,
+  "productionDomainChanged": false,
+  "historicalCountersRetained": {
+    "mfaGenerationDelta": 2,
+    "wakeGenerationDelta": 1
+  },
+  "driverCorrections": [
+    {
+      "stage": "guard-before-any-seed",
+      "correction": "Pinned absence of RECOVERY_WRITE_FREEZE to match the live normal default; the first guard expected an explicit false value. No application API or fixture writes ran."
+    },
+    {
+      "stage": "read-only-status-probe-upload",
+      "correction": "The generic JSON API helper could not submit multipart Worker source. The first probe was independently absent after cleanup, then a new exact-owned multipart probe read status and was deleted. No capture or prune was invoked."
+    }
+  ],
+  "accepted": {
+    "programmaticV3MfaEventAlarmInboxReadAndCleanup": true,
+    "naturalDailyBackup": false,
+    "physicalMobileOrRenderedNotificationUi": false,
+    "freshAppleFirstSignup": false,
+    "wholeMigration": false
+  },
+  "sourceValidationCi": {
+    "headSha": "957b1ae927c1f5e3c64c39dd0fa87925bdad1ffe",
+    "run": 38294234967,
+    "application": "success",
+    "worker": "success"
+  }
+}
