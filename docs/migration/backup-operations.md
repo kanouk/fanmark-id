@@ -1,3 +1,12 @@
+## 2026-10-13: V3にもHTTP終了未確認記録を観測
+
+画面用fixtureのseed前guardはmain cc7710d2/http ticket2件・ownerなし・完全走査で停止した。
+終了未確認記録は削除・期限切れにしない。予定actorは未作成と確認し、一時Workerを削除、
+schema/FK/共通設定/Master/MFA世代を保持した。同時間帯の匿名集計にはclientDisconnected8件があるが、
+個々のticketとの相関や終了、根本原因を証明しない。[限定観測](evidence/staging-v3-http-unsettled-2026-10-13.json)。
+V3の過去の手動保存/復旧と自然monitorは過去の受け入れとして保持し、現在の日次backup成功へ拡張しない。
+別の隔離D1/R2の非空40表復旧は2 targetで完了したが、通常sourceのdrain/backup成立ではない。
+
 ## 現行V3の運用確認（2026-10-13 JST）
 
 通常sourceは独立V3の3D1/2画像R2/private archiveと2つのDO namespaceへ切替済み。

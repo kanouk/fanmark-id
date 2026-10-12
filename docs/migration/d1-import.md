@@ -20,7 +20,7 @@ source実ユーザー行・remote D1/R2・main Worker・mail・domainへの変�
 隔離remote runner `run-isolated-combined-recovery.mjs`も同じ非空40表/46行を入力とし、
 primary/restoredの両方で固定SQLの型/件数照合を行う。以前の15行期待値は使わない。
 実行にはcleanなtested headと同じheadの成功済み2-job CIを必須とする。
-新しいrunnerの実Cloudflare受け入れはまだ未確認。
+1a5a321/CI38304455103の実Cloudflare2 targetでは、非空40表/46行のresume/recovery・独立型/件数照合・FK0・Master/分離R2と全所有資源cleanupを確認した。[限定remote証拠](evidence/current-full-table-remote-recovery-2026-10-13.json)。Auth依存userのfixtureであり、暗号化Auth資格情報の保存/復旧や全値形状の受け入れではない。
 2026-10-13のreadonly inventoryはD1=9/R2=9、main cc7710d2の100%配信を確認した。
 以前の固定10個は[Freeの公式上限](https://developers.cloudflare.com/d1/platform/limits/)であり、
 現在のsubscriptionを証明しない。subscription APIは403、dashboardは読み込みエラーで未確認。

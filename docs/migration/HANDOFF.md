@@ -1,3 +1,22 @@
+## 2026-10-13: 実隔離2 targetで非空40表の復旧・cleanupを確認
+
+1a5a321/[CI38304455103](https://github.com/kanouk/fanmark-id/actions/runs/38304455103)は2 job成功。
+全40表/46合成行を2組の独立D1/R2へ復旧し、primaryのcommit後中断/再開、両targetの型/件数固定SQL、
+全40非空checkpoint/target45行（inactive credential1行deferred）、全FK0、Master3 emoji/4 tierと
+分離R2画像2件・アプリStorage readを確認した。所要206,022/67,842msはprovision込みの合成測定。
+Authは依存用の合成user1件であり、以前の暗号化Auth資格情報/全Master保存bundleの受け入れとは別。
+6D1/4R2/2Workerを所有receiptに従い削除し、別processで元の9D1/9R2/4Worker全identity/created time集合と
+main cc7710d2の100%配信を照合した。[限定remote証拠](evidence/current-full-table-remote-recovery-2026-10-13.json)。
+
+V3画面用fixtureはseed前のwriter guardで停止した。scope aee5のmain cc7710d2/http ticket2件が残り、
+oldest enteredAtは20:32:29.181Zだった。予定actorの全Auth/profile行なし、schema/FK/共通6表/Master/MFA世代保持を
+確認し、一時Workerのみ削除した。Chromeの匿名authは描画できたが、profile保存検証は行っていない。
+同時間帯のGraphQL集計にclientDisconnected8件があるが、ticketとの対応/終了/原因の証明ではない。
+[限定HTTP記録](evidence/staging-v3-http-unsettled-2026-10-13.json)。ticket削除/TTL/namespace交換は0。
+通常stagingの日次backup/画面/Apple/実端末/最終統合/source意味論・converterは未完了。
+次はisolatedなDOだけを使うdisconnect再現で終了記録が残る条件を調べ、通常sourceのunknown recordを終了と推測しない。
+private probeはコンパイル済み、まだ未配備。real Supabase user/Auth/Storageと本番domain/DNSは未実行。
+
 ## 2026-10-13: 隔離targetの運用resource ceilingを現状に整合
 
 readonly実inventoryでD1=9/R2=9、main cc7710d2の100%配信を確認した。旧領域は保持する。
