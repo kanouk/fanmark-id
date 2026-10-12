@@ -1,3 +1,18 @@
+## 2026-10-13: V3通常Master公開・復元と2画像R2を確認
+
+main `cc7710d2` / source a6f600b、検証75da9c5のCI38296556032は両job成功。
+専用合成adminをwriter追跡内で用意し、実signin/TOTP/MFAで🦊のkeywordだけをimportした。
+UUID付きreadonly export→Node22.6.0の旧identity照合/3,944件生成→通常V3 stage→promotion→rollback→draft復元を確認。
+公開版なしAPIから始めた全8ページは新版/元版とも全公開8列・UUID/codepoint一致。世代5→6→7、元版10ec42c1へ戻った。
+新版a0b18942のready3,944行、2 activationと本人actorの変更監査2件は履歴として保持した。
+
+同じactorでavatars/cover-imagesへ正規PNGを各1件POSTし、匿名public GETの全バイトhash/MIME/nosniffを確認した。
+owner DELETE204の後は各404。合成Auth/profileと4 temporary Workerを除去し、別readonly processで3 schema/FK0、
+canonical8列・共通6表hash保持、owner rows/画像/Workerなし、active元版/世代7と履歴を照合した。
+MFA世代+2を保持し、前後writer active0/ownerなし/完全走査。実メール・provider callback・real data/domain移送は0。
+[限定V3 Master/R2証拠](evidence/staging-v3-master-r2-integration-2026-10-13.json)。
+programmatic統合であり、新V3の画面、Apple初回signup、実端末、自然daily、全体移行の受け入れではない。
+
 ## 2026-10-13: V3通知の実HTTP・MFA・自動alarmを確認
 
 通常main `cc7710d2`の新V3 namespaceで、専用合成adminのsignin→MFA enrollment拒否→
