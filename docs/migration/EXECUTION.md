@@ -1,3 +1,27 @@
+## 2026-10-13: 通常split Master更新のstaging受け入れ
+
+c4cd0bf/[CI38278795933](https://github.com/kanouk/fanmark-id/actions/runs/38278795933)は両job成功。
+通常main `73d2bcae-4dd6-4347-9f83-d3d4f03b976c`を100%配信し、固定Master IDと
+named service binding専用の公開処理を配備した。旧隔離bootstrapの空Auth/旧DBガードは維持する。
+
+専用合成adminの実signin/TOTP/同一session MFAを通して、既存🦊のkeywordだけをimportした。
+UUID付きreadonly export→Node22.6.0の生成/旧identity照合→3,944件stage→promotion→
+全公開API照合→rollback→全公開API照合→canonical draft復元を一巡した。
+版の世代は3→4→5、stage中のactive/historyは不変。元版10ec42c1へ戻り、全公開8列と
+UUID/emoji/codepointsが原本と一致した。新版/2 activation/2変更監査は履歴として保持する。
+
+in-appのreload/dashboard、🦊選択/取得可能表示、匿名search eventの正しいUUIDを確認した。
+マスターkeywordでのパレット検索は既存のFrimousse独自datasetを使うため表示されなかった。
+これは新しいkeyword検索の受け入れではなく、#36で明示したパレット本実装は移行後の#26に残す。
+合成admin/匿名test search-event/fixture Worker/4公開gatewayは除去し、本人2 user/profileは保持。
+独立readonlyで3D1 schema/全表件数/FK0、canonical公開8列、114 binding、8公開file、
+backup/monitor versionと周期を照合した。Auth MFA世代の+2はfactor登録/削除の履歴として保持し、resetしない。
+
+[通常更新の限定証拠](evidence/emoji-normal-publication-staging-2026-10-13.json)。
+#36の通常Master公開の2追加条件を受け入れた。日次backupの旧unknown writer1件、source意味論/converter、
+Apple新identity/relay、実スマホ/PWA、同じ最終candidateの統合は残る。
+実Supabaseユーザー/Auth/Storage移送とproduction domain/DNSは未実行、全体完了はfalseのまま。
+
 ## 絵文字更新経路の確認（2026-10-11 JST）
 
 Unicodeテキスト→converter CSV/JSON→管理画面のマスターimport→UUID付きDB export→

@@ -389,3 +389,5 @@ writerの終了確認は `recovery-writer-drain.ts` と `RecoveryWriterCoordinat
 旧class/namespaceは保持する。DOの固定object IDが現在のbindingと一致する場合だけ
 処理し、旧通知alarmが新Businessへ書くことを防ぐ。旧ticketの削除や移送はしない。
 配備状況と実resource identityは[backup operations](migration/backup-operations.md)を参照する。
+
+カタログ生成の純粋な検証・生成関数は`scripts/emoji-catalog-core.ts`へ分離した。`scripts/build-emoji-release.ts`はこのcoreを参照し、WorkerのCI fixtureでSupabase/app依存を要求しない。従来の`scripts/generate-emoji-catalog.ts`は同じ関数をre-exportし、Supabase読取CLIの互換性を維持する。通常split Master公開の[staging受け入れ](migration/evidence/emoji-normal-publication-staging-2026-10-13.json)を参照。

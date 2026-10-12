@@ -1,4 +1,4 @@
-## 2026-10-13: normal split-Master publication candidate
+## 2026-10-13: normal split-Master publication accepted in staging
 
 The new `staging-emoji-publication.mjs` is separate from the isolated bootstrap CLIs.
 It pins the current account, `MASTER_DB` ID, split topology, recovery scope and runtime.
@@ -36,9 +36,20 @@ node --experimental-strip-types scripts/migration/staging-emoji-publication.mjs 
 Stage leaves the active version/history unchanged. Promotion/rollback use the same
 artifact and explicit expected-current version/generation. Rollback cannot remove
 identities introduced by the active release. Old bootstrap guards stay unchanged.
-Current evidence is local only: producer-payload4, CLI4, native publication5 and
-legacy stage/activation7. Normal remote import/export/publication/frontend rehearsal
-and deployment are not yet accepted; the Unicode18 candidate remains unpublished.
+Producer-payload4, CLI4, native publication5 and legacy stage/activation7 passed.
+Exact-source c4cd0bf / CI38278795933 passed both jobs. Runtime73d2bcae accepted
+normal MFA-protected import → UUID export → stage → promotion → all3,944 public
+records → rollback → all3,944 records → draft restoration, followed by owned cleanup
+and independent schema/count/FK/binding/asset/control readback.
+[Evidence](evidence/emoji-normal-publication-staging-2026-10-13.json).
+Stage held active generation3; promotion advanced to4 and rollback to5. The original
+public fields/IDs/codepoints were restored, while immutable release and audit history
+was retained. Existing users were preserved and disposable admin/search rows removed.
+The frontend reloaded and selected the fox with the original UUID. Its existing
+Frimousse picker searches an independent dataset; master keyword search is not
+accepted here and palette implementation remains the post-migration #26 scope.
+The Unicode18 candidate remains unpublished. Natural backup and the overall migration
+remain unaccepted; no production users or DNS were migrated.
 
 # Versioned emoji catalog artifacts
 
@@ -121,7 +132,7 @@ Node24's ICU collation changes generated module bytes even for identical records
 the exporter therefore rejects other runtimes before credential/network access.
 Keep the existing generator's ordering contract and use the pinned runtime.
 
-**Normal split-Master publication remains pending.** Existing
+**Normal split-Master publication uses the accepted dedicated service path above.** Existing
 `emoji-master-release-remote-stage.mjs` / `remote-activate.mjs` require the old
 isolated `FANMARK_DB` topology and an empty Auth schema. Their guards must not be
 weakened or used against the normal populated split stores. The next update path
