@@ -1,10 +1,11 @@
 ## 現在の通常staging（2026-10-13 JST）
 
-通常mainはV4の `51b060cb-fc8b-457f-a229-37550f38038b`。実保存先・source scope・DO・日次保存/監視は
+通常mainはV4の `cc82c298-ff27-4322-8c42-175e7be17f16`。実保存先・source scope・DO・日次保存/監視は
 `workers/api/wrangler.app-staging.jsonc`、`wrangler.backup-staging.jsonc`、`wrangler.backup-monitor-staging.jsonc`へ一致させた。
 readonly observerもV4の固定IDを使用する。運用鍵の保存・隔離復旧・全表hash/FK照合・所有資源cleanupと30日保持を確認した。
 担当/鍵/off-host保管/日次・30日/RPO24時間・RTO4時間目標/復旧時session失効の採用は既存の方針を保持する。
-V4の自然daily/自然monitor、Apple初回登録・メール再login/relay、実スマホ/PWAと最終統合は未受け入れ。
+V4の07:35:30 JST自然monitorとApple初回登録/設定/logout/メール再loginを受け入れた。
+自然daily、Apple relay配送、実スマホ/PWAと最終統合は未受け入れ。
 [現行V4の限定証拠](evidence/staging-resource-scope-v4-operational-2026-10-13.json)と [COMPLETION](COMPLETION.md) を現在の残件の基準とする。
 以下の過去version/受け入れ待ちの記述は当時の履歴であり、旧保存先を現在のapp bindingとして使用しない。
 

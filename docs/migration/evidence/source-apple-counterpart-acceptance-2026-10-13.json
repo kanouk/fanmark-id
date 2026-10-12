@@ -1,0 +1,28 @@
+{
+  "state": "bounded_manual_correspondence_updated",
+  "priorManualTraceSha256": "83ba71fb48dc6932931bd8b28502b233c68bdd5f8554048fd9b38526a1c0daee",
+  "currentManualTraceSha256": "dd6232c5d1aa495e5a81d6404b26c2028f84d512f488c0f49b4811ddd8f693a1",
+  "updatedFunctionCounterparts": [
+    "handle_new_user",
+    "validate_invitation_code"
+  ],
+  "sourceDefinitionAndIdentityFieldsChanged": false,
+  "appleAcceptanceEvidence": "apple-staging-first-password-relogin-2026-10-13.json",
+  "sourceCatalogObservedAt": "2026-10-12T18:14:19.671464+00:00",
+  "newSourceObservation": false,
+  "sourceRowsRead": false,
+  "sourceWrites": 0,
+  "newCallbackExecutedByCorrespondenceStep": false,
+  "pendingClassifierCount": 54,
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "relayDeliveryAccepted": false,
+  "counterpartTrace": {
+    "functionCount": 58,
+    "missingFunctionCount": 0,
+    "traceSha256": "563a0fd7748097673c4876e0a6d5c91ffe78af22f950157ffa27ed76bc7fcb97",
+    "semanticApprovalInferred": false,
+    "boundary": "Exact source identity, definition, attributes and binding count matched to manual correspondence; feature/provider/operational acceptance and converter gates remain separate."
+  },
+  "linkageTestsPassed": 13
+}

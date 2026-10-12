@@ -1,3 +1,11 @@
+## 2026-10-13: 実配備後の保存・再読込・cleanupを確認
+
+修正ソースe511762/CI38315685393両job成功をmain cc82c298へ配備した。
+同じChrome actorで画像未設定の表示名保存、D1のnull avatar/表示名反映、reload保持、logoutを確認した。
+本人専用のAuth/profile行とoperatorを除去し、schema/共通Master/MFA世代を保持、writer0を確認した。
+新avatar uploadと実スマホ全profile操作の受け入れには広げない。
+[実画面の限定証拠](evidence/staging-v4-profile-empty-avatar-accepted-2026-10-13.json)。以下は修正前後の履歴。
+
 ## 2026-10-13: アバター未設定の実画面保存を修正（配備前）
 
 V4の専用合成ownerでログイン後、画像未設定の表示名保存がHTTP400となり、D1に未保存だった。

@@ -10,8 +10,12 @@ indexes, owned Auth0, FK0 and unchanged MFA generation. At that initial checkpoi
 were still open; unconfigured capabilities listed no providers. Current staging
 configures all four providers. Actual Google/GitHub first-user provisioning and
 human password setup/logout/relogin are accepted in their dated receipts;
-Apple/Discord callbacks linked an existing Google user, so their new-user flows
-and Apple relay remain unaccepted. Credential email signup/reset/login also has
+The historical Apple/Discord callbacks first linked an existing Google user.
+One new Discord identity completed setup/logout/credential relogin on October9.
+On October13, an initially empty V4 Auth store accepted one Apple first registration,
+human initial password setup/logout/email-password relogin and independent metadata-only
+readback. Apple relay delivery remains unaccepted. See
+[Apple first registration](evidence/apple-staging-first-password-relogin-2026-10-13.json). Credential email signup/reset/login also has
 its separate accepted proof. The complete migration is still unfinished. See
 [Google](evidence/google-staging-real-auth-2026-10-04.json),
 [GitHub](evidence/github-staging-real-auth-2026-10-04.json),

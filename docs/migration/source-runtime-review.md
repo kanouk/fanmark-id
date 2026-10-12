@@ -1,3 +1,13 @@
+## Apple first-user acceptance correspondence (2026-10-13 JST)
+
+The `handle_new_user` and `validate_invitation_code` correspondence now links the
+accepted V4 Apple first registration, human password setup/logout/credential
+relogin and metadata-only Auth/Business readback. Relay delivery remains open.
+All58 identities/definitions/attributes/binding counts match the existing
+October13 source capture; the linkage tests pass13/13. This is no new source
+observation or whole-source semantic approval. Classifier54/fullRuntimeReconciled
+and converterDeployable=false remain separate. [Bounded linkage](evidence/source-apple-counterpart-acceptance-2026-10-13.json).
+
 # Source runtime bindings review
 
 ## Signup acceptance correspondence refreshed (2026-10-13 JST)

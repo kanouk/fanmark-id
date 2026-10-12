@@ -1,3 +1,26 @@
+## 現在の確認結果（2026-10-13 07:38 JST）
+
+通常mainは`cc82c298-ff27-4322-8c42-175e7be17f16`、ソースe511762の
+[CI38315685393](https://github.com/kanouk/fanmark-id/actions/runs/38315685393)はアプリ・Worker両job成功。
+V4の保存先・114 binding・schema/件数・公開カタログ・backup/monitor版とCronを配備前後で保持した。
+画像未設定のプロフィール保存が400になる不具合を、clientの空avatar文字列をnullへ揃えて修正した。
+専用Chromeで表示名保存、D1反映、再読み込み後の保持、logoutを確認し、専用Auth/profile/operatorを除去した。
+[プロフィール保存の限定証拠](evidence/staging-v4-profile-empty-avatar-accepted-2026-10-13.json)。
+
+本人からApple初回登録→パスワード設定→logout→メール・パスワードlogin完了の報告を受け、
+in-appのdashboardを確認した。readonly D1でもApple/credential account各1、password存在boolean、
+emailVerified、設定待ち解除、Free profile/本人session/FK0を照合した。資格情報の値は読まない。
+[Apple初回登録・通常loginの限定証拠](evidence/apple-staging-first-password-relogin-2026-10-13.json)。
+今回のidentityはrelayではないため、relayのメール配送は別の未確認条件として残す。
+
+07:35:30 JSTの自然monitorは実version `c03f6a13-e888-4802-9af0-1c920907c43e`、
+Cron `35 * * * *`、正常event/例外0を受け入れた。
+[自然監視の限定証拠](evidence/staging-v4-natural-backup-monitor-2026-10-13.json)。
+保存slotは既存の2026-10-12であり、09:05 JSTの自然日次保存成功を示すものではない。
+
+残件は自然日次保存、Apple relay配送、実スマホ/ホーム画面起動、最終候補の通し確認とsource対応の残件。
+実Supabaseユーザー/Auth/Storage移送と本番domain/DNSは最後の#38。以下の旧version・未確認記述は各時点の履歴。
+
 ## 2026-10-13: V4切替・運用鍵の保存・隔離復旧を確認
 
 3cd0eb9/[CI38312296313](https://github.com/kanouk/fanmark-id/actions/runs/38312296313)は両job成功。

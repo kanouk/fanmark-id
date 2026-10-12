@@ -153,5 +153,15 @@
   "naturalMonitorV4Accepted": false,
   "newAuthAppleInitialSignupAccepted": false,
   "physicalPhoneAccepted": false,
-  "fullMigrationAccepted": false
+  "fullMigrationAccepted": false,
+  "followUpAcceptance": {
+    "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+    "runtimeSource": "e511762850631275664597afec8ca4155419358f",
+    "runtimeCi": 38315685393,
+    "appleFirstRegistrationAndCredentialRelogin": "apple-staging-first-password-relogin-2026-10-13.json",
+    "profileNoAvatarSave": "staging-v4-profile-empty-avatar-accepted-2026-10-13.json",
+    "naturalMonitor": "staging-v4-natural-backup-monitor-2026-10-13.json",
+    "naturalDailyCaptureAccepted": false,
+    "captureAuthUserCountIsHistorical": true
+  }
 }
