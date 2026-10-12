@@ -9065,3 +9065,18 @@ Auth native52・backup native23、型/lint/dry-runとCIは成功。通常Master�
 未終了writerの解決/自然daily成功、Apple新規identity/relay、実端末/最終統合は残る。
 候補の下記記録は配備前の過去checkpointとして保持する。
 [配備と限定読戻し](evidence/staging-emoji-backup-diagnostics-deploy-2026-10-11.json)。
+
+## 2026-10-13: writer終了通知の再試行と処理分類を配備
+
+04f9860/CI38267514229はアプリ・Worker両job成功。通常mainは
+`c0ddb6e3-ced1-4616-9100-e702a40927fd`を100%配信する。settle済みの同じwriterのleaveだけを
+最大3回再試行し、enter/業務処理は再実行しない。新recordは固定kindを持ち、旧recordはunknown。
+native writer13/通知22/backup23、型/lint/配備dry-runも成功した。
+113 binding・3D1 schema/全表件数/FK・8公開file/active catalog・backup/monitor version/周期を
+前後照合した。配備直後のasset確認は503で一度止まり、その後の全読戻しは成功した。
+検査用Workerの初期2回も500で止まりowned workerを除去、後続read-only statusは成功し除去済み。
+各失敗の具体原因は未確定。通常HTTPとログイン済みdashboardのreloadが成功し、source credential値は読まない。
+最終内部statusはownerなし/active1/kinds unknown1/旧49e191a8の同じ開始記録を保持していた。
+新規孤立recordなし、旧ticket削除・失敗slot再実行は0。既存1件の終了確認/自然daily成功は未受け入れ。
+[配備と限定確認](evidence/staging-writer-retry-rollout-2026-10-13.json)。
+通常Master新版公開、Apple新規identity/relay、実端末/最終統合、最後の実user/DNSも残る。

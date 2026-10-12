@@ -1,0 +1,50 @@
+{
+  "scope": "current staging settled writer leave retry and fixed kind attribution rollout",
+  "runtimeVersion": "c0ddb6e3-ced1-4616-9100-e702a40927fd",
+  "runtimeSourceHead": "04f9860a0cccd19fdb8156c6460b4532631a6537",
+  "ciRun": 38267514229,
+  "ciBothJobs": "passed",
+  "writerNativeTests": 13,
+  "notificationNativeTests": 22,
+  "backupNativeTests": 23,
+  "bindingCountHeld": 113,
+  "d1SchemaAndTableCountsHeld": true,
+  "d1ForeignKeysValid": true,
+  "publicFilesHeld": 8,
+  "publicCatalogHeld": true,
+  "backupAndMonitorVersionsAndSchedulesHeld": true,
+  "firstPostDeployAssetStatus": 503,
+  "subsequentFullReadback": "passed",
+  "firstTwoInspectorAttempts": "500; owned inspectors removed",
+  "finalReadOnlyInspector": "passed; owned inspector removed",
+  "temporaryTailStopped": true,
+  "authenticatedDashboardReload": "passed",
+  "remainingWriters": {
+    "owner": null,
+    "scope": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
+    "active": 1,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 1,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 1,
+      "oldestEnteredAt": 1791571310884,
+      "runtimeRevisions": {
+        "49e191a8-d85e-4ccd-a343-5387439edaac": 1
+      },
+      "kinds": {
+        "unknown": 1
+      }
+    }
+  },
+  "existingUnknownWriterRemoved": false,
+  "failedBackupSlotsReplayed": false,
+  "sourceCredentialValuesRead": false,
+  "agentDirectD1Writes": 0,
+  "naturalDailyBackupAccepted": false,
+  "sourceUserMigrationPerformed": false,
+  "productionDnsChanged": false,
+  "fullMigrationAccepted": false
+}
