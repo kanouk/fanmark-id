@@ -1,3 +1,24 @@
+## 2026-10-12: 自然dailyの失敗工程を確認
+
+UTC00:05:24.733（JST09:05:24.733）の自然dailyもfailed、25秒後にowner解除済みだった。
+現行main `6f1dad73-74f7-4ae4-b998-e9e83c63b69c`のfailure診断は
+stage=drain / reason=drain_pending / activeWriters=1。今回は処理終了待ちで保存に進めなかったと
+確認できる。10/10・11のgeneric receiptの具体工程まで遡って確定する証拠ではない。
+処理の終了が未確認のため記録の削除/TTL/namespace交換や失敗slot再実行は行わない。
+固定account/main/3D1/scopeを確認したR2 receipt読取だけで、source row読取/書込は0。
+[限定証拠](evidence/staging-natural-daily-failure-2026-10-12.json)。自然daily成功は未受け入れ。
+
+## 2026-10-12: Apple連携済み既存userのpassword復旧と再loginを限定受け入れ
+
+初回password後のメール再loginはinvalid credentialsとなり、本人はpasswordを忘れたと報告した。
+in-appの通常reset画面から登録先へメール1回を要求し、本人がreset・メールpassword loginを完了した。
+現行main `6f1dad73-74f7-4ae4-b998-e9e83c63b69c`でdashboard・登録先をUI確認し、V2 Auth/Businessの
+独立read-only照合でApple連携時と同じuser/profile、credential更新とその後の新session、設定済みを確認した。
+credential値は読まず、agentの直接D1 writeは0。reset前の失敗原因は確定しておらず、初回設定直後の
+再login成功とは扱わない。Apple単独の新規identity/relay、自然daily backup・通常Master新版公開・
+実端末/最終統合、最後の実user/DNSは残る。
+[限定証拠](evidence/staging-apple-password-recovery-2026-10-12.json)。
+
 ## 2026-10-11: Apple既存user連携を限定確認
 
 本人の認証・password設定完了報告、Chrome dashboardと現行V2 D1の読戻しで、
