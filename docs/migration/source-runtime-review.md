@@ -1,5 +1,15 @@
 # Source runtime bindings review
 
+## Latest metadata observation (2026-10-13 JST)
+
+The metadata-only runtime and authorization observations at 2026-10-12T18:14:19Z
+and 18:14:20Z retain the previous fingerprints: 58 functions, 37 bindings,
+40 RLS tables and 77 policies. All 58 counterpart identities remain linked.
+[Current readonly evidence](evidence/source-current-readonly-refresh-2026-10-13.json)
+records no application/Auth row reads and no source writes. The 54 conservative
+semantic classifications, fullRuntimeReconciled=false and converterDeployable=false
+remain separate gates. This observation does not refresh historical feature acceptance.
+
 ## Native invitation acceptance linked (2026-10-08 JST)
 
 The accepted Japanese invitation-required signup now replaces capability-only

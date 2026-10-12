@@ -1,3 +1,16 @@
+## 現在の確認結果（2026-10-13 JST）
+
+通常ステージングは独立したV3の保存先とDO名前空間を使用し、旧V2の検証データと終了未確認ticketは保持する。
+V3の運用鍵による手動保存・隔離復旧・Auth9/Business80/Master25表の独立hash照合、FK0、所有する一時資源の除去を確認した。
+30日保持処理は完了し、03:35:30 JSTの自然監視は保存正常・例外なし。日次09:05 JSTの自然保存は未確認。
+通常configは実際の保存先・Cron・service/DO bindingと一致し、公開カタログ3,944件とdraftも一致する。
+[現在のV3証拠](evidence/staging-resource-scope-v3-operational-2026-10-13.json)。
+
+残る受け入れは自然日次保存、新AuthでのApple初回登録とパスワード設定後のメール再ログイン/relay、
+実スマホ/PWA、同じ最終候補での統合、source意味論/外部consumer/converter。
+最新のreadonly source catalogは前回と一致したが、54の保守的な分類と全体未照合gateは保持する。
+実Supabaseユーザー/Auth/Storage移送と本番domain/DNSは最後の#38。以下は各時点の履歴。
+
 ## 2026-10-13: 通常split Master更新のstaging受け入れ
 
 c4cd0bf/[CI38278795933](https://github.com/kanouk/fanmark-id/actions/runs/38278795933)は両job成功。

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const account = 'bfc2890741f0b3fb236e2d755b6c9adc';
 const worker = 'fanmark-app-staging';
-const businessDatabase = 'c99c9f7e-b234-400e-aa89-8d15a168abcc';
+const businessDatabase = '397d389a-9d6d-453f-bf09-317dc9591056';
 const apiOrigin = 'https://api.cloudflare.com/client/v4';
 
 /** Fixed read-only operations; no arbitrary endpoint or SQL supplied by the caller. */

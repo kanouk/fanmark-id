@@ -51,6 +51,9 @@ test("backup/monitor activation requires matching scope, transport admission and
     c => { c.hourly.d1_databases = [{ binding: "AUTH_DB", database_id: "unowned" }]; },
     c => { c.hourly.services[0].service = "other-project"; },
     c => { c.hourly.services[0].entrypoint = "StagingBackupService"; },
+    c => { c.hourly.r2_buckets[0].bucket_name = "fanmark-backups-staging"; },
+    c => { c.hourly.r2_buckets.push({binding:"AVATARS_BUCKET",bucket_name:"fanmark-avatars-staging-v3-6a5d9114"}); },
+    c => { c.main.r2_buckets.find(bucket=>bucket.binding==="STAGING_BACKUP_BUCKET").bucket_name = "unowned"; c.hourly.r2_buckets[0].bucket_name = "unowned"; },
   ]) {
     const c = structuredClone({ main, daily, hourly }); change(c);
     assert.throws(() => validateStagingBackupJobCoverage(c.main, c.daily, c.hourly), /staging_backup_/u);

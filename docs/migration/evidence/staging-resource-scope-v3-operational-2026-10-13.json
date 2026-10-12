@@ -155,5 +155,32 @@
     "exceptions": 0,
     "healthySlot": "2026-10-12",
     "manualInvocations": 0
+  },
+  "readOnlyOperationalMonitor": {
+    "observedAt": "2026-10-12T18:40:44.764Z",
+    "version": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+    "ledgerEntries": 27,
+    "credentialSource": "monitor_api_token",
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": [],
+    "arbitraryTargetsAllowed": false,
+    "genericTokenFallback": false
+  },
+  "localValidation": {
+    "migrationDataTests": {
+      "passed": 326,
+      "failed": 0
+    },
+    "nativeBackupMonitorTests": {
+      "passed": 11,
+      "failed": 0
+    },
+    "scheduledJobCoverage": "covered",
+    "normalAppSchedulerMonitorDryRun": "passed",
+    "changedScriptsLint": "passed",
+    "latestCi": "pending"
   }
 }

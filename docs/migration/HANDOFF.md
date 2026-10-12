@@ -20,6 +20,10 @@ runtime/authorization fingerprintは前回と一致した。システムcatalog�
 最終統合とruntime意味レビューは未完了。旧sourceの終了未確認処理を消したことや、本番切替完了は意味しない。
 `wrangler.app-staging-v3-candidate.jsonc`は初期pending構成として残し、通常configはadmission採用済みV3を指す。
 
+通常readonly運用monitorもV3の固定3D1へ更新し、専用readonly tokenで実CLIのledger27・health200・attention0を確認した。
+CI `38292063743`のapplication jobは旧archive名だけを許可する検査で失敗した。検査を既知archive/main一致へ修正し、
+旧固定V2を参照していた運用monitorとincarnation回帰期待もV3へ合わせた。稼働Worker sourceはa6f600bのまま。
+
 以下のcandidate記録は切替前の履歴。
 
 ## 2026-10-13: fresh five-store/V3 candidate, not routed

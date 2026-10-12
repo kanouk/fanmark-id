@@ -637,3 +637,5 @@ JSON等の未対応添付をVault全体で許可する設定変更は行わな�
 結果不明は停止を維持する。既存の非クリティカルな移行作業の継続許可に基づき、初期運用の保持・調査方針を採用する。
 保持方針をTTL/purgeの実装や本番削除承認へ換算しない。
 この記録に伴うruntime・schema・selector変更は0。
+
+2026-10-13以降の通常staging read-only運用観測（`staging-operations-status.mjs` / `staging-monitor-api.mjs`）はV3の固定3D1を照合する。専用monitor tokenからWrangler/generic tokenへのfallbackはなく、SQLはledgerと集計SELECTだけ。定期ジョブのCIは既知の非公開archive名とmain/monitorの一致を検査する。

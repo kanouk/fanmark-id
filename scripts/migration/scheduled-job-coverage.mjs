@@ -34,8 +34,11 @@ export function validateStagingBackupJobCoverage(main, scheduler, monitor) {
   }
   for (const key of ["STAGING_BACKUP_SOURCE_IDS", "STAGING_BACKUP_SCHEMA_HASHES", "STAGING_BACKUP_KEY_ID"])
     if (monitor.vars[key] !== main.vars[key]) throw new Error("staging_backup_monitor_source_mismatch");
+  const archives = main.r2_buckets?.filter(bucket => bucket.binding === "STAGING_BACKUP_BUCKET") ?? [];
+  if (archives.length !== 1 || !["fanmark-backups-staging", "fanmark-backups-staging-v3-6a5d9114"].includes(archives[0].bucket_name))
+    throw new Error("staging_backup_archive_binding_invalid");
   if (monitor.d1_databases || monitor.durable_objects || monitor.vars.STAGING_BACKUP_KEY || monitor.vars.BETTER_AUTH_SECRET ||
-      JSON.stringify(monitor.r2_buckets) !== JSON.stringify([{ binding: "STAGING_BACKUP_BUCKET", bucket_name: "fanmark-backups-staging" }]))
+      JSON.stringify(monitor.r2_buckets) !== JSON.stringify(archives))
     throw new Error("staging_backup_monitor_binding_invalid");
   return jobs;
 }
