@@ -127,3 +127,8 @@ test('export selects only the recognized live V3 Master and keeps it pinned acro
  const result=await readStagingEmojiMaster({token,fetchImpl:f.fetchImpl});
  assert.equal(result.recordCount,1);assert.ok(f.calls.filter(x=>x.url.includes('/d1/database/')).every(x=>x.url.includes(profile.masterId)));
 });
+test('export recognizes V4 and pins every fixed Master read to that cohort',async()=>{
+ const profile=STAGING_EMOJI_PUBLICATION_TARGETS[2],f=fixture({profile});
+ const result=await readStagingEmojiMaster({token,fetchImpl:f.fetchImpl});
+ assert.equal(result.recordCount,1);assert.ok(f.calls.filter(x=>x.url.includes('/d1/database/')).every(x=>x.url.includes(profile.masterId)));
+});

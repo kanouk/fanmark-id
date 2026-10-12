@@ -84,3 +84,6 @@ export class EmojiMasterPublicationService extends WorkerEntrypoint<PublicationE
 export class EmojiMasterPublicationServiceV3 extends WorkerEntrypoint<PublicationEnv>{
  async fetch(request:Request):Promise<Response>{return publicationFetch(request,this.env,this.ctx,STAGING_EMOJI_PUBLICATION_TARGETS[1]);}
 }
+export class EmojiMasterPublicationServiceV4 extends WorkerEntrypoint<PublicationEnv>{
+ async fetch(request:Request):Promise<Response>{return publicationFetch(request,this.env,this.ctx,STAGING_EMOJI_PUBLICATION_TARGETS[2]);}
+}

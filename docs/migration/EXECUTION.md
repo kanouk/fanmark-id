@@ -1,3 +1,16 @@
+## 2026-10-13: V4非ユーザー領域の候補を準備（未配備）
+
+V3に終了未確認の旧HTTP記録2件が残るため、終了済みと推測せず旧保存先と名前空間を保持する。
+独立したV4の3D1・2画像R2・非公開archiveを作成し、Master25表/20,152行と共通6表/106行を
+二重取得・全表hash照合して複製した。Auth user/account/session・業務ユーザー行・画像は空、FK0。
+通常mainは87584a12のV3のままで、新資源を参照する既存Workerは0。
+新V4 class/固定Master・scopeのnamed entrypointと専用native検査を追加する。
+旧class/記録は保持し、任意targetや旧新混合pairを拒否する。候補configはadmission=pending。
+[未配備候補の限定証拠](evidence/staging-resource-scope-v4-candidate-2026-10-13.json)。
+次はexact CI成功後の候補切替、writer0確認、運用鍵での保存・隔離復旧と別process照合。
+自然daily/新AuthのApple初回登録・メール再login/実スマホ・最終統合/source意味論は未完了。
+実Supabaseユーザー/Auth/Storageと本番domain/DNSは最後の#38へ残す。
+
 ## 2026-10-13: V3通常Master公開・復元と2画像R2を確認
 
 main `cc7710d2` / source a6f600b、検証75da9c5のCI38296556032は両job成功。

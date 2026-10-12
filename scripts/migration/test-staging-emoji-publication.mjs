@@ -52,9 +52,18 @@ test('wrong Master target refuses before upload or mutation',async()=>{
 });
 
 test('fixed profiles refuse mixed cohorts and unknown targets',()=>{
- const [oldTarget,fresh]=STAGING_EMOJI_PUBLICATION_TARGETS;
- assert.equal(resolveStagingEmojiTarget(fresh.masterId,fresh.scope).entrypoint,'EmojiMasterPublicationServiceV3');
- for(const [id,scope]of [[fresh.masterId,oldTarget.scope],[oldTarget.masterId,fresh.scope],['other',fresh.scope]])assert.throws(()=>resolveStagingEmojiTarget(id,scope),/target_mismatch/);
+ for(const target of STAGING_EMOJI_PUBLICATION_TARGETS){
+  assert.equal(resolveStagingEmojiTarget(target.masterId,target.scope).entrypoint,target.entrypoint);
+  for(const other of STAGING_EMOJI_PUBLICATION_TARGETS)if(other!==target)assert.throws(()=>resolveStagingEmojiTarget(target.masterId,other.scope),/target_mismatch/);
+  assert.throws(()=>resolveStagingEmojiTarget('other',target.scope),/target_mismatch/);
+ }
+});
+test('V4 live metadata selects only its V4 service with one mutation and owned cleanup',async()=>{
+ const f=await fixture(),profile=STAGING_EMOJI_PUBLICATION_TARGETS[2],t=transport(f.version,{profile});let entrypoint;
+ const fetcher=async(url,init)=>{if(init?.method==='PUT'&&init.body instanceof FormData)entrypoint=JSON.parse(init.body.get('metadata')).bindings.find(x=>x.name==='PUBLICATION').entrypoint;return t.fetch(url,init);};
+ try {const journal=path.join(f.dir,'v4-operation.json');const result=await runStagingEmojiPublication({action:'stage',releaseDirectory:f.releaseDirectory,expectedActive:old,expectedGeneration:1,journal},{identity,token:'synthetic-token-only-123456789',fetch:fetcher,sleep:async()=>{}});
+ assert.equal(result.state,'readback_verified');assert.equal(entrypoint,'EmojiMasterPublicationServiceV4');assert.equal(t.mutations,1);assert.equal(t.removed,true);assert.equal(JSON.parse(await fs.readFile(journal,'utf8')).masterId,profile.masterId);
+ }finally{await fs.rm(f.dir,{recursive:true,force:true});}
 });
 test('V3 live metadata selects the V3 service entrypoint with one mutation and owned cleanup',async()=>{
  const f=await fixture(),profile=STAGING_EMOJI_PUBLICATION_TARGETS[1],t=transport(f.version,{profile});let entrypoint;

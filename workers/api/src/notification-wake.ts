@@ -141,6 +141,7 @@ export class NotificationWakeCoordinatorV2 extends NotificationWakeCoordinator {
 
 /** New five-store candidate; old alarm object IDs fail the selected-namespace guard. */
 export class NotificationWakeCoordinatorV3 extends NotificationWakeCoordinator {}
+export class NotificationWakeCoordinatorV4 extends NotificationWakeCoordinator {}
 
 type Authorize = (request: Request, headers: Headers) => Promise<Response | { userId: string; sessionId: string }>;
 export async function handleNotificationWakeRepairRequest(request: Request, env: Env, authorize: Authorize): Promise<Response | null> {
