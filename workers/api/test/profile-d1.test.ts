@@ -8,6 +8,7 @@ import oauthSignupSql from "../migrations/0009_auth_oauth_signup.sql?raw";
 import { checkedInSqlStatements } from "./schema-statements";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
+import { updateOwnProfile } from "../../../src/lib/profile-api";
 
 declare module "vitest" {
   export interface ProvidedContext { businessProfileMigrations: Array<{ name: string; sql: string }>; }
@@ -115,6 +116,28 @@ afterEach(async () => {
 });
 
 describe("Better Auth own-profile API", () => {
+  it("saves the blank-avatar form through the real frontend client without weakening server URL validation", async () => {
+    const cookie = await signIn(otherEmail);
+    const invalid = await request("/api/me/profile", {
+      method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ display_name: "Updated no-avatar profile", avatar_url: "" }),
+    });
+    expect(invalid.status).toBe(400);
+    const saved = await updateOwnProfile({ display_name: "Updated no-avatar profile", avatar_url: "" }, {
+      baseUrl: apiBase, authBaseUrl: apiBase,
+      fetchImpl: async (url, init) => {
+        const headers = new Headers(init?.headers);
+        headers.set("Cookie", cookie);
+        headers.set("Origin", appOrigin);
+        return handleRequest(new Request(String(url), { ...init, headers }), runtimeEnv);
+      },
+    });
+    expect(saved).toMatchObject({ user_id: otherId, display_name: "Updated no-avatar profile", avatar_url: null, plan_type: "free" });
+    expect(await businessDatabase!.prepare("SELECT display_name,avatar_url FROM user_settings WHERE user_id=?").bind(otherId).first())
+      .toEqual({ display_name: "Updated no-avatar profile", avatar_url: null });
+    expect(await businessDatabase!.prepare("SELECT display_name FROM user_settings WHERE user_id=?").bind(ownerId).first())
+      .toEqual({ display_name: "Old Owner Name" });
+  });
   it("projects an imported avatar through actual R2 and preserves its stored URL on an unchanged form save", async () => {
     const source = "https://synthetic-source.example.invalid";
     const key = `${ownerId}/1700000000000.jpg`;

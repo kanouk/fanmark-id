@@ -399,3 +399,5 @@ writerの終了確認は `recovery-writer-drain.ts` と `RecoveryWriterCoordinat
 V4候補は `workers/api/wrangler.app-staging-v4-candidate.jsonc` の独立3D1/3R2とV4 DO classを選ぶ。通常configと実配備はまだV3である。`staging-emoji-targets.mjs` はV2/V3/V4の3既知pairだけを許可し、V4のnamed entrypointは `EmojiMasterPublicationServiceV4`。`vitest.emoji-publication-v4.config.mjs` は旧V3 objectの拒否・記録保持・V4の停止fenceを実native D1/DOで確認する。候補の [限定証拠](migration/evidence/staging-resource-scope-v4-candidate-2026-10-13.json) を参照する。
 
 現在の通常Cloudflare stagingはV4の独立保存先と `NotificationWakeCoordinatorV4` / `RecoveryWriterCoordinatorV4` を使う。通常main/backup/monitorの3configは実binding・vars・Cronへ一致させた。V1/V2/V3のclassとmigration、旧データと終了未確認記録は保持する。V4 named publicationのreadonly statusも実bindingで確認済み。[限定運用証拠](migration/evidence/staging-resource-scope-v4-operational-2026-10-13.json)を参照する。
+
+`src/lib/profile-api.ts` は本人プロフィールのフォームで使う未設定avatarの空文字だけを `null` にして送る。Workerの所有者URL検証は維持する。`workers/api/test/profile-d1.test.ts` では実frontend client→Better Auth session→Worker→native D1の保存と、raw空URL拒否・別owner保持を確認する。

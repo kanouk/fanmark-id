@@ -182,7 +182,8 @@ export function updateOwnProfile(patch: OwnProfilePatch, options: Parameters<typ
   if (!isRecord(patch) || Object.keys(patch).length === 0 || Object.keys(patch).some((key) => !["display_name", "avatar_url", "preferred_language"].includes(key))) {
     throw new ProfileApiError("configuration");
   }
-  return requestProfile(patch, options).then((profile) => {
+  const normalizedPatch = patch.avatar_url === "" ? { ...patch, avatar_url: null } : patch;
+  return requestProfile(normalizedPatch, options).then((profile) => {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(OWN_PROFILE_UPDATED_EVENT, { detail: profile }));
     }

@@ -1,3 +1,11 @@
+## 2026-10-13: アバター未設定の実画面保存を修正（配備前）
+
+V4の専用合成ownerでログイン後、画像未設定の表示名保存がHTTP400となり、D1に未保存だった。
+フォームの未設定avatarは空文字で、clientがそのままPATCHしWorkerの所有者URL検証に拒否されていた。
+実frontend client→Better Auth session→native Worker/D1の回帰を追加し、修正前の400を再現した。
+client境界で空文字だけをnullに揃え、Workerのraw空URL拒否と別owner保持を維持する。
+修正後のnative12件、client7件、app/Worker型と対象ESLintが成功した。実配備・同じ画面の再確認は後続。
+
 # Own-profile Worker API
 
 The staging profile client uses Better Auth and business D1 for the signed-in
