@@ -1,9 +1,19 @@
+## 2026-10-13: 隔離targetの運用resource ceilingを現状に整合
+
+readonly実inventoryでD1=9/R2=9、main cc7710d2の100%配信を確認した。旧領域は保持する。
+runnerのFree固定10個は現在のsubscriptionを示さない。subscription APIは403、dashboardは
+更新後も読み込みエラーで、plan変更/課金操作は0。公式D1上限はFree10/Workers Paid50,000。
+検証の運用ceilingを全体12個・owned target3D1に限定し、primary cleanup後にだけ次targetを作る。
+Cloudflare側quotaは変更せず、provider作成拒否・ACK不明は成功/自動再送にしない。
+新しいheadの2-job CI成功後に実隔離rehearsalを行う。2f7b2e6のCI38304025403は実行中だが、
+このguard整合後のheadでCIを完了させる。実remote resource作成はまだ0。
+
 ## 2026-10-13: 非空40表を隔離remote runnerへ接続（実受け入れ前）
 
 `run-isolated-combined-recovery.mjs`は古いsourceRows=15を固定しており、最新fixtureの18行にも
 一致していなかった。同じ全40非空/46行fixtureと`verifyFullSyntheticReadback`へ接続し、
 primary/restoredの両方で実table件数45行・独立型照合・全40報告の非空を要求する。
-未検証head、CI未完了、既存resourceとの同名、所有不明のcleanupと10件容量上限のガードは維持する。
+未検証head、CI未完了、既存resourceとの同名、所有不明のcleanupのガードは維持する。
 実Cloudflareの2 target受け入れはまだ行っていない。fb8f547のCI38303822494はpendingを実確認した。
 次はrunner更新headのCI成功後に隔離targetを作成し、復旧/所有範囲cleanup/独立readbackを確認する。
 

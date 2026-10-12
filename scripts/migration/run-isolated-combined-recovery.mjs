@@ -18,6 +18,12 @@ import { verifyFullSyntheticReadback } from './full-table-synthetic-rows.mjs';
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 const apiDirectory = path.join(repo, 'workers/api');
 const accountId = 'bfc2890741f0b3fb236e2d755b6c9adc';
+// Operational scope, not a claim about the account's subscription. The live
+// account has nine retained D1 databases; each owned target adds exactly three
+// and is removed before the next target. Provider subscription quotas remain
+// enforced by Cloudflare. Never delete retained data to manufacture capacity.
+const maxRehearsalAccountD1Count = 12;
+const ownedTargetD1Count = 3;
 const [expectedHead, ciRun] = process.argv.slice(2);
 assert.match(expectedHead ?? '', /^[a-f0-9]{40}$/u);
 assert.match(ciRun ?? '', /^\d+$/u);
@@ -113,7 +119,8 @@ async function createTarget(phase) {
   journal.targets.push(target);
   await save();
   const before = await inventory();
-  assert.ok(before.d1.length + 3 <= 10, 'no free-plan D1 capacity for one owned recovery target');
+  assert.ok(before.d1.length + ownedTargetD1Count <= maxRehearsalAccountD1Count,
+    'isolated_recovery_account_resource_ceiling_exceeded');
   assert.ok(before.workers.every(worker => worker.id !== target.workerName));
   const bindings = {};
   for (const kind of ['business', 'auth', 'master']) {
@@ -281,7 +288,10 @@ try {
   journal.temporaryConfigCredentialVerifiedAt = new Date().toISOString();
   await save();
   journal.beforeInventory = await inventory();
-  assert.ok(journal.beforeInventory.d1.length + 3 <= 10);
+  assert.ok(journal.beforeInventory.d1.length + ownedTargetD1Count <= maxRehearsalAccountD1Count,
+    'isolated_recovery_account_resource_ceiling_exceeded');
+  journal.resourceCeiling = { maximumAccountD1Count: maxRehearsalAccountD1Count,
+    ownedD1PerTarget: ownedTargetD1Count, providerSubscriptionQuotaAssumed: false };
   const fixture = await prepareCurrentCatalogSyntheticSnapshot(fileURLToPath(new URL('./fixtures/business-import-structure.json', import.meta.url)),
     { snapshotDirectory: path.join(root, 'snapshot'), fullTableCoverage: true });
   journal.syntheticFixture = { tableCount: fixture.tableNames.length,

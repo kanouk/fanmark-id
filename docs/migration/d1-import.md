@@ -21,6 +21,12 @@ source実ユーザー行・remote D1/R2・main Worker・mail・domainへの変�
 primary/restoredの両方で固定SQLの型/件数照合を行う。以前の15行期待値は使わない。
 実行にはcleanなtested headと同じheadの成功済み2-job CIを必須とする。
 新しいrunnerの実Cloudflare受け入れはまだ未確認。
+2026-10-13のreadonly inventoryはD1=9/R2=9、main cc7710d2の100%配信を確認した。
+以前の固定10個は[Freeの公式上限](https://developers.cloudflare.com/d1/platform/limits/)であり、
+現在のsubscriptionを証明しない。subscription APIは403、dashboardは読み込みエラーで未確認。
+runnerは契約を推測せず、検証用の運用ceilingをアカウント全体12個・同時owned target3D1とする。
+Cloudflare自身のsubscription quotaは維持し、作成拒否時は成功と扱わない。
+primaryの所有資源をcleanupした後でだけrestoredを作り、最終inventoryを元の集合と照合する。
 
 # D1 importer and isolated recovery transport
 
