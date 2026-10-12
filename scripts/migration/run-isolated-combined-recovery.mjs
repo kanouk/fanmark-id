@@ -19,10 +19,10 @@ const repo = fileURLToPath(new URL('../../', import.meta.url));
 const apiDirectory = path.join(repo, 'workers/api');
 const accountId = 'bfc2890741f0b3fb236e2d755b6c9adc';
 // Operational scope, not a claim about the account's subscription. The live
-// account has nine retained D1 databases; each owned target adds exactly three
+// account has twelve retained D1 databases; each owned target adds exactly three
 // and is removed before the next target. Provider subscription quotas remain
 // enforced by Cloudflare. Never delete retained data to manufacture capacity.
-const maxRehearsalAccountD1Count = 12;
+const maxRehearsalAccountD1Count = 15;
 const ownedTargetD1Count = 3;
 const [expectedHead, ciRun] = process.argv.slice(2);
 assert.match(expectedHead ?? '', /^[a-f0-9]{40}$/u);

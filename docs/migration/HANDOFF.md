@@ -7,7 +7,10 @@ V3に終了未確認の旧HTTP記録2件が残るため、終了済みと推測�
 新V4 class/固定Master・scopeのnamed entrypointと専用native検査を追加する。
 旧class/記録は保持し、任意targetや旧新混合pairを拒否する。候補configはadmission=pending。
 [未配備候補の限定証拠](evidence/staging-resource-scope-v4-candidate-2026-10-13.json)。
-次はexact CI成功後の候補切替、writer0確認、運用鍵での保存・隔離復旧と別process照合。
+CI38311841028は専用V4テストを汎用configでも収集しMaster bindingなしで失敗した。
+V3と同じ専用configへの振分けに修正し、専用native9件と汎用63件を別々に検証する。
+現在の保持D1=12と一時target3に合わせ、隔離runnerの運用ceilingを15へ更新する。provider quotaは変更しない。
+次は修正headのexact CI成功後の候補切替、writer0確認、運用鍵での保存・隔離復旧と別process照合。
 自然daily/新AuthのApple初回登録・メール再login/実スマホ・最終統合/source意味論は未完了。
 実Supabaseユーザー/Auth/Storageと本番domain/DNSは最後の#38へ残す。
 
