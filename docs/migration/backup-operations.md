@@ -1,3 +1,19 @@
+## 2026-10-13: readonly HTTP候補を実検証しV3へ配備
+
+ceb32a3/[CI38309207810](https://github.com/kanouk/fanmark-id/actions/runs/38309207810)は2 job成功。
+専用namespaceで実WorkerのASSETS handler開始をmarkerで確認してからclient abortした。
+1秒/45秒のreaderはadmission時も2.5/35/52秒後もticket0。claimed fence/明示freezeは503でhandler未呼出、
+解除後のasset200を確認。Auth未構成のsession503は確認したが、remoteのticket side effect単体証明にはしない。
+専用namespace/Worker削除後、別processで元の6 namespace/4 Workerとmain cc7710d2を照合した。
+初回ready GETは失敗し、mutating setupを再送せず次のreadonly GET200で準備済み状態を照合した。
+
+通常main `87584a12-9e3c-44b7-9b7c-72bf4848ca27`を100%配信し、前後114 binding・3D1全schema/表件数/FK、
+8公開file・公開catalog・backup/monitor版とCronを照合した。D1 migration/Source ID/namespace変更は0。
+Chromeの匿名auth描画後も台帳は旧cc7710d2/http2件・oldest20:32:29.181Z・完全走査のままで、新版ticket0。
+readonly status Workerは削除した。[限定実検証/配備証拠](evidence/staging-read-admission-rollout-2026-10-13.json)。
+新しいreadonly処理の改善を受け入れたが、旧2件の終了・日次backup成功・profile保存・Apple/実端末/全体移行は未完了。
+既存ticket削除/TTL/別namespaceへの交換は行っていない。次は残る運用停止状態を、実データ/DNS工程とは分けて解消する。
+
 ## 2026-10-13: 切断と長い処理の隔離再現、readonly admission候補
 
 通常mainとは別の専用DO/Workerで、同じ`withRecoveryWriter`のtimer-only処理を試した。

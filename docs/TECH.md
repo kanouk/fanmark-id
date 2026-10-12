@@ -649,5 +649,5 @@ DO inspectionのscope/ownerを検証し、fence中の新規readerを拒否する
 client切断後にreadonly responseが未終了でもcaptureを永久に阻害しない。`index.ts`はASSETSありの
 non-API GET/HEAD（静的/OGP）と公開emoji/reference Master GET/HEADだけを選ぶ。
 `RECOVERY_WRITE_FREEZE`の全HTTP503、Auth callback/session GET、その他API/非read method、
-post-response wake/Cron/alarmと既存unknown writerの扱いは維持する。通常stagingへは未配備。
-根拠と限定再現は[backup operations](migration/backup-operations.md)を参照。
+post-response wake/Cron/alarmと既存unknown writerの扱いは維持する。ceb32a3/CI38309207810の実readonly切断・fence検証後、V3の87584a12へ配備済み。
+旧cc7710d2の終了未確認http2件と自然daily未確認は保持する。根拠と限定再現は[backup operations](migration/backup-operations.md)を参照。
