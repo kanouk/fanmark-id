@@ -6,7 +6,7 @@ const NAME = "recovery-writers-v1";
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 const HASH = /^[0-9a-f]{64}$/u;
 const REVISION = /^[A-Za-z0-9:_-]{1,128}$/u;
-const WRITER_KINDS = ["unknown", "http", "scheduled", "notification-wake", "notification-alarm"] as const;
+const WRITER_KINDS = ["unknown", "http", "scheduled", "notification-wake", "notification-alarm", "master-publication"] as const;
 export type RecoveryWriterKind = typeof WRITER_KINDS[number];
 function validKind(value: unknown): value is RecoveryWriterKind {
   return typeof value === "string" && WRITER_KINDS.includes(value as RecoveryWriterKind);

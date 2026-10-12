@@ -54,6 +54,14 @@ Cloudflareの告知メールは、苦情・恒久的なバウンスで確定し�
 - ファンマティア (絵文字数に応じたライセンス初期日数): S=1個/7日, A=2個または2〜5個連続/14日, B=3個/30日, C=4〜5個以上非連続/無期限 (`license_end=null`)。`fanmark_tiers.display_name` に S/A/B/C を保持。
 - AuthCode（移管コード）発行権限: アクティブライセンス保持者は発行可。発行には残期間48h以上が必要で、コード有効期限は発行から48hまたは `license_end` の短い方（Tierに関わらず一定）。承認後の再発行は不可。移管完了後は Transfer Lock 30日間（返却・再移管・再発行不可）。
 
+## 絵文字マスターの更新と公開
+
+管理画面のimportはMFAを確認して更新用のMaster D1へ保存し、既存emojiのUUIDを維持する。公開版は別に検証し、途中importは表示しない。
+通常stagingでは所有者のCloudflare認証を使う専用CLIから、サービスbinding専用の公開処理を呼び出す。既存の隔離bootstrap用ツールは通常Masterへ使わない。
+UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のrecords/module/identity hash、固定Master接続、現行の版と世代を照合してから新版を準備し、公開時にも旧UUID/emoji/codepointsを維持する。
+公開処理はバックアップのwriter追跡に入り、同時の別公開と停止中の書き込みを拒否する。CLIは応答不明の書き込みを自動再送せず、非公開journalと読み取り専用statusで調査する。
+以前に公開したready版へ戻す場合も、その時点の全公開IDを保持する必要がある。公開版に新IDを追加した後、そのIDを含まない旧版へのrollbackは拒否する。
+
 ## Cloudflareの公開参照マスター
 
 - 公開APIのTier・予約パターン・延長価格は、選択したready releaseの有効行だけを返す。無効な行はMaster D1と管理画面に保持する。

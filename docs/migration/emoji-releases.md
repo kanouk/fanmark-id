@@ -1,3 +1,45 @@
+## 2026-10-13: normal split-Master publication candidate
+
+The new `staging-emoji-publication.mjs` is separate from the isolated bootstrap CLIs.
+It pins the current account, `MASTER_DB` ID, split topology, recovery scope and runtime.
+The operator uses existing Cloudflare OAuth; the temporary gateway can forward only
+one selected mutation path plus read-only status. It is removed after the operation.
+The source Master is accessed through `EmojiMasterPublicationService`, a named
+[service binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/),
+with no default public HTTP route. The existing administrator import retains session/MFA protection.
+
+Node22.6.0 verifies the producer's exact files before credentials/network access.
+Worker verification checks canonical records and identity digests, module bytes,
+fixed generated JSON grammar and lookup/category semantics without evaluating code
+or regenerating locale-dependent ordering. Shared pure D1 cores retain stage/readback,
+ready immutability, continuity, activation CAS and transactional audit behavior.
+The normal path also pins the expected generation, verifies the full current draft,
+tracks `master-publication` through the entire operation, and rejects another publisher.
+It does not inspect or require empty Auth/Business databases.
+
+```sh
+node --experimental-strip-types scripts/migration/staging-emoji-publication.mjs \
+  --action stage --release-directory /private/releases/NEW_VERSION \
+  --expected-active OLD_VERSION --expected-generation GENERATION \
+  --journal /private/new-stage-operation.json
+```
+
+Use a new exclusive0600 journal for each promotion/rollback; never overwrite an
+unknown-acknowledgement journal or automatically replay the mutation. Inspection:
+
+```sh
+node --experimental-strip-types scripts/migration/staging-emoji-publication.mjs \
+  --action status --version TARGET_VERSION --activation-id OPERATION_UUID \
+  --journal /private/new-status-observation.json
+```
+
+Stage leaves the active version/history unchanged. Promotion/rollback use the same
+artifact and explicit expected-current version/generation. Rollback cannot remove
+identities introduced by the active release. Old bootstrap guards stay unchanged.
+Current evidence is local only: producer-payload4, CLI4, native publication5 and
+legacy stage/activation7. Normal remote import/export/publication/frontend rehearsal
+and deployment are not yet accepted; the Unicode18 candidate remains unpublished.
+
 # Versioned emoji catalog artifacts
 
 The local release builder prepares the immutable artifact boundary for #36.

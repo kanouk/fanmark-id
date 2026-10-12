@@ -2,6 +2,7 @@ import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from
 export { NotificationWakeCoordinator, NotificationWakeCoordinatorV2 } from "./notification-wake";
 export { RecoveryWriterCoordinator, RecoveryWriterCoordinatorV2 } from "./recovery-writer-drain";
 export { StagingBackupService, StagingBackupAlertService } from "./staging-backup-service";
+export { EmojiMasterPublicationService } from "./emoji-publication-service";
 import {
   createSupabaseRecentFanmarksRepository,
   mapRecentFanmarkRows,

@@ -87,6 +87,7 @@
     "EMOJI_CATALOG_BACKEND": "d1",
     "REFERENCE_MASTER_BACKEND": "d1",
     "EMOJI_MASTER_ADMIN_BACKEND": "d1",
+    "EMOJI_PUBLICATION_BACKEND": "staging-service",
     "AUTH_BACKEND": "better-auth",
     "AUTH_EMAIL_BACKEND": "resend",
     "RESEND_FROM_EMAIL": "fanmark.id staging <no-reply@fanmark.id>",
