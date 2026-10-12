@@ -1,3 +1,20 @@
+## 2026-10-13: 切断と長い処理の隔離再現、readonly admission候補
+
+通常mainとは別の専用DO/Workerで、同じ`withRecoveryWriter`のtimer-only処理を試した。
+実server admissionを読戻してからclientをabortし、1秒処理は2.5秒後active0、45秒処理は35/52秒後も
+active1だった。source D1/R2/service bindingは0。所有namespace/classだけをdelete migrationで削除し、
+一時Worker削除後、別processで元の6 namespace/4 Worker全identity保持とmain cc7710d2を確認した。
+[限定再現](evidence/writer-disconnect-isolated-2026-10-13.json)。これは通常mainの2件の原因/終了の証明ではない。
+[CloudflareのwaitUntil](https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil)はHTTP終了/切断後の保護を最大30秒とする。
+
+静的/OGPのGET・HEAD（ASSETS bindingがあるnon-API経路）と公開MasterのGET・HEADは、
+readonly inspectionでowner fenceを確認してからhandlerへ渡す候補へ変更した。readerはticketを作らず、
+claim前に許可されたreadonly応答は継続できるが、claim後の新しいreaderは503で止まる。
+RECOVERY_WRITE_FREEZEも既存handlerで503を維持。Auth GET（callback/session更新を含む）・その他API・
+非read method・post-response wake・Cron/alarm・既存終了未確認ticketは従来どおり追跡する。
+既存ticketの削除/TTLは0。native15・catalog7・reference10・backup/monitor23、型/lintが成功した。
+候補はまだ通常mainへ未配備。次は候補CI/隔離remote readonly切断検証と通常scopeの残る2件の扱いを詰める。
+
 ## 2026-10-13: 実隔離2 targetで非空40表の復旧・cleanupを確認
 
 1a5a321/[CI38304455103](https://github.com/kanouk/fanmark-id/actions/runs/38304455103)は2 job成功。

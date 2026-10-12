@@ -119,7 +119,7 @@ import {
   shouldPauseScheduledJobsForCutover,
 } from "./cutover-write-freeze";
 import { shouldFreezeRecoveryWrites } from "./recovery-write-freeze";
-import { RecoveryWriterDrainError, recoveryWriterTrackingSelected, settleRecoveryWriterTasks, withRecoveryWriter } from "./recovery-writer-drain";
+import { RecoveryWriterDrainError, recoveryWriterTrackingSelected, settleRecoveryWriterTasks, withRecoveryRead, withRecoveryWriter } from "./recovery-writer-drain";
 import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
 import { handleLifecycleRunRequest, isLifecycleRunPath } from "./lifecycle-run-d1-api";
 import { handleSystemSettingsRequest, isSystemSettingsPath } from "./system-settings-d1-api";
@@ -1741,6 +1741,17 @@ export async function handleRequest(
 const worker = {
   async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     try {
+      const url = new URL(request.url);
+      // Static/OGP responses and public Master reads do not mutate captured
+      // D1/R2 stores. In particular, a disconnected asset download must not
+      // permanently block backups. Auth (including GET callbacks/session
+      // refresh), owner APIs, analytics and all non-read methods stay tracked.
+      const readMethod = request.method === "GET" || request.method === "HEAD";
+      const assetRead = Boolean(env.ASSETS) && !url.pathname.startsWith("/api/") && url.pathname !== "/api";
+      const masterRead = url.pathname === "/api/emoji/catalog" || isReferenceMasterPath(url);
+      if (readMethod && (assetRead || masterRead)) {
+        return await withRecoveryRead(env, () => handleRequest(request, env));
+      }
       return await withRecoveryWriter(env, async () => {
         try { return await handleRequest(request, env); }
         finally {

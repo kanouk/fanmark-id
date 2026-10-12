@@ -98,6 +98,17 @@ export async function inspectRecoveryWriters(env: Env): Promise<RecoveryWriterIn
   }
   return status;
 }
+
+/** Only audited read-only handlers may use this admission; they never create a writer ticket. */
+export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>): Promise<T> {
+  if (!recoveryWriterTrackingSelected(env)) return operation();
+  // A read admitted before claim may finish afterwards: it cannot change a
+  // captured store. New reads still refuse the same fence as mutating requests.
+  // Losing this read-only inspection's ACK cannot strand a persistent ticket.
+  const status = await inspectRecoveryWriters(env);
+  if (status.owner !== null) throw new RecoveryWriterDrainError();
+  return operation();
+}
 export async function claimRecoveryWriterFence(env: Env, owner: string): Promise<RecoveryWriterStatus> {
   if (!UUID.test(owner)) throw new RecoveryWriterDrainError();
   return command(env, "claim", owner);

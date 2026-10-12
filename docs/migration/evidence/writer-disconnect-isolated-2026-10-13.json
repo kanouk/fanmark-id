@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "scope": "owned isolated DO and timer-only operation; no source D1/R2/service bindings",
+  "sourceWorkerBaseHead": "1ae4bf4dff316bf257569b629aba5003633c2499",
+  "probeBundledBeforeReadAdmissionChange": true,
+  "startedAt": "2026-10-12T21:02:32.344Z",
+  "finishedAt": "2026-10-12T21:05:48.505Z",
+  "cases": [
+    {
+      "mode": "short",
+      "operationDelayMs": 1000,
+      "serverAdmissionObserved": true,
+      "clientAbortObserved": true,
+      "postAbort": [
+        {
+          "afterMs": 2500,
+          "activeTickets": 0
+        }
+      ]
+    },
+    {
+      "mode": "long",
+      "operationDelayMs": 45000,
+      "serverAdmissionObserved": true,
+      "clientAbortObserved": true,
+      "postAbort": [
+        {
+          "afterMs": 35000,
+          "activeTickets": 1
+        },
+        {
+          "afterMs": 52000,
+          "activeTickets": 1
+        }
+      ]
+    }
+  ],
+  "ownedNamespaceDeleted": true,
+  "ownedWorkerDeleted": true,
+  "independentCleanup": {
+    "observedAt": "2026-10-12T21:10:34.669Z",
+    "state": "verified_independent_owned_cleanup",
+    "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+    "originalNamespaceCount": 6,
+    "originalWorkerCount": 4,
+    "ownedNamespaceAbsent": true,
+    "ownedWorkerAbsent": true,
+    "sourceNamespacesRetained": true
+  },
+  "boundaries": {
+    "productionOrStagingDataStoresBound": false,
+    "mainUnsettledTicketCauseCorrelated": false,
+    "mainTicketsDeletedOrExpired": false,
+    "mainWorkerDeployed": false,
+    "mainBackupAccepted": false,
+    "realUserDataOrDomainMigrated": false
+  },
+  "candidateLocalChecks": {
+    "nativeWriterAndReadAdmissionTestsPassed": 15,
+    "emojiCatalogTestsPassed": 7,
+    "referenceMasterTestsPassed": 10,
+    "backupAndMonitorTestsPassed": 23,
+    "typecheckPassed": true,
+    "eslintPassed": true,
+    "candidateReadAdmissionRemoteAccepted": false
+  },
+  "testedProbeBundleSHA256": "29772e5ef4aa986ea0b2f7aaa8b5163eecaa795e6620109e34f152e11cb1ca2f"
+}

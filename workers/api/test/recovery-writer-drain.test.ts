@@ -3,7 +3,7 @@ import { runInDurableObject, runDurableObjectAlarm } from "cloudflare:test";
 import { beforeAll, beforeEach, expect, it } from "vitest";
 import worker from "../src/index";
 import { assertRecoveryWriterFence, claimRecoveryWriterFence, releaseRecoveryWriterFence,
-  inspectRecoveryWriters, settleRecoveryWriterTasks, withRecoveryWriter } from "../src/recovery-writer-drain";
+  inspectRecoveryWriters, settleRecoveryWriterTasks, withRecoveryRead, withRecoveryWriter } from "../src/recovery-writer-drain";
 import type { Env } from "../src/repository";
 
 const runtime = env as unknown as Env;
@@ -59,13 +59,19 @@ it("inspects the native census without initializing, fencing or changing writer 
   expect((await db.prepare("SELECT id FROM drain_fixture").all()).results).toEqual([{ id: 5 }]);
 });
 
-it("keeps actual HTTP work and its awaited post-response wake in the census until they finish", async () => {
+it("admits delayed static reads without a writer ticket and still tracks HTTP post-response writes", async () => {
   const httpEntered = signal(), httpFinish = signal();
   const http = worker.fetch(new Request("https://app.example.test/"), { ...runtime,
     ASSETS: { async fetch() { httpEntered.resolve(); await httpFinish.promise; return new Response("synthetic"); } } as unknown as Fetcher,
   });
   await httpEntered.promise;
-  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 0, drained: true });
+  let lateAssetCalls = 0;
+  const refused = await worker.fetch(new Request("https://app.example.test/assets/late.js"), { ...runtime,
+    ASSETS: { async fetch() { lateAssetCalls++; return new Response("must not read"); } } as unknown as Fetcher,
+  });
+  expect(refused.status).toBe(503); expect(lateAssetCalls).toBe(0);
   httpFinish.resolve(); expect((await http).status).toBe(200);
   await assertRecoveryWriterFence(runtime, owner); await releaseRecoveryWriterFence(runtime, owner);
 
@@ -90,6 +96,45 @@ it("keeps actual HTTP work and its awaited post-response wake in the census unti
   await assertRecoveryWriterFence(runtime, owner);
   expect((await db.prepare("SELECT id FROM drain_fixture").first())?.id).toBe(4);
   await releaseRecoveryWriterFence(runtime, owner);
+});
+
+it("read admission holds the native scope/fence checks without initializing or removing tickets", async () => {
+  const stored = () => runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  let readCalls = 0;
+  expect(await withRecoveryRead(runtime, async () => { readCalls++; return "read"; })).toBe("read");
+  expect(await stored()).toEqual([]);
+  await expect(withRecoveryRead({ ...runtime, RECOVERY_DRAIN_SCOPE_DIGEST: "b".repeat(64) }, async () => { readCalls++; }))
+    .rejects.toThrow("recovery_writer_unavailable");
+  expect(readCalls).toBe(1);
+  const entered = signal(), finish = signal();
+  const work = withRecoveryWriter(runtime, async () => { entered.resolve(); await finish.promise; });
+  await entered.promise;
+  const beforeRead = await stored();
+  await withRecoveryRead(runtime, async () => { readCalls++; });
+  expect(await stored()).toEqual(beforeRead);
+  await claimRecoveryWriterFence(runtime, owner);
+  const fenced = await stored();
+  await expect(withRecoveryRead(runtime, async () => { readCalls++; })).rejects.toThrow("recovery_writer_unavailable");
+  expect(readCalls).toBe(2); expect(await stored()).toEqual(fenced);
+  finish.resolve(); await work;
+  await assertRecoveryWriterFence(runtime, owner);
+  await releaseRecoveryWriterFence(runtime, owner);
+});
+
+it("public Master reads leave no tickets and freeze/configuration failures still refuse before reading", async () => {
+  for (const path of ["/api/emoji/catalog", "/api/reference-masters/tiers"]) {
+    const response = await worker.fetch(new Request(`https://app.example.test${path}`), runtime);
+    expect(response.status).not.toBe(200); // This fixture has no configured Master, so no fallback is permitted.
+    expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
+  }
+  let assetCalls = 0;
+  for (const override of [{ RECOVERY_WRITE_FREEZE: "true" }, { RECOVERY_DRAIN_SCOPE_DIGEST: "b".repeat(64) }]) {
+    const response = await worker.fetch(new Request("https://app.example.test/auth"), { ...runtime, ...override,
+      ASSETS: { async fetch() { assetCalls++; return new Response("must not read"); } } as unknown as Fetcher,
+    });
+    expect(response.status).toBe(503);
+  }
+  expect(assetCalls).toBe(0);
 });
 
 it("fences HTTP, Cron and a real notification alarm while waiting for an existing native D1 writer", async () => {

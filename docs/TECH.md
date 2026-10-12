@@ -641,3 +641,13 @@ JSON等の未対応添付をVault全体で許可する設定変更は行わな�
 2026-10-13以降の通常staging read-only運用観測（`staging-operations-status.mjs` / `staging-monitor-api.mjs`）はV3の固定3D1を照合する。専用monitor tokenからWrangler/generic tokenへのfallbackはなく、SQLはledgerと集計SELECTだけ。定期ジョブのCIは既知の非公開archive名とmain/monitorの一致を検査する。
 
 2026-10-13の現行40表/406列合成移送は全表を非空にした46行を使い、実Business27/Auth4 migrationで停止/再開・ACK不明・独立target復旧を検査する。Master/2画像R2付きの一式復旧にも同じ非空40表を使う。target45行と各表件数、大きな整数・桁数の多い抽選重み・金額cents・JSON/配列を独立した固定SQL期待値で照合する。inactive credential1件はdeferredを保持する。local合成検証であり、remote全40表の非空復旧・全データ形状・source全体の意味レビュー/4 converter groupの承認には拡張しない。
+
+### バックアップ停止とreadonly HTTP候補（2026-10-13）
+
+`withRecoveryRead`はcapture対象D1/R2を書き換えないと確認したhandlerだけのadmissionで、
+DO inspectionのscope/ownerを検証し、fence中の新規readerを拒否する。writer ticketを作らず、
+client切断後にreadonly responseが未終了でもcaptureを永久に阻害しない。`index.ts`はASSETSありの
+non-API GET/HEAD（静的/OGP）と公開emoji/reference Master GET/HEADだけを選ぶ。
+`RECOVERY_WRITE_FREEZE`の全HTTP503、Auth callback/session GET、その他API/非read method、
+post-response wake/Cron/alarmと既存unknown writerの扱いは維持する。通常stagingへは未配備。
+根拠と限定再現は[backup operations](migration/backup-operations.md)を参照。
