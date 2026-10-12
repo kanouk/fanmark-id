@@ -1,0 +1,64 @@
+{
+  "state": "same_v4_runtime_english_core_journey_accepted",
+  "observedAt": "2026-10-12T22:51:47.339Z",
+  "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "runtimeSource": "e511762850631275664597afec8ca4155419358f",
+  "runtimeSourceCi": 38315685393,
+  "device": "Chrome desktop",
+  "ui": {
+    "loginAccepted": true,
+    "locale": "en",
+    "preferredLocaleMatched": true,
+    "preAcquisitionFavoriteAccepted": true,
+    "acquisitionAccepted": true,
+    "acquiredTier": "B",
+    "finiteLicenseDays": 30,
+    "previewDraftReturnAccepted": true,
+    "localizedPreviewAccepted": true,
+    "settingsSaveAccepted": true,
+    "favoriteImmediateStateAccepted": true,
+    "localizedFavoriteDate": "October 13th, 2026",
+    "publicMessageboardFromFavoriteAccepted": true,
+    "pageReloadsDuringJourney": 0,
+    "returnAccepted": true,
+    "returnGraceObserved": true,
+    "activeOwnedCountAfterReturn": 0,
+    "logoutAccepted": true,
+    "logoutLocation": "/"
+  },
+  "cleanup": {
+    "state": "independent_owned_cleanup_verified",
+    "observedAt": "2026-10-12T22:51:47.339Z",
+    "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+    "ownedAuthAndBusinessRowsAbsent": true,
+    "ownedFanmarkAndRelatedRowsAbsent": true,
+    "operatorAbsent": true,
+    "humanAppleAndCredentialAccountsHeld": true,
+    "humanPasswordSetupAndSessionHeld": true,
+    "credentialValuesRead": false,
+    "foreignKeyViolations": 0,
+    "notificationWakeDrained": true
+  },
+  "baselineHeld": {
+    "schemas": true,
+    "commonMaster": true,
+    "canonicalEmojiMaster": true,
+    "mfaGeneration": true
+  },
+  "writerFinal": {
+    "active": 0,
+    "ownerAbsent": true,
+    "scanComplete": true
+  },
+  "screenshots": {
+    "favorites-immediate.png": "d303ee86531a19f42e41574f264b50306a208b47222ce87e6a6b0c58702f28f9",
+    "public-message.png": "0006b2b761acc5a67d559bb87da5ee5381b4ec6dee6d98370244af1d344f0dbc",
+    "returned.png": "2de30e3b02fa5c9d211c1d924381b619464fa6e168c1fd8944c41780d711c610"
+  },
+  "emailsSent": 0,
+  "stripeCalls": 0,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "physicalPhonePwaAccepted": false,
+  "wholeMigrationAccepted": false
+}

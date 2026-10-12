@@ -1,3 +1,28 @@
+## 現在の確認結果（2026-10-13 08:35 JST）
+
+通常stagingはV4、main `cc82c298-ff27-4322-8c42-175e7be17f16` / 配備source
+`e511762850631275664597afec8ca4155419358f`。ソースの[CI38315685393](https://github.com/kanouk/fanmark-id/actions/runs/38315685393)と
+直前の文書678d96bの[CI38318629318](https://github.com/kanouk/fanmark-id/actions/runs/38318629318)は両job成功。
+本節以降の古い版・待ち条件は各時点の履歴であり、現在の対象は本節とOPERATIONS冒頭で確認する。
+
+- JA/EN/KO/IDで通常login→取得前favorite→Tier B取得→伝言板preview/下書き保持/保存→favorite即時owner反映→公開本文→返却→logoutを同じ現行V4で確認した。手動reloadは各0回。専用4 user/fanmark/operatorを削除し、別readonly processで削除・本人Apple/credential account/session保持・FK0・通知wake排出を照合した。[4言語の限定証拠](evidence/staging-v4-four-locale-core-integration-2026-10-13.json)。KOは初回bootstrap500（所有行0を照合後に進行）と設定read503（戻って開き直し、下書き保持）を記録し、原因未確定・失敗なしとは扱わない。
+- 同じ現行V4でTier C無期限取得→Stripe sandbox Checkout/Creator→Portalのテスト支払い/Business→警告確認/Free即時解約→Tier C保有継続→返却/grace/保有0→通知受信/既読→logoutを確認した。署名receipt7件・delivery各1・dispatch7件完了、先着Invoiceは自然retryで反映。手動provider replay/reload/実課金0。専用actor/fanmark/billing receipt/operatorを削除し、本人Auth/session・schema/Master・FK0・writer active0を独立照合した。Stripe側のテスト履歴は保持する。[課金とcleanup](evidence/staging-v4-paid-journey-2026-10-13.json)。
+- 本人の「スマホとホーム画面、確認できました。」を、依頼したlogin/dashboard/設定/ホーム画面起動の確認報告として記録した。端末・OS・ブラウザは未指定。全mobile OAuth/課金/旧インストール版更新の証明には拡張しない。[本人の確認](evidence/staging-v4-smartphone-home-screen-human-2026-10-13.json)。
+- Apple新Auth初回登録/本人password設定/logout/通常loginは既存の限定証拠で受け入れ済み。Apple DeveloperのEmail Sourcesが空だったため、既存送信元 `no-reply@fanmark.id` の1アドレスだけを登録し、登録完了とSPFの緑checkを実画面で確認した。OAuth client/secret・DNS変更0。実relay宛先/本人受信は別途必要。[送信元設定](evidence/apple-relay-sender-registration-2026-10-13.json)。
+- 07:35:30 JSTの自然monitor、V4運用鍵による保存/隔離復旧・全schema/hash・30日保持・独立cleanupを受け入れ済み。09:05 JSTの自然backupはまだ未観測。実scheduler版73f7249f/Cron `5 0 * * *` を照合し、操作を伴わないtail観測を準備した。初回observerの誤ったWorker名によるreadonly404は修正したが、Cron/配備/slotを変更・手動実行していない。
+
+| 六工程 | 現在の受け入れ | 具体的に残る条件 |
+| --- | --- | --- |
+| 1. source/caller照合 | 40表/58関数/37trigger/77policy/211frontend callsitesの対応と差の記録。今回のlinkage/ACL/callsite checks24件成功 | 最終手動レビュー。54 classifier pendingを未実装件数と解釈しない。任意外部caller、実配列/identity/Auth-role対応は#38 preflightで確認 |
+| 2. アプリ/Auth/業務 | 既存の取得/移管/抽選/クーポン/MFA/退会/管理/失敗処理と、現行V4のprofile保存/4言語/課金/通知/Apple再login | 最終差分レビュー。新しい未実装経路の有無を既存対応表と照合 |
+| 3. 実provider | 4 OAuth、Resend確認/reset、Stripe sandboxの既存証拠と現行V4課金 | Apple relayの実宛先と受信確認 |
+| 4. infra/運用 | V4 D1/R2/全Master、運用鍵/off-host、実保存/隔離復旧、retention、自然monitor | 09:05 JSTの自然日次保存と停止解除/保存receiptを照合 |
+| 5. 合成移送器 | 最新全40表非空46行→45行、2 remote target、型/件数/FK/R2/中断再開/cleanupとV4全Master一式復旧 | generic converterのcatalog3 scopeとseq_keyのgateは自動DDLの非対応。manual runtime/importとの差を最終整理し、実userdata条件は#38へ残す |
+| 6. 最終統合/引継ぎ | 同じ現行V4の4言語と課金、本人スマホ/ホーム画面、既存旧client更新/障害復旧の証拠 | 最新文書CI、PR最終レビューと残工程の引継ぎ。全機能の同じfault再試験を追加しない |
+
+実Supabase user/Auth/Storage移送と本番domain/DNSは最後の#38。PR #41はdraft、merge/cutoverなし。
+全体完了は未受け入れ。終了条件は既存六工程から増やさず、完了済みの証拠を再試験で置き換えない。
+
 ## 2026-10-13 07:46 JST: 現行V4で日本語の主要フローを一巡
 
 通常main cc82c298/source e511762の同じChromeテストaccountで、通常login→取得前favorite→

@@ -1,3 +1,26 @@
+## 現行V4対象（2026-10-13 JST）
+
+操作対象はmain `cc82c298-ff27-4322-8c42-175e7be17f16` / source e511762、incarnation
+`0690d7c1-d8ce-4f02-b90c-38740ca7da13`。[最新の確認結果](COMPLETION.md)を先に確認する。
+旧V1/V2/V3のstore・DO・終了不明記録は保持領域で、以下の現行対象へ代入しない。
+
+| Binding | 現行resource名 | ID |
+| --- | --- | --- |
+| FANMARK_DB | fanmark-recovery-staging-v4-0690d7c1-business | 7c0ff711-19bd-4964-8ae8-cf9800339223 |
+| AUTH_DB | fanmark-recovery-staging-v4-0690d7c1-auth | 7c56bf17-f15e-4828-ae20-37532c45c436 |
+| MASTER_DB | fanmark-recovery-staging-v4-0690d7c1-master | 31cad6f0-5ce3-44a1-bdb3-017364555b29 |
+| AVATARS_BUCKET | fanmark-avatars-staging-v4-0690d7c1 | — |
+| COVER_IMAGES_BUCKET | fanmark-covers-staging-v4-0690d7c1 | — |
+| STAGING_BACKUP_BUCKET | fanmark-backups-staging-v4-0690d7c1 | — |
+
+通知DOはNotificationWakeCoordinatorV4、writerはRecoveryWriterCoordinatorV4。通常3 configと
+実bindingの一致を操作前に確認する。現在のAuthには本人のApple/credential accountがある。
+旧空Authのcanaryで削除しない。RECOVERY_WRITE_FREEZEは未設定、通常HTTPは公開200。
+backup Worker `fanmark-backup-staging` は版73f7249f、Cron `5 0 * * *`（09:05 JST）。
+monitor Worker `fanmark-backup-monitor-staging` は版c03f6a13、Cron `35 * * * *`。
+自然monitorは確認済み、自然dailyは未観測。詳細は[運用保存](backup-operations.md)と
+[V4証拠](evidence/staging-resource-scope-v4-operational-2026-10-13.json)。
+
 ## 現在の通常staging（2026-10-13 JST）
 
 通常mainはV4の `cc82c298-ff27-4322-8c42-175e7be17f16`。実保存先・source scope・DO・日次保存/監視は
@@ -40,7 +63,7 @@ Apple新identity/relay、実スマホ/PWA、同じ最終candidateの統合は残
 Business/Auth/Master D1とavatar/cover/backup R2。実ユーザー移送、DNS切替、
 Supabase writer停止は最後の別工程とする。本書の作成から運用受け入れを推定しない。
 
-## 現行対象と保持領域（2026-10-09 JST）
+## 過去のV2対象と保持領域（2026-10-09 JST）
 
 現在のapp stagingはincarnation `e434eb11-9351-498b-8855-8bec0fed7a7b` の別領域を使う。
 旧 `fanmark-business-staging` / `fanmark-auth-staging` と旧Master/画像/DOは保持領域であり、

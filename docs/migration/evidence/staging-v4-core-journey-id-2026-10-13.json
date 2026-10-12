@@ -1,0 +1,67 @@
+{
+  "state": "same_v4_runtime_indonesian_core_journey_accepted",
+  "observedAt": "2026-10-12T23:08:57.128Z",
+  "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "runtimeSource": "e511762850631275664597afec8ca4155419358f",
+  "runtimeSourceCi": 38315685393,
+  "device": "Chrome desktop",
+  "ui": {
+    "loginAccepted": true,
+    "locale": "id",
+    "preferredLocaleMatched": true,
+    "preAcquisitionFavoriteAccepted": true,
+    "acquisitionAccepted": true,
+    "acquiredTier": "B",
+    "finiteLicenseDays": 30,
+    "previewDraftReturnAccepted": true,
+    "localizedPreviewAccepted": true,
+    "settingsSaveAccepted": true,
+    "favoriteImmediateStateAccepted": true,
+    "localizedFavoriteDate": "13 Oktober 2026",
+    "publicMessageboardFromFavoriteAccepted": true,
+    "pageReloadsDuringJourney": 0,
+    "publicAccessClickTimedOutBeforeDispatch": true,
+    "unchangedFavoritesPageReadBackBeforeRetry": true,
+    "returnAccepted": true,
+    "returnGraceObserved": true,
+    "activeOwnedCountAfterReturn": 0,
+    "logoutAccepted": true,
+    "logoutLocation": "/",
+    "browserLanguageRestoredToJapanese": true
+  },
+  "cleanup": {
+    "state": "independent_owned_cleanup_verified",
+    "observedAt": "2026-10-12T23:08:57.128Z",
+    "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+    "ownedAuthAndBusinessRowsAbsent": true,
+    "ownedFanmarkAndRelatedRowsAbsent": true,
+    "operatorAbsent": true,
+    "humanAppleAndCredentialAccountsHeld": true,
+    "humanPasswordSetupAndSessionHeld": true,
+    "credentialValuesRead": false,
+    "foreignKeyViolations": 0,
+    "notificationWakeDrained": true
+  },
+  "baselineHeld": {
+    "schemas": true,
+    "commonMaster": true,
+    "canonicalEmojiMaster": true,
+    "mfaGeneration": true
+  },
+  "writerFinal": {
+    "active": 0,
+    "ownerAbsent": true,
+    "scanComplete": true
+  },
+  "screenshots": {
+    "favorites-immediate.png": "ddcfa0577e9ad1ad689f1967627757088a9424bbfe39331a68e53322b419aab7",
+    "public-message.png": "8ed88980c90676c8ec52df5b96b0266bf6d3aeeb2b3268d0d8b9734b69a9b10d",
+    "returned.png": "f01833866bb688a474ffa2558e95f47415464475b6341b5bcb1f2a0f5fc5e32f"
+  },
+  "emailsSent": 0,
+  "stripeCalls": 0,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "physicalPhonePwaAccepted": false,
+  "wholeMigrationAccepted": false
+}

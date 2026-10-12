@@ -1,3 +1,10 @@
+## 最新の再開位置（2026-10-13 08:35 JST）
+
+[現在の確認結果と六工程の残件](COMPLETION.md)を参照。4言語/現行課金/本人スマホは確認済み。
+専用fixture cleanup・独立照合済み。次は自然日次backup、Apple relay受信、source/PR最終レビュー。
+private自然backup observerは`v4-natural-daily-2026-10-13/observe-natural-backup.mjs`、
+状態は`natural-backup-observation.json`。既存slotを再送せず、observer失敗と実Cron失敗を区別する。
+
 ## 2026-10-13 07:46 JST: 現行V4で日本語の主要フローを一巡
 
 通常main cc82c298/source e511762の同じChromeテストaccountで、通常login→取得前favorite→
