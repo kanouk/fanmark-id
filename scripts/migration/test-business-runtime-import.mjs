@@ -14,7 +14,8 @@ test("current Business/Auth schemas import, resume and reconcile a synthetic sna
   assert.equal(result.businessMigrationCount, 27);
   assert.equal(result.authMigrationCount, 4);
   assert.equal(result.tableCount, 40);
-  assert.equal(result.sourceRowCount, 13);
+  assert.equal(result.sourceRowCount, 16);
+  assert.equal(result.importOnlySettingsReadback, true);
   assert.equal(result.completedCheckpointCount, 40);
   assert.equal(result.runtimeSchemaGuardRejected, true);
   assert.equal(result.runtimeFingerprintTamperRejected, true);

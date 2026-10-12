@@ -9,7 +9,8 @@ test("one synthetic snapshot bundle restores Business/Auth/Master and linked ass
     fileURLToPath(new URL("./fixtures/business-import-structure.json", import.meta.url)),
     { canonicalBusinessSchema: true, auxiliaryRecovery: createSyntheticAuxiliaryRecovery() },
   );
-  assert.equal(result.sourceRowCount, 15);
+  assert.equal(result.sourceRowCount, 18);
+  assert.equal(result.importOnlySettingsReadback, true);
   assert.equal(result.completedCheckpointCount, 40);
   assert.equal(result.freshTargetRestoreVerified, true);
   assert.equal(result.auxiliaryRecovery.masterMigrationCount, 8);

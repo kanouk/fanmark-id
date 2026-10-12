@@ -639,3 +639,5 @@ JSON等の未対応添付をVault全体で許可する設定変更は行わな�
 この記録に伴うruntime・schema・selector変更は0。
 
 2026-10-13以降の通常staging read-only運用観測（`staging-operations-status.mjs` / `staging-monitor-api.mjs`）はV3の固定3D1を照合する。専用monitor tokenからWrangler/generic tokenへのfallbackはなく、SQLはledgerと集計SELECTだけ。定期ジョブのCIは既知の非公開archive名とmain/monitorの一致を検査する。
+
+2026-10-13の現行40表合成移送は、基本設定・URLリダイレクト・多言語伝言板のリテラルとUTC六桁小数を含む。通常16行/一式18行で、停止/再開・ACK不明・独立target復旧を検査する。40表の非空全値カバレッジはまだ成立していない。

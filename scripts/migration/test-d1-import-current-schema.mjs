@@ -251,6 +251,25 @@ function buildRows(catalog) {
     },
     arrayMetadata: {},
   }];
+  const settingsTime = "2026-09-26T12:00:00.123456Z";
+  for (const [table, values] of [
+    ["fanmark_basic_configs", {
+      id: "90000000-0000-4000-8000-000000000021", license_id: syntheticLicenseId,
+      fanmark_name: "移送テスト 🧴", access_type: "text", created_at: settingsTime, updated_at: settingsTime,
+    }],
+    ["fanmark_redirect_configs", {
+      id: "90000000-0000-4000-8000-000000000022", license_id: syntheticLicenseId,
+      target_url: "https://synthetic.example.invalid/after?literal=%24%26#retained",
+      created_at: settingsTime, updated_at: settingsTime,
+    }],
+    ["fanmark_messageboard_configs", {
+      id: "90000000-0000-4000-8000-000000000023", license_id: syntheticLicenseId,
+      content: "合成の伝言 🧴\n$& \"quoted\" — 임시 / sementara", created_at: settingsTime, updated_at: settingsTime,
+    }],
+  ]) {
+    rows[table] = [{ schemaVersion: 1, table,
+      columns: requireColumns(catalog, table, Object.keys(values)), values, arrayMetadata: {} }];
+  }
   return { tableNames, rows };
 }
 
@@ -610,6 +629,12 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
     assert.equal(resumed.fullMigrationReconciled, false);
     assert.equal(resumed.deployable, false);
     assert.equal(resumed.objectCount, 40);
+    for (const table of ["fanmark_basic_configs", "fanmark_redirect_configs", "fanmark_messageboard_configs"]) {
+      const source = rows[table][0].values;
+      const actual = await database.prepare(`SELECT ${Object.keys(source).map(column => `"${column}"`).join(", ")}
+        FROM "${table}" WHERE id = ?`).bind(source.id).first();
+      assert.deepEqual(actual, source, `${table}_literal_settings_readback`);
+    }
 
     const checkpoints = await database.prepare(
       'SELECT COUNT(*) AS "count", SUM(CASE WHEN "status" = \'complete\' THEN 1 ELSE 0 END) AS "complete" FROM "__fanmark_d1_import_checkpoints"',
@@ -646,7 +671,9 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
     const generation = await database.prepare(
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticLicenseId).first();
-    assert.deepEqual(generation, { password_generation: 1, access_generation: auxiliaryRecovery ? 2 : 1 });
+    // Each of the three imported settings rows invalidates access once; the
+    // auxiliary profile adds one more. Resume must not replay those inserts.
+    assert.deepEqual(generation, { password_generation: 1, access_generation: auxiliaryRecovery ? 5 : 4 });
     const disabledGeneration = await database.prepare(
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticDisabledLicenseId).first();
@@ -778,6 +805,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
         businessMigrationCount: (await readBusinessRuntimeImportSchema()).migrationDigests.length } : {}),
       tableCount: tableNames.length,
       sourceRowCount: Object.values(rows).reduce((sum, tableRows) => sum + tableRows.length, 0),
+      importOnlySettingsReadback: true,
       ...(canonicalBusinessSchema ? { authMigrationCount: 4, runtimeSchemaGuardRejected: true,
         runtimeFingerprintTamperRejected: true, freshTargetRestoreVerified,
         freshTargetRestoreDurationMs,

@@ -1,3 +1,13 @@
+## 2026-10-13: 合成移送の設定行を追加
+
+現行40表snapshotの合成fixtureへbasic/redirect/messageboard設定を各1行追加した。
+Unicode名、多言語本文/改行/引用符/文字列`$&`、URL query/fragmentとUTC六桁小数をリテラルで照合する。
+通常現行Business/Authはsource16行、一式Master/R2付き復旧は18行となり、40checkpoint・停止後再開・
+credential ACK不明/coverage競合拒否・独立新target復旧/FK0の2 testが成功した。
+設定insert3回の正当なaccess generationを期待値へ含め、再開で挿入を再実行しないことを確認した。
+これは全40表が非空という証拠ではなく、source全体/4 converter group・運用/画面のgateは保持する。
+source/remoteの実ユーザー行・main Worker・D1/R2・mail・domainへの変更は0。
+
 # Credential transform integration with the full D1 importer
 
 This document records the implementation contract and current evidence for the

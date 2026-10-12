@@ -1,3 +1,14 @@
+## 2026-10-13: 画面検証はMac解除待ち、移送の設定行検証を追加
+
+Cuaの実inventoryでMacロックとChrome接続失敗を確認した。Appleの既存in-app authタブは保持し、
+解除/Apple初回認証の依頼をまとめて提示した。新しい画面fixtureは作っていない。
+先行8ff1b36のCI38301015282はapplication/Worker両job成功。
+現行40表合成移送へbasic/redirect/messageboard各1行を追加し、通常16行/一式18行の2 testで
+リテラル・六桁UTC・40checkpoint・ACK不明/再開・新target復旧/FK0を確認した。
+最初の試験は既存のaccess generation期待値が追加3insertを含まず失敗し、実trigger契約に合わせて補正した。
+実source/remote writeは0。全40表が非空/全値照合済みとはせず、未カバー表・4 converter gateを維持する。
+次は残る移送fixture範囲を詰め、解除後にV3画面/Appleを確認する。自然daily09:05 JSTも未受け入れ。
+
 ## 2026-10-13: V3通常Master公開・復元と2画像R2を確認
 
 main `cc7710d2` / source a6f600b、検証75da9c5のCI38296556032は両job成功。
