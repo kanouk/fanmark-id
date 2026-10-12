@@ -13,6 +13,7 @@ import { prepareSyntheticAuxiliaryBundle, createSyntheticAuxiliaryRecovery } fro
 import { applyBusinessRuntimeMigrations } from './business-runtime-import-schema.mjs';
 import { importD1Snapshot } from './d1-import.mjs';
 import { sha256Hex } from './snapshot-format.mjs';
+import { verifyFullSyntheticReadback } from './full-table-synthetic-rows.mjs';
 
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 const apiDirectory = path.join(repo, 'workers/api');
@@ -282,7 +283,11 @@ try {
   journal.beforeInventory = await inventory();
   assert.ok(journal.beforeInventory.d1.length + 3 <= 10);
   const fixture = await prepareCurrentCatalogSyntheticSnapshot(fileURLToPath(new URL('./fixtures/business-import-structure.json', import.meta.url)),
-    { snapshotDirectory: path.join(root, 'snapshot') });
+    { snapshotDirectory: path.join(root, 'snapshot'), fullTableCoverage: true });
+  journal.syntheticFixture = { tableCount: fixture.tableNames.length,
+    populatedTableCount: Object.values(fixture.rows).filter(rows => rows.length > 0).length,
+    sourceRowCount: Object.values(fixture.rows).reduce((count, rows) => count + rows.length, 0) };
+  assert.deepEqual(journal.syntheticFixture, { tableCount: 40, populatedTableCount: 40, sourceRowCount: 46 });
   const prepared = await prepareSyntheticAuxiliaryBundle(root, fixture.manifestPath);
   journal.bundleSHA256 = sha256Hex(prepared.bundle);
   await mkdir(path.join(root, 'reports'), { mode: 0o700 });
@@ -318,15 +323,17 @@ try {
       const result = await importD1Snapshot(options);
       assert.equal(result.status, 'public_rows_reconciled'); assert.equal(result.objectCount, 40);
       assert.equal(result.deployable, false); assert.equal(result.fullMigrationReconciled, false);
+      await verifyFullSyntheticReadback(live.bindings.business, fixture.tableNames);
+      live.ownership.independentFullTableReadback = true;
       live.ownership.stage = 'master-and-split-r2'; await save();
       const auxiliary = await createSyntheticAuxiliaryRecovery({ preparedBundle: prepared })({ target: live.applicationTarget, root,
         manifestPath: fixture.manifestPath, phase });
       const report = JSON.parse(await readFile(reportPath, 'utf8'));
       assert.equal(report.reconciledTables.length, 40);
-      assert.ok(report.reconciledTables.every(table => Number.isSafeInteger(Number(table.rowCount)) && Number(table.rowCount) >= 0));
+      assert.ok(report.reconciledTables.every(table => Number.isSafeInteger(Number(table.rowCount)) && Number(table.rowCount) > 0));
       const summary = { sourceRows: report.reconciledTables.reduce((count, table) => count + Number(table.rowCount), 0),
         tables: report.reconciledTables.map(table => [table.table, table.rowCount, table.sourceStreamHash]), auxiliary };
-      assert.equal(summary.sourceRows, 15);
+      assert.equal(summary.sourceRows, 46);
       if (phase === 'primary') journal.primary = summary; else assert.deepEqual(summary, journal.primary);
       for (const binding of Object.values(live.bindings)) assert.deepEqual((await binding.prepare('PRAGMA foreign_key_check').all()).results, []);
       assert.deepEqual(await live.bindings.business.prepare('SELECT requested_generation,acknowledged_generation FROM notification_worker_wake_state WHERE singleton_id=1').first(),

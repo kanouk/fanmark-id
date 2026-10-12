@@ -17,6 +17,11 @@ source全体の意味レビューや4 converter groupの承認ではない。ful
 source実ユーザー行・remote D1/R2・main Worker・mail・domainへの変更は0。
 直前の16行/18行の設定検証は[以前の限定証拠](evidence/current-settings-import-recovery-2026-10-13.json)に残す。
 
+隔離remote runner `run-isolated-combined-recovery.mjs`も同じ非空40表/46行を入力とし、
+primary/restoredの両方で固定SQLの型/件数照合を行う。以前の15行期待値は使わない。
+実行にはcleanなtested headと同じheadの成功済み2-job CIを必須とする。
+新しいrunnerの実Cloudflare受け入れはまだ未確認。
+
 # D1 importer and isolated recovery transport
 
 Current saved-file acceptance is the [27 Business/4 Auth full recovery](evidence/full-combined-file-remote-recovery-v27-2026-10-06.json):

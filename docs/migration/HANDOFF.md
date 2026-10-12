@@ -1,3 +1,12 @@
+## 2026-10-13: 非空40表を隔離remote runnerへ接続（実受け入れ前）
+
+`run-isolated-combined-recovery.mjs`は古いsourceRows=15を固定しており、最新fixtureの18行にも
+一致していなかった。同じ全40非空/46行fixtureと`verifyFullSyntheticReadback`へ接続し、
+primary/restoredの両方で実table件数45行・独立型照合・全40報告の非空を要求する。
+未検証head、CI未完了、既存resourceとの同名、所有不明のcleanupと10件容量上限のガードは維持する。
+実Cloudflareの2 target受け入れはまだ行っていない。fb8f547のCI38303822494はpendingを実確認した。
+次はrunner更新headのCI成功後に隔離targetを作成し、復旧/所有範囲cleanup/独立readbackを確認する。
+
 ## 2026-10-13: 全40表の非空合成fixtureと独立型照合
 
 現行構造40表/406列へ全表が非空になる46行を追加した。通知・招待・移管・抽選・決済設定・監査・
