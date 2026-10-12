@@ -397,3 +397,5 @@ writerの終了確認は `recovery-writer-drain.ts` と `RecoveryWriterCoordinat
 通常Cloudflare stagingのV3保存先・DO名前空間・日次保存/監視構成は、`workers/api/wrangler.app-staging.jsonc`、`wrangler.backup-staging.jsonc`、`wrangler.backup-monitor-staging.jsonc`に固定する。旧V1/V2 classとmigrationは保持し、候補用configのpending admissionを通常運用へ使わない。2026-10-13の限定受け入れは[運用V3証拠](migration/evidence/staging-resource-scope-v3-operational-2026-10-13.json)を参照する。
 
 V4候補は `workers/api/wrangler.app-staging-v4-candidate.jsonc` の独立3D1/3R2とV4 DO classを選ぶ。通常configと実配備はまだV3である。`staging-emoji-targets.mjs` はV2/V3/V4の3既知pairだけを許可し、V4のnamed entrypointは `EmojiMasterPublicationServiceV4`。`vitest.emoji-publication-v4.config.mjs` は旧V3 objectの拒否・記録保持・V4の停止fenceを実native D1/DOで確認する。候補の [限定証拠](migration/evidence/staging-resource-scope-v4-candidate-2026-10-13.json) を参照する。
+
+現在の通常Cloudflare stagingはV4の独立保存先と `NotificationWakeCoordinatorV4` / `RecoveryWriterCoordinatorV4` を使う。通常main/backup/monitorの3configは実binding・vars・Cronへ一致させた。V1/V2/V3のclassとmigration、旧データと終了未確認記録は保持する。V4 named publicationのreadonly statusも実bindingで確認済み。[限定運用証拠](migration/evidence/staging-resource-scope-v4-operational-2026-10-13.json)を参照する。

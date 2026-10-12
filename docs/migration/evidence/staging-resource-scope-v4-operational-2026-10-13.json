@@ -1,0 +1,157 @@
+{
+  "state": "verified_non_user_staging_capture_restore_and_job_alignment",
+  "runtimeSourceCommit": "3cd0eb9fa27383e3f71d006f42f3cce193a5d3dc",
+  "runtimeSourceCi": {
+    "run": 38312296313,
+    "jobs": 2,
+    "conclusion": "success"
+  },
+  "incarnation": "0690d7c1-d8ce-4f02-b90c-38740ca7da13",
+  "scopeDigest": "4e924bd92fad88fc1dea4c6aae2d808d3df07f142cc3b7cd9a623427848a2801",
+  "sourceIds": {
+    "business": "7c0ff711-19bd-4964-8ae8-cf9800339223",
+    "auth": "7c56bf17-f15e-4828-ae20-37532c45c436",
+    "master": "31cad6f0-5ce3-44a1-bdb3-017364555b29",
+    "avatars": "fanmark-avatars-staging-v4-0690d7c1",
+    "covers": "fanmark-covers-staging-v4-0690d7c1"
+  },
+  "mainVersion": "51b060cb-fc8b-457f-a229-37550f38038b",
+  "namespaces": [
+    {
+      "binding": "NOTIFICATION_WAKE",
+      "className": "NotificationWakeCoordinatorV4",
+      "id": "60b840dbdd9c4a57badf0a6f3aae0870"
+    },
+    {
+      "binding": "RECOVERY_DRAIN",
+      "className": "RecoveryWriterCoordinatorV4",
+      "id": "4fe616d9590844988f221e116c7e0100"
+    }
+  ],
+  "bindingCount": 114,
+  "oldNamespaceCount": 6,
+  "currentNamespaceCount": 8,
+  "oldNamespacesKept": true,
+  "oldStoreSchemasAndCountsHeld": true,
+  "oldV3HttpTicketsObservedBeforeRoute": 2,
+  "oldTicketTerminationProven": false,
+  "oldTicketsDeleted": false,
+  "master": {
+    "tables": 25,
+    "rows": 20152
+  },
+  "commonSettings": {
+    "tables": 6,
+    "rows": 106
+  },
+  "sourceAuthUsers": 0,
+  "sourceImageObjects": 0,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "archive": {
+    "state": "verified",
+    "bytes": 10919002,
+    "hash": "3b0de3e143c4a72dddfb293ed0c47e69d0acccf2d73dc2ea82c0885ea4b5b3c0",
+    "captureId": "b82ba9f2-78c6-4382-8897-5051205c5702",
+    "slot": "2026-10-12",
+    "fenceReleased": true
+  },
+  "restore": {
+    "state": "verified",
+    "durationMs": 9966,
+    "sourceRows": {
+      "auth": 1,
+      "business": 136,
+      "master": 20152
+    },
+    "tableCounts": {
+      "auth": 9,
+      "business": 80,
+      "master": 25
+    },
+    "allTableHashesMatched": true,
+    "foreignKeyViolations": 0,
+    "sessionPolicy": "revoke-local-sessions-and-challenges",
+    "operatorDeleted": true,
+    "ownedD1Deleted": 3,
+    "ownedR2Deleted": 3,
+    "sourceArchiveKept": true,
+    "initialPreRestoreAssertionRetained": true,
+    "firstHttpAndRootCauseUnknown": true,
+    "restoreMutationReplayed": false
+  },
+  "retention": {
+    "days": 30,
+    "deleted": 0,
+    "finishedAt": "2026-10-12T21:59:55.852Z"
+  },
+  "workers": [
+    {
+      "name": "fanmark-app-staging",
+      "version": "51b060cb-fc8b-457f-a229-37550f38038b",
+      "bindingsMatched": true,
+      "crons": [
+        "* * * * *",
+        "0 0 * * *"
+      ],
+      "namespaces": [
+        {
+          "binding": "NOTIFICATION_WAKE",
+          "className": "NotificationWakeCoordinatorV4",
+          "id": "60b840dbdd9c4a57badf0a6f3aae0870"
+        },
+        {
+          "binding": "RECOVERY_DRAIN",
+          "className": "RecoveryWriterCoordinatorV4",
+          "id": "4fe616d9590844988f221e116c7e0100"
+        }
+      ]
+    },
+    {
+      "name": "fanmark-backup-staging",
+      "version": "73f7249f-7899-44d2-ae91-df97c74f9512",
+      "bindingsMatched": true,
+      "crons": [
+        "5 0 * * *"
+      ],
+      "namespaces": []
+    },
+    {
+      "name": "fanmark-backup-monitor-staging",
+      "version": "c03f6a13-e888-4802-9af0-1c920907c43e",
+      "bindingsMatched": true,
+      "crons": [
+        "35 * * * *"
+      ],
+      "namespaces": []
+    }
+  ],
+  "publicationStatus": {
+    "entrypoint": "EmojiMasterPublicationServiceV4",
+    "gatewayRemoved": true,
+    "runtimeVersion": "51b060cb-fc8b-457f-a229-37550f38038b",
+    "active": {
+      "release_version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+      "generation": 7,
+      "activation_id": "fe956207-1dc7-421e-9fce-2ccf36c4bc5e",
+      "action": "rollback",
+      "previous_release_version": "a0b189427be84b8397483d4701a23a871be4576b95df4a068f9f272f790ad71e"
+    }
+  },
+  "operationalObservation": {
+    "credentialSource": "monitor_api_token",
+    "attention": [],
+    "foreignKeyViolations": 0,
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    }
+  },
+  "schedulerDeployReplayed": false,
+  "schedulerSameCronAndCreatedAtHeld": true,
+  "naturalDailyAccepted": false,
+  "naturalMonitorV4Accepted": false,
+  "newAuthAppleInitialSignupAccepted": false,
+  "physicalPhoneAccepted": false,
+  "fullMigrationAccepted": false
+}

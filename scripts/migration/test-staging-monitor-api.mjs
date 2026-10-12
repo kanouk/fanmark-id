@@ -120,5 +120,5 @@ test('the actual monitor command reads a fixed deployment and aggregate health w
   assert.deepEqual(report.attention, []);
   assert.equal(result.requests.filter(row => row.path.endsWith('/query')).length, 2);
   assert.ok(result.requests.filter(row => row.path.endsWith('/query')).every(row =>
-    row.path === '/client/v4/accounts/bfc2890741f0b3fb236e2d755b6c9adc/d1/database/397d389a-9d6d-453f-bf09-317dc9591056/query'));
+    row.path === '/client/v4/accounts/bfc2890741f0b3fb236e2d755b6c9adc/d1/database/7c0ff711-19bd-4964-8ae8-cf9800339223/query'));
 });

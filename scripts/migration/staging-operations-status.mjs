@@ -14,9 +14,9 @@ const account = 'bfc2890741f0b3fb236e2d755b6c9adc';
 const worker = 'fanmark-app-staging';
 const origin = 'https://fanmark-app-staging.fanmark-id.workers.dev';
 const databases = {
-  FANMARK_DB: '397d389a-9d6d-453f-bf09-317dc9591056',
-  AUTH_DB: '9ffc70bd-1f4e-490a-92b9-4e95a3a9b6c4',
-  MASTER_DB: '8a52824c-4e9f-411c-95f9-5778b880604b',
+  FANMARK_DB: '7c0ff711-19bd-4964-8ae8-cf9800339223',
+  AUTH_DB: '7c56bf17-f15e-4828-ae20-37532c45c436',
+  MASTER_DB: '31cad6f0-5ce3-44a1-bdb3-017364555b29',
 };
 let token;
 let stage = 'configuration';
@@ -43,7 +43,7 @@ async function observe() {
   for (const [binding, id] of Object.entries(databases)) {
     assert.equal(config.d1_databases.find(row => row.binding === binding)?.database_id, id);
   }
-  const businessDatabaseName = 'fanmark-recovery-staging-v3-6a5d9114-business';
+  const businessDatabaseName = 'fanmark-recovery-staging-v4-0690d7c1-business';
   assert.equal(config.d1_databases.find(row => row.binding === 'FANMARK_DB')?.database_name, businessDatabaseName);
   if (monitorTokenMode) {
     stage = 'monitor_token';

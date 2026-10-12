@@ -1,3 +1,23 @@
+## 2026-10-13: V4切替・運用鍵の保存・隔離復旧を確認
+
+3cd0eb9/[CI38312296313](https://github.com/kanouk/fanmark-id/actions/runs/38312296313)は両job成功。
+通常mainは`51b060cb-fc8b-457f-a229-37550f38038b`、独立V4の3D1/2画像R2/private archiveと
+V4 DO名前空間へ切替済み。旧6名前空間と保存先を保持し、旧V3のHTTP2件の終了は推測しない。
+114 binding・旧3D1のschema/件数・8公開fileを照合し、新scopeのAuth GET/公開Master後もwriter0を確認した。
+Master25表/20,152行・共通6表/106行、Auth user0/画像0の環境を運用鍵で10,919,002 bytes保存した。
+保存物から別3D1/3R2へ復旧し、Auth9/Business80/Master25表の全hash/schema/FK0を別processで照合した。
+復旧処理9,966msはone-off値で、本番RTO保証ではない。復旧時のsession/challenge失効方針を適用した。
+初回は取り込み前の確認で止まり、HTTP/根本原因は未記録。source/targetの空状態を照合し、所有する一時operatorの
+gateだけを更新して同じtargetへ進めた。取り込みの二重実行は0で、初回失敗記録を保持する。
+所有する復旧資源・operator・probe・publication gatewayを削除し、元inventoryと旧schema/件数保持を確認した。
+V4 named publication status、30日保持処理、日次09:05 JSTと毎時35分の別監視Workerも実配備して
+通常3configとのbinding/vars/Cron一致を別processで確認した。同じCron配備でmodified時刻だけが更新された
+schedulerは再配備せず、Cron/created時刻/実versionを読み戻して確認した。
+専用readonly monitor tokenでも現行version・ledger27・FK0・滞留0・公開200・attention0を確認した。
+[現在の限定V4証拠](evidence/staging-resource-scope-v4-operational-2026-10-13.json)。
+自然daily/自然monitor、新AuthでのApple初回登録・password設定後のメール再login/relay、実スマホ/PWA、
+同じ最終候補の統合・source対応の残件は未完了。実Supabaseユーザー/Auth/Storageと本番domain/DNSは最後の#38。
+
 ## 2026-10-13: V4非ユーザー領域の候補を準備（未配備）
 
 V3に終了未確認の旧HTTP記録2件が残るため、終了済みと推測せず旧保存先と名前空間を保持する。
