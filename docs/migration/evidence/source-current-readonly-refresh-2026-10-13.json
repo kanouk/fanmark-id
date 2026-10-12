@@ -1,0 +1,46 @@
+{
+  "observedAt": "2026-10-12T18:14:21.053Z",
+  "projectRef": "ppqgtbjykitqtiaisyji",
+  "runtimeObservedAt": "2026-10-12T18:14:19.671464+00:00",
+  "authorizationObservedAt": "2026-10-12T18:14:20.655518+00:00",
+  "runtimeCounts": {
+    "functions": 58,
+    "triggerBindings": 37,
+    "externalTriggerBindings": 1,
+    "eventTriggerBindings": 0,
+    "reviewedUnboundTriggerDefinitions": 4,
+    "pendingFunctionReviews": 54
+  },
+  "authorizationCounts": {
+    "relations": 41,
+    "tables": 40,
+    "views": 1,
+    "rlsEnabledTables": 40,
+    "policies": 77,
+    "functions": 58,
+    "triggerFunctions": 13,
+    "nonTriggerRoutines": 45,
+    "securityDefiners": 52,
+    "effectiveExecuteIncludingTriggers": {
+      "anon": 40,
+      "authenticated": 40,
+      "service_role": 56
+    },
+    "effectiveExecuteNonTriggers": {
+      "anon": 39,
+      "authenticated": 39,
+      "service_role": 44
+    }
+  },
+  "runtimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+  "authorizationFingerprint": "8e9859a0fe06eb1e7b123f55f3cde2c1ae482081ed6912dd9dbc53a7452cd273",
+  "all58CounterpartsLinked": 58,
+  "sourceDefinitionDrift": false,
+  "readOnlyTransaction": true,
+  "managementReadOnlyOption": true,
+  "sourceApplicationAndAuthRowsRead": false,
+  "sourceWrites": 0,
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "fullMigrationAccepted": false
+}

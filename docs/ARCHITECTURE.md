@@ -393,3 +393,5 @@ writerの終了確認は `recovery-writer-drain.ts` と `RecoveryWriterCoordinat
 カタログ生成の純粋な検証・生成関数は`scripts/emoji-catalog-core.ts`へ分離した。`scripts/build-emoji-release.ts`はこのcoreを参照し、WorkerのCI fixtureでSupabase/app依存を要求しない。従来の`scripts/generate-emoji-catalog.ts`は同じ関数をre-exportし、Supabase読取CLIの互換性を維持する。通常split Master公開の[staging受け入れ](migration/evidence/emoji-normal-publication-staging-2026-10-13.json)を参照。
 
 未配備の`wrangler.app-staging-v3-candidate.jsonc`は別3D1/3R2とV3 DO classを選ぶ。現在の通常config/V2 namespaceは変更しない。`staging-emoji-targets.mjs`の2既知pairから実bindingを選び、export/公開の全follow-upを固定する。V3公開は`EmojiMasterPublicationServiceV3`で別にguardする。候補の[限定証拠](migration/evidence/staging-resource-scope-v3-candidate-2026-10-13.json)を参照。
+
+通常Cloudflare stagingのV3保存先・DO名前空間・日次保存/監視構成は、`workers/api/wrangler.app-staging.jsonc`、`wrangler.backup-staging.jsonc`、`wrangler.backup-monitor-staging.jsonc`に固定する。旧V1/V2 classとmigrationは保持し、候補用configのpending admissionを通常運用へ使わない。2026-10-13の限定受け入れは[運用V3証拠](migration/evidence/staging-resource-scope-v3-operational-2026-10-13.json)を参照する。

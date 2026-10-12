@@ -1,3 +1,27 @@
+## 2026-10-13: V3稼働、運用バックアップと隔離復旧を確認
+
+通常ステージングを独立したV3の3D1・2画像R2・非公開archiveと2つのDO名前空間へ切り替えた。
+main `cc7710d2-6d70-4fe7-bec9-1a03fa4b5349`、source `a6f600b` / CI `38288565279`両job成功。
+writer active0・ownerなし・完全走査を確認してadmissionを採用した。旧V2の終了未確認ticket1件と
+旧2検証アカウントは旧領域に保持し、終了済みとは扱わない。本番ユーザーデータは移送しない。
+
+新archiveへの手動保存8,829,257 bytesを運用鍵で隔離復旧し、約10.4秒で完了した。
+独立した照合でAuth9/Business80/Master25表の全hash・schema一致、FK0、旧source件数/定義保持を確認した。
+復旧先session/MFA assurance/verificationは0。所有する復旧用3D1・3R2と一時Workerだけを除去した。
+30日保持処理は完了、削除0件。09:05 JSTのschedulerと毎時35分monitorを新scope/archiveへ更新し、
+通常configの全public変数・保存先・DO class・service binding・Cronを実設定と独立照合した。
+通常Masterの公開3,944件とdraftが一致し、公開CLIのV3 statusと一時gateway除去も確認した。
+
+[運用V3の限定証拠](evidence/staging-resource-scope-v3-operational-2026-10-13.json)。
+[現行Supabase schemaのreadonly更新](evidence/source-current-readonly-refresh-2026-10-13.json)では
+runtime/authorization fingerprintは前回と一致した。システムcatalogだけの確認で、実ユーザー行は読んでいない。
+2026-10-13 03:35:30 JSTの自然監視は保存正常・例外なしで完了した。
+自然日次保存、新AuthでのApple初回登録→password設定→メール再login、実スマホ、
+最終統合とruntime意味レビューは未完了。旧sourceの終了未確認処理を消したことや、本番切替完了は意味しない。
+`wrangler.app-staging-v3-candidate.jsonc`は初期pending構成として残し、通常configはadmission採用済みV3を指す。
+
+以下のcandidate記録は切替前の履歴。
+
 ## 2026-10-13: fresh five-store/V3 candidate, not routed
 
 旧unknown ticket1件の終了は証明できず、削除/TTL/失敗slot再試行は行わない。

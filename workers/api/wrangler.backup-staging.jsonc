@@ -18,7 +18,7 @@
   ],
   "vars": {
     "STAGING_BACKUP_SCHEDULE": "daily-v1",
-    "RECOVERY_DRAIN_SCOPE_DIGEST": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773"
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392"
   },
   "triggers": {
     "crons": [

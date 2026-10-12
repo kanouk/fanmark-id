@@ -128,7 +128,8 @@ test('backup monitor candidate pins the active stores and has no source DB, imag
   assert.equal(monitor.workers_dev,false);assert.equal(monitor.preview_urls,false);
   assert.equal(monitor.d1_databases,undefined);assert.equal(monitor.durable_objects,undefined);
   assert.equal(monitor.vars.STAGING_BACKUP_KEY,undefined);assert.equal(monitor.vars.BETTER_AUTH_SECRET,undefined);
-  assert.deepEqual(monitor.r2_buckets,[{binding:'STAGING_BACKUP_BUCKET',bucket_name:'fanmark-backups-staging'}]);
+  assert.deepEqual(monitor.r2_buckets,[{binding:'STAGING_BACKUP_BUCKET',bucket_name:'fanmark-backups-staging-v3-6a5d9114'}]);
+  assert.deepEqual(monitor.r2_buckets,main.r2_buckets.filter(bucket=>bucket.binding==='STAGING_BACKUP_BUCKET'));
   assert.deepEqual(monitor.services,[{binding:'BACKUP_ALERT_SERVICE',service:'fanmark-app-staging',entrypoint:'StagingBackupAlertService'}]);
   assert.ok(['disabled','hourly-v1'].includes(monitor.vars.STAGING_BACKUP_MONITOR));
   assert.deepEqual(monitor.triggers.crons,monitor.vars.STAGING_BACKUP_MONITOR==='disabled'?[]:['35 * * * *']);
