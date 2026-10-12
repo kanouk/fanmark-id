@@ -17,6 +17,7 @@ import { importD1Snapshot } from "./d1-import.mjs";
 import { validateSequenceStates } from "./snapshot-format.mjs";
 import { applyBusinessRuntimeMigrations, businessMigrationStatements, readBusinessRuntimeImportSchema } from "./business-runtime-import-schema.mjs";
 import { LOCAL_R2_IMPORT_WORKER } from "./local-r2-import-transport.mjs";
+import { populateEverySyntheticTable, verifyFullSyntheticReadback } from "./full-table-synthetic-rows.mjs";
 import {
   applyLifecycleTargetSchema,
   generateLifecycleTargetSchema,
@@ -450,7 +451,7 @@ async function createSyntheticSnapshot(catalog, rows, sequenceStates, directory)
   return result.manifestPath;
 }
 
-async function buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema, includeAuxiliary }) {
+async function buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema, includeAuxiliary, fullTableCoverage = false }) {
   if (typeof catalogResultPath !== "string" || catalogResultPath.length === 0) failUsage();
   const parsed = await fs.readFile(path.resolve(catalogResultPath), "utf8");
   const catalog = readCatalog(parsed);
@@ -489,6 +490,10 @@ async function buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonica
       fanmark.arrayMetadata.emoji_ids = { isNull: false, ndims: 1, lowerBound: 1 };
     }
   }
+  if (fullTableCoverage) {
+    assert.equal(canonicalBusinessSchema, true, "full_fixture_requires_actual_runtime_schema");
+    populateEverySyntheticTable(catalog, rows);
+  }
   assert.equal(tableNames.length, 40, "current_public_table_count");
   const sequenceStates = sequenceStatesForCurrentCatalog(catalog);
   const convertedSchema = convertSchema(catalog, { credentialDescriptor: descriptor() });
@@ -513,19 +518,19 @@ async function buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonica
   return { catalog, tableNames, rows, sequenceStates, convertedSchema, lifecyclePlan, generationPlan, credentialPlan };
 }
 
-export async function prepareCurrentCatalogSyntheticSnapshot(catalogResultPath, { snapshotDirectory, includeAuxiliary = true } = {}) {
+export async function prepareCurrentCatalogSyntheticSnapshot(catalogResultPath, { snapshotDirectory, includeAuxiliary = true, fullTableCoverage = false } = {}) {
   if (typeof snapshotDirectory !== "string" || !path.isAbsolute(snapshotDirectory)) throw new Error("synthetic_snapshot_directory_required");
-  const fixture = await buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema: true, includeAuxiliary });
+  const fixture = await buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema: true, includeAuxiliary, fullTableCoverage });
   const manifestPath = await createSyntheticSnapshot(fixture.catalog, fixture.rows, fixture.sequenceStates, snapshotDirectory);
   return { ...fixture, manifestPath, syntheticAuthUserId, expectedTargetProfile: {
     credentialPlan: fixture.credentialPlan, descriptor: descriptor(), generationPlan: fixture.generationPlan, lifecyclePlan: fixture.lifecyclePlan,
   } };
 }
 
-export async function runCurrentCatalogSyntheticImport(catalogResultPath, { canonicalBusinessSchema = false, auxiliaryRecovery = null } = {}) {
+export async function runCurrentCatalogSyntheticImport(catalogResultPath, { canonicalBusinessSchema = false, auxiliaryRecovery = null, fullTableCoverage = false } = {}) {
   if (auxiliaryRecovery !== null && (typeof auxiliaryRecovery !== "function" || !canonicalBusinessSchema)) throw new Error("invalid_auxiliary_recovery");
   const { catalog, tableNames, rows, sequenceStates, convertedSchema, lifecyclePlan, generationPlan, credentialPlan } =
-    await buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema, includeAuxiliary: auxiliaryRecovery !== null });
+    await buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema, includeAuxiliary: auxiliaryRecovery !== null, fullTableCoverage });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-current-catalog-import-"));
   await fs.chmod(root, 0o700);
   const snapshotDirectory = path.join(root, "snapshot");
@@ -640,6 +645,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
       'SELECT COUNT(*) AS "count", SUM(CASE WHEN "status" = \'complete\' THEN 1 ELSE 0 END) AS "complete" FROM "__fanmark_d1_import_checkpoints"',
     ).first();
     assert.deepEqual(checkpoints, { count: 40, complete: 40 });
+    if (fullTableCoverage) await verifyFullSyntheticReadback(database, tableNames);
     const password = await database.prepare(
       'SELECT "id", "license_id", "access_password", "is_enabled" FROM "fanmark_password_configs" WHERE "id" = ?',
     ).bind(syntheticPasswordConfigId).first();
@@ -671,9 +677,9 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
     const generation = await database.prepare(
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticLicenseId).first();
-    // Each of the three imported settings rows invalidates access once; the
-    // auxiliary profile adds one more. Resume must not replay those inserts.
-    assert.deepEqual(generation, { password_generation: 1, access_generation: auxiliaryRecovery ? 5 : 4 });
+    // Each of the three imported settings rows invalidates access once; an
+    // auxiliary or full-table profile adds one more. Resume must not replay them.
+    assert.deepEqual(generation, { password_generation: 1, access_generation: auxiliaryRecovery || fullTableCoverage ? 5 : 4 });
     const disabledGeneration = await database.prepare(
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticDisabledLicenseId).first();
@@ -778,6 +784,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
         resumedReport.reconciledTables.map(table => [table.table, table.rowCount, table.sourceStreamHash]));
       assert.deepEqual(await restored.database.prepare("PRAGMA foreign_key_check").all().then(result => result.results), []);
       assert.deepEqual(await restored.authDatabase.prepare("PRAGMA foreign_key_check").all().then(result => result.results), []);
+      if (fullTableCoverage) await verifyFullSyntheticReadback(restored.database, tableNames);
       assert.deepEqual(await restored.database.prepare("SELECT requested_generation, acknowledged_generation FROM notification_worker_wake_state WHERE singleton_id = 1").first(),
         { requested_generation: 1, acknowledged_generation: 0 });
       if (auxiliaryRecovery) {
@@ -805,6 +812,9 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath, { cano
         businessMigrationCount: (await readBusinessRuntimeImportSchema()).migrationDigests.length } : {}),
       tableCount: tableNames.length,
       sourceRowCount: Object.values(rows).reduce((sum, tableRows) => sum + tableRows.length, 0),
+      populatedSourceTableCount: Object.values(rows).filter(tableRows => tableRows.length > 0).length,
+      fullTableCoverage,
+      independentFullTableReadback: fullTableCoverage,
       importOnlySettingsReadback: true,
       ...(canonicalBusinessSchema ? { authMigrationCount: 4, runtimeSchemaGuardRejected: true,
         runtimeFingerprintTamperRejected: true, freshTargetRestoreVerified,

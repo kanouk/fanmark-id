@@ -9,12 +9,15 @@ import { runCurrentCatalogSyntheticImport } from "./test-d1-import-current-schem
 test("current Business/Auth schemas import, resume and reconcile a synthetic snapshot without duplicate notification wake", async () => {
   const result = await runCurrentCatalogSyntheticImport(
     fileURLToPath(new URL("./fixtures/business-import-structure.json", import.meta.url)),
-    { canonicalBusinessSchema: true },
+    { canonicalBusinessSchema: true, fullTableCoverage: true },
   );
   assert.equal(result.businessMigrationCount, 27);
   assert.equal(result.authMigrationCount, 4);
   assert.equal(result.tableCount, 40);
-  assert.equal(result.sourceRowCount, 16);
+  assert.equal(result.sourceRowCount, 46);
+  assert.equal(result.populatedSourceTableCount, 40);
+  assert.equal(result.fullTableCoverage, true);
+  assert.equal(result.independentFullTableReadback, true);
   assert.equal(result.importOnlySettingsReadback, true);
   assert.equal(result.completedCheckpointCount, 40);
   assert.equal(result.runtimeSchemaGuardRejected, true);

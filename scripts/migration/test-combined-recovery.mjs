@@ -7,9 +7,12 @@ import { createSyntheticAuxiliaryRecovery } from "./synthetic-auxiliary-recovery
 test("one synthetic snapshot bundle restores Business/Auth/Master and linked assets to independent split R2 buckets", async (context) => {
   const result = await runCurrentCatalogSyntheticImport(
     fileURLToPath(new URL("./fixtures/business-import-structure.json", import.meta.url)),
-    { canonicalBusinessSchema: true, auxiliaryRecovery: createSyntheticAuxiliaryRecovery() },
+    { canonicalBusinessSchema: true, auxiliaryRecovery: createSyntheticAuxiliaryRecovery(), fullTableCoverage: true },
   );
-  assert.equal(result.sourceRowCount, 18);
+  assert.equal(result.sourceRowCount, 46);
+  assert.equal(result.populatedSourceTableCount, 40);
+  assert.equal(result.fullTableCoverage, true);
+  assert.equal(result.independentFullTableReadback, true);
   assert.equal(result.importOnlySettingsReadback, true);
   assert.equal(result.completedCheckpointCount, 40);
   assert.equal(result.freshTargetRestoreVerified, true);
@@ -23,5 +26,7 @@ test("one synthetic snapshot bundle restores Business/Auth/Master and linked ass
   assert.equal(result.deployable, false);
   assert.equal(result.fullMigrationReconciled, false);
   context.diagnostic(JSON.stringify({ freshTargetRestoreDurationMs: result.freshTargetRestoreDurationMs,
-    sourceTableCount: result.tableCount, sourceRowCount: result.sourceRowCount, ...result.auxiliaryRecovery }));
+    sourceTableCount: result.tableCount, populatedSourceTableCount: result.populatedSourceTableCount,
+    sourceRowCount: result.sourceRowCount, independentFullTableReadback: result.independentFullTableReadback,
+    ...result.auxiliaryRecovery }));
 });

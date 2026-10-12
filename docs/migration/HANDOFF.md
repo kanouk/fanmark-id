@@ -1,3 +1,17 @@
+## 2026-10-13: 全40表の非空合成fixtureと独立型照合
+
+現行構造40表/406列へ全表が非空になる46行を追加した。通知・招待・移管・抽選・決済設定・監査・
+統計/マスターを含む。通常Business/AuthとMaster/2画像R2一式復旧の2 testは同じ全40非空表を使う。
+大きな整数・桁数の多い小数・金額cents・JSON/配列/六桁UTCを固定SQL期待値で照合し、
+両targetの全40表件数45行（inactive credential1行はdeferred）と40非空checkpoint/46行も確認する。
+source/remote writeは0。これでlocalの非空表カバレッジを補ったが、remote全40非空復旧・
+全値形状・source意味/外部consumer・4 converter groupとprovider/実端末/最終統合のgateは維持する。
+[限定証拠](evidence/current-full-table-import-recovery-2026-10-13.json)。
+新しい件数検査の40-term UNIONはD1のcompound SELECT上限で拒否されたため、通常SELECT40件の
+batchへ変更した。importer/serverの変更や稼働stagingへの配備は0。
+Macロックを再確認し、in-appのauthタブを保持した。解除/Apple初回認証の既存依頼は回答待ち。
+次はexact CI・隔離remote非空40表の受け入れ、解除後のV3画面/Apple、自然daily09:05 JSTを確認する。
+
 ## 2026-10-13: 画面検証はMac解除待ち、移送の設定行検証を追加
 
 Cuaの実inventoryでMacロックとChrome接続失敗を確認した。Appleの既存in-app authタブは保持し、

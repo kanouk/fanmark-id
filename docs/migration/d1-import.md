@@ -1,12 +1,21 @@
-## 2026-10-13: 合成移送の設定行を追加
+## 2026-10-13: 全40表に合成行を入れた現行スキーマ移送
 
-現行40表snapshotの合成fixtureへbasic/redirect/messageboard設定を各1行追加した。
-Unicode名、多言語本文/改行/引用符/文字列`$&`、URL query/fragmentとUTC六桁小数をリテラルで照合する。
-通常現行Business/Authはsource16行、一式Master/R2付き復旧は18行となり、40checkpoint・停止後再開・
-credential ACK不明/coverage競合拒否・独立新target復旧/FK0の2 testが成功した。
-設定insert3回の正当なaccess generationを期待値へ含め、再開で挿入を再実行しないことを確認した。
-これは全40表が非空という証拠ではなく、source全体/4 converter group・運用/画面のgateは保持する。
-source/remoteの実ユーザー行・main Worker・D1/R2・mail・domainへの変更は0。
+現行40表/406列の構造fixtureへ、各表が非空になる計46行の合成データを用意した。
+通知・招待・移管・抽選・決済設定・監査・統計・マスターも含む。列名はsource metadataと一致させ、
+JSON/配列・Unicode/改行/引用符・NULL/真偽値・UTC六桁小数を保存する。
+大きな整数9007199254740993、抽選重み0.12500000000000000001、金額12.34→1234の変換は、
+converter/reportを期待値に使わない固定SQL読戻しでも確認する。
+
+通常Business/AuthとMaster/2画像R2付きの2 testが、40非空checkpoint・停止/再開・credential ACK不明・
+coverage競合拒否・新しい独立targetへの復旧・FK0を検査する。target全40表の件数は合計45行で、
+activeのcredential2件は変換し、inactiveの1件は保存済みcoverageでdeferredとする。
+プロフィールを含む4 insertのaccess generationを保持し、再開で副作用を重複させない。
+[限定合成証拠](evidence/current-full-table-import-recovery-2026-10-13.json)。
+
+これはlocal Miniflareでの合成移送/復旧であり、全データ形状の網羅、remote全40表の非空復旧、
+source全体の意味レビューや4 converter groupの承認ではない。fullMigrationReconciled/deployable=falseを維持する。
+source実ユーザー行・remote D1/R2・main Worker・mail・domainへの変更は0。
+直前の16行/18行の設定検証は[以前の限定証拠](evidence/current-settings-import-recovery-2026-10-13.json)に残す。
 
 # D1 importer and isolated recovery transport
 
