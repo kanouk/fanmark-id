@@ -1,8 +1,8 @@
 import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from "./notification-wake";
-export { NotificationWakeCoordinator, NotificationWakeCoordinatorV2 } from "./notification-wake";
-export { RecoveryWriterCoordinator, RecoveryWriterCoordinatorV2 } from "./recovery-writer-drain";
+export { NotificationWakeCoordinator, NotificationWakeCoordinatorV2, NotificationWakeCoordinatorV3 } from "./notification-wake";
+export { RecoveryWriterCoordinator, RecoveryWriterCoordinatorV2, RecoveryWriterCoordinatorV3 } from "./recovery-writer-drain";
 export { StagingBackupService, StagingBackupAlertService } from "./staging-backup-service";
-export { EmojiMasterPublicationService } from "./emoji-publication-service";
+export { EmojiMasterPublicationService, EmojiMasterPublicationServiceV3 } from "./emoji-publication-service";
 import {
   createSupabaseRecentFanmarksRepository,
   mapRecentFanmarkRows,

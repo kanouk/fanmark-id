@@ -209,3 +209,6 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
 
 /** Fresh staging namespace; never resets or imports the legacy census. */
 export class RecoveryWriterCoordinatorV2 extends RecoveryWriterCoordinator {}
+
+/** New five-store candidate; existing V1/V2 namespaces remain intact. */
+export class RecoveryWriterCoordinatorV3 extends RecoveryWriterCoordinator {}

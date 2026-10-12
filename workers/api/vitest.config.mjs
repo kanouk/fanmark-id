@@ -11,6 +11,7 @@ export default defineConfig({
     include: ["./test/**/*.test.ts"],
     exclude: [
       "./test/emoji-publication.test.ts",
+      "./test/emoji-publication-v3.test.ts",
       "./test/static-assets.test.ts",
       "./test/d1-repository.test.ts",
       "./test/availability-d1.test.ts",

@@ -540,3 +540,29 @@ ownerだけを解除し、archiveを作らず、実処理の終了後にactive0�
 実失敗通知は10/10・10/11ともR2 provider-acceptedと署名sent/deliveredを確認した。
 本人受信の新しい報告、ticket発生/終了の特定、自然daily成功は未受け入れ。
 [修正配備と通知照合](evidence/staging-emoji-backup-diagnostics-deploy-2026-10-11.json)。
+
+## 2026-10-13: fresh five-store/V3 candidate, not routed
+
+旧unknown ticket1件の終了は証明できず、削除/TTL/失敗slot再試行は行わない。
+別3D1/2画像R2を作成し、Master25表16,203行と共通6表106行だけを初期化した。
+新Auth/Business user/profile/sessionは0。旧2検証アカウントは旧領域に保持する。
+日付だけをkeyにするbackup receiptの旧failed slotを再使用しないため、運用archiveも
+別の非公開`fanmark-backups-staging-v3-6a5d9114`へ分離する候補とした。旧archiveは保持する。
+
+独立REST readbackでsource/target schema、全Master row hash、共通設定hash、FK0、
+Auth4/Business27 migrationと空user領域を確認した。別のreadonly Workerで3R2の空集合/
+非公開を確認し、initializer/probeは削除した。4 configured Workerに新保存先のbindingは0。
+新名前空間はV3 classで分離し、旧V1/V2 classとmigrationは保持する。nativeで旧V2 object
+が選択されたV3 namespaceへ入れないこと、旧ticket保持、新Master stage/fenceを確認した。
+writer13/通知22/publicationV2 5+V3 2、export/CLI14、型/lint/candidate dry-run成功。
+
+`wrangler.app-staging-v3-candidate.jsonc`は未配備でadmission=pending。通常configと実main73d2bcaeは
+旧V2のまま。新sourceは6a5d9114、Master8a52824c、scopeaee5fcdcで固定する。
+通常export/公開CLIは実bindingの既知Master/scope pairを1度選び、同じpairへpinする。
+V2とV3は別named entrypointで固定され、任意targetや混合pairを拒否する。旧bootstrapガードは維持する。
+
+[限定candidate証拠](evidence/staging-resource-scope-v3-candidate-2026-10-13.json)。
+次はexact CI、guarded staging切替、全binding/namespace/bootstrap終了の独立照合、
+admission採用、採用済み鍵で初回保存/復旧、自然daily/monitorを確認する。
+切替後は新Authが空なので検証用OAuth登録/password setupが必要になる。実Supabase user/Auth/Storageと
+本番DNSは移送しない。新scopeの証拠を旧unknown ticketの終了や既存sourceの一貫したbackup成立へ換算しない。

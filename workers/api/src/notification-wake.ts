@@ -139,6 +139,9 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
 /** Fresh staging namespace; the legacy class and its stored state remain available. */
 export class NotificationWakeCoordinatorV2 extends NotificationWakeCoordinator {}
 
+/** New five-store candidate; old alarm object IDs fail the selected-namespace guard. */
+export class NotificationWakeCoordinatorV3 extends NotificationWakeCoordinator {}
+
 type Authorize = (request: Request, headers: Headers) => Promise<Response | { userId: string; sessionId: string }>;
 export async function handleNotificationWakeRepairRequest(request: Request, env: Env, authorize: Authorize): Promise<Response | null> {
   if (new URL(request.url).pathname !== REPAIR_PATH) return null;

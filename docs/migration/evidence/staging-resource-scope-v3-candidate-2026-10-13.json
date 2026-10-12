@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-13",
+  "scope": "fresh non-user staging resource candidate, not yet routed",
+  "incarnation": "6a5d9114-5aab-4564-8395-1121a6c43552",
+  "currentMainVersion": "73d2bcae-4dd6-4347-9f83-d3d4f03b976c",
+  "databases": {
+    "business": {
+      "id": "397d389a-9d6d-453f-bf09-317dc9591056",
+      "name": "fanmark-recovery-staging-v3-6a5d9114-business",
+      "schemaHash": "598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2",
+      "tableCount": 79
+    },
+    "auth": {
+      "id": "9ffc70bd-1f4e-490a-92b9-4e95a3a9b6c4",
+      "name": "fanmark-recovery-staging-v3-6a5d9114-auth",
+      "schemaHash": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+      "tableCount": 10
+    },
+    "master": {
+      "id": "8a52824c-4e9f-411c-95f9-5778b880604b",
+      "name": "fanmark-recovery-staging-v3-6a5d9114-master",
+      "schemaHash": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+      "tableCount": 25
+    }
+  },
+  "masterTables": 25,
+  "masterRows": 16203,
+  "commonRows": 106,
+  "authUsers": 0,
+  "authSessions": 0,
+  "businessProfiles": 0,
+  "businessMigrations": 27,
+  "authMigrations": 4,
+  "sourceMasterAllRowHashesHeld": true,
+  "targetSchemasEqualSource": true,
+  "foreignKeysClean": true,
+  "configuredWorkersWithCandidateBindings": 0,
+  "workersChecked": 4,
+  "scopeDigest": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+  "r2": {
+    "avatars": "fanmark-avatars-staging-v3-6a5d9114",
+    "covers": "fanmark-covers-staging-v3-6a5d9114",
+    "archive": "fanmark-backups-staging-v3-6a5d9114",
+    "allPrivateAndEmpty": true
+  },
+  "oldArchiveAndFailedSlotsKept": true,
+  "failedSlotsReplayed": false,
+  "initializerAndReadOnlyProbeRemoved": true,
+  "localTests": {
+    "v2Publication": 5,
+    "v3Publication": 2,
+    "exportAndCliProfiles": 14,
+    "v3Writer": 13,
+    "v3Notification": 22,
+    "typecheck": "passed",
+    "candidateBundleDryRun": "passed",
+    "changedCodeLint": "passed"
+  },
+  "sourceBindingsAndAuthProfileCountsHeld": true,
+  "existingStagingAccountsKept": 2,
+  "sourceAuthCredentialRowsRead": false,
+  "sourceUserRowsCopied": false,
+  "activated": false,
+  "newNamespacesProvisioned": false,
+  "oldUnknownWriterCompletionProven": false,
+  "naturalDailyBackupAccepted": false,
+  "migrationCompleted": false
+}

@@ -1,3 +1,4 @@
+import {STAGING_EMOJI_PUBLICATION_TARGETS,resolveStagingEmojiTarget} from './staging-emoji-targets.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';import os from 'node:os';import path from 'node:path';
 import {buildRelease} from '../build-emoji-release.ts';
@@ -12,7 +13,7 @@ test('argument parsing refuses arbitrary targets, duplicate flags and invalid ge
  assert.throws(()=>parsePublicationArguments(args.map(v=>v==='1'?'0':v)));assert.throws(()=>parsePublicationArguments(['--action','execute-sql','--journal','x']));
 });
 async function fixture(){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'fanmark-publication-'));const input=path.join(dir,'input.json');await fs.writeFile(input,JSON.stringify(records));const release=await buildRelease(input,path.join(dir,'releases'));return {dir,releaseDirectory:release.directory,version:release.version};}
-function transport(version,{wrongTarget=false,loseAck=false}={}){
+function transport(version,{wrongTarget=false,loseAck=false,profile=STAGING_EMOJI_PUBLICATION_TARGETS[0]}={}){
  let mutations=0,removed=false,staged=false;const j={};
  const response=(value,status=200)=>Response.json(value,{status});
  return {get mutations(){return mutations;},get removed(){return removed;},async fetch(url,options={}){
@@ -20,7 +21,7 @@ function transport(version,{wrongTarget=false,loseAck=false}={}){
   assert.ok(!u.pathname.includes('/d1/'),'publisher never writes D1 directly');
   if(u.hostname==='api.cloudflare.com'){
    if(u.pathname.endsWith('/deployments'))return response({success:true,result:{deployments:[{versions:[{version_id:runtime,percentage:100}]}]}});
-   if(u.pathname.endsWith('fanmark-app-staging/settings'))return response({success:true,result:{bindings:[{name:'MASTER_DB',id:wrongTarget?'other':'02681378-5528-45a9-8093-76805a4705c9'},{name:'D1_TOPOLOGY',text:'split'},{name:'RECOVERY_DRAIN_SCOPE_DIGEST',text:'8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773'},{name:'EMOJI_PUBLICATION_BACKEND',text:'staging-service'}]}});
+   if(u.pathname.endsWith('fanmark-app-staging/settings'))return response({success:true,result:{bindings:[{name:'MASTER_DB',id:wrongTarget?'other':profile.masterId},{name:'D1_TOPOLOGY',text:'split'},{name:'RECOVERY_DRAIN_SCOPE_DIGEST',text:profile.scope},{name:'EMOJI_PUBLICATION_BACKEND',text:'staging-service'}]}});
    if(method==='PUT'){assert.ok(options.body instanceof FormData);return response({success:true,result:{}});}
    if(method==='POST')return response({success:true,result:{}});
    if(method==='DELETE'){removed=true;return response({success:true,result:{}});}
@@ -47,5 +48,18 @@ test('lost mutation acknowledgement never replays, retains the journal, and remo
 test('wrong Master target refuses before upload or mutation',async()=>{
  const f=await fixture(),t=transport(f.version,{wrongTarget:true});
  try{await assert.rejects(runStagingEmojiPublication({action:'stage',releaseDirectory:f.releaseDirectory,expectedActive:old,expectedGeneration:1,journal:path.join(f.dir,'operation.json')},{identity,token:'synthetic-token-only-123456789',fetch:t.fetch}));assert.equal(t.mutations,0);assert.equal(t.removed,false);
+ }finally{await fs.rm(f.dir,{recursive:true,force:true});}
+});
+
+test('fixed profiles refuse mixed cohorts and unknown targets',()=>{
+ const [oldTarget,fresh]=STAGING_EMOJI_PUBLICATION_TARGETS;
+ assert.equal(resolveStagingEmojiTarget(fresh.masterId,fresh.scope).entrypoint,'EmojiMasterPublicationServiceV3');
+ for(const [id,scope]of [[fresh.masterId,oldTarget.scope],[oldTarget.masterId,fresh.scope],['other',fresh.scope]])assert.throws(()=>resolveStagingEmojiTarget(id,scope),/target_mismatch/);
+});
+test('V3 live metadata selects the V3 service entrypoint with one mutation and owned cleanup',async()=>{
+ const f=await fixture(),profile=STAGING_EMOJI_PUBLICATION_TARGETS[1],t=transport(f.version,{profile});let entrypoint;
+ const fetcher=async(url,init)=>{if(init?.method==='PUT'&&init.body instanceof FormData)entrypoint=JSON.parse(init.body.get('metadata')).bindings.find(x=>x.name==='PUBLICATION').entrypoint;return t.fetch(url,init);};
+ try {const journal=path.join(f.dir,'v3-operation.json');const result=await runStagingEmojiPublication({action:'stage',releaseDirectory:f.releaseDirectory,expectedActive:old,expectedGeneration:1,journal},{identity,token:'synthetic-token-only-123456789',fetch:fetcher,sleep:async()=>{}});
+ assert.equal(result.state,'readback_verified');assert.equal(entrypoint,profile.entrypoint);assert.equal(t.mutations,1);assert.equal(t.removed,true);assert.equal(JSON.parse(await fs.readFile(journal,'utf8')).masterId,profile.masterId);
  }finally{await fs.rm(f.dir,{recursive:true,force:true});}
 });

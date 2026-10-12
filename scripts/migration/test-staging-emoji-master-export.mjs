@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {STAGING_EMOJI_PUBLICATION_TARGETS} from './staging-emoji-targets.mjs';
 import { test } from 'node:test';
 import { mkdtemp, readFile, writeFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -20,7 +21,7 @@ test('release export rejects other Node runtimes to keep ICU-generated release h
   }
 });
 function fixture({ rows = [row], meta = { rows_written: 0, changed_db: false }, bindingId,
-  afterBindingId, identityName = target.databaseName } = {}) {
+  afterBindingId, profile=STAGING_EMOJI_PUBLICATION_TARGETS[0], identityName = profile.masterName } = {}) {
   const calls = []; let settingsReads = 0;
   const fetchImpl = async (url, init) => {
     assert.equal(init.redirect, 'error');
@@ -30,8 +31,8 @@ function fixture({ rows = [row], meta = { rows_written: 0, changed_db: false }, 
     if (url.endsWith('/settings')) {
       settingsReads++;
       result = { bindings: [{ name: 'MASTER_DB', type: 'd1',
-        id: settingsReads > 1 ? afterBindingId ?? target.databaseId : bindingId ?? target.databaseId },
-      { name: 'D1_TOPOLOGY', type: 'plain_text', text: 'split' }] };
+        id: settingsReads > 1 ? afterBindingId ?? profile.masterId : bindingId ?? profile.masterId },
+      { name: 'D1_TOPOLOGY', type: 'plain_text', text: 'split' },{name:'RECOVERY_DRAIN_SCOPE_DIGEST',type:'plain_text',text:profile.scope}] };
     } else if (url.endsWith('/query')) {
       assert.equal(init.method, 'POST');
       const payload = JSON.parse(init.body);
@@ -41,8 +42,8 @@ function fixture({ rows = [row], meta = { rows_written: 0, changed_db: false }, 
       assert.doesNotMatch(payload.sql, /INSERT|UPDATE|DELETE|\buser\b|\baccount\b|\bsession\b/iu);
       result = [{ success: true, results: rows, meta }];
     } else {
-      assert.equal(url, `https://api.cloudflare.com/client/v4/accounts/${target.account}/d1/database/${target.databaseId}`);
-      result = { uuid: target.databaseId, name: identityName };
+      assert.equal(url, `https://api.cloudflare.com/client/v4/accounts/${target.account}/d1/database/${profile.masterId}`);
+      result = { uuid: profile.masterId, name: identityName };
     }
     return Response.json({ success: true, result });
   };
@@ -119,4 +120,10 @@ test('CLI requires read-only mode and explicit JSON output, rejecting unknown/du
     ['--read-only', '--output', 'x.json', '--output', 'y.json']]) {
     assert.throws(() => parseEmojiExportArguments(args));
   }
+});
+
+test('export selects only the recognized live V3 Master and keeps it pinned across the read',async()=>{
+ const profile=STAGING_EMOJI_PUBLICATION_TARGETS[1],f=fixture({profile});
+ const result=await readStagingEmojiMaster({token,fetchImpl:f.fetchImpl});
+ assert.equal(result.recordCount,1);assert.ok(f.calls.filter(x=>x.url.includes('/d1/database/')).every(x=>x.url.includes(profile.masterId)));
 });

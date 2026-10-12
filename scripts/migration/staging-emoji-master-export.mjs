@@ -6,6 +6,7 @@ import { mkdir, writeFile, link, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import { resolveStagingEmojiTarget } from './staging-emoji-targets.mjs';
 import { createEmojiReleaseArtifacts } from '../build-emoji-release.ts';
 
 export const STAGING_EMOJI_TARGET = Object.freeze({
@@ -24,13 +25,15 @@ const SQL = `SELECT id, emoji, short_name, keywords, category, subcategory, code
   (SELECT release_version FROM fanmark_emoji_master_active_release WHERE singleton_id = 1) AS active_version
   FROM emoji_master ORDER BY id LIMIT 10001`;
 
-function assertMasterBinding(settings) {
+function assertMasterBinding(settings, expectedTarget) {
   assert.ok(Array.isArray(settings?.bindings));
   const bindings = settings.bindings.filter(row => row.name === 'MASTER_DB');
   assert.equal(bindings.length, 1);
   assert.equal(bindings[0].type, 'd1');
-  assert.equal(bindings[0].id, STAGING_EMOJI_TARGET.databaseId);
+  const target=resolveStagingEmojiTarget(bindings[0].id,settings.bindings.find(row=>row.name==='RECOVERY_DRAIN_SCOPE_DIGEST')?.text);
+  if(expectedTarget)assert.equal(target.name,expectedTarget.name);
   assert.equal(settings.bindings.find(row => row.name === 'D1_TOPOLOGY')?.text, 'split');
+  return target;
 }
 
 /** Fixed endpoints and one fixed public-master SELECT; callers cannot supply SQL or a target. */
@@ -38,7 +41,7 @@ export async function readStagingEmojiMaster({ token, fetchImpl = fetch, expecte
   assertPinnedEmojiRuntime();
   assert.ok(typeof token === 'string' && token.length >= 16 && !/\s/u.test(token));
   if (expectedActive !== undefined) assert.match(expectedActive, VERSION_RE);
-  const { account, worker, databaseId, databaseName } = STAGING_EMOJI_TARGET;
+  const { account, worker } = STAGING_EMOJI_TARGET;
   async function request(resource, payload) {
     const response = await fetchImpl(`https://api.cloudflare.com/client/v4/accounts/${account}/${resource}`, {
       method: payload === undefined ? 'GET' : 'POST', redirect: 'error',
@@ -64,7 +67,8 @@ export async function readStagingEmojiMaster({ token, fetchImpl = fetch, expecte
     assert.equal(envelope.success, true);
     return envelope.result;
   }
-  assertMasterBinding(await request(`workers/scripts/${worker}/settings`));
+  const target=assertMasterBinding(await request(`workers/scripts/${worker}/settings`));
+  const databaseId=target.masterId,databaseName=target.masterName;
   const identity = await request(`d1/database/${databaseId}`);
   assert.equal(identity.uuid ?? identity.id, databaseId);
   assert.equal(identity.name, databaseName);
@@ -88,7 +92,7 @@ export async function readStagingEmojiMaster({ token, fetchImpl = fetch, expecte
   });
   const built = createEmojiReleaseArtifacts(records);
   // Refuse an export if the application's Master binding moved while it was read.
-  assertMasterBinding(await request(`workers/scripts/${worker}/settings`));
+  assertMasterBinding(await request(`workers/scripts/${worker}/settings`),target);
   return { activeVersion, draftVersion: built.version, recordsSource: built.recordsSource,
     records: built.records, recordCount: built.records.length, rowsWritten: 0 };
 }

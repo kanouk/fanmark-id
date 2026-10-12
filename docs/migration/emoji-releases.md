@@ -482,3 +482,5 @@ correction pins the complete import metadata/manifest hashes/pointer/history
 SHA-2565dddb3109b218fe1c7566d3d6c8348f5c95c7bd2b03d4b4e1d265297d3ed009e.
 Independent00:08:27Z readback matched it. No retained release was deleted and
 no canonical master, activation or legacy Auth row was changed.
+
+Known staging V2/V3 Master/scope pairs are compiled in `staging-emoji-targets.mjs`. The CLI chooses the live pair once and pins every follow-up. The exporter also rechecks the same pair. V3 uses a separate service entrypoint; arbitrary/mixed profiles and target changes are refused. V3 is still an unrouted candidate; V2 remains active.
