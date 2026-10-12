@@ -1,3 +1,16 @@
+## 2026-10-13 07:46 JST: 現行V4で日本語の主要フローを一巡
+
+通常main cc82c298/source e511762の同じChromeテストaccountで、通常login→取得前favorite→
+Tier Bの3絵文字/30日ライセンス取得→伝言板preview/入力保持→保存→favoriteの即時owner反映→
+公開本文表示→返却/grace/保有0→通常logoutを確認した。途中の手動reloadは0。
+専用Auth/profile/fanmark/関連履歴とoperatorを除去し、別readonly processでowned行なし、
+元のApple/credential account・本人session/設定状態、FK0、通知wake排出を照合した。
+schema/共通Master/canonical/MFA世代を保持し、writer active0/ownerなし/完全走査を確認した。
+一度のnative click観測timeoutはmenuが開いた実状態で照合し、clickを重複送信しなかった。
+[現行日本語フローの限定証拠](evidence/staging-v4-core-journey-ja-2026-10-13.json)。
+メール送信/Stripe呼出/実Supabaseユーザー移送/本番domain変更は0。合成資格情報は除去済み。
+EN/KO/IDの現行V4通し・実スマホ/PWA・自然daily・relay・source残件は別条件として保持する。
+
 ## 現在の確認結果（2026-10-13 07:38 JST）
 
 通常mainは`cc82c298-ff27-4322-8c42-175e7be17f16`、ソースe511762の
