@@ -1,5 +1,17 @@
 # Source runtime bindings review
 
+## Signup acceptance correspondence refreshed (2026-10-13 JST)
+
+The object-map still described invitation consumption and every new Discord identity as unaccepted.
+The three signup rows now match the historical native invitation evidence from October8 and one new
+Discord identity's first-password/logout/email-password relogin evidence from October9.
+The two provider-boundary fields in the manual trace were updated; all58 source definition hashes
+and identities match the current October13 metadata capture. The thirteen linkage tests pass.
+[Bounded correspondence refresh](evidence/source-signup-counterpart-acceptance-refresh-2026-10-13.json).
+No provider callback, mail, user-row read or runtime write occurred. These historical acceptances
+are not new V3 provider checks. Apple first-user/relay, external callers, role custody and final
+integration remain open, as do the conservative classifier54 and full-source/converter false gates.
+
 ## Latest metadata observation (2026-10-13 JST)
 
 The metadata-only runtime and authorization observations at 2026-10-12T18:14:19Z

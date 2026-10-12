@@ -180,7 +180,13 @@
     },
     "scheduledJobCoverage": "covered",
     "normalAppSchedulerMonitorDryRun": "passed",
-    "changedScriptsLint": "passed",
-    "latestCi": "pending"
+    "changedScriptsLint": "passed"
+  },
+  "implementationCi": {
+    "headSha": "bb37df88fb429ce4e2e5af7379dae80063323c73",
+    "run": 38292623175,
+    "application": "success",
+    "worker": "success",
+    "scope": "V3 config alignment and fixed operational monitoring guard code; subsequent correspondence documentation is validated separately"
   }
 }

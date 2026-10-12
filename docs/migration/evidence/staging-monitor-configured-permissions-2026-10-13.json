@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-12T18:55:52.485370+00:00",
+  "scope": "Read-only Cloudflare UI inspection of the named configured token, plus active dedicated-Keychain token verification",
+  "tokenName": "fanmark-app-staging-monitor",
+  "loggedInOwner": "fanmark.id@gmail.com",
+  "configuredPermissions": [
+    {
+      "resource": "Account",
+      "product": "D1",
+      "level": "Read"
+    },
+    {
+      "resource": "Account",
+      "product": "Workers Scripts",
+      "level": "Read"
+    }
+  ],
+  "configuredAccountCount": 1,
+  "configuredAccountDisplay": "Fanmark.id@gmail.com's Account",
+  "configuredStartDate": "2026-10-04",
+  "configuredExpiryDate": "2026-11-04",
+  "configurationPolicyReadOnlyConfirmed": true,
+  "monitorTokenActive": true,
+  "permissionDetailsApiStatus": 403,
+  "effectiveCredentialPolicyMachineVerified": false,
+  "credentialValueReadOrExportedByBrowser": false,
+  "tokenCreatedOrRotated": false,
+  "permissionsOrExpiryChanged": false,
+  "limitations": [
+    "UI configuration inspection is distinct from machine verification of the active credential policy; the status CLI still reports leastPrivilegeAccepted=false.",
+    "Read-only account permissions apply within the configured account; the observation CLI separately restricts its fixed Worker and databases."
+  ]
+}

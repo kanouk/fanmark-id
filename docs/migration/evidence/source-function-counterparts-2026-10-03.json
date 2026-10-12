@@ -838,7 +838,7 @@
         "location": "M:1079; enabled auth.users binding in all-schema catalog",
         "actor": "Worker internal / retain Auth provisioning behavior",
         "boundaryAndEvidence": "Credential signup coordinator uses server-derived private username/display defaults, Free plan, captured language, reserved invitation and setup=false; selected OAuth candidate uses private provider-subject markers and setup=true. Native invitation-required Japanese credential signup also accepted server defaults and exact invitation attribution in staging-invitation-signup-native-2026-10-08.json.",
-        "remainingBoundary": "Literal source expressions and full25 Business/Auth core/0007/0008 signup15/15 cover credential defaults, retry/capacity and forged metadata. Native OAuth54/54 adds core/0009 and covers all four new-user callbacks/initial setup, cross-D1 commit/ACK recovery, conflicts, suspension and state/schema guards. Target deliberately narrows caller metadata. Actual credential email registration/verification/reset/login, invitation-required native signup/one-time consumption/verification/login/logout (2026-10-08), and Google/GitHub first callback/provisioning/human initial-password/logout/relogin are accepted in their dated receipts. Apple/Discord actual callbacks linked the existing Google account; new-user/initial-settings/Apple relay remain unaccepted. The invitation fixture was removed with independent all-baseline hash equality; original controlled staging accounts remain retained; external callers, role custody and final integration remain open. See source-signup-provisioning.md, oauth-signup-provisioning.md, staging-email-password-login-2026-10-05.json, google-staging-real-auth-2026-10-04.json and github-staging-real-auth-2026-10-04.json."
+        "remainingBoundary": "Literal source expressions and full25 Business/Auth core/0007/0008 signup15/15 cover credential defaults, retry/capacity and forged metadata. Native OAuth54/54 adds core/0009 and covers all four new-user callbacks/initial setup, cross-D1 commit/ACK recovery, conflicts, suspension and state/schema guards. Target deliberately narrows caller metadata. Actual credential email registration/verification/reset/login, invitation-required native signup/one-time consumption/verification/login/logout (2026-10-08), and Google/GitHub first callback/provisioning/human initial-password/logout/relogin are accepted in their dated receipts. Apple previously linked the existing Google account; Apple first-user/password setup/relay remain unaccepted. One separate newly provisioned Discord identity completed human first-password setup, explicit logout and same-identity email/password relogin on 2026-10-09, with independent Auth/business readback; the other pending Discord identity is retained. See discord-staging-first-password-relogin-2026-10-09.json. The invitation fixture was removed with independent all-baseline hash equality; original controlled staging accounts remain retained; external callers, role custody and final integration remain open. See source-signup-provisioning.md, oauth-signup-provisioning.md, staging-email-password-login-2026-10-05.json, google-staging-real-auth-2026-10-04.json and github-staging-real-auth-2026-10-04.json."
       },
       "counterpartSemanticApprovalInferred": false
     },
@@ -1894,7 +1894,7 @@
         "location": "T:2237; F useAuthForm.tsx:154, useInvitationCode.tsx:43",
         "actor": "Worker public",
         "boundaryAndEvidence": "Pre-auth invitation validity DTO for the selected signup coordinator. Native invalid code rejection and valid code application, followed by successful signup and depleted-code API rejection, are accepted in staging-invitation-signup-native-2026-10-08.json.",
-        "remainingBoundary": "Implemented validation exposes the bounded signup contract rather than raw invitation/config rows. Native15 signup cases cover invalid/depleted invitation and capacity behavior. The 2026-10-08 actual Japanese invitation-required signup now accepts the public validation and one-time consumption path on Workerf6d162c5, including mail verification/login/logout and independent cleanup readback. Real Google/GitHub new-user provisioning is accepted separately; Apple/Discord new-user provisioning, external/direct callers and final integration remain open. See invitation-signup-api.md and staging-invitation-signup-native-2026-10-08.json."
+        "remainingBoundary": "Implemented validation exposes the bounded signup contract rather than raw invitation/config rows. Native15 signup cases cover invalid/depleted invitation and capacity behavior. The 2026-10-08 actual Japanese invitation-required signup now accepts the public validation and one-time consumption path on Workerf6d162c5, including mail verification/login/logout and independent cleanup readback. Real Google/GitHub new-user provisioning is accepted separately; One separate newly provisioned Discord identity completed human first-password setup, explicit logout and same-identity email/password relogin on 2026-10-09; the other pending Discord identity is retained. Apple new-user provisioning/relay, external/direct callers and final integration remain open. See discord-staging-first-password-relogin-2026-10-09.json. See invitation-signup-api.md and staging-invitation-signup-native-2026-10-08.json."
       },
       "counterpartSemanticApprovalInferred": false
     },
@@ -1949,5 +1949,14 @@
     "evidence": "staging-invitation-signup-native-2026-10-08.json",
     "scope": "Native Safari Japanese invitation-required signup, human mail verification, password login, logout, exact-owned cleanup only",
     "wholeSourceEquivalenceInferred": false
+  },
+  "discordFirstPasswordNativeAcceptance": {
+    "evidence": "discord-staging-first-password-relogin-2026-10-09.json",
+    "scope": "one separate newly provisioned identity only",
+    "firstPasswordLogoutEmailReloginAccepted": true,
+    "otherPendingIdentityRetained": true,
+    "appleNewIdentityOrRelayAccepted": false,
+    "sourceDefinitionsChanged": false,
+    "fullRuntimeReconciled": false
   }
 }

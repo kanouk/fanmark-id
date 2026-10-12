@@ -24,6 +24,16 @@ runtime/authorization fingerprintは前回と一致した。システムcatalog�
 CI `38292063743`のapplication jobは旧archive名だけを許可する検査で失敗した。検査を既知archive/main一致へ修正し、
 旧固定V2を参照していた運用monitorとincarnation回帰期待もV3へ合わせた。稼働Worker sourceはa6f600bのまま。
 
+招待登録/Discord新規identityの対応表に残っていた古い未確認記述を、10月8日・9日の限定native証拠へ合わせた。
+現行source metadataで58関数の定義hashとidentityは不変、対応付け13件の検査は成功した。再認証やメール配送は0。
+これは新V3のprovider受け入れではなく、Apple/外部caller/role custody/実端末/最終統合とclassifier54のgateは保持する。
+[対応表の限定更新](evidence/source-signup-counterpart-acceptance-refresh-2026-10-13.json)。
+
+運用monitor/構成guard修正 `bb37df8` / CI `38292623175` はapplication・Worker両job成功。
+Cloudflare UIのnamed monitor tokenは、同じfanmark所有者の1アカウントだけにD1 Read/Workers Scripts Readを設定、11月4日期限と確認した。
+APIのtoken権限詳細は403のため、機械的なeffective-policy検証とは区別し、CLIのleastPrivilegeAccepted=falseを維持する。
+トークン・権限・期限の変更は0。[限定権限確認](evidence/staging-monitor-configured-permissions-2026-10-13.json)。
+
 以下のcandidate記録は切替前の履歴。
 
 ## 2026-10-13: fresh five-store/V3 candidate, not routed
