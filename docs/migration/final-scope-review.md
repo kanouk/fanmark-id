@@ -11,7 +11,9 @@
 Apple本人認証・非公開メール選択と実受信、およびtarget機能の最終判定は残る。
 実ユーザー/Auth/Storage移送と本番domain/DNSは最後の#38。以下の範囲未確定/Resend login待ちは各時点の履歴。
 
-現行通常stagingは **f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64** / source **cb3c1f3**。
+現行通常stagingは **19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd** / source **fdd16ef**。
+検索の現所有/grace選択もlocal D1 17/API4/client6・実Cloudflare8項目と独立cleanup/通常保持確認を受け入れた。
+[限定証拠](evidence/search-current-license-native-2026-10-13.json)。
 お気に入りの現所有者選択もlocal D1 19/client6・実Cloudflare5項目・独立cleanup/通常保持確認を受け入れた。
 [限定証拠](evidence/favorites-current-license-native-2026-10-13.json)。
 Adminの移管無制限もlocal46件・実Cloudflare4項目・独立cleanup/通常保持確認を受け入れた。

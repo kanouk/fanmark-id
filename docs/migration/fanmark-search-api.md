@@ -83,8 +83,10 @@ selects one latest license by NULL-first end ordering. It also selects raw confi
 content, which the narrower target search endpoint deliberately never queries.
 Its latest-license selection differs from availability/secure availability and
 the combined lottery helper: those choose the earliest currently blocking
-active/grace license with NULL last. The target preserves these separate
-contracts. The combined lottery RPC has no literal frontend/Edge invocation in
+active/grace license with NULL last. The target now prioritizes live active
+ownership and then blocking grace over retired history; the source NULL-first
+ordering remains within each group and for history-only fallback. Source RPC
+ordering is unchanged. The separate helper contracts retain their own scopes. The combined lottery RPC has no literal frontend/Edge invocation in
 the current repository (only its generated type declaration was found). Its
 external/dynamic consumers,
 ties between NULL-end historical licenses, full policy reconciliation and
@@ -167,7 +169,7 @@ closed. No current remote search-details, int64 boundary, historical-row or
 external-caller acceptance is inferred. Private proof and the remaining six
 work packages are referenced in HANDOFF/COMPLETION.
 
-## Current ownership correction (2026-10-13 candidate)
+## Current ownership correction accepted (2026-10-13)
 
 Native local D1 reproduced two retired-history cases returning the old owner
 and `is_blocked_for_registration=false` despite a live finite license. The
@@ -177,4 +179,5 @@ clock drives selection and response lifecycle fields. Existing NULL-first end
 ordering remains within each group and for history-only fallback; protected
 config omission and caller-specific lottery filtering stay unchanged.
 This corrects target current-ownership behavior; it does not modify source RPCs.
-Local/full CI/native acceptance and normal rollout are tracked separately.
+Local D1 17/API4/client6 and both CI38393726318 jobs passed. Eight actual Cloudflare cases were accepted, owned Worker/2D1 removed, and normal staging 19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd independently read back.
+[Native and rollout receipt](evidence/search-current-license-native-2026-10-13.json).

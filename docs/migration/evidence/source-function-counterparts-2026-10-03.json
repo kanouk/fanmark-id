@@ -540,8 +540,8 @@
       "counterpart": {
         "location": "T:2013; F useFanmarkSearch.tsx:327,560; F preview/settings pages",
         "actor": "Worker public/user",
-        "boundaryAndEvidence": "Search uses a narrow DTO and Better Auth session-derived pending lottery state; settings/profile use separate owner APIs",
-        "remainingBoundary": "Fresh body review and full-schema native D1 search13/13 cover sessions, anonymous state, caller-ID refusal, lifecycle precision, config omission and revoked/suspended sessions. Source latest NULL-first ordering is retained; NULL-end history ties and imported-row parity remain open. See `fanmark-search-api.md`."
+        "boundaryAndEvidence": "Search uses a narrow DTO and Better Auth session-derived pending lottery state; settings/profile use separate owner APIs; current target prioritizes live active ownership and blocking grace before retired history",
+        "remainingBoundary": "Historical native13 source-shape/session/privacy acceptance keeps its scope. Current correction fdd16ef accepted native local17/API4/client6 and actual Cloudflare8, with exact-owned cleanup and normal19aa1e2f independent readback; see search-current-license-native-2026-10-13.json. NULL-first/end ordering is retained within live/grace/history groups. Source RPC and real imported-row/unknown external-consumer conditions remain separate #38; full legacy JWT bridge excluded by direct owner decision."
       },
       "counterpartSemanticApprovalInferred": false
     },

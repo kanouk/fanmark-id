@@ -1,3 +1,16 @@
+## 2026-10-13: 検索の現所有・grace判定を修正し通常stagingへ反映
+
+終了済み履歴を選び、現在の所有があるのに取得可能と返す2ケースを実D1で再現・修正。
+有効なactive、取得を保留するgrace、その他の履歴の順に選び、各群内のNULL-first/end順は保持する。
+native local D1 17/API4/client6・typecheck/lint、source fdd16efのCI38393726318両jobが成功。
+実Cloudflareで8項目を確認し、専用Worker/2D1と秘密fixture fileを削除。別readonlyで元inventoryとmain保持を照合した。
+初回CIのWorker API2件は旧引数数を期待して失敗。時刻/本人IDの厳密な検証を更新し、再試験で通過。旧run全体はcancelledとして保持する。
+通常mainは **19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd** / runtime **fdd16ef**。
+独立readonlyでbinding114・3D1 schema/件数/FK0・asset10・catalog・backup/monitor保持を確認。
+[限定証拠](evidence/search-current-license-native-2026-10-13.json)。旧JWT全機能中継は本人判断で対象から除外済み。
+Apple非公開メールの本人認証・実受信とtarget/PRの最終判定は残る。実ユーザー/Auth/Storageと本番domain/DNSは最後の#38。
+以下は各時点の履歴。
+
 ## 2026-10-13: 移行方針を本人回答で確定
 
 ユーザーは「現在の方針を継続：Cloudflare環境を完成させ、既存ユーザー移送と再ログインは最後」を選択した。

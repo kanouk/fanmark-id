@@ -611,5 +611,10 @@
     "userAnswer": "現在の方針を継続：Cloudflare環境を完成させ、既存ユーザー移送と再ログインは最後（推奨）",
     "originalScopeOverrideExplicit": true
   },
-  "resendReloginCompleted": true
+  "resendReloginCompleted": true,
+  "currentRuntimeAfterScopedFix": {
+    "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a",
+    "normalStagingVersion": "19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd",
+    "proof": "docs/migration/evidence/search-current-license-native-2026-10-13.json"
+  }
 }
