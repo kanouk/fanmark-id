@@ -118,3 +118,21 @@ Mac fileを保存せずsource側のcopyだけで済ませたとはしない。
 全最終recaptureとsession失効を維持する。通常defaultの小さいfixture入口は従来通り。
 
 [新方式のlocal限定証拠](evidence/representative-recovery-capacity-r2-transport-local-2026-10-13.json)：native2件と全Master復旧/画像配信/SDK/cleanupは成功。実CLIのupload/download全bytes一致・CI・実Cloudflare成功は未確認。
+
+## 全plaintextの同時保持を避ける共有候補（2026-10-13）
+
+393c4c1の[実file転送](evidence/representative-recovery-capacity-r2-transport-failure-2026-10-13.json)は
+CLI upload/download全bytes一致まで成功したが、画像工程のnative memory超過は残った。
+全5caseの失敗を保持し、全一時資源を削除/元構成と本人Authの独立照合まで受け入れた。
+大きいHTTP bodyの回避だけで原因解消・復旧成功としない。
+
+新共有候補は、入力のmutable container/byte配列を所有copyで固定し、immutable ciphertext文字列は
+共有して余分な全archive複製を作らない。全part/相互関係を初めに検証し、session失効方針の
+wanted hashesを確定して全plaintextを解放する。全targetの事前確認は維持し、各storeだけを
+再度open/restoreする。最終は全store recapture、全hash、Auth/Business相互関係とfenceを確認する。
+入力がMaster verified後に変更されても、固定したcipher/配列で後続storeを復旧するtestを追加した。
+source fileを変更せず、wrong key/part mixing・先行不一致の全target write拒否・exact resumeを維持する。
+
+型check・関連17件と全Master/同じ件数容量のlocal復旧・画像配信/SDK/cleanupは成功。
+[local限定証拠](evidence/representative-recovery-capacity-one-store-local-2026-10-13.json)。
+CI/実Cloudflareは別の未完了条件。native memory上限や全最大量、本番RTOの保証にしない。

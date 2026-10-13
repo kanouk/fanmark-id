@@ -135,14 +135,24 @@ test('one private recovery set restores native split D1 and both R2 stores with 
       assert.equal(await target.auth.prepare('SELECT COUNT(*) AS count FROM session').first('count'), 1);
       assert.deepEqual(await (await target.avatars.get(user + '/a.png')).arrayBuffer(), new Uint8Array([1, 2, 3]).buffer);
     });
-    await t.test('explicit revocation drops sessions/challenges while keeping credential data', async () => {
-      const result = await restoreRecoverySet(revoked, reopened, context, key, {...options, mode: 'new-empty', targetIds: ids('REVOKED'), targetGuard: guard('REVOKED'),
-        sessionPolicy: 'revoke-local-sessions-and-challenges', isolatedFidelity: false});
+    await t.test('revocation retains credentials and later per-store opens use captured caller input', async () => {
+      const mutable = structuredClone(reopened);
+      const result = await restoreRecoverySet(revoked, mutable, context, key, {...options, mode: 'new-empty', targetIds: ids('REVOKED'), targetGuard: guard('REVOKED'),
+        sessionPolicy: 'revoke-local-sessions-and-challenges', isolatedFidelity: false,
+        progress: async receipt => {
+          if (receipt.store === 'master' && receipt.state === 'verified') {
+            mutable.parts.covers.ciphertext = 'changed-after-validation';
+            mutable.parts.auth.ciphertext[0] ^= 1;
+          }
+        }});
       assert.equal(result.sessionPolicy, 'revoke-local-sessions-and-challenges');
       assert.notEqual(result.restoredHashes.auth, before.manifest.parts.auth.snapshotHash);
       assert.equal(await revoked.auth.prepare('SELECT COUNT(*) AS count FROM session').first('count'), 0);
       assert.equal(await revoked.auth.prepare('SELECT COUNT(*) AS count FROM verification').first('count'), 0);
       assert.equal(await revoked.auth.prepare('SELECT password FROM account').first('password'), before.snapshots.auth.tables.account[0].password);
+      assert.equal(result.restoredHashes.covers, before.manifest.parts.covers.snapshotHash);
+      assert.equal(mutable.parts.covers.ciphertext, 'changed-after-validation');
+      assert.deepEqual(await readFile(filename), fileBytes);
       for (const store of ['auth', 'business', 'master']) assert.equal((await revoked[store].prepare('PRAGMA foreign_key_check').all()).results.length, 0);
     });
     console.info(JSON.stringify({proof: 'recovery-set-native-local', stores: 5, privateFile: true, allPartsAuthenticatedBeforeWrites: true,

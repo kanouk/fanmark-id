@@ -32,6 +32,25 @@ const FORMAT = "fanmark-recovery-set-v1", HASH = /^[a-f0-9]{64}$/u, ID = /^[A-Za
 const encoder = new TextEncoder(), aad = encoder.encode(FORMAT);
 const MAX_PART_JSON_BYTES = 128 * 1024 * 1024, MAX_SET_JSON_BYTES = 256 * 1024 * 1024;
 function fail(code: string): never {throw new Error("recovery_set_" + code);}
+/** Own mutable containers without serializing another copy of immutable ciphertext strings. */
+function ownArchiveValue<T>(value: T, seen = new Map<object, unknown>()): T {
+  if (value === null || typeof value !== "object") {
+    if (typeof value === "function" || typeof value === "symbol") return structuredClone(value);
+    return value;
+  }
+  if (seen.has(value)) return seen.get(value) as T;
+  const prototype = Object.getPrototypeOf(value);
+  if (!Array.isArray(value) && prototype !== Object.prototype && prototype !== null) {
+    const copied = structuredClone(value); seen.set(value, copied); return copied;
+  }
+  const copied = Array.isArray(value) ? new Array(value.length) : Object.create(prototype);
+  seen.set(value, copied);
+  for (const name of Object.keys(value)) Object.defineProperty(copied, name, {
+    value: ownArchiveValue((value as Record<string, unknown>)[name], seen),
+    enumerable: true, configurable: true, writable: true,
+  });
+  return copied as T;
+}
 function exactKeys(value: object, keys: readonly string[]): boolean {
   return !!value && typeof value === "object" && !Array.isArray(value) && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 }
@@ -122,7 +141,7 @@ export async function openRecoverySet(archive: RecoverySetArchive, context: Reco
       archive.ciphertext.length < 16 || archive.ciphertext.length > 65_536 ||
       [...archive.nonce, ...archive.ciphertext].some(v => !Number.isInteger(v) || v < 0 || v > 255)) fail("archive_invalid");
   // Caller objects cannot be changed between manifest verification and component decrypts.
-  archive = structuredClone(archive); const hashes = await partHashes(archive.parts);
+  archive = ownArchiveValue(archive); const hashes = await partHashes(archive.parts);
   let plaintext: ArrayBuffer;
   try {plaintext = await crypto.subtle.decrypt({name: "AES-GCM", iv: new Uint8Array(archive.nonce), additionalData: aad},
     key, new Uint8Array(archive.ciphertext));} catch {fail("manifest_invalid");}
@@ -145,6 +164,42 @@ export async function openRecoverySet(archive: RecoverySetArchive, context: Reco
   if (RECOVERY_SET_STORES.some(store => actual[store] !== manifest.parts[store].snapshotHash)) fail("snapshot_mismatch");
   crossStoreValid(snapshots); return {manifest, snapshots};
 }
+
+async function applySessionPolicy(snapshot: AuthRecoverySnapshot, policy: AuthRecoverySessionPolicy): Promise<void> {
+  if (policy !== "revoke-local-sessions-and-challenges") return;
+  for (const table of ["session", "mfaAssurance", "verification"]) snapshot.tables[table] = [];
+  snapshot.rowsHash = await authRecoveryDigest(snapshot.tables);
+}
+async function restorePins(archive: RecoverySetArchive, context: RecoverySetContext, key: CryptoKey,
+  policy: AuthRecoverySessionPolicy): Promise<{manifest: Manifest; wantedHashes: Record<RecoverySetStore, string>}> {
+  const {manifest, snapshots} = await openRecoverySet(archive, context, key);
+  await applySessionPolicy(snapshots.auth, policy);
+  return {manifest, wantedHashes: await snapshotHashes(snapshots)};
+}
+async function validateR2Target(bucket: R2Bucket, archive: R2RecoveryArchive, key: CryptoKey,
+  kind: "avatars" | "cover-images", mode: "new-empty" | "resume-exact"): Promise<void> {
+  const desired = await openR2(archive, key, kind), current = await captureR2(bucket, kind);
+  if (mode === "new-empty" && current.objects.length) fail("target_not_empty");
+  const wanted = new Map(desired.objects.map(o => [o.key, o]));
+  if (current.objects.some(o => JSON.stringify(o) !== JSON.stringify(wanted.get(o.key)))) fail("target_mismatch");
+}
+async function restoreOneStore(bindings: RecoverySetBindings, archive: RecoverySetArchive, context: RecoverySetContext,
+  key: CryptoKey, store: RecoverySetStore, options: {mode: "new-empty" | "resume-exact";
+    sessionPolicy: AuthRecoverySessionPolicy; isolatedFidelity?: boolean}): Promise<void> {
+  if (store === "master") await restoreMaster(bindings.master,
+    await openMaster(archive.parts.master, key, context.schemaHashes.master), context.schemaHashes.master);
+  else if (store === "business") await restoreBusiness(bindings.business,
+    await openBusiness(archive.parts.business, key, context.schemaHashes.business), context.schemaHashes.business);
+  else if (store === "auth") {
+    const snapshot = await openAuth(archive.parts.auth, key, context.schemaHashes.auth, context.authSecret);
+    await applySessionPolicy(snapshot, options.sessionPolicy);
+    await restoreAuth(bindings.auth, snapshot, {expectedSchemaHash: context.schemaHashes.auth,
+      authSecret: context.authSecret, sessionPolicy: options.sessionPolicy, isolatedFidelity: options.isolatedFidelity});
+  } else {
+    const kind = store === "avatars" ? "avatars" : "cover-images";
+    await restoreR2(bindings[store], await openR2(archive.parts[store], key, kind), {expectedKind: kind, mode: options.mode});
+  }
+}
 /** All targets must remain isolated/closed until this returns. Separate D1/R2 commits are never rolled back across stores. */
 export async function restoreRecoverySet(bindings: RecoverySetBindings, archive: RecoverySetArchive, context: RecoverySetContext,
   key: CryptoKey, options: {mode: "new-empty" | "resume-exact"; sessionPolicy: AuthRecoverySessionPolicy;
@@ -159,13 +214,10 @@ export async function restoreRecoverySet(bindings: RecoverySetBindings, archive:
   if (!exactKeys(options.targetIds, RECOVERY_SET_STORES) || Object.values(options.targetIds).some(id =>
       typeof id !== "string" || !ID.test(id) || Object.values(context.sourceIds).includes(id)) ||
       new Set(Object.values(options.targetIds)).size !== 5) fail("target_identity_invalid");
-  const {manifest, snapshots} = await openRecoverySet(archive, context, key);
+  archive = ownArchiveValue(archive);
+  const {manifest, wantedHashes} = await restorePins(archive, context, key, options.sessionPolicy);
   context = structuredClone(context);
-  if (options.sessionPolicy === "revoke-local-sessions-and-challenges") {
-    for (const table of ["session", "mfaAssurance", "verification"]) snapshots.auth.tables[table] = [];
-    snapshots.auth.rowsHash = await authRecoveryDigest(snapshots.auth.tables);
-  }
-  const wantedHashes = await snapshotHashes(snapshots), existing = new Set<RecoverySetStore>();
+  const existing = new Set<RecoverySetStore>();
   await held(options.targetGuard, options.targetIds);
   // Validate every destination before the first write, including exact committed D1s after an unknown ACK.
   for (const store of ["auth", "business", "master"] as const) {
@@ -178,25 +230,15 @@ export async function restoreRecoverySet(bindings: RecoverySetBindings, archive:
     if (await digest(current) !== wantedHashes[store]) fail("target_mismatch"); existing.add(store);
   }
   for (const store of ["avatars", "covers"] as const) {
-    const current = await captureR2(bindings[store], store === "avatars" ? "avatars" : "cover-images");
-    if (options.mode === "new-empty" && current.objects.length) fail("target_not_empty");
-    const wanted = new Map(snapshots[store].objects.map(o => [o.key, o]));
-    if (current.objects.some(o => JSON.stringify(o) !== JSON.stringify(wanted.get(o.key)))) fail("target_mismatch");
+    await validateR2Target(bindings[store], archive.parts[store], key,
+      store === "avatars" ? "avatars" : "cover-images", options.mode);
   }
   for (const store of ["master", "business", "auth", "avatars", "covers"] as const) {
     await held(options.targetGuard, options.targetIds); await options.progress({store, state: "started"});
     await held(options.targetGuard, options.targetIds);
     if (!existing.has(store)) {
-      if (store === "master") await restoreMaster(bindings.master, snapshots.master, context.schemaHashes.master);
-      else if (store === "business") await restoreBusiness(bindings.business, snapshots.business, context.schemaHashes.business);
-      else if (store === "auth") await restoreAuth(bindings.auth, snapshots.auth, {expectedSchemaHash: context.schemaHashes.auth,
-        authSecret: context.authSecret, sessionPolicy: options.sessionPolicy, isolatedFidelity: options.isolatedFidelity});
-      else await restoreR2(bindings[store], snapshots[store], {expectedKind: store === "avatars" ? "avatars" : "cover-images", mode: options.mode});
+      await restoreOneStore(bindings, archive, context, key, store, options);
     }
-    // The desired hashes are already pinned. Release each completed store's
-    // plaintext before the next restore and the complete final recapture.
-    // This mutates only this call's decrypted snapshots, never the input archive.
-    delete (snapshots as Partial<Snapshots>)[store];
     await held(options.targetGuard, options.targetIds); await options.progress({store, state: "verified"});
   }
   const actual = await captureAll(bindings, {...context, sourceIds: options.targetIds}, options.targetGuard);

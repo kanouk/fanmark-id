@@ -1,3 +1,19 @@
+## 最新の保留（2026-10-13 11:48 JST）
+
+393c4c1/CI38336458978は両job成功。Mac保存fileのCLI upload/download全bytes一致とetag参照は
+成功したが、画像復旧はnative exceededMemoryで終了した。実version/開始時刻/1失敗で終了を確認し、
+operator failureを保持。全5caseの一時資源を削除、別processで元の12D1/12R2/4Worker/8DO・
+main cc82c298・binding/schema/件数/本人Apple・credential/session/Freeを照合した。復旧POST再送0。
+[転送成功と復旧失敗](evidence/representative-recovery-capacity-r2-transport-failure-2026-10-13.json)、
+[5case後の独立保持確認](evidence/representative-recovery-capacity-five-failures-cleanup-2026-10-13.json)。
+
+次の候補は、全part/相互関係を復号検証し、session方針適用後のwanted hashesを確定してからpayloadを解放、
+各storeを1つずつ再度復号・復旧する構成。大きなimmutable cipher文字列の複製を避けつつ、
+mutable container/配列は所有copyで固定する。全target事前検証/最終recapture/相互関係/fenceを維持。
+型check・関連17件（途中のcaller入力変更拒否を含む）と全Master入りlocal復旧/画像配信/SDK/cleanupは成功。
+[local限定証拠](evidence/representative-recovery-capacity-one-store-local-2026-10-13.json)。CIと実Cloudflareは未受け入れ。
+通常main再配備・実ユーザー/Auth/Storage移送・本番domain/DNS変更は0。Apple relay実受信は宛先なしで未確認。
+
 ## 最新の保留（2026-10-13 11:15 JST）
 
 共有修正a4541dc/CI38333543500は両job成功したが、最初は業務D1のrestore_failed（原因未確定）、
