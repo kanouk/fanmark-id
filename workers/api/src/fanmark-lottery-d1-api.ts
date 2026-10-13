@@ -162,9 +162,15 @@ function auditGuard(
     now, newStatus, now, ...metadataBindings, newStatus, now, newStatus, now);
 }
 
+interface LotteryPlanSnapshot {
+  plan: string;
+  key: string | null;
+  value: string | null;
+}
+
 async function failedApplication(
   db: D1Database, userId: string, fanmarkId: string, licenseId: string, now: string,
-  limit: number | null, reuse: boolean,
+  limit: number | null, reuse: boolean, snapshot: LotteryPlanSnapshot,
 ): Promise<Response> {
   const concurrentEntry = await db.prepare(`
     SELECT entry_status FROM fanmark_lottery_entries
@@ -179,6 +185,14 @@ async function failedApplication(
       AND lifecycle_claim_id IS NULL
   `).bind(licenseId, fanmarkId, now).first();
   if (!stillGrace) throw new FanmarkLotteryApiError("Fanmark is not in grace period or not available for lottery", 400);
+  const profiles = await db.prepare("SELECT plan_type FROM user_settings WHERE user_id = ? LIMIT 2")
+    .bind(userId).all<SettingsRow>();
+  const currentValue = snapshot.key === null ? null :
+    (await db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 1")
+      .bind(snapshot.key).first<{ setting_value: unknown }>())?.setting_value ?? null;
+  if (profiles.results?.length !== 1 || profiles.results[0].plan_type !== snapshot.plan || currentValue !== snapshot.value) {
+    throw new FanmarkLotteryApiError("Your plan or fanmark limit changed. Please try again.", 409);
+  }
   const active = limit === null ? null : await db.prepare(`
     SELECT COUNT(*) AS count FROM fanmark_licenses
     WHERE user_id = ? AND status = 'active' AND is_returned = 0
@@ -224,6 +238,7 @@ async function apply(
   }
   const planType = typeof settings.results[0].plan_type === "string" ? settings.results[0].plan_type : "free";
   let limit: number | null = null;
+  const planSnapshot: LotteryPlanSnapshot = { plan: planType, key: null, value: null };
   if (planType !== "admin") {
     const limitKeys: Record<string, string> = {
       free: "free_fanmarks_limit",
@@ -233,6 +248,7 @@ async function apply(
       max: "max_fanmarks_limit",
     };
     const limitKey = limitKeys[planType] ?? "free_fanmarks_limit";
+    planSnapshot.key = limitKey;
     let limitSetting: { setting_value: unknown } | null = null;
     try {
       limitSetting = await db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 1")
@@ -241,6 +257,7 @@ async function apply(
       // Source ignores a settings-query error and uses the built-in default.
     }
     limit = limitSetting?.setting_value ? parseLimit(limitSetting.setting_value) : 3;
+    planSnapshot.value = typeof limitSetting?.setting_value === "string" ? limitSetting.setting_value : null;
     const active = await db.prepare(`
       SELECT COUNT(*) AS count FROM fanmark_licenses
       WHERE user_id = ? AND status = 'active' AND is_returned = 0
@@ -274,14 +291,18 @@ async function apply(
   const entryId = typeof oldEntry?.id === "string" ? oldEntry.id : crypto.randomUUID();
   const auditId = crypto.randomUUID();
   const statements: D1PreparedStatement[] = [];
-  const capacityGuard = limit === null
+  const countGuard = limit === null
     ? "1 = 1"
     : `(
         SELECT COUNT(*) FROM fanmark_licenses
         WHERE user_id = ? AND status = 'active' AND is_returned = 0
           AND (license_end IS NULL OR license_end > ?)
       ) < ?`;
-  const capacityBindings = limit === null ? [] : [userId, now, limit];
+  const capacityGuard = `${countGuard}
+    AND (SELECT COUNT(*) FROM user_settings WHERE user_id = ? AND plan_type = ?) = 1
+    AND (? IS NULL OR (SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 1) IS ?)`;
+  const capacityBindings = [...(limit === null ? [] : [userId, now, limit]),
+    userId, planSnapshot.plan, planSnapshot.key, planSnapshot.key, planSnapshot.value];
   const licenseGuard = `EXISTS (
     SELECT 1 FROM fanmark_licenses
     WHERE id = ? AND fanmark_id = ? AND status = 'grace' AND grace_expires_at > ?
@@ -326,11 +347,11 @@ async function apply(
   try {
     const results = await db.batch(statements);
     if (results[0]?.meta.changes !== 1) {
-      return failedApplication(db, userId, fanmarkId, licenseId, now, limit, Boolean(oldEntry));
+      return failedApplication(db, userId, fanmarkId, licenseId, now, limit, Boolean(oldEntry), planSnapshot);
     }
   } catch (error) {
     if (error instanceof FanmarkLotteryApiError) throw error;
-    return failedApplication(db, userId, fanmarkId, licenseId, now, limit, Boolean(oldEntry));
+    return failedApplication(db, userId, fanmarkId, licenseId, now, limit, Boolean(oldEntry), planSnapshot);
   }
 
   const probability = await db.prepare("SELECT lottery_probability, applied_at FROM fanmark_lottery_entries WHERE id = ?")

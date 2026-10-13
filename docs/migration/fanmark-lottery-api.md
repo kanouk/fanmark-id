@@ -1,5 +1,14 @@
 # Fanmark lottery entry Worker API
 
+The conditional apply/reapply mutation also verifies the preflight profile plan
+and exact limit-setting value. A concurrent setting insertion/edit or Admin-to-Free
+change cannot preserve an old allowance. Refusal leaves entry/audit/outbox rows
+unchanged and returns409 with a retry message when the snapshot changed. A new
+request rechecks the current limit; no automatic mutation retry is performed.
+The existing missing-setting fallback of three and unlimited Admin behavior are
+retained. When a failed settings read cannot match the actual configuration at
+commit, the snapshot guard refuses the write rather than trusting the fallback.
+
 This is the staging D1 implementation of the current `apply-fanmark-lottery`
 and `cancel-lottery-entry` Edge Function contracts. It covers application and
 cancellation only; selecting a winner, issuing the next license, and finalizing

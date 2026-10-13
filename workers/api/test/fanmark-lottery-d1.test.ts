@@ -122,6 +122,43 @@ afterEach(async () => {
 });
 
 describe("D1 fanmark lottery entry actions", () => {
+  it.each(["insert", "update", "plan"])("refuses a lottery capacity snapshot changed before the batch (%s)", async change => {
+    if (change !== "insert") await run("INSERT INTO system_settings (id,setting_key,setting_value,created_at,updated_at) VALUES(?,'free_fanmarks_limit',?,?,?)",
+      crypto.randomUUID(), change === "plan" ? "0" : "3", NOW, NOW);
+    if (change === "plan") await run("UPDATE user_settings SET plan_type='admin' WHERE user_id=?", OWNER);
+    const original = requestEnv.FANMARK_DB;
+    let injected = false;
+    requestEnv.FANMARK_DB = new Proxy(business!, {
+      get(target, property) {
+        if (property === "batch") return async (queries: D1PreparedStatement[]) => {
+          if (!injected) {
+            injected = true;
+            if (change === "plan") await run("UPDATE user_settings SET plan_type='free' WHERE user_id=?", OWNER);
+            else if (change === "update") await run("UPDATE system_settings SET setting_value='0' WHERE setting_key='free_fanmarks_limit'");
+            else await run("INSERT INTO system_settings(id,setting_key,setting_value,created_at,updated_at) VALUES(?,'free_fanmarks_limit','0',?,?)", crypto.randomUUID(), NOW, NOW);
+          }
+          return target.batch(queries);
+        };
+        const value = Reflect.get(target, property, target);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    try {
+      const result = await post("apply", { fanmark_id: FANMARK });
+      expect(injected).toBe(true);
+      expect(result.status).toBe(409);
+      for (const table of ["fanmark_lottery_entries", "audit_logs", "notification_events"]) expect(await count(table)).toBe(0);
+      expect(await business!.prepare("SELECT setting_value FROM system_settings WHERE setting_key='free_fanmarks_limit'").first())
+        .toEqual({ setting_value: "0" });
+    } finally {
+      requestEnv.FANMARK_DB = original;
+    }
+    await run("UPDATE system_settings SET setting_value='1' WHERE setting_key='free_fanmarks_limit'");
+    expect((await post("apply", { fanmark_id: FANMARK })).status).toBe(200);
+    expect(await count("fanmark_lottery_entries")).toBe(1);
+    expect(await count("audit_logs")).toBe(1);
+  });
+
   it("applies atomically, returns the source contract, and enqueues the best-effort event", async () => {
     const response = await post("apply", { fanmark_id: FANMARK });
     expect(response.status).toBe(200);

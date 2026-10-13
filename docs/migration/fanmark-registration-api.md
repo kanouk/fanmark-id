@@ -31,6 +31,21 @@ default.
 
 ## Input and identity rules
 
+Cloudflare registration enforces the PRODUCT plan limit on the server, including
+direct HTTP requests that bypass the frontend's disabled button. The limit comes
+from the authenticated user's Business profile and the corresponding setting;
+missing settings use Free3/Creator10/Max500/Business50/Enterprise100, and Admin is
+unlimited. Missing/ambiguous profiles and malformed limits fail closed.
+Active licenses with a future or NULL end count toward capacity; expired ends
+and foreign owners do not. A first assertion in the same Business D1 batch
+rechecks current capacity and the exact profile-plan/setting snapshot, so a
+competing acquisition or plan edit rolls back identity, license, config and audit
+writes. The API returns403 `fanmark_limit_exceeded`,409 `plan_limit_changed` for a
+changed snapshot that still has capacity, or503 for unavailable configuration.
+Mutations are not automatically resent. This deliberately fixes a source Edge
+behavior that relied on the frontend's limit gate; the Supabase production path
+is unchanged. Original availability, Tier and source pricing rules below remain.
+
 The JSON body accepts `user_input_fanmark`, one to five ordered `emoji_ids`, an
 optional matching `normalized_emoji_ids`, `accessType`, display/default names,
 redirect URL, text content, and `createProfile`. Request bodies are capped at

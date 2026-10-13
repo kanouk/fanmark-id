@@ -50,7 +50,10 @@ async function reset(): Promise<void> {
     "DELETE FROM fanmark_profiles", "DELETE FROM fanmark_redirect_configs", "DELETE FROM fanmark_messageboard_configs",
     "DELETE FROM fanmark_basic_configs", "DELETE FROM audit_logs", "DELETE FROM fanmark_lottery_entries",
     "DELETE FROM fanmark_licenses", "DELETE FROM fanmarks", "DELETE FROM system_settings",
+    "DELETE FROM user_settings",
   ]);
+  await business.prepare("INSERT INTO user_settings(user_id,plan_type) VALUES(?,'creator'),(?,'creator')")
+    .bind(OWNER, OTHER).run();
   await batch(master, [
     "DELETE FROM fanmark_emoji_master_active_release", "DELETE FROM fanmark_emoji_master_release_staging",
     "DELETE FROM fanmark_emoji_master_release_imports", "DELETE FROM fanmark_tiers",

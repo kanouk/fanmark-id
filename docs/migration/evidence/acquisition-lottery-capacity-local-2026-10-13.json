@@ -1,0 +1,61 @@
+{
+  "state": "local_capacity_regressions_accepted_pending_ci_and_native",
+  "observedAt": "2026-10-13T08:53:43.333Z",
+  "reproduction": {
+    "registrationOverFreeLimit": {
+      "beforeStatus": 201,
+      "expected": 403
+    },
+    "twoRegistrationsForOneSlot": {
+      "beforeStatuses": [
+        201,
+        201
+      ],
+      "expected": [
+        201,
+        403
+      ]
+    },
+    "lotteryConfigurationRace": {
+      "cases": 3,
+      "beforeStatuses": [
+        200,
+        200,
+        200
+      ],
+      "expected": 409
+    }
+  },
+  "validation": {
+    "registrationD1": 34,
+    "lotteryD1": 45,
+    "registrationClient": 6,
+    "workerTypecheck": true,
+    "focusedLint": true,
+    "perpetualTierCCounted": true,
+    "adminUnlimitedRegistration": true,
+    "expiredAndForeignLicensesExcluded": true,
+    "invalidLimitFailClosed": true,
+    "concurrentAcquisitionOnlyOne": true,
+    "planAndSettingSnapshotsCheckedInsideBatch": true,
+    "concurrentConfigWritesPreserved": true,
+    "retryAccepted": true
+  },
+  "sourceDifference": "Target registration now enforces the PRODUCT limit server-side; the source Edge handler had only the UI limit gate. Lottery missing-setting default3 and Admin unlimited remain unchanged.",
+  "code": [
+    {
+      "path": "workers/api/src/fanmark-registration-d1-api.ts",
+      "sha256": "8b94f35447bbaa8b3cbed5d5baf638f3b1782f66a7ae04969c774edcaca34f17"
+    },
+    {
+      "path": "workers/api/src/fanmark-lottery-d1-api.ts",
+      "sha256": "30b1839ae8be43106f7c7fa089ea92bda37e63357f4f04744d7799a8028eedfe"
+    }
+  ],
+  "proofScope": "Actual local Worker router, synthetic Better Auth sessions, current Business/Auth schemas and activated Master release. Historical reduced-schema regressions are included separately; not remote Cloudflare or whole App acceptance.",
+  "remoteAccepted": false,
+  "normalStagingRedeployed": false,
+  "sourceProductionChanged": false,
+  "sourceUsersMoved": false,
+  "domainChanged": false
+}

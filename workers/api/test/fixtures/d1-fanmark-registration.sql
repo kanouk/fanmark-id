@@ -1,5 +1,10 @@
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id TEXT PRIMARY KEY,
+  plan_type TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS fanmarks (
   id TEXT PRIMARY KEY,
   user_input_fanmark TEXT NOT NULL,

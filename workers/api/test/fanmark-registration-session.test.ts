@@ -161,7 +161,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await business.batch([
     "fanmark_favorites", "fanmark_discoveries", "fanmark_profiles", "fanmark_basic_configs",
-    "audit_logs", "fanmark_licenses", "fanmarks", "user_settings",
+    "audit_logs", "fanmark_licenses", "fanmarks", "user_settings", "system_settings",
   ].map(table => business.prepare(`DELETE FROM ${table}`)));
   await auth.batch(['DELETE FROM "mfaAssurance"', 'DELETE FROM "twoFactor"', 'DELETE FROM "adminRole"',
     'DELETE FROM "session"', 'DELETE FROM "account"', 'DELETE FROM "user"'].map(sql => auth.prepare(sql)));
@@ -185,6 +185,105 @@ afterEach(async () => {
 });
 
 describe("registration through real Better Auth and all current D1 migrations", () => {
+  it("rejects direct registration beyond the Free plan limit without business writes", async () => {
+    await business.prepare("UPDATE user_settings SET plan_type='free' WHERE user_id=?").bind(OWNER).run();
+    const cookie = await signIn();
+    for (const [display, id] of [["🌹", ROSE], ["👍", THUMB], ["💗", HEART]]) {
+      expect((await register(cookie, display, [id])).status).toBe(201);
+    }
+    const tables = ["fanmarks", "fanmark_licenses", "fanmark_basic_configs", "fanmark_profiles", "audit_logs"];
+    const snapshot = async () => Promise.all(tables.map(async table => ({ table,
+      rows: (await business.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()).results,
+    })));
+    const before = await snapshot();
+    const refused = await register(cookie, "⭐", [STAR]);
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ error_code: "fanmark_limit_exceeded" });
+    expect(await snapshot()).toEqual(before);
+  });
+
+  it("allows only one registration when two requests compete for the last plan slot", async () => {
+    await business.prepare("UPDATE user_settings SET plan_type='free' WHERE user_id=?").bind(OWNER).run();
+    await business.prepare("INSERT INTO system_settings(id,setting_key,setting_value,created_at,updated_at) VALUES(?,'free_fanmarks_limit','1',?,?)")
+      .bind(crypto.randomUUID(), CREATED, CREATED).run();
+    const cookie = await signIn();
+    const results = await Promise.all([register(cookie, "🌹", [ROSE]), register(cookie, "👍", [THUMB])]);
+    expect(results.map(r => r.status).sort()).toEqual([201, 403]);
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM fanmark_licenses WHERE user_id=? AND status='active'")
+      .bind(OWNER).first()).toEqual({ count: 1 });
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM fanmarks").first()).toEqual({ count: 1 });
+  });
+
+  it("counts perpetual Tier C licenses toward the Free limit", async () => {
+    await business.prepare("UPDATE user_settings SET plan_type='free' WHERE user_id=?").bind(OWNER).run();
+    const cookie = await signIn();
+    for (const [display, ids] of [
+      ["🌹👍💗⭐", [ROSE, THUMB, HEART, STAR]],
+      ["⭐💗👍🌹", [STAR, HEART, THUMB, ROSE]],
+      ["👍🌹⭐💗", [THUMB, ROSE, STAR, HEART]],
+    ] as Array<[string, string[]]>) expect((await register(cookie, display, ids)).status).toBe(201);
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM fanmark_licenses WHERE license_end IS NULL").first())
+      .toEqual({ count: 3 });
+    expect((await register(cookie)).status).toBe(403);
+  });
+
+  it("preserves unlimited Admin acquisition and ignores expired or foreign licenses for capacity", async () => {
+    const cookie = await signIn();
+    await business.prepare("UPDATE user_settings SET plan_type='admin' WHERE user_id=?").bind(OWNER).run();
+    for (const [display, id] of [["🌹", ROSE], ["👍", THUMB], ["💗", HEART], ["⭐", STAR]]) {
+      expect((await register(cookie, display, [id])).status).toBe(201);
+    }
+    await business.prepare("UPDATE user_settings SET plan_type='free' WHERE user_id=?").bind(OWNER).run();
+    await business.prepare("UPDATE fanmark_licenses SET license_end=?").bind(CREATED).run();
+    // A different ordered identity remains obtainable despite four expired rows.
+    expect((await register(cookie, "🌹👍", [ROSE, THUMB])).status).toBe(201);
+    // The other owner has no active licenses and is not charged for these rows.
+    expect((await register(await signIn(OTHER), "👍🌹", [THUMB, ROSE])).status).toBe(201);
+  });
+
+  it("rolls back acquisition when the configured limit changes immediately before the batch", async () => {
+    await business.prepare("UPDATE user_settings SET plan_type='free' WHERE user_id=?").bind(OWNER).run();
+    const cookie = await signIn();
+    const original = runtime.FANMARK_DB;
+    let injected = false;
+    runtime.FANMARK_DB = new Proxy(business, {
+      get(target, property) {
+        if (property === "batch") return async (queries: D1PreparedStatement[]) => {
+          if (!injected) {
+            injected = true;
+            await target.prepare("INSERT INTO system_settings(id,setting_key,setting_value,created_at,updated_at) VALUES(?,'free_fanmarks_limit','0',?,?)")
+              .bind(crypto.randomUUID(), CREATED, CREATED).run();
+          }
+          return target.batch(queries);
+        };
+        const value = Reflect.get(target, property, target);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    try {
+      expect((await register(cookie)).status).toBe(403);
+      expect(injected).toBe(true);
+      for (const table of ["fanmarks", "fanmark_licenses", "fanmark_basic_configs", "fanmark_profiles", "audit_logs"]) {
+        expect(await business.prepare(`SELECT COUNT(*) AS count FROM ${table}`).first()).toEqual({ count: 0 });
+      }
+      expect(await business.prepare("SELECT setting_value FROM system_settings WHERE setting_key='free_fanmarks_limit'").first())
+        .toEqual({ setting_value: "0" });
+    } finally {
+      runtime.FANMARK_DB = original;
+    }
+    await business.prepare("UPDATE system_settings SET setting_value='1' WHERE setting_key='free_fanmarks_limit'").run();
+    expect((await register(cookie)).status).toBe(201);
+  });
+
+  it.each(["-1", "not-a-number", "1.5"])("refuses an invalid configured acquisition limit (%s)", async value => {
+    await business.prepare("UPDATE user_settings SET plan_type='free' WHERE user_id=?").bind(OWNER).run();
+    await business.prepare("INSERT INTO system_settings(id,setting_key,setting_value,created_at,updated_at) VALUES(?,'free_fanmarks_limit',?,?,?)")
+      .bind(crypto.randomUUID(), value, CREATED, CREATED).run();
+    expect((await register(await signIn())).status).toBe(503);
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM fanmarks").first()).toEqual({ count: 0 });
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM fanmark_licenses").first()).toEqual({ count: 0 });
+  });
+
   it("canonicalizes UUID case, keeps tone display/order, links favorites, and enforces identity ownership", async () => {
     const discoveryId = crypto.randomUUID();
     const normalized = JSON.stringify([ROSE, THUMB]);

@@ -396,6 +396,60 @@ function baseDatabase(env: Env): D1Database {
   return database;
 }
 
+interface RegistrationCapacity {
+  plan: string;
+  key: string | null;
+  value: string | null;
+  settingCount: number;
+  limit: number | null;
+  active: number;
+}
+
+async function registrationCapacity(db: D1Database, userId: string, now: string): Promise<RegistrationCapacity> {
+  const profiles = await db.prepare("SELECT plan_type FROM user_settings WHERE user_id = ? LIMIT 2")
+    .bind(userId).all<{ plan_type: unknown }>();
+  if (profiles.success !== true || profiles.results?.length !== 1) {
+    throw new FanmarkRegistrationError("user_settings_unavailable", 503);
+  }
+  const plan = profiles.results[0].plan_type;
+  const defaults: Record<string, number> = { free: 3, creator: 10, max: 500, business: 50, enterprise: 100 };
+  if (typeof plan !== "string" || (plan !== "admin" && !Object.hasOwn(defaults, plan))) {
+    throw new FanmarkRegistrationError("plan_limit_unavailable", 503);
+  }
+  const key = plan === "admin" ? null : `${plan}_fanmarks_limit`;
+  let value: string | null = null, settingCount = 0;
+  let limit: number | null = plan === "admin" ? null : defaults[plan];
+  if (key !== null) {
+    const settings = await db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 2")
+      .bind(key).all<{ setting_value: unknown }>();
+    if (settings.success !== true || !Array.isArray(settings.results) || settings.results.length > 1) {
+      throw new FanmarkRegistrationError("plan_limit_unavailable", 503);
+    }
+    settingCount = settings.results.length;
+    if (settingCount === 1) {
+      const configured = settings.results[0].setting_value;
+      if (typeof configured !== "string" || !/^\d+$/u.test(configured) || !Number.isSafeInteger(Number(configured))) {
+        throw new FanmarkRegistrationError("plan_limit_unavailable", 503);
+      }
+      value = configured;
+      limit = Number(configured);
+    }
+  }
+  const count = await db.prepare(`SELECT COUNT(*) AS n FROM fanmark_licenses
+    WHERE user_id = ? AND status = 'active' AND (license_end IS NULL OR license_end > ?)`)
+    .bind(userId, now).first<{ n: unknown }>();
+  if (typeof count?.n !== "number" || !Number.isSafeInteger(count.n) || count.n < 0) {
+    throw new FanmarkRegistrationError("registration_unavailable", 503);
+  }
+  return { plan, key, value, settingCount, limit, active: count.n };
+}
+
+function requireRegistrationCapacity(capacity: RegistrationCapacity): void {
+  if (capacity.limit !== null && capacity.active >= capacity.limit) {
+    throw new FanmarkRegistrationError("fanmark_limit_exceeded", 403);
+  }
+}
+
 async function register(
   request: Request,
   env: Env,
@@ -408,6 +462,8 @@ async function register(
   const validated = await validateCatalog(master, input, db);
   const nowDate = clock();
   const now = toUtcMicrosecondTimestamp(nowDate);
+  const capacity = await registrationCapacity(db, userId, now);
+  requireRegistrationCapacity(capacity);
   const fanmark = await currentFanmark(db, validated.normalizedIds, validated.normalizedEmoji);
   if (fanmark) {
     if (fanmark.status !== "active") throw new FanmarkRegistrationError("fanmark_inactive", 403);
@@ -451,6 +507,19 @@ async function register(
   const userInput = typeof fanmark?.user_input_fanmark === "string" ? fanmark.user_input_fanmark : input.userInputFanmark;
   const licenseGuard = blockedGuardSql("f");
   const statements: D1PreparedStatement[] = [];
+  // This assertion shares the transaction with identity/configuration writes;
+  // a simultaneous acquisition or changed plan/limit cannot use stale capacity.
+  statements.push(db.prepare(`SELECT CASE WHEN
+    (SELECT COUNT(*) FROM user_settings WHERE user_id = ? AND plan_type = ?) = 1
+    AND (? IS NULL OR (
+      (SELECT COUNT(*) FROM system_settings WHERE setting_key = ?) = ?
+      AND NOT EXISTS (SELECT 1 FROM system_settings WHERE setting_key = ? AND setting_value IS NOT ?)
+    ))
+    AND (? IS NULL OR (SELECT COUNT(*) FROM fanmark_licenses
+      WHERE user_id = ? AND status = 'active' AND (license_end IS NULL OR license_end > ?)) < ?)
+    THEN 1 ELSE json('registration_capacity_guard_failed') END AS allowed`)
+    .bind(userId, capacity.plan, capacity.key, capacity.key, capacity.settingCount, capacity.key, capacity.value,
+      capacity.limit, userId, now, capacity.limit));
   if (fanmark) {
     statements.push(db.prepare(`
       UPDATE fanmarks SET emoji_ids = ?, normalized_emoji_ids = ?, normalized_emoji = ?, tier_level = ?, updated_at = ?
@@ -527,6 +596,12 @@ async function register(
   try {
     await db.batch(statements);
   } catch {
+    const current = await registrationCapacity(db, userId, now);
+    requireRegistrationCapacity(current);
+    if (current.plan !== capacity.plan || current.key !== capacity.key || current.value !== capacity.value ||
+        current.settingCount !== capacity.settingCount) {
+      throw new FanmarkRegistrationError("plan_limit_changed", 409);
+    }
     throw new FanmarkRegistrationError("registration_unavailable", 503);
   }
 
@@ -568,6 +643,8 @@ export function isFanmarkRegistrationPath(pathname: string): boolean {
 
 function publicErrorMessage(code: string): string {
   const messages: Record<string, string> = {
+    fanmark_limit_exceeded: "You have reached your fanmark limit. Please return a fanmark or upgrade your plan.",
+    plan_limit_changed: "Your plan or fanmark limit changed. Please try again.",
     authentication_required: "Authentication required",
     auth_unavailable: "Authentication is temporarily unavailable",
     fanmark_inactive: "This emoji pattern is not active and cannot be registered",
