@@ -1,3 +1,13 @@
+## 最新の受け入れ範囲（2026-10-13）
+
+プロフィールGET/PATCH・usernameの旧Supabase JWT/service-role adapterは、frontendのBearer送出、
+実GoTrue/PostgREST local8項目（実画面部品を含む）、実Cloudflare合成source TLS7項目まで確認済み。
+通常stagingはsource5c1504e/main958b5ea2でD1/Better Authを維持し、実Appの保存・再ログインと独立cleanupを確認した。
+このadapterを全旧RPC・全旧認証APIのproxyとして扱わない。実利用者のsourceは引き続きSupabaseで、
+D1との二重書込をしない。既存実identity/契約の最終移送と公開domainは#38。
+[配備と旧認証画面部品](evidence/legacy-profile-rendered-normal-deploy-2026-10-13.json) /
+[通常Appの回帰確認](evidence/staging-profile-auth-regression-2026-10-13.json)。以下は各時点の履歴。
+
 ## 旧認証プロフィールの実Cloudflare受け入れ（2026-10-13）
 
 849c4ee/CI38354171074は両job成功。所有2Worker/1D1で、実frontend client→実Worker→

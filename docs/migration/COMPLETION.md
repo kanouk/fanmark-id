@@ -1,3 +1,33 @@
+## 通常ステージングのプロフィール・認証連携を確認（2026-10-13 15:52 JST）
+
+現行main **958b5ea2-525d-4a7e-adc6-f6b15bfdcf91** / source5c1504eで、実配信されたAppから
+合成アカウントのメールログイン、本人プロフィール保存・再読込、サインアウト・再ログインを確認した。
+390pxで横overflowなし。Supabaseへの通信0。初回はテストが「サインアウト」を「ログアウト」と探して停止し、
+既に成功した保存を繰り返さず、残る再ログイン/サインアウトを確認した。
+所有アカウント・profile・一時Workerを削除。独立readonlyで全3D1の全表件数が検証前へ復元し、
+本人Apple/credential/password存在boolean・setup解除・既存sessionとFK0、notification wakeのdrainを確認。
+[通常版の限定証拠](evidence/staging-profile-auth-regression-2026-10-13.json)。
+
+残件は元条件の最終照合/PRの記録と、本人管理の宛先がなく実受信を確認できないApple relay。
+実ユーザー/Auth/Storage移送・本番domain/DNSは最後の#38。以下は各時点の履歴。
+
+## 2026-10-13 15:46 JST: 検証の停止を解消し通常ステージングへ反映
+
+停止は追加localブラウザ試験のfixture不備によるもの。favicon不足、隔離環境からの外部font要求、
+画面試験追加前の通信回数を使ったban検証を修正した。実GoTrue/PostgRESTと実プロフィール画面部品の
+保存・再読込・username確認・取得失敗時のgate/retry・ban後JWT拒否の計8項目が成功し、所有fixtureを削除した。
+これは画面部品の機能試験であり、全Appの画面品質や新通常versionの全機能受け入れを意味しない。
+
+source5c1504e / CI38356766234の両job成功後、通常V4へ1回だけ配備。
+現行versionは **958b5ea2-525d-4a7e-adc6-f6b15bfdcf91**。
+直後のAPI観測では旧versionだったため、再配備せずread-only再取得で新versionを確認した。
+binding114、3D1全表件数/schema/FK、旧hashed assetsと新assets、catalog、backup/monitor版とCronを保持。
+通常Auth=better-auth / PROFILE=d1で、source service-role資格情報の追加、実ユーザー移送、domain/DNS変更は0。
+
+残件はこの通常versionの変更箇所を対象にした統合確認、元issue条件の照合とPR最終レビュー。
+Apple relay実受信は本人管理の宛先がなく未確認。追加ログインや承認待ちではない。
+[限定証拠](evidence/legacy-profile-rendered-normal-deploy-2026-10-13.json)。以下は各時点の履歴。
+
 ## 旧認証プロフィールの実Cloudflare受け入れ（2026-10-13）
 
 849c4ee/CI38354171074は両job成功。所有2Worker/1D1で、実frontend client→実Worker→
