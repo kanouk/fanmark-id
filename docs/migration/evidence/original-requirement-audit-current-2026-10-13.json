@@ -90,8 +90,8 @@
       "issue": 28,
       "id": "28-05",
       "originalCheckbox": "- [ ] Worker APIを導入し、移行中は必要に応じてSupabaseへ接続する。旧Authトークンを検証し、service roleを使用するAPIは必ず独自の認可を行う。",
-      "status": "scope_choice_required",
-      "reason": "only profile/username old-JWT bridge accepted; all families require original #33 scope decision"
+      "status": "owner_revised_scope",
+      "reason": "Direct human decision: keep production Supabase until final #38; complete separate Better Auth/D1/R2 staging; omit full transitional legacy JWT bridge. Original checkbox retained; bridge implementation not claimed."
     },
     {
       "issue": 28,
@@ -104,8 +104,8 @@
       "issue": 28,
       "id": "28-07",
       "originalCheckbox": "- [ ] Workersでフロントを配信して既存機能を検証する。この段階ではSupabaseを正とし、バックエンド移行完了とは呼ばない。",
-      "status": "scope_choice_required",
-      "reason": "production remains Supabase while isolated target staging uses Better Auth/D1; full transitional Supabase bridge not accepted"
+      "status": "owner_revised_scope",
+      "reason": "Direct human decision: keep production Supabase until final #38; complete separate Better Auth/D1/R2 staging; omit full transitional legacy JWT bridge. Original checkbox retained; bridge implementation not claimed."
     },
     {
       "issue": 28,
@@ -286,8 +286,8 @@
       "issue": 33,
       "id": "33-01",
       "originalCheckbox": "- [ ] 機能ごとの旧新契約試験。機微APIをキャッシュしない。公開URL・最近取得・PC/スマホ維持。Supabase依存の残件を列挙。",
-      "status": "scope_choice_required",
-      "reason": "source old JWT profile bridge accepted; entire old authenticated API bridge not implemented"
+      "status": "partial_target_contract_review",
+      "reason": "Full old JWT bridge explicitly excluded by owner; target API feature/authorization acceptance and final PR judgement remain separate. Existing profile adapter retained."
     },
     {
       "issue": 33,
@@ -587,14 +587,10 @@
     }
   ],
   "currentReviewer": "current task model; user selected a higher model during the task; no new Astra review claimed",
-  "unresolvedOriginalContract": [
-    "all authenticated Supabase JWT bridge families; source remains sole authority during transitional frontend phase"
-  ],
+  "unresolvedOriginalContract": [],
   "pendingHumanActions": [
     "Apple Hide My Email sign-in in own probe",
-    "Resend re-login",
-    "actual controlled private relay inbox receipt",
-    "original legacy bridge scope choice"
+    "actual controlled private relay inbox receipt"
   ],
   "deferredByUser": [
     "real Supabase user/Auth/Storage snapshot/import/identity acceptance",
@@ -609,5 +605,11 @@
     "58 function index coverage alone",
     "closed issue alone",
     "historical proof relabeled as current full rerun"
-  ]
+  ],
+  "ownerScopeDecision": {
+    "path": "docs/migration/evidence/owner-migration-scope-decision-2026-10-13.json",
+    "userAnswer": "現在の方針を継続：Cloudflare環境を完成させ、既存ユーザー移送と再ログインは最後（推奨）",
+    "originalScopeOverrideExplicit": true
+  },
+  "resendReloginCompleted": true
 }

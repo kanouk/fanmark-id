@@ -1,3 +1,14 @@
+## 2026-10-13: 移行方針を本人回答で確定
+
+ユーザーは「現在の方針を継続：Cloudflare環境を完成させ、既存ユーザー移送と再ログインは最後」を選択した。
+本番の正は最後の切り替えまでSupabase、検証環境はWorkers / Better Auth / D1 / R2とする。
+全機能への旧JWT中継は今回の実装条件から外す。既存のprofile/username adapterは任意の検証済みコードとして保持し、通常stagingへ旧認証を設定しない。
+元#28/#33の移行途中の旧JWT中継要求は、この本人判断で置き換える。未実装の中継を実装済みと扱わない。
+[本人の範囲判断](evidence/owner-migration-scope-decision-2026-10-13.json)。通常main f7a601f0/runtime cb3c1f3を維持。
+結果文書efff9e0のCI38385973590も両job成功。Resendは再login済み。
+Apple本人認証・非公開メール選択と実受信、およびtarget機能の最終判定は残る。
+実ユーザー/Auth/Storage移送と本番domain/DNSは最後の#38。以下の範囲未確定/Resend login待ちは各時点の履歴。
+
 ## お気に入りの現所有者表示を修正・通常stagingへ反映（2026-10-13）
 
 終了済みライセンスが現所有者より優先される不具合を修正し、有効な有限・無期限ライセンスを先に選ぶ。

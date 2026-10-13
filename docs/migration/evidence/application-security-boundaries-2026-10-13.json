@@ -73,10 +73,10 @@
   "sourceUserDataMoved": false,
   "domainChanged": false,
   "remaining": [
-    "Original full legacy JWT bridge scope choice",
-    "Human Apple relay consent and Resend login then actual receive",
-    "Original-criteria final decision; no new Astra independent review claimed"
+    "Human Apple private relay consent and actual inbox receipt",
+    "Final target feature/PR acceptance under owner-selected direct migration scope"
   ],
   "reviewedHead": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1",
-  "normalVersion": "f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64"
+  "normalVersion": "f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64",
+  "ownerScopeDecision": "docs/migration/evidence/owner-migration-scope-decision-2026-10-13.json"
 }

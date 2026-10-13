@@ -1,5 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
+Cloudflare検証環境はWorkers・Better Auth・D1・R2を使い、本番Supabaseとは分離する。2026-10-13の本人判断で全APIへの旧JWT中継を対象から外し、既存ユーザー移送・再ログインと本番domain/DNSは最後の#38とした。[範囲判断](migration/evidence/owner-migration-scope-decision-2026-10-13.json)。
+
 Cloudflareの通常画面は`AuthReadinessGate.tsx`で認証プロフィールの取得完了を待つ。取得失敗時はURLを保って再試行し、`PasswordSetupGate.tsx`は確認済みの未設定状態だけをパスワード設定へ送る。`MaintenanceGate.tsx`も設定取得の失敗とメンテナンス有効を別表示にする。
 
 全Master・合成Auth・業務・R2一式復旧の専用入口は

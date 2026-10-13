@@ -1,0 +1,23 @@
+{
+  "state": "owner_selected_direct_target_staging_then_final_user_cutover",
+  "decidedAt": "2026-10-13T11:39:25.764249+00:00",
+  "source": "direct human answer to legacy JWT bridge scope question",
+  "userAnswer": "現在の方針を継続：Cloudflare環境を完成させ、既存ユーザー移送と再ログインは最後（推奨）",
+  "adopted": {
+    "productionAuthorityUntilFinalCutover": "Supabase",
+    "cloudflareStaging": "Workers / Better Auth / D1 / R2",
+    "allLegacyAuthenticatedJwtBridgeFamiliesRequired": false,
+    "realUserMigrationAndRelogin": "final #38",
+    "productionDomainDnsCutover": "final #38",
+    "dualWrites": false
+  },
+  "existingScopedProfileAdapter": "retain as optional tested code; not enabled in normal staging and not expanded",
+  "unchangedGates": [
+    "target feature contracts and authorization acceptance",
+    "Apple private relay actual inbox delivery",
+    "live identity/billing/storage reconciliation in deferred #38"
+  ],
+  "deploymentChanged": false,
+  "sourceProductionChanged": false,
+  "wholeGoalComplete": false
+}
