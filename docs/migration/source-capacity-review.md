@@ -136,3 +136,17 @@ source fileを変更せず、wrong key/part mixing・先行不一致の全target
 型check・関連17件と全Master/同じ件数容量のlocal復旧・画像配信/SDK/cleanupは成功。
 [local限定証拠](evidence/representative-recovery-capacity-one-store-local-2026-10-13.json)。
 CI/実Cloudflareは別の未完了条件。native memory上限や全最大量、本番RTOの保証にしない。
+
+## 代表容量のnative受け入れと通常V4配備（2026-10-13）
+
+9794a49/CI38338723332の両job成功後、同じ全Master/件数/容量の保存fileで全5store復旧、
+hash/旧session拒否/SDK login/画像配信/catalog/FK0、全資源cleanupと元inventory一致が成功した。
+[限定証拠](evidence/representative-recovery-capacity-native-accepted-2026-10-13.json)。
+restore/アプリ確認67,423msはscoped one-off。本番RTO、Business全表の本番行数分布、全最大量へ拡張しない。
+過去5caseの失敗と業務D1の原因未確定を保持する。復旧POST再送0。
+
+通常V4へsource9794a49を配備し、main34a665d2で設定114・D1 schema/件数・配信9file・旧hashed assets・
+catalog・backup/monitor/Cron・本人Auth/setup/session/Free/FK0を保持した。
+[通常配備](evidence/staging-v4-one-store-recovery-runtime-2026-10-13.json)。
+credentials値/実ユーザー移送/DNS変更0。自然daily成功は旧cc82c298/source e511762の証拠のままで、
+新mainの自然dailyを実行済みとしない。controller cadence/slot/retentionを変更せず、手動再送もしない。

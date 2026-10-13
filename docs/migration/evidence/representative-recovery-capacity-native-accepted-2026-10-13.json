@@ -1,0 +1,173 @@
+{
+  "state": "representative_capacity_native_saved_file_restore_accepted",
+  "head": "9794a49a4d4bd4d3e29a81c93a6c2e2619d5a5c9",
+  "ciRun": "38338723332",
+  "workerVersion": "259ad695-b575-4188-ba97-a39d5c801a7a",
+  "startedAt": "2026-10-13T03:03:46.145Z",
+  "finishedAt": "2026-10-13T03:08:25.019Z",
+  "masterRows": 20152,
+  "masterSchemaHash": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+  "masterRowsHash": "a9f02699a5c446ddff4fe9d207c0fcb2daf1a094bb31745670588a5d7337ff09",
+  "capacityFixture": {
+    "users": 15,
+    "accounts": 18,
+    "avatars": 69,
+    "covers": 40,
+    "imageBytes": 13285729,
+    "maxObjectBytes": 1196603
+  },
+  "archiveBytes": 34575231,
+  "savedMacFileCliUploadDownloadByteIdentical": true,
+  "capacityRestorePostBody": "Opaque ETag reference only, maximum1024 bytes",
+  "captureId": "a5439676-2220-4a85-9c1d-4f3f36494c14",
+  "sourceSnapshotAndArchiveHashes": {
+    "auth": {
+      "archiveHash": "4cf4f6d6a3b4f0c59969cbdb91916907a611c46942ff8dda0ef2a20cf4df40c1",
+      "snapshotHash": "f44ecc0c7fae7373f6a7b7c4713a0e63144bd08e5aedf5aeed5b330769938b03"
+    },
+    "business": {
+      "archiveHash": "cbe36ebaa90400bd110d7b88f7e50ef01c0088dd0f7a3b83adc8d82ca8ba6b6e",
+      "snapshotHash": "09af90f39b28d5b0e67a5c3849e8362a6322b6009d6c071d66696c084415dd45"
+    },
+    "master": {
+      "archiveHash": "2fec53088c46e1c9c9b023a8dfb3efb5407c089a891d29d3b956bf107f7cdd9d",
+      "snapshotHash": "36b727d6ea618b3f03822a98ef60089788533fd7176602a501901bb5776ba60d"
+    },
+    "avatars": {
+      "archiveHash": "08c6e3ee6559600b50d71a01d66d6d4628b4d52845b1e283c1850165c6923f94",
+      "snapshotHash": "0b5b8da33051e31d0e767d3a5ab9557ef50456921fc47edb413443faf4760c7e"
+    },
+    "covers": {
+      "archiveHash": "a023b653878b8719237cc7cb58e6597870889929d62ce74c8d18663d09bfc4bc",
+      "snapshotHash": "0b550695a866129a5f9ef05835a4988ef04c0e0fcf5b4e12aa12fb99f07448aa"
+    }
+  },
+  "restore": {
+    "state": "verified",
+    "startedAt": "2026-10-13T03:06:23.532Z",
+    "d1Queries": {
+      "T_AUTH": 102,
+      "T_BUSINESS": 402,
+      "T_MASTER": 393
+    },
+    "progress": [
+      {
+        "store": "master",
+        "state": "started"
+      },
+      {
+        "store": "master",
+        "state": "verified"
+      },
+      {
+        "store": "business",
+        "state": "started"
+      },
+      {
+        "store": "business",
+        "state": "verified"
+      },
+      {
+        "store": "auth",
+        "state": "started"
+      },
+      {
+        "store": "auth",
+        "state": "verified"
+      },
+      {
+        "store": "avatars",
+        "state": "started"
+      },
+      {
+        "store": "avatars",
+        "state": "verified"
+      },
+      {
+        "store": "covers",
+        "state": "started"
+      },
+      {
+        "store": "covers",
+        "state": "verified"
+      }
+    ],
+    "result": {
+      "captureId": "a5439676-2220-4a85-9c1d-4f3f36494c14",
+      "sessionPolicy": "revoke-local-sessions-and-challenges",
+      "restoredHashes": {
+        "auth": "0529466c82637e7a755c24c136f82a79912a09764b642e421c5ef7beec87f001",
+        "business": "09af90f39b28d5b0e67a5c3849e8362a6322b6009d6c071d66696c084415dd45",
+        "master": "36b727d6ea618b3f03822a98ef60089788533fd7176602a501901bb5776ba60d",
+        "avatars": "0b5b8da33051e31d0e767d3a5ab9557ef50456921fc47edb413443faf4760c7e",
+        "covers": "0b550695a866129a5f9ef05835a4988ef04c0e0fcf5b4e12aa12fb99f07448aa"
+      },
+      "verified": true
+    },
+    "canonicalEmojiCount": 3944,
+    "referenceViewCounts": {
+      "fanmark_tiers": 4,
+      "languages": 4,
+      "reserved_emoji_patterns": 5,
+      "fanmark_tier_extension_prices": 16
+    },
+    "emptyR2ReadStatus": {
+      "avatars": 404,
+      "cover-images": 404
+    },
+    "restoredImageReads": {
+      "avatars": {
+        "status": 200,
+        "bytes": 1196603,
+        "sha256": "989ceab8296ad5da59fe22ae7cceea20677a058d754bdded3013fbadcb968229"
+      },
+      "cover-images": {
+        "status": 200,
+        "bytes": 111936,
+        "sha256": "947c87edaf51d0ac4770cf144bbc54df04dbca2c96237243ffe094aedc5b38e9"
+      }
+    },
+    "credentialBytesRetained": true,
+    "sessionChallengesRevoked": true,
+    "oldSessionRejected": true,
+    "normalSdkTargetLogin": true,
+    "releasedGuardRefusesCapture": true,
+    "foreignKeyViolations": 0,
+    "finishedAt": "2026-10-13T03:07:30.955Z"
+  },
+  "durationsMs": {
+    "collect": 76467,
+    "restoreAndAppVerification": 67423,
+    "wholeOwnedRehearsalIncludingProvisionAndCleanup": 278874
+  },
+  "cleanup": {
+    "ownedObjectsEmpty": true,
+    "workerDeleted": true,
+    "keyFilesRemoved": true,
+    "verified": true,
+    "originalInventoryEqual": true
+  },
+  "inventoryCounts": {
+    "before": {
+      "d1": 12,
+      "r2": 12,
+      "workers": 4,
+      "namespaces": 8
+    },
+    "after": {
+      "d1": 12,
+      "r2": 12,
+      "workers": 4,
+      "namespaces": 8
+    }
+  },
+  "limits": [
+    "Synthetic Auth/Business and random image bytes only; no individual source user/image/credential imported",
+    "Non-user full Master only; Business volumes use the bounded synthetic fixture rather than every production table distribution",
+    "Observed scoped capacity only; not all-store simultaneous maximum or production RTO guarantee",
+    "Previous five failed runs remain recorded; source business restore failure cause remains unconfirmed",
+    "Apple relay actual delivery remains unverified without controlled recipient"
+  ],
+  "sourceUsersMoved": false,
+  "domainChanged": false
+}

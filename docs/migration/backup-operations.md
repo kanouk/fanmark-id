@@ -1,3 +1,25 @@
+## 現在の確認結果（2026-10-13 12:15 JST）
+
+9794a49/[CI38338723332](https://github.com/kanouk/fanmark-id/actions/runs/38338723332)はアプリ・Worker両job成功。
+同じ全Master25表/20,152行・合成Auth15人/18account・画像109件/13,285,729 bytesで、
+Mac保存fileの実CLI upload/download全bytes一致、native全5store復旧/hash、旧session拒否/new SDK login、
+画像GET200/全bytes hash、catalog3,944/参照4・4・5・16、FK0を受け入れた。
+復旧/アプリ確認67,423ms、収集76,467ms、provision/cleanup込み278,874msはone-off実測。
+全所有6D1/5R2/1Worker/2DOを削除し、元inventory・main/本人Authを独立照合した。
+[代表容量のnative受け入れ](evidence/representative-recovery-capacity-native-accepted-2026-10-13.json)。
+過去5回の失敗は保持し、業務D1失敗の原因未確定も消さない。復旧POST再送0。本番RTO/全最大量の保証ではない。
+
+修正を通常V4へ配備したmainは **34a665d2-eb78-4473-8fdf-4fe10ae7a058** / source9794a49。
+e511762からのruntime変更はrecovery-set.tsのみ。frontend/configは変更なし。
+設定114・D1全table件数/schema・配信9file（旧hashed assets含む）・公開catalog・backup/monitor版とCronを保持。
+本人Apple/credential各1・emailVerified/password存在boolean・setup解除/session/Free・FK0をreadbackした。
+資格情報の値・実ユーザーの移送/削除・domain/DNS変更0。dashboardの再観測からは推定せず、metadata検証として記録。
+[通常stagingへの配備と保持](evidence/staging-v4-one-store-recovery-runtime-2026-10-13.json)。
+
+残るのは最終文書/PRレビューと元条件の監査。Apple relay実受信は本人管理の宛先がなく未確認。
+実Supabase user/Auth/Storageと本番domain/DNSは最後の#38。全体完了を推定しない。
+以下の旧version・未完了記述は各時点の履歴。
+
 ## 現在の確認結果（2026-10-13 07:38 JST）
 
 通常mainは`cc82c298-ff27-4322-8c42-175e7be17f16`、ソースe511762の

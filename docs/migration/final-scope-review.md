@@ -13,6 +13,6 @@
 | #36 配備 | staging専用CI・Supabase自動配備の分離、Workers/D1/R2、全25表Master、master stage/promote/rollback、公表3,944件 | PR #41 draft・main未merge。公開domain切替なし |
 | #37 統合/復旧 | 既存isolated pre-write fallback/post-write repair-forward、暗号化保存/復旧。現行V4の日次通常Cron/自然backup・別monitor、運用鍵/off-host/retention、現行四言語/課金と本人mobile | sourceの実停止/drain・確定copyの同時手順/実契約の受信継続は#38。目標RPO24h/RTO4hを本番保証にしない。KO一過性500/503原因不明を保持 |
 
-今回の代表容量は全Master取り込み・一式収集まで成功し、画像復旧でnativeメモリ上限超過により失敗した。資源は保留し、修正候補のremote成功は未確認。[容量レビュー](source-capacity-review.md)を参照。確認済みの証拠を置き換える全機能再試験や新しい最大量試験を追加しない。Apple relayの実受信未確認は消さず、検証用アドレスがないことを全アプリ・インフラ未実装とは区別する。
+代表容量のnative一式復旧はsource9794a49/CI38338723332で受け入れた。Mac保存fileのbyte一致・全5store hash・SDK復帰・画像配信・全資源cleanupと元構成保持を確認。通常main34a665d2へ配備し、設定/保存先/件数/schema/assets/catalog/監視・本人Authを保持した。[容量レビュー](source-capacity-review.md)を参照。過去5caseの失敗と業務D1の原因未確定を保持する。
 
-容量復旧のwrapper修正だけではnativeメモリ上限超過が残った。両失敗の全所有資源を削除し、独立readbackで元の構成/本人Authを照合した。共有store解放の修正はlocal17件/全Master復旧まで成功、CIとremoteは別の未完了条件。容量レビューを現在の判断に使う。
+Apple relayの実受信は本人管理の宛先がなく未確認。旧JWT/service-role認証bridgeは実装済みとして承認しない。実ユーザー同一性・実契約・source writer停止/最終copy・本番domain/DNSは#38。完成済みの証拠を全機能再試験で置き換えず、最終文書/PRと原条件の監査を続ける。
