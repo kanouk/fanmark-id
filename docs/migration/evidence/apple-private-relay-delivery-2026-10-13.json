@@ -1,5 +1,5 @@
 {
-  "state": "private_relay_delivery_and_inbox_accepted_cloudflare_cleanup_verified",
+  "state": "private_relay_delivery_inbox_acceptance_and_all_test_cleanup_complete",
   "observedAt": "2026-10-13T14:39:14.813457+00:00",
   "normalStagingVersion": "19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd",
   "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a",
@@ -47,6 +47,13 @@
     "sourceUserDataMoved": false,
     "domainChanged": false
   },
-  "appleDeveloperKeyRetirementPending": true,
-  "deliveryCaveat": "One controlled email arrived in spam; this does not establish inbox placement for other mailboxes."
+  "appleDeveloperKeyRetirementPending": false,
+  "deliveryCaveat": "One controlled email arrived in spam; this does not establish inbox placement for other mailboxes.",
+  "appleDeveloperKeyRetirement": {
+    "keyId": "TFUJASYTW8",
+    "humanRetired": true,
+    "absentFromRefreshedList": true,
+    "existingKeysHeld": true,
+    "localDedicatedKeyCopiesRemoved": 2
+  }
 }

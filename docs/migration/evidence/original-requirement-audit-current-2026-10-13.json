@@ -588,9 +588,7 @@
   ],
   "currentReviewer": "current task model; user selected a higher model during the task; no new Astra review claimed",
   "unresolvedOriginalContract": [],
-  "pendingHumanActions": [
-    "Retire dedicated Apple test key TFUJASYTW8"
-  ],
+  "pendingHumanActions": [],
   "deferredByUser": [
     "real Supabase user/Auth/Storage snapshot/import/identity acceptance",
     "production domain/DNS and source shutdown"
@@ -622,11 +620,13 @@
     "providerDelivered": true,
     "humanInboxAccepted": true,
     "inboxFolder": "spam",
-    "cloudflareCleanupIndependentlyVerified": true
+    "cloudflareCleanupIndependentlyVerified": true,
+    "allTestCleanupComplete": true
   },
   "targetScopeAcceptance": {
     "path": "docs/migration/evidence/target-pre-cutover-acceptance-2026-10-14.json",
     "accepted": true,
-    "productionAdoptionAccepted": false
+    "productionAdoptionAccepted": false,
+    "preCutoverScopeComplete": true
   }
 }

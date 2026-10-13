@@ -1,5 +1,13 @@
 ## 2026-10-13: 検索の現所有・grace判定を修正し通常stagingへ反映
 
+## 2026-10-14: 検証後片付け完了
+
+本人が専用Apple key TFUJASYTW8を失効し、更新後の一覧から消えたことと通常Fanmark・香水ラジオの2つの既存key保持を確認した。専用p8の同一性を照合してローカル2コピーも削除した。
+Apple relay検証のaccount/Worker/2D1・一時資格情報の後片付けは完了。Cloudflareのアプリ・インフラ・許可済みマスターの準備範囲は受け入れ済み。
+実ユーザー/Auth/Storage/課金対応・source停止/drain/確定copy・本番domain/DNS・production release/mergeは最後の#38。PR41はdraft、本番Supabaseを維持する。
+[実受信と後片付け](evidence/apple-private-relay-delivery-2026-10-13.json) / [準備範囲の判定](evidence/target-pre-cutover-acceptance-2026-10-14.json)。以下のkey失効待ちは各時点の履歴。
+
+
 ## 2026-10-14: 最終切り替え前のtarget範囲を受け入れ
 
 Apple非公開メール宛ての確認メールを本人が迷惑メールフォルダで受信した。認証・送信・配送・実受信を受け入れ、振り分けの保証とは区別する。

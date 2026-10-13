@@ -461,8 +461,8 @@
     },
     {
       "path": "docs/migration/evidence/apple-private-relay-delivery-2026-10-13.json",
-      "sha256": "0511d3ef52e7a463d6a87fe3204d332fa8d2075f7b4d03f3babd4c3eb1227bc3",
-      "state": "private_relay_delivery_and_inbox_accepted_cloudflare_cleanup_verified",
+      "sha256": "66336f770740d4518318b06398be16e5508e4acd2a92dcc4e42a3f9f19031597",
+      "state": "private_relay_delivery_inbox_acceptance_and_all_test_cleanup_complete",
       "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a"
     }
   ],
@@ -477,9 +477,7 @@
     "inbox placement guarantee",
     "production merge or domain cutover review"
   ],
-  "pendingCleanup": [
-    "User retirement of dedicated Apple test key TFUJASYTW8"
-  ],
+  "pendingCleanup": [],
   "deferredToIssue38": [
     "real user/Auth/Storage migration and per-user/provider/credential/billing reconciliation",
     "source freeze/drain and final copy difference-zero check",
@@ -490,5 +488,7 @@
   "domainChanged": false,
   "fullProductionReleaseReviewComplete": false,
   "wholeMigrationComplete": false,
-  "probeIdentifiersDisposition": "Retained as audit-only configuration; probe Worker/databases deleted; no live callback endpoint."
+  "probeIdentifiersDisposition": "Retained as audit-only configuration; probe Worker/databases deleted; no live callback endpoint.",
+  "testCleanupComplete": true,
+  "stagingPreparationScopeComplete": true
 }
