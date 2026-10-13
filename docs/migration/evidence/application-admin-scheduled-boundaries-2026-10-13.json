@@ -1,0 +1,65 @@
+{
+  "state": "current_application_boundary_review_record",
+  "observedAt": "2026-10-13T10:26:28.324Z",
+  "files": [
+    {
+      "path": "workers/api/src/index.ts",
+      "sha256": "bf914e7a4933fcb2d59dfdffab8f096a51ca4a0c23294de039f98ad6b24636e1"
+    },
+    {
+      "path": "workers/api/src/admin-user-management-d1-api.ts",
+      "sha256": "451e3d4edf4b053181898bc9929b2a752964e2dd574413887c2ff8623768292f"
+    },
+    {
+      "path": "workers/api/src/lifecycle-settings-d1-api.ts",
+      "sha256": "8b2f357e480310bcbe00658812a550b4056ddfd968cf37c6a4845981a005089a"
+    },
+    {
+      "path": "workers/api/src/scheduled-dispatch.ts",
+      "sha256": "1c7850d037cb97df723a1fadb92bbfe08125149d42e149f68d1b1a4334f4f473"
+    },
+    {
+      "path": "workers/api/src/notification-wake.ts",
+      "sha256": "6098a7a89108da6071412dc394651066b0688d072618cbac00c0b5d77cd443c8"
+    },
+    {
+      "path": "workers/api/src/broadcast-email-webhook-d1.ts",
+      "sha256": "41a089f2c65aa6ff66afa7ef6b61df56af674b266a7628b87adaad853f970e4b"
+    },
+    {
+      "path": "workers/api/src/broadcast-email-delivery-d1.ts",
+      "sha256": "214cac48d1ad524c65756c3371f8e7b3ee20bc57790c3e98965d3585fad157e8"
+    }
+  ],
+  "review": [
+    {
+      "family": "administrator routes",
+      "finding": "Central authorizer derives Auth adminRole and current same-session/factor MFA; handler calls precede operations and server actor audit. Plan edits compare prior plan in their Business transaction, without client role authority."
+    },
+    {
+      "family": "scheduled selection",
+      "finding": "Daily lifecycle/archive and minute dispatch are selected from explicit configured selectors/crons; durable-object notification mode avoids the minute processor path. Native natural daily/provider evidence retains exact historical versions."
+    },
+    {
+      "family": "notification wake",
+      "finding": "Only committed generation reaches a fixed internal DO URL; no user headers/payload forwarded. Scope owns its namespace; earliest alarm is retained, and pending/processing queue prevents idle sleep."
+    },
+    {
+      "family": "Resend webhook",
+      "finding": "Bounded raw body and Svix v1 HMAC are verified before accepted event persistence. Actual provider created_at is independently validated and normalized with full fractional precision; permanent complaint/bounce policy and uncertain-send retention preserve their separate contract."
+    }
+  ],
+  "newRuntimeTest": false,
+  "newRemoteMutation": false,
+  "fullPrReviewComplete": false,
+  "sourceUserRowsRead": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "remaining": [
+    "Original full legacy JWT bridge scope choice",
+    "Human Apple relay consent and Resend login then actual receive",
+    "Original-criteria final decision; no new Astra independent review claimed"
+  ],
+  "reviewedHead": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1",
+  "normalVersion": "f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64"
+}

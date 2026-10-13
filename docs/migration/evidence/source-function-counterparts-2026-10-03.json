@@ -640,7 +640,7 @@
         "location": "T:2080; F useFavoriteFanmarks.ts:33",
         "actor": "Worker user",
         "boundaryAndEvidence": "Session owner's favorites; target redacts protected name/target/text for owner and other users alike; current target prefers an active future/perpetual license over retired history before projecting the same protected DTO",
-        "remainingBoundary": "Source hashbace00ba selects raw protected fields; target corrects that privacy behavior. Native11/client6 and guarded47b69c5/Workerb5a07a34 accepted both owners for redirect/text, retained ordinary content/configs and scoped cleanup. LIST_SQL/mapper/listFavorites are unchanged through ef25b50; mutation acceptance is separate. Source/default is unchanged. See favorites-api.md. Active-first ownership correction passes local19/client6, including finite/perpetual selected protection, but its CI/native/deployment acceptance is pending separately; historical protected read-region equality is not a current unchanged-region claim."
+        "remainingBoundary": "Source hashbace00ba selects raw protected fields; target corrects that privacy behavior. Historical native11/client6 and Workerb5a07a34 privacy acceptance retains its original scope; LIST_SQL equality through ef25b50 is historical only. Active-owner correction cb3c1f3 accepted local D1 19/client6 and native5 with protected projection/history fallback. Normal staging f7a601f0 independently read back; owned resources cleaned. See favorites-current-license-native-2026-10-13.json. Broader raw source RPC/external-consumer and full legacy JWT bridge acceptance remains separate."
       },
       "counterpartSemanticApprovalInferred": false
     },

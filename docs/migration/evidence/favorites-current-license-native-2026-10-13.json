@@ -1,0 +1,130 @@
+{
+  "state": "favorite_current_owner_native_and_normal_staging_verified",
+  "observedAt": "2026-10-13T10:41:18.405580+00:00",
+  "runtimeSource": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1",
+  "ciRun": 38382342905,
+  "bothJobsSuccess": true,
+  "localTests": {
+    "workerD1": 19,
+    "client": 6
+  },
+  "nativeCases": [
+    {
+      "kind": "perpetual",
+      "protected": false,
+      "correctSelectedOwner": true,
+      "correctLicenseStatusAndEnd": true,
+      "protectedBodiesNull": false,
+      "unprotectedOrHistoryBodyPreserved": true,
+      "foreignFavoritesEmpty": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "perpetual",
+      "protected": true,
+      "correctSelectedOwner": true,
+      "correctLicenseStatusAndEnd": true,
+      "protectedBodiesNull": true,
+      "unprotectedOrHistoryBodyPreserved": false,
+      "foreignFavoritesEmpty": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "finite",
+      "protected": false,
+      "correctSelectedOwner": true,
+      "correctLicenseStatusAndEnd": true,
+      "protectedBodiesNull": false,
+      "unprotectedOrHistoryBodyPreserved": true,
+      "foreignFavoritesEmpty": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "finite",
+      "protected": true,
+      "correctSelectedOwner": true,
+      "correctLicenseStatusAndEnd": true,
+      "protectedBodiesNull": true,
+      "unprotectedOrHistoryBodyPreserved": false,
+      "foreignFavoritesEmpty": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "history",
+      "protected": false,
+      "correctSelectedOwner": true,
+      "correctLicenseStatusAndEnd": true,
+      "protectedBodiesNull": false,
+      "unprotectedOrHistoryBodyPreserved": true,
+      "foreignFavoritesEmpty": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    }
+  ],
+  "declaredMigrations": {
+    "auth": 4,
+    "business": 27,
+    "master": 8
+  },
+  "proofScope": "Actual Cloudflare Worker with synthetic Better Auth sessions and declared current D1 schemas. Owned license/discovery fixtures, active emoji/reference release. Current-owner selection, private body projection, history fallback and foreign-user isolation; not full App UI or all source RPC equivalence.",
+  "testInterruptions": [
+    {
+      "error": "Expected values to be strictly equal:\n\n404 !== 200\n",
+      "phase": "post-secret read-only readiness",
+      "masterAndBusinessEmptyConfirmed": true,
+      "resolution": "same owned Worker readiness later 200; no redeploy or reprovision"
+    },
+    {
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ null\n- 'current-owner'",
+      "phase": "first fixture favorite projection",
+      "cause": "fixture inserted owned fanmark directly without the registration discovery link",
+      "resolution": "seed valid linked discovery in test reset; source unchanged"
+    },
+    {
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n",
+      "phase": "final history read validation",
+      "rootCause": "unknown",
+      "resolution": "inspect history-only rows and resume GET checks without reset or favorite replay"
+    }
+  ],
+  "cleanup": {
+    "worker": 1,
+    "d1": 3,
+    "removed": true,
+    "independentInventoryRestored": true,
+    "disposedSecretsRemoved": true
+  },
+  "normalStaging": {
+    "previous": "02f6c9dd-33ef-4bcf-9a2d-0e90dbd87a04",
+    "version": "f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64",
+    "bindingsPreserved": 114,
+    "allThreeD1SchemaAndCountsHeld": true,
+    "foreignKeysZero": true,
+    "assetsPreserved": 10,
+    "catalogHeld": true,
+    "backupAndMonitorHeld": true,
+    "independentReadonlyConfirmed": true,
+    "frontendChanged": false,
+    "schemaChanged": false,
+    "normalDatabaseWrites": false,
+    "normalSecretsChanged": false
+  },
+  "code": [
+    {
+      "path": "workers/api/src/favorites-d1-api.ts",
+      "sha256": "21997f48f6d9161b4d18c07f11100ffcdacef9899c7068b11474a0228154ac31"
+    },
+    {
+      "path": "workers/api/test/favorites-d1.test.ts",
+      "sha256": "d37a5e9f86cb2996a75f796648fbe9af364cd5f35c1143183b61598e29ee3f84"
+    }
+  ],
+  "sourceProductionChanged": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "wholeMigrationComplete": false
+}

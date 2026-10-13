@@ -1,3 +1,14 @@
+## お気に入りの現所有者表示を修正・通常stagingへ反映（2026-10-13）
+
+終了済みライセンスが現所有者より優先される不具合を修正し、有効な有限・無期限ライセンスを先に選ぶ。
+履歴fallbackと選択ライセンスの保護本文NULLは維持。local D1 19/client6・typecheck/lint、source cb3c1f3のCI38382342905両jobが成功。
+実Cloudflareで5項目を確認し、所有Worker/3D1を削除。初回readiness404は後続GET200、未リンクのfixtureを補正。
+最後の履歴確認中の停止原因は未確定。同じ保存済み履歴を読み直し、reset/お気に入り追加を再実行せず受け入れた。
+通常mainは **f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64**。独立readonlyでbinding114・全3D1 schema/件数/FK0・asset10・catalog・backup/monitor保持を確認。
+[限定証拠](evidence/favorites-current-license-native-2026-10-13.json)。実ユーザー/Auth/Storageと本番domain/DNSは最後の#38。
+残件は旧JWT中継の全機能対応範囲、元条件/PRの最終判定、Apple非公開メール認証・Resend再loginと実受信。
+以下は各時点の履歴。
+
 ## Admin移管の無制限を修正・通常stagingへ反映（2026-10-13）
 
 AdminにMax上限を適用する申請400を実local D1で再現。nullによる無制限とplan snapshotを使い、全46件/typecheck/lintが成功。

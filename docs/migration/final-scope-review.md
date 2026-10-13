@@ -1,6 +1,8 @@
 # 元の完了条件との照合（2026-10-13 15:52 JST）
 
-現行通常stagingは **02f6c9dd-33ef-4bcf-9a2d-0e90dbd87a04** / source **5ac5be9**。
+現行通常stagingは **f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64** / source **cb3c1f3**。
+お気に入りの現所有者選択もlocal D1 19/client6・実Cloudflare5項目・独立cleanup/通常保持確認を受け入れた。
+[限定証拠](evidence/favorites-current-license-native-2026-10-13.json)。
 Adminの移管無制限もlocal46件・実Cloudflare4項目・独立cleanup/通常保持確認を受け入れた。
 初回初期化500の原因未確定と同じ所有資源での再開を保持する。[Admin移管の限定証拠](evidence/transfer-admin-unlimited-native-2026-10-13.json)。
 取得・抽選の上限判定もlocal85件・実Cloudflare8項目・独立cleanup/通常保持確認を受け入れた。
@@ -21,7 +23,7 @@ Adminの移管無制限もlocal46件・実Cloudflare4項目・独立cleanup/通�
 | #35 移送・復旧 | 非空40表46→45行と明示credential deferral、2target中断再開、専用Auth/R2と全Master合成復旧。代表容量5storeのhash/SDK復帰/画像配信とcleanup | generic converterはdeployable=false。全source schemaと実アプリnative importerを同じものと扱わない。実snapshotの差分0は#38 |
 | #36 マスター更新 | 25表Master、3,944 UUID、stage/promote/rollback/draft復元。Unicode更新は別release | 公開domainは変更なし。PR41はdraft |
 | #37 統合・停止・復旧 | 既存pre-write fallback/post-write repair-forward、自然日次/backup/monitor/retention、運用鍵、代表復旧実測、旧PWA、4言語、本人phone/home-screen | 新mainで自然dailyを再観測したとは扱わない。実source停止/drain/確定copy/実契約受信は#38。RPO/RTOは目標 |
-| 文書・PRレビュー | PRODUCT/ARCHITECTURE/TECH/API/環境/運用手順と差分・限定証拠を保存。CI38356766234両job成功 | 元条件の意味論とPR最終レビューは未完了。新文書は次のcommitで保存 |
+| 文書・PRレビュー | PRODUCT/ARCHITECTURE/TECH/API/環境/運用手順と差分・限定証拠を保存。CI38356766234両job成功 | 元条件の意味論とPR最終判定は未完了。現runtimeのCI38382342905は両job成功 |
 
 今回の実App確認は合成アカウントだけ。保存・再読込後の保持、通常サインアウトと再ログイン、
 390px表示、Supabase通信0、全表件数の復元と本人Auth metadata保持を別processで照合した。
@@ -31,4 +33,8 @@ Adminの移管無制限もlocal46件・実Cloudflare4項目・独立cleanup/通�
 残る準備工程は、#33の機能別契約/旧認証bridge範囲、元条件に対するsource機能とPRレビュー、Apple relay実受信。
 専用のrelay検証環境は準備済みだが、本人の非公開メール認証・Resend再loginと実受信は未完了。これを成功に置き換えず、全工程完了・本番切替可能とは判定しない。
 当初のcheckboxを今回の限定結果だけでは変更しない。
+58関数の18機能群と現在の境界確認を[レビュー索引](evidence/application-counterpart-review-index-2026-10-13.json)、
+[認証・保護・課金・復旧](evidence/application-security-boundaries-2026-10-13.json)、
+[管理・日次処理](evidence/application-admin-scheduled-boundaries-2026-10-13.json)に保存した。
+索引の網羅と現在の境界確認は、任意の旧RPC利用者・元PostgreSQL権限・全PRの同等性承認を意味しない。
 [照合記録](evidence/original-criteria-status-2026-10-13.json)には確認した証拠の版とhashを残す。

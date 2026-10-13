@@ -22,6 +22,17 @@ an allowed `Origin`, JSON input is bounded, responses are `no-store`, and the
 browser checks that the favorites API and Better Auth use the same origin. The
 request cannot supply a user ID.
 
+## 2026-10-13 current-owner acceptance
+
+Source cb3c1f3 passed both CI38382342905 jobs after local D1 19/client6 checks.
+Five cases on an owned Cloudflare Worker and three D1 stores cover live finite/
+perpetual owners, protected projections, history fallback and foreign isolation.
+The owned resources and temporary synthetic secret files were removed. Normal
+staging f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64 was deployed once; independent read-only
+checks preserved bindings114, all-store schema/counts/FK, assets10, catalog and
+backup/monitor settings. Fixture/readiness interruptions and the bounded resume
+are retained in the [acceptance receipt](evidence/favorites-current-license-native-2026-10-13.json).
+
 ## Protected content boundary
 
 The list first selects an active license with a future or NULL end before

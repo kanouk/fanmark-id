@@ -1,0 +1,82 @@
+{
+  "state": "current_application_boundary_review_record",
+  "observedAt": "2026-10-13T10:19:55.974Z",
+  "reviewedFiles": [
+    {
+      "path": "workers/api/src/notifications-d1-api.ts",
+      "sha256": "338d1225c605bb55aabb080b8721c793ba510195e23873ea6ce68b403dd85306"
+    },
+    {
+      "path": "workers/api/src/favorites-d1-api.ts",
+      "sha256": "21997f48f6d9161b4d18c07f11100ffcdacef9899c7068b11474a0228154ac31"
+    },
+    {
+      "path": "workers/api/src/public-access-d1-repository.ts",
+      "sha256": "5df808efa6a5241905c2dc7b14dcabc427e15c88365ff32f2fd2168a25545544"
+    },
+    {
+      "path": "workers/api/src/verified-access.mjs",
+      "sha256": "a05751de22c75a595afe0ab67dc9e5f39886e2ad7372dfdd58457ade610b8aa7"
+    },
+    {
+      "path": "workers/api/src/stripe-webhook-d1-api.ts",
+      "sha256": "b09d9b67e8707a573e234c3a1046f7bcbd2962f7e35966206dd161aa382b73af"
+    },
+    {
+      "path": "supabase/functions/_shared/stripe-receipt-ingress/index.ts",
+      "sha256": "8c28b3e94119886bdac8274c4f259c78117ac6efcbd4a632f73838ed76cb9014"
+    },
+    {
+      "path": "workers/api/src/account-deletion-d1-api.ts",
+      "sha256": "10e8a0b6498bb96ae7a8d1cfc6ac4c7696f934ee56732989d02f1023f76d7235"
+    },
+    {
+      "path": "workers/api/src/stripe-account-deletion.ts",
+      "sha256": "02d46a5c3b78010bbfa22c4ca35498237cf047b220f4b0379bfadf4175e4c5b2"
+    },
+    {
+      "path": "workers/api/src/recovery-set.ts",
+      "sha256": "0e749609a79fc7a5318012c0a9d8dacc272cef2372e12e124e176eba1e394804"
+    }
+  ],
+  "findings": [
+    {
+      "family": "notifications",
+      "boundary": "List/count/read updates derive user from server session and filter that user; no caller owner field; private DTO and no-store."
+    },
+    {
+      "family": "favorites",
+      "boundary": "Session owner and active-catalog normalized identity; protected contents projected NULL; stale historical current-owner selection reproduced and fixed, native5 and normal staging independently accepted in favorites-current-license-native-2026-10-13.json."
+    },
+    {
+      "family": "public/protected access",
+      "boundary": "Public selector projection masks protected and unselected-mode content; proof read binds selector/token hash and live license/password/access generations; unavailable/ambiguous reads refuse."
+    },
+    {
+      "family": "Stripe ingress",
+      "boundary": "Bounded raw-body signature verification and mode policy precede durable receipt/dispatch acknowledgment; no normalized payload trust before verification."
+    },
+    {
+      "family": "paid account deletion",
+      "boundary": "Current session/password, broadcast preflight and unique linked customer ownership before cancellation; provider customer/livemode checks; business cleanup then guarded Auth removal. Cross-system failure is not claimed atomic rollback."
+    },
+    {
+      "family": "recovery",
+      "boundary": "Distinct target IDs excluding source, authenticated snapshots and all destination prevalidation before writes, held guard across each store and final recapture hash equality. Separate-store commits are retained for repair-forward."
+    }
+  ],
+  "historicalEvidenceScopesRetained": true,
+  "newRemoteTests": false,
+  "fullPrReviewComplete": false,
+  "wholeSourceEquivalenceApproved": false,
+  "sourceUserRowsRead": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "remaining": [
+    "Original full legacy JWT bridge scope choice",
+    "Human Apple relay consent and Resend login then actual receive",
+    "Original-criteria final decision; no new Astra independent review claimed"
+  ],
+  "reviewedHead": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1",
+  "normalVersion": "f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64"
+}
