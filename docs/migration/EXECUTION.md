@@ -1,3 +1,12 @@
+## 追加candidate CIの対応表修正（2026-10-13）
+
+622743d/CI38353353499のapplication jobは、旧211 callsite表と新コードの不一致で停止した。
+旧sessionを読む4 callbackを個別にレビューし、215行・147既存semantic位置+68残件位置へ更新した。
+移動したuseAuth/useProfile位置を照合し、重複/欠落/余分0の2検査が成功。
+checkの意味や所有者・権限条件は緩めない。repo offline reportの35 Edge entrypointも現checkoutへ更新。
+この文書更新からsource実データ・外部consumer・remote/UIの完了を推定しない。
+Worker jobは前runで継続中、追加CI受け入れは未完了。通常main34a665d2/source9794a49は変更なし。
+
 ## 旧認証プロフィールのフロント接続と実Auth local試験（2026-10-13）
 
 プロフィール取得/保存/ユーザー名確認を、現在のSupabase sessionから得たBearerでWorkerへ接続した。

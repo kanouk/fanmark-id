@@ -51,7 +51,7 @@ moved.
 | `src/pages/Profile.tsx:257` | Delete the signed-in account after password confirmation and cleanup. | Auth identity, business rows, license history, subscription state, and possible Stripe cancellation. | Worker mode calls the cross-D1 account-deletion coordinator, which fails closed on ambiguous Stripe identity/config and preflights foreign-key/transfer constraints. Synthetic contract tests pass. The dedicated synthetic paid account was deleted through Safari on 2026-10-06; its Stripe test subscription was canceled and its unlimited Tier C license returned. The later signed cancellation completed without recreating the account, and exact-owned cleanup/independent retained-data checks passed. See [paid deletion evidence](evidence/staging-native-paid-deletion-accepted-2026-10-06.json). Real-user state and live billing remain deferred. See [account deletion API](account-deletion-api.md). |
 
 The row references above cover the previously unmapped locations in the
-checked-in 211-callsite report. A bounded import/caller trace for shared
+checked-in 215-callsite report. A bounded import/caller trace for shared
 frontend helpers found these paths:
 
 - `src/lib/favorites-backend.ts` is called by the favorites hook and fanmark

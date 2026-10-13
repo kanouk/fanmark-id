@@ -45,8 +45,8 @@ test("all static frontend Supabase callsites have exactly one semantic map entry
   const unmappedLocations = [...inventorySet].filter((location) => !mappedSet.has(location));
   const unexpectedMappings = [...mappedSet].filter((location) => !inventorySet.has(location));
 
-  assert.equal(inventoryLocations.length, 211, "update this expected count when regenerating the static inventory");
-  assert.equal(existingMappings.length, 143, "update prior semantic sections and this expected count together");
+  assert.equal(inventoryLocations.length, 215, "update this expected count when regenerating the static inventory");
+  assert.equal(existingMappings.length, 147, "update prior semantic sections and this expected count together");
   assert.equal(remainingMappings.length, 68, "update the remaining-callsite map and this expected count together");
   assert.deepEqual(duplicateMappings, []);
   assert.deepEqual(unmappedLocations, []);

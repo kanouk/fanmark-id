@@ -26,3 +26,6 @@ Apple relayの実受信は本人管理の宛先がなく未確認。旧JWT/servi
 旧認証profile/usernameはfrontend接続45件・実GoTrue/PostgREST local7項目まで進んだ。
 [source bridge](legacy-supabase-bridge.md)のlocal/遠隔/全schemaの境界を維持し、
 新candidate CI・実画面/Cloudflare remoteを待たずに#33を完了しない。
+
+現checkoutの静的frontendは215 callsite（旧Auth session callback4追加）。
+147+68全位置のsemantic対応と現AST一致を確認。旧211件の証拠は各snapshot時点のもの。

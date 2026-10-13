@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `63b601869ad549a113d129750ca1cdc0eed9ed41`
+Base commit: `622743d190f4e454d262bb381a05b56c60e5dfc2`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -117,7 +117,7 @@ Source: `src/integrations/supabase/types.ts` (generated checkout artifact; count
 
 ## Edge entrypoints
 
-Found 34 local directories with `index.ts` (`_shared` excluded). 34 have an explicit `verify_jwt` entry in `supabase/config.toml`; an absent value is reported as unconfigured and requires live verification.
+Found 35 local directories with `index.ts` (`_shared` excluded). 35 have an explicit `verify_jwt` entry in `supabase/config.toml`; an absent value is reported as unconfigured and requires live verification.
 
 | Function | Entrypoint | verify_jwt in config | Handler signal |
 | --- | --- | --- | --- |
@@ -147,6 +147,7 @@ Found 34 local directories with `index.ts` (`_shared` excluded). 34 have an expl
 | `generate-ogp-image` | `supabase/functions/generate-ogp-image/index.ts` | false | serve:111 |
 | `generate-transfer-code` | `supabase/functions/generate-transfer-code/index.ts` | true | serve:12 |
 | `handle-stripe-webhook` | `supabase/functions/handle-stripe-webhook/index.ts` | false | serve:81 |
+| `manual-expire-grace-licenses` | `supabase/functions/manual-expire-grace-licenses/index.ts` | true | serve:20 |
 | `process-notification-events` | `supabase/functions/process-notification-events/index.ts` | false | serve:33 |
 | `record-fanmark-access` | `supabase/functions/record-fanmark-access/index.ts` | false | serve:117 |
 | `register-fanmark` | `supabase/functions/register-fanmark/index.ts` | true | serve:386 |
@@ -158,7 +159,7 @@ Found 34 local directories with `index.ts` (`_shared` excluded). 34 have an expl
 
 ## Frontend Supabase callsites
 
-Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of the call and the extracted operation.
+Scanned `src/**/*.{ts,tsx}`: 215 callsites. Each row records the first line of the call and the extracted operation.
 
 | Location | Kind | Target | Operation | Dynamic expression |
 | --- | --- | --- | --- | --- |
@@ -250,10 +251,11 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/SecureWaitlistAdmin.tsx:108` | table | `audit_logs` | `table.select` |  |
 | `src/components/SecureWaitlistAdmin.tsx:137` | rpc | `get_waitlist_email_by_id` | `rpc` |  |
 | `src/components/UserProfileForm.tsx:143` | edge | `bulk-return-fanmarks` | `edge_function_invoke` |  |
-| `src/hooks/useAuth.tsx:54` | table | `user_settings` | `table.select` |  |
-| `src/hooks/useAuth.tsx:141` | auth | `auth` | `auth.getSession` |  |
-| `src/hooks/useAuth.tsx:158` | auth | `auth` | `auth.onAuthStateChange` |  |
-| `src/hooks/useAuth.tsx:198` | auth | `auth` | `auth.signOut` |  |
+| `src/hooks/useAuth.tsx:56` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useAuth.tsx:63` | table | `user_settings` | `table.select` |  |
+| `src/hooks/useAuth.tsx:156` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useAuth.tsx:173` | auth | `auth` | `auth.onAuthStateChange` |  |
+| `src/hooks/useAuth.tsx:213` | auth | `auth` | `auth.signOut` |  |
 | `src/hooks/useAuthForm.tsx:97` | edge | `check-email-exists` | `edge_function_invoke` |  |
 | `src/hooks/useAuthForm.tsx:156` | rpc | `validate_invitation_code` | `rpc` |  |
 | `src/hooks/useAuthForm.tsx:186` | auth | `auth` | `auth.signUp` |  |
@@ -311,11 +313,14 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/hooks/usePasswordReset.tsx:47` | auth | `auth` | `auth.setSession` |  |
 | `src/hooks/usePasswordReset.tsx:83` | auth | `auth` | `auth.updateUser` |  |
 | `src/hooks/usePreferredLanguage.ts:28` | table | `user_settings` | `table.update` |  |
-| `src/hooks/useProfile.tsx:23` | table | `user_settings` | `table.select` |  |
-| `src/hooks/useProfile.tsx:58` | realtime | `user_settings` | `realtime.channel` |  |
-| `src/hooks/useProfile.tsx:70` | realtime | `user_settings` | `realtime.removeChannel` |  |
-| `src/hooks/useProfile.tsx:120` | table | `user_settings` | `table.update` |  |
-| `src/hooks/useProfile.tsx:145` | rpc | `check_username_availability_secure` | `rpc` |  |
+| `src/hooks/useProfile.tsx:17` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useProfile.tsx:25` | table | `user_settings` | `table.select` |  |
+| `src/hooks/useProfile.tsx:60` | realtime | `user_settings` | `realtime.channel` |  |
+| `src/hooks/useProfile.tsx:72` | realtime | `user_settings` | `realtime.removeChannel` |  |
+| `src/hooks/useProfile.tsx:118` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useProfile.tsx:123` | table | `user_settings` | `table.update` |  |
+| `src/hooks/useProfile.tsx:146` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useProfile.tsx:149` | rpc | `check_username_availability_secure` | `rpc` |  |
 | `src/hooks/useSubscription.tsx:84` | auth | `auth` | `auth.getSession` |  |
 | `src/hooks/useSubscription.tsx:86` | edge | `check-subscription` | `edge_function_invoke` |  |
 | `src/hooks/useSubscription.tsx:93` | table | `user_subscriptions` | `table.select` |  |
@@ -376,7 +381,7 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 
 Operation summary:
 
-- `auth.getSession`: 7
+- `auth.getSession`: 11
 - `auth.getUser`: 2
 - `auth.mfa.challenge`: 2
 - `auth.mfa.enroll`: 1
@@ -443,12 +448,12 @@ Evidence files (32): `supabase/migrations/20251231070109_remote_schema.sql`, `su
 
 | Reference | Locations |
 | --- | --- |
-| `cron.alter_job` | supabase/config.toml:134; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:32,92; supabase/remote_schema.sql:92,597 |
+| `cron.alter_job` | supabase/config.toml:137; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:32,92; supabase/remote_schema.sql:92,597 |
 | `cron.job` | supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:23,83; supabase/remote_schema.sql:83,588 |
-| `edge-url:check-expired-licenses` | supabase/config.toml:119 |
-| `edge-url:process-notification-events` | supabase/config.toml:127 |
-| `net.http_post` | supabase/config.toml:118,126 |
-| `pg_cron` | supabase/config.toml:110; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:2,5 |
+| `edge-url:check-expired-licenses` | supabase/config.toml:122 |
+| `edge-url:process-notification-events` | supabase/config.toml:130 |
+| `net.http_post` | supabase/config.toml:121,129 |
+| `pg_cron` | supabase/config.toml:113; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:2,5 |
 
 ## Reproduction and tests
 
@@ -466,15 +471,15 @@ Evidence files (32): `supabase/migrations/20251231070109_remote_schema.sql`, `su
 
 ### Unverified live-only inventory
 
-- This offline scan does not enumerate live-only names. The coordinator-owned [live observations](live-observations.md) record read-only provider metadata, including the one deployed-only Edge Function, separately from these local counts.
+- No live-only names are knowable from this offline scan. See the coordinator-owned [live observations](live-observations.md) for separately captured read-only observations; those observations are not imported into these local counts.
 
 Reconcile the live observations with this checkout report before treating any mapping as complete.
 
 ## Remaining mapping work
 
-- Review the read-only deployed Edge inventory in [live observations](live-observations.md). The live-only `manual-expire-grace-licenses` function still requires purpose and authorization review before any replacement or retirement.
-- Review the refreshed public schema snapshot and live object-identity reconciliation in [live observations](live-observations.md). The generated TypeScript function set covers PostgREST RPCs, not every trigger/internal function; behavior, RLS, trigger, and D1-converter gates remain separate.
-- Review the completed static operation map in this document and the [remaining-callsite map](frontend-callsite-map.md). Realtime cleanup aliases are resolved to their subscribed table; a bounded import/caller trace for shared favorites, plan, profile, and emoji-master helpers is recorded there. Arbitrary/computed aliases, dynamic imports, and whole-program dataflow remain open.
+- Verify every local Edge entrypoint, configured JWT policy, deployed version, and any live-only function against the production project read-only.
+- Reconcile generated types and checked-in SQL snapshots with a fresh, access-controlled production schema readback; resolve drift before selecting Cloudflare D1/R2/Workers targets.
+- Map each static frontend operation to an owner, data classification, and Cloudflare replacement or retention decision. Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.
 - Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.
 
 ## Semantic mapping completed slice: Authentication and MFA
@@ -487,7 +492,7 @@ were imported. Those identity records remain deferred to #38.
 
 | Callsite(s) | Operation and owner | Data class | Cloudflare replacement and parity |
 | --- | --- | --- | --- |
-| `src/hooks/useAuth.tsx:141,158,198` | Load session, observe auth changes, and sign out the current user. | Private identity and session. | Better Auth `getSession`/`signOut` with HttpOnly Worker cookies; Worker mode skips the Supabase auth-state listener. Synthetic session and logout passed in local/staging proof. |
+| `src/hooks/useAuth.tsx:156,173,213` | Load session, observe auth changes, and sign out the current user. | Private identity and session. | Better Auth `getSession`/`signOut` with HttpOnly Worker cookies; Worker mode skips the Supabase auth-state listener. Synthetic session and logout passed in local/staging proof. |
 | `src/components/AdminApp.tsx:88,100,137`; `src/pages/AdminAuth.tsx:42,76,89,118,172` | Admin session, password sign-in, AAL/factor checks, and sign-out. | Restricted admin identity and MFA assurance. | `CloudflareAdminAuth` uses Better Auth sign-in/TOTP and `/api/admin/session`; each protected Worker operation checks admin role and same-session, current-factor assurance. The Supabase `AdminAuth` branch remains for Supabase mode. |
 | `src/components/auth/MFAChallenge.tsx:43,73,108,120`; `src/components/auth/MFAEnrollment.tsx:37,62,82,136,148` | List, enroll, challenge, verify, or remove TOTP factors. | MFA secret, factor identity, and challenge state. | These components are only rendered by `SupabaseAdminAuth`. Cloudflare mode uses inline Better Auth `enableTotp`/`verifyTotp` flows in `CloudflareAdminAuth`; synthetic enrollment, challenge, replacement, and session-bound assurance are tested. Supabase factor secrets were not read or migrated. |
 | `src/hooks/useAuthForm.tsx:186` | Create an identity and send verification email. | Email, password credential, invitation attribution. | `POST /api/auth/sign-up/email` uses a recoverable split-D1 command; account creation remains closed until selector and Resend are configured. No real email was sent. See [invitation signup API](invitation-signup-api.md). |
@@ -514,8 +519,8 @@ in Supabase until the separate real-user/data phase.
 
 | Callsite(s) | Operation and owner | Data class | Cloudflare replacement and parity |
 | --- | --- | --- | --- |
-| `src/hooks/useAuth.tsx:54`; `src/hooks/useProfile.tsx:23,120`; `src/hooks/usePreferredLanguage.ts:28`; `src/lib/profile-utils.ts:34` | Read or update the signed-in user's profile and preferred language. | Private account/profile fields, including plan and password-setup state. | `GET/PATCH /api/me/profile`; session owns the row. PATCH allows display name, avatar URL, and language; plan, Stripe IDs, invitation fields, and password-setup state are not client-writable. Existing rows are not imported. |
-| `src/hooks/useProfile.tsx:145`; `src/lib/profile-utils.ts:59` | Check whether a candidate username is available, excluding the current user. | Username and account existence signal. | `GET /api/me/username-availability`; Worker derives the excluded ID from Better Auth and returns only a boolean. It is a read-only check and does not reserve the name. |
+| `src/hooks/useAuth.tsx:63`; `src/hooks/useProfile.tsx:25,123`; `src/hooks/usePreferredLanguage.ts:28`; `src/lib/profile-utils.ts:34` | Read or update the signed-in user's profile and preferred language. | Private account/profile fields, including plan and password-setup state. | `GET/PATCH /api/me/profile`; session owns the row. PATCH allows display name, avatar URL, and language; plan, Stripe IDs, invitation fields, and password-setup state are not client-writable. Existing rows are not imported. |
+| `src/hooks/useProfile.tsx:149`; `src/lib/profile-utils.ts:59` | Check whether a candidate username is available, excluding the current user. | Username and account existence signal. | `GET /api/me/username-availability`; Worker derives the excluded ID from Better Auth and returns only a boolean. It is a read-only check and does not reserve the name. |
 | `src/pages/PasswordSetup.tsx:92`; `src/pages/Profile.tsx:139` | Clear `requires_password_setup` after a password change. | Private account security state. | Better Auth `setupPassword` and `changePassword` own these transitions; Worker mode does not expose a generic profile flag write. The direct table writes remain in Supabase mode. |
 | `src/hooks/useAuthForm.tsx:207` | Record the invitation attribution on the new user's profile. | Private signup attribution. | The split-D1 signup command creates the source-shaped profile and consumes the reserved invitation atomically; the legacy post-signup update runs only in Supabase mode. |
 | `src/components/AdminBroadcastEmail.tsx:192` | Count recipients matching allowlisted plan, language, and date filters. | Aggregate user population count. | `POST /api/admin/broadcast-emails/estimate` requires admin role and MFA and returns only `{count}`; it does not expose user IDs or addresses. Delivery remains selector/secret gated. |
@@ -689,8 +694,8 @@ real-user migration or provider acceptance.
 | `src/components/layout/AppHeader.tsx:135` | Remove the component's Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode creates no channel. React Query's component lifecycle and polling configuration own cleanup. |
 | `src/pages/Notifications.tsx:66` | Subscribe to any change in the signed-in user's `notifications` and reload up to 50 rows; recipient owns the read. | Private user notification content and delivery/read state. | `GET /api/me/notifications?limit=50`; Worker mode polls every 30 seconds. Immediate cross-device refresh becomes eventual polling. |
 | `src/pages/Notifications.tsx:83` | Remove the page's Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode creates no channel; the 30-second interval is cleared when the page unmounts. |
-| `src/hooks/useProfile.tsx:58` | Receive `UPDATE` for the signed-in user's `user_settings` row and replace local profile state; the user owns the row. | Private account profile and preference fields. | `GET/PATCH /api/me/profile`; same-runtime local update events plus a quiet refresh on focus/visibility. A change from another device is not pushed immediately. |
-| `src/hooks/useProfile.tsx:70` | Remove the Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode removes its local event handler and focus/visibility listeners. |
+| `src/hooks/useProfile.tsx:60` | Receive `UPDATE` for the signed-in user's `user_settings` row and replace local profile state; the user owns the row. | Private account profile and preference fields. | `GET/PATCH /api/me/profile`; same-runtime local update events plus a quiet refresh on focus/visibility. A change from another device is not pushed immediately. |
+| `src/hooks/useProfile.tsx:72` | Remove the Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode removes its local event handler and focus/visibility listeners. |
 | `src/hooks/useSubscription.tsx:124` | Receive any change to the signed-in user's latest `user_subscriptions` record and refetch it; the user owns the read, Stripe webhook processing owns provider-state writes. | Private billing entitlement and subscription projection metadata. | Read-only `GET /api/me/subscription`; focus/visibility refresh and a 30-second visible-tab interval. Stripe webhook projection replaces database push; no Stripe secret or payment action is exposed to the client. |
 | `src/hooks/useSubscription.tsx:132` | Remove the Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode removes focus/visibility listeners and clears the interval. |
 
@@ -716,3 +721,9 @@ The Worker uses the same API and session boundary as the dashboard list; see
 The 68 previously unmapped static callsites are classified in
 [`frontend-callsite-map.md`](frontend-callsite-map.md), completing all 211
 locations in this report. Wrapper and indirect-call review remains open.
+
+### 2026-10-13: legacy profile session readers
+
+| Source callsites | Purpose | Data | Target and verification |
+| --- | --- | --- | --- |
+| `src/hooks/useAuth.tsx:56`; `src/hooks/useProfile.tsx:17,118,146` | Resolve the current legacy token before Worker profile gate/load/save/username requests. | Private access token and current owner identity. | `resolveOwnProfileAuth` reads only the current Supabase session, requires its user ID to match the context, and gives the explicit bearer to the same-origin Worker client. Better Auth mode skips these callbacks. Worker verifies through fixed Auth and binds service-role operations to that owner. Client/worker fixtures and real isolated Auth/PostgREST proof are in [legacy bridge](legacy-supabase-bridge.md); remote/browser acceptance remains pending. |
