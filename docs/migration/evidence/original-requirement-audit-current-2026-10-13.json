@@ -589,7 +589,6 @@
   "currentReviewer": "current task model; user selected a higher model during the task; no new Astra review claimed",
   "unresolvedOriginalContract": [],
   "pendingHumanActions": [
-    "Apple Hide My Email sign-in in own probe",
     "actual controlled private relay inbox receipt"
   ],
   "deferredByUser": [
@@ -616,5 +615,11 @@
     "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a",
     "normalStagingVersion": "19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd",
     "proof": "docs/migration/evidence/search-current-license-native-2026-10-13.json"
+  },
+  "appleRelayProgress": {
+    "proof": "docs/migration/evidence/apple-private-relay-delivery-2026-10-13.json",
+    "applePrivateRelayConsentCompleted": true,
+    "providerDelivered": true,
+    "humanInboxAccepted": false
   }
 }

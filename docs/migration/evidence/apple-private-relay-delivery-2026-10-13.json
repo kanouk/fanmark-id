@@ -1,0 +1,33 @@
+{
+  "state": "provider_delivery_confirmed_human_inbox_pending",
+  "observedAt": "2026-10-13T14:39:14.813457+00:00",
+  "normalStagingVersion": "19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd",
+  "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a",
+  "appleAuthentication": {
+    "dedicatedProbe": true,
+    "provider": "apple",
+    "emailVerified": true,
+    "privateRelayDomain": "privaterelay.appleid.com",
+    "matchingNormalUserCountBeforeSend": 0
+  },
+  "email": {
+    "sender": "no-reply@fanmark.id",
+    "route": "/api/auth/sign-up/email",
+    "syntheticSignupCount": 1,
+    "signupHttpStatus": 200,
+    "signupAttemptState": "completed",
+    "verificationSentRecorded": true,
+    "providerEvents": [
+      "Sent",
+      "Delivered"
+    ],
+    "humanInboxConfirmed": false,
+    "newResendKeysCreated": 0,
+    "automaticReplayCount": 0
+  },
+  "cleanupPending": true,
+  "credentialValuesRead": false,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "wholeMigrationAccepted": false
+}

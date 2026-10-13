@@ -1,5 +1,14 @@
 # 元の完了条件との照合（2026-10-13）
 
+## 2026-10-13: Apple非公開メール認証と配送記録を確認
+
+本人のApple「メールを非公開」選択後、専用環境のAppleアカウント1件・確認済みrelayメールを確認した。
+通常stagingに同一メールのアカウントがないことを照合し、既存signup経路から合成アカウントを1件作成、確認メールを1通送った。
+signupは200/attempt completed、ResendはSent・Delivered。実際の転送先受信と所有テストデータの後片付けは未完了。
+新Resend鍵・送信再試行・本番ユーザー移送・domain変更は0。現行通常main19aa1e2f/source fdd16ef。
+[配送の限定証拠](evidence/apple-private-relay-delivery-2026-10-13.json)。target/PRの最終判定と最後の#38は引き続き別工程。
+
+
 ## 2026-10-13: 移行方針を本人回答で確定
 
 ユーザーは「現在の方針を継続：Cloudflare環境を完成させ、既存ユーザー移送と再ログインは最後」を選択した。
