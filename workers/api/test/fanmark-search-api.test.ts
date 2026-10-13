@@ -82,7 +82,7 @@ describe("fanmark search details D1 API", () => {
     expect(payload.result).not.toHaveProperty("target_url");
     expect(payload.result).not.toHaveProperty("text_content");
     expect(test.getSql()).toContain("entry_status = 'pending'");
-    expect(test.getBindings()).toEqual([FANMARK_ID, USER_ID, USER_ID, USER_ID, FANMARK_ID]);
+    expect(test.getBindings()).toEqual([FANMARK_ID, "2026-09-25T00:00:00.000000Z", "2026-09-25T00:00:00.000000Z", USER_ID, USER_ID, USER_ID, FANMARK_ID]);
   });
 
   it("serves anonymous search details without a user-specific lottery entry", async () => {
@@ -93,7 +93,7 @@ describe("fanmark search details D1 API", () => {
     expect(response?.status).toBe(200);
     expect(payload.result.has_user_lottery_entry).toBe(false);
     expect(payload.result.user_lottery_entry_id).toBeNull();
-    expect(test.getBindings()).toEqual([FANMARK_ID, null, null, null, FANMARK_ID]);
+    expect(test.getBindings()).toEqual([FANMARK_ID, "2026-09-25T00:00:00.000000Z", "2026-09-25T00:00:00.000000Z", null, null, null, FANMARK_ID]);
   });
 
   it("returns null for missing fanmarks and fails closed on unavailable auth/configuration", async () => {

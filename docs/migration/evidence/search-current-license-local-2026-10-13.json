@@ -21,7 +21,8 @@
     "frontendClientTests": 6,
     "typecheck": true,
     "eslint": true,
-    "additionalCases": "active finite and blocking grace vs retired NULL/longer-end history; anonymous and two real synthetic Better Auth sessions; stored licenses unchanged"
+    "additionalCases": "active finite and blocking grace vs retired NULL/longer-end history; anonymous and two real synthetic Better Auth sessions; stored licenses unchanged",
+    "workerApiContractTests": 4
   },
   "selection": "live active future/perpetual, blocking grace, then source NULL-first history ordering",
   "capturedServerClockUsedForSqlAndDto": true,
@@ -33,6 +34,10 @@
     {
       "path": "workers/api/test/fanmark-search-d1.test.ts",
       "sha256": "d75f8eea913b75a6da2ee8c7cc5c4de6e7939db5e5793e1998780c22be505aaa"
+    },
+    {
+      "path": "workers/api/test/fanmark-search-api.test.ts",
+      "sha256": "c3108d84490d74ea15f5daab78ac2cec6a60fe59b6e0901321693abf58ed6091"
     }
   ],
   "remaining": [
@@ -40,5 +45,12 @@
     "isolated actual Cloudflare cases and exact-owned cleanup",
     "normal staging rollout and independent readback"
   ],
-  "wholeMigrationComplete": false
+  "wholeMigrationComplete": false,
+  "initialCI": {
+    "run": 38392991456,
+    "workerJob": "failure",
+    "cause": "Two API binding assertions still expected five parameters; now seven parameters include the same captured server clock twice",
+    "assertionsUpdated": "exact clock and auth-owner positions; no assertion relaxation",
+    "localApiRetestPassed": 4
+  }
 }
