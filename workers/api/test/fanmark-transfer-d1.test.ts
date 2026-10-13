@@ -629,6 +629,68 @@ describe("D1 fanmark transfer", () => {
     expect(await count(business, "fanmark_licenses")).toBe(3);
   });
 
+  it.each([
+    ["apply", "insert"], ["approve", "insert"],
+    ["apply", "update"], ["approve", "update"],
+    ["apply", "plan"], ["approve", "plan"],
+  ])("refuses a reduced recipient limit immediately before the %s batch (%s)", async (action, change) => {
+    await seedRecipientLicenses();
+    if (change !== "insert") {
+      await run(business,
+        "INSERT INTO system_settings (id, setting_key, setting_value, created_at, updated_at) VALUES (?, 'free_fanmarks_limit', ?, ?, ?)",
+        crypto.randomUUID(), change === "plan" ? "2" : "3", NOW, NOW);
+    }
+    if (change === "plan") {
+      await run(business, "UPDATE user_settings SET plan_type = 'creator' WHERE user_id = ?", RECIPIENT);
+    }
+    const issued = await issue();
+    const applied = action === "approve" ? await apply(String(issued.transfer_code)) : null;
+    let before: unknown;
+    let injected = false;
+    requestEnv.FANMARK_DB = new Proxy(business, {
+      get(target, property) {
+        if (property === "batch") return async (queries: D1PreparedStatement[]) => {
+          if (!injected) {
+            injected = true;
+            if (change === "plan") {
+              await run(business, "UPDATE user_settings SET plan_type = 'free' WHERE user_id = ?", RECIPIENT);
+            } else if (change === "update") {
+              await run(business, "UPDATE system_settings SET setting_value = '2' WHERE setting_key = 'free_fanmarks_limit'");
+            } else {
+              await run(business,
+                "INSERT INTO system_settings (id, setting_key, setting_value, created_at, updated_at) VALUES (?, 'free_fanmarks_limit', '2', ?, ?)",
+                crypto.randomUUID(), NOW, NOW);
+            }
+            before = await approvalSnapshot();
+          }
+          return target.batch(queries);
+        };
+        const value = Reflect.get(target, property, target);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    try {
+      const result = await call(`/${action}`, action === "approve"
+        ? { request_id: applied?.request_id }
+        : { transfer_code: issued.transfer_code, disclaimer_agreed: true }, action === "approve" ? OWNER : RECIPIENT);
+      expect(injected).toBe(true);
+      expect(result.status).toBe(409);
+      expect(await result.json()).toMatchObject({ error: "fanmark_limit_exceeded", limit: 2 });
+      expect(await approvalSnapshot()).toEqual(before);
+    } finally {
+      requestEnv.FANMARK_DB = business;
+    }
+    expect(await business.prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'free_fanmarks_limit'")
+      .first()).toMatchObject({ setting_value: "2" });
+    await run(business, "UPDATE system_settings SET setting_value = '3' WHERE setting_key = 'free_fanmarks_limit'");
+    const retry = await call(`/${action}`, action === "approve"
+      ? { request_id: applied?.request_id }
+      : { transfer_code: issued.transfer_code, disclaimer_agreed: true }, action === "approve" ? OWNER : RECIPIENT);
+    expect(retry.status).toBe(200);
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action = ?")
+      .bind(action === "approve" ? "LICENSE_TRANSFERRED" : "TRANSFER_REQUESTED").first()).toMatchObject({ count: 1 });
+  });
+
   it("cancels only an active code issued by the authenticated owner", async () => {
     const issued = await issue();
     const codeId = String(issued.transfer_code_id);

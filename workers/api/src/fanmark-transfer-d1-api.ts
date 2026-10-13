@@ -255,11 +255,40 @@ async function issueCode(db: D1Database, userId: string, body: JsonObject, now: 
   }, 200);
 }
 
+interface PlanLimitSnapshot {
+  current: number;
+  active: number;
+  pending: number;
+  limit: number;
+  plan: string;
+  settingKey: string;
+  settingCount: number;
+  settingValue: string | null;
+}
+
+// Check the configuration read during preflight in the same transaction as
+// the reservation/approval. A concurrent plan or limit edit must not leave a
+// stale numeric limit authorizing the write.
+const PLAN_SNAPSHOT_GUARD = `
+  (SELECT COUNT(*) FROM user_settings WHERE user_id = ? AND plan_type = ?) = 1
+  AND (SELECT COUNT(*) FROM system_settings WHERE setting_key = ?) = ?
+  AND NOT EXISTS (SELECT 1 FROM system_settings WHERE setting_key = ? AND setting_value IS NOT ?)
+`;
+
+function planSnapshotBindings(userId: string, plan: PlanLimitSnapshot): Array<string | number | null> {
+  return [userId, plan.plan, plan.settingKey, plan.settingCount, plan.settingKey, plan.settingValue];
+}
+
+function samePlanSnapshot(left: PlanLimitSnapshot, right: PlanLimitSnapshot): boolean {
+  return left.plan === right.plan && left.settingKey === right.settingKey &&
+    left.settingCount === right.settingCount && left.settingValue === right.settingValue;
+}
+
 async function planLimit(
   db: D1Database,
   userId: string,
   now: string,
-): Promise<{ current: number; active: number; pending: number; limit: number }> {
+): Promise<PlanLimitSnapshot> {
   const settings = await db.prepare("SELECT plan_type FROM user_settings WHERE user_id = ? LIMIT 2")
     .bind(userId).all<{ plan_type: unknown }>();
   if (settings.results?.length !== 1) throw new FanmarkTransferApiError("user_settings_unavailable", 503);
@@ -272,6 +301,11 @@ async function planLimit(
   const settingKey = keyByPlan[plan] ?? keyByPlan.free;
   const setting = await db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 2")
     .bind(settingKey).all<{ setting_value: unknown }>();
+  const settingCount = setting.results?.length ?? 0;
+  const settingValue = setting.results?.[0]?.setting_value ?? null;
+  if (settingValue !== null && typeof settingValue !== "string") {
+    throw new FanmarkTransferApiError("plan_limit_unavailable", 503);
+  }
   let limit = defaults[plan] ?? defaults.free;
   if (setting.results?.length === 1) {
     const configured = Number(setting.results[0].setting_value);
@@ -295,7 +329,7 @@ async function planLimit(
   const pending = typeof pendingCount?.count === "number" && Number.isSafeInteger(pendingCount.count)
     ? pendingCount.count
     : 0;
-  return { current: active + pending, active, pending, limit };
+  return { current: active + pending, active, pending, limit, plan, settingKey, settingCount, settingValue };
 }
 
 async function applyCode(db: D1Database, userId: string, body: JsonObject, now: Date): Promise<Response> {
@@ -347,8 +381,9 @@ async function applyCode(db: D1Database, userId: string, body: JsonObject, now: 
           + (SELECT COUNT(*) FROM fanmark_transfer_requests AS r
              JOIN fanmark_transfer_codes AS c ON c.id = r.transfer_code_id
              WHERE r.requester_user_id = ? AND r.status = 'pending' AND c.status = 'applied')
-        ) < ?
-    `).bind(nowIso, row.id, nowIso, userId, userId, nowIso, userId, plan.limit),
+        ) < ? AND ${PLAN_SNAPSHOT_GUARD}
+    `).bind(nowIso, row.id, nowIso, userId, userId, nowIso, userId, plan.limit,
+      ...planSnapshotBindings(userId, plan)),
     db.prepare(`
       INSERT INTO fanmark_transfer_requests
         (id, transfer_code_id, license_id, fanmark_id, requester_user_id, status,
@@ -390,6 +425,7 @@ async function applyCode(db: D1Database, userId: string, body: JsonObject, now: 
         limit: currentPlan.limit,
       });
     }
+    if (!samePlanSnapshot(plan, currentPlan)) throw new FanmarkTransferApiError("plan_limit_changed", 409);
     throw new FanmarkTransferApiError("code_not_active", 409);
   }
   return json({ success: true, request_id: requestId, fanmark_name: row.display_fanmark ?? "", fanmark_short_id: row.short_id }, 200);
@@ -505,9 +541,10 @@ async function approveRequest(
                JOIN fanmark_transfer_codes AS pending_code ON pending_code.id = pending.transfer_code_id
                WHERE pending.requester_user_id = ? AND pending.status = 'pending'
                  AND pending_code.status = 'applied')
-          ) <= ?
+          ) <= ? AND ${PLAN_SNAPSHOT_GUARD}
       `).bind(nowIso, nowIso, nowIso, transfer.license_id, userId, requestId, userId,
-        transfer.requester_user_id, nowIso, transfer.requester_user_id, recipientPlan.limit),
+        transfer.requester_user_id, nowIso, transfer.requester_user_id, recipientPlan.limit,
+        ...planSnapshotBindings(transfer.requester_user_id, recipientPlan)),
       db.prepare(`
         INSERT INTO fanmark_licenses
           (id, fanmark_id, user_id, license_start, license_end, display_fanmark, status,
@@ -596,6 +633,7 @@ async function approveRequest(
         current: currentPlan.current, limit: currentPlan.limit,
       });
     }
+    if (!samePlanSnapshot(recipientPlan, currentPlan)) throw new FanmarkTransferApiError("plan_limit_changed", 409);
     throw error;
   }
   return json({ success: true, new_license_id: newLicenseId, new_license_end: newEnd, fanmark_name: canonicalDisplay }, 200);

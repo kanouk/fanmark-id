@@ -7,6 +7,12 @@ The authenticated routes are `GET /api/me/transfers` and `POST /api/me/transfers
 Issue, apply, reject, cancel, and approval state changes use D1 batches. Approval retires the old license, creates a fresh recipient license from the active master-tier duration, sets the 30-day transfer lock, deletes the old access/profile/password configuration, creates an inactive basic config, cancels pending lottery entries, and writes the audit/outbox records. It does not copy the old configuration. The UI may provide the new basic-config display name.
 
 Recipient capacity is reserved while an incoming transfer request is pending.
+Application and approval also verify the preflight plan and exact limit-setting
+snapshot inside their mutation batch. A concurrent plan edit, newly inserted
+limit or changed limit aborts the stale operation without transfer effects.
+A newly insufficient limit returns `fanmark_limit_exceeded`; another changed
+snapshot returns `plan_limit_changed` (409). A new request rechecks the current
+configuration; the server does not automatically resend mutations.
 The limit check counts active, unexpired licenses plus pending requests whose
 transfer code is applied. The code transition to `applied` repeats this count
 inside its D1 batch, so two simultaneous applications cannot reserve the last

@@ -11,7 +11,7 @@ Authorization fingerprint:8e9859a0fe06eb1e7b123f55f3cde2c1ae482081ed6912dd9dbc53
 
 | Source function | Exact definition SHA-256 | Target and scope |
 | --- | --- | --- |
-| prevent_user_settings_insert_escalation | 0fae1473f8fa3b1caffa6f2dfd26a19a3215373b0bd17790c56c6128632d4de3 | Source permits service_role, otherwise requires is_admin for an admin-plan insert. Credential/OAuth provisioning always inserts server-selected free; no public generic settings insert exists. Real new-provider provisioning is still separately pending. |
+| prevent_user_settings_insert_escalation | 0fae1473f8fa3b1caffa6f2dfd26a19a3215373b0bd17790c56c6128632d4de3 | Source permits service_role, otherwise requires is_admin for an admin-plan insert. Credential/OAuth provisioning always inserts server-selected free; no public generic settings insert exists. Apple first registration, human password setup/logout and credential relogin are accepted on V4 cc82c298 in [the October13 evidence](evidence/apple-staging-first-password-relogin-2026-10-13.json). Actual provider subjects/roles remain deferred user-data conditions; private relay delivery remains open. |
 | prevent_user_settings_privilege_escalation | 5d75756c214881d9ee330bc04d9795e6abae18d8aa3004ffc1d6ddacb9faa61d | Source permits service_role/admin and rejects any non-admin plan change. Target own-profile PATCH allows display_name/avatar_url/preferred_language only; the user cannot write plan/owner/Stripe/invitation fields. Administrator plan mutations pass the router's current-session MFA authorizer first. Billing changes come from verified reconciliation, whose price map contains creator/max/business only. |
 | notify_security_breach | 0565124948f692b68362bfd980b8bee1222210cea800bcf721f9398d459fda81 | Source AFTER INSERT audit trigger raises a NOTICE for two unauthorized-waitlist/email action names; it stores no extra row and sends no email. Audit storage/route refusal and operator telemetry are separate target responsibilities. A real notification-delivery feature is not inferred from this function name; final operational logging acceptance remains open. |
 
@@ -89,7 +89,7 @@ remaining authorization/operations reconciliation.
 
 | Source binding | Function | Definition SHA-256 prefix | Target review entry point |
 | --- | --- | --- | --- |
-| `auth.users.on_auth_user_created` | `handle_new_user` | `0da996fbca2881e1` | invitation-signup-d1-api.ts / oauth-signup-provisioning.mjs; real provider setup remains pending |
+| `auth.users.on_auth_user_created` | `handle_new_user` | `0da996fbca2881e1` | invitation-signup-d1-api.ts / oauth-signup-provisioning.mjs; [native invitation signup](evidence/staging-invitation-signup-native-2026-10-08.json) and [V4 Apple first-user signup/relogin](evidence/apple-staging-first-password-relogin-2026-10-13.json) accepted in their recorded scopes; relay remains open |
 | `public.audit_logs.security_alert_trigger` | `notify_security_breach` | `f2ce3b273899bc48` | NOTICE-only source behavior; audit storage and operational logging are separate, above |
 | `public.broadcast_emails.update_broadcast_emails_updated_at` | `update_updated_at_column` | `84f1b85aa5d880e6` | broadcast-email-admin-d1-api.ts, broadcast-email-delivery-d1.ts |
 | `public.email_templates.update_email_templates_updated_at` | `update_updated_at_column` | `9c9494a079abea3b` | admin-email-templates-d1-api.ts |
