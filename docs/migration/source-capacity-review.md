@@ -78,3 +78,20 @@ sourceは完全件数、すべての対象は元manifestのkey/metadata/class/si
 
 このprofileのBusiness件数は通常の合成fixtureに14 profileを加えたもの。本番の全Business表の
 行数分布・最大容量や停止時間を代表するものではない。実行結果を本番RTO保証にしない。
+
+## wrapper修正だけでは不足・共有復旧の保持を限定（2026-10-13）
+
+3632cec/CI38331658551は両job成功。新しい所有環境・同じMaster/件数/容量のremote復旧は
+avatarのverifiedまで進んだが、その後native exceededMemoryで終了した。全体成功ではない。
+[2回目の失敗](evidence/representative-recovery-capacity-wrapper-repair-failure-2026-10-13.json)。
+各回のnative終了をversion/開始時刻/1失敗で確認し、operator観測のfailureを保持した。
+最初はCI済みcleanup版の専用Workerで、2回目は同じjournalのresumeによるcleanupだけで、
+全所有画像の照合後に6D1/5R2/1Worker/2DOを削除した。復旧POSTの再送は0。
+
+共有restoreは、最初に全snapshotのauth/schema/hash/相互関係と全targetを検証し、
+比較用のwanted hashesを固定する。各store復旧が完了したら、その呼出内で復号した完了storeだけを
+解放する修正を加える。入力archiveを変更せず、最終の全store recapture/hashとAuth/Businessの
+相互関係、fence、復旧後のsession失効は維持する。容量/形式/件数を縮めて成功にしない。
+共有修正はtypecheck、関連17件、全Master入りlocal復旧・画像配信・SDK login・cleanupまで成功。
+[local限定証拠](evidence/representative-recovery-capacity-shared-release-local-2026-10-13.json)。
+CI/実Cloudflare成功は別に確認する。通常mainの再配備と実ユーザー/DNS変更は0。

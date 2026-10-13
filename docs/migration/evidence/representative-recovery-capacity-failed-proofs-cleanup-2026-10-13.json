@@ -1,0 +1,23 @@
+{
+  "state": "both_failed_owned_proofs_cleaned_and_existing_staging_preserved",
+  "observedAt": "2026-10-13T01:42:44.271Z",
+  "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "mainBindingCount": 114,
+  "mainBindingDigest": "646b184dadb08cce0b5a528d9753b10059127eb87f09da4841b0a895d9f630d5",
+  "inventoryCounts": {
+    "d1": 12,
+    "r2": 12,
+    "workers": 4,
+    "namespaces": 8
+  },
+  "baselineIdentityConfigurationSchemaCountsMatched": true,
+  "humanAppleCredentialAndSessionPreserved": true,
+  "freeProfileAndPasswordSetupStatePreserved": true,
+  "realAuthCredentialValuesRead": false,
+  "foreignKeyViolations": 0,
+  "independentReadbackSha256": "32e465cf6b33a4b170e2093a60226f7b19d6d01d3d6dbc6e9cd0c917ad58bb0e",
+  "failedProofsAccepted": false,
+  "proofPostsResent": false,
+  "userDataMigrated": false,
+  "domainChanged": false
+}

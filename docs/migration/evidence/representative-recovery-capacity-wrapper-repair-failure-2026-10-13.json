@@ -1,0 +1,70 @@
+{
+  "state": "representative_capacity_remote_wrapper_repair_insufficient",
+  "head": "3632cecb32d82bb125789f81d6737da4828327ff",
+  "ciRun": "38331658551",
+  "workerVersion": "16fabb73-c74b-4647-af67-4c05c6834316",
+  "masterRows": 20152,
+  "capacityFixture": {
+    "users": 15,
+    "accounts": 18,
+    "avatars": 69,
+    "covers": 40,
+    "imageBytes": 13285729,
+    "maxObjectBytes": 1196603
+  },
+  "restoreState": "failed",
+  "restoreError": "proof_exceeded_memory",
+  "progress": [
+    {
+      "store": "master",
+      "state": "started"
+    },
+    {
+      "store": "master",
+      "state": "verified"
+    },
+    {
+      "store": "business",
+      "state": "started"
+    },
+    {
+      "store": "business",
+      "state": "verified"
+    },
+    {
+      "store": "auth",
+      "state": "started"
+    },
+    {
+      "store": "auth",
+      "state": "verified"
+    },
+    {
+      "store": "avatars",
+      "state": "started"
+    },
+    {
+      "store": "avatars",
+      "state": "verified"
+    }
+  ],
+  "terminalEvidence": {
+    "source": "Cloudflare workersInvocationsAdaptive",
+    "operatorRecorded": true,
+    "invocationTerminated": true,
+    "scriptVersion": "16fabb73-c74b-4647-af67-4c05c6834316",
+    "status": "exceededMemory",
+    "requests": 1,
+    "errors": 1,
+    "invocationStartedAt": "2026-10-13T01:39:08Z"
+  },
+  "operatorTerminalRecordVerified": true,
+  "proofResent": false,
+  "cleanupVerified": true,
+  "originalInventoryEqual": true,
+  "sourceUsersMoved": false,
+  "normalMainRedeployed": false,
+  "domainChanged": false,
+  "nextRepair": "Release each completed decrypted store inside shared restore; preserve pinned hashes, full final recapture and cross-store checks",
+  "nextRemoteAccepted": false
+}

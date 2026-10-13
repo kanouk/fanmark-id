@@ -1,3 +1,18 @@
+## 最新の保留（2026-10-13 10:45 JST）
+
+3632cec/[CI38331658551](https://github.com/kanouk/fanmark-id/actions/runs/38331658551)は両job成功。
+wrapper修正後の同じ容量の復旧はavatar verifiedまで進み、続いてnative exceededMemoryで終了した。
+[2回目の失敗とcleanup](evidence/representative-recovery-capacity-wrapper-repair-failure-2026-10-13.json)。
+各回の処理終了を確認してfailureを保持し、所有画像を照合して全一時資源を削除した。復旧再送0。
+最初のcleanup後は別processで元の12D1/12R2/4Worker/8DO、通常main cc82c298、設定/件数/schema/
+本人Apple/credential/session/Freeを照合した。2回目の独立照合も成功。
+[両失敗の後片付けと保持](evidence/representative-recovery-capacity-failed-proofs-cleanup-2026-10-13.json)。
+共有restoreで完了storeの復号payloadを解放する修正はtypecheck・関連17件と全Master入りlocal復旧が成功。
+[local限定証拠](evidence/representative-recovery-capacity-shared-release-local-2026-10-13.json)。
+共有修正のCI・実Cloudflare受け入れは残る。全target事前検証・wanted hashes・
+全store最終recapture/相互関係・fenceは維持。実Cloudflare成功は未受け入れ。
+実ユーザー/Auth/Storageと本番domain/DNSは#38。Apple relay実受信は宛先なしで未確認。
+
 ## 追加の確認と未完了（2026-10-13 10:20 JST）
 
 読み取り専用で本番の40表の正確な件数とAuth/Storage容量を取得し、Cloudflareの現在のPaidプランを確認した。

@@ -193,6 +193,10 @@ export async function restoreRecoverySet(bindings: RecoverySetBindings, archive:
         authSecret: context.authSecret, sessionPolicy: options.sessionPolicy, isolatedFidelity: options.isolatedFidelity});
       else await restoreR2(bindings[store], snapshots[store], {expectedKind: store === "avatars" ? "avatars" : "cover-images", mode: options.mode});
     }
+    // The desired hashes are already pinned. Release each completed store's
+    // plaintext before the next restore and the complete final recapture.
+    // This mutates only this call's decrypted snapshots, never the input archive.
+    delete (snapshots as Partial<Snapshots>)[store];
     await held(options.targetGuard, options.targetIds); await options.progress({store, state: "verified"});
   }
   const actual = await captureAll(bindings, {...context, sourceIds: options.targetIds}, options.targetGuard);
