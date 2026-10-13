@@ -1,6 +1,8 @@
 # 元の完了条件との照合（2026-10-13 15:52 JST）
 
-現行通常stagingは **8b2ddbf3-cc77-4937-a036-c750e00b3f39** / source **8fd1aaa**。
+現行通常stagingは **5e78343b-9e26-4193-af96-42ffd96461d5** / source **ef2128f**。
+取得・抽選の上限判定もlocal85件・実Cloudflare8項目・独立cleanup/通常保持確認を受け入れた。
+[取得・抽選の限定証拠](evidence/acquisition-lottery-capacity-native-2026-10-13.json)。
 移管plan/limit競合のlocal43件・実Cloudflare6件・独立cleanup/通常保持確認を受け入れた。
 [限定証拠](evidence/transfer-plan-snapshot-native-2026-10-13.json)。
 下表のprofile/auth App受け入れは958b5ea2/source5c1504e当時の結果として保持する。

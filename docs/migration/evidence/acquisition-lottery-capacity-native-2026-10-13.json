@@ -1,0 +1,118 @@
+{
+  "state": "native_capacity_acceptance_and_normal_staging_rollout_verified",
+  "observedAt": "2026-10-13T09:17:32.716Z",
+  "runtimeSource": "ef2128f79fc66c00f8f8c4b3d12fdf27904f888d",
+  "ciRun": 38372438870,
+  "bothJobsSuccess": true,
+  "localTests": {
+    "registration": 34,
+    "lottery": 45,
+    "client": 6
+  },
+  "nativeCases": [
+    {
+      "kind": "registration_free_limit",
+      "initialAccepted": 3,
+      "rejectedStatus": 403,
+      "businessRowsHeld": true
+    },
+    {
+      "kind": "registration_last_slot",
+      "statuses": [
+        201,
+        403
+      ],
+      "activeOwned": 1,
+      "fanmarks": 1
+    },
+    {
+      "kind": "registration_setting_race",
+      "rejectedStatus": 403,
+      "businessRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 201,
+      "singleAudit": true
+    },
+    {
+      "kind": "registration_admin_unlimited",
+      "accepted": 4,
+      "freeLimitIgnored": true
+    },
+    {
+      "kind": "registration_perpetual_count",
+      "perpetualOwned": 3,
+      "rejectedStatus": 403
+    },
+    {
+      "kind": "lottery_setting_race",
+      "change": "insert",
+      "rejectedStatus": 409,
+      "businessRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleEntryAndAudit": true
+    },
+    {
+      "kind": "lottery_setting_race",
+      "change": "update",
+      "rejectedStatus": 409,
+      "businessRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleEntryAndAudit": true
+    },
+    {
+      "kind": "lottery_setting_race",
+      "change": "plan",
+      "rejectedStatus": 409,
+      "businessRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleEntryAndAudit": true
+    }
+  ],
+  "schemas": {
+    "businessMigrations": 27,
+    "authMigrations": 4,
+    "masterMigrations": 8,
+    "realImmutableEmojiActivation": true,
+    "realReferenceReleaseHelper": true,
+    "syntheticEmojiRows": 4
+  },
+  "proofScope": "Actual Cloudflare Worker/router and Better Auth sessions with all current schemas. Private gated fixture changes owned configuration immediately before the actual batch. Synthetic active Master records use the real activation/staging helpers. This is changed capacity-flow acceptance, not full App UI or source-user migration.",
+  "cleanup": {
+    "ownedD1": 3,
+    "ownedWorker": 1,
+    "removed": true,
+    "independentInventoryRestored": true
+  },
+  "normalStaging": {
+    "previous": "8b2ddbf3-cc77-4937-a036-c750e00b3f39",
+    "version": "5e78343b-9e26-4193-af96-42ffd96461d5",
+    "bindingsPreserved": 114,
+    "allThreeD1SchemaAndCountsHeld": true,
+    "foreignKeysZero": true,
+    "assetsPreserved": 10,
+    "catalogHeld": true,
+    "backupAndMonitorHeld": true,
+    "independentReadonlyConfirmed": true,
+    "frontendChanged": false,
+    "normalDatabaseWrites": false,
+    "normalSecretsChanged": false
+  },
+  "code": [
+    {
+      "path": "workers/api/src/fanmark-registration-d1-api.ts",
+      "sha256": "8b94f35447bbaa8b3cbed5d5baf638f3b1782f66a7ae04969c774edcaca34f17"
+    },
+    {
+      "path": "workers/api/src/fanmark-lottery-d1-api.ts",
+      "sha256": "30b1839ae8be43106f7c7fa089ea92bda37e63357f4f04744d7799a8028eedfe"
+    }
+  ],
+  "syntheticCredentialsPublished": false,
+  "sourceProductionChanged": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "wholeMigrationComplete": false
+}

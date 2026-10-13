@@ -1,3 +1,14 @@
+## Current capacity acceptance (2026-10-13)
+
+Sourceef2128f/CI38372438870 passes both jobs. Actual Cloudflare Worker/Better Auth,
+all27 Business/4 Auth/8 Master schemas and real reference-release/emoji activation
+accept eight capacity cases, including direct Free refusal, one-slot concurrency,
+Admin, perpetual Tier C and changed configuration with safe retry. All owned
+Worker/3D1 resources are removed and independently checked. Normal5e78343b
+preserves binding114, all3 D1 schema/counts/FK0, ten assets, catalog and backup/monitor,
+with independent readonly readback. Frontend/schema/normal DB writes/secrets and
+real-user/domain changes are0. [Scoped proof](evidence/acquisition-lottery-capacity-native-2026-10-13.json).
+
 # Fanmark registration Worker API
 
 ## Route and selection

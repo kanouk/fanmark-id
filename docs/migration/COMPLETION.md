@@ -1,3 +1,15 @@
+## 取得・抽選の上限判定を修正・通常stagingへ反映（2026-10-13）
+
+取得APIがFree4件目や残り1枠への同時取得を受け入れる2件、抽選が書込直前の設定変更を無視する3件を実local D1で再現。
+取得は本人plan/有効所有数/limit、抽選はplan/limit snapshotを同じbatchで再確認する。
+取得34・抽選45・client6件とtypecheck/lint、sourceef2128fのCI38372438870両jobが成功。
+所有Worker/3D1に全27 Business/4 Auth/8 Masterと実マスター公開helperを使い、8項目を受け入れた。
+全所有資源を削除して独立inventory照合。通常mainは **5e78343b-9e26-4193-af96-42ffd96461d5**。
+frontend/schema変更0。独立readonlyでbinding114・全3D1のschema/件数/FK0・asset10件・catalog・backup/monitorを保持。
+[限定証拠](evidence/acquisition-lottery-capacity-native-2026-10-13.json)。元条件/PRの最終レビューは継続中。
+旧JWT bridge範囲の回答、本人のApple非公開メール認証・Resend再loginとrelay実受信は未完了。
+実ユーザー/Auth/Storage移送・本番domain/DNSは最後の#38。以下は各時点の履歴。
+
 ## 移管のプラン変更競合を修正・通常stagingへ反映（2026-10-13）
 
 事前確認後に受取人のplan/limitが変わると古い上限で成功する競合を実local D1で2件再現。
