@@ -8,14 +8,17 @@ import bcrypt from '../../workers/api/node_modules/bcryptjs/index.js';
 import {seedRecoverySetFixture,recoverySetFixturePins,fixtureSecret} from './recovery-set-fixture.mjs';
 import {captureMasterRecoverySnapshot,sealMasterRecoverySnapshot} from '../../workers/api/src/master-d1-recovery.ts';
 import {d1RecoveryDigest} from '../../workers/api/src/d1-store-recovery.ts';
-import {databaseRoles,bucketRoles,fixturePassword} from './application-recovery-set-contract.mjs';
+import {databaseRoles,bucketRoles,fixturePassword,PROOF_MASTER_BODY_BYTES} from './application-recovery-set-contract.mjs';
+import {CAPACITY_PROFILE,CAPACITY_COUNTS} from './recovery-capacity-fixture.mjs';
 
-export async function exerciseApplicationRecoveryWorker({savedMaster}={}){
+export async function exerciseApplicationRecoveryWorker({savedMaster,capacityProfile}={}){
+  assert.ok(capacityProfile===undefined || capacityProfile===CAPACITY_PROFILE);
   const nonce='eeaa001122334455',schemaHashes=await recoverySetFixturePins();
   const vars={PROOF_ACCOUNT:'bfc2890741f0b3fb236e2d755b6c9adc',PROOF_NONCE:nonce,PROOF_HEAD:'a'.repeat(40),PROOF_ORIGIN:'https://localhost',
     PROOF_TOKEN:'b'.repeat(64),PROOF_ARCHIVE_KEY:'c'.repeat(64),PROOF_MASTER_KEY:'d'.repeat(64),PROOF_SDK_SECRET:fixtureSecret,
     ...Object.fromEntries([...databaseRoles,...bucketRoles].map(role=>[role+'_NAME',`fanmark-recovery-${nonce}-${role.toLowerCase().replaceAll('_','-')}`])),
     ...Object.fromEntries(databaseRoles.map((role,i)=>[role+'_ID','90000000-0000-4000-8000-'+String(i+1).padStart(12,'0')]))};
+  if(capacityProfile){vars.PROOF_CAPACITY_PROFILE=capacityProfile;vars.PROOF_LOCAL_FIXTURE_CLASS='Standard';}
   const sourceIds=prefix=>Object.fromEntries(['auth','business','master','avatars','covers'].map(store=>[store,
     ['avatars','covers'].includes(store)?vars[prefix+'_'+store.toUpperCase()+'_NAME']:vars[prefix+'_'+store.toUpperCase()+'_ID']]));
   vars.PROOF_SOURCE_SCOPE=await d1RecoveryDigest(sourceIds('S'));vars.PROOF_TARGET_SCOPE=await d1RecoveryDigest(sourceIds('T'));
@@ -63,12 +66,13 @@ export async function exerciseApplicationRecoveryWorker({savedMaster}={}){
     assert.equal((await request('initialize',{method:'POST',body:'{}',headers:{...headers,'x-proof-nonce':'bad'}})).status,403);
     assert.equal((await request('query',{method:'POST',body:'{}'})).status,404);
     assert.equal((await request('collect',{method:'POST'})).status,409);
-    assert.equal((await request('initialize',{method:'POST',body:Buffer.alloc(8*1024*1024+1)})).status,413);
+    assert.equal((await request('initialize',{method:'POST',body:Buffer.alloc(PROOF_MASTER_BODY_BYTES+1)})).status,413);
     assert.equal((await request('initialize',{method:'POST',body:'{}'})).status,400);
     assert.equal(await mf.getR2Bucket('CONTROL').then(bucket=>bucket.head('initialize-claim.json')),null);
     const initialize=await (await request('initialize',{method:'POST',body:archiveBytes})).json();assert.equal(initialize.report.state,'verified',JSON.stringify(initialize.report));
     assert.equal((await request('initialize',{method:'POST',body:archiveBytes})).status,409);
     const collect=await (await request('collect',{method:'POST'})).json();assert.equal(collect.report.state,'verified',JSON.stringify(collect.report));
+    if(capacityProfile)assert.deepEqual(collect.report.capacityFixture,CAPACITY_COUNTS);
     assert.equal((await request('collect',{method:'POST'})).status,409);
     const {archive}=await (await request('archive')).json();
     const tampered=structuredClone(archive);tampered.nonce[0]^=1;
@@ -81,6 +85,19 @@ export async function exerciseApplicationRecoveryWorker({savedMaster}={}){
     assert.equal((await request('restore',{method:'POST',body:JSON.stringify(archive)})).status,409);
     const control=await mf.getR2Bucket('CONTROL');await control.put('unowned','preserve');
     assert.equal((await request('objects',{method:'DELETE'})).status,409);assert.equal(await (await control.get('unowned')).text(),'preserve');await control.delete('unowned');
+    if(capacityProfile){
+      const sourceAvatars=await mf.getR2Bucket('S_AVATARS'),key='90000000-0000-4000-8000-000000000001/capacity-0.png';
+      const original=await sourceAvatars.get(key),bytes=new Uint8Array(await original.arrayBuffer());
+      const unchangedCounts=async()=>{for(const [role,n] of [['S_AVATARS',69],['T_AVATARS',69],['S_COVERS',40],['T_COVERS',40]])
+        assert.equal((await (await mf.getR2Bucket(role)).list()).objects.length,n);};
+      bytes[0]^=1;
+      await sourceAvatars.put(key,bytes,{storageClass:'Standard',httpMetadata:original.httpMetadata,customMetadata:original.customMetadata});
+      const refused=await request('objects',{method:'DELETE'});assert.equal(refused.status,409);
+      assert.equal((await refused.json()).error,'owned_object_changed');await unchangedCounts();
+      bytes[0]^=1;
+      await sourceAvatars.put(key,bytes,{storageClass:'Standard',httpMetadata:original.httpMetadata,customMetadata:original.customMetadata});
+      bytes.fill(0);
+    }
     await control.put('restore-status.json',JSON.stringify({state:'in_progress'}));assert.equal((await request('objects',{method:'DELETE'})).status,409);
     await control.put('restore-status.json',JSON.stringify(restore.report));
     assert.equal((await (await request('objects',{method:'DELETE'})).json()).bucketsEmpty,true);
@@ -91,5 +108,9 @@ export async function exerciseApplicationRecoveryWorker({savedMaster}={}){
     console.info(JSON.stringify(result));return result;
   }finally{await mf.dispose();}
 }
-if(process.argv[1]===fileURLToPath(import.meta.url))test('native actual app and distinct DO guards collect and restore one bounded owned set',
-  {timeout:120_000},()=>exerciseApplicationRecoveryWorker());
+if(process.argv[1]===fileURLToPath(import.meta.url)){
+  test('native actual app and distinct DO guards collect and restore one bounded owned set',
+    {timeout:120_000},()=>exerciseApplicationRecoveryWorker());
+  test('109 owned synthetic images and 15 Auth users restore; changed objects stop all cleanup',
+    {timeout:120_000},()=>exerciseApplicationRecoveryWorker({capacityProfile:CAPACITY_PROFILE}));
+}

@@ -5,7 +5,8 @@ import {BUSINESS_MIGRATION_SEQUENCE} from './business-migration-ledger.mjs';
 import {AUTH_RECOVERY_SCHEMA_SQL, authRecoveryDigest} from '../../workers/api/src/auth-d1-recovery.ts';
 import {D1_RECOVERY_SCHEMA_SQL, d1RecoveryDigest} from '../../workers/api/src/d1-store-recovery.ts';
 
-export const fixtureUser = '90000000-0000-4000-8000-000000000001';
+import {fixtureUser} from './application-recovery-set-contract.mjs';
+export {fixtureUser};
 export const fixtureSecret = 'synthetic-only-sdk-secret-not-for-deployment-2026';
 export const fixtureKeys = [fixtureUser + '/a.png', fixtureUser + '/c.png'];
 export const authMigrations = ['0003_better_auth_core.sql', '0007_auth_signup_command.sql', '0008_auth_user_suspension.sql', '0009_auth_oauth_signup.sql'];

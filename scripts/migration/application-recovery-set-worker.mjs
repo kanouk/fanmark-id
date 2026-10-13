@@ -4,9 +4,10 @@ import {claimRecoveryWriterFence,assertRecoveryWriterFence,releaseRecoveryWriter
 import {collectRecoverySet,restoreRecoverySet,openRecoverySet,RECOVERY_SET_STORES as stores} from '../../workers/api/src/recovery-set.ts';
 import {openMasterRecoverySnapshot,restoreMasterRecoverySnapshot} from '../../workers/api/src/master-d1-recovery.ts';
 import {d1RecoveryDigest} from '../../workers/api/src/d1-store-recovery.ts';
-import {databaseRoles,bucketRoles,fixturePassword} from './application-recovery-set-contract.mjs';
+import {databaseRoles,bucketRoles,fixturePassword,PROOF_MASTER_BODY_BYTES,PROOF_RESTORE_BODY_BYTES} from './application-recovery-set-contract.mjs';
+import {CAPACITY_PROFILE,CAPACITY_COUNTS,seedCapacityFixture} from './recovery-capacity-fixture.mjs';
 
-const account='bfc2890741f0b3fb236e2d755b6c9adc',MAX_BODY=8*1024*1024;
+const account='bfc2890741f0b3fb236e2d755b6c9adc';
 const check=(condition,code)=>{if(!condition)throw Error('proof_'+code);};
 const json=(body,status=200)=>Response.json(body,{status,headers:{'cache-control':'no-store'}});
 const ids=(receipt,prefix)=>Object.fromEntries(stores.map(store=>[store,
@@ -16,7 +17,10 @@ function identity(env){
     !/^[a-f0-9]{16}$/u.test(env.PROOF_NONCE??'')||!/^[a-f0-9]{40}$/u.test(env.PROOF_HEAD??'')||
     ['PROOF_TOKEN','PROOF_ARCHIVE_KEY','PROOF_MASTER_KEY','PROOF_SOURCE_SCOPE','PROOF_TARGET_SCOPE',
       'PROOF_MASTER_ARCHIVE_HASH','PROOF_MASTER_ROWS_HASH'].some(name=>!/^[a-f0-9]{64}$/u.test(env[name]??''))||
-    !env.SOURCE_DRAIN||!env.TARGET_DRAIN)return null;
+    !env.SOURCE_DRAIN||!env.TARGET_DRAIN||
+    env.PROOF_CAPACITY_PROFILE!==undefined && env.PROOF_CAPACITY_PROFILE!==CAPACITY_PROFILE||
+    env.PROOF_LOCAL_FIXTURE_CLASS!==undefined &&
+      (env.PROOF_LOCAL_FIXTURE_CLASS!=='Standard' || env.PROOF_CAPACITY_PROFILE!==CAPACITY_PROFILE))return null;
   const databases=Object.fromEntries(databaseRoles.map(role=>[role,{id:env[role+'_ID'],name:env[role+'_NAME']}]));
   const buckets=Object.fromEntries(bucketRoles.map(role=>[role,env[role+'_NAME']]));
   if(databaseRoles.some(role=>!env[role]||!/^[a-f0-9-]{36}$/u.test(databases[role].id??'')||
@@ -25,9 +29,26 @@ function identity(env){
   return {account,nonce:env.PROOF_NONCE,head:env.PROOF_HEAD,origin:env.PROOF_ORIGIN,databases,buckets,
     scopes:{S:env.PROOF_SOURCE_SCOPE,T:env.PROOF_TARGET_SCOPE}};
 }
+// The pinned local emulator reports an empty class after explicit Standard PUT.
+// Only its owned synthetic profile opts into this adapter; remote runners never do.
+function localFixtureBucket(bucket){
+  const wrap=value=>value===null?null:new Proxy(value,{get(target,name){
+    if(name==='storageClass' && target.storageClass==='')return 'Standard';
+    const v=Reflect.get(target,name,target);return typeof v==='function'?v.bind(target):v;
+  }});
+  const overrides={get:async(...args)=>wrap(await bucket.get(...args)),head:async(...args)=>wrap(await bucket.head(...args)),
+    put:async(...args)=>wrap(await bucket.put(...args)),list:async(...args)=>{
+      const page=await bucket.list(...args);return {...page,objects:page.objects.map(wrap)};
+    }};
+  return new Proxy(bucket,{get(target,name){if(name in overrides)return overrides[name];
+    const v=Reflect.get(target,name,target);return typeof v==='function'?v.bind(target):v;
+  }});
+}
 function bindings(env,prefix,counts){
   return Object.fromEntries(stores.map(store=>{
-    const native=env[prefix+'_'+store.toUpperCase()];if(!counts||['avatars','covers'].includes(store))return [store,native];
+    const native=env[prefix+'_'+store.toUpperCase()];
+    if(['avatars','covers'].includes(store))return [store,env.PROOF_LOCAL_FIXTURE_CLASS==='Standard'?localFixtureBucket(native):native];
+    if(!counts)return [store,native];
     const role=prefix+'_'+store.toUpperCase(),statements=new WeakMap();
     const count=n=>{counts[role]=(counts[role]??0)+n;check(Object.values(counts).reduce((a,b)=>a+b,0)<=1000,'query_limit');};
     const wrap=raw=>{const statement={bind:(...values)=>wrap(raw.bind(...values)),
@@ -79,15 +100,17 @@ function guard(env,receipt,prefix,owner){return {id:'application-'+receipt.nonce
   check(await d1RecoveryDigest(expected)===receipt.scopes[prefix],'guard_scope');
   await assertRecoveryWriterFence(appEnv(env,receipt,prefix),owner);
 }};}
-async function readBytes(request){
+async function readBytes(request,limit=PROOF_MASTER_BODY_BYTES){
+  const declared=Number(request.headers.get('content-length'));
+  if(Number.isSafeInteger(declared) && declared>limit)throw Error('proof_body_too_large');
   const reader=request.body?.getReader();if(!reader)throw Error('proof_body_required');
   const chunks=[];let size=0;
   try{for(;;){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;
-    if(size>MAX_BODY){await reader.cancel();throw Error('proof_body_too_large');}chunks.push(next.value);}}
+    if(size>limit){await reader.cancel();throw Error('proof_body_too_large');}chunks.push(next.value);}}
   finally{reader.releaseLock();}
   const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}return bytes;
 }
-async function bodyJson(request){const bytes=await readBytes(request);try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}
+async function bodyJson(request){const bytes=await readBytes(request,PROOF_RESTORE_BODY_BYTES);try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}
   catch{throw Error('proof_body_invalid');}finally{bytes.fill(0);}}
 const claim=(env,name,value)=>env.CONTROL.put(name+'-claim.json',JSON.stringify(value),{onlyIf:{etagDoesNotMatch:'*'}});
 const report=(env,name,value)=>env.CONTROL.put(name+'-status.json',JSON.stringify(value));
@@ -142,6 +165,13 @@ export default {async fetch(request,env){
         value={...value,masterRows:Number(env.PROOF_MASTER_ROWS),masterSchemaHash:snapshot.schemaHash,masterRowsHash:snapshot.rowsHash};
       }else if(phase==='collect'){
         for(const role of bucketRoles.filter(role=>role!=='CONTROL')){const page=await env[role].list();check(!page.truncated&&!page.objects.length,'bucket_not_empty');}
+        if(env.PROOF_CAPACITY_PROFILE===CAPACITY_PROFILE){
+          value.capacityFixture=await seedCapacityFixture(bindings(env,'S',value.d1Queries));
+          if(env.PROOF_LOCAL_FIXTURE_CLASS==='Standard'){
+            const raw=await env.S_AVATARS.head('90000000-0000-4000-8000-000000000001/capacity-0.png');
+            value.localFixtureRawStorageClass=raw.storageClass;
+          }
+        }
         const signedIn=await login(env,receipt,'S',value.d1Queries);
         if(signedIn.status!==200){value.sourceLoginStatus=signedIn.status;const body=await signedIn.json();
           if(/^[a-z_]{1,80}$/u.test(body.error??''))value.sourceLoginError=body.error;throw Error('proof_source_login');}
@@ -156,6 +186,20 @@ export default {async fetch(request,env){
         }
         const archive=await collectRecoverySet(bindings(env,'S',value.d1Queries),context,key,guard(env,receipt,'S',owner));
         const opened=await openRecoverySet(archive,context,key);check(opened.snapshots.auth.tables.session.length===2,'source_sessions');
+        if(env.PROOF_CAPACITY_PROFILE===CAPACITY_PROFILE){
+          check(opened.snapshots.auth.tables.user.length===CAPACITY_COUNTS.users &&
+            opened.snapshots.auth.tables.account.length===CAPACITY_COUNTS.accounts,'capacity_auth_counts');
+          const objects=[...opened.snapshots.avatars.objects,...opened.snapshots.covers.objects];
+          check(opened.snapshots.avatars.objects.length===CAPACITY_COUNTS.avatars &&
+            opened.snapshots.covers.objects.length===CAPACITY_COUNTS.covers &&
+            objects.reduce((n,object)=>n+object.size,0)===CAPACITY_COUNTS.imageBytes &&
+            Math.max(...objects.map(object=>object.size))===CAPACITY_COUNTS.maxObjectBytes,'capacity_image_counts');
+          const owned=Object.fromEntries(['avatars','covers'].map(store=>[store,
+            opened.snapshots[store].objects.map(({key,size,sha256,httpMetadata,customMetadata,storageClass})=>
+              ({key,size,sha256,httpMetadata,customMetadata,storageClass}))]));
+          check(await env.CONTROL.put('capacity-owned-images.json',JSON.stringify(owned),
+            {onlyIf:{etagDoesNotMatch:'*'}}),'capacity_ownership_claim');
+        }
         check(await env.CONTROL.put('archive.json',JSON.stringify(archive),{onlyIf:{etagDoesNotMatch:'*'}}),'archive_claim');
         value={...value,captureId:opened.manifest.captureId,parts:opened.manifest.parts,sourceAuthSessions:2,
           normalSdkSourceLogin:true,heldSourceAndTargetLoginRefused:true,wrongOwnerReleaseRefused:true};
@@ -166,7 +210,8 @@ export default {async fetch(request,env){
           targetIds:ids(receipt,'T'),targetGuard:guard(env,receipt,'T',sourceOwner),progress:async entry=>{value.progress.push(entry);await report(env,phase,value);}});
         check(await targets.auth.prepare('SELECT count(*) AS n FROM session').first('n')===0&&
           await targets.auth.prepare('SELECT count(*) AS n FROM verification').first('n')===0,'revocation');
-        check(await targets.auth.prepare('SELECT password FROM account').first('password')===opened.snapshots.auth.tables.account[0].password,'credential');
+        check(await targets.auth.prepare('SELECT password FROM account WHERE id=?').bind('synthetic-credential').first('password')===
+          opened.snapshots.auth.tables.account.find(row=>row.id==='synthetic-credential').password,'credential');
         check((await login(env,receipt,'T',value.d1Queries)).status===503,'held_target_login');
         await releaseRecoveryWriterFence(appEnv(env,receipt,'T'),sourceOwner);
         const oldSession=await appFetch(env,receipt,'T',value.d1Queries,'/api/auth/get-session',{headers:{cookie:await cookieFile(env,receipt,key)}});
@@ -178,6 +223,17 @@ export default {async fetch(request,env){
         for(const bucket of ['avatars','cover-images']){
           const response=await appFetch(env,receipt,'T',value.d1Queries,'/api/storage/public/'+bucket+'/90000000-0000-4000-8000-000000000001/missing.png');
           check(response.status===404,'empty_storage_read');await response.body?.cancel();emptyR2ReadStatus[bucket]=response.status;
+        }
+        const restoredImageReads={};
+        if(env.PROOF_CAPACITY_PROFILE===CAPACITY_PROFILE){
+          for(const [store,bucket,index] of [['avatars','avatars',0],['covers','cover-images',69]]){
+            const wanted=opened.snapshots[store].objects.find(o=>o.key===`90000000-0000-4000-8000-000000000001/capacity-${index}.png`);
+            const response=await appFetch(env,receipt,'T',value.d1Queries,'/api/storage/public/'+bucket+'/'+wanted.key);
+            check(response.status===200,'restored_image_read');const bytes=await response.arrayBuffer();
+            const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
+            check(bytes.byteLength===wanted.size && hash===wanted.sha256,'restored_image_hash');
+            restoredImageReads[bucket]={status:200,bytes:wanted.size,sha256:hash};
+          }
         }
         const catalogCounts={};
         if(Number(env.PROOF_CATALOG_ROWS)>0){
@@ -197,7 +253,7 @@ export default {async fetch(request,env){
         await releaseRecoveryWriterFence(appEnv(env,receipt,'S'),sourceOwner);
         let captureRefused=false;try{await collectRecoverySet(bindings(env,'S',value.d1Queries),context,key,guard(env,receipt,'S',sourceOwner));}
         catch(error){captureRefused=error.message==='recovery_set_guard_lost';}check(captureRefused,'released_guard');
-        value={...value,result,...catalogCounts,emptyR2ReadStatus,credentialBytesRetained:true,sessionChallengesRevoked:true,oldSessionRejected:true,normalSdkTargetLogin:true,releasedGuardRefusesCapture:true,foreignKeyViolations:0};
+        value={...value,result,...catalogCounts,emptyR2ReadStatus,restoredImageReads,credentialBytesRetained:true,sessionChallengesRevoked:true,oldSessionRejected:true,normalSdkTargetLogin:true,releasedGuardRefusesCapture:true,foreignKeyViolations:0};
       }
       value.state='verified';
     }catch(error){value={...value,state:'failed',error:safeError(error)};}
@@ -209,7 +265,36 @@ export default {async fetch(request,env){
   if(url.pathname==='/_proof/objects'&&request.method==='DELETE'){
     for(const phase of ['initialize','collect','restore']){const state=await status(env,phase);if(await env.CONTROL.head(phase+'-claim.json')&&!state||state&&!['verified','failed'].includes(state.state))return json({error:'phase_not_terminal'},409);}
     const allowed=['initialize','collect','restore'].flatMap(phase=>[phase+'-claim.json',phase+'-status.json']).concat(['archive.json','cookie.json']);
-    const listed=[];for(const role of bucketRoles){const page=await env[role].list();if(page.truncated||page.objects.some(o=>role!=='CONTROL'||!allowed.includes(o.key)))return json({error:'unowned_object'},409);listed.push([role,page.objects.map(o=>o.key)]);}
+    let owned;
+    if(env.PROOF_CAPACITY_PROFILE===CAPACITY_PROFILE){
+      const object=await env.CONTROL.get('capacity-owned-images.json');
+      if(object){owned=await object.json();allowed.push('capacity-owned-images.json');}
+    }
+    // Complete every ownership/readback check before deleting any bucket's keys.
+    const listed=[];for(const role of bucketRoles){
+      const page=await env[role].list();if(page.truncated)return json({error:'unowned_object'},409);
+      if(role==='CONTROL'){
+        if(page.objects.some(o=>!allowed.includes(o.key)))return json({error:'unowned_object'},409);
+      }else if(page.objects.length){
+        const store=role.endsWith('AVATARS')?'avatars':'covers';
+        const expected=owned?.[store];
+        if(!expected || expected.length!==CAPACITY_COUNTS[store] || page.objects.length!==expected.length)return json({error:'unowned_object'},409);
+        const bucket=bindings(env,role[0])[store];
+        for(const current of page.objects){
+          const wanted=expected.find(o=>o.key===current.key);
+          if(!wanted || !/^90000000-0000-4000-8000-000000000001\/capacity-\d+\.png$/u.test(wanted.key) ||
+            wanted.customMetadata.fixture!==CAPACITY_PROFILE || current.size!==wanted.size)return json({error:'unowned_object'},409);
+          const object=await bucket.get(current.key,{onlyIf:{etagMatches:current.etag}});
+          if(!object || object.storageClass!==wanted.storageClass ||
+            await d1RecoveryDigest(object.httpMetadata)!==await d1RecoveryDigest(wanted.httpMetadata) ||
+            await d1RecoveryDigest(object.customMetadata)!==await d1RecoveryDigest(wanted.customMetadata))return json({error:'owned_object_changed'},409);
+          const bytes=await object.arrayBuffer();
+          const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
+          if(hash!==wanted.sha256)return json({error:'owned_object_changed'},409);
+        }
+      }
+      listed.push([role,page.objects.map(o=>o.key)]);
+    }
     for(const [role,keys] of listed)if(keys.length)await env[role].delete(keys);
     for(const role of bucketRoles){const page=await env[role].list();check(!page.truncated&&!page.objects.length,'cleanup_incomplete');}return json({identity:receipt,bucketsEmpty:true});
   }

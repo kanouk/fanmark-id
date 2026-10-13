@@ -5,6 +5,13 @@
 接続と全経路のprivate gateを確認し、通常Worker CIに含める。全Masterを含む保存file
 復旧とremote受け入れは[別の測定工程](migration/full-combined-recovery.md)で確認する。
 
+## 本番集計に合わせた所有合成復旧
+
+全Master20,152行・合成Auth15 user/18 account・分離R2画像109 objectの同時保存/復旧は
+[migration/source-capacity-review.md](migration/source-capacity-review.md)を参照する。
+専用proof Workerのbody bounds/所有hash cleanupを変更した。通常アプリのupload規則や
+source/userdata/domainは変更しない。localと実Cloudflareの受け入れを区別する。
+
 ## スタックとランタイム
 - フロント: Vite + React 18 + TypeScript, React Router, React Query, Tailwind CSS, shadcn/ui (Radix UI), Zod + React Hook Form, Sonner (toast), Lucide。
 - バックエンド: Supabase (PostgreSQL, Auth, Storage, Edge Functions, pg_cron, Realtime)。

@@ -14,16 +14,26 @@ import {d1RecoveryDigest} from '../../workers/api/src/d1-store-recovery.ts';
 import bcrypt from '../../workers/api/node_modules/bcryptjs/index.js';
 import path from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
+import {CAPACITY_PROFILE} from './recovery-capacity-fixture.mjs';
 
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 const apiDirectory = path.join(repo, 'workers/api');
 const account = 'bfc2890741f0b3fb236e2d755b6c9adc';
 const roles = bucketRoles;
-const [head, ciRun, masterDirectory, resumeFlag, resumeDirectory] = process.argv.slice(2);
+const [head, ciRun, masterDirectory, ...options] = process.argv.slice(2);
+let resumeDirectory,capacityProfile,masterEvidence='master-recovery-shared-full-local-2026-10-07.json';
+for(let i=0;i<options.length;i+=2){
+  const flag=options[i],value=options[i+1];assert.ok(value);
+  if(flag==='--resume'){assert.equal(resumeDirectory,undefined);resumeDirectory=value;}
+  else if(flag==='--capacity-profile'){assert.equal(capacityProfile,undefined);assert.equal(value,CAPACITY_PROFILE);capacityProfile=value;}
+  else if(flag==='--master-evidence'){assert.equal(masterEvidence,'master-recovery-shared-full-local-2026-10-07.json');
+    assert.equal(value,'master-recovery-v4-capacity-fixture-2026-10-13.json');masterEvidence=value;}
+  else throw new Error('proof_option_invalid');
+}
 assert.match(head ?? '', /^[a-f0-9]{40}$/u); assert.match(ciRun ?? '', /^\d+$/u);
-assert.ok(resumeFlag === undefined || resumeFlag === '--resume' && resumeDirectory);
 assert.ok(masterDirectory && path.isAbsolute(masterDirectory));
-const masterPins=JSON.parse(await readFile(path.join(repo,'docs/migration/evidence/master-recovery-shared-full-local-2026-10-07.json'),'utf8'));
+const masterPins=JSON.parse(await readFile(path.join(repo,'docs/migration/evidence',masterEvidence),'utf8'));
+if(capacityProfile){assert.equal(masterEvidence,'master-recovery-v4-capacity-fixture-2026-10-13.json');assert.equal(masterPins.rows,20152);}
 for(const name of ['archive.json','key.bin']) {const file=await stat(path.join(masterDirectory,name));assert.ok(file.isFile());assert.equal(file.mode&0o077,0);}
 const masterArchive=await readFile(path.join(masterDirectory,'archive.json'));
 assert.equal(masterArchive.length,masterPins.archiveBytes);assert.equal(createHash('sha256').update(masterArchive).digest('hex'),masterPins.archiveSha256);
@@ -82,6 +92,9 @@ let journal = resumeDirectory ? JSON.parse(await readFile(journalPath, 'utf8')) 
   format: 'fanmark-application-recovery-set-remote-proof-v1', account, head, ciRun, nonce: randomBytes(8).toString('hex'),
   incarnation: randomUUID(), startedAt: new Date().toISOString(), databases: [], buckets: [], cleanupVerified: false,
 };
+if(!resumeDirectory){journal.masterEvidence=masterEvidence;journal.capacityProfile=capacityProfile??null;}
+else{assert.equal(journal.masterEvidence??'master-recovery-shared-full-local-2026-10-07.json',masterEvidence);
+  assert.equal(journal.capacityProfile??null,capacityProfile??null);}
 assert.equal(journal.format, 'fanmark-application-recovery-set-remote-proof-v1'); assert.equal(journal.account, account);
 assert.equal(journal.head, head); assert.equal(journal.ciRun, ciRun); assert.match(journal.nonce, /^[a-f0-9]{16}$/u);
 journal.workerName = `fanmark-recovery-${journal.nonce}-application-set`;
@@ -141,6 +154,7 @@ async function bindingPreflight() {
   const bindings = (await api('workers/scripts/' + journal.workerName + '/settings')).bindings;
   assert.ok(Array.isArray(bindings));
   const text = {PROOF_ACCOUNT: account, PROOF_NONCE: journal.nonce, PROOF_HEAD: head, PROOF_ORIGIN:origin,
+    ...(capacityProfile?{PROOF_CAPACITY_PROFILE:capacityProfile}:{}),
     PROOF_SOURCE_SCOPE:journal.scopes.S,PROOF_TARGET_SCOPE:journal.scopes.T,
     PROOF_MASTER_ARCHIVE_HASH:masterPins.archiveSha256,PROOF_MASTER_ROWS_HASH:masterPins.rowsHash,PROOF_MASTER_ROWS:String(masterPins.rows),
     PROOF_CATALOG_ROWS:String(masterPins.canonicalEmojiCount),PROOF_REFERENCE_COUNTS:JSON.stringify(masterPins.referenceViewCounts),
@@ -223,7 +237,9 @@ try {
     journal.before = await inventory();
     assert.ok(journal.before.workers.every(row => row.id !== journal.workerName));
     assert.ok(journal.before.r2.every(row => !Object.values(names).includes(row.name))); await save();
-    assert.ok(journal.before.d1.length + databaseRoles.length <= 10);
+    // Operational ceiling for retained12 plus owned6, within the verified Paid plan.
+    // Never delete a retained database or increase provider quota to pass this guard.
+    assert.ok(journal.before.d1.length + databaseRoles.length <= 18);
     journal.schemaHashes = await recoverySetFixturePins();journal.schemaHashes.master=masterPins.schemaHash;
     journal.masterArchivePin=masterPins.archiveSha256;await save();
     for (const role of databaseRoles) {
@@ -261,6 +277,7 @@ try {
       durable_objects:{bindings:[{name:'SOURCE_DRAIN',class_name:'SourceWriterCoordinator'},{name:'TARGET_DRAIN',class_name:'TargetWriterCoordinator'}]},
       migrations:[{tag:'owned-application-proof-v1',new_sqlite_classes:['SourceWriterCoordinator','TargetWriterCoordinator']}],
       vars: {PROOF_ACCOUNT: account, PROOF_NONCE: journal.nonce, PROOF_HEAD: head,PROOF_ORIGIN:origin,
+        ...(capacityProfile?{PROOF_CAPACITY_PROFILE:capacityProfile}:{}),
         PROOF_SOURCE_SCOPE:journal.scopes.S,PROOF_TARGET_SCOPE:journal.scopes.T,
         PROOF_MASTER_ARCHIVE_HASH:masterPins.archiveSha256,PROOF_MASTER_ROWS_HASH:masterPins.rowsHash,PROOF_MASTER_ROWS:String(masterPins.rows),
         PROOF_CATALOG_ROWS:String(masterPins.canonicalEmojiCount),PROOF_REFERENCE_COUNTS:JSON.stringify(masterPins.referenceViewCounts),
