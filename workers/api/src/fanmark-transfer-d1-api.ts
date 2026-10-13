@@ -259,9 +259,9 @@ interface PlanLimitSnapshot {
   current: number;
   active: number;
   pending: number;
-  limit: number;
+  limit: number | null;
   plan: string;
-  settingKey: string;
+  settingKey: string | null;
   settingCount: number;
   settingValue: string | null;
 }
@@ -271,12 +271,14 @@ interface PlanLimitSnapshot {
 // stale numeric limit authorizing the write.
 const PLAN_SNAPSHOT_GUARD = `
   (SELECT COUNT(*) FROM user_settings WHERE user_id = ? AND plan_type = ?) = 1
-  AND (SELECT COUNT(*) FROM system_settings WHERE setting_key = ?) = ?
-  AND NOT EXISTS (SELECT 1 FROM system_settings WHERE setting_key = ? AND setting_value IS NOT ?)
+  AND (? IS NULL OR (
+    (SELECT COUNT(*) FROM system_settings WHERE setting_key = ?) = ?
+    AND NOT EXISTS (SELECT 1 FROM system_settings WHERE setting_key = ? AND setting_value IS NOT ?)
+  ))
 `;
 
 function planSnapshotBindings(userId: string, plan: PlanLimitSnapshot): Array<string | number | null> {
-  return [userId, plan.plan, plan.settingKey, plan.settingCount, plan.settingKey, plan.settingValue];
+  return [userId, plan.plan, plan.settingKey, plan.settingKey, plan.settingCount, plan.settingKey, plan.settingValue];
 }
 
 function samePlanSnapshot(left: PlanLimitSnapshot, right: PlanLimitSnapshot): boolean {
@@ -295,18 +297,19 @@ async function planLimit(
   const plan = typeof settings.results[0].plan_type === "string" ? settings.results[0].plan_type : "free";
   const keyByPlan: Record<string, string> = {
     free: "free_fanmarks_limit", creator: "creator_fanmarks_limit", business: "business_fanmarks_limit",
-    enterprise: "enterprise_fanmarks_limit", max: "max_fanmarks_limit", admin: "max_fanmarks_limit",
+    enterprise: "enterprise_fanmarks_limit", max: "max_fanmarks_limit",
   };
-  const defaults: Record<string, number> = { free: 3, creator: 10, business: 50, enterprise: 100, max: 500, admin: 500 };
-  const settingKey = keyByPlan[plan] ?? keyByPlan.free;
-  const setting = await db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 2")
-    .bind(settingKey).all<{ setting_value: unknown }>();
+  const defaults: Record<string, number> = { free: 3, creator: 10, business: 50, enterprise: 100, max: 500 };
+  const settingKey = plan === "admin" ? null : keyByPlan[plan] ?? keyByPlan.free;
+  const setting = settingKey === null ? { results: [] } :
+    await db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 2")
+      .bind(settingKey).all<{ setting_value: unknown }>();
   const settingCount = setting.results?.length ?? 0;
   const settingValue = setting.results?.[0]?.setting_value ?? null;
   if (settingValue !== null && typeof settingValue !== "string") {
     throw new FanmarkTransferApiError("plan_limit_unavailable", 503);
   }
-  let limit = defaults[plan] ?? defaults.free;
+  let limit: number | null = plan === "admin" ? null : defaults[plan] ?? defaults.free;
   if (setting.results?.length === 1) {
     const configured = Number(setting.results[0].setting_value);
     if (!Number.isSafeInteger(configured) || configured < 0) throw new FanmarkTransferApiError("plan_limit_unavailable", 503);
@@ -364,7 +367,7 @@ async function applyCode(db: D1Database, userId: string, body: JsonObject, now: 
     throw new FanmarkTransferApiError("user_settings_unavailable", 503);
   }
   const plan = await planLimit(db, userId, nowIso);
-  if (plan.current >= plan.limit) {
+  if (plan.limit !== null && plan.current >= plan.limit) {
     throw new FanmarkTransferApiError("fanmark_limit_exceeded", 400, { current: plan.current, limit: plan.limit });
   }
   const requestId = crypto.randomUUID();
@@ -375,14 +378,14 @@ async function applyCode(db: D1Database, userId: string, body: JsonObject, now: 
       UPDATE fanmark_transfer_codes SET status = 'applied', updated_at = ?
       WHERE id = ? AND status = 'active' AND expires_at > ? AND issuer_user_id <> ?
         AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = fanmark_transfer_codes.license_id AND status = 'active')
-        AND (
+        AND (? IS NULL OR (
           (SELECT COUNT(*) FROM fanmark_licenses
            WHERE user_id = ? AND status = 'active' AND (license_end IS NULL OR license_end > ?))
           + (SELECT COUNT(*) FROM fanmark_transfer_requests AS r
              JOIN fanmark_transfer_codes AS c ON c.id = r.transfer_code_id
              WHERE r.requester_user_id = ? AND r.status = 'pending' AND c.status = 'applied')
-        ) < ? AND ${PLAN_SNAPSHOT_GUARD}
-    `).bind(nowIso, row.id, nowIso, userId, userId, nowIso, userId, plan.limit,
+        ) < ?) AND ${PLAN_SNAPSHOT_GUARD}
+    `).bind(nowIso, row.id, nowIso, userId, plan.limit, userId, nowIso, userId, plan.limit,
       ...planSnapshotBindings(userId, plan)),
     db.prepare(`
       INSERT INTO fanmark_transfer_requests
@@ -419,7 +422,7 @@ async function applyCode(db: D1Database, userId: string, body: JsonObject, now: 
   ]);
   if (results[0]?.meta?.changes !== 1 || results[1]?.meta?.changes !== 1) {
     const currentPlan = await planLimit(db, userId, nowIso);
-    if (currentPlan.current >= currentPlan.limit) {
+    if (currentPlan.limit !== null && currentPlan.current >= currentPlan.limit) {
       throw new FanmarkTransferApiError("fanmark_limit_exceeded", 409, {
         current: currentPlan.current,
         limit: currentPlan.limit,
@@ -491,7 +494,7 @@ async function approveRequest(
   }
   const nowIso = toUtcMicrosecondTimestamp(now);
   const recipientPlan = await planLimit(db, transfer.requester_user_id, nowIso);
-  if (recipientPlan.current > recipientPlan.limit) {
+  if (recipientPlan.limit !== null && recipientPlan.current > recipientPlan.limit) {
     throw new FanmarkTransferApiError("fanmark_limit_exceeded", 409, {
       current: recipientPlan.current,
       limit: recipientPlan.limit,
@@ -533,7 +536,7 @@ async function approveRequest(
             WHERE r.id = ? AND r.status = 'pending' AND c.status = 'applied'
               AND c.issuer_user_id = ? AND r.license_id = fanmark_licenses.id
           )
-          AND (
+          AND (? IS NULL OR (
             (SELECT COUNT(*) FROM fanmark_licenses AS current
              WHERE current.user_id = ? AND current.status = 'active'
                AND (current.license_end IS NULL OR current.license_end > ?))
@@ -541,9 +544,9 @@ async function approveRequest(
                JOIN fanmark_transfer_codes AS pending_code ON pending_code.id = pending.transfer_code_id
                WHERE pending.requester_user_id = ? AND pending.status = 'pending'
                  AND pending_code.status = 'applied')
-          ) <= ? AND ${PLAN_SNAPSHOT_GUARD}
+          ) <= ?) AND ${PLAN_SNAPSHOT_GUARD}
       `).bind(nowIso, nowIso, nowIso, transfer.license_id, userId, requestId, userId,
-        transfer.requester_user_id, nowIso, transfer.requester_user_id, recipientPlan.limit,
+        recipientPlan.limit, transfer.requester_user_id, nowIso, transfer.requester_user_id, recipientPlan.limit,
         ...planSnapshotBindings(transfer.requester_user_id, recipientPlan)),
       db.prepare(`
         INSERT INTO fanmark_licenses
@@ -628,7 +631,7 @@ async function approveRequest(
     ]);
   } catch (error) {
     const currentPlan = await planLimit(db, transfer.requester_user_id, nowIso);
-    if (currentPlan.current > currentPlan.limit) {
+    if (currentPlan.limit !== null && currentPlan.current > currentPlan.limit) {
       throw new FanmarkTransferApiError("fanmark_limit_exceeded", 409, {
         current: currentPlan.current, limit: currentPlan.limit,
       });

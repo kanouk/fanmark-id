@@ -21,6 +21,10 @@ The authenticated routes are `GET /api/me/transfers` and `POST /api/me/transfers
 Issue, apply, reject, cancel, and approval state changes use D1 batches. Approval retires the old license, creates a fresh recipient license from the active master-tier duration, sets the 30-day transfer lock, deletes the old access/profile/password configuration, creates an inactive basic config, cancels pending lottery entries, and writes the audit/outbox records. It does not copy the old configuration. The UI may provide the new basic-config display name.
 
 Recipient capacity is reserved while an incoming transfer request is pending.
+Admin capacity is unlimited, matching PRODUCT and the acquisition/lottery APIs.
+Admin requests do not read the Max-plan setting or use a numeric sentinel. Their
+profile-plan snapshot is still checked in the transaction: switching to Free
+between preflight and mutation aborts the stale operation and retains all rows.
 Application and approval also verify the preflight plan and exact limit-setting
 snapshot inside their mutation batch. A concurrent plan edit, newly inserted
 limit or changed limit aborts the stale operation without transfer effects.

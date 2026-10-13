@@ -629,19 +629,38 @@ describe("D1 fanmark transfer", () => {
     expect(await count(business, "fanmark_licenses")).toBe(3);
   });
 
+  it("preserves unlimited Admin transfer capacity independently of the Max plan setting", async () => {
+    await seedRecipientLicenses();
+    await run(business, "UPDATE user_settings SET plan_type='admin' WHERE user_id=?", RECIPIENT);
+    await run(business,
+      "INSERT INTO system_settings(id,setting_key,setting_value,created_at,updated_at) VALUES(?,'max_fanmarks_limit','1',?,?)",
+      crypto.randomUUID(), NOW, NOW);
+    const issued = await issue();
+    const applied = await call("/apply", { transfer_code: issued.transfer_code, disclaimer_agreed: true }, RECIPIENT);
+    expect(applied.status).toBe(200);
+    const request = await applied.json() as { request_id: string };
+    const approved = await call("/approve", { request_id: request.request_id });
+    expect(approved.status).toBe(200);
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM fanmark_licenses WHERE user_id=? AND status='active'")
+      .bind(RECIPIENT).first()).toEqual({ count: 3 });
+  });
+
   it.each([
     ["apply", "insert"], ["approve", "insert"],
     ["apply", "update"], ["approve", "update"],
     ["apply", "plan"], ["approve", "plan"],
+    ["apply", "admin"], ["approve", "admin"],
   ])("refuses a reduced recipient limit immediately before the %s batch (%s)", async (action, change) => {
     await seedRecipientLicenses();
     if (change !== "insert") {
       await run(business,
         "INSERT INTO system_settings (id, setting_key, setting_value, created_at, updated_at) VALUES (?, 'free_fanmarks_limit', ?, ?, ?)",
-        crypto.randomUUID(), change === "plan" ? "2" : "3", NOW, NOW);
+        crypto.randomUUID(), change === "plan" || change === "admin" ? "2" : "3", NOW, NOW);
     }
     if (change === "plan") {
       await run(business, "UPDATE user_settings SET plan_type = 'creator' WHERE user_id = ?", RECIPIENT);
+    } else if (change === "admin") {
+      await run(business, "UPDATE user_settings SET plan_type = 'admin' WHERE user_id = ?", RECIPIENT);
     }
     const issued = await issue();
     const applied = action === "approve" ? await apply(String(issued.transfer_code)) : null;
@@ -652,7 +671,7 @@ describe("D1 fanmark transfer", () => {
         if (property === "batch") return async (queries: D1PreparedStatement[]) => {
           if (!injected) {
             injected = true;
-            if (change === "plan") {
+            if (change === "plan" || change === "admin") {
               await run(business, "UPDATE user_settings SET plan_type = 'free' WHERE user_id = ?", RECIPIENT);
             } else if (change === "update") {
               await run(business, "UPDATE system_settings SET setting_value = '2' WHERE setting_key = 'free_fanmarks_limit'");

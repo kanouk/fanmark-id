@@ -1,0 +1,37 @@
+{
+  "state": "admin_transfer_capacity_local_accepted_pending_ci_native",
+  "observedAt": "2026-10-13T09:30:59.086Z",
+  "problem": "Admin transfer application used max_fanmarks_limit instead of unlimited PRODUCT capacity.",
+  "beforeFix": {
+    "status": 400,
+    "expected": 200,
+    "recipientActive": 2,
+    "maxSetting": 1
+  },
+  "fix": "Use null unlimited capacity for Admin and skip Max setting reads; keep exact plan snapshot and repeat finite capacity checks atomically.",
+  "validation": {
+    "nativeLocalTests": 46,
+    "adminApplicationAndApprovalAccepted": true,
+    "adminDowngradeBeforeApplicationAndApprovalRejected": true,
+    "downgradeChangesPreserved": true,
+    "transferRowsUnchangedOnRefusal": true,
+    "currentLimitRetryAccepted": true,
+    "foreignKeysZero": true,
+    "workerTypecheck": true,
+    "focusedLint": true
+  },
+  "code": [
+    {
+      "path": "workers/api/src/fanmark-transfer-d1-api.ts",
+      "sha256": "5a2b2c91b419de8dfd409eaa4eb4eccef457317f2dea48a72730191f28b267d3"
+    },
+    {
+      "path": "workers/api/test/fanmark-transfer-d1.test.ts",
+      "sha256": "f78e7d9be25dac492e93e26a4aa51208b135f140938c20c0a2e86ae8c6342da1"
+    }
+  ],
+  "remoteAccepted": false,
+  "normalStagingRedeployed": false,
+  "sourceUsersMoved": false,
+  "domainChanged": false
+}
