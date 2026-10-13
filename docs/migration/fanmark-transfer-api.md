@@ -1,3 +1,17 @@
+## Admin capacity native acceptance (2026-10-13)
+
+Source5ac5be9/CI38376883655 passes both jobs and the local46-case suite. Four
+Cloudflare cases with real Auth and all declared migrations accept Free/Admin
+application/approval and refuse an Admin-to-Free plan change before either
+mutation; affected rows are held and current-limit retry writes one audit.
+Initial Master500 has unknown cause; empty readback, diagnostic deployment and
+same-permission gate rotation were followed by readiness200/initialization200.
+The same owned resources were resumed and then removed. The extra diagnostic
+compound SELECT7500 is recorded, not treated as an authorization denial.
+Normal02f6c9dd preserves settings, all3 D1 schema/counts/FK0, ten assets, catalog
+and backup/monitor, independently verified. [Scoped proof](evidence/transfer-admin-unlimited-native-2026-10-13.json).
+No source user/production/domain change, frontend edit or whole App UI claim.
+
 ## Plan snapshot race acceptance (2026-10-13)
 
 On source8fd1aaa, CI38368179928 passes both jobs. The local43-case suite includes

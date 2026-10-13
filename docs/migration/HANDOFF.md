@@ -1,3 +1,15 @@
+## Admin移管の無制限を修正・通常stagingへ反映（2026-10-13）
+
+AdminにMax上限を適用する申請400を実local D1で再現。nullによる無制限とplan snapshotを使い、全46件/typecheck/lintが成功。
+source5ac5be9/CI38376883655両job成功後、所有Worker/3D1・27 Business/4 Auth/8 Masterで4項目を確認。
+Free/Adminの申請・承認、Admin→Freeの直前変更時の拒否/行保持/条件変更後retryが成功。
+初回のMaster初期化500は原因未確定。空を照合後に同じWorkerへ診断/同権限gate更新、readiness200と初期化200から再開した。
+診断用6-term UNIONの7500も保持し、分割readonlyで照合。所有資源と使い捨て秘密fileを除去、独立inventoryを確認。
+通常mainは **02f6c9dd-33ef-4bcf-9a2d-0e90dbd87a04**。独立readonlyでbinding114・全3D1 schema/件数/FK0・asset10・catalog・backup/monitorを保持。
+[限定証拠](evidence/transfer-admin-unlimited-native-2026-10-13.json)。元条件/PRの最終レビューと旧JWT bridge範囲の回答は残る。
+本人Apple非公開メール認証・Resend再login/relay実受信は未完了。実ユーザー/Auth/Storage・本番domain/DNSは最後の#38。
+以下は各時点の履歴。
+
 ## 取得・抽選の上限判定を修正・通常stagingへ反映（2026-10-13）
 
 取得APIがFree4件目や残り1枠への同時取得を受け入れる2件、抽選が書込直前の設定変更を無視する3件を実local D1で再現。

@@ -1,0 +1,102 @@
+{
+  "state": "admin_transfer_native_acceptance_and_staging_rollout_verified",
+  "observedAt": "2026-10-13T10:04:28.499Z",
+  "runtimeSource": "5ac5be951eba5f0d55ee7881edb98ecec1ce9386",
+  "ciRun": 38376883655,
+  "bothJobsSuccess": true,
+  "localTests": 46,
+  "nativeCases": [
+    {
+      "kind": "transfer_application_approval",
+      "plan": "free",
+      "maxConfigured": 1,
+      "activeAfter": 3,
+      "applicationStatus": 200,
+      "approvalStatus": 200
+    },
+    {
+      "kind": "transfer_application_approval",
+      "plan": "admin",
+      "maxConfigured": 1,
+      "activeAfter": 3,
+      "applicationStatus": 200,
+      "approvalStatus": 200
+    },
+    {
+      "kind": "admin_downgrade",
+      "action": "apply",
+      "rejectedStatus": 409,
+      "transferRowsHeld": true,
+      "concurrentPlanEditHeld": true,
+      "retryStatus": 200,
+      "singleAudit": true
+    },
+    {
+      "kind": "admin_downgrade",
+      "action": "approve",
+      "rejectedStatus": 409,
+      "transferRowsHeld": true,
+      "concurrentPlanEditHeld": true,
+      "retryStatus": 200,
+      "singleAudit": true
+    }
+  ],
+  "declaredMigrations": {
+    "business": 27,
+    "auth": 4,
+    "master": 8
+  },
+  "proofScope": "Actual Cloudflare Worker/Better Auth synthetic sessions and declared current schemas, canonical emoji IDs and real activated reference tiers. Private test gate changes only the owned recipient plan before the real mutation batch. Not full App UI or real-user migration.",
+  "initializationFailure": {
+    "status": 500,
+    "stage": "master_initialization",
+    "rootCause": "unknown",
+    "inspectedMasterRowsEmpty": true,
+    "diagnosticCompoundSelectExceededLimit": {
+      "code": 7500,
+      "resolvedBySplittingReadonlyQueries": true
+    },
+    "sameOwnedWorkerDiagnosticDeployment": true,
+    "samePermissionGateRotation": true,
+    "anonymousAuthReadiness200": true,
+    "masterInitialization200": true,
+    "resourcesNotRecreated": true,
+    "syntheticPasswordsRotatedBeforeResume": true,
+    "disposedSecretFilesRemoved": true
+  },
+  "cleanup": {
+    "worker": 1,
+    "d1": 3,
+    "removed": true,
+    "independentInventoryRestored": true
+  },
+  "normalStaging": {
+    "previous": "5e78343b-9e26-4193-af96-42ffd96461d5",
+    "version": "02f6c9dd-33ef-4bcf-9a2d-0e90dbd87a04",
+    "bindingsPreserved": 114,
+    "allThreeD1SchemaAndCountsHeld": true,
+    "foreignKeysZero": true,
+    "assetsPreserved": 10,
+    "catalogHeld": true,
+    "backupAndMonitorHeld": true,
+    "independentReadonlyConfirmed": true,
+    "frontendChanged": false,
+    "schemaChanged": false,
+    "normalDatabaseWrites": false,
+    "normalSecretsChanged": false
+  },
+  "code": [
+    {
+      "path": "workers/api/src/fanmark-transfer-d1-api.ts",
+      "sha256": "5a2b2c91b419de8dfd409eaa4eb4eccef457317f2dea48a72730191f28b267d3"
+    },
+    {
+      "path": "workers/api/test/fanmark-transfer-d1.test.ts",
+      "sha256": "f78e7d9be25dac492e93e26a4aa51208b135f140938c20c0a2e86ae8c6342da1"
+    }
+  ],
+  "sourceProductionChanged": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "wholeMigrationComplete": false
+}

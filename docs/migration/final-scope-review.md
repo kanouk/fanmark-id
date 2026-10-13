@@ -1,6 +1,8 @@
 # 元の完了条件との照合（2026-10-13 15:52 JST）
 
-現行通常stagingは **5e78343b-9e26-4193-af96-42ffd96461d5** / source **ef2128f**。
+現行通常stagingは **02f6c9dd-33ef-4bcf-9a2d-0e90dbd87a04** / source **5ac5be9**。
+Adminの移管無制限もlocal46件・実Cloudflare4項目・独立cleanup/通常保持確認を受け入れた。
+初回初期化500の原因未確定と同じ所有資源での再開を保持する。[Admin移管の限定証拠](evidence/transfer-admin-unlimited-native-2026-10-13.json)。
 取得・抽選の上限判定もlocal85件・実Cloudflare8項目・独立cleanup/通常保持確認を受け入れた。
 [取得・抽選の限定証拠](evidence/acquisition-lottery-capacity-native-2026-10-13.json)。
 移管plan/limit競合のlocal43件・実Cloudflare6件・独立cleanup/通常保持確認を受け入れた。
