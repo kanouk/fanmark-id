@@ -301,7 +301,9 @@ LEFT JOIN fanmark_licenses AS fl ON fl.id = (
   SELECT inner_fl.id
   FROM fanmark_licenses AS inner_fl
   WHERE inner_fl.fanmark_id = f.id
-  ORDER BY (inner_fl.license_end IS NULL) ASC, inner_fl.license_end DESC, inner_fl.id ASC
+  ORDER BY CASE WHEN inner_fl.status = 'active'
+    AND (inner_fl.license_end IS NULL OR inner_fl.license_end > ?) THEN 0 ELSE 1 END ASC,
+    (inner_fl.license_end IS NULL) ASC, inner_fl.license_end DESC, inner_fl.id ASC
   LIMIT 1
 )
 LEFT JOIN user_settings AS us ON us.user_id = fl.user_id
@@ -317,7 +319,7 @@ LIMIT ${MAX_FAVORITES + 1}
 async function listFavorites(db: D1Database, userId: string): Promise<Record<string, unknown>[]> {
   let result: D1Result<FavoriteRow>;
   try {
-    result = await db.prepare(LIST_SQL).bind(userId).all<FavoriteRow>();
+    result = await db.prepare(LIST_SQL).bind(toUtcMicrosecondTimestamp(new Date()), userId).all<FavoriteRow>();
   } catch {
     throw new FavoritesApiError("favorites_unavailable");
   }

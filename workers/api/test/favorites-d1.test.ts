@@ -429,6 +429,40 @@ describe("Better Auth favorites D1 API", () => {
     expect(JSON.stringify(payload)).not.toContain(otherEmail);
   });
 
+  it.each(["perpetual", "finite"])("reports the active %s owner instead of an older retired finite license", async kind => {
+    const cookie = await signIn(ownerEmail);
+    const added = await request("/api/me/favorites", {
+      method: "POST", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ input_emoji_ids: [baseEmojiId], input_display_fanmark: "👋" }),
+    });
+    expect(added.status).toBe(200);
+    await businessDatabase!.prepare("UPDATE fanmark_licenses SET status='expired',license_end='2099-01-01T00:00:00.000000Z' WHERE id=?").bind(licenseId).run();
+    await businessDatabase!.prepare("UPDATE fanmark_password_configs SET is_enabled=0 WHERE license_id=?").bind(licenseId).run();
+    await businessDatabase!.prepare("INSERT INTO user_settings(id,user_id,username,display_name,created_at,updated_at) VALUES(?,?,'current-perpetual','Current Perpetual',?,?)")
+      .bind(crypto.randomUUID(), ownerId, now, now).run();
+    const currentId = crypto.randomUUID();
+    const end = kind === "perpetual" ? null : new Date(Date.now() + 7 * 86_400_000).toISOString().replace("Z", "000Z");
+    await businessDatabase!.prepare("INSERT INTO fanmark_licenses(id,fanmark_id,user_id,license_start,license_end,status,created_at,updated_at) VALUES(?,?,?,?,?,'active',?,?)")
+      .bind(currentId, fanmarkId, ownerId, now, end, now, now).run();
+    await businessDatabase!.prepare("INSERT INTO fanmark_basic_configs(id,license_id,fanmark_name,access_type,created_at,updated_at) VALUES(?,?,'Current private name','redirect',?,?)")
+      .bind(crypto.randomUUID(), currentId, now, now).run();
+    await businessDatabase!.prepare("INSERT INTO fanmark_redirect_configs(id,license_id,target_url,created_at,updated_at) VALUES(?,?,'https://example.invalid/current-private',?,?)")
+      .bind(crypto.randomUUID(), currentId, now, now).run();
+    await businessDatabase!.prepare("INSERT INTO fanmark_password_configs(id,license_id,is_enabled,access_password,created_at,updated_at) VALUES(?,?,1,'synthetic-not-used',?,?)")
+      .bind(crypto.randomUUID(), currentId, now, now).run();
+    const listed = await request("/api/me/favorites", { headers: { Cookie: cookie } });
+    expect(listed.status).toBe(200);
+    const payload = await listed.json() as { items: Array<Record<string, unknown>> };
+    expect(payload.items).toHaveLength(1);
+    expect(payload.items[0]).toMatchObject({
+      current_owner_username: "current-perpetual", current_owner_display_name: "Current Perpetual",
+      current_license_end: end, current_license_status: "active", is_password_protected: true,
+      fanmark_name: null, target_url: null, text_content: null,
+    });
+    expect(JSON.stringify(payload)).not.toContain("Current private name");
+    expect(JSON.stringify(payload)).not.toContain("current-private");
+  });
+
   it.each(["redirect", "text"])("withholds protected %s content from favorites regardless of the signed-in account or proof-looking cookie", async (accessType) => {
     await businessDatabase?.prepare("UPDATE fanmark_licenses SET license_end = NULL WHERE id = ?").bind(licenseId).run();
     await businessDatabase?.prepare("UPDATE fanmark_basic_configs SET access_type = ? WHERE license_id = ?")

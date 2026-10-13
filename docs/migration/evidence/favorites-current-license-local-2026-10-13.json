@@ -1,0 +1,36 @@
+{
+  "state": "favorites_current_license_local_accepted_pending_ci_native",
+  "observedAt": "2026-10-13T10:17:23.460Z",
+  "beforeFix": {
+    "currentOwnerIncorrect": true,
+    "selectedRetiredFinite": true,
+    "ignoredActivePerpetual": true
+  },
+  "fix": "Prefer active future/NULL-end licenses before existing historical end/id ordering; use the selected license for protected projection.",
+  "validation": {
+    "nativeD1": 19,
+    "client": 6,
+    "workerTypecheck": true,
+    "focusedLint": true,
+    "finiteAndPerpetualCurrentOwnership": true,
+    "selectedProtectedNameUrlTextNull": true,
+    "historicalFallbackRetained": true,
+    "foreignUserFavoritesScoped": true,
+    "sourceRpcChanged": false
+  },
+  "code": [
+    {
+      "path": "workers/api/src/favorites-d1-api.ts",
+      "sha256": "21997f48f6d9161b4d18c07f11100ffcdacef9899c7068b11474a0228154ac31"
+    },
+    {
+      "path": "workers/api/test/favorites-d1.test.ts",
+      "sha256": "d37a5e9f86cb2996a75f796648fbe9af364cd5f35c1143183b61598e29ee3f84"
+    }
+  ],
+  "sourceCounterpartIdentityAndDefinitionUnchanged": true,
+  "remoteAccepted": false,
+  "normalStagingRedeployed": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false
+}

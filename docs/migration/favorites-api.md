@@ -24,6 +24,16 @@ request cannot supply a user ID.
 
 ## Protected content boundary
 
+The list first selects an active license with a future or NULL end before
+historical licenses. This prevents an older retired finite license from hiding
+the current perpetual owner. Within the live group, and when no live owner is
+present, the existing finite/NULL/end/id ordering is retained. The same query
+still restricts favorites to the authenticated owner and applies password
+redaction to the selected license. Finite/perpetual current owners are covered
+against a retired license with a larger end value, including protected bodies.
+This target correction follows PRODUCT current ownership; the Supabase RPC is
+unchanged and the historical unchanged-read-region proof below stays historical.
+
 For an enabled password configuration, the list query projects `fanmark_name`,
 `target_url`, and `text_content` as SQL NULL before they reach the Worker response.
 The stored configurations are unchanged. Emoji spelling, public identity,
