@@ -18,7 +18,7 @@
 旧空Authのcanaryで削除しない。RECOVERY_WRITE_FREEZEは未設定、通常HTTPは公開200。
 backup Worker `fanmark-backup-staging` は版73f7249f、Cron `5 0 * * *`（09:05 JST）。
 monitor Worker `fanmark-backup-monitor-staging` は版c03f6a13、Cron `35 * * * *`。
-自然monitorは確認済み、自然dailyは未観測。詳細は[運用保存](backup-operations.md)と
+自然monitorに続き、09:00 app dailyと09:05 backup/30日保持が自然実行で成功。別R2制御receiptでverified/停止解除/source5 store/schema/keyを照合した。詳細は[運用保存](backup-operations.md)と
 [V4証拠](evidence/staging-resource-scope-v4-operational-2026-10-13.json)。
 
 ## 現在の通常staging（2026-10-13 JST）
@@ -28,7 +28,7 @@ monitor Worker `fanmark-backup-monitor-staging` は版c03f6a13、Cron `35 * * * 
 readonly observerもV4の固定IDを使用する。運用鍵の保存・隔離復旧・全表hash/FK照合・所有資源cleanupと30日保持を確認した。
 担当/鍵/off-host保管/日次・30日/RPO24時間・RTO4時間目標/復旧時session失効の採用は既存の方針を保持する。
 V4の07:35:30 JST自然monitorとApple初回登録/設定/logout/メール再loginを受け入れた。
-自然daily、Apple relay配送、実スマホ/PWAと最終統合は未受け入れ。
+現行V4の4言語/課金と本人のスマホ/ホーム画面確認は受け入れ済み。自然daily backup/保持処理/停止解除・本人Auth保持を独立照合済み。Apple relay配送は検証先なしで未確認。最終文書CI/引継ぎは別途確認する。
 [現行V4の限定証拠](evidence/staging-resource-scope-v4-operational-2026-10-13.json)と [COMPLETION](COMPLETION.md) を現在の残件の基準とする。
 以下の過去version/受け入れ待ちの記述は当時の履歴であり、旧保存先を現在のapp bindingとして使用しない。
 

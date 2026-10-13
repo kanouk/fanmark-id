@@ -60,7 +60,7 @@ approved fixed-recipient API test was Delivered and matched to its D1 audit;
 [bounded acceptance](evidence/staging-admin-mfa-broadcast-delivery-2026-10-06.json).
 The native fixed-recipient test-send UI was later accepted with Delivered,
 exact audit and canonical restore/cleanup; [native evidence](evidence/staging-main-auth-mfa-admin-mail-native-2026-10-07.json).
-Bulk dispatch, actual signed delivery/retry and retention remain unaccepted. Auth verification/reset success does not close them. See
+Later October9 receipts accept native Send UI,51 controlled recipients with signed delivery outcomes and scoped provider retry; the initial hold/owner-investigation policy is recorded in broadcast-operations.md. See staging-broadcast-send-ui-native-2026-10-09.json, staging-broadcast-multi-recipient-native-2026-10-09.json and staging-broadcast-controlled-provider-retry-2026-10-09.json. These are later target proofs, not new source downloads or production delivery. Auth verification/reset alone does not close them. See
 [broadcast contract](broadcast-email-admin-api.md).
 
 ## Reproduce without changing the source

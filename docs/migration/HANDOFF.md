@@ -1,9 +1,14 @@
-## 最新の再開位置（2026-10-13 08:35 JST）
+## 最新の再開位置（2026-10-13 09:10 JST）
 
-[現在の確認結果と六工程の残件](COMPLETION.md)を参照。4言語/現行課金/本人スマホは確認済み。
-専用fixture cleanup・独立照合済み。次は自然日次backup、Apple relay受信、source/PR最終レビュー。
-private自然backup observerは`v4-natural-daily-2026-10-13/observe-natural-backup.mjs`、
-状態は`natural-backup-observation.json`。既存slotを再送せず、observer失敗と実Cron失敗を区別する。
+[現在の六工程と証拠](COMPLETION.md)を参照。現行V4の4言語/課金、本人スマホ/ホーム画面、
+自然app daily/backup/30日保持・停止解除・独立照合まで完了。全専用fixture/operator cleanup済み。
+新しいコード配備はなく、main cc82c298/source e511762。文書2897795のCI38322879636は両job成功。
+自然観測2 processは受付済みeventから終了。完了slotを再送しない。private記録は
+`v4-natural-daily-2026-10-13`。本人Auth/session/Free profile・FK0・root/Auth200を保持した。
+Apple relay sender no-reply@fanmark.idの登録/SPFは完了したが、本人は検証用relayアドレスを
+「ありません」と回答。実転送/受信は未確認で、同じ質問や本番Apple承認の解除を繰り返さない。
+PR最終CI/引継ぎの状態を確認し、この未確認条件と#38の実user/Auth/Storage/domain工程を分けて報告する。
+
 
 ## 2026-10-13 07:46 JST: 現行V4で日本語の主要フローを一巡
 

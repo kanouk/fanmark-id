@@ -14,5 +14,8 @@
   "relayRecipientAvailable": false,
   "realRelayDeliveryAccepted": false,
   "screenshotSha256": "2a9ed72dc7ff5e05f93f95923945f5372926669864cb7b921a3d1d9bf7b35e15",
-  "officialRequirement": "https://developer.apple.com/jp/help/account/capabilities/configure-private-email-relay-service/"
+  "officialRequirement": "https://developer.apple.com/jp/help/account/capabilities/configure-private-email-relay-service/",
+  "relayRecipientHumanReply": "ありません",
+  "controlledRelayRecipientAvailable": false,
+  "relayEmailsSent": 0
 }

@@ -1,0 +1,146 @@
+{
+  "state": "natural_v4_daily_backup_and_retention_accepted",
+  "worker": "fanmark-backup-staging",
+  "schedulerVersion": "73f7249f-7899-44d2-ae91-df97c74f9512",
+  "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "runtimeSource": "e511762850631275664597afec8ca4155419358f",
+  "naturalInvocation": {
+    "scheduledTime": "2026-10-13T00:05:25.000Z",
+    "outcome": "ok",
+    "exceptionCount": 0,
+    "healthy": true,
+    "slot": "2026-10-13",
+    "receipt": {
+      "captureId": "6d680e47-c747-4340-bc66-00676f4ad275",
+      "archiveHash": "7f7194288424b7bd78f81d86b82b782b6c89e68fd31cab0f0b114556b274f831",
+      "bytes": 10931804,
+      "deleted": 0
+    },
+    "accepted": true
+  },
+  "independentReceiptReadback": {
+    "state": "natural_backup_control_receipt_verified",
+    "observedAt": "2026-10-13T00:07:07.343Z",
+    "slot": "2026-10-13",
+    "stateInReceipt": "verified",
+    "fenceReleased": true,
+    "sourceIds": {
+      "business": "7c0ff711-19bd-4964-8ae8-cf9800339223",
+      "auth": "7c56bf17-f15e-4828-ae20-37532c45c436",
+      "master": "31cad6f0-5ce3-44a1-bdb3-017364555b29",
+      "avatars": "fanmark-avatars-staging-v4-0690d7c1",
+      "covers": "fanmark-covers-staging-v4-0690d7c1"
+    },
+    "schemaHashes": {
+      "business": "598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2",
+      "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+      "master": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56"
+    },
+    "captureId": "6d680e47-c747-4340-bc66-00676f4ad275",
+    "archiveHash": "7f7194288424b7bd78f81d86b82b782b6c89e68fd31cab0f0b114556b274f831",
+    "bytes": 10931804,
+    "retention": {
+      "days": 30,
+      "deleted": 0,
+      "finishedAt": "2026-10-13T00:06:05.360Z"
+    },
+    "startedAt": "2026-10-13T00:05:37.895Z",
+    "finishedAt": "2026-10-13T00:06:03.266Z",
+    "archiveBodyRead": false,
+    "authCredentialValuesRead": false,
+    "manualInvocation": false,
+    "runtimeRedeployed": false,
+    "domainChanged": false
+  },
+  "postBackupReadOnlyOperations": {
+    "observedAt": "2026-10-13T00:07:28.744Z",
+    "scope": "read-only staging aggregates; no repair/provider/data/domain action",
+    "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "worker": "fanmark-app-staging",
+    "version": "cc82c298-ff27-4322-8c42-175e7be17f16",
+    "ledgerEntries": 27,
+    "credentialSource": "monitor_api_token",
+    "leastPrivilegeAccepted": false,
+    "selectors": {
+      "CUTOVER_WRITE_FREEZE": "false",
+      "RECOVERY_WRITE_FREEZE": null,
+      "RECOVERY_DRAIN_BACKEND": "durable-object",
+      "LICENSE_EXPIRY_BACKEND": "d1",
+      "LICENSE_EXPIRY_CRON": "0 0 * * *",
+      "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+      "NOTIFICATION_WAKE_BACKEND": "durable-object",
+      "NOTIFICATION_ARCHIVE_BACKEND": "d1",
+      "NOTIFICATION_ARCHIVE_CRON": "0 0 * * *",
+      "STRIPE_DISPATCH_BACKEND": "d1",
+      "BROADCAST_SEND_BACKEND": null
+    },
+    "counts": {
+      "foreign_key_violations": 0,
+      "wake_singletons": 1,
+      "wake_requested": 5,
+      "wake_acknowledged": 5,
+      "notification_pending": 0,
+      "notification_overdue": 0,
+      "notification_stale_processing": 0,
+      "notification_failed": 0,
+      "notification_archive_candidates": 0,
+      "expiry_open_runs": 0,
+      "finalization_open_runs": 0,
+      "finite_licenses_past_end": 0,
+      "grace_licenses_past_end": 0,
+      "stripe_dead_letters": 0,
+      "stripe_overdue": 0,
+      "stripe_expired_leases": 0
+    },
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": [],
+    "disabledJobs": [
+      "BROADCAST_SEND_BACKEND"
+    ],
+    "recurringOperationsAccepted": false,
+    "providerIntegrationAccepted": false
+  },
+  "humanAuthPreserved": {
+    "state": "verified_apple_first_registration_and_human_credential_login",
+    "observedAt": "2026-10-13T00:07:39.073Z",
+    "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+    "appleUsers": 1,
+    "emailVerified": true,
+    "appleAccounts": 1,
+    "credentialAccounts": 1,
+    "passwordPresent": true,
+    "passwordSetupRequired": false,
+    "activeSessionPresent": true,
+    "freeBusinessProfileLinked": true,
+    "relayIdentity": false,
+    "relayDeliveryAccepted": false,
+    "credentialValuesRead": false,
+    "humanReportedSequence": [
+      "Apple first registration",
+      "initial password setting",
+      "logout",
+      "email password login to dashboard"
+    ],
+    "dashboardObserved": true,
+    "foreignKeyViolations": 0,
+    "sourceUsersMoved": false,
+    "domainChanged": false
+  },
+  "manualInvocation": false,
+  "runtimeRedeployed": false,
+  "initialReadonlyObserver404Corrected": true,
+  "observerCopiedStateLabelWasMonitorButActualWorkerWasBackup": true,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "wholeMigrationAccepted": false,
+  "dashboardAfterBackup": {
+    "origin": "https://fanmark-app-staging.fanmark-id.workers.dev/dashboard",
+    "heading": "ダッシュボード",
+    "owned": "0 / 3",
+    "favoriteCount": 0,
+    "screenshotSha256": "35e28fc0aaaf79f34bf39bcb6b40709dfc28fcf1d6deb652190a0add8368a33b"
+  }
+}
