@@ -120,6 +120,18 @@ async function readBytes(request,limit=PROOF_MASTER_BODY_BYTES){
 }
 async function bodyJson(request){const bytes=await readBytes(request,PROOF_RESTORE_BODY_BYTES);try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}
   catch{throw Error('proof_body_invalid');}finally{bytes.fill(0);}}
+async function storedRestoreInput(env,etag){
+  const object=await env.CONTROL.get('restore-input.json',{onlyIf:{etagMatches:etag}});
+  check(object && typeof object.json==='function' && object.etag===etag,'restore_input_changed');
+  check(object.size<=PROOF_RESTORE_BODY_BYTES,'body_too_large');
+  return object.json();
+}
+async function restoreInputProvenance(env,receipt,archive){
+  const {context,key}=await contextKey(env,receipt),{manifest}=await openRecoverySet(archive,context,key);
+  const source=await status(env,'collect');
+  check(source?.state==='verified' && manifest.captureId===source.captureId &&
+    await d1RecoveryDigest(manifest.parts)===await d1RecoveryDigest(source.parts),'archive_mismatch');
+}
 const claim=(env,name,value)=>env.CONTROL.put(name+'-claim.json',JSON.stringify(value),{onlyIf:{etagDoesNotMatch:'*'}});
 const report=(env,name,value)=>env.CONTROL.put(name+'-status.json',JSON.stringify(value));
 async function status(env,name){const object=await env.CONTROL.get(name+'-status.json');return object?await object.json():null;}
@@ -146,6 +158,11 @@ export default {async fetch(request,env){
     if((await status(env,'collect'))?.state!=='verified')return json({error:'archive_not_verified'},409);
     return json({identity:receipt,archive:await (await env.CONTROL.get('archive.json')).json()});
   }
+  if(url.pathname==='/_proof/restore-input'&&request.method==='GET'&&env.PROOF_CAPACITY_PROFILE===CAPACITY_PROFILE){
+    const object=await env.CONTROL.head('restore-input.json');
+    if(!object)return json({identity:receipt,object:null});
+    return json({identity:receipt,object:{etag:object.etag,size:object.size}});
+  }
   const phase={'/_proof/initialize':'initialize','/_proof/collect':'collect','/_proof/restore':'restore'}[url.pathname];
   if(phase&&request.method==='POST'){
     if(phase==='collect'&&(await status(env,'initialize'))?.state!=='verified'||phase==='restore'&&(await status(env,'collect'))?.state!=='verified')return json({error:'source_not_verified'},409);
@@ -157,8 +174,17 @@ export default {async fetch(request,env){
           check(hash===env.PROOF_MASTER_ARCHIVE_HASH,'master_archive_mismatch');input=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
         }finally{bytes.fill(0);}
       }else if(phase==='restore'){
-        input=await bodyJson(request);const saved=await env.CONTROL.get('archive.json');
-        check(saved&&await d1RecoveryDigest(input)===await d1RecoveryDigest(await saved.json()),'archive_mismatch');
+        if(env.PROOF_CAPACITY_PROFILE===CAPACITY_PROFILE){
+          const bytes=await readBytes(request,1024);let reference;
+          try{reference=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}finally{bytes.fill(0);}
+          check(reference && Object.keys(reference).length===1 && typeof reference.archiveEtag==='string' &&
+            reference.archiveEtag.length>0 && reference.archiveEtag.length<=200,'restore_reference_invalid');
+          input=await storedRestoreInput(env,reference.archiveEtag);
+          await restoreInputProvenance(env,receipt,input);
+        }else{
+          input=await bodyJson(request);const saved=await env.CONTROL.get('archive.json');
+          check(saved&&await d1RecoveryDigest(input)===await d1RecoveryDigest(await saved.json()),'archive_mismatch');
+        }
       }else if(request.body){const reader=request.body.getReader();try{
         for(;;){const next=await reader.read();if(next.done)break;if(next.value.byteLength){await reader.cancel();throw Error('proof_body_invalid');}}
       }finally{reader.releaseLock();}}
@@ -276,6 +302,7 @@ export default {async fetch(request,env){
     const allowed=['initialize','collect','restore'].flatMap(phase=>[phase+'-claim.json',phase+'-status.json']).concat(['archive.json','cookie.json']);
     let owned;
     if(env.PROOF_CAPACITY_PROFILE===CAPACITY_PROFILE){
+      allowed.push('restore-input.json');
       const object=await env.CONTROL.get('capacity-owned-images.json');
       if(object){owned=await object.json();allowed.push('capacity-owned-images.json');}
     }
@@ -284,6 +311,11 @@ export default {async fetch(request,env){
       const page=await env[role].list();if(page.truncated)return json({error:'unowned_object'},409);
       if(role==='CONTROL'){
         if(page.objects.some(o=>!allowed.includes(o.key)))return json({error:'unowned_object'},409);
+        const restoredFile=page.objects.find(o=>o.key==='restore-input.json');
+        if(restoredFile){
+          try{await restoreInputProvenance(env,receipt,await storedRestoreInput(env,restoredFile.etag));}
+          catch{return json({error:'unowned_restore_input'},409);}
+        }
       }else if(page.objects.length){
         const store=role.endsWith('AVATARS')?'avatars':'covers';
         const expected=owned?.[store];

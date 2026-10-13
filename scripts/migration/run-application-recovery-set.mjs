@@ -1,7 +1,7 @@
 /** New native actual-application rehearsal. Resume only inspects the same owned run. */
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {mkdir, readFile, writeFile, rename, realpath, unlink, stat} from 'node:fs/promises';
+import {mkdir, readFile, writeFile, rename, realpath, unlink, stat, chmod} from 'node:fs/promises';
 import {randomBytes, randomUUID, createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {createIsolatedRemoteD1} from './isolated-remote-d1.mjs';
@@ -326,9 +326,28 @@ try {
     const restoredFile = await readRecoverySetFile(archivePath, context(), archiveKey);
     const opened = await openRecoverySet(restoredFile, context(), archiveKey);
     assert.equal(opened.manifest.captureId, status.phases.collect.captureId);
+    let restorePayload=restoredFile;
+    if(capacityProfile){
+      if(!journal.restoreInputUploadRequested){
+        assert.equal((await request('restore-input')).object,null);
+        journal.restoreInputUploadRequested=true;await save();
+        try{wrangler(['r2','object','put',names.CONTROL+'/restore-input.json','--remote','--file',archivePath],{config});}
+        catch{journal.restoreInputUploadAcknowledgementUnknown=true;await save();}
+      }
+      // Inspect a possibly committed upload; never upload again after an unknown ACK.
+      const uploaded=await request('restore-input');assert.ok(uploaded.object);
+      assert.equal(typeof uploaded.object.etag,'string');
+      const downloadedPath=path.join(root,'restore-input-readback.json');
+      wrangler(['r2','object','get',names.CONTROL+'/restore-input.json','--remote','--file',downloadedPath],{config});
+      await chmod(downloadedPath,0o600);
+      assert.deepEqual(await readFile(downloadedPath),await readFile(archivePath));
+      assert.equal((await request('restore-input')).object.etag,uploaded.object.etag);
+      journal.restoreInputEtag=uploaded.object.etag;journal.restoreInputVerified=true;await save();
+      restorePayload={archiveEtag:uploaded.object.etag};
+    }
     if (!journal.restoreRequested) {
       await bindingPreflight(); journal.restoreRequested = true; await save();
-      try {await request('restore', 'POST', restoredFile);} catch {journal.restoreAcknowledgementUnknown = true; await save();}
+      try {await request('restore', 'POST', restorePayload);} catch {journal.restoreAcknowledgementUnknown = true; await save();}
     }
     await bindingPreflight(); journal.phases = (await request('status')).phases; await save();
     assert.equal(journal.phases.restore?.state, 'verified', 'proof_restore_not_verified');

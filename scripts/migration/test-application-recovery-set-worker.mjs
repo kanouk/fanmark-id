@@ -75,15 +75,32 @@ export async function exerciseApplicationRecoveryWorker({savedMaster,capacityPro
     if(capacityProfile)assert.deepEqual(collect.report.capacityFixture,CAPACITY_COUNTS);
     assert.equal((await request('collect',{method:'POST'})).status,409);
     const {archive}=await (await request('archive')).json();
+    const control=await mf.getR2Bucket('CONTROL');
     const tampered=structuredClone(archive);tampered.nonce[0]^=1;
-    assert.equal((await request('restore',{method:'POST',body:JSON.stringify(tampered)})).status,400);
+    let restorePayload=archive;
+    if(capacityProfile){
+      assert.equal((await (await request('restore-input')).json()).object,null);
+      assert.equal((await request('restore',{method:'POST',body:JSON.stringify(archive)})).status,413);
+      const broken=await control.put('restore-input.json',JSON.stringify(tampered));
+      assert.equal((await request('restore',{method:'POST',body:JSON.stringify({archiveEtag:broken.etag})})).status,400);
+      assert.equal(await control.head('restore-claim.json'),null);
+      const refused=await request('objects',{method:'DELETE'});assert.equal(refused.status,409);
+      assert.equal((await refused.json()).error,'unowned_restore_input');
+      assert.equal((await (await mf.getR2Bucket('S_AVATARS')).list()).objects.length,69);
+      const good=await control.put('restore-input.json',JSON.stringify(archive));
+      const uploaded=await (await request('restore-input')).json();
+      assert.equal(uploaded.object.etag,good.etag);
+      assert.equal((await request('restore',{method:'POST',body:JSON.stringify({archiveEtag:broken.etag})})).status,400);
+      assert.equal((await request('restore',{method:'POST',body:JSON.stringify({archiveEtag:good.etag,key:'foreign'})})).status,400);
+      restorePayload={archiveEtag:good.etag};
+    }else assert.equal((await request('restore',{method:'POST',body:JSON.stringify(tampered)})).status,400);
     for(const role of databaseRoles.filter(role=>role.startsWith('T_')))assert.equal((await (await mf.getD1Database(role)).prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'").all()).results.length,0);
-    const restore=await (await request('restore',{method:'POST',body:JSON.stringify(archive)})).json();assert.equal(restore.report.state,'verified',JSON.stringify(restore.report));
+    const restore=await (await request('restore',{method:'POST',body:JSON.stringify(restorePayload)})).json();assert.equal(restore.report.state,'verified',JSON.stringify(restore.report));
     assert.equal(restore.report.progress.length,10);assert.equal(restore.report.result.captureId,collect.report.captureId);
     assert.equal(restore.report.oldSessionRejected,true);assert.equal(restore.report.normalSdkTargetLogin,true);assert.equal(restore.report.credentialBytesRetained,true);
     assert.deepEqual(restore.report.emptyR2ReadStatus,{avatars:404,'cover-images':404});
-    assert.equal((await request('restore',{method:'POST',body:JSON.stringify(archive)})).status,409);
-    const control=await mf.getR2Bucket('CONTROL');await control.put('unowned','preserve');
+    assert.equal((await request('restore',{method:'POST',body:JSON.stringify(restorePayload)})).status,409);
+    await control.put('unowned','preserve');
     assert.equal((await request('objects',{method:'DELETE'})).status,409);assert.equal(await (await control.get('unowned')).text(),'preserve');await control.delete('unowned');
     if(capacityProfile){
       const sourceAvatars=await mf.getR2Bucket('S_AVATARS'),key='90000000-0000-4000-8000-000000000001/capacity-0.png';

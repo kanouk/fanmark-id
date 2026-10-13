@@ -1,3 +1,20 @@
+## 最新の保留（2026-10-13 11:15 JST）
+
+共有修正a4541dc/CI38333543500は両job成功したが、最初は業務D1のrestore_failed（原因未確定）、
+新しい所有環境ではBusiness verified後のavatar工程でnative exceededMemoryが残った。
+[2caseの記録](evidence/representative-recovery-capacity-shared-release-failures-2026-10-13.json)。
+全4caseの一時資源を削除し、独立readbackで元の12D1/12R2/4Worker/8DO・main cc82c298・
+binding/schema/件数/本人Apple・credential/session/Freeの保持を確認した。復旧POST再送0。
+
+次の限定候補は、Macで保存/検証した同じfileを固定private R2へuploadし、downloadして全bytes一致を
+確認後、etagだけの最大1 KiB POSTで条件付き読込/暗号・source provenance/復旧を行う。
+大きなHTTP本体とfull control copyの同時保持を避ける。全最終hash/fence/容量を維持。
+新方式はnative2件・全Master入りlocal復旧/画像配信/SDK/cleanupが成功。
+[local限定証拠](evidence/representative-recovery-capacity-r2-transport-local-2026-10-13.json)。
+[全4case後の独立保持確認](evidence/representative-recovery-capacity-all-failures-cleanup-2026-10-13.json)。
+実CLIのfile upload/download全bytes一致とCI/実Cloudflareは未確認。通常mainの再配備・実ユーザー/DNS変更は0。
+詳細は[source容量/復旧](source-capacity-review.md)。Apple relay実受信は宛先なしで未確認。
+
 ## 最新の保留（2026-10-13 10:45 JST）
 
 3632cec/[CI38331658551](https://github.com/kanouk/fanmark-id/actions/runs/38331658551)は両job成功。

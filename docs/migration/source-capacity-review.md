@@ -95,3 +95,26 @@ avatarのverifiedまで進んだが、その後native exceededMemoryで終了し
 共有修正はtypecheck、関連17件、全Master入りlocal復旧・画像配信・SDK login・cleanupまで成功。
 [local限定証拠](evidence/representative-recovery-capacity-shared-release-local-2026-10-13.json)。
 CI/実Cloudflare成功は別に確認する。通常mainの再配備と実ユーザー/DNS変更は0。
+
+## 大きなHTTP本体の保持を避ける候補（2026-10-13）
+
+a4541dc/CI38333543500は両job成功。最初のcaseはbusiness_recovery_restore_failedを返し、
+終了/cleanup/inventory一致まで確認した。同じcode/件数/容量の新しい所有環境を1回確認し、
+Businessはverified、avatar工程でnative exceededMemoryによる終了をversion/時刻/1失敗で確認した。
+業務D1失敗の原因は未確定。両記録を保持し、復旧POST再送0、全所有資源はcleanup済み。
+[共有修正後の失敗](evidence/representative-recovery-capacity-shared-release-failures-2026-10-13.json)。
+
+新候補は、このprofileだけMacで保存/検証した**同じ暗号化file**を所有CONTROLの固定
+`restore-input.json`へCLIでuploadし、CLIで独立downloadして元fileと全bytesを比較する。
+GETはetag/sizeだけ返し、restore POSTはそのopaque etagのみ・body最大1 KiBとする。
+未確認upload ACKでは再PUTせず、同じjournalで存在/bytes/etagを調べる。
+Workerは条件付きR2 getと上限64 MiB、AES/AAD/全part hash・schema/SDK・source capture ID/
+元part hash・相互関係を確認してからclaim/target writeへ進む。file pathをclientに選ばせない。
+cleanupもそのfileのsource provenanceを確認し、不一致なら全bucketの削除を拒否する。
+Mac fileを保存せずsource側のcopyだけで済ませたとはしない。
+
+従来のfull HTTP bodyとCONTROLのfull copyを同時に保持/比較する点もmemory圧迫の候補であり、
+通信を変えても実Cloudflare成功は未確認。shared format/容量/復旧dataを縮めず、hash/fence/
+全最終recaptureとsession失効を維持する。通常defaultの小さいfixture入口は従来通り。
+
+[新方式のlocal限定証拠](evidence/representative-recovery-capacity-r2-transport-local-2026-10-13.json)：native2件と全Master復旧/画像配信/SDK/cleanupは成功。実CLIのupload/download全bytes一致・CI・実Cloudflare成功は未確認。
