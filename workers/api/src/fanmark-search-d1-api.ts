@@ -21,7 +21,11 @@ WITH latest_license AS (
     fl.display_fanmark
   FROM fanmark_licenses fl
   WHERE fl.fanmark_id = ?
-  ORDER BY (fl.license_end IS NULL) DESC, fl.license_end DESC
+  ORDER BY CASE
+    WHEN fl.status = 'active' AND (fl.license_end IS NULL OR fl.license_end > ?) THEN 0
+    WHEN fl.status = 'grace' AND COALESCE(fl.grace_expires_at, fl.license_end) > ? THEN 1
+    ELSE 2 END,
+    (fl.license_end IS NULL) DESC, fl.license_end DESC
   LIMIT 1
 )
 SELECT
@@ -344,7 +348,7 @@ export async function handleFanmarkSearchDetailsRequest(
     const currentUserId = auth.userId === null ? null : uuid(auth.userId);
     const currentTime = formatAvailabilityNow(clock());
     const result = await database.prepare(DETAILS_SQL)
-      .bind(fanmarkId, currentUserId, currentUserId, currentUserId, fanmarkId)
+      .bind(fanmarkId, currentTime, currentTime, currentUserId, currentUserId, currentUserId, fanmarkId)
       .all<SearchDetailsRow>();
     const rows = asRows(result);
     if (rows.length > 1) throw new FanmarkSearchApiError("fanmark_search_unavailable");

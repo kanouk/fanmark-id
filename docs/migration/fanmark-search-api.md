@@ -14,7 +14,7 @@ Content-Type: application/json
 { "fanmarkId": "<UUID>" }
 ```
 
-The Worker reads the fanmark, its latest license under the source RPC ordering,
+The Worker reads the fanmark, its live active license, otherwise a blocking grace license, otherwise history under the source RPC ordering,
 and pending lottery entries from one business D1 binding. A Better Auth session
 resolves the current user ID on the server; the request body cannot choose a
 user. Anonymous reads return public fanmark fields and a false/null user-entry
@@ -166,3 +166,15 @@ wake/secrets plus owned0/ledger25. Static bytes match; real providers remain
 closed. No current remote search-details, int64 boundary, historical-row or
 external-caller acceptance is inferred. Private proof and the remaining six
 work packages are referenced in HANDOFF/COMPLETION.
+
+## Current ownership correction (2026-10-13 candidate)
+
+Native local D1 reproduced two retired-history cases returning the old owner
+and `is_blocked_for_registration=false` despite a live finite license. The
+selection now ranks active future/perpetual ownership, then a grace deadline
+still blocking registration, then history. The same captured server microsecond
+clock drives selection and response lifecycle fields. Existing NULL-first end
+ordering remains within each group and for history-only fallback; protected
+config omission and caller-specific lottery filtering stay unchanged.
+This corrects target current-ownership behavior; it does not modify source RPCs.
+Local/full CI/native acceptance and normal rollout are tracked separately.

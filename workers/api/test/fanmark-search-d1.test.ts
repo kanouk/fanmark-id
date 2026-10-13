@@ -109,6 +109,37 @@ describe("full-schema native D1 search authorization and source lifecycle", () =
       .bind(ownerId).first()).toEqual({ count: 0 });
   });
 
+  it.each([null, "2099-01-01T00:00:00.000000Z"])("prefers live ownership over retired history ending %s", async (historicalEnd) => {
+    await business.prepare("UPDATE fanmark_licenses SET license_end = ? WHERE id = ?")
+      .bind("2027-01-01T00:00:00.000000Z", licenseId).run();
+    await business.prepare("INSERT INTO fanmark_licenses (id,fanmark_id,user_id,license_start,license_end,status,created_at,updated_at) VALUES (?, ?, ?, ?, ?, 'expired', ?, ?)")
+      .bind(olderId, fanmarkId, otherId, "2025-01-01T00:00:00.000000Z", historicalEnd, timestamp, timestamp).run();
+    const before = (await business.prepare("SELECT * FROM fanmark_licenses ORDER BY id").all()).results;
+    for (const cookie of ["", await signin(ownerId), await signin(otherId)]) {
+      expect(await details(cookie)).toMatchObject({
+        current_owner_id: ownerId, license_id: licenseId, current_license_status: "active",
+        has_active_license: true, is_blocked_for_registration: true,
+      });
+    }
+    expect((await business.prepare("SELECT * FROM fanmark_licenses ORDER BY id").all()).results).toEqual(before);
+  });
+
+  it.each([null, "2099-01-01T00:00:00.000000Z"])("preserves blocking grace ownership over retired history ending %s", async (historicalEnd) => {
+    await business.prepare("UPDATE fanmark_licenses SET status = 'grace', license_end = ?, grace_expires_at = ? WHERE id = ?")
+      .bind("2026-10-02T00:00:00.000000Z", "2026-10-04T00:00:00.000000Z", licenseId).run();
+    await business.prepare("INSERT INTO fanmark_licenses (id,fanmark_id,user_id,license_start,license_end,status,created_at,updated_at) VALUES (?, ?, ?, ?, ?, 'expired', ?, ?)")
+      .bind(olderId, fanmarkId, otherId, "2025-01-01T00:00:00.000000Z", historicalEnd, timestamp, timestamp).run();
+    const before = (await business.prepare("SELECT * FROM fanmark_licenses ORDER BY id").all()).results;
+    for (const cookie of ["", await signin(ownerId), await signin(otherId)]) {
+      expect(await details(cookie)).toMatchObject({
+        current_owner_id: ownerId, license_id: licenseId, current_license_status: "grace",
+        has_active_license: false, is_blocked_for_registration: true,
+        next_available_at: "2026-10-04T00:00:00.000000Z",
+      });
+    }
+    expect((await business.prepare("SELECT * FROM fanmark_licenses ORDER BY id").all()).results).toEqual(before);
+  });
+
   it("resolves only each real Better Auth session's pending lottery entry", async () => {
     await business.prepare("INSERT INTO fanmark_licenses (id,fanmark_id,user_id,license_start,license_end,status,created_at,updated_at) VALUES (?, ?, ?, ?, ?, 'expired', ?, ?)")
       .bind(olderId, fanmarkId, ownerId, "2025-01-01T00:00:00.000000Z", "2025-02-01T00:00:00.000000Z", timestamp, timestamp).run();
