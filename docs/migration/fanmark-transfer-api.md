@@ -1,3 +1,17 @@
+## Plan snapshot race acceptance (2026-10-13)
+
+On source8fd1aaa, CI38368179928 passes both jobs. The local43-case suite includes
+six injected before-batch limit/plan changes and safe retry with one audit.
+The same six cases pass on an owned Cloudflare Worker and three owned D1 stores;
+all Business/Auth schemas are used, with a focused Master tier fixture. The gated
+wrapper changes the synthetic recipient configuration before the actual batch,
+not the route's response. All owned resources are removed and independently checked.
+Normal staging8b2ddbf3 preserves binding114, all3 D1 schema/counts/FK0, ten assets,
+catalog and backup/monitor, with an independent readonly readback. No frontend,
+normal DB write, secret or real-user/domain change occurred. [Scoped proof](evidence/transfer-plan-snapshot-native-2026-10-13.json).
+This is the changed transfer transaction's acceptance; remaining original API
+contracts/PR review and Apple relay remain separate requirements.
+
 # Fanmark transfer D1 API
 
 The transfer UI remains on Supabase unless `VITE_FANMARK_TRANSFER_BACKEND=worker` is explicitly set. The Worker requires `FANMARK_TRANSFER_BACKEND=d1`, Better Auth session cookies, split business/auth/master D1 bindings, and the configured CORS origin. Worker errors never cause the UI to switch back to Supabase.

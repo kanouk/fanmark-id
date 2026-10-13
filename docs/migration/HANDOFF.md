@@ -1,3 +1,15 @@
+## 移管のプラン変更競合を修正・通常stagingへ反映（2026-10-13）
+
+事前確認後に受取人のplan/limitが変わると古い上限で成功する競合を実local D1で2件再現。
+同じ書込batchで設定snapshotを照合し、全43件とtypecheck/lintが成功した。
+source8fd1aaa / CI38368179928両job成功後、所有Worker/3D1で追加・更新・plan変更×申請/承認の6件を確認。
+拒否409は移管行を保持し、条件変更後のretry200は監査1件。所有資源を削除し独立inventory照合。
+通常mainは **8b2ddbf3-cc77-4937-a036-c750e00b3f39**。変更runtimeはtransfer1file、frontend/schema変更0。
+別readonlyでもbinding114・全3D1のschema/件数/FK0・旧assetを含む10file・catalog・backup/monitorを保持。
+[限定証拠](evidence/transfer-plan-snapshot-native-2026-10-13.json)。元条件/他APIの最終レビューは継続中。
+Apple relayは専用App/Services ID/key/隔離Workerを準備し、本人の非公開メール認証とResend再login待ち。
+実ユーザー/Auth/Storage移送・本番domain/DNSは最後の#38。以下は各時点の履歴。
+
 ## 通常ステージングのプロフィール・認証連携を確認（2026-10-13 15:52 JST）
 
 現行main **958b5ea2-525d-4a7e-adc6-f6b15bfdcf91** / source5c1504eで、実配信されたAppから
