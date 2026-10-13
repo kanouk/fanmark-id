@@ -1,3 +1,23 @@
+## 旧認証プロフィールの実Cloudflare受け入れ（2026-10-13）
+
+849c4ee/CI38354171074は両job成功。所有2Worker/1D1で、実frontend client→実Worker→
+TLSの合成source Auth/PostgREST fixtureを通す7項目が成功した。
+本人GET/PATCH/username RPC、foreign保持、偽造/role/未認証・権限変更・ban後JWTの拒否、FK0を確認。
+同一accountの検証Worker間だけglobal_fetch_strictly_publicを選択し、通常configは変更しない。
+実GoTrueの署名/ban/service role検証は別のlocal実Auth試験で受け入れ済み。
+このremote sourceは合成fixtureで、実Supabase productionの版/全schema/既存identityの証明にはしない。
+
+最初の404は具体原因未確定。次の503はsame-account検証通信が未受け入れで、公開fetch flag後に成功した。
+正確なplatform errorは取得していないため1042と断定しない。両失敗とcleanupのreceiptは保持する。
+成功後も全2Worker/1D1を削除、12D1/12R2/4Worker/8DOとmain34a665d2を照合した。
+別readonly processでbinding114・3D1全表件数/schema/FK・配信9file/catalog・backup/monitor版/Cronの保持も確認。
+[remote限定証拠](evidence/legacy-profile-native-tls-2026-10-13.json) /
+[独立保持確認](evidence/legacy-profile-native-main-preserved-2026-10-13.json)。
+
+残件は旧認証経路の実画面、新frontendの通常V4配備/受け入れと当初条件レビュー。
+source user/Auth/Storage・domain/DNS移行0。通常stagingの配備sourceは9794a49のまま。
+以下は各時点の履歴。
+
 ## 追加candidate CIの対応表修正（2026-10-13）
 
 622743d/CI38353353499のapplication jobは、旧211 callsite表と新コードの不一致で停止した。

@@ -29,3 +29,7 @@ Apple relayの実受信は本人管理の宛先がなく未確認。旧JWT/servi
 
 現checkoutの静的frontendは215 callsite（旧Auth session callback4追加）。
 147+68全位置のsemantic対応と現AST一致を確認。旧211件の証拠は各snapshot時点のもの。
+
+旧JWT profile/usernameはCI両jobと実Cloudflare7項目を追加。
+remote sourceは合成fixture、実GoTrueはlocal独立証拠。全owned cleanupと通常main/schema/件数/assets保持を確認。
+旧認証経路の実画面と通常mainの新frontend配備は未完了。[証拠](evidence/legacy-profile-native-tls-2026-10-13.json)。

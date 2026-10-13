@@ -1,0 +1,63 @@
+{
+  "state": "legacy_profile_native_tls_rehearsal_verified",
+  "head": "849c4eef94433e3084771e2434cc7ab2b1680a6b",
+  "ciRun": "38354171074",
+  "startedAt": "2026-10-13T06:19:07.195Z",
+  "finishedAt": "2026-10-13T06:19:32.112Z",
+  "checks": [
+    "actual frontend GET through deployed Worker and TLS source",
+    "actual frontend PATCH and owned row",
+    "source RPC current owner exclusion",
+    "foreign profile retained",
+    "signature/role/missing-token refusal",
+    "privilege and owner-input refusal",
+    "banned current user refused"
+  ],
+  "workers": [
+    {
+      "name": "fanmark-legacy-source-aa11e23c",
+      "version": "202f64cf-0d8a-4e46-b62d-50ff3057c87e",
+      "deleted": true
+    },
+    {
+      "name": "fanmark-legacy-app-aa11e23c",
+      "version": "ac3894bc-e530-4043-b112-2adddbc547bb",
+      "deleted": true
+    }
+  ],
+  "ownedDatabaseDeleted": true,
+  "originalMainVersion": "34a665d2-eb78-4473-8fdf-4fe10ae7a058",
+  "originalInventoryPreserved": true,
+  "cleanupVerified": true,
+  "resourcesBefore": {
+    "databases": 12,
+    "workers": 4,
+    "r2": 12,
+    "namespaces": 8
+  },
+  "journalSha256": "dadcff31be468d0f73249677dc4ee2bdd8654b5f8d92f99bea6063ffe3b4dfb3",
+  "runnerSha256": "2b90cc49a85dee32ab9781df4f04d2010bddde424de27b950a0d1d29282a4ab1",
+  "fixtureSha256": "0c2c9bf1cf40d274b15d92e033aa92849bd7c6e2945d65d3df5cf8dfe8a3a2b6",
+  "fixtureOnlyCompatibilityFlag": "global_fetch_strictly_public",
+  "retainedFailedRehearsals": [
+    {
+      "status": 404,
+      "cause": "unconfirmed initial endpoint response",
+      "cleanupVerified": true
+    },
+    {
+      "status": 503,
+      "cause": "same-account test source transport; flag repair follows Cloudflare requirement; exact platform error not captured",
+      "cleanupVerified": true
+    }
+  ],
+  "limits": [
+    "Synthetic source Auth/PostgREST fixture on owned D1, not actual Supabase production",
+    "Real Cloudflare TLS request path and actual application code; real GoTrue semantics proved separately locally",
+    "Test-only worker-to-worker compatibility flag; ordinary main configuration unchanged",
+    "Rendered source bridge journey remains unverified"
+  ],
+  "realUsersMoved": false,
+  "domainChanged": false,
+  "normalMainDeployed": false
+}
