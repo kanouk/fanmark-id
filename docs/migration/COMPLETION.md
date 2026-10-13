@@ -1,3 +1,21 @@
+## 追加の確認と未完了（2026-10-13 10:20 JST）
+
+読み取り専用で本番の40表の正確な件数とAuth/Storage容量を取得し、Cloudflareの現在のPaidプランを確認した。
+個別ユーザー/認証情報/画像本体の読み取りとsource変更は0。
+[容量集計と限定復旧](source-capacity-review.md)、[元イシューの条件別レビュー](final-scope-review.md)。
+
+bb6cf42の[CI38330262202](https://github.com/kanouk/fanmark-id/actions/runs/38330262202)は両job成功。
+一時6D1/5R2/1Worker/2DOで全Master20,152行の取り込み、合成Auth15人/18account・画像109件の
+バックアップ収集は成功した。復旧はMaster/Business/Authまで照合したが、avatar工程でnative
+exceededMemoryにより終了した。元の処理中記録は実version/開始時刻/失敗1件の確認後に、
+operator観測のterminal failureとして記録した。成功扱い・復旧再送・強制削除は0。
+[失敗と保留](evidence/representative-recovery-capacity-remote-failure-2026-10-13.json)。
+通常mainは引き続きcc82c298、本人Authと保存先を保持。一時資源はcleanup未完了。
+追加全snapshotの保持をやめる限定修正は全Master・同じ件数/容量のlocal復旧まで成功。
+terminal failure後の所有target subset cleanup、改変/処理中の拒否を含むnative2件も成功。
+[修正のlocal限定証拠](evidence/representative-recovery-capacity-memory-repair-local-2026-10-13.json)。
+修正後の実Cloudflare成功とexact cleanup・独立比較は残る。全体完了を受け入れない。
+
 ## 現在の確認結果（2026-10-13 09:10 JST）
 
 通常stagingはV4、main `cc82c298-ff27-4322-8c42-175e7be17f16` / 配備source

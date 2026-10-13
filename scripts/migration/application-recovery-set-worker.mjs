@@ -44,6 +44,14 @@ function localFixtureBucket(bucket){
     const v=Reflect.get(target,name,target);return typeof v==='function'?v.bind(target):v;
   }});
 }
+// Return only the assertions needed after restore; never retain a second full snapshot.
+async function restoreExpectations(archive,context,key){
+  const {manifest,snapshots}=await openRecoverySet(archive,context,key);
+  return {captureId:manifest.captureId,credentialPassword:snapshots.auth.tables.account.find(row=>row.id==='synthetic-credential').password,
+    images:Object.fromEntries(['avatars','covers'].map(store=>[store,snapshots[store].objects
+      .filter(o=>o.key.endsWith('/capacity-0.png')||o.key.endsWith('/capacity-69.png'))
+      .map(({key,size,sha256})=>({key,size,sha256}))]))};
+}
 function bindings(env,prefix,counts){
   return Object.fromEntries(stores.map(store=>{
     const native=env[prefix+'_'+store.toUpperCase()];
@@ -205,13 +213,14 @@ export default {async fetch(request,env){
           normalSdkSourceLogin:true,heldSourceAndTargetLoginRefused:true,wrongOwnerReleaseRefused:true};
       }else{
         const saved=await env.CONTROL.get('collect-claim.json');check(saved,'collect_claim_missing');const sourceOwner=(await saved.json()).owner;
-        const {context,key}=await contextKey(env,receipt),opened=await openRecoverySet(input,context,key),targets=bindings(env,'T',value.d1Queries);
+        const {context,key}=await contextKey(env,receipt),expected=await restoreExpectations(input,context,key),targets=bindings(env,'T',value.d1Queries);
         const result=await restoreRecoverySet(targets,input,context,key,{mode:'new-empty',sessionPolicy:'revoke-local-sessions-and-challenges',
           targetIds:ids(receipt,'T'),targetGuard:guard(env,receipt,'T',sourceOwner),progress:async entry=>{value.progress.push(entry);await report(env,phase,value);}});
+        check(result.captureId===expected.captureId,'restore_capture_identity');
         check(await targets.auth.prepare('SELECT count(*) AS n FROM session').first('n')===0&&
           await targets.auth.prepare('SELECT count(*) AS n FROM verification').first('n')===0,'revocation');
         check(await targets.auth.prepare('SELECT password FROM account WHERE id=?').bind('synthetic-credential').first('password')===
-          opened.snapshots.auth.tables.account.find(row=>row.id==='synthetic-credential').password,'credential');
+          expected.credentialPassword,'credential');
         check((await login(env,receipt,'T',value.d1Queries)).status===503,'held_target_login');
         await releaseRecoveryWriterFence(appEnv(env,receipt,'T'),sourceOwner);
         const oldSession=await appFetch(env,receipt,'T',value.d1Queries,'/api/auth/get-session',{headers:{cookie:await cookieFile(env,receipt,key)}});
@@ -227,7 +236,7 @@ export default {async fetch(request,env){
         const restoredImageReads={};
         if(env.PROOF_CAPACITY_PROFILE===CAPACITY_PROFILE){
           for(const [store,bucket,index] of [['avatars','avatars',0],['covers','cover-images',69]]){
-            const wanted=opened.snapshots[store].objects.find(o=>o.key===`90000000-0000-4000-8000-000000000001/capacity-${index}.png`);
+            const wanted=expected.images[store].find(o=>o.key===`90000000-0000-4000-8000-000000000001/capacity-${index}.png`);
             const response=await appFetch(env,receipt,'T',value.d1Queries,'/api/storage/public/'+bucket+'/'+wanted.key);
             check(response.status===200,'restored_image_read');const bytes=await response.arrayBuffer();
             const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
@@ -278,7 +287,10 @@ export default {async fetch(request,env){
       }else if(page.objects.length){
         const store=role.endsWith('AVATARS')?'avatars':'covers';
         const expected=owned?.[store];
-        if(!expected || expected.length!==CAPACITY_COUNTS[store] || page.objects.length!==expected.length)return json({error:'unowned_object'},409);
+        // A terminated failed restore may have committed only an exact subset.
+        const partialTarget=role.startsWith('T_') && (await status(env,'restore'))?.state==='failed';
+        if(!expected || expected.length!==CAPACITY_COUNTS[store] ||
+          (partialTarget?page.objects.length>expected.length:page.objects.length!==expected.length))return json({error:'unowned_object'},409);
         const bucket=bindings(env,role[0])[store];
         for(const current of page.objects){
           const wanted=expected.find(o=>o.key===current.key);

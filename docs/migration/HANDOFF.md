@@ -1,3 +1,11 @@
+## 最新の保留と再開位置（2026-10-13 10:20 JST）
+
+[COMPLETION冒頭](COMPLETION.md)と[source容量/限定復旧](source-capacity-review.md)を参照。
+本番容量集計と全Master/合成Auth/画像のremote収集は成功。復旧はnative exceededMemoryで失敗し、
+terminal failure観測を記録。一時6D1/5R2/1Worker/2DOは保持。復旧再送や処理中の削除を行わない。
+通常V4 main cc82c298・本人Auth・元の保存先を保持。修正候補のlocal検証後、CIとremote受け入れ/cleanupが残る。
+実ユーザー/Auth/Storage移送と本番domain/DNSは#38、Apple relay実受信は宛先なしで未確認。
+
 ## 最新の再開位置（2026-10-13 09:10 JST）
 
 [現在の六工程と証拠](COMPLETION.md)を参照。現行V4の4言語/課金、本人スマホ/ホーム画面、

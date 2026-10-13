@@ -100,6 +100,12 @@ export async function exerciseApplicationRecoveryWorker({savedMaster,capacityPro
     }
     await control.put('restore-status.json',JSON.stringify({state:'in_progress'}));assert.equal((await request('objects',{method:'DELETE'})).status,409);
     await control.put('restore-status.json',JSON.stringify(restore.report));
+    if(capacityProfile){
+      const target=await mf.getR2Bucket('T_AVATARS');
+      await target.delete('90000000-0000-4000-8000-000000000001/capacity-0.png');
+      assert.equal((await request('objects',{method:'DELETE'})).status,409);
+      await control.put('restore-status.json',JSON.stringify({...restore.report,state:'failed',error:'proof_simulated_terminal_failure'}));
+    }
     assert.equal((await (await request('objects',{method:'DELETE'})).json()).bucketsEmpty,true);
     for(const role of bucketRoles)assert.equal((await (await mf.getR2Bucket(role)).list()).objects.length,0);
     const result={initialize:initialize.report,collect:collect.report,restore:restore.report,archiveBytes:Buffer.byteLength(JSON.stringify(archive)),

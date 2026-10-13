@@ -61,3 +61,20 @@ Master pins/profileを保持して`--resume <journal-directory>`を加える。�
 [local限定の証拠](evidence/representative-recovery-capacity-local-2026-10-13.json)は、同時保存/復旧/後片付け、実アプリから復旧avatar/coverのGET200と全bytes/hash一致まで成功。最初のlocal失敗はemulatorの空class、次の失敗は
 旧empty-bucket cleanupの前提で、記録を保持する。実Cloudflareの同じmaterialはまだ未受け入れ。
 この1回のsource sizing検証を全store同時最大量・1000 object・本番RTOへ拡張しない。
+
+## 実Cloudflareの失敗と限定修正（2026-10-13）
+
+bb6cf42/CI38330262202は両job成功。専用6D1/5R2/1Worker/2DOで全Masterの取り込みと
+15 Auth user/18 account/109 imageの収集は成功した。復旧はMaster/Business/Authまで照合し、
+avatar工程でnative exceededMemoryによる終了を実行記録のscriptVersion/開始時刻/1失敗と照合した。
+[失敗の証拠](evidence/representative-recovery-capacity-remote-failure-2026-10-13.json)。
+復旧の再送0、失敗記録をoperator観測として保持する。資源はcleanup未完了のまま保留。
+
+検証wrapperが保持する追加の全snapshotを、復旧後に必要なcredential比較・2画像のkey/size/hash・
+capture IDだけへ縮め、shared restoreの呼出前に解放する。shared保存形式/validator/上限は変更しない。
+画像の途中commit後は、terminal failureが確認できた所有targetのexact subsetだけをcleanup対象にできる。
+sourceは完全件数、すべての対象は元manifestのkey/metadata/class/size/hashで照合し、改変/外部objectでは
+全bucket削除を拒否する。localの2件は成功したが、修正後のremote成功は未確認。
+
+このprofileのBusiness件数は通常の合成fixtureに14 profileを加えたもの。本番の全Business表の
+行数分布・最大容量や停止時間を代表するものではない。実行結果を本番RTO保証にしない。
