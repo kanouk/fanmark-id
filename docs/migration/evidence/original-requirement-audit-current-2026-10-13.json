@@ -153,8 +153,8 @@
       "issue": 28,
       "id": "28-14",
       "originalCheckbox": "- [ ] 管理者MFA、認証メール、パスワード設定/再設定、Apple relay、アカウント削除を検証済み。",
-      "status": "incomplete_human_delivery",
-      "reason": "OAuth/password/MFA/deletion evidence exists; Apple private relay inbox proof pending"
+      "status": "accepted_staging_scope",
+      "reason": "Recorded OAuth/password/MFA/deletion plus Apple private relay human receipt in spam and independent Cloudflare cleanup; no inbox placement guarantee"
     },
     {
       "issue": 28,
@@ -189,7 +189,7 @@
       "id": "28-19",
       "originalCheckbox": "- [ ] PC/スマホ、対応言語、PWAの旧クライアントを含め、切り替え/復旧のリハーサルを完了。",
       "status": "partial",
-      "reason": "four locales/phone/home-screen/PWA and bounded restore accepted; final scope choice/relay gate still open"
+      "reason": "Four locale/phone/home-screen/PWA and bounded restore accepted at recorded versions; owner scope resolved and relay inbox accepted; real cutover rehearsal belongs to #38"
     },
     {
       "issue": 28,
@@ -286,8 +286,8 @@
       "issue": 33,
       "id": "33-01",
       "originalCheckbox": "- [ ] 機能ごとの旧新契約試験。機微APIをキャッシュしない。公開URL・最近取得・PC/スマホ維持。Supabase依存の残件を列挙。",
-      "status": "partial_target_contract_review",
-      "reason": "Full old JWT bridge explicitly excluded by owner; target API feature/authorization acceptance and final PR judgement remain separate. Existing profile adapter retained."
+      "status": "accepted_owner_selected_target_scope",
+      "reason": "Target feature review accepted against current reviewed code identities and scoped native/CI evidence; full transitional old JWT bridge excluded by direct owner decision; real source/production adoption deferred #38"
     },
     {
       "issue": 33,
@@ -371,7 +371,7 @@
       "id": "37-01",
       "originalCheckbox": "- [ ] 親#28の完了条件ごとに証拠。復元・停止時間・復旧目標を実測。Astraが本番可否を判断し未検証は通過扱いにしない。",
       "status": "partial",
-      "reason": "bounded representative recovery measured; parent relay and legacy-scope conditions open"
+      "reason": "Parent requirements have version-scoped evidence and bounded representative recovery measurements; relay accepted and owner scope resolved; actual source freeze/drain/cutover and production release decision remain #38"
     },
     {
       "issue": 37,
@@ -589,7 +589,7 @@
   "currentReviewer": "current task model; user selected a higher model during the task; no new Astra review claimed",
   "unresolvedOriginalContract": [],
   "pendingHumanActions": [
-    "actual controlled private relay inbox receipt"
+    "Retire dedicated Apple test key TFUJASYTW8"
   ],
   "deferredByUser": [
     "real Supabase user/Auth/Storage snapshot/import/identity acceptance",
@@ -620,6 +620,13 @@
     "proof": "docs/migration/evidence/apple-private-relay-delivery-2026-10-13.json",
     "applePrivateRelayConsentCompleted": true,
     "providerDelivered": true,
-    "humanInboxAccepted": false
+    "humanInboxAccepted": true,
+    "inboxFolder": "spam",
+    "cloudflareCleanupIndependentlyVerified": true
+  },
+  "targetScopeAcceptance": {
+    "path": "docs/migration/evidence/target-pre-cutover-acceptance-2026-10-14.json",
+    "accepted": true,
+    "productionAdoptionAccepted": false
   }
 }

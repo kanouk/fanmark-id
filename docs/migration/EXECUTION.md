@@ -1,5 +1,16 @@
 ## 2026-10-13: 検索の現所有・grace判定を修正し通常stagingへ反映
 
+## 2026-10-14: 最終切り替え前のtarget範囲を受け入れ
+
+Apple非公開メール宛ての確認メールを本人が迷惑メールフォルダで受信した。認証・送信・配送・実受信を受け入れ、振り分けの保証とは区別する。
+検証で作成した通常account1件、専用Worker1個・D1 2個を削除した。別のreadonly処理で全3D1の構造・無関係な全table件数・既存Auth metadata・通常設定の保持とFK0を確認した。
+既存の18機能群/58関数のレビュー済みコードと現在のhashを照合した。差分の検索ライセンス選択は実Cloudflare8項目の記録で補い、現runtime fdd16efのCI両job成功を確認した。
+本人が選んだ「独立したCloudflare環境を完成させ、既存ユーザーと本番切り替えは最後」のtarget機能範囲は受け入れた。新しい全機能通し試験・独立Astraレビュー・全旧RPC利用者との同等性を追加実施したとは扱わない。
+残る検証後片付けは専用Apple key TFUJASYTW8の本人による失効。識別子は当面監査用の設定記録として保持する。
+本番Supabase/実ユーザー/Auth/Storage/契約の移送、停止・drain・確定copy、domain/DNS、production release/merge可否は#38に残す。PR41はdraftのまま。
+[非公開メールの実受信と後片付け](evidence/apple-private-relay-delivery-2026-10-13.json) / [target範囲の判定](evidence/target-pre-cutover-acceptance-2026-10-14.json)。以下の未受信・未判定記述は各時点の履歴。
+
+
 ## 2026-10-13: Apple非公開メール認証と配送記録を確認
 
 本人のApple「メールを非公開」選択後、専用環境のAppleアカウント1件・確認済みrelayメールを確認した。

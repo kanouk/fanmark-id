@@ -1,5 +1,16 @@
 # 元の完了条件との照合（2026-10-13）
 
+## 2026-10-14: 最終切り替え前のtarget範囲を受け入れ
+
+Apple非公開メール宛ての確認メールを本人が迷惑メールフォルダで受信した。認証・送信・配送・実受信を受け入れ、振り分けの保証とは区別する。
+検証で作成した通常account1件、専用Worker1個・D1 2個を削除した。別のreadonly処理で全3D1の構造・無関係な全table件数・既存Auth metadata・通常設定の保持とFK0を確認した。
+既存の18機能群/58関数のレビュー済みコードと現在のhashを照合した。差分の検索ライセンス選択は実Cloudflare8項目の記録で補い、現runtime fdd16efのCI両job成功を確認した。
+本人が選んだ「独立したCloudflare環境を完成させ、既存ユーザーと本番切り替えは最後」のtarget機能範囲は受け入れた。新しい全機能通し試験・独立Astraレビュー・全旧RPC利用者との同等性を追加実施したとは扱わない。
+残る検証後片付けは専用Apple key TFUJASYTW8の本人による失効。識別子は当面監査用の設定記録として保持する。
+本番Supabase/実ユーザー/Auth/Storage/契約の移送、停止・drain・確定copy、domain/DNS、production release/merge可否は#38に残す。PR41はdraftのまま。
+[非公開メールの実受信と後片付け](evidence/apple-private-relay-delivery-2026-10-13.json) / [target範囲の判定](evidence/target-pre-cutover-acceptance-2026-10-14.json)。以下の未受信・未判定記述は各時点の履歴。
+
+
 ## 2026-10-13: Apple非公開メール認証と配送記録を確認
 
 本人のApple「メールを非公開」選択後、専用環境のAppleアカウント1件・確認済みrelayメールを確認した。
@@ -39,14 +50,14 @@ Adminの移管無制限もlocal46件・実Cloudflare4項目・独立cleanup/通�
 | 元条件 | 確認できた準備・受け入れ | 未達または最終移送の条件 |
 | --- | --- | --- |
 | #30 全対応表・容量・担当者 | 40表/58関数/37trigger/77policyの実metadataとmanual counterpart。現行215 callerのAST/semantic位置対応。容量・運用担当・鍵・RPO/RTO目標を文書化 | metadata一致は全SQLの意味論の承認ではない。外部caller・実Storage本文照合は#38 |
-| #31 認証・競合 | 固定Better Auth/bcrypt、合成UUID/credential、4実OAuth、MFA/残枠/移管/クーポンの既存local/native証拠。Apple初回passwordと通常login | 実provider subject/UUID/role・既存MFAは#38。Apple relay実受信は未確認 |
+| #31 認証・競合 | 固定Better Auth/bcrypt、合成UUID/credential、4実OAuth、MFA/残枠/移管/クーポンの既存local/native証拠。Apple初回passwordと通常login | 実provider subject/UUID/role・既存MFAは#38。Apple relayは本人の迷惑メールフォルダ受信で確認済み |
 | #32 Stripe | 受信/適用/dispatch台帳の重複/逆順/失敗/retry、sandbox Checkout/Portal/Freeと署名7件 | 実契約の対応、旧receiver/dispatcher停止と台帳引継ぎは#38 |
-| #33 API・旧認証・配信 | typed API/権限/no-store、45 selector、匿名source bridge、旧PWA更新。旧JWT/service-role profile GET/PATCH/usernameは実Auth local8、native TLS7、実画面部品で確認 | 全旧JWT中継は本人判断で今回の条件から除外。target機能別契約の最終判定は継続し、旧中継の全機能対応を実装済みとは扱わない |
+| #33 API・旧認証・配信 | typed API/権限/no-store、45 selector、匿名source bridge、旧PWA更新。旧JWT/service-role profile GET/PATCH/usernameは実Auth local8、native TLS7、実画面部品で確認 | 全旧JWT中継は本人判断で今回の条件から除外。target機能別契約は2026-10-14の限定レビューで受け入れ。旧中継の全機能対応を実装済みとは扱わない |
 | #34 D1/Auth/R2/Resend/jobs | 既存caller対応、owner/foreign/admin/失敗・並行操作証拠、4言語core/sandbox課金。958b5ea2版Appのメールlogin/profile保存/logout/reloginと独立cleanup | 4言語/課金の通しは前cc82c298の証拠。最新変更はprofile/authに限定し確認。実履歴/契約の同一性は#38 |
 | #35 移送・復旧 | 非空40表46→45行と明示credential deferral、2target中断再開、専用Auth/R2と全Master合成復旧。代表容量5storeのhash/SDK復帰/画像配信とcleanup | generic converterはdeployable=false。全source schemaと実アプリnative importerを同じものと扱わない。実snapshotの差分0は#38 |
 | #36 マスター更新 | 25表Master、3,944 UUID、stage/promote/rollback/draft復元。Unicode更新は別release | 公開domainは変更なし。PR41はdraft |
 | #37 統合・停止・復旧 | 既存pre-write fallback/post-write repair-forward、自然日次/backup/monitor/retention、運用鍵、代表復旧実測、旧PWA、4言語、本人phone/home-screen | 新mainで自然dailyを再観測したとは扱わない。実source停止/drain/確定copy/実契約受信は#38。RPO/RTOは目標 |
-| 文書・PRレビュー | PRODUCT/ARCHITECTURE/TECH/API/環境/運用手順と差分・限定証拠を保存。CI38356766234両job成功 | 元条件の意味論とPR最終判定は未完了。現runtimeのCI38382342905は両job成功 |
+| 文書・PRレビュー | PRODUCT/ARCHITECTURE/TECH/API/環境/運用手順と差分・限定証拠を保存。CI38356766234両job成功 | target範囲の判定は受け入れ。production release/merge判定は#38。現runtime fdd16efのCI38393726318は両job成功 |
 
 今回の実App確認は合成アカウントだけ。保存・再読込後の保持、通常サインアウトと再ログイン、
 390px表示、Supabase通信0、全表件数の復元と本人Auth metadata保持を別processで照合した。
