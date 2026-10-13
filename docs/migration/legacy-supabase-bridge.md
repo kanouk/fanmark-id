@@ -1,3 +1,38 @@
+## フロント接続・実Auth local確認の追加
+
+`useProfile`と旧Authの`useAuth`は、現在のsessionの本人IDとtokenを確認してからWorkerを呼ぶ。
+`profile-api.ts`は明示Bearer時にcookieを省き、返却IDが期待した本人でなければ拒否する。
+取得・保存・username確認を同じtransportで扱い、失敗時のSupabase direct fallbackを行わない。
+Better Auth modeはcookieを保ち、Supabase sessionを読むcallbackを呼ばない。
+旧AuthのWorker profile取得中/失敗は保護画面を閉じる。
+
+`GET /api/me/username-availability`のSupabase adapterは、固定RPC
+`check_username_availability_secure`へcandidateと検証済みowner IDだけを渡し、booleanだけを返す。
+callerのowner指定・余分/重複queryを拒否する。PATCHはowner+profile主キーで1行へ限定し、
+旧PostgRESTのorder条件に依存しないようlimitを更新へ持ち越さない。
+
+実GoTrue v2.196.0・PostgREST v14.17・PostgreSQL17.6をloopbackの所有containerへ作り、
+actual frontend client→actual workerd API→実Auth署名検証・実service role更新/RPC、
+foreign保持・偽造/privilege拒否・ban後のJWT拒否を確認した。7項目成功、全owned cleanup/元一覧一致。
+[限定証拠](evidence/legacy-profile-frontend-real-local-auth-2026-10-13.json)。
+Docker起動中のsocket切替、Auth schema/search_path不足、テストproxyのHTTP framingを修正した。
+これらの失敗receiptはprivateに保持し、成功へ書き換えない。
+
+再現は、Docker daemonが利用可能で、依存treeがinstall済みのrepo rootで:
+
+```sh
+node --experimental-strip-types scripts/migration/test-legacy-profile-supabase-local.mjs /absolute/private/result.json
+```
+
+外部URL・既存resource・実credentialを入力できない。毎回新しい所有scope/fixture secretを作る。
+HTTPS aliasをMiniflare outboundServiceでHTTP loopbackへ写すtest限定のtransportで、遠隔TLSの証明にしない。
+reduced profile schema/RPCのため全source policy/trigger互換にも拡張しない。
+このreal local試験とclient認証transport9件は通常application CIへ追加した。
+source-bridge modeのbuildは成功。通常staging/production selector・配備・secretは変更0。
+画面・Cloudflare remote・exact-head CIと当初条件レビューが残る。
+
+以下は最初の候補の契約・local fixture証拠。
+
 # 旧Supabase JWTを保持するAPI bridge
 
 当初#28/#33が要求した旧JWT検証とservice roleの独自認可を保持する。

@@ -817,3 +817,7 @@ Cloudflareの本人プロフィール画面では、アバター未設定でも�
 表示名・アバター・言語だけをSupabaseへ保存する。ユーザーID・plan・課金・初回password flagは変更できない。
 認証失敗・通信失敗では別の認証方式/DBへフォールバックしない。
 候補はlocal合成検証までで、現行stagingのBetter Auth/D1とproductionの既定を変更しない。
+
+旧AuthのWorkerプロフィールを選んだ画面は、プロフィール確認中/失敗に保護画面を開かない。
+本人IDに一致する現在のsessionを使い、表示名/画像/言語の保存とusernameの空き確認を同じWorkerで扱う。
+確認失敗時は再試行し、別のDBへ直接書き込み直さない。候補の画面/remote採用は未確認。

@@ -76,6 +76,11 @@ jobs:
 
       - name: Test main login MFA and session completion
         run: npm run test:auth-login-mfa
+      - name: Test profile client authentication transport
+        run: npm run test:profile-api
+      - name: Test isolated legacy Auth and PostgREST profile bridge
+        timeout-minutes: 10
+        run: node --experimental-strip-types scripts/migration/test-legacy-profile-supabase-local.mjs "$RUNNER_TEMP/legacy-profile-supabase-local.json"
       - name: Plan projection confirmation
         run: npm run test:plan-projection-polling
 

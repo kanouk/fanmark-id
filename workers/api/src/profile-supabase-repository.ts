@@ -45,26 +45,33 @@ function assertSourceAvatar(value: string, current: unknown, userId: string, bas
 }
 
 export async function handleSupabaseProfileRequest(request: Request, env: Env, outboundFetch: typeof fetch): Promise<Response> {
+  const url = new URL(request.url);
+  const usernameCheck = url.pathname === "/api/me/username-availability";
+  const methods = usernameCheck ? "GET, OPTIONS" : METHODS;
   const headers = new Headers({ "cache-control": "no-store" });
   const origin = request.headers.get("origin");
   const allowed = new Set((env.CORS_ALLOWED_ORIGINS ?? "").split(",").map(s => s.trim()).filter(Boolean));
   if (origin && !allowed.has(origin)) return json({ error: "forbidden_origin" }, 403, headers);
   if (origin) {
     headers.set("access-control-allow-origin", origin);
-    headers.set("access-control-allow-methods", METHODS);
+    headers.set("access-control-allow-methods", methods);
     headers.set("access-control-allow-headers", "authorization, content-type");
     headers.set("vary", "Origin");
   }
-  const url = new URL(request.url);
-  if (url.search || url.hash) return json({ error: "invalid_request" }, 400, headers);
+  if ((!usernameCheck && url.search) || url.hash ||
+      (usernameCheck && request.method !== "OPTIONS" && ([...url.searchParams.keys()].some(key => key !== "username") ||
+        url.searchParams.getAll("username").length !== 1 ||
+        new TextEncoder().encode(url.searchParams.get("username") ?? "").byteLength > 256))) {
+    return json({ error: "invalid_request" }, 400, headers);
+  }
   if (request.method === "OPTIONS") {
-    headers.set("allow", METHODS);
+    headers.set("allow", methods);
     const method = request.headers.get("access-control-request-method")?.toUpperCase();
-    if (method && !METHODS.split(", ").includes(method)) return json({ error: "method_not_allowed" }, 405, headers);
+    if (method && !methods.split(", ").includes(method)) return json({ error: "method_not_allowed" }, 405, headers);
     return new Response(null, { status: 204, headers });
   }
-  if (request.method !== "GET" && request.method !== "PATCH") {
-    headers.set("allow", METHODS);
+  if (request.method !== "GET" && (usernameCheck || request.method !== "PATCH")) {
+    headers.set("allow", methods);
     return json({ error: "method_not_allowed" }, 405, headers);
   }
   try {
@@ -77,19 +84,32 @@ export async function handleSupabaseProfileRequest(request: Request, env: Env, o
     const key = serviceKey(env);
     const patch = request.method === "PATCH" ? parseProfilePatch(await readProfileJson(request)) : undefined;
     const { userId } = await verifyLegacySupabaseUser(request, env, outboundFetch);
+    const upstreamHeaders = { accept: "application/json", apikey: key, authorization: `Bearer ${key}` };
+    if (usernameCheck) {
+      const username = url.searchParams.get("username")!;
+      if (!username) return json({ schemaVersion: 1, available: false }, 200, headers);
+      const available = await legacySupabaseJson(new URL("/rest/v1/rpc/check_username_availability_secure", base), env, {
+        method: "POST", headers: { ...upstreamHeaders, "content-type": "application/json" },
+        body: JSON.stringify({ username_to_check: username, current_user_id: userId }),
+      }, outboundFetch);
+      if (typeof available !== "boolean") throw new LegacySupabaseError("username_availability_unavailable");
+      return json({ schemaVersion: 1, available }, 200, headers);
+    }
     // All elevated reads/writes derive both filters from authenticated server
     // state; request bodies and user_metadata never select a user or privilege.
     const endpoint = new URL("/rest/v1/user_settings", base);
     endpoint.searchParams.set("select", COLUMNS);
     endpoint.searchParams.set("user_id", `eq.${userId}`);
     endpoint.searchParams.set("limit", "2");
-    const upstreamHeaders = { accept: "application/json", apikey: key, authorization: `Bearer ${key}` };
     const current = oneProfile(await legacySupabaseJson(endpoint, env, { method: "GET", headers: upstreamHeaders }, outboundFetch), userId, env);
     if (!patch) return json({ schemaVersion: 1, profile: current.profile }, 200, headers);
     if (typeof patch.avatar_url === "string") assertSourceAvatar(patch.avatar_url, current.row.avatar_url, userId, base);
     // Pin the profile identity too. A concurrent removal/replacement must not
     // turn an authorized update into a write to a newly selected row.
     endpoint.searchParams.set("id", `eq.${current.profile.id}`);
+    // The primary-key and owner filters already bound the write to one row.
+    // Older PostgREST versions reject PATCH limits without an explicit order.
+    endpoint.searchParams.delete("limit");
     const updated = await legacySupabaseJson(endpoint, env, {
       method: "PATCH", headers: { ...upstreamHeaders, "content-type": "application/json", prefer: "return=representation" },
       body: JSON.stringify(patch),

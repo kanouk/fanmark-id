@@ -84,7 +84,13 @@ assert(/^  pull_request:\s*$/m.test(cloudflareWorkflow), "Cloudflare migration v
 assert(/^  push:\s*$/m.test(cloudflareWorkflow), "Cloudflare migration validation must run on main pushes");
 assert(/^  workflow_dispatch:\s*$/m.test(cloudflareWorkflow), "Cloudflare migration validation must support an explicit manual run");
 assert(/^permissions:\s*\n^  contents:\s*read\s*$/m.test(cloudflareWorkflow), "Cloudflare migration validation must be read-only");
-assert(!/secrets\.|\bsupabase\b|\bwrangler\s+deploy\b|--remote\b|\bgit\s+push\b/i.test(cloudflareWorkflow), "Cloudflare migration validation must not access secrets or deploy/write remotely");
+// This exact local harness creates its own loopback containers and credentials;
+// it never accepts a project URL or an existing credential. Keep the broad ban
+// on CLI/project access, allowing only the complete fixed test command line.
+const localAuthProofLine = '        run: node --experimental-strip-types scripts/migration/test-legacy-profile-supabase-local.mjs "$RUNNER_TEMP/legacy-profile-supabase-local.json"\n';
+assert(cloudflareWorkflow.split(localAuthProofLine).length === 2, "Cloudflare validation must run exactly one fixed local Auth integration proof");
+const cloudflareExternalActions = cloudflareWorkflow.replace(localAuthProofLine, "");
+assert(!/secrets\.|\bsupabase\b|\bwrangler\s+deploy\b|--remote\b|\bgit\s+push\b/i.test(cloudflareExternalActions), "Cloudflare migration validation must not access secrets or deploy/write remotely");
 assert(/run: npm run test:migration-data\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must test migration data boundaries");
 assert(/run: npm run check:cloudflare-schedules\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must check configured scheduled job coverage");
 assert(/run: npm run build:cloudflare-staging\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must build the staging application");

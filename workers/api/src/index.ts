@@ -1485,6 +1485,9 @@ export async function handleRequest(
     });
   }
   if (isUsernameAvailabilityPath(url.pathname)) {
+    if (env.PROFILE_BACKEND?.trim() === "supabase") {
+      return handleSupabaseProfileRequest(request, env, outboundFetch);
+    }
     return (await handleUsernameAvailabilityRequest(request, env, resolveStorageAuth)) ?? errorResponse("not_found", 404, routeHeaders);
   }
   const fanmarkAnalyticsResponse = await handleFanmarkAnalyticsRequest(request, env, resolveStorageAuth, availabilityClock);

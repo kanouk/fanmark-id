@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { UserSettings } from '@/lib/profile-utils';
-import { checkOwnUsernameAvailability as checkWorkerUsernameAvailability, getOwnProfileBackend, loadOwnProfile, subscribeToOwnProfileUpdates, updateOwnProfile } from '@/lib/profile-api';
+import { checkOwnUsernameAvailability as checkWorkerUsernameAvailability, getOwnProfileBackend, loadOwnProfile, resolveOwnProfileAuth, subscribeToOwnProfileUpdates, updateOwnProfile } from '@/lib/profile-api';
+import { isBetterAuthEnabled } from '@/lib/auth-backend';
 
 export const useProfile = () => {
   const { user } = useAuth();
@@ -13,7 +14,8 @@ export const useProfile = () => {
     try {
       if (!options.silent) setLoading(true);
       if (getOwnProfileBackend() === 'worker') {
-        const result = await loadOwnProfile();
+        const auth = await resolveOwnProfileAuth(user?.id, isBetterAuthEnabled(), () => supabase.auth.getSession());
+        const result = await loadOwnProfile(auth);
         setProfile(result as UserSettings);
         return;
       }
@@ -113,7 +115,8 @@ export const useProfile = () => {
         if (Object.prototype.hasOwnProperty.call(updates, 'avatar_url')) patch.avatar_url = updates.avatar_url ?? null;
         if (Object.prototype.hasOwnProperty.call(updates, 'preferred_language')) patch.preferred_language = updates.preferred_language;
         if (Object.keys(patch).length === 0) return;
-        const saved = await updateOwnProfile(patch);
+        const auth = await resolveOwnProfileAuth(user.id, isBetterAuthEnabled(), () => supabase.auth.getSession());
+        const saved = await updateOwnProfile(patch, auth);
         setProfile(saved as UserSettings);
         return;
       }
@@ -140,7 +143,8 @@ export const useProfile = () => {
     
     try {
       if (getOwnProfileBackend() === 'worker') {
-        return await checkWorkerUsernameAvailability(username);
+        const auth = await resolveOwnProfileAuth(user?.id, isBetterAuthEnabled(), () => supabase.auth.getSession());
+        return await checkWorkerUsernameAvailability(username, auth);
       }
       const { data, error } = await supabase.rpc('check_username_availability_secure', {
         username_to_check: username,

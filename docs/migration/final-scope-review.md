@@ -22,3 +22,7 @@ Apple relayの実受信は本人管理の宛先がなく未確認。旧JWT/servi
 当初条件を削除せず、本人プロフィールのSupabase adapterを最初の単位として追加した。
 [legacy bridge](legacy-supabase-bridge.md)に採用条件・local限定証拠・未配備/残りAPIを記録する。
 全旧API・frontend・実Supabase接続をこの1APIから受け入れない。
+
+旧認証profile/usernameはfrontend接続45件・実GoTrue/PostgREST local7項目まで進んだ。
+[source bridge](legacy-supabase-bridge.md)のlocal/遠隔/全schemaの境界を維持し、
+新candidate CI・実画面/Cloudflare remoteを待たずに#33を完了しない。

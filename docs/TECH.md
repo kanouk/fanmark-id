@@ -668,3 +668,8 @@ service roleをVite/clientへ渡さない。通常V4はBetter Auth/D1で、候�
 `workers/api`を作業ディレクトリにして
 `npx vitest run --config vitest.config.mjs test/legacy-supabase-profile.test.ts`を実行する。
 詳細は[契約](migration/legacy-supabase-bridge.md)。
+
+旧Authフロントのprofile-only bridgeは`VITE_PROFILE_BACKEND=worker`を選び、
+Better Authを選ぶcloudflare-staging mode以外でSupabase sessionを使う。API/認証originの一致は維持する。
+CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの7項目を追加した。
+実画面・remote採用は別のgate。[契約](migration/legacy-supabase-bridge.md)を参照。

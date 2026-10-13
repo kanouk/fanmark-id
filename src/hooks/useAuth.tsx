@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, ReactNode 
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
-import { loadOwnProfile } from '@/lib/profile-api';
+import { getOwnProfileBackend, loadOwnProfile, resolveOwnProfileAuth } from '@/lib/profile-api';
 
 interface AuthUser {
   id: string;
@@ -50,7 +50,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [profileGateError, setProfileGateError] = useState(false);
 
   const loadUserSettings = useCallback(async (userId: string) => {
+    const workerProfile = getOwnProfileBackend() === 'worker';
     try {
+      if (workerProfile) {
+        const auth = await resolveOwnProfileAuth(userId, false, () => supabase.auth.getSession());
+        const profile = await loadOwnProfile(auth);
+        if (profile.user_id !== userId) throw new Error('Profile identity did not match the Supabase session');
+        setRequiresPasswordSetup(profile.requires_password_setup);
+        setProfileGateError(false);
+        return;
+      }
       const { data, error } = await supabase
         .from('user_settings')
         .select('requires_password_setup')
@@ -66,7 +75,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setRequiresPasswordSetup(Boolean(data?.requires_password_setup));
     } catch (error) {
       console.error('Unexpected error loading user settings:', error);
-      setRequiresPasswordSetup(false);
+      setRequiresPasswordSetup(workerProfile);
+      if (workerProfile) setProfileGateError(true);
+    } finally {
+      if (workerProfile) setLoading(false);
     }
   }, []);
 
@@ -79,7 +91,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const confirmed = Boolean(nextSession?.user.email_confirmed_at);
     setUser(nextUser);
     setEmailConfirmed(confirmed);
-    setLoading(false);
+    setProfileGateError(false);
+    const workerProfile = Boolean(nextUser) && getOwnProfileBackend() === 'worker';
+    setLoading(workerProfile);
+    if (workerProfile) setRequiresPasswordSetup(true);
 
     if (nextUser) {
       setTimeout(() => {

@@ -408,3 +408,7 @@ V4候補は `workers/api/wrangler.app-staging-v4-candidate.jsonc` の独立3D1/3
 `profile-supabase-repository.ts`は既存`/api/me/profile`のSupabase adapter。
 `PROFILE_BACKEND=supabase`かつ`AUTH_BACKEND=supabase`でだけ選び、現行D1経路は変更しない。
 契約・未配備・残りAPIは`docs/migration/legacy-supabase-bridge.md`。
+
+旧AuthのWorker profile選択時は`useProfile.tsx`と`useAuth.tsx`が`resolveOwnProfileAuth`を使う。
+`profile-api.ts`は明示Bearer/cookieを分け、期待する本人IDを確認する。
+Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使う。

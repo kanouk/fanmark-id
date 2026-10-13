@@ -22,6 +22,46 @@ export interface OwnProfile {
 
 export type OwnProfilePatch = Partial<Pick<OwnProfile, "display_name" | "avatar_url" | "preferred_language">>;
 
+export interface OwnProfileRequestOptions {
+  baseUrl?: string;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+  authBaseUrl?: string;
+  accessToken?: string;
+  expectedUserId?: string;
+}
+
+export async function resolveOwnProfileAuth(
+  userId: string | undefined,
+  betterAuthEnabled: boolean,
+  readSupabaseSession: () => Promise<{ data: { session: { access_token: string; user: { id: string } } | null }; error: unknown }>,
+): Promise<Pick<OwnProfileRequestOptions, "accessToken" | "expectedUserId">> {
+  if (!userId) throw new ProfileApiError("http", 401);
+  if (betterAuthEnabled) return { expectedUserId: userId };
+  let result: Awaited<ReturnType<typeof readSupabaseSession>>;
+  try { result = await readSupabaseSession(); }
+  catch { throw new ProfileApiError("network"); }
+  const session = result.data.session;
+  if (result.error || !session || session.user.id !== userId) throw new ProfileApiError("http", 401);
+  assertAccessToken(session.access_token);
+  return { accessToken: session.access_token, expectedUserId: userId };
+}
+
+function assertAccessToken(value: string): void {
+  if (typeof value !== "string" || value.length > 8192 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u.test(value)) {
+    throw new ProfileApiError("configuration");
+  }
+}
+
+function authenticationHeaders(options: OwnProfileRequestOptions): Headers {
+  const headers = new Headers({ accept: "application/json" });
+  if (options.accessToken !== undefined) {
+    assertAccessToken(options.accessToken);
+    headers.set("authorization", `Bearer ${options.accessToken}`);
+  }
+  return headers;
+}
+
 export type ProfileApiErrorKind = "configuration" | "http" | "invalid_response" | "network" | "timeout";
 
 export class ProfileApiError extends Error {
@@ -120,12 +160,7 @@ async function readProfileResponse(response: Response): Promise<OwnProfile> {
   return parseProfile(payload.profile);
 }
 
-async function requestProfile(patch?: OwnProfilePatch, options: {
-  baseUrl?: string;
-  fetchImpl?: typeof fetch;
-  timeoutMs?: number;
-  authBaseUrl?: string;
-} = {}): Promise<OwnProfile> {
+async function requestProfile(patch?: OwnProfilePatch, options: OwnProfileRequestOptions = {}): Promise<OwnProfile> {
   const baseUrl = options.baseUrl ?? getRecentFanmarksApiBaseUrl();
   if (!baseUrl) throw new ProfileApiError("configuration");
   const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
@@ -134,18 +169,23 @@ async function requestProfile(patch?: OwnProfilePatch, options: {
   const authBaseUrl = options.authBaseUrl ?? (import.meta.env?.VITE_AUTH_API_BASE_URL?.trim() ||
     (typeof window === "undefined" ? undefined : window.location.origin));
   assertAuthOrigin(baseUrl, authBaseUrl);
+  const headers = authenticationHeaders(options);
+  if (patch) headers.set("content-type", "application/json");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await (options.fetchImpl ?? fetch)(url, {
       method: patch ? "PATCH" : "GET",
-      ...(patch ? { headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify(patch) } : { headers: { accept: "application/json" } }),
-      credentials: "include",
+      headers,
+      ...(patch ? { body: JSON.stringify(patch) } : {}),
+      credentials: options.accessToken === undefined ? "include" : "omit",
       cache: "no-store",
       signal: controller.signal,
     });
     if (!response.ok) throw new ProfileApiError("http", response.status);
-    return await readProfileResponse(response);
+    const profile = await readProfileResponse(response);
+    if (options.expectedUserId !== undefined && profile.user_id !== options.expectedUserId) throw new ProfileApiError("invalid_response");
+    return profile;
   } catch (error) {
     if (error instanceof ProfileApiError) throw error;
     if (controller.signal.aborted) throw new ProfileApiError("timeout");
@@ -191,12 +231,7 @@ export function updateOwnProfile(patch: OwnProfilePatch, options: Parameters<typ
   });
 }
 
-export async function checkOwnUsernameAvailability(username: string, options: {
-  baseUrl?: string;
-  fetchImpl?: typeof fetch;
-  timeoutMs?: number;
-  authBaseUrl?: string;
-} = {}): Promise<boolean> {
+export async function checkOwnUsernameAvailability(username: string, options: OwnProfileRequestOptions = {}): Promise<boolean> {
   if (typeof username !== "string" || new TextEncoder().encode(username).byteLength > 256) {
     throw new ProfileApiError("configuration");
   }
@@ -210,13 +245,14 @@ export async function checkOwnUsernameAvailability(username: string, options: {
   const authBaseUrl = options.authBaseUrl ?? (import.meta.env?.VITE_AUTH_API_BASE_URL?.trim() ||
     (typeof window === "undefined" ? undefined : window.location.origin));
   assertAuthOrigin(baseUrl, authBaseUrl);
+  const headers = authenticationHeaders(options);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await (options.fetchImpl ?? fetch)(url, {
       method: "GET",
-      headers: { accept: "application/json" },
-      credentials: "include",
+      headers,
+      credentials: options.accessToken === undefined ? "include" : "omit",
       cache: "no-store",
       signal: controller.signal,
     });

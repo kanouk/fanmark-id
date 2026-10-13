@@ -1,3 +1,19 @@
+## 旧認証プロフィールのフロント接続と実Auth local試験（2026-10-13）
+
+プロフィール取得/保存/ユーザー名確認を、現在のSupabase sessionから得たBearerでWorkerへ接続した。
+Better Auth modeはcookieのみでSupabase sessionを読まない。返却プロフィールの本人IDを照合し、
+旧Authのプロフィール確認中/失敗もAuthReadinessGateを閉じる。Sourceのユーザー名確認は固定RPCへ
+検証済み本人IDだけを渡す。主キー+本人IDに限定したPATCHからlimitを除き、旧PostgRESTも扱う。
+
+local workerd45件、client9件、認証/MFA/readiness14件、既存D1 profile12件、両型検査が成功。
+隔離した実GoTrue v2.196.0 / PostgREST v14.17 / PostgreSQL17.6でも、実frontend client→実Worker→
+署名検証/本人GET・保存・username RPC、他人の保持、偽造/権限変更拒否、ban後の旧JWT拒否の7項目が成功。
+3 container/専用network/一時credentialsを除去し、既存container一覧の保持を照合した。
+実際のAuth実装を用いたlocal確認であり、本番source版/全schema/遠隔TLS/実画面/Cloudflare配備の証明ではない。
+起動・schema/search_path不足とloopback proxyのHTTP framing失敗も履歴に残す。通常V4配備や実データ変更0。
+前候補a687c5dのCI38350082552は両job成功。追加分のexact-head CI、source bridgeの画面/remote受け入れと
+当初条件レビューは残る。[限定証拠](evidence/legacy-profile-frontend-real-local-auth-2026-10-13.json)。
+
 ## 旧Supabase認証のプロフィール候補
 
 `PROFILE_BACKEND=supabase` / `AUTH_BACKEND=supabase`を選ぶ同一URLのadapterを追加した。

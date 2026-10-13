@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {execFile} from 'node:child_process';
+import {mkdtemp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {promisify} from 'node:util';
+import test from 'node:test';
+import {fileURLToPath} from 'node:url';
+
+const run=promisify(execFile),script=fileURLToPath(new URL('./check-supabase-workflow.mjs',import.meta.url));
+const production=await readFile(new URL('../.github/workflows/supabase-deploy.yml',import.meta.url),'utf8');
+const cloudflare=await readFile(new URL('../.github/workflows/cloudflare-migration-validation.yml',import.meta.url),'utf8');
+const command='node --experimental-strip-types scripts/migration/test-legacy-profile-supabase-local.mjs "$RUNNER_TEMP/legacy-profile-supabase-local.json"';
+async function verify(text){const directory=await mkdtemp(path.join(os.tmpdir(),'fanmark-ci-isolation-'));
+  try{const workflows=path.join(directory,'.github/workflows');await mkdir(workflows,{recursive:true});
+    await writeFile(path.join(workflows,'supabase-deploy.yml'),production);
+    await writeFile(path.join(workflows,'cloudflare-migration-validation.yml'),text);
+    return await run(process.execPath,[script],{cwd:directory});
+  }finally{await rm(directory,{recursive:true,force:true});}}
+
+test('the one fixed local container proof retains workflow isolation',async()=>{const result=await verify(cloudflare);assert.match(result.stdout,/isolation checks passed/);});
+for(const [name,mutate] of [
+  ['external arguments',text=>text.replace(command,command+' --remote')],
+  ['project URL arguments',text=>text.replace(command,command+' https://project.supabase.co')],
+  ['extra project CLI step',text=>text+'\n      - run: supabase db push\n'],
+  ['secret access',text=>text+'\n      - run: echo "${{ secrets.SUPABASE_ACCESS_TOKEN }}"\n'],
+  ['duplicate proof command',text=>text+'\n        run: '+command+'\n'],
+])test('local Auth allowance rejects '+name,async()=>{await assert.rejects(verify(mutate(cloudflare)),error=>{assert.notEqual(error.code,0);assert.match(error.stderr,/must not access secrets|exactly one fixed local Auth/);return true;});});

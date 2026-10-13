@@ -3,6 +3,7 @@ import { http, HttpResponse } from "msw";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 import { network } from "./network";
+import { checkOwnUsernameAvailability, loadOwnProfile, resolveOwnProfileAuth, updateOwnProfile } from "../../../src/lib/profile-api";
 
 const root = "https://legacy-fixture.supabase.co";
 const origin = "https://app.example.test";
@@ -76,6 +77,7 @@ describe("legacy JWT and service-role own-profile bridge on Worker", () => {
       expect(upstream.headers.get("authorization")).toBe(`Bearer ${serviceKey}`);
       expect(upstream.headers.get("cookie")).toBeNull();
       if (upstream.method === "PATCH") {
+        if (url.searchParams.has("limit")) return HttpResponse.json({ code: "PGRST109" }, { status: 400 });
         expect(url.searchParams.get("id")).toBe(`eq.${row.id}`);
         const value = await upstream.json() as Record<string, unknown>;
         row = { ...row, ...value };
@@ -102,6 +104,45 @@ describe("legacy JWT and service-role own-profile bridge on Worker", () => {
     expect(row.display_name).toBe("Edited"); expect(row.plan_type).toBe("free"); expect(row.user_id).toBe(owner);
     expect(dataCalls.map(r => r.method)).toEqual(["GET", "PATCH"]);
     expect(await dataCalls[1].json()).toEqual({ display_name: "Edited", preferred_language: "ko" });
+  });
+
+  it("connects the actual frontend auth resolver and client GET/PATCH/username requests to Worker", async () => {
+    const token = await jwt();
+    const auth = await resolveOwnProfileAuth(owner, false, async () => ({ data: { session: { access_token: token, user: { id: owner } } }, error: null }));
+    let usernameCalls = 0;
+    network.use(http.post(`${root}/rest/v1/rpc/check_username_availability_secure`, async ({ request: upstream }) => {
+      usernameCalls++;
+      expect(upstream.headers.get("authorization")).toBe(`Bearer ${serviceKey}`);
+      expect(await upstream.json()).toEqual({ username_to_check: "OWNER", current_user_id: owner });
+      return HttpResponse.json(true);
+    }));
+    const options = { ...auth, baseUrl: "https://api.example.test", authBaseUrl: "https://api.example.test",
+      fetchImpl: (async (input, init) => {
+        expect(init?.credentials).toBe("omit");
+        const headers = new Headers(init?.headers); headers.set("origin", origin);
+        return handleRequest(new Request(String(input), { ...init, headers }), config);
+      }) as typeof fetch };
+    expect((await loadOwnProfile(options)).user_id).toBe(owner);
+    expect((await updateOwnProfile({ display_name: "Frontend saved" }, options)).display_name).toBe("Frontend saved");
+    expect(await checkOwnUsernameAvailability("OWNER", options)).toBe(true);
+    expect(usernameCalls).toBe(1); expect(authCalls).toHaveLength(3);
+  });
+
+  it.each(["?username=owner&current_user_id=foreign", "?username=a&username=b", "?username=" + "x".repeat(257)])("rejects caller identity, duplicate and oversized username query: %s", async query => {
+    const response = await handleRequest(new Request(`https://api.example.test/api/me/username-availability${query}`, {
+      headers: { origin, authorization: `Bearer ${await jwt()}` },
+    }), config);
+    expect(response.status).toBe(400); expect(authCalls).toHaveLength(0); expect(dataCalls).toHaveLength(0);
+  });
+
+  it("rejects malformed availability payloads without exposing or retrying the RPC", async () => {
+    let calls = 0;
+    network.use(http.post(`${root}/rest/v1/rpc/check_username_availability_secure`, () => { calls++; return HttpResponse.json({ available: true, private: "must-not-escape" }); }));
+    const response = await handleRequest(new Request("https://api.example.test/api/me/username-availability?username=owner", {
+      headers: { origin, authorization: `Bearer ${await jwt()}` },
+    }), config);
+    expect(response.status).toBe(503); expect(await response.json()).toEqual({ error: "username_availability_unavailable" });
+    expect(calls).toBe(1);
   });
 
   it("accepts a current owner's Supabase upload reference", async () => {
