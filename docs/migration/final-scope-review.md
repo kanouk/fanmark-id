@@ -11,6 +11,7 @@ Adminの移管無制限もlocal46件・実Cloudflare4項目・独立cleanup/通�
 [限定証拠](evidence/transfer-plan-snapshot-native-2026-10-13.json)。
 下表のprofile/auth App受け入れは958b5ea2/source5c1504e当時の結果として保持する。
 実ユーザー/Auth/Storageの移送と本番domain/DNSはユーザー指示により#38へ残す。
+元計画の20条件と子イシュー30条件を[条件別監査](evidence/original-requirement-audit-current-2026-10-13.json)で個別に照合した。
 現在の担当モデルでコードと証拠を確認している。今回Astraが独立レビューしたとは記録しない。
 
 | 元条件 | 確認できた準備・受け入れ | 未達または最終移送の条件 |

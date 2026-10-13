@@ -2,7 +2,8 @@
 
 プロフィールGET/PATCH・usernameの旧Supabase JWT/service-role adapterは、frontendのBearer送出、
 実GoTrue/PostgREST local8項目（実画面部品を含む）、実Cloudflare合成source TLS7項目まで確認済み。
-通常stagingはsource5c1504e/main958b5ea2でD1/Better Authを維持し、実Appの保存・再ログインと独立cleanupを確認した。
+source5c1504e/main958b5ea2で実Appの保存・再ログインと独立cleanupを確認した。
+現行通常stagingはsourcecb3c1f3/mainf7a601f0でD1/Better Authを維持し、全機能の旧JWT中継は未受け入れ。
 このadapterを全旧RPC・全旧認証APIのproxyとして扱わない。実利用者のsourceは引き続きSupabaseで、
 D1との二重書込をしない。既存実identity/契約の最終移送と公開domainは#38。
 [配備と旧認証画面部品](evidence/legacy-profile-rendered-normal-deploy-2026-10-13.json) /

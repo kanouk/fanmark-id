@@ -1,3 +1,12 @@
+## 2026-10-13: 現行の実行位置
+
+通常stagingは **f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64** / runtime **cb3c1f3**。
+旧JWT profile/usernameの実画面・native確認と通常Appの回帰確認は受け入れ済み。
+取得・移管・抽選の上限競合、Admin移管無制限、お気に入り現所有者の修正も各native証拠を受け入れた。
+元イシューの20計画/完了条件と子イシュー30条件を[条件別監査](evidence/original-requirement-audit-current-2026-10-13.json)へ保存。
+全機能の旧JWT中継範囲は回答待ち、Apple非公開メール認証・Resend再login・実受信は未完了。
+実ユーザー/Auth/Storage移送と本番domain/DNSは最後の#38。以下の版・残件は各時点の履歴。
+
 ## 旧認証プロフィールの実Cloudflare受け入れ（2026-10-13）
 
 849c4ee/CI38354171074は両job成功。所有2Worker/1D1で、実frontend client→実Worker→

@@ -1,0 +1,613 @@
+{
+  "state": "original_requirement_audit_incomplete",
+  "observedAt": "2026-10-13T10:48:40.524071+00:00",
+  "reviewedHead": "732654dea74b2a4eb056f4ba76aead3b63c813ee",
+  "runtimeSource": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1",
+  "normalStagingVersion": "f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64",
+  "requirementCount": 50,
+  "sourceIssues": [
+    {
+      "number": 29,
+      "state": "CLOSED",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 30,
+      "state": "OPEN",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 31,
+      "state": "OPEN",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 32,
+      "state": "OPEN",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 33,
+      "state": "OPEN",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 34,
+      "state": "OPEN",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 35,
+      "state": "OPEN",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 36,
+      "state": "CLOSED",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 37,
+      "state": "OPEN",
+      "originalCriteriaCount": 3
+    },
+    {
+      "number": 38,
+      "state": "OPEN",
+      "originalCriteriaCount": 3
+    }
+  ],
+  "requirements": [
+    {
+      "issue": 28,
+      "id": "28-01",
+      "originalCheckbox": "- [ ] 本番スキーマ/容量/ユーザー/Storage/cronの棚卸しと、Stripe・OAuth・DNS/TLS・メール設定の確認を完了する。",
+      "status": "partial",
+      "reason": "metadata correspondence is recorded; unknown external consumers and real Storage/identity reconciliation remain #38"
+    },
+    {
+      "issue": 28,
+      "id": "28-02",
+      "originalCheckbox": "- [ ] 前述の認証検証と、取得/移管/上限/クーポンの同時操作試験をWorkers/D1で通す。ライブラリと互換設定を固定する。",
+      "status": "accepted_scoped",
+      "reason": "synthetic/native concurrency and pinned target auth; real identities are deferred"
+    },
+    {
+      "issue": 28,
+      "id": "28-03",
+      "originalCheckbox": "- [ ] 必要なロール・秘密情報の管理者、停止時間上限、復旧時間目標、連絡方法を決める。確定済みユーザー操作と受領済み課金イベントの欠落0を条件にする。",
+      "status": "accepted_staging_documentation",
+      "reason": "custody/operator/RPO/RTO documented; measured rehearsal is not a production guarantee"
+    },
+    {
+      "issue": 28,
+      "id": "28-04",
+      "originalCheckbox": "- [ ] 現行CIのPR時 `supabase db push` を本番から隔離し、staging/prodのデプロイ境界を設ける。Webhook台帳を先行導入する。",
+      "status": "accepted_code_boundary",
+      "reason": "PR workflow does not deploy; main/environment production guard reviewed; build CI cb3c1f3 green"
+    },
+    {
+      "issue": 28,
+      "id": "28-05",
+      "originalCheckbox": "- [ ] Worker APIを導入し、移行中は必要に応じてSupabaseへ接続する。旧Authトークンを検証し、service roleを使用するAPIは必ず独自の認可を行う。",
+      "status": "scope_choice_required",
+      "reason": "only profile/username old-JWT bridge accepted; all families require original #33 scope decision"
+    },
+    {
+      "issue": 28,
+      "id": "28-06",
+      "originalCheckbox": "- [ ] フロントの直接DB/RPC呼び出しを順次APIへ移し、API契約を固定する。業務データを旧新DBへ二重書き込みしない。",
+      "status": "accepted_target_scoped",
+      "reason": "45 explicit target selectors; two intentional broadcast-send controls default off; no source double writes"
+    },
+    {
+      "issue": 28,
+      "id": "28-07",
+      "originalCheckbox": "- [ ] Workersでフロントを配信して既存機能を検証する。この段階ではSupabaseを正とし、バックエンド移行完了とは呼ばない。",
+      "status": "scope_choice_required",
+      "reason": "production remains Supabase while isolated target staging uses Better Auth/D1; full transitional Supabase bridge not accepted"
+    },
+    {
+      "issue": 28,
+      "id": "28-08",
+      "originalCheckbox": "- [ ] 現行PWAのSupabase向けNetworkFirstキャッシュを見直す。旧Service Workerの更新・機微なキャッシュの削除・古いクライアントの更新案内を実装する。",
+      "status": "accepted_scoped",
+      "reason": "controlled old-client PWA update evidence retained; current private APIs no-store"
+    },
+    {
+      "issue": 28,
+      "id": "28-09",
+      "originalCheckbox": "- [ ] Workers API/Static Assets、D1 schema、認証、R2、Queues/Cronをlocal/stagingで実装し、合成ユーザーで権限と主要操作を検証する。Supabase本番はまだ書き込み権威のまま。",
+      "status": "accepted_scoped",
+      "reason": "target app/infra tested with synthetic actors; full arbitrary source client equivalence not inferred"
+    },
+    {
+      "issue": 28,
+      "id": "28-10",
+      "originalCheckbox": "- [ ] #36で明示的に許可された絵文字・参照マスターのみを版付きで配置する。ユーザー所有行、Auth、ユーザーStorage、credential、秘密設定をマスター移行に混ぜない。",
+      "status": "accepted_scoped",
+      "reason": "non-user master release/publication/rollback and UUID stability accepted"
+    },
+    {
+      "issue": 28,
+      "id": "28-11",
+      "originalCheckbox": "- [ ] #35の移送器はsynthetic snapshotで再開・照合・失敗復旧を検証する。実ユーザーデータの確定snapshot/export/importはここでは実行しない。",
+      "status": "accepted_synthetic_scope",
+      "reason": "40-table synthetic migration and bounded representative restore; generic converter deployable=false retained"
+    },
+    {
+      "issue": 28,
+      "id": "28-12",
+      "originalCheckbox": "- [ ] Stripe sandboxとテストメールを使い、実課金・実通知なしでAPI/ジョブを比較する。差分と復旧時間を記録する。",
+      "status": "accepted_sandbox_scope",
+      "reason": "Stripe sandbox and named test recipient/simulator evidence; real source customer side effects not performed"
+    },
+    {
+      "issue": 28,
+      "id": "28-13",
+      "originalCheckbox": "- [ ] 既存ユーザーが4種類のOAuth/メールで同じUUIDのアカウントへ戻れ、取得済みファンマと課金を参照できる。",
+      "status": "deferred_by_user",
+      "reason": "existing real provider/UUID/rights/billing identity acceptance belongs to #38"
+    },
+    {
+      "issue": 28,
+      "id": "28-14",
+      "originalCheckbox": "- [ ] 管理者MFA、認証メール、パスワード設定/再設定、Apple relay、アカウント削除を検証済み。",
+      "status": "incomplete_human_delivery",
+      "reason": "OAuth/password/MFA/deletion evidence exists; Apple private relay inbox proof pending"
+    },
+    {
+      "issue": 28,
+      "id": "28-15",
+      "originalCheckbox": "- [ ] Stripeの重複/逆順イベント、継続課金、延長、プラン変更、クーポンが権利の二重付与・喪失を起こさない。",
+      "status": "accepted_sandbox_scope",
+      "reason": "signed sandbox paid journey plus retry/order/concurrency ledger tests; live billing identity deferred"
+    },
+    {
+      "issue": 28,
+      "id": "28-16",
+      "originalCheckbox": "- [ ] データ/Storage照合が通り、公開URL、匿名の最近取得一覧、保護付きファンマ、移管/抽選/期限処理を維持。",
+      "status": "partial",
+      "reason": "public/protected/transfer/lifecycle accepted in recorded scopes; real data/storage reconciliation deferred"
+    },
+    {
+      "issue": 28,
+      "id": "28-17",
+      "originalCheckbox": "- [ ] 同時取得、残り1枠、移管承認の競合、クーポン再利用が安全に拒否される。",
+      "status": "accepted_scoped",
+      "reason": "native registration/transfer/lottery capacity correction and coupon transaction tests; no real user mutation"
+    },
+    {
+      "issue": 28,
+      "id": "28-18",
+      "originalCheckbox": "- [ ] マスター更新を実行でき、旧ID維持、版の整合、公開取り消し、既存参照の維持を検証済み。",
+      "status": "accepted_scoped",
+      "reason": "master stage/promotion/rollback and stable IDs accepted; Unicode update is separate release"
+    },
+    {
+      "issue": 28,
+      "id": "28-19",
+      "originalCheckbox": "- [ ] PC/スマホ、対応言語、PWAの旧クライアントを含め、切り替え/復旧のリハーサルを完了。",
+      "status": "partial",
+      "reason": "four locales/phone/home-screen/PWA and bounded restore accepted; final scope choice/relay gate still open"
+    },
+    {
+      "issue": 28,
+      "id": "28-20",
+      "originalCheckbox": "- [ ] PRODUCT/ARCHITECTURE/TECH、API仕様、環境変数一覧、運用・復旧手順を更新。",
+      "status": "accepted_documents_with_open_gates",
+      "reason": "specs/API/env/operations updated with remaining conditions; no whole-goal completion claim"
+    },
+    {
+      "issue": 29,
+      "id": "29-01",
+      "originalCheckbox": "- [ ] PRイベントではデプロイ経路が実行されず、main以外から本番へ到達しないことを検査。ビルド成功。実設定とコード上の保護を区別。",
+      "status": "accepted_code_boundary",
+      "reason": "closed historical issue; current deployment guard code hashes retained"
+    },
+    {
+      "issue": 29,
+      "id": "29-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 29,
+      "id": "29-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 30,
+      "id": "30-01",
+      "originalCheckbox": "- [ ] 全テーブル/RPC/Edge Function/呼出箇所の対応表。容量・停止時間目標・設定管理者を確認。ローカル集計を本番実測と混同しない。",
+      "status": "accepted_metadata_scope",
+      "reason": "40 tables/58 functions/37 triggers/77 policies and 215 callsites mapped; semantic/external equivalence not inferred"
+    },
+    {
+      "issue": 30,
+      "id": "30-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 30,
+      "id": "30-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 31,
+      "id": "31-01",
+      "originalCheckbox": "- [ ] 4プロバイダー・既存パスワード・MFAと残り1枠の同時操作の証拠。未検証があれば本番方式は未確定。Astraが採否を判断。",
+      "status": "partial",
+      "reason": "four real OAuth/current-password/MFA and synthetic races accepted; real user credentials deferred and relay missing"
+    },
+    {
+      "issue": 31,
+      "id": "31-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 31,
+      "id": "31-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 32,
+      "id": "32-01",
+      "originalCheckbox": "- [ ] 重複・並行・順序逆転・途中失敗・再試行で権利の二重付与/喪失なし。DB変更の本番適用は検証済み手順で別管理。",
+      "status": "accepted_sandbox_scope",
+      "reason": "receipt/apply/dispatch replay/order/concurrency tests and signed sandbox events; live adoption remains #38"
+    },
+    {
+      "issue": 32,
+      "id": "32-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 32,
+      "id": "32-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 33,
+      "id": "33-01",
+      "originalCheckbox": "- [ ] 機能ごとの旧新契約試験。機微APIをキャッシュしない。公開URL・最近取得・PC/スマホ維持。Supabase依存の残件を列挙。",
+      "status": "scope_choice_required",
+      "reason": "source old JWT profile bridge accepted; entire old authenticated API bridge not implemented"
+    },
+    {
+      "issue": 33,
+      "id": "33-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 33,
+      "id": "33-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 34,
+      "id": "34-01",
+      "originalCheckbox": "- [ ] 全対応項目の置換と権限/並行操作試験。旧新DBへ二重書き込みしない。メール・課金の本番副作用は比較試験で発生させない。",
+      "status": "accepted_target_scoped",
+      "reason": "current target API ownership/admin/transaction boundaries reviewed; arbitrary old source clients not accepted"
+    },
+    {
+      "issue": 34,
+      "id": "34-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 34,
+      "id": "34-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 35,
+      "id": "35-01",
+      "originalCheckbox": "- [ ] 件数/主キー/行ハッシュ/保有数/期限/Stripe対応/ファイルサイズとハッシュを照合。未説明差分0。停止時間を実測。",
+      "status": "accepted_synthetic_scope",
+      "reason": "synthetic migration/restart/row comparison and image/archive hash restore; actual source difference0 deferred"
+    },
+    {
+      "issue": 35,
+      "id": "35-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 35,
+      "id": "35-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 36,
+      "id": "36-01",
+      "originalCheckbox": "- [x] 既存ID往復・参照維持・衝突検知・途中import非公開・版違い検出・旧版へ戻す試験。Unicode更新は初回移行と別リリース。",
+      "status": "accepted_scoped",
+      "reason": "closed issue; normal Master publish/rollback receipt retained"
+    },
+    {
+      "issue": 36,
+      "id": "36-02",
+      "originalCheckbox": "- [x] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 36,
+      "id": "36-03",
+      "originalCheckbox": "- [x] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 37,
+      "id": "37-01",
+      "originalCheckbox": "- [ ] 親#28の完了条件ごとに証拠。復元・停止時間・復旧目標を実測。Astraが本番可否を判断し未検証は通過扱いにしない。",
+      "status": "partial",
+      "reason": "bounded representative recovery measured; parent relay and legacy-scope conditions open"
+    },
+    {
+      "issue": 37,
+      "id": "37-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "recorded_current_review_not_new_astra_review",
+      "reason": "Current task model review and scoped evidence are recorded; no new Astra independent review asserted"
+    },
+    {
+      "issue": 37,
+      "id": "37-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "recorded_staging_vs_production",
+      "reason": "Parent/HANDOFF separate implementation, staging acceptance and deferred production cutover"
+    },
+    {
+      "issue": 38,
+      "id": "38-01",
+      "originalCheckbox": "- [ ] 既存アカウント/権利/課金/URLの直接確認、監視正常、未適用イベント回収。旧URL/認証リンク/バックアップ等の廃止条件成立後に旧基盤を終了。",
+      "status": "deferred_by_user",
+      "reason": "actual source user data and production domain cutover intentionally excluded"
+    },
+    {
+      "issue": 38,
+      "id": "38-02",
+      "originalCheckbox": "- [ ] 差分、検証コマンドと結果、未確認、DB/デプロイへの影響を記録し、Astraが実コードと証拠をレビューした。",
+      "status": "deferred_by_user",
+      "reason": "production adoption is excluded; original historical records retained"
+    },
+    {
+      "issue": 38,
+      "id": "38-03",
+      "originalCheckbox": "- [ ] 実装済み・本番適用済み・運用確認済みを区別して親イシューへ反映した。",
+      "status": "deferred_by_user",
+      "reason": "production adoption is excluded; original historical records retained"
+    }
+  ],
+  "evidenceInspected": [
+    {
+      "path": "docs/migration/evidence/source-final-correspondence-review-2026-10-13.json",
+      "sha256": "2813ad874dfeb01fb7bbdd197f8bdf2ef27a61ac725510f84143acbf51b5d9cf",
+      "recordedState": "existing_source_catalog_and_current_correspondence_reviewed",
+      "recordedScope": null,
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/application-counterpart-review-index-2026-10-13.json",
+      "sha256": "a52651b1293d4391a0c3fa3b5a12ec5550dec6e8cff71da81e743a9aa7ecccd1",
+      "recordedState": "current_application_review_index_refreshed",
+      "recordedScope": null,
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/final-authorization-review-checkpoint-2026-10-13.json",
+      "sha256": "881bd09761129e5468c8b556aa0244df91306b66d785fc6c7f13c9bc1cf15807",
+      "recordedState": "limited_authorization_and_ci_review_recorded",
+      "recordedScope": null,
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/apple-staging-first-password-relogin-2026-10-13.json",
+      "sha256": "f577aa16fcdca8c2581ed45e0294910960faa4a9a7aa534d1b5a5c5056643ede",
+      "recordedState": "verified_apple_first_registration_and_human_credential_login",
+      "recordedScope": null,
+      "recordedVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/acquisition-lottery-capacity-native-2026-10-13.json",
+      "sha256": "8ca58e9a70d6ec17d9d571f71f51d22374a1de38231481c8221a7fb15f6f16b7",
+      "recordedState": "native_capacity_acceptance_and_normal_staging_rollout_verified",
+      "recordedScope": "Actual Cloudflare Worker/router and Better Auth sessions with all current schemas. Private gated fixture changes owned configuration immediately before the actual batch. Synthetic active Master records use the real activation/staging helpers. This is changed capacity-flow acceptance, not full App UI or source-user migration.",
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/transfer-plan-snapshot-native-2026-10-13.json",
+      "sha256": "d9ec2b9a685d143b2868b1f1fd12eb199ee53cf5a9ab5845f77ed6f73af4523a",
+      "recordedState": "transfer_plan_snapshot_native_accepted_and_normal_staging_deployed",
+      "recordedScope": "Actual Cloudflare Worker entrypoint, synthetic Better Auth cookies and owned full Business/Auth D1 schemas. A gated test-only wrapper changes only the owned recipient plan/limit immediately before the actual D1 batch. Master uses the focused tier fixture. No claim of full App UI or real user migration.",
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/transfer-admin-unlimited-native-2026-10-13.json",
+      "sha256": "e165449828ad8f4cb6ffaeaf70e97389ea3d0893fe7dfd3045de2a7a25a31e1a",
+      "recordedState": "admin_transfer_native_acceptance_and_staging_rollout_verified",
+      "recordedScope": "Actual Cloudflare Worker/Better Auth synthetic sessions and declared current schemas, canonical emoji IDs and real activated reference tiers. Private test gate changes only the owned recipient plan before the real mutation batch. Not full App UI or real-user migration.",
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/favorites-current-license-native-2026-10-13.json",
+      "sha256": "f7be5734bf52878c4094089feb6c7af560b5d80a5ce736e275b102387f0ac9c4",
+      "recordedState": "favorite_current_owner_native_and_normal_staging_verified",
+      "recordedScope": "Actual Cloudflare Worker with synthetic Better Auth sessions and declared current D1 schemas. Owned license/discovery fixtures, active emoji/reference release. Current-owner selection, private body projection, history fallback and foreign-user isolation; not full App UI or all source RPC equivalence.",
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-paid-journey-2026-10-13.json",
+      "sha256": "526b1cb39329d5b8a66492f5c600cad349f727f028c2c1c04ff2a9554ff60f11",
+      "recordedState": "same_v4_sandbox_paid_journey_and_cleanup_accepted",
+      "recordedScope": null,
+      "recordedVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/pwa-legacy-update-local-2026-10-06.json",
+      "sha256": "b21ed5590a3cd95f39b2773ae226738f4438e3ce949b56b2d3c709f191feedfd",
+      "recordedState": null,
+      "recordedScope": "actual CUA-controlled in-app browser local legacy-to-current PWA update, with synthetic API/cache data and permitted non-user catalog",
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/emoji-normal-publication-staging-2026-10-13.json",
+      "sha256": "c74852bf132053a400baf9911a9f029d6371ed6d1ca5798c56699cebb7fdb61c",
+      "recordedState": null,
+      "recordedScope": "non-user normal split-Master staging publication; no production cutover",
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/current-full-table-remote-recovery-2026-10-13.json",
+      "sha256": "fbd3ee1e1943c38bbfc44f0b14dc9a945463ff2807bde3e27bc9d937743c0a36",
+      "recordedState": null,
+      "recordedScope": "two isolated Cloudflare targets with synthetic nonempty source tables only",
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/representative-recovery-capacity-native-accepted-2026-10-13.json",
+      "sha256": "2c3882d8b4287f993f1fd07ab969f8d28a76be89d403121936163faedfd19bc5",
+      "recordedState": "representative_capacity_native_saved_file_restore_accepted",
+      "recordedScope": null,
+      "recordedVersion": "259ad695-b575-4188-ba97-a39d5c801a7a",
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-broadcast-send-ui-native-2026-10-09.json",
+      "sha256": "8e9d28275d2a8e1e8b35cab5aebe87cbcf6e28ece42ad5c6c38cb7ea456e7d2d",
+      "recordedState": "native-staging-broadcast-send-ui",
+      "recordedScope": {
+        "stagingOnly": true,
+        "officialResendSimulatorOnly": true,
+        "syntheticAdminAndRecipient": true,
+        "realSupabaseUsersMigrated": false,
+        "productionDomainChanged": false,
+        "fullMigrationAccepted": false
+      },
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json",
+      "sha256": "75925a23ef42bc6b323130c69170a9074a357edf8819bcf8c5fadf8d898828c2",
+      "recordedState": null,
+      "recordedScope": null,
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-natural-backup-2026-10-13.json",
+      "sha256": "2acb647bc6f5e943d8460dc9aa96c6376426d6920fa5cb466a0a8bb612ef7fc0",
+      "recordedState": "natural_v4_daily_backup_and_retention_accepted",
+      "recordedScope": null,
+      "recordedVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-four-locale-core-integration-2026-10-13.json",
+      "sha256": "38361650dcc91ce99b905b3ace4791e27311ce2caa07780c59e15d85d7530407",
+      "recordedState": "four_locales_same_v4_core_journeys_accepted",
+      "recordedScope": null,
+      "recordedVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-smartphone-home-screen-human-2026-10-13.json",
+      "sha256": "05e5b328fcb434c1f85ebcdfb6c66fd4abd769604f8abd047ca6f5137fb91996",
+      "recordedState": "human_smartphone_and_home_screen_check_reported",
+      "recordedScope": null,
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-profile-auth-regression-2026-10-13.json",
+      "sha256": "c7e72b43525372b2ffc65022022b257011ef47620dcd405a1fbee3ad50f0201f",
+      "recordedState": "normal_staging_profile_auth_browser_and_cleanup_verified",
+      "recordedScope": null,
+      "recordedVersion": "958b5ea2-525d-4a7e-adc6-f6b15bfdcf91",
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/legacy-supabase-bridge.md",
+      "sha256": "fc1fba0147dfa5f28a491be767f567e502dba322604564c109909d4c08b7f640",
+      "recordedState": null,
+      "recordedScope": null,
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    },
+    {
+      "path": "docs/migration/final-scope-review.md",
+      "sha256": "dd2971ee3191e8bd4777b2a8f92eb7860f9b023782303a040f95a1601f6dc173",
+      "recordedState": null,
+      "recordedScope": null,
+      "recordedVersion": null,
+      "historicalScopeRetained": true
+    }
+  ],
+  "currentReviewer": "current task model; user selected a higher model during the task; no new Astra review claimed",
+  "unresolvedOriginalContract": [
+    "all authenticated Supabase JWT bridge families; source remains sole authority during transitional frontend phase"
+  ],
+  "pendingHumanActions": [
+    "Apple Hide My Email sign-in in own probe",
+    "Resend re-login",
+    "actual controlled private relay inbox receipt",
+    "original legacy bridge scope choice"
+  ],
+  "deferredByUser": [
+    "real Supabase user/Auth/Storage snapshot/import/identity acceptance",
+    "production domain/DNS and source shutdown"
+  ],
+  "wholeGoalComplete": false,
+  "originalIssueCheckboxesChanged": false,
+  "newSourceRowsRead": false,
+  "newRemoteMutations": false,
+  "notCompletionEvidence": [
+    "green CI alone",
+    "58 function index coverage alone",
+    "closed issue alone",
+    "historical proof relabeled as current full rerun"
+  ]
+}

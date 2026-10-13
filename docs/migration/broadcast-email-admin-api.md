@@ -1,6 +1,22 @@
 # Broadcast email admin API migration
 
-## Current boundary
+## 2026-10-13 current acceptance boundary
+
+Bulk/test-send remain default-off in the normal staging frontend. Their guarded
+Worker implementation and bounded rehearsal are accepted in the historical
+receipts, rather than missing implementations. The actual send UI used a temporary
+explicit selector and one synthetic official Resend simulator recipient; draft,
+MFA, natural dispatch, signed sent/delivered events and cleanup passed on2026-10-09.
+A separately controlled provider retry reused the same provider message ID. It
+does not prove a real lost network response or a provider outage. The current
+normal Worker keeps the receive-only webhook enabled while sending remains off.
+[UI receipt](evidence/staging-broadcast-send-ui-native-2026-10-09.json) /
+[controlled retry](evidence/staging-broadcast-controlled-provider-retry-2026-10-09.json).
+Earlier pending statements below are dated implementation/deployment checkpoints,
+not the present bounded acceptance status. Human Apple private-relay delivery
+remains a separate open check; no bulk send to real accounts is authorized here.
+
+## Earlier implementation boundary
 
 The local Cloudflare staging path now supports listing recent broadcast drafts,
 reading active broadcast templates, estimating a recipient count from D1, and
