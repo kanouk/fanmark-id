@@ -120,6 +120,8 @@ export interface Env {
   SUPABASE_URL?: string;
   SUPABASE_PUBLISHABLE_KEY?: string;
   SUPABASE_ANON_KEY?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  SUPABASE_AUTH_URL?: string;
   CORS_ALLOWED_ORIGINS?: string;
   STAGING_NO_INDEX?: string;
   SUPABASE_REQUEST_TIMEOUT_MS?: string;

@@ -658,3 +658,13 @@ non-API GET/HEAD（静的/OGP）と公開emoji/reference Master GET/HEADだけ�
 `RECOVERY_WRITE_FREEZE`の全HTTP503、Auth callback/session GET、その他API/非read method、
 post-response wake/Cron/alarmと既存unknown writerの扱いは維持する。ceb32a3/CI38309207810の実readonly切断・fence検証後、V3の87584a12へ配備済み。
 旧cc7710d2の終了未確認http2件と自然daily未確認は保持する。根拠と限定再現は[backup operations](migration/backup-operations.md)を参照。
+
+## 旧JWTとservice roleのプロフィール候補
+
+Supabase adapterは`AUTH_BACKEND=supabase`と`PROFILE_BACKEND=supabase`を明示する。
+必要変数は`SUPABASE_URL`、公開key、Worker専用`SUPABASE_SERVICE_ROLE_KEY`。
+任意`SUPABASE_AUTH_URL`はcustom Authの固定HTTPS root、未指定はproject rootを使う。
+service roleをVite/clientへ渡さない。通常V4はBetter Auth/D1で、候補は未配備。
+`workers/api`を作業ディレクトリにして
+`npx vitest run --config vitest.config.mjs test/legacy-supabase-profile.test.ts`を実行する。
+詳細は[契約](migration/legacy-supabase-bridge.md)。

@@ -1,3 +1,19 @@
+## 旧JWT対応の最初のAPI候補（2026-10-13）
+
+当初#33の旧JWT/service role条件に対し、`GET/PATCH /api/me/profile`のSupabase adapterを追加した。
+`PROFILE_BACKEND=supabase`と`AUTH_BACKEND=supabase`の両方を明示した時だけ使用する。
+Supabase Authへの固定GETで本人を検証し、そのIDでservice roleの読取・更新を限定する。
+クライアント指定ID/plan/課金/setup flag、署名偽造、別issuer、期限切れ、停止中Auth user、
+外部Origin/redirect/大きすぎる応答を拒否する。更新は3編集項目だけ、ACK不明の自動再送なし。
+Supabaseだけを操作し、D1/R2との混在は拒否する。共有DTO/入力検証はD1経路と同じ。
+
+local workerd合成Auth/PostgREST fixtureの40件と、既存native D1プロフィール12件、Worker型検査・対象lintが成功。
+Auth fixtureは合成HMAC署名を検証するが、実Supabase Authでの本人成功や実service roleの試験ではない。
+通常V4の設定・配備・実データ・秘密・domainは変更0。frontendの旧JWT送出/採用、残りの旧API、
+全bridgeの統合/staging受け入れは未完了。この1APIだけで#33を完了しない。
+[契約と残件](legacy-supabase-bridge.md)。以降の「旧JWT未実装」は各時点の履歴とし、
+現在はプロフィール候補だけを実装済み、未配備として区別する。
+
 ## 現在の確認結果（2026-10-13 12:15 JST）
 
 9794a49/[CI38338723332](https://github.com/kanouk/fanmark-id/actions/runs/38338723332)はアプリ・Worker両job成功。

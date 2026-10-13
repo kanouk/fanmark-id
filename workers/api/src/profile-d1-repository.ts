@@ -10,7 +10,7 @@ const LANGUAGES = new Set(["en", "ja", "ko", "id"]);
 const PLANS = new Set(["free", "creator", "max", "business", "enterprise", "admin"]);
 const AVATAR_KEY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:avif|gif|jpg|png|webp)$/iu;
 
-interface ProfileRow extends Record<string, unknown> {
+export interface ProfileRow extends Record<string, unknown> {
   id: unknown;
   user_id: unknown;
   username: unknown;
@@ -78,7 +78,7 @@ function booleanValue(value: unknown): boolean {
   throw new ProfileApiError("profile_unavailable");
 }
 
-function mapProfile(row: ProfileRow, userId: string, env: Env): Record<string, unknown> {
+export function mapProfile(row: ProfileRow, userId: string, env: Env): Record<string, unknown> {
   const result = {
     id: requiredText(row.id),
     user_id: requiredText(row.user_id),
@@ -123,7 +123,7 @@ async function readProfile(db: D1Database, userId: string): Promise<ProfileRow> 
   return result.results[0];
 }
 
-async function readJson(request: Request): Promise<unknown> {
+export async function readProfileJson(request: Request): Promise<unknown> {
   const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
   if (contentType !== "application/json") throw new ProfileApiError("json_content_type_required", 415);
   const declared = request.headers.get("content-length");
@@ -161,7 +161,7 @@ async function readJson(request: Request): Promise<unknown> {
   }
 }
 
-function parsePatch(value: unknown): ProfilePatch {
+export function parseProfilePatch(value: unknown): ProfilePatch {
   if (!isRecord(value)) throw new ProfileApiError("invalid_request", 400);
   const keys = Object.keys(value);
   if (keys.length === 0 || keys.some((key) => !["display_name", "avatar_url", "preferred_language"].includes(key))) {
@@ -276,7 +276,7 @@ export async function handleProfileRequest(
       const row = await readProfile(db, auth.userId);
       return json({ schemaVersion: 1, profile: mapProfile(row, auth.userId, env) }, 200, headers);
     }
-    const patch = parsePatch(await readJson(request));
+    const patch = parseProfilePatch(await readProfileJson(request));
     const current = await readProfile(db, auth.userId);
     mapProfile(current, auth.userId, env);
     if (typeof patch.avatar_url === "string") {

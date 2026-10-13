@@ -42,6 +42,7 @@ import { handleVerifiedAccessRequest, isVerifiedAccessPath } from "./verified-ac
 import { handleStorageRequest, type StorageAuthResult } from "./storage-r2";
 import { handleOwnedFanmarksRequest, isOwnedFanmarksPath } from "./owned-fanmarks-d1-repository";
 import { handleProfileRequest, isProfilePath } from "./profile-d1-repository";
+import { handleSupabaseProfileRequest } from "./profile-supabase-repository";
 import { handlePasswordSetupRequest, isPasswordSetupPath } from "./password-setup-d1-api";
 import { handleFanmarkProfileRequest, isFanmarkProfilePath } from "./fanmark-profile-d1-api";
 import { handleFanmarkSettingsRequest, isFanmarkSettingsPath } from "./fanmark-settings-d1-api";
@@ -1440,6 +1441,9 @@ export async function handleRequest(
       errorResponse("not_found", 404, routeHeaders);
   }
   if (isProfilePath(url.pathname)) {
+    if (env.PROFILE_BACKEND?.trim() === "supabase") {
+      return handleSupabaseProfileRequest(request, env, outboundFetch);
+    }
     return handleProfileRequest(request, env, resolveStorageAuth);
   }
   if (isPasswordSetupPath(url.pathname)) {

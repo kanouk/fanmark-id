@@ -401,3 +401,10 @@ V4候補は `workers/api/wrangler.app-staging-v4-candidate.jsonc` の独立3D1/3
 現在の通常Cloudflare stagingはV4の独立保存先と `NotificationWakeCoordinatorV4` / `RecoveryWriterCoordinatorV4` を使う。通常main/backup/monitorの3configは実binding・vars・Cronへ一致させた。V1/V2/V3のclassとmigration、旧データと終了未確認記録は保持する。V4 named publicationのreadonly statusも実bindingで確認済み。[限定運用証拠](migration/evidence/staging-resource-scope-v4-operational-2026-10-13.json)を参照する。
 
 `src/lib/profile-api.ts` は本人プロフィールのフォームで使う未設定avatarの空文字だけを `null` にして送る。Workerの所有者URL検証は維持する。`workers/api/test/profile-d1.test.ts` では実frontend client→Better Auth session→Worker→native D1の保存と、raw空URL拒否・別owner保持を確認する。
+
+## 旧Supabase認証を保持するAPI候補
+
+`workers/api/src/legacy-supabase-auth.ts`は固定Supabase Auth endpointで旧JWTを検証する。
+`profile-supabase-repository.ts`は既存`/api/me/profile`のSupabase adapter。
+`PROFILE_BACKEND=supabase`かつ`AUTH_BACKEND=supabase`でだけ選び、現行D1経路は変更しない。
+契約・未配備・残りAPIは`docs/migration/legacy-supabase-bridge.md`。

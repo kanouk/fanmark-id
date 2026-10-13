@@ -1,0 +1,73 @@
+# 旧Supabase JWTを保持するAPI bridge
+
+当初#28/#33が要求した旧JWT検証とservice roleの独自認可を保持する。
+プロフィールの最初の単位を実装した。全bridge完了・採用・本番切替とは扱わない。
+
+## プロフィールの契約
+
+既存`GET/PATCH /api/me/profile`に、明示`PROFILE_BACKEND=supabase`かつ
+`AUTH_BACKEND=supabase`で選ぶadapterを追加した。通常V4は`d1`/`better-auth`のまま。
+クライアントはAuthorizationのBearerで旧access tokenを送る。Cookieでは認証しない。
+
+1. 固定project/custom Auth rootに対して`GET /auth/v1/user`で検証する。
+   事前decodeは拒否フィルターだけで、署名検証として扱わない。anon/service role JWT、
+   別issuer/audience、期限切れ、alg=none、非UUID subjectを拒否する。
+2. Auth応答の本人ID/roleを確認し、匿名・削除・有効なbanを拒否する。
+   user_metadataのrole/IDは権限・所有者判定に使用しない。
+3. service roleの固定`user_settings`読取を、その本人の`user_id`で限定する。
+   結果0件は404、複数/別所有者/不正DTOは503。Stripe顧客ID等を返さない。
+4. PATCHはD1経路と同じ3項目の入力検証を使用する。既存プロフィールのIDも
+   固定条件へ追加し、本人のSupabase avatar pathだけを新規参照として認める。
+   既存外部avatar参照の保持、nullへの解除は許可する。
+   サーバー側のplan/課金/招待/ユーザーID/setup flagを入力できない。
+5. Supabaseだけへ保存する。D1への二重書込・移送・fallback・自動再送をしない。
+   通信失敗時には、既に更新されたか未確定として扱う。成功したPATCHの返却表現を検証する。
+
+CORSは固定Origin一覧、OPTIONSはGET/PATCHのみ。応答はno-store。
+Authリクエストは公開apikeyと本人JWT、データリクエストはWorker専用service roleを使い、
+受信Cookie/Origin等を上流へ複製しない。上流redirectを追わず、タイムアウト5秒（設定最大30秒）、
+応答64 KiB上限で停止する。上流例外本文・個人情報・credentialをエラーへ載せない。
+R2 selectorとの混在、異なる認証方式の混在は拒否する。
+
+## 環境変数
+
+| 変数 | 用途 |
+| --- | --- |
+| AUTH_BACKEND / PROFILE_BACKEND | 両方`supabase`を明示した場合だけ使用 |
+| SUPABASE_URL | データAPIの固定HTTPS root、path/query/userinfoなし |
+| SUPABASE_AUTH_URL | 任意の固定Auth HTTPS root。既定はSUPABASE_URL。issuerはこのrootの`/auth/v1` |
+| SUPABASE_PUBLISHABLE_KEY / SUPABASE_ANON_KEY | Auth検証用公開key。既存anon-only validatorを使用 |
+| SUPABASE_SERVICE_ROLE_KEY | Worker secretのみ。secret keyまたはlegacy service_role JWT。公開keyの代用を拒否 |
+| CORS_ALLOWED_ORIGINS | 既存と同じ完全一致のOrigin一覧 |
+| SUPABASE_REQUEST_TIMEOUT_MS | 既存5秒default、1–30,000ms |
+
+キーを設定・取得・配備していない。stagingの既存secret/selectorは変更していない。
+
+## 検証と残件
+
+`workers/api/test/legacy-supabase-profile.test.ts`はlocal workerdの実entrypointに対し、
+合成HMAC署名を検証するAuth fixtureとPostgREST fixtureを使う。
+所有者のGET/PATCH、公開DTO、D1アクセス禁止、署名偽造/期限/issuer/role/状態、
+metadata偽装、ID/plan等の更新禁止、別avatar/Origin/redirect/過大応答、
+ACK不明のPATCH再送なしを含む40件が成功。既存native D1プロフィール12件、
+Worker型検査と対象ESLintも成功した。
+[local限定証拠](evidence/legacy-supabase-profile-local-2026-10-13.json)。
+
+```sh
+cd workers/api
+npx vitest run --config vitest.config.mjs test/legacy-supabase-profile.test.ts
+npm run test:profile-d1
+npm run typecheck
+```
+
+新しいtestは既存vitest.config.mjsのincludeを通じて通常Worker CIに含まれる。
+合成upstream fixtureは実Supabase Authでの成功・実service roleの権限を証明しない。
+ソースのlogoutが既存access JWTを直ちに失効させるとは保証しない。
+
+残件はfrontendのBearer送出/採用、他の旧APIとの契約対応、隔離した実Supabase
+Auth/service roleの統合、stagingでの全bridge受け入れ。当初の条件をこの1APIで閉じない。
+実ユーザー/Auth/Storageの移送と本番domain/DNSは最後の#38。
+
+根拠: [Auth getUser](https://supabase.com/docs/reference/javascript/auth-getuser)、
+[JWT検証](https://supabase.com/docs/guides/auth/jwts)、
+[API keyとservice role](https://supabase.com/docs/guides/getting-started/api-keys)。

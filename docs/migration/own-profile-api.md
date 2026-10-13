@@ -1,3 +1,8 @@
+## 旧Supabase認証のプロフィール候補
+
+`PROFILE_BACKEND=supabase` / `AUTH_BACKEND=supabase`を選ぶ同一URLのadapterを追加した。
+[旧認証bridge](legacy-supabase-bridge.md)を参照。通常V4はD1/Better Authのまま。
+
 ## 2026-10-13: 実配備後の保存・再読込・cleanupを確認
 
 修正ソースe511762/CI38315685393両job成功をmain cc82c298へ配備した。

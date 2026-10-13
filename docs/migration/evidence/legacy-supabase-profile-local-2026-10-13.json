@@ -1,0 +1,24 @@
+{
+  "state": "legacy_profile_bridge_local_candidate_verified",
+  "observedAt": "2026-10-13T05:09:16.735942+00:00",
+  "localWorkerTests": 40,
+  "nativeD1ProfileRegressionTests": 12,
+  "workerTypecheck": true,
+  "focusedLint": true,
+  "upstream": "Synthetic Auth HMAC verifier and PostgREST fixture via MSW inside local workerd",
+  "runtimeSelectorsChanged": false,
+  "deployed": false,
+  "realSourceRequests": false,
+  "realSourceWrites": false,
+  "realCredentialsRead": false,
+  "userDataMigrated": false,
+  "domainChanged": false,
+  "remaining": [
+    "Frontend bearer delivery and adoption",
+    "Other legacy API contracts and adapters",
+    "Real Supabase Auth/service-role integration in an isolated environment",
+    "Full staging acceptance and original criterion review"
+  ],
+  "existingProfileClientTests": 7,
+  "ciIsolationCheck": true
+}
