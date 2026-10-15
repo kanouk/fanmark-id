@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "1e0d8473a614999fb07cac204cbe0520cca2fc266749c3e99492da1a71e02854"
+    "sha256": "6850d94bca6f876553ef75285d3918d4d821e578d7e5a0217baa3686f4ef4809"
   },
   "variables": [
     {
@@ -635,12 +635,24 @@
       "sha256": "8c50ebca6599ab93f65cea19c714c1535542e0fc1d1b98376b61d81ef19e0a12"
     },
     {
+      "path": "scripts/migration/supabase-auth-projection.mjs",
+      "sha256": "7e4fc8f21fce6e6cba61a87bdc5de534f91f1e08687b7014dcdc37bfdb6936b8"
+    },
+    {
+      "path": "scripts/migration/supabase-auth-snapshot.sql",
+      "sha256": "76c9dc7f374d228ce5b35aa638d2d1c3571c5ff599b7ac1fe5c6a34777b6236f"
+    },
+    {
       "path": "scripts/migration/test-auth-identity-preflight.mjs",
       "sha256": "2cc73cd45987a84ea8998301a1547c9439b63318f5459742cb38bb2445554842"
     },
     {
       "path": "scripts/migration/test-production-preparation.mjs",
       "sha256": "bb3e74c3088bef4ca74a4bb2e4b1f135923711d4a733dc452f62e7945b9ae706"
+    },
+    {
+      "path": "scripts/migration/test-supabase-auth-projection.mjs",
+      "sha256": "f0c8c175c0498c4892bb39389f8afec194a29862d929d2e82175a698b7335a83"
     },
     {
       "path": "supabase/functions/handle-stripe-webhook/index.ts",

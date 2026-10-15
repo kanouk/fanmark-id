@@ -1,0 +1,35 @@
+{
+  "dateJst": "2026-10-16",
+  "state": "preliminary_execution_not_cutover",
+  "productionExecutionAuthorized": true,
+  "previousCI": {
+    "head": "493976d70361d11b448c356732c30ebd2ebc362a",
+    "run": 38753106454,
+    "application": "success",
+    "worker": "success"
+  },
+  "sourceReadOnly": true,
+  "authCredentialRowsSelected": true,
+  "encryptedAuthPrecopyReadback": true,
+  "plaintextAuthFilesWritten": false,
+  "sourceFrozen": false,
+  "authProjectionPassed": false,
+  "authProjectionBlocker": "source_auth_totp_binary_key_requires_adapter",
+  "privateCiphertextSha256": "2210d9980a1b2ac161033bf1a50d84daff200c5cb4d1b9c005bdf26b74260a66",
+  "dnsExportSha256": "86a9a2da5c25a16c99e16ac74f701c5658308444ec448ee498d47fb7149b407c",
+  "newResources": {
+    "d1": 3,
+    "r2": 3,
+    "manifest": "../production-resources.json"
+  },
+  "localValidation": {
+    "node": "22.6.0",
+    "passedTests": 17,
+    "productionLoginProved": false
+  },
+  "applicationDeployment": false,
+  "sourceWrites": false,
+  "targetUserDataImported": false,
+  "domainChanged": false,
+  "mainMerged": false
+}

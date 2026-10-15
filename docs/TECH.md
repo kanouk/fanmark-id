@@ -1,5 +1,11 @@
 # fanmark.id TECH.md
 
+本番Authの予備移送検査は `scripts/migration/supabase-auth-projection.mjs` と
+`npm run test:supabase-auth-projection`。SupabaseのBase32 TOTPをそのままBetter Authへ
+コピーせず、秘密バイト列のUTF-8往復一致を検査し、不一致は拒否する。実sourceはこの
+停止条件に該当した。[2026-10-16実行記録](migration/production-execution-2026-10-16.md)
+を参照。SQL snapshotの出力は資格情報を含むため、Git外の暗号化保存以外へ出力しない。
+
 全一式復旧の専用Workerは`isolated-recovery-combined-worker.mjs`、native入口試験は
 `npm --prefix workers/api run test:isolated-combined-recovery`。実Auth/Business/R2の
 接続と全経路のprivate gateを確認し、通常Worker CIに含める。全Masterを含む保存file

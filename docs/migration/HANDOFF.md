@@ -1,3 +1,9 @@
+## 2026-10-16: 本番実施指示・予備Auth取得・専用資源作成
+
+所有者がデータ移行とドメイン切替を明示指示。以前の本番変更禁止は更新済み。3サイトのログイン確認後、本番用の空D1 3個/R2 3個を作成し、DNS設定をexport、実Authの暗号化予備コピーと投影検査を行った。実TOTPキーは固定SDKへ単純変換できず停止。管理者MFAの保護された再登録（推奨）か互換adapter追加を所有者に提示し回答待ち。承認不足とは扱わない。
+
+[実行記録と残条件](production-execution-2026-10-16.md) / [作成済み資源](production-resources.json)。493976dのCIは両job成功、新規ローカル関連試験17件成功。source停止・targetへの実データ投入・Worker配備・DNS変更・mergeは未実施。P1〜P8の残実装もあり、MFA回答だけで公開可能ではない。秘密原本はGit外の `/Users/kanouk/.codex/private/fanmark-cutover-2026-10-16/` に保存。PR41の既存ブランチとmain保持を継続する。
+
 ## 2026-10-15: CI確認・停止境界とAuthのレビュー
 
 714fee4のCI38748657327はApplication/Worker両job成功。今回の[実装・設計レビュー](implementation-review-2026-10-15.md)ではcutover中の通知wake更新をローカルD1で再現・修正し、Stripe受信だけ通す`receipt_only`モードとAuthの読取preflightを追加した。実Auth、旧Webhookのreceipt-only化、実施者用の閉鎖中確認入口、本番runner等は未完了。追加コードは未配備で、本番・main・旧経路を維持する。所有者の判断事項はレビュー文書に推奨案と理由を記録した。

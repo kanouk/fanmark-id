@@ -185,6 +185,9 @@
     "workers/api/src/index.ts",
     "workers/api/src/notification-wake.ts",
     "scripts/migration/auth-identity-preflight.mjs",
-    "scripts/migration/test-auth-identity-preflight.mjs"
+    "scripts/migration/test-auth-identity-preflight.mjs",
+    "scripts/migration/supabase-auth-projection.mjs",
+    "scripts/migration/supabase-auth-snapshot.sql",
+    "scripts/migration/test-supabase-auth-projection.mjs"
   ]
 }

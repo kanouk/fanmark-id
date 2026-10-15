@@ -1,5 +1,7 @@
 # #38 本番データ・ドメイン移行の実行計画
 
+> 2026-10-16更新：所有者から本番実施の指示を受けた。空の専用資源と実Authの予備コピーを作成したが、TOTP移送で技術的な停止条件を確認した。[現在の実行記録](production-execution-2026-10-16.md)を優先する。以下は計画作成時の条件・見積もり。
+
 更新日: 2026-10-15 JST。状態: **確認用の計画案。本番実行は未承認・未実施。**
 
 対象は[issue #38](https://github.com/kanouk/fanmark-id/issues/38)。[PR #41](https://github.com/kanouk/fanmark-id/pull/41) / `codex/cloudflare-api-preparation`を継続する。本番確認までGitの`main`を維持し、確認後に旧デプロイ経路を整理してマージする。

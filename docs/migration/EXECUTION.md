@@ -1,3 +1,7 @@
+## 2026-10-16: 本番実施指示に基づく予備移送と専用資源作成
+
+[実行記録](production-execution-2026-10-16.md)と[資源表](production-resources.json)を参照。Cloudflare/Supabase/Stripeの管理画面を確認、DNS exportを保存、本番Authをread-onlyで暗号化予備取得し復号一致を確認した。TOTPのBase32とSDKのUTF-8キーの相違をnative試験で再現し、実sourceも互換不可として拒否した。保護された再登録か互換adapterについて所有者に選択肢を提示済み。D1 3個/R2 3個の専用空資源は作成・読戻し済み。source停止、業務移送、配備、DNS変更、送信、mergeは未実施。ローカル関連試験17件成功。
+
 ## 2026-10-15: 起点CI成功とローカル実装レビュー
 
 714fee4のCI38748657327両job成功を確認。cutover中の通知wake更新を再現して修正し、`receipt_only`で署名付きStripe受信を保存・重複排除しつつAuth/一般HTTP/業務Cronを閉鎖する検証を追加。Auth preflightは合成D1に対する読取のみで、制約適用漏れやMFA等の16種類の停止理由を集計する。初期schemaで疑ったidentity unique制約の欠落は、後続0009の適用で否定した。現行migrationを変更しない。[レビュー・残件・推奨案](implementation-review-2026-10-15.md)。本番変更・実データ取得・配備・送信・mergeは0。
