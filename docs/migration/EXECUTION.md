@@ -1,3 +1,15 @@
+## 2026-10-15: 本番を変更しない準備
+
+[production-preparation.md](production-preparation.md)にP1〜P8の実施範囲・残件・判断事項を記録。`npm run migration:prepare-production`は保存済み設定/SQL/code一覧の一致だけを検査し、`productionReady=false`を維持する。`npm run test:production-preparation`は追加したfault caseを合成データで試験する。既存`test:migration-data`にも組み込んだ。Stripe checkerはJSON投影の読み取り専用であり、本番の停止・収集・移送・適用は行わない。
+
+本番実データ取得、source停止、資源作成、配備、DNS変更、外部送信、旧経路廃止、mergeは未実施。公開DNSを読み取り再確認した。詳細な検証結果は準備記録を参照。
+
+## 2026-10-15: #38本番実行計画の確認案
+
+本番データ移送・ドメイン切替・停止時間・復旧の計画は[production-cutover-plan.md](production-cutover-plan.md)を参照する。P1〜P8の準備と所有者による実行指示がそろうまで、本番停止・移送・配備・DNS変更を開始しない。暫定停止枠は2時間で、実測保証ではない。今回の変更は計画文書のみ。
+
+以下は各時点の履歴。
+
 ## 2026-10-13: 検索の現所有・grace判定を修正し通常stagingへ反映
 
 ## 2026-10-14: 検証後片付け完了

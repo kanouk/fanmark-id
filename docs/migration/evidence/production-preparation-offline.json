@@ -1,0 +1,678 @@
+{
+  "format": "fanmark-production-preparation-v1",
+  "scope": "offline-repository-only",
+  "productionReady": false,
+  "deployable": false,
+  "pendingGates": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "P7",
+    "P8"
+  ],
+  "configurationFingerprint": {
+    "path": "workers/api/wrangler.app-staging.jsonc",
+    "sha256": "4e2e5be12f82791c95edb84b98feddaae90963756a80eee6c1c82c2ee1b927dc"
+  },
+  "policyFingerprint": {
+    "path": "docs/migration/production-preparation-policy.json",
+    "sha256": "f86ffcada4ef0cf476102874d62739017af3eadab4497f13037ad8b98ad90fec"
+  },
+  "variables": [
+    {
+      "name": "ACCOUNT_DELETION_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "ADMIN_DATA_RESET_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "ADMIN_USER_MANAGEMENT_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "AUTH_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "AUTH_EMAIL_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "AUTH_EMAIL_TEMPLATE_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "AUTH_SOCIAL_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "AUTH_SOCIAL_PROVISIONING_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "AUTH_USER_STATUS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "AVAILABILITY_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "AVAILABILITY_RULES_ADMIN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "BETTER_AUTH_URL",
+      "disposition": "review-production-origin"
+    },
+    {
+      "name": "BROADCAST_EMAIL_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "BROADCAST_WEBHOOK_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "CORS_ALLOWED_ORIGINS",
+      "disposition": "review-production-origin"
+    },
+    {
+      "name": "CUTOVER_WRITE_FREEZE",
+      "disposition": "review-freeze-schedules-and-modes"
+    },
+    {
+      "name": "D1_TOPOLOGY",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "EMAIL_TEMPLATE_ADMIN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "EMOJI_CATALOG_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "EMOJI_MASTER_ADMIN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "EMOJI_PUBLICATION_BACKEND",
+      "disposition": "production-adapter-required"
+    },
+    {
+      "name": "EXTENSION_COUPON_ADMIN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "EXTENSION_COUPON_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_ACCESS_ANALYTICS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_ANALYTICS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_DETAILS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_LOTTERY_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_PROFILE_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_REGISTRATION_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_RETURN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_SEARCH_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_SETTINGS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FANMARK_TRANSFER_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "FAVORITES_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "INVITATION_ADMIN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "INVITATION_SIGNUP_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "LICENSE_EXPIRY_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "LICENSE_EXPIRY_CRON",
+      "disposition": "review-freeze-schedules-and-modes"
+    },
+    {
+      "name": "LICENSE_EXPIRY_MAX_PAGES",
+      "disposition": "review-freeze-schedules-and-modes"
+    },
+    {
+      "name": "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST",
+      "disposition": "replace-resource-bound-value"
+    },
+    {
+      "name": "LICENSE_EXPIRY_TARGET_INCARNATION",
+      "disposition": "replace-resource-bound-value"
+    },
+    {
+      "name": "LIFECYCLE_RUN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "LIFECYCLE_SETTINGS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "MAINTENANCE_SETTINGS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "NOTIFICATION_ARCHIVE_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "NOTIFICATION_ARCHIVE_CRON",
+      "disposition": "review-freeze-schedules-and-modes"
+    },
+    {
+      "name": "NOTIFICATION_MASTER_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "NOTIFICATION_PROCESSOR_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "NOTIFICATION_WAKE_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "NOTIFICATIONS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "OWNED_FANMARKS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "PROFILE_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "PUBLIC_ACCESS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "RECENT_FANMARKS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "RECOVERY_DRAIN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "RECOVERY_DRAIN_SCOPE_DIGEST",
+      "disposition": "replace-resource-bound-value"
+    },
+    {
+      "name": "REFERENCE_MASTER_ADMIN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "REFERENCE_MASTER_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "RESEND_FROM_EMAIL",
+      "disposition": "review-production-origin"
+    },
+    {
+      "name": "STAGING_BACKUP_ADMISSION",
+      "disposition": "production-adapter-required"
+    },
+    {
+      "name": "STAGING_BACKUP_ALERT_BACKEND",
+      "disposition": "production-adapter-required"
+    },
+    {
+      "name": "STAGING_BACKUP_ALERT_TO",
+      "disposition": "replace-resource-bound-value"
+    },
+    {
+      "name": "STAGING_BACKUP_BACKEND",
+      "disposition": "production-adapter-required"
+    },
+    {
+      "name": "STAGING_BACKUP_KEY_ID",
+      "disposition": "replace-resource-bound-value"
+    },
+    {
+      "name": "STAGING_BACKUP_SCHEMA_HASHES",
+      "disposition": "replace-resource-bound-value"
+    },
+    {
+      "name": "STAGING_BACKUP_SOURCE_IDS",
+      "disposition": "replace-resource-bound-value"
+    },
+    {
+      "name": "STAGING_NO_INDEX",
+      "disposition": "review-freeze-schedules-and-modes"
+    },
+    {
+      "name": "STORAGE_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "STORAGE_LEGACY_ORIGIN",
+      "disposition": "review-production-origin"
+    },
+    {
+      "name": "STORAGE_PUBLIC_BASE_URL",
+      "disposition": "review-production-origin"
+    },
+    {
+      "name": "STRIPE_CUSTOMER_PORTAL_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "STRIPE_DISPATCH_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "STRIPE_EXTENSION_CHECKOUT_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "STRIPE_MODE_POLICY",
+      "disposition": "review-freeze-schedules-and-modes"
+    },
+    {
+      "name": "STRIPE_PLAN_CHANGE_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "STRIPE_PLAN_CHECKOUT_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "STRIPE_WEBHOOK_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "SUBSCRIPTION_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "SUPABASE_PUBLISHABLE_KEY",
+      "disposition": "remove-fixture-after-fallback-audit"
+    },
+    {
+      "name": "SUPABASE_URL",
+      "disposition": "remove-fixture-after-fallback-audit"
+    },
+    {
+      "name": "SYSTEM_SETTINGS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "VERIFIED_ACCESS_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "WAITLIST_ADMIN_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    },
+    {
+      "name": "WAITLIST_SIGNUP_BACKEND",
+      "disposition": "reuse-code-with-new-bindings"
+    }
+  ],
+  "schemas": [
+    {
+      "binding": "FANMARK_DB",
+      "proposedName": "fanmark-production-business",
+      "productionId": null,
+      "schemaFileCount": 27,
+      "files": [
+        {
+          "path": "workers/api/migrations-business/0000_business_schema_v4_staging.sql",
+          "sha256": "9e10f7863f9d24811fcae6af7e4130a0859e6882565a6827523d7efaf1dc806a"
+        },
+        {
+          "path": "workers/api/migrations-business/0001_lifecycle_target_staging.sql",
+          "sha256": "3e5b2c33e38fc6facfd9a91fa932a33d94478d78a72b05ff32d3ee04da193026"
+        },
+        {
+          "path": "workers/api/migrations-business/0002_lifecycle_generation_staging.sql",
+          "sha256": "09db2dd8c12b09300354fd64aeb89a735ab6b0b925b42cb1f7f4a08c6361b7c4"
+        },
+        {
+          "path": "workers/api/migrations-business/0003_credential_transform_staging.sql",
+          "sha256": "51a9243ebe40c684c61fe80d07155cf4e29483ba1cf0433bdadc68fca42675db"
+        },
+        {
+          "path": "workers/api/migrations-business/0004_verified_access_staging.sql",
+          "sha256": "ab2cd37b6d55f8c1ca5ec560fdc8f006064447cb8f1e2fe877855b8c915d1443"
+        },
+        {
+          "path": "workers/api/migrations-business/0005_lottery_plan_journal_staging.sql",
+          "sha256": "27f317474b07ee25ed55048a1fe92d314c6cd1693e1f75f65d00ba6da42d483e"
+        },
+        {
+          "path": "workers/api/migrations-business/0006_stripe_webhook_ingress_staging.sql",
+          "sha256": "d39b45ca4068df5ce1ebd425053569ffc393a47522854d046b6020ad3f67da84"
+        },
+        {
+          "path": "workers/api/migrations-business/0007_stripe_extension_application_staging.sql",
+          "sha256": "1642fccf74a48739c97688cb6365805cc8ec038df536bff0fa9021b8a157d075"
+        },
+        {
+          "path": "workers/api/migrations-business/0008_stripe_invoice_projection_staging.sql",
+          "sha256": "abb0f91347cfa3a64279691b55fd6becf06ef3abc364bfb7a2ce23187ef2895e"
+        },
+        {
+          "path": "workers/api/migrations-business/0009_stripe_subscription_identity.sql",
+          "sha256": "e4289675a95ac720dbac432803fa7e8637695aa850167623298ae798bd10e44f"
+        },
+        {
+          "path": "workers/api/migrations-business/0010_stripe_subscription_reconciliation_staging.sql",
+          "sha256": "c67374fcde12f5738d81cdc71a9e569046db08b4ac26c4ee5b9368c4a712981d"
+        },
+        {
+          "path": "workers/api/migrations-business/0011_stripe_subscription_free_return.sql",
+          "sha256": "10fae92f861e87fd9eef300c861bdfb22f6ed6544040a98bd29c2f8864ddba5b"
+        },
+        {
+          "path": "workers/api/migrations-business/0012_stripe_plan_checkout_commands.sql",
+          "sha256": "2a92958c8c5ca59bfe4e757b23f3bf935eb8a3fd7555a8a63a8e091e7d0814a2"
+        },
+        {
+          "path": "workers/api/migrations-business/0013_stripe_plan_change_commands.sql",
+          "sha256": "6aad3c117b9e7fb81153c8dd2c45f8fe15881322eabce7addc292cf99f80761a"
+        },
+        {
+          "path": "workers/api/migrations-business/0014_invitation_signup_attempts.sql",
+          "sha256": "c4de8bc4f036df91f98db3ee9ecc3ff5bb8f08e70577ed28a99a7bfb917adff1"
+        },
+        {
+          "path": "workers/api/migrations-business/0015_extension_coupon_application.sql",
+          "sha256": "d564bc90e86a7b3720b725edb3cb3b24083f42c424af211a3083169e28ca29b0"
+        },
+        {
+          "path": "workers/api/migrations-business/0016_broadcast_email_delivery.sql",
+          "sha256": "a5f8bbf63efe5901574cac2139ba1048626e02b8c5052cc86c2094f2a5756cf4"
+        },
+        {
+          "path": "workers/api/migrations-business/0017_lifecycle_generation_timestamp_precision.sql",
+          "sha256": "587f31945c1ceb5f62db651e30b1aec5f1491989d201823293968f0deb2791c4"
+        },
+        {
+          "path": "workers/api/migrations-business/0018_invitation_capacity_timestamp_precision.sql",
+          "sha256": "fd57790e89a594490d17c8b93e203025a3c453a0a2f7107050307a4ac414b157"
+        },
+        {
+          "path": "workers/api/migrations-business/0019_extension_coupon_timestamp_precision.sql",
+          "sha256": "32468e15077322087f48fe4afa815f73fb9ccbe49b4e999dd7120e091afac79e"
+        },
+        {
+          "path": "workers/api/migrations-business/0020_notification_archive_index.sql",
+          "sha256": "a0124d69089f84874a9b57265c90eef34fc8fd92b4e8ef614d30c76869180cdc"
+        },
+        {
+          "path": "workers/api/migrations-business/0021_coupon_lottery_status_audit.sql",
+          "sha256": "e9b67148b635e34ef750fd838b5d971aae1495004dc80995b473725cad0e1936"
+        },
+        {
+          "path": "workers/api/migrations-business/0022_fanmark_discovery_link.sql",
+          "sha256": "a40ac4edfed9ba91035fbb07db5eeb154d2d949325f94b1a301c76d8b462d241"
+        },
+        {
+          "path": "workers/api/migrations-business/0023_admin_data_reset.sql",
+          "sha256": "e0fac9bffb029ae2c185ef7248e375d21549b7c9d28e2b382deaf8d3de50d14e"
+        },
+        {
+          "path": "workers/api/migrations-business/0024_notification_worker_wake.sql",
+          "sha256": "594b8686f5bceb0601b43b91684af1d109b77909263b12949f4261205a65ddb4"
+        },
+        {
+          "path": "workers/api/migrations-business/0025_broadcast_delivery_terminal_outcomes.sql",
+          "sha256": "f9f55e8299c85cd428d1e43f8096176a09e4859bec00fc6af8ae85676c200219"
+        },
+        {
+          "path": "workers/api/migrations-business/0026_broadcast_delivery_provider_time.sql",
+          "sha256": "f31b217f13fc18afb2216c12dbe5ee99cee69cd3683c5287284f0064528a7ab5"
+        }
+      ],
+      "migrationFilesSha256": "853808f83498847e39ed841c3c6c58c1a878d11541deed630e349eca2089fe7a"
+    },
+    {
+      "binding": "AUTH_DB",
+      "proposedName": "fanmark-production-auth",
+      "productionId": null,
+      "schemaFileCount": 4,
+      "files": [
+        {
+          "path": "workers/api/migrations/0003_better_auth_core.sql",
+          "sha256": "ad51865fe63cb14623b43216c11773a198be91d25b999907184bf4d73f88fb1f"
+        },
+        {
+          "path": "workers/api/migrations/0007_auth_signup_command.sql",
+          "sha256": "c82b96294d9a5d3fdff9ed4dc8f42bbdc2255ac95c23cce76e4284340e66a42a"
+        },
+        {
+          "path": "workers/api/migrations/0008_auth_user_suspension.sql",
+          "sha256": "a7e37902d160569ba2df19035007cf664a865c6b588ea34e04734a4245d74a09"
+        },
+        {
+          "path": "workers/api/migrations/0009_auth_oauth_signup.sql",
+          "sha256": "0d404cd3fc7cc715ddda7f47f7c27686fe43e6cd86bf47fc983417a9dacde2db"
+        }
+      ],
+      "migrationFilesSha256": "ee6925b565b0d8becfad77ace5ce335494502066bff03032b7079f34069585f9"
+    },
+    {
+      "binding": "MASTER_DB",
+      "proposedName": "fanmark-production-master",
+      "productionId": null,
+      "schemaFileCount": 9,
+      "files": [
+        {
+          "path": "workers/api/migrations/0000_emoji_master.sql",
+          "sha256": "788b5297b0af14c93a6f14ebd4dcf430b62ba8770cff1cf90a67e50032219912"
+        },
+        {
+          "path": "workers/api/migrations/0001_emoji_master_release_staging.sql",
+          "sha256": "f20c8bfaba2b81ad2bd354dff1a6ac47b1ff2df2cc519dbda3e7a1746c2b7b52"
+        },
+        {
+          "path": "workers/api/migrations/0002_emoji_master_release_activation.sql",
+          "sha256": "7be19c1e0951542d370113c2953eb8b3b48b1064673308e3618d77ec7c48afb9"
+        },
+        {
+          "path": "workers/api/migrations/0003_better_auth_core.sql",
+          "sha256": "ad51865fe63cb14623b43216c11773a198be91d25b999907184bf4d73f88fb1f"
+        },
+        {
+          "path": "workers/api/migrations/0004_reference_master_releases.sql",
+          "sha256": "78cf0ba96943f057723d46da5229bd96e9fc89c00e707140c12247bbd540e744"
+        },
+        {
+          "path": "workers/api/migrations/0005_emoji_master_admin_guards.sql",
+          "sha256": "17c286d713e50efdd6710dbd24870ebedc84be5cc8a5eae28b72eae078dbc5fa"
+        },
+        {
+          "path": "workers/api/migrations/0006_reference_master_extension_prices.sql",
+          "sha256": "c8b2fe178f773fb162dd0784f5b6ddf37c08bb3cc3ba2854a513cd9cd91226c3"
+        },
+        {
+          "path": "workers/api/migrations/0007_release_audit_timestamps.sql",
+          "sha256": "a96b733a048626a05ce16af1710258db549bdde5781d8e89b13bb141a5e2c31d"
+        },
+        {
+          "path": "workers/api/migrations/0008_emoji_master_change_audits.sql",
+          "sha256": "d92703efea010867f9629c3ea8e2932fcc7022d9a248321b53fad0b8162afc77"
+        }
+      ],
+      "migrationFilesSha256": "54fb28a94b45babb6fc37ea1a814c3cb2585b30240ef65da1f40fd34b6a7712f"
+    }
+  ],
+  "r2": [
+    {
+      "binding": "AVATARS_BUCKET",
+      "productionName": null
+    },
+    {
+      "binding": "COVER_IMAGES_BUCKET",
+      "productionName": null
+    },
+    {
+      "binding": "STAGING_BACKUP_BUCKET",
+      "productionName": null
+    }
+  ],
+  "durableObjects": [
+    {
+      "binding": "NOTIFICATION_WAKE",
+      "productionNamespace": null
+    },
+    {
+      "binding": "RECOVERY_DRAIN",
+      "productionNamespace": null
+    }
+  ],
+  "ratelimits": [
+    {
+      "binding": "FANMARK_ACCESS_ANALYTICS_LIMITER",
+      "productionNamespace": null
+    },
+    {
+      "binding": "FANMARK_SEARCH_LIMITER",
+      "productionNamespace": null
+    },
+    {
+      "binding": "WAITLIST_SIGNUP_LIMITER",
+      "productionNamespace": null
+    }
+  ],
+  "productionAccount": null,
+  "productionZone": null,
+  "productionWorker": null,
+  "implementationFingerprints": [
+    {
+      "path": "docs/migration/source-edge-bodies-review.md",
+      "sha256": "5d2af016b03d328771b7b9c51106df4a5e43518792316307acc3b255322247e3"
+    },
+    {
+      "path": "docs/migration/source-scheduled-writers.md",
+      "sha256": "b6d7d8ebf20c5dbfd7fe092f15021ca90b99875ab933e612693fc70e74020280"
+    },
+    {
+      "path": "scripts/migration/auth-readiness.sql",
+      "sha256": "79cdef0722898082fd902ec4d24ef3fa1aec8ba178ad8281c3fde3a7190b4653"
+    },
+    {
+      "path": "scripts/migration/d1-import.mjs",
+      "sha256": "f1824d8f8b06e630a74e24b1c8524f5f641c0071605afe71bb42a0aff4bb66df"
+    },
+    {
+      "path": "scripts/migration/isolated-remote-d1.mjs",
+      "sha256": "d43a55b2a4a239495853a0e2c901ae025965f4d2b50ed8d313931b9d9dc46772"
+    },
+    {
+      "path": "scripts/migration/production-preparation-audit.mjs",
+      "sha256": "069bd9752319c39f9b48453133f0d2a49d405c510628a476a5a5418ac75672b4"
+    },
+    {
+      "path": "scripts/migration/source-scheduled-writers.sql",
+      "sha256": "b7dfc1ff1b4511f51a21f3abce9b64ae074dd33621b57e60c2a95c91bf364752"
+    },
+    {
+      "path": "scripts/migration/staging-emoji-targets.mjs",
+      "sha256": "a1ff133d59159d348f59b9e99e0809941360bdb1e8ba90e6654fb7e11f59ba9d"
+    },
+    {
+      "path": "scripts/migration/storage-r2-import.mjs",
+      "sha256": "3cda6711b692cf94d068a64bc0a715df234df92f904595644203c43aeb5f9bf2"
+    },
+    {
+      "path": "scripts/migration/stripe-handoff-check.mjs",
+      "sha256": "8c50ebca6599ab93f65cea19c714c1535542e0fc1d1b98376b61d81ef19e0a12"
+    },
+    {
+      "path": "scripts/migration/test-production-preparation.mjs",
+      "sha256": "bb3e74c3088bef4ca74a4bb2e4b1f135923711d4a733dc452f62e7945b9ae706"
+    },
+    {
+      "path": "supabase/functions/handle-stripe-webhook/index.ts",
+      "sha256": "85db1354f3e5cb7fe0bb5f7abcc83985a2bc21d8c2dd0eb92c98c5bc3ef203e4"
+    },
+    {
+      "path": "workers/api/src/cutover-write-freeze.ts",
+      "sha256": "3ed4a543fc38f3938c8dcb0557e057fabf6dc1aed02dca3778042a1493a5e90c"
+    },
+    {
+      "path": "workers/api/src/emoji-publication-service.ts",
+      "sha256": "cfd979f4b705247bb7629ddd81756aa4c330b11e6794a705ab450a09f81d6668"
+    },
+    {
+      "path": "workers/api/src/repository.ts",
+      "sha256": "0a812d883967c0decfd1e2283c029203f2983d05c9668b41e023c8d7ac590a3f"
+    },
+    {
+      "path": "workers/api/src/staging-backup-monitor.ts",
+      "sha256": "7bee2b20934538be9cbd10c9b5fff9681e87856feaada11a02de380afdbb945e"
+    },
+    {
+      "path": "workers/api/src/staging-backup-scheduler.ts",
+      "sha256": "5b83b2947317cbe2313657259a4a276064c8a204c80297265b0ab6b5ecbcc456"
+    },
+    {
+      "path": "workers/api/src/staging-backup.ts",
+      "sha256": "031ee58e74b31b30de77cff5f7bd7cf8449a45188f0660b65765834105163f53"
+    },
+    {
+      "path": "workers/api/src/stripe-mode-policy.ts",
+      "sha256": "a6aa4016c3330396604a05c64db417f8937d0e08ee2dd68e2fd741cee75a5f1e"
+    },
+    {
+      "path": "workers/api/wrangler.backup-monitor-staging.jsonc",
+      "sha256": "ec746665f1aa0592323b7ac08025b7a4b43bfbeffa71fa925c2bced250124933"
+    },
+    {
+      "path": "workers/api/wrangler.backup-staging.jsonc",
+      "sha256": "2e623d84a63e80f7226d77d67212c10e473208c04500ffe9595807364180392a"
+    }
+  ]
+}
