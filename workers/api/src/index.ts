@@ -1060,6 +1060,12 @@ export async function handleRequest(
   }
 
   if (blocksRequestDuringCutoverFreeze(request.method, url.pathname, env.CUTOVER_WRITE_FREEZE)) {
+    if (url.pathname !== "/api" && !url.pathname.startsWith("/api/")) {
+      // A closed site must explain the outage without loading app assets or Auth.
+      return new Response(request.method === "HEAD" ? null :
+        '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>メンテナンス中 | fanmark.id</title><main><h1>メンテナンス中です</h1><p>時間をおいて、もう一度アクセスしてください。</p></main></html>',
+      { status: 503, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "retry-after": "60" } });
+    }
     return jsonResponse({ error: "cutover_write_freeze" }, 503, { "retry-after": "60" });
   }
 
@@ -1749,6 +1755,12 @@ const worker = {
   async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     try {
       const url = new URL(request.url);
+      // Rejected traffic must not create writer-tracking records or run the
+      // post-response notification wake. The admitted receipt still uses the
+      // normal writer guard, ingress signature checks and durable D1 ledger.
+      if (blocksRequestDuringCutoverFreeze(request.method, url.pathname, env.CUTOVER_WRITE_FREEZE)) {
+        return await handleRequest(request, env);
+      }
       // Static/OGP responses and public Master reads do not mutate captured
       // D1/R2 stores. In particular, a disconnected asset download must not
       // permanently block backups. Auth (including GET callbacks/session
@@ -1765,6 +1777,7 @@ const worker = {
           // The operator route performs its own authorized force-wake. A refused
           // Origin/MFA request must never replay an outbox through this finally.
           if (!shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE) &&
+              !shouldPauseScheduledJobsForCutover(env.CUTOVER_WRITE_FREEZE) &&
               !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
               new URL(request.url).pathname !== "/api/admin/notifications/wake" &&
               env.NOTIFICATION_WAKE_BACKEND?.trim() === "durable-object") {
@@ -1781,6 +1794,14 @@ const worker = {
     }
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    const admissionState = cutoverWriteFreezeState(env.CUTOVER_WRITE_FREEZE);
+    if (admissionState === "receipt_only" || admissionState === "invalid") {
+      // Closed-target mode does not admit cron tracking/diagnostic mutations.
+      // The older boolean freeze retains its explicit diagnostic-only behavior.
+      console.log(JSON.stringify({ job: "scheduled-dispatch", status: "paused",
+        reason: admissionState === "invalid" ? "invalid_cutover_write_freeze" : "cutover_receipt_only" }));
+      return;
+    }
     try {
       await withRecoveryWriter(env, async () => {
         // Even diagnostic D1 writes must stop before a recovery capture.

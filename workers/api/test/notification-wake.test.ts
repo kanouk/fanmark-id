@@ -66,6 +66,60 @@ beforeEach(async () => {
 });
 
 describe("native D1 outbox and real SQLite Durable Object alarms", () => {
+  it("receipt-only verifies signatures and durably deduplicates Stripe while keeping the outbox unchanged", async () => {
+    await event();
+    const before = await wakeState();
+    const secret = "whsec_synthetic_local_cutover_only";
+    const timestamp = Math.floor(Date.now() / 1000);
+    const eventId = `evt_cutover_${crypto.randomUUID().replaceAll("-", "")}`;
+    const body = JSON.stringify({ id: eventId, object: "event", type: "payment_intent.succeeded",
+      api_version: "2025-08-27.basil", created: timestamp, livemode: false,
+      data: { object: { id: "pi_synthetic_cutover", object: "payment_intent" } } });
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const signature = Array.from(new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}.${body}`))),
+      (byte) => byte.toString(16).padStart(2, "0")).join("");
+    const frozen: Env = { ...runtime, CUTOVER_WRITE_FREEZE: "receipt_only", STRIPE_WEBHOOK_BACKEND: "d1",
+      STRIPE_WEBHOOK_SECRET: secret, STRIPE_MODE_POLICY: "test_only" };
+    const send = (sig: string) => worker.fetch(new Request("https://app.example.test/api/stripe/webhook", {
+      method: "POST", headers: { "stripe-signature": `t=${timestamp},v1=${sig}` }, body,
+    }), frozen);
+    expect((await send("0".repeat(64))).status).toBe(400);
+    expect((await db.prepare("SELECT count(*) AS n FROM stripe_webhook_receipts WHERE stripe_event_id = ?").bind(eventId).first())?.n).toBe(0);
+    expect((await send(signature)).status).toBe(200);
+    expect((await send(signature)).status).toBe(200);
+    expect(await db.prepare("SELECT status, delivery_count FROM stripe_webhook_receipts WHERE stripe_event_id = ?").bind(eventId).first())
+      .toEqual({ status: "received", delivery_count: 2 });
+    expect(await db.prepare("SELECT status, attempt_count FROM stripe_webhook_dispatches WHERE stripe_event_id = ?").bind(eventId).first())
+      .toEqual({ status: "pending", attempt_count: 0 });
+    await worker.scheduled({ cron: "* * * * *", scheduledTime: Date.now() } as ScheduledController, frozen,
+      { waitUntil() { throw new Error("cutover_must_not_dispatch"); } } as unknown as ExecutionContext);
+    expect(await wakeState()).toEqual(before);
+    expect(await alarm()).toBeNull();
+    expect((await db.prepare("SELECT count(*) AS n FROM notifications").first())?.n).toBe(0);
+  });
+  it("does not acknowledge or schedule the outbox during cutover, then resumes it once", async () => {
+    const id = await event();
+    const before = await wakeState();
+    for (const selector of ["true", "receipt_only", "mistyped"]) {
+      await flushNotificationWake({ ...runtime, CUTOVER_WRITE_FREEZE: selector }, true);
+      expect(await wakeState()).toEqual(before);
+      expect(await alarm()).toBeNull();
+      await runInDurableObject(stub, async (instance: NotificationWakeCoordinator) => {
+        (instance as unknown as { env: Env }).env.CUTOVER_WRITE_FREEZE = selector;
+      });
+      expect((await stub.fetch("https://notification-wake.internal/wake", { method: "POST" })).status).toBe(503);
+      expect(await wakeState()).toEqual(before);
+      expect(await alarm()).toBeNull();
+    }
+    await runInDurableObject(stub, async (instance: NotificationWakeCoordinator) => {
+      delete (instance as unknown as { env: Env }).env.CUTOVER_WRITE_FREEZE;
+    });
+    await flushNotificationWake(runtime);
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+    expect((await db.prepare("SELECT count(*) AS n FROM notifications WHERE event_id = ?").bind(id).first())?.n).toBe(1);
+    expect(await alarm()).toBeNull();
+  });
   it("quarantines a retained legacy object before reading or writing the newly bound business store", async () => {
     await event();
     const rows = (await db.prepare("SELECT * FROM notification_events ORDER BY id").all()).results;

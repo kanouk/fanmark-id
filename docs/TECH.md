@@ -676,6 +676,10 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 
 ## 本番移行のオフライン準備
 
+`CUTOVER_WRITE_FREEZE=receipt_only`はStripeの正確なWebhook POSTだけを通常の署名検証・永続受信へ通し、一般HTTP/Auth/assetとCronの追跡・診断を止める。不明値は全HTTPを拒否する。`true`は従来の限定停止で、限定Auth/公開GETと明示されたCron診断を許す。拒否HTTPはwriter追跡前に返し、通知wakeもcutover中はD1を更新しない。既存のDO alarm再試行時刻は保持できる。旧source停止・in-flight drainは別工程。[レビューと検証範囲](migration/implementation-review-2026-10-15.md)。
+
+`scripts/migration/auth-identity-preflight.mjs`は固定SELECTでAuth D1のunique index・identity・MFA・roleの16種類の停止理由を件数のみ返す。ネットワーク接続/書込CLIはなく、実DBへの実行は確認済みの読取bindingを与える別adapterが必要。`npm run test:auth-identity-preflight`で合成検証する。全件source照合やMFA移送の受入れは別。
+
 `npm run migration:prepare-production`は、staging Appの設定分類・migration SQL・重要実装のhashを保存済み一覧と照合する。設定値や秘密は出力せず、配備設定や本番実行許可も生成しない。`npm run test:production-preparation`は設定/schema変更の検知とStripe引継ぎ投影の比較を検証し、既存`test:migration-data`にも含まれる。
 
 `scripts/migration/stripe-handoff-check.mjs`は、同じ閉じた境界から取得した受信/効果投影を読み取り専用で比較する。実台帳adapter、停止・全件取得の証明、境界後streamの回収は別途必要。[準備状況・操作票・判断事項](migration/production-preparation.md)を参照。本番用runner、資源・秘密の設定、実ユーザーデータ移送、DNS切替は未実施。

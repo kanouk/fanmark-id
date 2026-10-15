@@ -33,7 +33,8 @@ async function readState(database: D1Database): Promise<WakeState> {
 
 /** Flush only a committed native outbox generation; never forward user headers/payload. */
 export async function flushNotificationWake(env: Env, force = false): Promise<void> {
-  if (shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE)) return;
+  if (shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE) ||
+      shouldPauseScheduledJobsForCutover(env.CUTOVER_WRITE_FREEZE)) return;
   if (env.NOTIFICATION_WAKE_BACKEND?.trim() !== "durable-object") return;
   const database = databaseFor(env);
   if (!env.NOTIFICATION_WAKE) throw new NotificationWakeError();
@@ -109,6 +110,9 @@ export class NotificationWakeCoordinator extends DurableObject<Env> {
       } catch { return new Response(null, { status: 503 }); }
     }
     if (request.url !== INTERNAL_URL || request.method !== "POST") return new Response(null, { status: 404 });
+    if (shouldPauseScheduledJobsForCutover(this.env.CUTOVER_WRITE_FREEZE)) {
+      return new Response(null, { status: 503, headers: { "retry-after": "60", "cache-control": "no-store" } });
+    }
     try { await withRecoveryWriter(this.env, () => this.reconcile(Date.now()), undefined, "notification-wake"); return new Response(null, { status: 204 }); }
     catch { return new Response(null, { status: 503 }); }
   }

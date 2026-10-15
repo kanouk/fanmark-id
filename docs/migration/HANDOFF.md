@@ -1,3 +1,7 @@
+## 2026-10-15: CI確認・停止境界とAuthのレビュー
+
+714fee4のCI38748657327はApplication/Worker両job成功。今回の[実装・設計レビュー](implementation-review-2026-10-15.md)ではcutover中の通知wake更新をローカルD1で再現・修正し、Stripe受信だけ通す`receipt_only`モードとAuthの読取preflightを追加した。実Auth、旧Webhookのreceipt-only化、実施者用の閉鎖中確認入口、本番runner等は未完了。追加コードは未配備で、本番・main・旧経路を維持する。所有者の判断事項はレビュー文書に推奨案と理由を記録した。
+
 ## 2026-10-15: P1〜P8の安全な準備を実施
 
 [準備記録と所有者の判断事項](production-preparation.md)に、設定84項目・3 D1の40 SQLの固定、更新停止票、Auth照合項目、ドメイン変更/復元票を追加。設定・schema・重要コードの変更を検出するオフラインinventoryと、Stripe受信/効果台帳の閉じた境界を比較するcheckerを実装した。checkerは欠落・余分な行・状態競合・不明な処理を成功へ読み替えない。

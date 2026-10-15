@@ -4,6 +4,8 @@
 
 **準備用の設定一覧・検査コード・操作票を作成した。P1〜P8の本番開始条件はまだ完了していない。** 以下の「未完了」は所有者の承認だけで解消するものではなく、実装・実測・読戻しが必要な作業を含む。
 
+続く[実装・設計レビュー](implementation-review-2026-10-15.md)で、P3/P4向けの`receipt_only`モード、通知wake停止の修正、P5向けのAuth読取preflightを追加した。前回commitのCIは両job成功。追加コードも本番開始条件を完了したとは扱わず、実施者用の確認入口、旧Webhook移行、実Auth対応などを残す。
+
 ## 準備できたもの
 
 | 項目 | 今回進めた準備 | 本番開始までに残る作業 |
@@ -40,6 +42,7 @@
 - `emoji-publication-service.ts`はstaging target一覧を参照する。本番専用targetを、実IDとreadbackに基づいて追加・レビューする必要がある。
 - backupは5 storeのID・schema hash・scope digestと暗号鍵を照合する。名前だけを変更して動作確認を省かない。
 - `CUTOVER_WRITE_FREEZE`はSupabaseを止めず、受信Webhookや一部Auth、GET/HEADを許す。一般利用者の閉鎖と全更新の停止を別に証明する。
+- 上の限定停止は値`true`の契約。追加した`receipt_only`はWebhook以外のHTTPを閉じる。一般画面の閉鎖・受信継続をローカル検証済みだが、実施者のasset/API確認と本番の停止/drainは未検証。
 
 秘密の実値はGitに置かない。取得前に、Better Auth、OAuth各provider、Resend、Stripe generic/test/live・Webhook、保護アクセス、backup暗号鍵について、保管場所・注入先・復旧時の取扱者を操作票に記す。今回の一覧は秘密が設定済みであることの証明ではない。
 
@@ -79,6 +82,8 @@
 ## P5 Auth照合とMFA
 
 取得前に[auth-readiness.sql](../../scripts/migration/auth-readiness.sql)の集計で、パスワード形式・provider・MFA種類を確認する。これは今回未実行。集計結果もGit外に保管する。実投影ではUUID、provider subject、確認済み状態、停止状態、role、Business参照を照合し、メール一致による自動統合を禁止する。重複identity・孤児参照・未対応hash・管理権限の不一致を個別に解決する。
+
+移送先の検査には[Auth identity preflight](../../scripts/migration/auth-identity-preflight.mjs)を追加した。既存unique制約の欠落、identity/credential/factorの重複、MFA不整合等を集計するが、sourceとの同一性は別の独立checkerが必要。実ユーザーでは未実行。
 
 既存credential変換試験にはfanmarkの保護パスワードも含まれる。これをSupabase AuthログインパスワードやTOTP移送の成功と取り違えない。導入済みBetter Authの固定版で、実形式と同じ合成credentialのログイン・停止中拒否・管理者MFAを確認する。
 

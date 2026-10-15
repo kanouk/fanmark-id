@@ -1,3 +1,7 @@
+## 2026-10-15: 起点CI成功とローカル実装レビュー
+
+714fee4のCI38748657327両job成功を確認。cutover中の通知wake更新を再現して修正し、`receipt_only`で署名付きStripe受信を保存・重複排除しつつAuth/一般HTTP/業務Cronを閉鎖する検証を追加。Auth preflightは合成D1に対する読取のみで、制約適用漏れやMFA等の16種類の停止理由を集計する。初期schemaで疑ったidentity unique制約の欠落は、後続0009の適用で否定した。現行migrationを変更しない。[レビュー・残件・推奨案](implementation-review-2026-10-15.md)。本番変更・実データ取得・配備・送信・mergeは0。
+
 ## 2026-10-15: 本番を変更しない準備
 
 [production-preparation.md](production-preparation.md)にP1〜P8の実施範囲・残件・判断事項を記録。`npm run migration:prepare-production`は保存済み設定/SQL/code一覧の一致だけを検査し、`productionReady=false`を維持する。`npm run test:production-preparation`は追加したfault caseを合成データで試験する。既存`test:migration-data`にも組み込んだ。Stripe checkerはJSON投影の読み取り専用であり、本番の停止・収集・移送・適用は行わない。

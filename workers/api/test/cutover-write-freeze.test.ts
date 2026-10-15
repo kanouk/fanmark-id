@@ -56,6 +56,47 @@ describe("recovery write freeze at the real Worker entrypoints", () => {
 });
 
 describe("cutover write freeze", () => {
+  it("receipt-only closes public and Auth traffic before bindings and admits only Stripe POST", async () => {
+    let accesses = 0;
+    const denied = () => { accesses++; throw new Error("closed_binding_access"); };
+    const database = { prepare: denied } as unknown as D1Database;
+    const frozen: Env = { ...runtimeEnv, CUTOVER_WRITE_FREEZE: "receipt_only",
+      RECOVERY_DRAIN_BACKEND: "durable-object", RECOVERY_DRAIN: { idFromName: denied } as unknown as DurableObjectNamespace,
+      FANMARK_DB: database, AUTH_DB: database, MASTER_DB: database,
+      ASSETS: { fetch: denied } as unknown as Fetcher,
+      NOTIFICATION_WAKE_BACKEND: "durable-object", NOTIFICATION_WAKE: { idFromName: denied } as unknown as DurableObjectNamespace };
+    const ctx = { waitUntil: denied } as unknown as ExecutionContext;
+    for (const [method, path] of [
+      ["GET", "/"], ["HEAD", "/"], ["GET", "/ogp/example"], ["GET", "/api/emoji/catalog"],
+      ["GET", "/api/auth/get-session"], ["POST", "/api/auth/sign-in/email"],
+      ["POST", "/api/auth/two-factor/verify-totp"], ["GET", "/api/auth/callback/google"],
+      ["POST", "/api/fanmarks/register"], ["OPTIONS", "/api/auth/sign-in/email"],
+      ["GET", "/api/stripe/webhook"], ["POST", "/api/stripe/webhook/"],
+    ]) {
+      const response = await worker.fetch(new Request(`https://app.example.test${path}`, { method }), frozen, ctx);
+      expect(response.status).toBe(503);
+      if (path.startsWith("/api/")) expect(await response.json()).toEqual({ error: "cutover_write_freeze" });
+      else if (method === "HEAD") expect(await response.text()).toBe("");
+      else expect(await response.text()).toContain("メンテナンス中です");
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(response.headers.get("retry-after")).toBe("60");
+    }
+    expect(accesses).toBe(0);
+    expect(cutoverWriteFreezeState("receipt_only")).toBe("receipt_only");
+    for (const selector of ["receipt_only", "mistyped"]) {
+      await worker.scheduled({ cron: "* * * * *", scheduledTime: Date.now() } as ScheduledController,
+        { ...frozen, CUTOVER_WRITE_FREEZE: selector, SCHEDULED_DISPATCH_DIAGNOSTICS: "true",
+          SCHEDULED_DISPATCH_DIAGNOSTICS_DB: database }, ctx);
+    }
+    expect(accesses).toBe(0);
+    expect(shouldPauseScheduledJobsForCutover("receipt_only")).toBe(true);
+    expect(blocksRequestDuringCutoverFreeze("POST", "/api/stripe/webhook", "receipt_only")).toBe(false);
+    // Reaching the ingress still requires its normal signature/config checks.
+    const response = await handleRequest(new Request("https://app.example.test/api/stripe/webhook", { method: "POST" }),
+      { ...runtimeEnv, CUTOVER_WRITE_FREEZE: "receipt_only", STRIPE_WEBHOOK_BACKEND: undefined });
+    expect(response.status).toBe(404);
+    expect(blocksRequestDuringCutoverFreeze("POST", "/api/stripe/webhook", "mistyped")).toBe(true);
+  });
   it("defaults off, enables only on true, and fails closed for an unknown value", () => {
     expect(cutoverWriteFreezeState(undefined)).toBe("disabled");
     expect(cutoverWriteFreezeState("false")).toBe("disabled");

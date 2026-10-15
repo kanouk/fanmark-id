@@ -181,6 +181,10 @@
     "scripts/migration/staging-emoji-targets.mjs",
     "scripts/migration/production-preparation-audit.mjs",
     "scripts/migration/stripe-handoff-check.mjs",
-    "scripts/migration/test-production-preparation.mjs"
+    "scripts/migration/test-production-preparation.mjs",
+    "workers/api/src/index.ts",
+    "workers/api/src/notification-wake.ts",
+    "scripts/migration/auth-identity-preflight.mjs",
+    "scripts/migration/test-auth-identity-preflight.mjs"
   ]
 }

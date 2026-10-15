@@ -10,12 +10,13 @@ const AUTH_METHODS_ALLOWED_DURING_FREEZE = new Set([
   "GET /api/auth/capabilities",
 ]);
 
-export type CutoverWriteFreezeState = "disabled" | "enabled" | "invalid";
+export type CutoverWriteFreezeState = "disabled" | "enabled" | "receipt_only" | "invalid";
 
 export function cutoverWriteFreezeState(value: string | undefined): CutoverWriteFreezeState {
   const normalized = value?.trim().toLowerCase();
   if (normalized === undefined || normalized === "" || normalized === "false") return "disabled";
   if (normalized === "true") return "enabled";
+  if (normalized === "receipt_only") return "receipt_only";
   return "invalid";
 }
 
@@ -24,8 +25,14 @@ export function blocksRequestDuringCutoverFreeze(
   pathname: string,
   selector: string | undefined,
 ): boolean {
+  const state = cutoverWriteFreezeState(selector);
+  if (state === "disabled") return false;
+  // A closed target may accept durable, signature-verified Stripe receipts,
+  // but no Auth/session mutations, public GET side effects, or asset traffic.
+  // A typo admits nothing; Stripe will receive a non-success response to retry.
+  if (state === "invalid") return true;
+  if (state === "receipt_only") return !(method === "POST" && pathname === "/api/stripe/webhook");
   if (!pathname.startsWith("/api/")) return false;
-  if (cutoverWriteFreezeState(selector) === "disabled") return false;
   if (method === "OPTIONS") return false;
   if (method === "POST" && pathname === "/api/stripe/webhook") return false;
   if (AUTH_METHODS_ALLOWED_DURING_FREEZE.has(`${method} ${pathname}`)) return false;

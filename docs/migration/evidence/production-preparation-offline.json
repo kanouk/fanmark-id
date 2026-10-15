@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "f86ffcada4ef0cf476102874d62739017af3eadab4497f13037ad8b98ad90fec"
+    "sha256": "1e0d8473a614999fb07cac204cbe0520cca2fc266749c3e99492da1a71e02854"
   },
   "variables": [
     {
@@ -599,6 +599,10 @@
       "sha256": "b6d7d8ebf20c5dbfd7fe092f15021ca90b99875ab933e612693fc70e74020280"
     },
     {
+      "path": "scripts/migration/auth-identity-preflight.mjs",
+      "sha256": "28bf4b1e5856df4df1ba8597420e36acf18b9f61dd78d533c691b34d453c8b47"
+    },
+    {
       "path": "scripts/migration/auth-readiness.sql",
       "sha256": "79cdef0722898082fd902ec4d24ef3fa1aec8ba178ad8281c3fde3a7190b4653"
     },
@@ -631,6 +635,10 @@
       "sha256": "8c50ebca6599ab93f65cea19c714c1535542e0fc1d1b98376b61d81ef19e0a12"
     },
     {
+      "path": "scripts/migration/test-auth-identity-preflight.mjs",
+      "sha256": "2cc73cd45987a84ea8998301a1547c9439b63318f5459742cb38bb2445554842"
+    },
+    {
       "path": "scripts/migration/test-production-preparation.mjs",
       "sha256": "bb3e74c3088bef4ca74a4bb2e4b1f135923711d4a733dc452f62e7945b9ae706"
     },
@@ -640,11 +648,19 @@
     },
     {
       "path": "workers/api/src/cutover-write-freeze.ts",
-      "sha256": "3ed4a543fc38f3938c8dcb0557e057fabf6dc1aed02dca3778042a1493a5e90c"
+      "sha256": "a6ee94260a7758d1f6af59e539f00260d6b63e878bae67f2755cc4623e86bbc2"
     },
     {
       "path": "workers/api/src/emoji-publication-service.ts",
       "sha256": "cfd979f4b705247bb7629ddd81756aa4c330b11e6794a705ab450a09f81d6668"
+    },
+    {
+      "path": "workers/api/src/index.ts",
+      "sha256": "a72b6cb88a2a097371ac4e6f5d1aa3ff8b59128d4b91e29778a8ef602c0c3cb5"
+    },
+    {
+      "path": "workers/api/src/notification-wake.ts",
+      "sha256": "38d1f4f7c3f66a1c93e68f2ff6f6a642bb296c0e245304c8c162a0e0baff3c21"
     },
     {
       "path": "workers/api/src/repository.ts",
