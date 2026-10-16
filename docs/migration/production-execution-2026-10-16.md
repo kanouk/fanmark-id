@@ -58,3 +58,11 @@ Node 22.6.0でAuth投影4件、既存Auth preflight4件、production preparation
 [集計証拠](evidence/real-precopy-rehearsal-2026-10-16.json)。これは稼働中sourceの予備検証であり、DB/Auth/Storageの確定共通境界ではない。StorageのR2復元、本番D1取り込み、実本番ログイン、全source意味論の承認は未完了。ローカル検証だけで既存の未解決4 schema groupを許容し、remote guardは変更していない。停止枠・本番移送/RTOの見積もりに上のファイル復元時間を代入しない。
 
 秘密原本・private capture/restore driver・詳細reportは既存Git外ディレクトリに保持。短命なDB接続資格情報を含んだCLI dry-run fileは取得後に削除した。公開前には確定snapshotを取り直す。
+
+暗号化予備コピー6 object（18,738,059 bytes）を本番専用の非公開backup R2へ保存し、全objectを別downloadでhash照合した。復号鍵はuploadしていない。別場所での鍵保管と本番資源復旧の証明は未完了。[off-host記録](evidence/real-precopy-offhost-2026-10-16.json)。
+
+元のDNS17件は管理画面でも再確認。single redirectとPage Rulesは管理画面でともに未登録。apex/www/adminへのHEADは `/` と `/auth?migration_probe=read_only` の各2件で200、Locationなし。これだけで画面内遷移やadminの機能契約が同一とは扱わない。CLIのzone identity/Worker routesは読取成功、DNS/rules/page rules/TLS APIは403で、API record ID付き復元票は未完了。
+
+20:39 JSTの実source集計では、identity対象926行（fanmarks50/discoveries306/events570/favorites0）のNULL・空配列・形状違反・正規化重複・表示重複は全0。[実データidentity条件](evidence/source-identity-real-preflight-2026-10-16.json)。停止後に再検査する。外部/直接API利用者の有無は所有者に確認中。
+
+コード修正58dd606のCI38894830871はApplication/Worker両job成功。関連ローカル試験はsnapshot20/encryption4/preparation9件成功。mainは`e5a553c0bcc938a308def6f3770f1a84db88d389`を保持。以後の追加commitは検証記録のみ。

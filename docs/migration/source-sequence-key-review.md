@@ -1,3 +1,18 @@
+## Actual historical-row preflight (2026-10-16 JST)
+
+At `2026-10-16T11:39:45.072825+00:00`, the authorized read-only aggregate query
+checked actual fanmarks50, discoveries306, favorites0 and events570 rows.
+All926 rows passed the admitted shape policy. NULL/empty/NULL-element arrays,
+unsupported dimensions/lower bounds, canonical duplicate groups and display
+conflicts were all zero. [Bounded aggregate evidence](evidence/source-identity-real-preflight-2026-10-16.json).
+The independent private local runtime import also reconciled all40 public tables
+with FK0. This closes the observed historical-row exception list for this
+preliminary copy only; rerun after the final writer freeze. No rows were repaired
+or skipped to pass the shape policy. Generic converter deployability remains
+false, and external/direct consumers remain an owner-inventory condition.
+
+Earlier no-user-row observations below are historical.
+
 # Source sequence-key equality review
 
 The reviewed ordinary immutable/strict `seq_key(uuid[])` definition hash is

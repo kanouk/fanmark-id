@@ -57,9 +57,13 @@
       "name": "fanmark-backups-production",
       "createdAt": "2026-10-15T23:44:26.999Z",
       "location": "APAC",
-      "reportedObjects": 0,
       "publicDevUrlEnabled": false,
-      "customDomains": []
+      "customDomains": [],
+      "initialReportedObjects": 0,
+      "preliminaryEncryptedObjectsVerified": 6,
+      "preliminaryEncryptedBytesVerified": 18738059,
+      "preliminaryReadbackAt": "2026-10-16T11:36:54.639Z",
+      "preliminaryEvidence": "evidence/real-precopy-offhost-2026-10-16.json"
     }
   ],
   "schemaApplied": true,

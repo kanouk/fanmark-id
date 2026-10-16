@@ -1,0 +1,70 @@
+{
+  "sourceProject": "ppqgtbjykitqtiaisyji",
+  "sqlSha256": "c58e144812553b4607a2356483b38cdbf5d72b6e5567176cb4e6011ad2dd82c5",
+  "sourceStateChanged": false,
+  "productionReady": false,
+  "observation": {
+    "observedAt": "2026-10-16T11:39:45.072825+00:00",
+    "readyForIdentityImport": true,
+    "schemaVersion": 1,
+    "scope": "deferred source identity import preflight, aggregate counts only",
+    "tables": [
+      {
+        "admitted_rows": 306,
+        "canonical_duplicate_groups": 0,
+        "canonical_duplicate_rows": 0,
+        "display_duplicate_groups": 0,
+        "display_duplicate_rows": 0,
+        "empty_arrays": 0,
+        "null_arrays": 0,
+        "null_element_arrays": 0,
+        "relation": "fanmark_discoveries",
+        "total_rows": 306,
+        "unsupported_dimensions": 0,
+        "unsupported_lower_bounds": 0
+      },
+      {
+        "admitted_rows": 570,
+        "canonical_duplicate_groups": 0,
+        "canonical_duplicate_rows": 0,
+        "display_duplicate_groups": 0,
+        "display_duplicate_rows": 0,
+        "empty_arrays": 0,
+        "null_arrays": 0,
+        "null_element_arrays": 0,
+        "relation": "fanmark_events",
+        "total_rows": 570,
+        "unsupported_dimensions": 0,
+        "unsupported_lower_bounds": 0
+      },
+      {
+        "admitted_rows": 0,
+        "canonical_duplicate_groups": 0,
+        "canonical_duplicate_rows": 0,
+        "display_duplicate_groups": 0,
+        "display_duplicate_rows": 0,
+        "empty_arrays": 0,
+        "null_arrays": 0,
+        "null_element_arrays": 0,
+        "relation": "fanmark_favorites",
+        "total_rows": 0,
+        "unsupported_dimensions": 0,
+        "unsupported_lower_bounds": 0
+      },
+      {
+        "admitted_rows": 50,
+        "canonical_duplicate_groups": 0,
+        "canonical_duplicate_rows": 0,
+        "display_duplicate_groups": 0,
+        "display_duplicate_rows": 0,
+        "empty_arrays": 0,
+        "null_arrays": 0,
+        "null_element_arrays": 0,
+        "relation": "fanmarks",
+        "total_rows": 50,
+        "unsupported_dimensions": 0,
+        "unsupported_lower_bounds": 0
+      }
+    ]
+  }
+}

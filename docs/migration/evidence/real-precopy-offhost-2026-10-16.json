@@ -1,0 +1,20 @@
+{
+  "format": "fanmark-encrypted-precopy-offhost-v1",
+  "observedAt": "2026-10-16T11:36:54.639Z",
+  "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "bucket": "fanmark-backups-production",
+  "purpose": "preliminary-only",
+  "privateBucket": {
+    "r2DevEnabled": false,
+    "customDomainCount": 0
+  },
+  "objectsVerified": 6,
+  "totalBytes": 18738059,
+  "allDownloadedHashesMatchLocal": true,
+  "encryptionKeysUploaded": false,
+  "independentOffHostKeyCustodyVerified": false,
+  "applicationDataImported": false,
+  "productionReady": false,
+  "productionBackupRestoreVerified": false,
+  "scope": "Encrypted public DB, Storage, latest preliminary Auth and administrator reenrollment capsule; headers contain no decryption keys. Local restore and separate-process verification are recorded separately. This does not prove production resource recovery."
+}
