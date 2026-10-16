@@ -14,6 +14,10 @@ node scripts/migration/run-admin-reenrollment.mjs --private-dir /Users/kanouk/.c
 起動時に固定Supabase projectのAuth snapshotをread-onlyで取得し、同じMacの127.0.0.1だけで専用画面を開く。
 入口URLは一度だけ使える能力トークンをfragmentに持つ。共有・記録公開しない。
 Helperは20分で終了する。再起動しても保存済みcapsuleを上書きしない。
+画面に期限と失敗した段階を表示する。終了時もエラーを隠さない。
+旧TOTP確認は入力のたびに新しいchallengeを取得し、期限切れや使用済みchallengeを再利用しない。
+資格情報を含まない進行段階・残試行回数・期限だけをGit外の`admin-reenrollment-status.json`へ保存する。
+この進行記録は登録完了の証拠ではなく、完了判定には暗号化capsuleの存在・復号・最終source照合を要求する。
 
 1. 本人が現在の管理者パスワードを入力する。Supabaseの既存SDKでログインし、対象UUIDと既存のverified TOTP factorを照合する。
 2. 本人が旧認証アプリのコードを入力する。Supabaseのchallenge/verifyとgetUserで本人・AAL2を確認し、DBから権限・資格情報を再取得して変化がないことを確認する。

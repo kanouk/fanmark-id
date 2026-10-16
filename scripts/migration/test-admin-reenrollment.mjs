@@ -99,3 +99,21 @@ test("source drift and expiration cannot produce an artifact", async () => {
     time += 21 * 60000; await assert.rejects(session.step({ code: "123456" })); assert.equal(saved, false);
   } finally { await session.close(); }
 });
+
+test("each old-code retry gets a fresh challenge; persisted diagnostics exclude credentials and provider errors", async () => {
+  const source = fixture(), client = sourceClient(); let created = 0, saved = false; const seen = [], statuses = [];
+  client.auth.mfa.challenge = async () => ({ data: { id: `challenge-${++created}` } });
+  client.auth.mfa.verify = async input => { seen.push(input.challengeId); throw Error(`PRIVATE_PROVIDER_ERROR ${password} ${input.code}`); };
+  const session = createReenrollmentSession({ source, key: randomBytes(32), sourceClient: client, readFreshSource: async () => source,
+    saveCapsule: async () => { saved = true; }, recordStatus: async s => statuses.push(structuredClone(s)) });
+  try {
+    await session.step({ password }); assert.equal(created, 0);
+    for (let i = 0; i < 2; i++) await assert.rejects(session.step({ code: "123456" }), { message: "reenrollment_step_failed" });
+    assert.deepEqual(seen, ["challenge-1", "challenge-2"]);
+    assert.equal(session.status().lastFailure, "source-totp"); assert.equal(saved, false);
+    const json = JSON.stringify(statuses);
+    for (const secret of [password, "123456", "PRIVATE_PROVIDER_ERROR", source.users[0].email, source.factors[0].secret]) assert.equal(json.includes(secret), false);
+    await session.close(); assert.equal(statuses.at(-1).stage, "closed");
+    assert.equal(statuses.at(-1).lastFailure, "source-totp");
+  } finally { await session.close(); }
+});

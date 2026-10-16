@@ -8,11 +8,16 @@ import { businessMigrationStatements } from "./business-runtime-import-schema.mj
 import { adminSource, adminSourceBinding, sealAdminReenrollment, openAdminReenrollment, SOURCE_PROJECT } from "./admin-reenrollment-capsule.mjs";
 
 const fail = () => { throw Error("reenrollment_step_failed"); };
-export function createReenrollmentSession({ source, sourceClient, readFreshSource, key, saveCapsule, now = Date.now }) {
+export function createReenrollmentSession({ source, sourceClient, readFreshSource, key, saveCapsule, recordStatus = async () => {}, now = Date.now }) {
   const { user, factor } = adminSource(source), binding = adminSourceBinding(source, key);
   const started = now(), deadline = started + 20 * 60000;
-  let stage = "password", password = null, challengeId = null, sourceVerifiedAt = null, mf = null, db = null, env = null;
+  let stage = "password", password = null, sourceVerifiedAt = null, mf = null, db = null, env = null;
   let busy = false, attempts = 0, cookies = new Map(), inFlight = null;
+  let phase = "input", lastFailure = null;
+  const status = () => ({ stage: stage === "done" ? "done" : now() >= deadline ? "closed" : stage,
+    expired: now() >= deadline, expiresAt: new Date(deadline).toISOString(),
+    remainingAttempts: Math.max(0, 5 - attempts), lastFailure });
+  const report = async () => { try { await recordStatus(status()); } catch { /* Diagnostics cannot invalidate an already saved result. */ } };
   const dispose = async () => {
     password = null; cookies.clear();
     try { await sourceClient.auth.signOut({ scope: "local" }); } catch { /* never log provider errors */ }
@@ -62,35 +67,45 @@ export function createReenrollmentSession({ source, sourceClient, readFreshSourc
     if (stage === "closed" || now() >= deadline) fail();
   };
   return {
-    status: () => ({ stage: now() >= deadline ? "closed" : stage, expired: now() >= deadline, remainingAttempts: Math.max(0, 5 - attempts) }),
-    close: async () => { stage = "closed"; if (inFlight) await inFlight; await dispose(); },
+    status,
+    close: async () => { if (stage !== "done") stage = "closed"; if (inFlight) await inFlight; await dispose(); await report(); },
     async step(input) {
       if (busy || stage === "done" || stage === "closed" || now() >= deadline || attempts >= 5) fail();
       busy = true; attempts += 1;
+      phase = "input"; lastFailure = null;
       let release; inFlight = new Promise(resolve => { release = resolve; });
       try {
         if (stage === "password") {
           if (typeof input.password !== "string" || input.password.length < 1 || input.password.length > 1024) fail();
+          phase = "source-password";
           const signed = await sourceClient.auth.signInWithPassword({ email: user.email, password: input.password });
           if (signed.error || signed.data?.user?.id !== user.id || !signed.data.session) fail();
+          phase = "source-identity";
           const checked = await sourceClient.auth.getUser(signed.data.session.access_token);
           if (checked.error || checked.data?.user?.id !== user.id || !checked.data.user.factors?.some(f => f.id === factor.id && f.status === "verified" && f.factor_type === "totp")) fail();
-          const challenge = await sourceClient.auth.mfa.challenge({ factorId: factor.id });
-          if (challenge.error || typeof challenge.data?.id !== "string") fail();
           if (stage === "closed" || now() >= deadline) fail();
-          challengeId = challenge.data.id; password = input.password; stage = "old-totp"; attempts = 0;
+          password = input.password; stage = "old-totp"; attempts = 0;
           return { stage };
         }
         if (!/^\d{6}$/.test(input.code ?? "")) fail();
         if (stage === "old-totp") {
-          const verified = await sourceClient.auth.mfa.verify({ factorId: factor.id, challengeId, code: input.code });
+          // A challenge can expire or be consumed on a failed attempt. Obtain a
+          // new one when the human submits each code, never reuse an old one.
+          phase = "source-challenge";
+          const challenge = await sourceClient.auth.mfa.challenge({ factorId: factor.id });
+          if (challenge.error || typeof challenge.data?.id !== "string") fail();
+          phase = "source-totp";
+          const verified = await sourceClient.auth.mfa.verify({ factorId: factor.id, challengeId: challenge.data.id, code: input.code });
           if (verified.error || typeof verified.data?.access_token !== "string") fail();
           // getUser validates this freshly returned token at Supabase; do not
           // trust a client-supplied JWT or decoded claims alone.
+          phase = "source-assurance";
           const checked = await sourceClient.auth.getUser(verified.data.access_token);
           const claims = JSON.parse(Buffer.from(verified.data.access_token.split(".")[1], "base64url").toString("utf8"));
           if (checked.error || checked.data?.user?.id !== user.id || claims.sub !== user.id || claims.aal !== "aal2" || claims.iss !== `https://${SOURCE_PROJECT}.supabase.co/auth/v1` || !Number.isInteger(claims.exp) || !Number.isInteger(claims.iat) || claims.exp * 1000 <= now() || claims.iat * 1000 < started - 60000 || claims.iat * 1000 > now() + 60000) fail();
+          phase = "source-readback";
           await assertFreshSource(); sourceVerifiedAt = new Date(now()).toISOString();
+          phase = "target-setup";
           const enabled = await createIsolatedTarget();
           if (enabled.method !== "totp" || !enabled.totpURI || !Array.isArray(enabled.backupCodes)) fail();
           if (stage === "closed" || now() >= deadline) fail();
@@ -98,14 +113,18 @@ export function createReenrollmentSession({ source, sourceClient, readFreshSourc
           return { stage, totpURI: enabled.totpURI, backupCodes: enabled.backupCodes };
         }
         if (stage !== "new-totp") fail();
+        phase = "target-totp";
         await target("/two-factor/verify-totp", { code: input.code });
         // Prove a fresh password login demands the NEW factor. The same entered
         // TOTP is verified by the SDK, not by a custom algorithm in this helper.
         cookies.clear();
+        phase = "target-login";
         const login = await target("/sign-in/email", { email: user.email.toLowerCase(), password });
         if (login.twoFactorRedirect !== true) fail();
+        phase = "target-login-totp";
         const verified = await target("/two-factor/verify-totp", { code: input.code });
         if (verified.user?.id !== user.id || typeof verified.token !== "string") fail();
+        phase = "target-assurance";
         const row = await db.prepare(`SELECT f.id, f.secret, f.backupCodes FROM "session" s
           JOIN "user" u ON u.id=s.userId AND u.twoFactorEnabled=1 AND u.banned=0
           JOIN "adminRole" r ON r.userId=u.id AND r.role='admin'
@@ -114,7 +133,9 @@ export function createReenrollmentSession({ source, sourceClient, readFreshSourc
           JOIN "mfaGeneration" g ON g.id=1 AND g.generation=a.generation
           WHERE s.token=? AND u.id=? AND s.expiresAt>? AND a.expiresAt>?`).bind(verified.token, user.id, new Date(now()).toISOString(), new Date(now()).toISOString()).first();
         if (!row) fail();
+        phase = "final-source-readback";
         await assertFreshSource();
+        phase = "save";
         const payload = { version: 1, userId: user.id, sourceFactorId: factor.id, sourceBinding: binding,
           sourceVerifiedAt, sourceAal: "aal2", verifiedAt: new Date(now()).toISOString(), targetFreshSessionVerified: true,
           factorId: row.id, rawSecret: await symmetricDecrypt({ key: env.BETTER_AUTH_SECRET, data: row.secret }),
@@ -125,12 +146,13 @@ export function createReenrollmentSession({ source, sourceClient, readFreshSourc
         await saveCapsule(capsule);
         stage = "done"; await dispose(); return { stage };
       } catch {
+        lastFailure = phase;
         // Setup failures after source verification are terminal. Never allow
         // retries to leave multiple isolated targets or save partial evidence.
         if (stage === "old-totp" && mf) { stage = "closed"; await dispose(); }
         if (attempts >= 5) { stage = "closed"; await dispose(); }
         fail();
-      } finally { busy = false; release(); inFlight = null; }
+      } finally { busy = false; release(); inFlight = null; await report(); }
     },
   };
 }

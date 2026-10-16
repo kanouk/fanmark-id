@@ -604,15 +604,15 @@
     },
     {
       "path": "scripts/migration/admin-reenrollment-server.mjs",
-      "sha256": "444b84f4c23e28512b07334b48f39f2fa3c2200a0813b2dee84eb469a3ac4624"
+      "sha256": "3790b19735ab1188dd9d768e88908db7c1e3d7ae2e8e1f9dd20385d9aece1618"
     },
     {
       "path": "scripts/migration/admin-reenrollment-session.mjs",
-      "sha256": "08ebc91dccf39eb8905c49cd7cfd421ae8b97e5f131bde2085cee98e9bda2716"
+      "sha256": "0cb88e616de8a78a1e20f464c73b774f30251ed24b116c1c00ddd100027af31c"
     },
     {
       "path": "scripts/migration/admin-reenrollment.html",
-      "sha256": "57c1ff7c60fd42d783c482df7ca978ca182a4bb30c19fdf3c9cf3d13e8a96b15"
+      "sha256": "59f73f354c237c8655c978f3f914055a8254a7faee8d7cc7909b3ddd83881ebe"
     },
     {
       "path": "scripts/migration/auth-identity-preflight.mjs",
@@ -636,7 +636,7 @@
     },
     {
       "path": "scripts/migration/run-admin-reenrollment.mjs",
-      "sha256": "1b6387136580703aa175b7a4b1f4a0fab0427367065c44e0dfe8fad03419ae2a"
+      "sha256": "12c8be4fb24cbc70096a2b0be1b0649e4349ab5aa4436ec8435e7171a2b8c2d9"
     },
     {
       "path": "scripts/migration/source-scheduled-writers.sql",
@@ -668,7 +668,7 @@
     },
     {
       "path": "scripts/migration/test-admin-reenrollment.mjs",
-      "sha256": "52dc2fca90f04838ea140dd24e5fa331d08661b1316c0ea3948f48c870378e9b"
+      "sha256": "631b89724024c52a74d5b096acc09daf4856e93dfc98eb87f88d414855231878"
     },
     {
       "path": "scripts/migration/test-auth-identity-preflight.mjs",

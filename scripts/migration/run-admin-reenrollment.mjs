@@ -41,7 +41,12 @@ try {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, debug: false },
     global: { fetch: (url, options) => fetch(url, { ...options, signal: AbortSignal.timeout(15000), redirect: "error" }) },
   });
-  const session = createReenrollmentSession({ source, sourceClient, readFreshSource, key,
+  const recordStatus = async status => {
+    // Fixed phase names and counters only. No identity, input, SDK errors,
+    // QR/secret, recovery code, cookie, or token is recorded here.
+    await writeFile(resolve(dir, "admin-reenrollment-status.json"), JSON.stringify({ observedAt: new Date().toISOString(), ...status }), { mode: 0o600 });
+  };
+  const session = createReenrollmentSession({ source, sourceClient, readFreshSource, key, recordStatus,
     saveCapsule: async capsule => {
       openAdminReenrollment(await readFreshSource(), { capsule, key });
       await writeFile(capsulePath, JSON.stringify(capsule), { mode: 0o600, flag: "wx" });
@@ -49,6 +54,7 @@ try {
       console.log("admin_reenrollment_saved_and_readback_verified; production_import_and_login_pending");
     },
   });
+  await recordStatus(session.status());
   const server = await startReenrollmentServer(session);
   console.log(`Open privately on this Mac: ${server.url}`);
   console.log("Waiting for the administrator. No production data import or DNS change is performed by this helper.");

@@ -42,7 +42,7 @@ export async function startReenrollmentServer(session) {
         result.qrSvg = renderToStaticMarkup(React.createElement(QRCodeSVG, { value: result.totpURI, size: 220, level: "M" }));
         enrollmentDisplay = { totpURI: result.totpURI, backupCodes: result.backupCodes, qrSvg: result.qrSvg };
       } else if (result.stage !== "new-totp") enrollmentDisplay = null;
-      reply(200, result);
+      reply(200, { ...session.status(), ...result });
     } catch { reply(400, { error: "step_failed" }); }
   });
   server.requestTimeout = 120000; server.headersTimeout = 10000;
