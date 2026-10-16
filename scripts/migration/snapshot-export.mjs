@@ -399,7 +399,7 @@ class PsqlSession {
     if (targets.length !== 1) throw fail("sequence_target_unsupported");
     const token = randomToken("sequence");
     const payload = await this.#exec(`WITH sequence_metadata AS (
-      SELECT sn.nspname AS schema_name, sequence.relname AS sequence_name,
+      SELECT sn.nspname AS schema_name, seq_rel.relname AS sequence_name,
         owner_namespace.nspname AS owner_schema, owner_table.relname AS owner_table,
         owner_column.attname AS owner_column, sequence_definition.seqstart::text AS start_value,
         sequence_definition.seqincrement::text AS increment_by, sequence_definition.seqmin::text AS min_value,

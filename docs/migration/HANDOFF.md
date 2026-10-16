@@ -1,3 +1,17 @@
+## 2026-10-16: 実データの暗号化予備コピーとローカル移送
+
+管理者の再登録capsuleを読み戻し、最新source bindingと全Auth投影を確認した。旧factorを残したまま、新MFAの保存が完了。有効期限は10月17日20:20:41 JST。[認証記録](evidence/admin-reenrollment-verified-2026-10-16.json)。
+
+実DB40表・5,770行とStorage109件/13,285,729 bytesをGit外へ暗号化予備保存。別processで復元して全行hash/件数・全画像hashを照合した。ローカルnative D1へ実Auth15 users/28 accounts/1 admin MFAと業務40表を移送し、全表照合とFK0を確認した。[限定記録](evidence/real-precopy-rehearsal-2026-10-16.json)。読取用sequence SQLの未定義aliasを修正し、実sourceで動作と関連20試験を確認。移送先のschema gateを閉じた意味ではなく、既存の4 groupは残る。
+
+sourceは稼働中で、DB/Auth/Storageは別時刻の予備コピー。本番import・停止/drain・Webhook引継ぎ・domain切替・main mergeは未実施。CLI OAuthはzone identity/Worker routesの読取に成功、DNS/rules/TLS APIは403。管理画面では元のDNS17件とTLSを再確認したが、API record ID付きの復元票は未完了。次は本番専用runnerと独立checker、source停止/受信引継ぎ、production設定・復旧経路を完成させる。以前の入力待ち・未保存記述は以下の履歴。
+
+## 2026-10-16 20:21 JST: 管理者の再登録保存を確認
+
+本人の操作後、暗号化capsuleの復号・読戻し、最新Supabase snapshotとのsource binding一致、全Auth投影、管理者MFA有効状態を確認した。旧AAL2と新SDKのfresh sessionによる認証が成功済み。[限定証拠](evidence/admin-reenrollment-verified-2026-10-16.json)。有効期限は2026-10-17 20:20:41 JST。旧factorは保持し、本番import・実target管理者ログインはまだ未実施。
+
+7475ca8のCI38841779399は両job成功。実DB/Storageの暗号化予備コピーとP1〜P8の残実装を継続する。旧サービスを止める前に移送・停止/復旧経路を完成させる。PR41既存ブランチとmain保持を継続。以下の未保存・入力待ちは各時点の履歴。
+
 ## 2026-10-16: 再登録画面の終了と再開
 
 本人から完了の回答を受けたが、保存先にcapsuleがなく、元画面には確認失敗・終了が残っていた。QRの追加場所について本人から質問があり、旧password→旧TOTPの後に新QRが表示される手順を案内した。完了とは扱わない。helperは終了済みで、失敗した正確な段階の永続記録がなかった。

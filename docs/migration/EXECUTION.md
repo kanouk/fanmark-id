@@ -1,3 +1,11 @@
+## 2026-10-16: 実データの暗号化予備コピーとローカル移送
+
+管理者の再登録capsuleを読み戻し、最新source bindingと全Auth投影を確認した。旧factorを残したまま、新MFAの保存が完了。有効期限は10月17日20:20:41 JST。[認証記録](evidence/admin-reenrollment-verified-2026-10-16.json)。
+
+実DB40表・5,770行とStorage109件/13,285,729 bytesをGit外へ暗号化予備保存。別processで復元して全行hash/件数・全画像hashを照合した。ローカルnative D1へ実Auth15 users/28 accounts/1 admin MFAと業務40表を移送し、全表照合とFK0を確認した。[限定記録](evidence/real-precopy-rehearsal-2026-10-16.json)。読取用sequence SQLの未定義aliasを修正し、実sourceで動作と関連20試験を確認。移送先のschema gateを閉じた意味ではなく、既存の4 groupは残る。
+
+sourceは稼働中で、DB/Auth/Storageは別時刻の予備コピー。本番import・停止/drain・Webhook引継ぎ・domain切替・main mergeは未実施。CLI OAuthはzone identity/Worker routesの読取に成功、DNS/rules/TLS APIは403。管理画面では元のDNS17件とTLSを再確認したが、API record ID付きの復元票は未完了。次は本番専用runnerと独立checker、source停止/受信引継ぎ、production設定・復旧経路を完成させる。以前の入力待ち・未保存記述は以下の履歴。
+
 ## 2026-10-16: 本人用MFA再登録入口と本番空D1の準備
 
 所有者の再登録選択に従い、旧AAL2・native新MFA・fresh session・source bindingを要求する[local helper](admin-reenrollment.md)を実装。本人入力待ち。本番専用D1にAuth4/Master9/Business27 migrationを適用し、[独立した読戻し](evidence/production-schema-readback-2026-10-16.json)で全構造・ledger・seed一致/FK0を確認した。実データ移送、旧環境の停止、DNS変更、mergeは未実施。

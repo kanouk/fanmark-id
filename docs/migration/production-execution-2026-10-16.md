@@ -17,9 +17,9 @@
 
 SupabaseはTOTPのランダムな秘密バイト列をBase32文字列で保存する。一方、固定版Better Auth 1.7.5のtwo-factor pluginは復号した文字列をUTF-8にしてHMACへ渡す。Base32文字列をそのまま暗号化・コピーすると、同じ認証アプリのコードが401 `INVALID_CODE`になることを合成データと実D1互換runtimeで再現した。
 
-[Auth投影](../../scripts/migration/supabase-auth-projection.mjs)はBase32を復号し、UTF-8との往復で元バイト列が完全一致する場合だけ変換する。それ以外は `source_auth_totp_binary_key_requires_adapter` で拒否する。**今回の実Auth予備コピーはこの条件に該当し、移送可能とは判定していない。** 二段階認証を削除したり、emailVerifiedを真にしたり、管理権限をメール一致で作ったりして通過させない。
+[Auth投影](../../scripts/migration/supabase-auth-projection.mjs)はBase32を復号し、UTF-8との往復で元バイト列が完全一致する場合だけ変換する。それ以外は `source_auth_totp_binary_key_requires_adapter` で拒否する。**当初の実Auth予備コピーはこの条件に該当した。後述の本人再登録と最新source binding照合を経て、新factorへの投影を確認済み。旧factorの単純コピーは引き続き拒否する。** 二段階認証を削除したり、emailVerifiedを真にしたり、管理権限をメール一致で作ったりして通過させない。
 
-所有者は「移行先で認証アプリを再登録する」を選択済み。独自TOTP互換adapterは追加しない。以下の選択肢は判断時点の記録。保護された再登録helperは実装し、合成データのnative試験が成功した。実本人による操作と本番targetへの適用・ログイン確認は未実施。詳しくは [管理者の再登録手順](admin-reenrollment.md)。
+所有者は「移行先で認証アプリを再登録する」を選択済み。独自TOTP互換adapterは追加しない。以下の選択肢は判断時点の記録。保護された再登録helperは実装し、合成データのnative試験が成功した。2026-10-16 20:20 JSTに実本人の操作が完了し、20:21 JSTに暗号化保存の読戻し、最新sourceとの一致、全Auth投影を確認した。本番targetへの適用・ログイン確認は未実施。[限定証拠](evidence/admin-reenrollment-verified-2026-10-16.json)。詳しくは [管理者の再登録手順](admin-reenrollment.md)。
 
 1. 推奨：管理者の認証アプリを移行先で再登録する。独自の暗号・認証分岐を増やさない。旧環境で本人と現在のMFAを確認し、非公開の移行先で新MFA・現在sessionの管理権限を確認してから公開する。本人用の閉鎖中再登録経路、再登録結果を最終snapshotへ結び付ける照合、途中失敗時の旧環境維持が必要で、これらは後述のlocal helperと暗号化capsuleに実装済み。本番適用の確認は残る。
 2. 現在の登録を維持する：任意のバイト列を扱うTOTP互換adapterを追加する。SDKのlockout、試行回数、署名cookie、session、MFA assuranceと整合する独立試験が必要。node_modulesの書き換えやMFAの無効化で代用しない。
@@ -37,14 +37,24 @@ SupabaseはTOTPのランダムな秘密バイト列をBase32文字列で保存�
 
 ## 残る実装・当日条件
 
-P1は保存先作成とschema適用・読戻しまで完了。Worker/DO/ratelimit/production application config、secret custody、バックアップ・監視は未完了。P2の本番移送runner/独立checker、P3の全source writer停止/drain、P4の旧receipt receiverと引継ぎ、P5の今回のMFAの実本人操作と本番確認、P6のprovider/Stripe照合と変更・復元票、P7の実資源復旧、P8の全データ予備移送実測も残る。MFA方針は確定済みだが、再登録だけで切替可能になるわけではない。
+P1は保存先作成とschema適用・読戻しまで完了。Worker/DO/ratelimit/production application config、secret custody、バックアップ・監視は未完了。P2の本番移送runner/独立checker、P3の全source writer停止/drain、P4の旧receipt receiverと引継ぎ、P5のMFA本番適用と実target確認、P6のprovider/Stripe照合と変更・復元票、P7の実資源復旧、P8の全データ予備移送実測も残る。MFA方針は確定済みだが、再登録だけで切替可能になるわけではない。
 
 本番D1のAuth4/Master9/Business27 migrationを適用後、`verify-production-empty-schema.mjs`が別のnative local D1と構造を完全一致で比較した。9/24/78表、30/97/225 schema object、ledgerと全初期seed件数が一致し、FK違反0。[読戻し証拠](evidence/production-schema-readback-2026-10-16.json)。このcheckerはremote SELECT/PRAGMAだけを発行し、実データが入った後はseed一致条件で停止する。元のサービスには接続しない。D1 listのnum_tablesは既存DBも0を返すため、空確認の根拠には使わずsqlite_masterを直接検査した。
 
-ソース更新、業務データの移送、DNS切替、新旧dispatcher変更、送信・実課金、mainへのmergeは行っていない。次はMFA方針に沿った移行入口を作り、上記条件を完成させる。条件がそろうまで停止時間を開始しない。
+ソース更新、業務データの移送、DNS切替、新旧dispatcher変更、送信・実課金、mainへのmergeは行っていない。次は本番専用runner、source停止・受信引継ぎと本番設定・復旧経路を完成させる。条件がそろうまで停止時間を開始しない。
 
 ## 検証
 
 Node 22.6.0でAuth投影4件、既存Auth preflight4件、production preparation9件の合計17件が成功。native D1と固定SDKで移送した合成bcryptによるログイン→TOTP要求→元の認証コード→同じuser/factorのMFA assurance、停止中/未確認メールの拒否を確認した。実利用者のログイン・OAuth callback・本番import成功は検証していない。
 
 参考：固定版SDKの `plugins/two-factor/index.mjs`、`totp/index.mjs`、`@better-auth/utils/dist/hmac.mjs` を直接確認した。[Better Authの暗号化仕様](https://better-auth.com/docs/reference/security)も参照したが、移送可否は上記の実装と再現試験に基づく。
+
+## 実データ予備コピー・ローカル移送（20:26〜20:31 JST）
+
+- Public DB40表・5,770行をrepeatable-readで取得し、暗号化保存。採番状態の読取SQLで未定義alias `sequence` を `seq_rel` へ修正し、実source queryと関連20試験を確認。取得は79.3秒、別processでのファイル復元・全行検証は0.9秒。
+- Storage109件・13,285,729 bytesを取得前後のinventory一致付きで保存。画像とmetadataを暗号化した一つのarchiveを別processで復号し、既存verifierで全109件のhashを照合。取得61.3秒、ファイル復元・検証0.2秒。
+- 最新Authを別途暗号化保存し、再登録capsuleを適用してローカルnative D1へ15 users/28 accounts/1 admin MFAを投入。Business27/Auth4 migrationの構造で業務40表を移送し、全表照合・FK0。Auth取得から片付け前の照合まで70.6秒。
+
+[集計証拠](evidence/real-precopy-rehearsal-2026-10-16.json)。これは稼働中sourceの予備検証であり、DB/Auth/Storageの確定共通境界ではない。StorageのR2復元、本番D1取り込み、実本番ログイン、全source意味論の承認は未完了。ローカル検証だけで既存の未解決4 schema groupを許容し、remote guardは変更していない。停止枠・本番移送/RTOの見積もりに上のファイル復元時間を代入しない。
+
+秘密原本・private capture/restore driver・詳細reportは既存Git外ディレクトリに保持。短命なDB接続資格情報を含んだCLI dry-run fileは取得後に削除した。公開前には確定snapshotを取り直す。

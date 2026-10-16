@@ -1,0 +1,16 @@
+{
+  "observedAt": "2026-10-16T11:21:43.397Z",
+  "sourceProject": "ppqgtbjykitqtiaisyji",
+  "savedCapsuleReadback": true,
+  "sourceBindingMatchesCurrent": true,
+  "sourceAal2Verified": true,
+  "newMfaFreshSessionVerified": true,
+  "registeredAt": "2026-10-16T11:20:41.448Z",
+  "validUntil": "2026-10-17T11:20:41.448Z",
+  "authProjectionPassed": true,
+  "adminMfaEnabled": true,
+  "capsuleSha256": "f66c5349a4920fec3e6a7a22081a2c785afb0fb536f15791fb9631527b3ec181",
+  "productionReady": false,
+  "productionImported": false,
+  "productionAdminLoginVerified": false
+}

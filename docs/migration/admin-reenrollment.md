@@ -46,5 +46,6 @@ AES-256-GCMのAADはprojectとpurposeを固定する。source bindingは同じ�
 合成のsource API応答とnative D1/Better Authで正常経路を確認する。実Supabaseの本人操作や本番D1への移送成功とは区別する。
 既存Auth投影試験も継続する。通常CIの`test:migration-data`に含める。
 
-実本人の再登録、prod key custody、最終snapshotの照合、本番import、実targetの管理者ログインは未完了。
+2026-10-16 20:20 JSTに実本人の再登録が完了し、20:21 JSTに暗号化capsule読戻し、最新source binding、全Auth投影と管理者MFA有効を確認した。[検証記録](evidence/admin-reenrollment-verified-2026-10-16.json)。有効期限は翌17日20:20:41 JST。
+prod key custody、停止後の最終snapshot照合、本番import、実targetの管理者ログインは未完了。
 その他P1〜P8の条件が揃うまで旧サービスを停止せず、ドメインを切り替えない。
