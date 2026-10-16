@@ -66,3 +66,18 @@ Node 22.6.0でAuth投影4件、既存Auth preflight4件、production preparation
 20:39 JSTの実source集計では、identity対象926行（fanmarks50/discoveries306/events570/favorites0）のNULL・空配列・形状違反・正規化重複・表示重複は全0。[実データidentity条件](evidence/source-identity-real-preflight-2026-10-16.json)。停止後に再検査する。外部/直接API利用者の有無は所有者に確認中。
 
 コード修正58dd606のCI38894830871はApplication/Worker両job成功。関連ローカル試験はsnapshot20/encryption4/preparation9件成功。mainは`e5a553c0bcc938a308def6f3770f1a84db88d389`を保持。以後の追加commitは検証記録のみ。
+
+## 絵文字マスターの既存更新経路を再確認
+
+外部連携の確認に対し、所有者から「絵文字マスターを更新するスクリプト」の指摘を受けた。これは既に[絵文字公開手順](emoji-releases.md)で追跡しているリポジトリ内の既知経路である。所有者が他の連携の不存在を確認したとは扱わない。
+
+| 段階 | 既存経路と接続先 | 移行時の扱い |
+| --- | --- | --- |
+| Unicodeデータの変換 | `scripts/convert-emoji-test.mjs`がローカルのテキストをCSV/JSONへ変換。DBへ接続しない | 継続利用できる。移行と同時にUnicode版の更新は行わない |
+| マスターへの取り込み・編集 | `src/components/AdminEmojiMaster.tsx`の旧モードがSupabase `emoji_master`へ書き込む | source停止対象。移行先ではMFA付き管理APIからMaster D1のdraftを更新し、既存UUIDを維持する |
+| UUID付きカタログ生成 | `scripts/generate-emoji-catalog.ts`はSupabase資格情報があり明示入力がない場合に全件SELECTし、ローカルTSを生成。Supabaseへの書き込みはしない | 本番MasterのUUID付きexportを明示入力にして生成する。本番export先・公開サービスの固定と検証は未完了 |
+| Cloudflareでの公開 | stagingのexport・release生成・stage/promotion/rollbackは10月13日の証拠あり | staging専用CLIを本番へ流用せず、本番の接続・公開・復旧を別途検証する |
+
+移行ブランチのGitHub Actions 2ファイルに絵文字更新の定期実行はない。Unicode月次チェックは既存文書でも提案段階であり、今回ジョブの追加やマスター更新は行っていない。リポジトリ外のスクリプトコピーや端末・外部サービスの定期実行の不存在までは、この確認では証明していない。
+
+前回の記録更新4f935f9のCI38896468680も成功を確認した。この追記は運用経路の記録のみで、本番のデータ・設定は変更していない。
