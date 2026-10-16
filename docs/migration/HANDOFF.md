@@ -1,8 +1,8 @@
 ## 2026-10-16: 本番実施指示・予備Auth取得・専用資源作成
 
-所有者がデータ移行とドメイン切替を明示指示。以前の本番変更禁止は更新済み。3サイトのログイン確認後、本番用の空D1 3個/R2 3個を作成し、DNS設定をexport、実Authの暗号化予備コピーと投影検査を行った。実TOTPキーは固定SDKへ単純変換できず停止。管理者MFAの保護された再登録（推奨）か互換adapter追加を所有者に提示し回答待ち。承認不足とは扱わない。
+所有者がデータ移行とドメイン切替を明示指示。以前の本番変更禁止は更新済み。3サイトのログイン確認後、本番用の空D1 3個/R2 3個を作成し、DNS設定をexport、実Authの暗号化予備コピーと投影検査を行った。実TOTPキーは固定SDKへ単純変換できず停止。管理者MFAは所有者が移行先での再登録を選択済み。保護されたlocal helperを実装し、native SDKの再登録・fresh loginと拒否条件を合成試験で確認した。[本人の入力手順](admin-reenrollment.md)へ進む。承認不足とは扱わない。
 
-[実行記録と残条件](production-execution-2026-10-16.md) / [作成済み資源](production-resources.json)。493976dのCIは両job成功、新規ローカル関連試験17件成功。source停止・targetへの実データ投入・Worker配備・DNS変更・mergeは未実施。P1〜P8の残実装もあり、MFA回答だけで公開可能ではない。秘密原本はGit外の `/Users/kanouk/.codex/private/fanmark-cutover-2026-10-16/` に保存。PR41の既存ブランチとmain保持を継続する。
+[実行記録と残条件](production-execution-2026-10-16.md) / [作成済み資源](production-resources.json)。4078035のCI38825681182は両job成功、新規ローカル関連試験17件成功。source停止・targetへの実データ投入・Worker配備・DNS変更・mergeは未実施。P1〜P8の残実装もあり、MFA回答だけで公開可能ではない。秘密原本はGit外の `/Users/kanouk/.codex/private/fanmark-cutover-2026-10-16/` に保存。PR41の既存ブランチとmain保持を継続する。
 
 ## 2026-10-15: CI確認・停止境界とAuthのレビュー
 

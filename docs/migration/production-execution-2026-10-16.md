@@ -19,9 +19,9 @@ SupabaseはTOTPのランダムな秘密バイト列をBase32文字列で保存�
 
 [Auth投影](../../scripts/migration/supabase-auth-projection.mjs)はBase32を復号し、UTF-8との往復で元バイト列が完全一致する場合だけ変換する。それ以外は `source_auth_totp_binary_key_requires_adapter` で拒否する。**今回の実Auth予備コピーはこの条件に該当し、移送可能とは判定していない。** 二段階認証を削除したり、emailVerifiedを真にしたり、管理権限をメール一致で作ったりして通過させない。
 
-所有者には次の選択肢を提示済み。回答待ちであり、再登録・互換adapterとも未実施。
+所有者は「移行先で認証アプリを再登録する」を選択済み。独自TOTP互換adapterは追加しない。以下の選択肢は判断時点の記録。保護された再登録helperは実装し、合成データのnative試験が成功した。実本人による操作と本番targetへの適用・ログイン確認は未実施。詳しくは [管理者の再登録手順](admin-reenrollment.md)。
 
-1. 推奨：管理者の認証アプリを移行先で再登録する。独自の暗号・認証分岐を増やさない。旧環境で本人と現在のMFAを確認し、非公開の移行先で新MFA・現在sessionの管理権限を確認してから公開する。本人用の閉鎖中再登録経路、再登録結果を最終snapshotへ結び付ける照合、途中失敗時の旧環境維持が必要で、これらはまだ実装していない。
+1. 推奨：管理者の認証アプリを移行先で再登録する。独自の暗号・認証分岐を増やさない。旧環境で本人と現在のMFAを確認し、非公開の移行先で新MFA・現在sessionの管理権限を確認してから公開する。本人用の閉鎖中再登録経路、再登録結果を最終snapshotへ結び付ける照合、途中失敗時の旧環境維持が必要で、これらは後述のlocal helperと暗号化capsuleに実装済み。本番適用の確認は残る。
 2. 現在の登録を維持する：任意のバイト列を扱うTOTP互換adapterを追加する。SDKのlockout、試行回数、署名cookie、session、MFA assuranceと整合する独立試験が必要。node_modulesの書き換えやMFAの無効化で代用しない。
 
 投影処理はUUID・provider subject・bcrypt・email確認状態・停止状態・管理者対応を検査する。メールは大小文字衝突を拒否した上で、Better Authの検索に合わせて小文字へ正規化する。日時はSDKのミリ秒精度へ正規化する。旧session、refresh token、verification link、MFA assuranceは移さない。Supabaseにないbackup codeは勝手に発行せず、空の配列をSDK形式で暗号化する。処理の戻り値は常にproductionReady=falseであり、本番runnerではない。
@@ -37,7 +37,7 @@ SupabaseはTOTPのランダムな秘密バイト列をBase32文字列で保存�
 
 ## 残る実装・当日条件
 
-P1は空の保存先作成まで。Worker/DO/ratelimit/production config、schema適用、secret custody、バックアップ・監視は未完了。P2の本番移送runner/独立checker、P3の全source writer停止/drain、P4の旧receipt receiverと引継ぎ、P5の今回のMFA対応、P6のprovider/Stripe照合と変更・復元票、P7の実資源復旧、P8の全データ予備移送実測も残る。MFAの回答だけで切替可能になるわけではない。
+P1は空の保存先作成まで。Worker/DO/ratelimit/production config、schema適用、secret custody、バックアップ・監視は未完了。P2の本番移送runner/独立checker、P3の全source writer停止/drain、P4の旧receipt receiverと引継ぎ、P5の今回のMFA対応、P6のprovider/Stripe照合と変更・復元票、P7の実資源復旧、P8の全データ予備移送実測も残る。MFA方針は確定済みだが、再登録だけで切替可能になるわけではない。
 
 ソース更新、業務データの移送、DNS切替、新旧dispatcher変更、送信・実課金、mainへのmergeは行っていない。次はMFA方針に沿った移行入口を作り、上記条件を完成させる。条件がそろうまで停止時間を開始しない。
 

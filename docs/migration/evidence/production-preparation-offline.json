@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "6850d94bca6f876553ef75285d3918d4d821e578d7e5a0217baa3686f4ef4809"
+    "sha256": "8017c10a9b2faff12d8754a8eb7417d9ea01ce49c31b5c08d3f4b67a71bf2e7c"
   },
   "variables": [
     {
@@ -599,6 +599,22 @@
       "sha256": "b6d7d8ebf20c5dbfd7fe092f15021ca90b99875ab933e612693fc70e74020280"
     },
     {
+      "path": "scripts/migration/admin-reenrollment-capsule.mjs",
+      "sha256": "4fc07d7e36daf3a8830bcaed91f4a57543eb3627029f1cc3d75b09e780fc0d7a"
+    },
+    {
+      "path": "scripts/migration/admin-reenrollment-server.mjs",
+      "sha256": "444b84f4c23e28512b07334b48f39f2fa3c2200a0813b2dee84eb469a3ac4624"
+    },
+    {
+      "path": "scripts/migration/admin-reenrollment-session.mjs",
+      "sha256": "08ebc91dccf39eb8905c49cd7cfd421ae8b97e5f131bde2085cee98e9bda2716"
+    },
+    {
+      "path": "scripts/migration/admin-reenrollment.html",
+      "sha256": "57c1ff7c60fd42d783c482df7ca978ca182a4bb30c19fdf3c9cf3d13e8a96b15"
+    },
+    {
       "path": "scripts/migration/auth-identity-preflight.mjs",
       "sha256": "28bf4b1e5856df4df1ba8597420e36acf18b9f61dd78d533c691b34d453c8b47"
     },
@@ -619,6 +635,10 @@
       "sha256": "069bd9752319c39f9b48453133f0d2a49d405c510628a476a5a5418ac75672b4"
     },
     {
+      "path": "scripts/migration/run-admin-reenrollment.mjs",
+      "sha256": "1b6387136580703aa175b7a4b1f4a0fab0427367065c44e0dfe8fad03419ae2a"
+    },
+    {
       "path": "scripts/migration/source-scheduled-writers.sql",
       "sha256": "b7dfc1ff1b4511f51a21f3abce9b64ae074dd33621b57e60c2a95c91bf364752"
     },
@@ -636,11 +656,19 @@
     },
     {
       "path": "scripts/migration/supabase-auth-projection.mjs",
-      "sha256": "7e4fc8f21fce6e6cba61a87bdc5de534f91f1e08687b7014dcdc37bfdb6936b8"
+      "sha256": "aac1bcd9ee72e99ed5845cf1439dcc722a0fa7d6fa8db57a2b4df213f25d25e8"
     },
     {
       "path": "scripts/migration/supabase-auth-snapshot.sql",
       "sha256": "76c9dc7f374d228ce5b35aa638d2d1c3571c5ff599b7ac1fe5c6a34777b6236f"
+    },
+    {
+      "path": "scripts/migration/test-admin-reenrollment-server.mjs",
+      "sha256": "75c791e8a25190d892055ace4b4ea7acc864ea26e8bd10b145f81ebb42d4ff55"
+    },
+    {
+      "path": "scripts/migration/test-admin-reenrollment.mjs",
+      "sha256": "52dc2fca90f04838ea140dd24e5fa331d08661b1316c0ea3948f48c870378e9b"
     },
     {
       "path": "scripts/migration/test-auth-identity-preflight.mjs",
@@ -657,6 +685,10 @@
     {
       "path": "supabase/functions/handle-stripe-webhook/index.ts",
       "sha256": "85db1354f3e5cb7fe0bb5f7abcc83985a2bc21d8c2dd0eb92c98c5bc3ef203e4"
+    },
+    {
+      "path": "workers/api/src/better-auth.mjs",
+      "sha256": "eb18c8d2e9dadf7996a56904ee63fb92e1661a04dbb1827d02df0a6c5b735152"
     },
     {
       "path": "workers/api/src/cutover-write-freeze.ts",

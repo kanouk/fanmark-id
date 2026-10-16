@@ -1,5 +1,9 @@
 # fanmark.id TECH.md
 
+管理者MFAは所有者の選択に従って再登録する。[専用helperの手順](migration/admin-reenrollment.md)
+は旧Supabase AAL2確認後だけnative SDKの一時登録を許し、暗号化capsuleを最終sourceへ照合する。
+`npm run test:admin-reenrollment`で検証する。通常Workerに再登録用の公開例外は追加しない。
+
 本番Authの予備移送検査は `scripts/migration/supabase-auth-projection.mjs` と
 `npm run test:supabase-auth-projection`。SupabaseのBase32 TOTPをそのままBetter Authへ
 コピーせず、秘密バイト列のUTF-8往復一致を検査し、不一致は拒否する。実sourceはこの

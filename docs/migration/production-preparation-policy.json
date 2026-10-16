@@ -188,6 +188,14 @@
     "scripts/migration/test-auth-identity-preflight.mjs",
     "scripts/migration/supabase-auth-projection.mjs",
     "scripts/migration/supabase-auth-snapshot.sql",
-    "scripts/migration/test-supabase-auth-projection.mjs"
+    "scripts/migration/test-supabase-auth-projection.mjs",
+    "scripts/migration/admin-reenrollment-capsule.mjs",
+    "scripts/migration/admin-reenrollment-session.mjs",
+    "scripts/migration/admin-reenrollment-server.mjs",
+    "scripts/migration/admin-reenrollment.html",
+    "scripts/migration/run-admin-reenrollment.mjs",
+    "scripts/migration/test-admin-reenrollment.mjs",
+    "scripts/migration/test-admin-reenrollment-server.mjs",
+    "workers/api/src/better-auth.mjs"
   ]
 }

@@ -2,6 +2,7 @@
  * No sessions, refresh tokens, pending verification links or MFA assurance are copied.
  * This does not prove a frozen source, production import, or provider callback readiness.
  */
+import { openAdminReenrollment } from "./admin-reenrollment-capsule.mjs";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const PROVIDERS = new Set(["email", "google", "github", "discord", "apple"]);
 const fail = (code) => { throw new Error(`source_auth_${code}`); };
@@ -38,12 +39,15 @@ function totpRawSecret(value) {
   } catch { fail("totp_binary_key_requires_adapter"); }
 }
 
-export async function projectSupabaseAuth(source, { encrypt } = {}) {
+export async function projectSupabaseAuth(source, { encrypt, reenrollment } = {}) {
   if (!source || source.version !== 1 || typeof encrypt !== "function") fail("input_invalid");
   for (const table of ["users", "identities", "factors", "roles", "settings"]) {
     if (!Array.isArray(source[table]) || source[table].length > 20000) fail("table_invalid");
   }
   const observedAt = timestamp(source.observedAt);
+  // Only an authenticated, current-source-bound capsule may replace an old
+  // factor. There is deliberately no switch to drop or disable imported MFA.
+  const replacement = reenrollment ? openAdminReenrollment(source, reenrollment) : null;
   const users = unique(source.users, "id"), identities = unique(source.identities, "id");
   const factors = unique(source.factors, "id"), settings = unique(source.settings, "user_id");
   const emails = new Set(), subjects = new Set(), mfaUsers = new Set(), roleUsers = new Set();
@@ -81,7 +85,7 @@ export async function projectSupabaseAuth(source, { encrypt } = {}) {
     if (!users.has(uuid(f.user_id))) fail("orphan_factor");
     // Pending/unsupported/multiple factors require an explicit migration disposition.
     if (f.factor_type !== "totp" || f.status !== "verified" || !/^[A-Z2-7]{32}$/u.test(f.secret ?? "")) fail("factor_unsupported");
-    totpRawSecret(f.secret);
+    if (replacement?.sourceFactorId !== f.id) totpRawSecret(f.secret);
     if (mfaUsers.has(f.user_id)) fail("multiple_factors");
     mfaUsers.add(f.user_id);
   }
@@ -110,14 +114,17 @@ export async function projectSupabaseAuth(source, { encrypt } = {}) {
   }
   try {
     for (const f of factors.values()) {
-      const rawSecret = totpRawSecret(f.secret);
-      const secret = await encrypt(rawSecret), backupCodes = await encrypt("[]");
+      const replaced = replacement?.sourceFactorId === f.id;
+      const rawSecret = replaced ? replacement.rawSecret : totpRawSecret(f.secret);
+      const codes = replaced ? JSON.stringify(replacement.backupCodes) : "[]";
+      const secret = await encrypt(rawSecret), backupCodes = await encrypt(codes);
       if (typeof secret !== "string" || !secret || secret === rawSecret || typeof backupCodes !== "string" || !backupCodes || backupCodes === "[]") fail("encryption_invalid");
-      tables.twoFactor.push({ id: f.id, userId: f.user_id, secret, backupCodes, verified: 1, failedVerificationCount: 0, lockedUntil: null });
+      if (backupCodes === codes) fail("encryption_invalid");
+      tables.twoFactor.push({ id: replaced ? replacement.factorId : f.id, userId: f.user_id, secret, backupCodes, verified: 1, failedVerificationCount: 0, lockedUntil: null });
     }
   } catch { fail("encryption_failed"); }
   for (const r of source.roles) tables.adminRole.push({ userId: r.user_id, role: "admin" });
   return { version: 1, observedAt, productionReady: false, tables,
     omittedSessionState: ["session", "verification", "mfaAssurance"],
-    recoveryCodes: "none-issued-reenroll-or-generate-after-verified-login" };
+    recoveryCodes: replacement ? "protected-reenrollment-issued" : "none-issued-reenroll-or-generate-after-verified-login" };
 }
