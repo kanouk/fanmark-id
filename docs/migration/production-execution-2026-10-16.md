@@ -1,0 +1,83 @@
+# 2026-10-16 本番移行の開始前作業
+
+所有者からデータ移行・ドメイン切り替えの実施指示を受けた。以前の「本番変更なし」は今回の指示で更新された。PR #41・既存ブランチを継続し、本番確認までmainを維持する。**実施の許可はあるが、停止・確定移送・公開の技術条件は未達**。現在の本番サービスは停止していない。
+
+## 今回実行したこと
+
+- in-appブラウザでCloudflareの対象account/zone、Supabaseの本番project、Stripeのアカウントを確認。Stripeは開かれていたtest画面からlive画面へ移動し、read-only WebMCPでもlivemode=trueを確認した。
+- `493976d`のCI38753106454はApplication/Workerとも成功。今回の追加コードのCIとは区別する。
+- Supabaseのread-only transactionでAuthの形式・identity対応・管理者整合性・決済設定・定期処理を再確認した。個人行・秘密値をログに出さず、集計はGit外の0700ディレクトリ、0600ファイルに保存した。
+- 認証データだけをrepeatable-readの予備snapshotとして取得。CLI応答はメモリ内で処理し、AES-256-GCMで暗号化して保存後に復号一致を確認した。DB/Auth/画像全体の確定backupではなく、sourceは稼働中。鍵は専用ローカルファイルにあり、別保管・遠隔復旧は未検証。
+- 本番専用のD1 3個とR2 3個をAPACのlocation hintで作成した。[資源表](production-resources.json)のID・作成時刻を別のreadで確認。D1はtable数0、R2の情報はobject数0/size0、r2.dev公開は3個とも無効。backup bucketのcustom domainもなし。schema適用、アプリbinding、実データ投入、Worker配備はまだ行っていない。
+- Cloudflare管理画面からDNSのBIND zoneをexportし、Git外に保管した。DNS、証明書、Webhookの設定変更は0。
+
+秘密を含む原本と集計の保存先は `/Users/kanouk/.codex/private/fanmark-cutover-2026-10-16/`。このディレクトリをGitへ追加しない。`auth-precopy.aesgcm.json`と`auth-precopy.key`は予備調査用であり、本番復旧可能性を証明するものではない。
+
+## Authで見つかった停止条件
+
+SupabaseはTOTPのランダムな秘密バイト列をBase32文字列で保存する。一方、固定版Better Auth 1.7.5のtwo-factor pluginは復号した文字列をUTF-8にしてHMACへ渡す。Base32文字列をそのまま暗号化・コピーすると、同じ認証アプリのコードが401 `INVALID_CODE`になることを合成データと実D1互換runtimeで再現した。
+
+[Auth投影](../../scripts/migration/supabase-auth-projection.mjs)はBase32を復号し、UTF-8との往復で元バイト列が完全一致する場合だけ変換する。それ以外は `source_auth_totp_binary_key_requires_adapter` で拒否する。**当初の実Auth予備コピーはこの条件に該当した。後述の本人再登録と最新source binding照合を経て、新factorへの投影を確認済み。旧factorの単純コピーは引き続き拒否する。** 二段階認証を削除したり、emailVerifiedを真にしたり、管理権限をメール一致で作ったりして通過させない。
+
+所有者は「移行先で認証アプリを再登録する」を選択済み。独自TOTP互換adapterは追加しない。以下の選択肢は判断時点の記録。保護された再登録helperは実装し、合成データのnative試験が成功した。2026-10-16 20:20 JSTに実本人の操作が完了し、20:21 JSTに暗号化保存の読戻し、最新sourceとの一致、全Auth投影を確認した。本番targetへの適用・ログイン確認は未実施。[限定証拠](evidence/admin-reenrollment-verified-2026-10-16.json)。詳しくは [管理者の再登録手順](admin-reenrollment.md)。
+
+1. 推奨：管理者の認証アプリを移行先で再登録する。独自の暗号・認証分岐を増やさない。旧環境で本人と現在のMFAを確認し、非公開の移行先で新MFA・現在sessionの管理権限を確認してから公開する。本人用の閉鎖中再登録経路、再登録結果を最終snapshotへ結び付ける照合、途中失敗時の旧環境維持が必要で、これらは後述のlocal helperと暗号化capsuleに実装済み。本番適用の確認は残る。
+2. 現在の登録を維持する：任意のバイト列を扱うTOTP互換adapterを追加する。SDKのlockout、試行回数、署名cookie、session、MFA assuranceと整合する独立試験が必要。node_modulesの書き換えやMFAの無効化で代用しない。
+
+投影処理はUUID・provider subject・bcrypt・email確認状態・停止状態・管理者対応を検査する。メールは大小文字衝突を拒否した上で、Better Authの検索に合わせて小文字へ正規化する。日時はSDKのミリ秒精度へ正規化する。旧session、refresh token、verification link、MFA assuranceは移さない。Supabaseにないbackup codeは勝手に発行せず、空の配列をSDK形式で暗号化する。処理の戻り値は常にproductionReady=falseであり、本番runnerではない。
+
+## 決済とドメインの確認結果
+
+- 旧DBの `stripe_mode` はlive。Supabaseの現在の購読行は終了済みで、稼働中契約なしというDB集計を得たが、Stripeの現在値・未完了Checkout・遅延通知との照合は未完了。
+- 確認したStripe liveアカウント `acct_1SFjhvJk0VCfiKUp` のWebhookページは送信先未登録の画面だった。test側には通常stagingの送信先がある。旧本番secretがこのliveアカウントに属することはまだ確認していない。旧本番の受信経路が正常と推測したり、test webhookをlive用として変更したりしない。
+- Cloudflare zone `6a2c39c92ba1c4106b7c19f87ada0a7e`、account `bfc2890741f0b3fb236e2d755b6c9adc`。apex/www/adminはA `185.158.133.1`、authはCNAME `ppqgtbjykitqtiaisyji.supabase.co`。4件ともproxied/TTL Auto。全17件のzone exportを保存した。BIND exportはAPI record IDを含む復元票ではない。
+- Workers Routes一覧は空。Universal証明書は `fanmark.id` / `*.fanmark.id` に対しActive、表示期限2026-12-29。これは将来のCustom Domain切替を検証した結果ではない。
+- SupabaseのSite URLは `https://fanmark.id/`、redirect allowlistは既存5件を維持。OAuth provider側のcallback変更は未実施。
+- 旧notification cronはinactive、license expiry cronはUTC 00:00にactive。source全writerの停止を開始していない。
+
+## 残る実装・当日条件
+
+P1は保存先作成とschema適用・読戻しまで完了。Worker/DO/ratelimit/production application config、secret custody、バックアップ・監視は未完了。P2の本番移送runner/独立checker、P3の全source writer停止/drain、P4の旧receipt receiverと引継ぎ、P5のMFA本番適用と実target確認、P6のprovider/Stripe照合と変更・復元票、P7の実資源復旧、P8の全データ予備移送実測も残る。MFA方針は確定済みだが、再登録だけで切替可能になるわけではない。
+
+本番D1のAuth4/Master9/Business27 migrationを適用後、`verify-production-empty-schema.mjs`が別のnative local D1と構造を完全一致で比較した。9/24/78表、30/97/225 schema object、ledgerと全初期seed件数が一致し、FK違反0。[読戻し証拠](evidence/production-schema-readback-2026-10-16.json)。このcheckerはremote SELECT/PRAGMAだけを発行し、実データが入った後はseed一致条件で停止する。元のサービスには接続しない。D1 listのnum_tablesは既存DBも0を返すため、空確認の根拠には使わずsqlite_masterを直接検査した。
+
+ソース更新、業務データの移送、DNS切替、新旧dispatcher変更、送信・実課金、mainへのmergeは行っていない。次は本番専用runner、source停止・受信引継ぎと本番設定・復旧経路を完成させる。条件がそろうまで停止時間を開始しない。
+
+## 検証
+
+Node 22.6.0でAuth投影4件、既存Auth preflight4件、production preparation9件の合計17件が成功。native D1と固定SDKで移送した合成bcryptによるログイン→TOTP要求→元の認証コード→同じuser/factorのMFA assurance、停止中/未確認メールの拒否を確認した。実利用者のログイン・OAuth callback・本番import成功は検証していない。
+
+参考：固定版SDKの `plugins/two-factor/index.mjs`、`totp/index.mjs`、`@better-auth/utils/dist/hmac.mjs` を直接確認した。[Better Authの暗号化仕様](https://better-auth.com/docs/reference/security)も参照したが、移送可否は上記の実装と再現試験に基づく。
+
+## 実データ予備コピー・ローカル移送（20:26〜20:31 JST）
+
+- Public DB40表・5,770行をrepeatable-readで取得し、暗号化保存。採番状態の読取SQLで未定義alias `sequence` を `seq_rel` へ修正し、実source queryと関連20試験を確認。取得は79.3秒、別processでのファイル復元・全行検証は0.9秒。
+- Storage109件・13,285,729 bytesを取得前後のinventory一致付きで保存。画像とmetadataを暗号化した一つのarchiveを別processで復号し、既存verifierで全109件のhashを照合。取得61.3秒、ファイル復元・検証0.2秒。
+- 最新Authを別途暗号化保存し、再登録capsuleを適用してローカルnative D1へ15 users/28 accounts/1 admin MFAを投入。Business27/Auth4 migrationの構造で業務40表を移送し、全表照合・FK0。Auth取得から片付け前の照合まで70.6秒。
+
+[集計証拠](evidence/real-precopy-rehearsal-2026-10-16.json)。これは稼働中sourceの予備検証であり、DB/Auth/Storageの確定共通境界ではない。StorageのR2復元、本番D1取り込み、実本番ログイン、全source意味論の承認は未完了。ローカル検証だけで既存の未解決4 schema groupを許容し、remote guardは変更していない。停止枠・本番移送/RTOの見積もりに上のファイル復元時間を代入しない。
+
+秘密原本・private capture/restore driver・詳細reportは既存Git外ディレクトリに保持。短命なDB接続資格情報を含んだCLI dry-run fileは取得後に削除した。公開前には確定snapshotを取り直す。
+
+暗号化予備コピー6 object（18,738,059 bytes）を本番専用の非公開backup R2へ保存し、全objectを別downloadでhash照合した。復号鍵はuploadしていない。別場所での鍵保管と本番資源復旧の証明は未完了。[off-host記録](evidence/real-precopy-offhost-2026-10-16.json)。
+
+元のDNS17件は管理画面でも再確認。single redirectとPage Rulesは管理画面でともに未登録。apex/www/adminへのHEADは `/` と `/auth?migration_probe=read_only` の各2件で200、Locationなし。これだけで画面内遷移やadminの機能契約が同一とは扱わない。CLIのzone identity/Worker routesは読取成功、DNS/rules/page rules/TLS APIは403で、API record ID付き復元票は未完了。
+
+20:39 JSTの実source集計では、identity対象926行（fanmarks50/discoveries306/events570/favorites0）のNULL・空配列・形状違反・正規化重複・表示重複は全0。[実データidentity条件](evidence/source-identity-real-preflight-2026-10-16.json)。停止後に再検査する。外部/直接API利用者の有無は所有者に確認中。
+
+コード修正58dd606のCI38894830871はApplication/Worker両job成功。関連ローカル試験はsnapshot20/encryption4/preparation9件成功。mainは`e5a553c0bcc938a308def6f3770f1a84db88d389`を保持。以後の追加commitは検証記録のみ。
+
+## 絵文字マスターの既存更新経路を再確認
+
+外部連携の確認に対し、所有者から「絵文字マスターを更新するスクリプト」の指摘を受けた。これは既に[絵文字公開手順](emoji-releases.md)で追跡しているリポジトリ内の既知経路である。所有者が他の連携の不存在を確認したとは扱わない。
+
+| 段階 | 既存経路と接続先 | 移行時の扱い |
+| --- | --- | --- |
+| Unicodeデータの変換 | `scripts/convert-emoji-test.mjs`がローカルのテキストをCSV/JSONへ変換。DBへ接続しない | 継続利用できる。移行と同時にUnicode版の更新は行わない |
+| マスターへの取り込み・編集 | `src/components/AdminEmojiMaster.tsx`の旧モードがSupabase `emoji_master`へ書き込む | source停止対象。移行先ではMFA付き管理APIからMaster D1のdraftを更新し、既存UUIDを維持する |
+| UUID付きカタログ生成 | `scripts/generate-emoji-catalog.ts`はSupabase資格情報があり明示入力がない場合に全件SELECTし、ローカルTSを生成。Supabaseへの書き込みはしない | 本番MasterのUUID付きexportを明示入力にして生成する。本番export先・公開サービスの固定と検証は未完了 |
+| Cloudflareでの公開 | stagingのexport・release生成・stage/promotion/rollbackは10月13日の証拠あり | staging専用CLIを本番へ流用せず、本番の接続・公開・復旧を別途検証する |
+
+移行ブランチのGitHub Actions 2ファイルに絵文字更新の定期実行はない。Unicode月次チェックは既存文書でも提案段階であり、今回ジョブの追加やマスター更新は行っていない。リポジトリ外のスクリプトコピーや端末・外部サービスの定期実行の不存在までは、この確認では証明していない。
+
+前回の記録更新4f935f9のCI38896468680も成功を確認した。この追記は運用経路の記録のみで、本番のデータ・設定は変更していない。

@@ -1,0 +1,34 @@
+{
+  "state": "normal_staging_profile_auth_browser_and_cleanup_verified",
+  "sourceHead": "5c1504e95a133647ec6101127dffecf6388659af",
+  "mainVersion": "958b5ea2-525d-4a7e-adc6-f6b15bfdcf91",
+  "checks": [
+    "rendered email password login reaches dashboard",
+    "rendered own profile PATCH and reload persist",
+    "mobile viewport has no horizontal overflow",
+    "previous native save remains after new login",
+    "rendered logout returns to public home",
+    "rendered relogin restores saved own profile"
+  ],
+  "noSupabaseRequests": true,
+  "actualDeployedFrontendAndApi": true,
+  "syntheticAccountOnly": true,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "cleanup": {
+    "ownedAccountAndProfileRemoved": true,
+    "temporaryOperatorRemoved": true,
+    "allPreTestCountsRestored": true,
+    "humanAppleCredentialAndSessionPreserved": true,
+    "credentialValuesRead": false,
+    "foreignKeyViolations": 0,
+    "wakeDrained": true
+  },
+  "independentReadbackAt": "2026-10-13T06:52:59.854Z",
+  "screenshotSha256": "3cfba4d3a1769c632de1156a31a7db9cec938923309e5e1fa99ce0486fd560aa",
+  "retainedFailure": "Initial browser operation used logout label instead of the actual sign-out label; save/reload/mobile passed, subsequent run completed sign-out/relogin. The orphan owned session was revoked through owned authenticated API.",
+  "limits": [
+    "Focused normal staging profile/auth regression; not every application feature",
+    "390px browser emulation; actual phone acceptance is separate earlier evidence"
+  ]
+}

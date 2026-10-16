@@ -1,0 +1,38 @@
+{
+  "observedAt": "2026-10-04T10:50:14.633Z",
+  "acceptedHead": "2f45451b00044355bdad28089868a3e00f3df51c",
+  "ciRun": 37195682605,
+  "actualReadAccepted": true,
+  "d1WriteRejected": true,
+  "monitorWritePersisted": false,
+  "monitorWriteResponse": {
+    "httpStatus": 400,
+    "success": false,
+    "errorCodes": [
+      7500
+    ],
+    "rowsWritten": []
+  },
+  "validSqlPositiveControlAccepted": true,
+  "cleanupVerified": true,
+  "applicationDatabaseWritten": false,
+  "applicationVersionAndSettingsPreserved": true,
+  "retainedIdentityAndSessionPreserved": true,
+  "leastPrivilegeAccepted": true,
+  "tokenValuesExported": false,
+  "probeTarget": "new_disposable_d1_database",
+  "probeStatementType": "INSERT_one_synthetic_row",
+  "authorizationFailureRecognized": true,
+  "existingApplicationDatabasesUsedForWriteProbe": false,
+  "scope": "Configured Workers Scripts Read and D1 Read policy plus real D1 INSERT refusal; recurring monitoring and full operations remain separate.",
+  "independentReadback": {
+    "observedAt": "2026-10-04T10:51:53.976Z",
+    "d1InventoryMatchesOriginal": true,
+    "temporaryProbeDatabaseAbsent": true,
+    "retainedDatabaseCount": 3,
+    "workerVersionUnchanged": true,
+    "monitorTokenStillActive": true,
+    "credentialsExported": false
+  },
+  "fullOperationsAccepted": false
+}

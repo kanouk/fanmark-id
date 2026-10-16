@@ -1,0 +1,74 @@
+{
+  "state": "legacy_profile_frontend_real_local_auth_verified",
+  "observedAt": "2026-10-13T05:36:59.364Z",
+  "sourceBaseHead": "a687c5d539a1370658376cbb724506cd7081cac5",
+  "sourceFileSha256": {
+    "src/lib/profile-api.ts": "f66169b0d5b4e5e5286e186192faa665607799453439b700ff8a9568c656a5b9",
+    "src/hooks/useAuth.tsx": "a682a456b1c466d861a2ca8e53b2144d19b9b80b54fd81d18e95fac5c93be39f",
+    "src/hooks/useProfile.tsx": "6964244064edfe2abfe46cb4f94c0fe05b50f1157dba5be244c587e177d1dc07",
+    "workers/api/src/profile-supabase-repository.ts": "4f8977a5c34b554666386c91bdb0d7194c9c5e44f842d791e1b814fe496ba3aa",
+    "workers/api/src/legacy-supabase-auth.ts": "366795e5bb1b080ba64dc47281f1c724606b02064e4e30b383cd9781a3eb403b",
+    "workers/api/src/index.ts": "bf914e7a4933fcb2d59dfdffab8f096a51ca4a0c23294de039f98ad6b24636e1",
+    "scripts/migration/test-legacy-profile-supabase-local.mjs": "e5577501e5a89ff209e520e4663640a21a831e8cf72130d7c9501e4c63a55718"
+  },
+  "workerFixtureTests": 45,
+  "clientTests": 9,
+  "authAndReadinessTests": 14,
+  "existingD1ProfileRegressionTests": 12,
+  "appAndWorkerTypecheck": true,
+  "localRealUpstream": {
+    "images": {
+      "postgres": "postgres:17.6-alpine",
+      "auth": "supabase/gotrue:v2.196.0",
+      "rest": "postgrest/postgrest:v14.17"
+    },
+    "imageDigests": {
+      "postgres": [
+        "postgres@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94"
+      ],
+      "auth": [
+        "supabase/gotrue@sha256:c0c25187a6b835e65a6f6e6c6b39d090e832d40e6de5186f2c038e0411944232"
+      ],
+      "rest": [
+        "postgrest/postgrest@sha256:c9dc201e555f5d8e37e7f39cdd4df0229774996e213bfd7de8d10ac609030f2c"
+      ]
+    },
+    "authHealth": {
+      "version": "v2.196.0",
+      "name": "GoTrue",
+      "description": "GoTrue is a user registration and authentication API"
+    },
+    "checks": [
+      "real Auth signature and frontend own profile",
+      "real PostgREST service-role owner update",
+      "source RPC excludes only verified owner",
+      "foreign row retained",
+      "real Auth rejects forged token before elevated access",
+      "privilege and owner input rejected before data",
+      "real Auth ban rejects prior access token"
+    ],
+    "cleanupVerified": true,
+    "limitations": [
+      "Owned Auth v2.196.0/PostgREST fixture only; not live Supabase source version or rows",
+      "HTTPS alias is mapped to local HTTP ports solely by Miniflare test outboundService; not remote TLS proof",
+      "Reduced synthetic profile schema/RPC; not full source policy/trigger/schema parity",
+      "No rendered browser or Cloudflare remote deployment acceptance"
+    ]
+  },
+  "sourceBridgeBuild": true,
+  "normalV4Deployed": false,
+  "productionRequests": false,
+  "realUserDataMoved": false,
+  "domainChanged": false,
+  "retainedFailures": {
+    "localFixtureStartupAndSchemaPrerequisites": 4,
+    "localLoopbackProxyRequestFraming": 3,
+    "allOwnedResourcesCleaned": true
+  },
+  "remaining": [
+    "CI acceptance at new exact head",
+    "Rendered source-bridge browser journey",
+    "Cloudflare remote source-bridge rehearsal",
+    "Original issue criterion review; real existing identities remain in #38"
+  ]
+}

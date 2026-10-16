@@ -1,0 +1,796 @@
+{
+  "observedAt": "2026-10-05T15:29:56.812Z",
+  "project": "ppqgtbjykitqtiaisyji",
+  "readOnly": true,
+  "metadataStableBeforeAfter": true,
+  "functionBodiesDownloaded": 35,
+  "functionInvoked": false,
+  "applicationRowsRead": false,
+  "sourceMutationPerformed": false,
+  "sourceBodiesIncluded": false,
+  "functions": [
+    {
+      "name": "admin-expire-license",
+      "status": "ACTIVE",
+      "version": 20,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/admin-auth.ts",
+          "bytes": 3214,
+          "sha256": "3085c68b2168b3f888761e7a1e15b655719e2719d124175b8d5b687a6bce371f",
+          "checkedInPresent": true,
+          "checkedInSha256": "182a1381f3383d2f097cdb7e5913cf1b4bc8622c742f5f5ec399c0e7ee0346d0",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/admin-expire-license/index.ts",
+          "bytes": 5385,
+          "sha256": "3860c239de3211ff4574fa806ab7ed10e717db35a9e4c846fd7d1591b78e37a6",
+          "checkedInPresent": true,
+          "checkedInSha256": "3860c239de3211ff4574fa806ab7ed10e717db35a9e4c846fd7d1591b78e37a6",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "admin-get-user-detail",
+      "status": "ACTIVE",
+      "version": 219,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/admin-auth.ts",
+          "bytes": 3214,
+          "sha256": "3085c68b2168b3f888761e7a1e15b655719e2719d124175b8d5b687a6bce371f",
+          "checkedInPresent": true,
+          "checkedInSha256": "182a1381f3383d2f097cdb7e5913cf1b4bc8622c742f5f5ec399c0e7ee0346d0",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/admin-get-user-detail/index.ts",
+          "bytes": 8295,
+          "sha256": "0b094ddb4fd573634e9152dd36d028d242bed096eed779363d9ceeda6dbd29b4",
+          "checkedInPresent": true,
+          "checkedInSha256": "0b094ddb4fd573634e9152dd36d028d242bed096eed779363d9ceeda6dbd29b4",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "admin-list-users",
+      "status": "ACTIVE",
+      "version": 221,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/admin-auth.ts",
+          "bytes": 3214,
+          "sha256": "3085c68b2168b3f888761e7a1e15b655719e2719d124175b8d5b687a6bce371f",
+          "checkedInPresent": true,
+          "checkedInSha256": "182a1381f3383d2f097cdb7e5913cf1b4bc8622c742f5f5ec399c0e7ee0346d0",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/admin-list-users/index.ts",
+          "bytes": 9190,
+          "sha256": "3eaf920f89a8f455d9107d238cf80cce6d4d23d5a4e94f509b531c0c45e75e85",
+          "checkedInPresent": true,
+          "checkedInSha256": "3eaf920f89a8f455d9107d238cf80cce6d4d23d5a4e94f509b531c0c45e75e85",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "admin-toggle-user-status",
+      "status": "ACTIVE",
+      "version": 220,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/admin-auth.ts",
+          "bytes": 3214,
+          "sha256": "3085c68b2168b3f888761e7a1e15b655719e2719d124175b8d5b687a6bce371f",
+          "checkedInPresent": true,
+          "checkedInSha256": "182a1381f3383d2f097cdb7e5913cf1b4bc8622c742f5f5ec399c0e7ee0346d0",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/admin-toggle-user-status/index.ts",
+          "bytes": 2545,
+          "sha256": "603ba96231a8693c1cacff2048d556dba8f058dcb61d7caeb28bedd3f9973a31",
+          "checkedInPresent": true,
+          "checkedInSha256": "603ba96231a8693c1cacff2048d556dba8f058dcb61d7caeb28bedd3f9973a31",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "admin-trigger-password-reset",
+      "status": "ACTIVE",
+      "version": 220,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/admin-auth.ts",
+          "bytes": 3214,
+          "sha256": "3085c68b2168b3f888761e7a1e15b655719e2719d124175b8d5b687a6bce371f",
+          "checkedInPresent": true,
+          "checkedInSha256": "182a1381f3383d2f097cdb7e5913cf1b4bc8622c742f5f5ec399c0e7ee0346d0",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/admin-trigger-password-reset/index.ts",
+          "bytes": 2646,
+          "sha256": "b9cba87e08a35dc76d8e3909d42eb3dcf1ee19fcc91578f20105e706bc1ed547",
+          "checkedInPresent": true,
+          "checkedInSha256": "b9cba87e08a35dc76d8e3909d42eb3dcf1ee19fcc91578f20105e706bc1ed547",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "admin-update-user-plan",
+      "status": "ACTIVE",
+      "version": 220,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/admin-auth.ts",
+          "bytes": 3214,
+          "sha256": "3085c68b2168b3f888761e7a1e15b655719e2719d124175b8d5b687a6bce371f",
+          "checkedInPresent": true,
+          "checkedInSha256": "182a1381f3383d2f097cdb7e5913cf1b4bc8622c742f5f5ec399c0e7ee0346d0",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/admin-update-user-plan/index.ts",
+          "bytes": 5340,
+          "sha256": "9890e8ec6c072da2cca0d781e1b2a2c04cc0536f31a87a7b1ccfc07f81532db1",
+          "checkedInPresent": true,
+          "checkedInSha256": "9890e8ec6c072da2cca0d781e1b2a2c04cc0536f31a87a7b1ccfc07f81532db1",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "apply-extension-coupon",
+      "status": "ACTIVE",
+      "version": 75,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/plan-limits.ts",
+          "bytes": 2010,
+          "sha256": "d586c538060ed6c8c11c4151ac12828128468c1baf72b25fc31a24c2f7413080",
+          "checkedInPresent": true,
+          "checkedInSha256": "d586c538060ed6c8c11c4151ac12828128468c1baf72b25fc31a24c2f7413080",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/_shared/validation.ts",
+          "bytes": 12317,
+          "sha256": "39183e742c98b24b9328dd5ba9decf41789866187eb23a17b20386987e8760d7",
+          "checkedInPresent": true,
+          "checkedInSha256": "39183e742c98b24b9328dd5ba9decf41789866187eb23a17b20386987e8760d7",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/apply-extension-coupon/index.ts",
+          "bytes": 14579,
+          "sha256": "de507996952122f3c7c0ae1fb9d795f9c55e7127c8e189f8295ebf7d5fc7fb52",
+          "checkedInPresent": true,
+          "checkedInSha256": "de507996952122f3c7c0ae1fb9d795f9c55e7127c8e189f8295ebf7d5fc7fb52",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "apply-fanmark-lottery",
+      "status": "ACTIVE",
+      "version": 192,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/apply-fanmark-lottery/index.ts",
+          "bytes": 10657,
+          "sha256": "188e59769ee2300cdd5a5319221a0dcbb5305f3fca3d1bd11c2af177be12e678",
+          "checkedInPresent": true,
+          "checkedInSha256": "188e59769ee2300cdd5a5319221a0dcbb5305f3fca3d1bd11c2af177be12e678",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "apply-transfer-code",
+      "status": "ACTIVE",
+      "version": 106,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/apply-transfer-code/index.ts",
+          "bytes": 10375,
+          "sha256": "7014f420d6cd7b284c472d0ec7f11b69314441dd8ed30155e30cc398647c344f",
+          "checkedInPresent": true,
+          "checkedInSha256": "7014f420d6cd7b284c472d0ec7f11b69314441dd8ed30155e30cc398647c344f",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "approve-transfer-request",
+      "status": "ACTIVE",
+      "version": 104,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/approve-transfer-request/index.ts",
+          "bytes": 11609,
+          "sha256": "accc00cf7b878ec4dbf66d338ccdf2111572b19766951cae88d539f9094b123d",
+          "checkedInPresent": true,
+          "checkedInSha256": "accc00cf7b878ec4dbf66d338ccdf2111572b19766951cae88d539f9094b123d",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "bulk-return-fanmarks",
+      "status": "ACTIVE",
+      "version": 231,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/_shared/validation.ts",
+          "bytes": 12317,
+          "sha256": "39183e742c98b24b9328dd5ba9decf41789866187eb23a17b20386987e8760d7",
+          "checkedInPresent": true,
+          "checkedInSha256": "39183e742c98b24b9328dd5ba9decf41789866187eb23a17b20386987e8760d7",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/bulk-return-fanmarks/index.ts",
+          "bytes": 3055,
+          "sha256": "a15e22b9c4b1073a0b45380ee21bbf4305baffdbe4c0c00f73c4a3139f56b57a",
+          "checkedInPresent": true,
+          "checkedInSha256": "a15e22b9c4b1073a0b45380ee21bbf4305baffdbe4c0c00f73c4a3139f56b57a",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "cancel-lottery-entry",
+      "status": "ACTIVE",
+      "version": 189,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/cancel-lottery-entry/index.ts",
+          "bytes": 4323,
+          "sha256": "c0b8ac1488f85f813349af49fcf3a85ce8da6c99e899aa2298227e05f42608ca",
+          "checkedInPresent": true,
+          "checkedInSha256": "c0b8ac1488f85f813349af49fcf3a85ce8da6c99e899aa2298227e05f42608ca",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "cancel-transfer-code",
+      "status": "ACTIVE",
+      "version": 100,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/cancel-transfer-code/index.ts",
+          "bytes": 4782,
+          "sha256": "24b0a1198cc347fb8b967d07453c2992463bb4ac157ef362e160481ef9fd4f15",
+          "checkedInPresent": true,
+          "checkedInSha256": "24b0a1198cc347fb8b967d07453c2992463bb4ac157ef362e160481ef9fd4f15",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "change-subscription",
+      "status": "ACTIVE",
+      "version": 131,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/change-subscription/index.ts",
+          "bytes": 12399,
+          "sha256": "743a33b01ba38594205403203d59a94754ab2d44304af6782bfee65981bcbe00",
+          "checkedInPresent": true,
+          "checkedInSha256": "743a33b01ba38594205403203d59a94754ab2d44304af6782bfee65981bcbe00",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "check-email-exists",
+      "status": "ACTIVE",
+      "version": 304,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/check-email-exists/index.ts",
+          "bytes": 2640,
+          "sha256": "5bbb0b596f835bfa2f621f0516b0dd7e2456ab51511734b03f58ad0b2de28f02",
+          "checkedInPresent": true,
+          "checkedInSha256": "5bbb0b596f835bfa2f621f0516b0dd7e2456ab51511734b03f58ad0b2de28f02",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "check-expired-licenses",
+      "status": "ACTIVE",
+      "version": 300,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/check-expired-licenses/index.ts",
+          "bytes": 37302,
+          "sha256": "ffa74c48a24ab325047f44263b90d76ce653582f39fd6ed2affb1c8536390bed",
+          "checkedInPresent": true,
+          "checkedInSha256": "ffa74c48a24ab325047f44263b90d76ce653582f39fd6ed2affb1c8536390bed",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "check-subscription",
+      "status": "ACTIVE",
+      "version": 163,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/check-subscription/index.ts",
+          "bytes": 12691,
+          "sha256": "87b305474968969a8d08a2ad00da74527426b0d66f8ee5fe98de210ba54eaa2f",
+          "checkedInPresent": true,
+          "checkedInSha256": "87b305474968969a8d08a2ad00da74527426b0d66f8ee5fe98de210ba54eaa2f",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "create-checkout",
+      "status": "ACTIVE",
+      "version": 162,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/create-checkout/index.ts",
+          "bytes": 6319,
+          "sha256": "34c7a483833510390793b4aa02ef7c1dcf0e077fff1afa98965126ba85427fba",
+          "checkedInPresent": true,
+          "checkedInSha256": "34c7a483833510390793b4aa02ef7c1dcf0e077fff1afa98965126ba85427fba",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "create-extension-checkout",
+      "status": "ACTIVE",
+      "version": 152,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/plan-limits.ts",
+          "bytes": 2010,
+          "sha256": "d586c538060ed6c8c11c4151ac12828128468c1baf72b25fc31a24c2f7413080",
+          "checkedInPresent": true,
+          "checkedInSha256": "d586c538060ed6c8c11c4151ac12828128468c1baf72b25fc31a24c2f7413080",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/create-extension-checkout/index.ts",
+          "bytes": 5857,
+          "sha256": "846e531cc0d121de37b24d080ca0fc7e7a577c69adde0f54124abfbbd2a1daa0",
+          "checkedInPresent": true,
+          "checkedInSha256": "23fc4fa539b23e504c376e5e051a47724533184eb258cedadf14f20046a17007",
+          "checkedInMatch": false
+        }
+      ]
+    },
+    {
+      "name": "customer-portal",
+      "status": "ACTIVE",
+      "version": 159,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/customer-portal/index.ts",
+          "bytes": 4212,
+          "sha256": "961b415f3bb31177f2934bbbe84d7426acea7f999d75ff06fd1338459285874d",
+          "checkedInPresent": true,
+          "checkedInSha256": "961b415f3bb31177f2934bbbe84d7426acea7f999d75ff06fd1338459285874d",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "delete-user-account",
+      "status": "ACTIVE",
+      "version": 166,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/delete-user-account/index.ts",
+          "bytes": 11354,
+          "sha256": "bb6f5091c3e8fe07064e6f647079202524940f2a87bbcac4703bbe63d3644bac",
+          "checkedInPresent": true,
+          "checkedInSha256": "bb6f5091c3e8fe07064e6f647079202524940f2a87bbcac4703bbe63d3644bac",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "extend-fanmark-license",
+      "status": "ACTIVE",
+      "version": 227,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/plan-limits.ts",
+          "bytes": 2010,
+          "sha256": "d586c538060ed6c8c11c4151ac12828128468c1baf72b25fc31a24c2f7413080",
+          "checkedInPresent": true,
+          "checkedInSha256": "d586c538060ed6c8c11c4151ac12828128468c1baf72b25fc31a24c2f7413080",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/_shared/validation.ts",
+          "bytes": 12317,
+          "sha256": "39183e742c98b24b9328dd5ba9decf41789866187eb23a17b20386987e8760d7",
+          "checkedInPresent": true,
+          "checkedInSha256": "39183e742c98b24b9328dd5ba9decf41789866187eb23a17b20386987e8760d7",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/extend-fanmark-license/index.ts",
+          "bytes": 11752,
+          "sha256": "e57ebb8dbb5daaf4d757345039344d0997797d2e2ad0d16931ec434c426a62a5",
+          "checkedInPresent": true,
+          "checkedInSha256": "bc95689fa3272d20dd9b6af5f60e4ba6763356fbbd60125ac4e729457cc75e2b",
+          "checkedInMatch": false
+        }
+      ]
+    },
+    {
+      "name": "fanmark-ogp",
+      "status": "ACTIVE",
+      "version": 107,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/fanmark-ogp/index.ts",
+          "bytes": 9323,
+          "sha256": "ff4a4f4aa729cfe453731223dc1aaf91f7552db6f19ee02f448bb8a28f401a47",
+          "checkedInPresent": true,
+          "checkedInSha256": "ff4a4f4aa729cfe453731223dc1aaf91f7552db6f19ee02f448bb8a28f401a47",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "generate-ogp-image",
+      "status": "ACTIVE",
+      "version": 100,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/generate-ogp-image/index.ts",
+          "bytes": 5690,
+          "sha256": "c0184215ac1798bd85822f987199b266d37d4b989f2808f3b5dab812386f8b92",
+          "checkedInPresent": true,
+          "checkedInSha256": "c0184215ac1798bd85822f987199b266d37d4b989f2808f3b5dab812386f8b92",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "generate-transfer-code",
+      "status": "ACTIVE",
+      "version": 104,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/generate-transfer-code/index.ts",
+          "bytes": 8206,
+          "sha256": "1075414e8c41d4280b9afc5b55842e289d0e689876c3e8a8107b3fecc602e5fd",
+          "checkedInPresent": true,
+          "checkedInSha256": "1075414e8c41d4280b9afc5b55842e289d0e689876c3e8a8107b3fecc602e5fd",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "handle-stripe-webhook",
+      "status": "ACTIVE",
+      "version": 172,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/handle-stripe-webhook/index.ts",
+          "bytes": 22478,
+          "sha256": "9ff69d41dfb76c324bb7ad7269f477e14f0e898fafa1650780cd7388fca2d251",
+          "checkedInPresent": true,
+          "checkedInSha256": "85db1354f3e5cb7fe0bb5f7abcc83985a2bc21d8c2dd0eb92c98c5bc3ef203e4",
+          "checkedInMatch": false
+        }
+      ]
+    },
+    {
+      "name": "manual-expire-grace-licenses",
+      "status": "ACTIVE",
+      "version": 14,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/admin-auth.ts",
+          "bytes": 3214,
+          "sha256": "3085c68b2168b3f888761e7a1e15b655719e2719d124175b8d5b687a6bce371f",
+          "checkedInPresent": true,
+          "checkedInSha256": "182a1381f3383d2f097cdb7e5913cf1b4bc8622c742f5f5ec399c0e7ee0346d0",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 7398,
+          "sha256": "3976c1d859f33ea9a5d796299f3e536965fce7102e70f9575944ad1d13c0fad4",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/manual-expire-grace-licenses/index.ts",
+          "bytes": 4071,
+          "sha256": "845475ab6fedcbc9576082e8fa84a3fcb8495f3adf5ef6e244b9323d14cadfe4",
+          "checkedInPresent": true,
+          "checkedInSha256": "e7244d9bd3c6ddb7da141d836ae4fe516f8bcc4c4f53c85ffcdf320fd994a138",
+          "checkedInMatch": false
+        }
+      ]
+    },
+    {
+      "name": "process-notification-events",
+      "status": "ACTIVE",
+      "version": 209,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/process-notification-events/index.ts",
+          "bytes": 12390,
+          "sha256": "986b46f37eb62ecf656e80ac357db406975e56ec5ad9b99d64a63b974cc0a301",
+          "checkedInPresent": true,
+          "checkedInSha256": "986b46f37eb62ecf656e80ac357db406975e56ec5ad9b99d64a63b974cc0a301",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "record-fanmark-access",
+      "status": "ACTIVE",
+      "version": 114,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/record-fanmark-access/index.ts",
+          "bytes": 11367,
+          "sha256": "92997b00f2c7db5f641e369580df5cdd49ae9c0d6cf4f819f9ba96e5109c83de",
+          "checkedInPresent": true,
+          "checkedInSha256": "92997b00f2c7db5f641e369580df5cdd49ae9c0d6cf4f819f9ba96e5109c83de",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "register-fanmark",
+      "status": "ACTIVE",
+      "version": 316,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/_shared/validation.ts",
+          "bytes": 12317,
+          "sha256": "39183e742c98b24b9328dd5ba9decf41789866187eb23a17b20386987e8760d7",
+          "checkedInPresent": true,
+          "checkedInSha256": "39183e742c98b24b9328dd5ba9decf41789866187eb23a17b20386987e8760d7",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/register-fanmark/index.ts",
+          "bytes": 34117,
+          "sha256": "dce101654a649fd5b1ab7d76af5cf20941998ff47534a1b4c0056ee7fed455d5",
+          "checkedInPresent": true,
+          "checkedInSha256": "dce101654a649fd5b1ab7d76af5cf20941998ff47534a1b4c0056ee7fed455d5",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "reject-transfer-request",
+      "status": "ACTIVE",
+      "version": 100,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/reject-transfer-request/index.ts",
+          "bytes": 6312,
+          "sha256": "a2e546b9ffb3bc631022100cc737b540d2a4dfce04b7ba7782c5100c75ccfe95",
+          "checkedInPresent": true,
+          "checkedInSha256": "a2e546b9ffb3bc631022100cc737b540d2a4dfce04b7ba7782c5100c75ccfe95",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "reset-fanmark-data",
+      "status": "ACTIVE",
+      "version": 235,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/reset-fanmark-data/index.ts",
+          "bytes": 5420,
+          "sha256": "bbc3a2db95cb36103bdb75fbf4c425104078005ad5e2eebf0540d325b0f9cd26",
+          "checkedInPresent": true,
+          "checkedInSha256": "bbc3a2db95cb36103bdb75fbf4c425104078005ad5e2eebf0540d325b0f9cd26",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "return-fanmark",
+      "status": "ACTIVE",
+      "version": 299,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/return-helpers.ts",
+          "bytes": 8810,
+          "sha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInPresent": true,
+          "checkedInSha256": "115299ec85b2f8c05ab4cdef7540cf689378196fc90ce8e663118fe1f2d691b9",
+          "checkedInMatch": true
+        },
+        {
+          "path": "supabase/functions/return-fanmark/index.ts",
+          "bytes": 3559,
+          "sha256": "b5878be274a66c345f7eb5c37ad322a4fcc3281c9d3618aa547158a1817bb332",
+          "checkedInPresent": true,
+          "checkedInSha256": "b5878be274a66c345f7eb5c37ad322a4fcc3281c9d3618aa547158a1817bb332",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "send-auth-email",
+      "status": "ACTIVE",
+      "version": 64,
+      "verifyJwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/send-auth-email/index.ts",
+          "bytes": 21469,
+          "sha256": "9ad3300192e9fd6f70ce36970120e3d7a028a84497d348e707ab721f27438cad",
+          "checkedInPresent": true,
+          "checkedInSha256": "9ad3300192e9fd6f70ce36970120e3d7a028a84497d348e707ab721f27438cad",
+          "checkedInMatch": true
+        }
+      ]
+    },
+    {
+      "name": "send-broadcast-email",
+      "status": "ACTIVE",
+      "version": 36,
+      "verifyJwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/_shared/admin-auth.ts",
+          "bytes": 3214,
+          "sha256": "3085c68b2168b3f888761e7a1e15b655719e2719d124175b8d5b687a6bce371f",
+          "checkedInPresent": true,
+          "checkedInSha256": "182a1381f3383d2f097cdb7e5913cf1b4bc8622c742f5f5ec399c0e7ee0346d0",
+          "checkedInMatch": false
+        },
+        {
+          "path": "supabase/functions/send-broadcast-email/index.ts",
+          "bytes": 15562,
+          "sha256": "a0bc9f35f49dbb13f92165b0b1004f2f14d32d1a5fc8f4bd0ec86da61c203e67",
+          "checkedInPresent": true,
+          "checkedInSha256": "a0bc9f35f49dbb13f92165b0b1004f2f14d32d1a5fc8f4bd0ec86da61c203e67",
+          "checkedInMatch": true
+        }
+      ]
+    }
+  ],
+  "allExternalConsumersReconciled": false,
+  "fullRuntimeReconciled": false,
+  "authorizationReconciled": false,
+  "converterDeployable": false,
+  "reviewedHead": "ddf881a997d0a567b1478e01252404219dd9cf4c",
+  "downloadedFileOccurrences": 61,
+  "entrypointByteMatches": 31,
+  "entrypointDifferences": [
+    "create-extension-checkout",
+    "extend-fanmark-license",
+    "handle-stripe-webhook",
+    "manual-expire-grace-licenses"
+  ],
+  "bundlesWithAllDownloadedFilesMatching": 24,
+  "currentApplicationSourceBodyCorrespondenceComplete": false
+}

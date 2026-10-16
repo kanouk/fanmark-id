@@ -1,0 +1,47 @@
+{
+  "format": "fanmark-companion-worker-writer-inventory-v1",
+  "observedAt": "2026-10-07T17:16:12.704625+00:00",
+  "worker": "fanmark-emoji-master-staging-api",
+  "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "deploymentId": "8b07d51d-21b3-444e-8c64-2c2bf950d5d6",
+  "versionId": "a7c8f421-128e-4c29-ab9d-44e2d60bdc2b",
+  "moduleSha256": "abff525b6888cc43d87874f0616b8146132ec15ba61a44979d083f4da6405625",
+  "bindingNames": [
+    "CORS_ALLOWED_ORIGINS",
+    "EMOJI_CATALOG_BACKEND",
+    "FANMARK_DB"
+  ],
+  "actualMasterBinding": {
+    "name": "FANMARK_DB",
+    "id": "160376b0-bde6-4d5f-8969-96deb5ae1183"
+  },
+  "catalogBackend": "d1",
+  "authBackendPresent": false,
+  "authSecretPresent": false,
+  "cronSchedules": [],
+  "queueDoBindings": false,
+  "deployedCodeReview": {
+    "entrypoint": "fetch only; no Cron/DO/queue export",
+    "auth": "AUTH_BACKEND=better-auth and URL/secret required before SDK execution; all absent",
+    "catalog": "GET/OPTIONS only, SELECT reads",
+    "adminMutationRoutes": "not present in deployed handler",
+    "mutationCodeBundled": "Better Auth mutation code exists but its HTTP entry is gated"
+  },
+  "inference": "Under the observed deployed version and bindings, the companion Worker is not an active D1 writer",
+  "publicHttpChecks": {
+    "/api/emoji/catalog?limit=1": 403,
+    "/api/auth/ok": 403,
+    "/api/admin/session": 403
+  },
+  "publicHandlerGatesAccepted": false,
+  "deploymentUnchangedAfterModuleRead": true,
+  "writes": 0,
+  "limits": [
+    "HTTP checks returned 403 and the in-app browser was blocked before a page response; public handler behavior is unaccepted",
+    "Repository currently specifies MASTER_DB; observed old deployment uses FANMARK_DB",
+    "Any code/settings change invalidates this bounded review",
+    "CLI/operator/API-token and undiscovered external writers remain unverified",
+    "Does not establish all-writer quiescence or first activation drain"
+  ],
+  "browserPublicCheck": "blocked by client before page response"
+}

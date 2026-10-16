@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-backup-monitor-staging",
+  "main": "src/staging-backup-monitor.ts",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "workers_dev": false,
+  "preview_urls": false,
+  "limits": {
+    "cpu_ms": 10000
+  },
+  "services": [
+    {
+      "binding": "BACKUP_ALERT_SERVICE",
+      "service": "fanmark-app-staging",
+      "entrypoint": "StagingBackupAlertService"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "STAGING_BACKUP_BUCKET",
+      "bucket_name": "fanmark-backups-staging-v4-0690d7c1"
+    }
+  ],
+  "vars": {
+    "STAGING_BACKUP_MONITOR": "hourly-v1",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "4e924bd92fad88fc1dea4c6aae2d808d3df07f142cc3b7cd9a623427848a2801",
+    "STAGING_BACKUP_SOURCE_IDS": "{\"business\":\"7c0ff711-19bd-4964-8ae8-cf9800339223\",\"auth\":\"7c56bf17-f15e-4828-ae20-37532c45c436\",\"master\":\"31cad6f0-5ce3-44a1-bdb3-017364555b29\",\"avatars\":\"fanmark-avatars-staging-v4-0690d7c1\",\"covers\":\"fanmark-covers-staging-v4-0690d7c1\"}",
+    "STAGING_BACKUP_SCHEMA_HASHES": "{\"business\":\"598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2\",\"auth\":\"3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b\",\"master\":\"32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56\"}",
+    "STAGING_BACKUP_KEY_ID": "staging-backup-89ca6819-a159-4db8-aa7d-733315a9a0ef"
+  },
+  "triggers": {
+    "crons": [
+      "35 * * * *"
+    ]
+  },
+  "observability": {
+    "enabled": true
+  }
+}

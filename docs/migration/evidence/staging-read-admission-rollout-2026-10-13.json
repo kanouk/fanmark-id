@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "scope": "isolated actual Worker router read-disconnect check plus guarded V3 rollout",
+  "testedHead": "ceb32a3725a00ae3391739088b5122507ea250eb",
+  "successfulCI": "38309207810",
+  "isolatedReadProbe": {
+    "instrumentedAssetHandlerStartedBeforeAbort": true,
+    "sourceD1R2OrServiceBindings": 0,
+    "cases": [
+      {
+        "delayMs": 1000,
+        "clientAborted": true,
+        "writerTicketsAtReadAdmission": 0,
+        "postAbort": [
+          {
+            "afterMs": 2500,
+            "activeTickets": 0
+          }
+        ]
+      },
+      {
+        "delayMs": 45000,
+        "clientAborted": true,
+        "writerTicketsAtReadAdmission": 0,
+        "postAbort": [
+          {
+            "afterMs": 35000,
+            "activeTickets": 0
+          },
+          {
+            "afterMs": 52000,
+            "activeTickets": 0
+          }
+        ]
+      }
+    ],
+    "claimedReadRefused": true,
+    "explicitFreezeRefused": true,
+    "assetHandlerNotCalledOnRefusal": true,
+    "assetAfterReleaseAccepted": true,
+    "unconfiguredAuthSessionHTTPStatus": 503,
+    "remoteAuthGETTicketSideEffectIndependentlyProven": false,
+    "initialReadinessReconciledByReadOnly200": true,
+    "independentCleanup": {
+      "observedAt": "2026-10-12T21:21:40.882Z",
+      "state": "verified_independent_owned_cleanup",
+      "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+      "originalNamespaceCount": 6,
+      "originalWorkerCount": 4,
+      "ownedNamespaceAbsent": true,
+      "ownedWorkerAbsent": true,
+      "sourceNamespacesRetained": true
+    }
+  },
+  "rollout": {
+    "previousVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+    "version": "87584a12-9e3c-44b7-9b7c-72bf4848ca27",
+    "percent": 100,
+    "bindingCount": 114,
+    "allBindingsHeld": true,
+    "schemasTableCountsAndFKHeld": true,
+    "publicAssetCount": 8,
+    "publicAssetsHeld": true,
+    "publicCatalogHeld": true,
+    "backupAndMonitorDeploymentAndSchedulesHeld": true,
+    "sourceCredentialsRead": false,
+    "D1MigrationsApplied": false,
+    "sourceIncarnationOrNamespaceChanged": false
+  },
+  "browser": {
+    "anonymousAuthRendered": true,
+    "loginOrProfileSaveAccepted": false,
+    "newVersionTicketsAfterRendering": 0
+  },
+  "sourceWriterInspectionAfterBrowser": {
+    "observedAt": "2026-10-12T21:26:15.490Z",
+    "owner": null,
+    "scope": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+    "active": 2,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 2,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 2,
+      "oldestEnteredAt": 1791837149181,
+      "runtimeRevisions": {
+        "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349": 2
+      },
+      "kinds": {
+        "http": 2
+      }
+    }
+  },
+  "ownedStatusWorkerDeleted": true,
+  "boundaries": {
+    "oldUnsettledTicketsTerminated": false,
+    "ticketRemovedOrExpired": false,
+    "naturalDailyBackupAccepted": false,
+    "firstAppleSignupAccepted": false,
+    "physicalDeviceAccepted": false,
+    "wholeMigrationAccepted": false,
+    "realUserDataOrDomainMigrated": false
+  }
+}

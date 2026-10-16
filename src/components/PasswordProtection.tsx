@@ -7,28 +7,55 @@ import { Lock } from 'lucide-react';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  getVerifiedAccessBackend,
+  VerifiedAccessApiError,
+  verifyAndReadProtectedFanmark,
+  type ProtectedFanmarkProjection,
+  type VerifiedAccessSelector,
+} from '@/lib/verified-access-api';
 
 interface PasswordProtectionProps {
   fanmark: {
     id: string;
     user_input_fanmark: string;
+    license_id?: string | null;
+    access_type?: string;
   };
-  onSuccess: () => void;
+  selector: VerifiedAccessSelector;
+  onSuccess: (projection?: ProtectedFanmarkProjection) => void;
 }
 
-export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionProps) => {
+export const PasswordProtection = ({ fanmark, selector, onSuccess }: PasswordProtectionProps) => {
   const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [isShaking, setIsShaking] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const otpRef = useRef<HTMLInputElement>(null);
+  const verifyingRef = useRef(false);
   const slotClassName =
     "h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-[1.02] first:rounded-l-xl sm:first:rounded-l-2xl last:rounded-r-xl sm:last:rounded-r-2xl first:border-l-2";
 
   useEffect(() => {
-    if (password.length === 4) {
-      // Use secure password verification function
+    if (password.length === 4 && !verifyingRef.current) {
       const verifyPassword = async () => {
+        verifyingRef.current = true;
+        setIsVerifying(true);
         try {
+          if (getVerifiedAccessBackend() === 'worker') {
+            const projection = await verifyAndReadProtectedFanmark(selector, password);
+            if (
+              !fanmark.license_id ||
+              projection.fanmarkId !== fanmark.id ||
+              projection.licenseId !== fanmark.license_id ||
+              projection.accessType !== fanmark.access_type
+            ) {
+              throw new VerifiedAccessApiError('invalid_response');
+            }
+            onSuccess(projection);
+            return;
+          }
+
           const { data: isValid, error } = await supabase.rpc('verify_fanmark_password', {
             fanmark_uuid: fanmark.id,
             provided_password: password
@@ -54,12 +81,15 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
           setIsShaking(true);
           setPassword('');
           setTimeout(() => setIsShaking(false), 500);
+        } finally {
+          verifyingRef.current = false;
+          setIsVerifying(false);
         }
       };
 
       verifyPassword();
     }
-  }, [password, fanmark.id, onSuccess]);
+  }, [password, fanmark, selector, onSuccess]);
 
   useEffect(() => {
     // コンポーネントがマウントされた時にOTP入力にフォーカスを当てる
@@ -104,6 +134,7 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
                         onChange={setPassword}
                         maxLength={4}
                         pattern="[0-9]*"
+                        disabled={isVerifying}
                         className="gap-3 sm:gap-6"
                       >
                         <InputOTPGroup className="gap-3 sm:gap-6 w-full justify-center">

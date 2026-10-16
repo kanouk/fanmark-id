@@ -1,0 +1,169 @@
+{
+  "scope": "Synthetic desktop core journeys in EN, KO and ID; functional acceptance only",
+  "normalVersion": "d074b5dd-b69a-4e50-b847-8770383dc0ea",
+  "backendSource": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "locales": {
+    "en": {
+      "ui": {
+        "observedAt": "2026-10-09T06:49:12.471Z",
+        "tab": "956551382",
+        "version": "d074b5dd-b69a-4e50-b847-8770383dc0ea",
+        "locale": "en",
+        "device": "Chrome desktop",
+        "loginAccepted": true,
+        "preferredLocaleMatched": true,
+        "preAcquisitionFavoriteAccepted": true,
+        "acquisitionAccepted": true,
+        "settingsSaveAccepted": true,
+        "favoriteImmediateStateAccepted": true,
+        "pageReloadsDuringJourney": 0,
+        "publicMessageboardFromFavoriteAccepted": true,
+        "returnAccepted": true,
+        "logoutAccepted": true,
+        "syntheticCoreJourneyAccepted": true,
+        "knownLocalizationDefect": "messageboard preview button uses Japanese text",
+        "wholeTranslationAccepted": false,
+        "wholeMigrationAccepted": false,
+        "physicalPhonePwaAccepted": false,
+        "providerNewIdentityAccepted": false
+      },
+      "completedAt": "2026-10-09T06:49:53.217Z",
+      "cleanup": {
+        "syntheticUserRemoved": true,
+        "syntheticFanmarkRemoved": true,
+        "operatorRemoved": true,
+        "currentAndRetainedOldTableHashesHeld": true,
+        "foreignKeyChecksPassed": true,
+        "changedTables": [
+          "business.notification_worker_wake_state"
+        ],
+        "wakeRequestedAcknowledgedEqual": true
+      },
+      "privateJournalSha256": "474ebbc62d9373599b553d8c41aeee7db7e473bd98605ee8d087bd7b8bafa096",
+      "screenshots": {
+        "favorites-immediate.png": "52fd83b54b0b6ef4895b6ad2d228600fe139cb24a3a8f2d7d7410e8a2520e410",
+        "logout.png": "091f89f18a72952568dde1b63383aa81568d36559b3cc06a993e07bf8f583073",
+        "logged-in.png": "4ab8586e4ce9956b6e5bc64f445652cdcc9ef41d656ccd04d3fbb93686b139dc",
+        "public-message.png": "0b52eead621f3193a9eb45463518f3591de019f5c2fe6520b3bfc3a4b4b98307",
+        "saved.png": "742580d96287ce5c6942497dcf235dd006f081b8961c74926fd979838ce59486",
+        "favorite-before.png": "2eb1fe7e5a7ba9e941f4bd1aaaf8e0a99e6b45f27b0e2fc3a95367ed36d1b653",
+        "returned.png": "22aa4031c3b3b3e13c5ff815de2ed0e6a8f94e579b04753ee0a7a0391702a202",
+        "preflight.png": "7979d5d250d1125c728d4185ac19455861b9d6a5bbfe332ac4183425e198d19c"
+      }
+    },
+    "ko": {
+      "ui": {
+        "observedAt": "2026-10-09T06:57:09.116Z",
+        "tab": "956551382",
+        "version": "d074b5dd-b69a-4e50-b847-8770383dc0ea",
+        "locale": "ko",
+        "device": "Chrome desktop",
+        "loginAccepted": true,
+        "preferredLocaleMatched": true,
+        "preAcquisitionFavoriteAccepted": true,
+        "acquisitionAccepted": true,
+        "previewDraftReturnAccepted": true,
+        "settingsSaveAccepted": true,
+        "favoriteImmediateStateAccepted": true,
+        "pageReloadsDuringJourney": 0,
+        "publicMessageboardFromFavoriteAccepted": true,
+        "returnAccepted": true,
+        "logoutAccepted": true,
+        "syntheticCoreJourneyAccepted": true,
+        "knownLocalizationDefects": [
+          "messageboard preview button uses Japanese text",
+          "empty preview uses Japanese text",
+          "favorite date uses English format"
+        ],
+        "wholeTranslationAccepted": false,
+        "wholeMigrationAccepted": false,
+        "physicalPhonePwaAccepted": false,
+        "providerNewIdentityAccepted": false
+      },
+      "completedAt": "2026-10-09T06:57:59.119Z",
+      "cleanup": {
+        "syntheticUserRemoved": true,
+        "syntheticFanmarkRemoved": true,
+        "operatorRemoved": true,
+        "currentAndRetainedOldTableHashesHeld": true,
+        "foreignKeyChecksPassed": true,
+        "changedTables": [
+          "business.notification_worker_wake_state"
+        ],
+        "wakeRequestedAcknowledgedEqual": true
+      },
+      "privateJournalSha256": "c89e8ac175824ee16d43d5287d0a5eedf7bdcb1b830bc0dc8683bfb712f49211",
+      "screenshots": {
+        "preview-empty-before.png": "0f97f92e76aa4a7e98bb7009f8c4b173d634be7f0bb571001e3bdda981ab3981",
+        "favorites-immediate.png": "96ec5b9f49a6bb433a82067e17933e07e0e1536289fe3ba3c9f1a8f366d7d3b2",
+        "logout.png": "1801f4f2c3bf0cb818530ac1c6f6dab1e7f7d6ee544d2d1e7f6247ad84442a4d",
+        "logged-in.png": "a134cc12d438ebab9a2cf97433454ea2d1e9abd69eaccaa29ddced0448c6b27d",
+        "public-message.png": "225c8263c972ff0ec2fd83608b41df1dd01ef2d948f0d9e6c5be6332f5cf2784",
+        "saved.png": "1ea7fd972d9fed7ff14fbffcba960008844ae5f37d76eb4f08d33f67027ed134",
+        "favorite-before.png": "ab955e8828876ed64fa2507d74f9a363d0ae9d28b6ba696b5520c1b8c4fad486",
+        "returned.png": "22eceb244bc4c207c33b50f22ba74b43dbac25230efc74e0b3ac163315417543",
+        "preflight.png": "6ce2c54395cf4378d917e0a85a864466efa2f52c87170763d842ecaa48624c35",
+        "preview-label-before.png": "324dac4f7b50ebd40b7268eefa3915962d0611220ab964215a70b029ca787829"
+      }
+    },
+    "id": {
+      "ui": {
+        "observedAt": "2026-10-09T07:06:41.468Z",
+        "tab": "956551382",
+        "version": "d074b5dd-b69a-4e50-b847-8770383dc0ea",
+        "locale": "id",
+        "device": "Chrome desktop",
+        "loginAccepted": true,
+        "preferredLocaleMatched": true,
+        "preAcquisitionFavoriteAccepted": true,
+        "acquisitionAccepted": true,
+        "settingsSaveAccepted": true,
+        "favoriteImmediateStateAccepted": true,
+        "pageReloadsDuringJourney": 0,
+        "publicMessageboardFromFavoriteAccepted": true,
+        "returnAccepted": true,
+        "logoutAccepted": true,
+        "syntheticCoreJourneyAccepted": true,
+        "knownLocalizationDefects": [
+          "messageboard preview button uses Japanese text",
+          "favorite date uses English format"
+        ],
+        "wholeTranslationAccepted": false,
+        "wholeMigrationAccepted": false,
+        "physicalPhonePwaAccepted": false,
+        "providerNewIdentityAccepted": false
+      },
+      "completedAt": "2026-10-09T07:07:20.398Z",
+      "cleanup": {
+        "syntheticUserRemoved": true,
+        "syntheticFanmarkRemoved": true,
+        "operatorRemoved": true,
+        "currentAndRetainedOldTableHashesHeld": true,
+        "foreignKeyChecksPassed": true,
+        "changedTables": [
+          "business.notification_worker_wake_state"
+        ],
+        "wakeRequestedAcknowledgedEqual": true
+      },
+      "privateJournalSha256": "7cf688475086714f460cdab64ab25de99604f9e5a1a607d8ad56ea7de68713b8",
+      "screenshots": {
+        "favorites-immediate.png": "6fdcead25dda580251040f536abdafe1bebe6ab55750c218728360ad6d37083a",
+        "logout.png": "7ac339a439133332752d0466af5e8909b6b85ff89bb939e27df4d1992aa0d0a1",
+        "logged-in.png": "0a8849b2a6c155ba843723e44e3dd2b946831b9c1e1014eb4616a45ccb84dc89",
+        "public-message.png": "c9245658e00f8b0bc95d82c411769bf4beb8dd9837552b4b3a7b315dea3ba92d",
+        "saved.png": "2a1b41446cbdf4acda6b9b97c186e3f710d30c3e491eaef9b9777a5c745c0256",
+        "favorite-before.png": "72a977bd9b35cc70a5797e874d5583555aac3be9cf42ed6d048e92fe95938bbd",
+        "returned.png": "581d771627a319f728e7841ebd69fbd176ba7fbbbdeb631bdc8fef89e32d760a",
+        "preflight.png": "4e22e156841288a84f3cf719ba907547a6fdd89834ab8b2bac2479db89e6d77e"
+      }
+    }
+  },
+  "emailsSent": 0,
+  "stripeCalls": 0,
+  "imageWrites": 0,
+  "realUsersMigrated": false,
+  "domainCutover": false,
+  "wholeMigrationAccepted": false,
+  "wholeTranslationAccepted": false,
+  "physicalPhonePwaAccepted": false
+}

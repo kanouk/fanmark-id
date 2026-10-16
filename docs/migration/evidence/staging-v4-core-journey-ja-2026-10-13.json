@@ -1,0 +1,65 @@
+{
+  "state": "same_v4_runtime_japanese_core_journey_accepted",
+  "observedAt": "2026-10-12T22:46:39.739Z",
+  "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "runtimeSource": "e511762850631275664597afec8ca4155419358f",
+  "runtimeSourceCi": 38315685393,
+  "runtimeSourceBothCiJobsSuccess": true,
+  "device": "Chrome desktop",
+  "ui": {
+    "loginAccepted": true,
+    "locale": "ja",
+    "preAcquisitionFavoriteAccepted": true,
+    "acquisitionAccepted": true,
+    "acquiredTier": "B",
+    "finiteLicenseDays": 30,
+    "previewDraftReturnAccepted": true,
+    "settingsSaveAccepted": true,
+    "favoriteImmediateStateAccepted": true,
+    "pageReloadsDuringJourney": 0,
+    "publicMessageboardFromFavoriteAccepted": true,
+    "returnAccepted": true,
+    "returnGraceObserved": true,
+    "activeOwnedCountAfterReturn": 0,
+    "logoutAccepted": true,
+    "logoutLocation": "/"
+  },
+  "cleanup": {
+    "state": "independent_owned_cleanup_verified",
+    "observedAt": "2026-10-12T22:46:39.739Z",
+    "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+    "ownedAuthAndBusinessRowsAbsent": true,
+    "ownedFanmarkAndRelatedRowsAbsent": true,
+    "operatorAbsent": true,
+    "humanAppleAndCredentialAccountsHeld": true,
+    "humanPasswordSetupAndSessionHeld": true,
+    "credentialValuesRead": false,
+    "foreignKeyViolations": 0,
+    "notificationWakeDrained": true
+  },
+  "baselineHeld": {
+    "schemas": true,
+    "commonMaster": true,
+    "canonicalEmojiMaster": true,
+    "mfaGeneration": true
+  },
+  "writerFinal": {
+    "active": 0,
+    "ownerAbsent": true,
+    "scanComplete": true
+  },
+  "screenshots": {
+    "favorites-immediate.png": "a7110384e9ed6f07cf295a175709c0196bba7ef5202d39ab2b230f4c0a7ab78d",
+    "public-message.png": "430a491975674d93c103b1ff6bf6bcaf68d47bb7d1c824c2ebb73a70e118ee92",
+    "returned.png": "d1c405273223b206a0eadb3fff92526463ef26f6b118f7f0f25928912d9dab89"
+  },
+  "emailsSent": 0,
+  "stripeCalls": 0,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "otherLocalesOnThisRuntimeAccepted": false,
+  "physicalPhonePwaAccepted": false,
+  "wholeMigrationAccepted": false,
+  "transientNativeClickObservationTimeoutReconciled": true,
+  "nativeClickNotRepeated": true
+}

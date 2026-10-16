@@ -1,6 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { formatInTimeZone } from 'date-fns-tz';
-import { ja, enUS } from 'date-fns/locale';
+import { ja, enUS, ko, id as idLocale } from 'date-fns/locale';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -59,7 +59,7 @@ export default function Favorites() {
   const formatDate = (isoString: string) => {
     try {
       return formatInTimeZone(isoString, 'Asia/Tokyo', 'PPP', {
-        locale: language === 'ja' ? ja : enUS,
+        locale: { ja, en: enUS, ko, id: idLocale }[language],
       });
     } catch {
       return '—';

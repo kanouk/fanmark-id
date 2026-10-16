@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { isBetterAuthEnabled } from '@/lib/auth-backend';
+import { deleteStorageObject, getImageStorageBackend, uploadStorageObject } from '@/lib/storage-api';
 import { useTranslation } from './useTranslation';
 
 export const useCoverImageUpload = () => {
@@ -17,12 +19,21 @@ export const useCoverImageUpload = () => {
     
     setUploading(true);
     try {
-      // Create a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}_cover.${fileExt}`;
-
       // Resize image for cover images (larger dimensions, maintain aspect ratio)
       const resized = await resizeCoverImage(file, 2400, 1200);
+
+      if (getImageStorageBackend(isBetterAuthEnabled()) === 'r2') {
+        const { publicUrl } = await uploadStorageObject('cover-images', user.id, resized.file);
+        return {
+          url: publicUrl,
+          width: resized.width,
+          height: resized.height,
+        };
+      }
+
+      // Create a unique filename for the legacy Supabase Storage backend.
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}_cover.${fileExt}`;
 
       // Upload to Supabase Storage (cover-images bucket)
       const { data, error } = await supabase.storage
@@ -97,6 +108,11 @@ export const useCoverImageUpload = () => {
     if (!user) throw new Error(t('common.userNotAuthenticated'));
     
     try {
+      if (getImageStorageBackend(isBetterAuthEnabled()) === 'r2') {
+        await deleteStorageObject('cover-images', user.id, coverImageUrl);
+        return;
+      }
+
       // Extract file path from URL
       const url = new URL(coverImageUrl);
       const pathSegments = url.pathname.split('/');

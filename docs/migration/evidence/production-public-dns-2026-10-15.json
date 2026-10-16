@@ -1,0 +1,116 @@
+{
+  "observedAt": "2026-10-15T14:01:23.216644+00:00",
+  "scope": "public DNS via default recursive resolver only; not Cloudflare zone settings, DNS origin, TLS or route proof",
+  "productionChanged": false,
+  "records": [
+    {
+      "name": "fanmark.id",
+      "type": "NS",
+      "exitCode": 0,
+      "answer": [
+        "fanmark.id.\t\t86400\tIN\tNS\tgabriel.ns.cloudflare.com.",
+        "fanmark.id.\t\t86400\tIN\tNS\talice.ns.cloudflare.com."
+      ]
+    },
+    {
+      "name": "fanmark.id",
+      "type": "A",
+      "exitCode": 0,
+      "answer": [
+        "fanmark.id.\t\t300\tIN\tA\t104.21.91.247",
+        "fanmark.id.\t\t300\tIN\tA\t172.67.182.211"
+      ]
+    },
+    {
+      "name": "fanmark.id",
+      "type": "AAAA",
+      "exitCode": 0,
+      "answer": [
+        "fanmark.id.\t\t300\tIN\tAAAA\t2606:4700:3032::ac43:b6d3",
+        "fanmark.id.\t\t300\tIN\tAAAA\t2606:4700:3030::6815:5bf7"
+      ]
+    },
+    {
+      "name": "fanmark.id",
+      "type": "MX",
+      "exitCode": 0,
+      "answer": [
+        "fanmark.id.\t\t300\tIN\tMX\t83 route2.mx.cloudflare.net.",
+        "fanmark.id.\t\t300\tIN\tMX\t48 route3.mx.cloudflare.net.",
+        "fanmark.id.\t\t300\tIN\tMX\t6 route1.mx.cloudflare.net."
+      ]
+    },
+    {
+      "name": "www.fanmark.id",
+      "type": "A",
+      "exitCode": 0,
+      "answer": [
+        "www.fanmark.id.\t\t300\tIN\tA\t172.67.182.211",
+        "www.fanmark.id.\t\t300\tIN\tA\t104.21.91.247"
+      ]
+    },
+    {
+      "name": "www.fanmark.id",
+      "type": "AAAA",
+      "exitCode": 0,
+      "answer": [
+        "www.fanmark.id.\t\t300\tIN\tAAAA\t2606:4700:3030::6815:5bf7",
+        "www.fanmark.id.\t\t300\tIN\tAAAA\t2606:4700:3032::ac43:b6d3"
+      ]
+    },
+    {
+      "name": "www.fanmark.id",
+      "type": "CNAME",
+      "exitCode": 0,
+      "answer": []
+    },
+    {
+      "name": "admin.fanmark.id",
+      "type": "A",
+      "exitCode": 0,
+      "answer": [
+        "admin.fanmark.id.\t300\tIN\tA\t104.21.91.247",
+        "admin.fanmark.id.\t300\tIN\tA\t172.67.182.211"
+      ]
+    },
+    {
+      "name": "admin.fanmark.id",
+      "type": "AAAA",
+      "exitCode": 0,
+      "answer": [
+        "admin.fanmark.id.\t300\tIN\tAAAA\t2606:4700:3030::6815:5bf7",
+        "admin.fanmark.id.\t300\tIN\tAAAA\t2606:4700:3032::ac43:b6d3"
+      ]
+    },
+    {
+      "name": "admin.fanmark.id",
+      "type": "CNAME",
+      "exitCode": 0,
+      "answer": []
+    },
+    {
+      "name": "auth.fanmark.id",
+      "type": "A",
+      "exitCode": 0,
+      "answer": [
+        "auth.fanmark.id.\t300\tIN\tA\t104.21.91.247",
+        "auth.fanmark.id.\t300\tIN\tA\t172.67.182.211"
+      ]
+    },
+    {
+      "name": "auth.fanmark.id",
+      "type": "AAAA",
+      "exitCode": 0,
+      "answer": [
+        "auth.fanmark.id.\t300\tIN\tAAAA\t2606:4700:3030::6815:5bf7",
+        "auth.fanmark.id.\t300\tIN\tAAAA\t2606:4700:3032::ac43:b6d3"
+      ]
+    },
+    {
+      "name": "auth.fanmark.id",
+      "type": "CNAME",
+      "exitCode": 0,
+      "answer": []
+    }
+  ]
+}

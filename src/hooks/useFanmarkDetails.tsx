@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { useInvalidateFavoriteFanmarks } from './useFavoriteFanmarks';
+import { useFavoriteFanmarks, useInvalidateFavoriteFanmarks } from './useFavoriteFanmarks';
+import { getFavoritesBackend } from '@/lib/favorites-api';
+import { addFavoriteFanmark, removeFavoriteFanmark } from '@/lib/favorites-backend';
+import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
+import { fetchFanmarkDetailsFromWorker, FanmarkDetailsApiError, getFanmarkDetailsBackend } from '@/lib/fanmark-details-api';
 
 export interface FanmarkDetails {
   fanmark_id: string;
@@ -25,6 +29,7 @@ export interface FanmarkDetails {
   first_owner_username?: string;
   first_owner_display_name?: string;
   license_history: LicenseHistoryItem[];
+  history_available: boolean;
   is_favorited: boolean;
   has_pending_lottery?: boolean;
   is_current_owner?: boolean;
@@ -47,32 +52,53 @@ export interface LicenseHistoryItem {
 }
 
 export const useFanmarkDetails = (shortId: string | undefined) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const workerDetailsEnabled = getFanmarkDetailsBackend() === 'worker';
   const invalidateFavorites = useInvalidateFavoriteFanmarks();
+  const workerFavoritesEnabled = getFavoritesBackend() === 'worker';
+  const { favorites, isLoading: favoritesLoading, isError: favoritesError } = useFavoriteFanmarks({
+    enabled: Boolean(user) && workerFavoritesEnabled,
+  });
   const [details, setDetails] = useState<FanmarkDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [detailsSourceKey, setDetailsSourceKey] = useState<string | null>(null);
+  const requestSequence = useRef(0);
 
-  const fetchDetails = async () => {
+  const fetchDetails = useCallback(async () => {
+    const requestId = ++requestSequence.current;
+    const sourceKey = `${shortId ?? ''}:${user?.id ?? 'anonymous'}`;
     if (!shortId) {
       setLoading(false);
       return;
     }
 
+    if (workerDetailsEnabled && authLoading) return;
+
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase.rpc('get_fanmark_details_by_short_id', {
-        shortid_param: shortId
-      });
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        setError('not-found');
-        setDetails(null);
+      if (workerDetailsEnabled) {
+        const data = await fetchFanmarkDetailsFromWorker(shortId);
+        if (requestId !== requestSequence.current) return;
+        setDetailsSourceKey(sourceKey);
+        if (!data) {
+          setError('not-found');
+          setDetails(null);
+        } else {
+          setDetails(data as unknown as FanmarkDetails);
+        }
       } else {
+        const { data, error } = await supabase.rpc('get_fanmark_details_by_short_id', {
+          shortid_param: shortId
+        });
+        if (requestId !== requestSequence.current) return;
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          setError('not-found');
+          setDetails(null);
+        } else {
         const fanmarkData = data[0];
         const emojiIds = Array.isArray(fanmarkData.emoji_ids)
           ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
@@ -94,7 +120,7 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
           display_fanmark: displayFanmark,
           fanmark: normalizedDisplay,
           license_history: Array.isArray(fanmarkData.license_history)
-            ? fanmarkData.license_history.map((item: any) => ({
+            ? (fanmarkData.license_history as unknown as LicenseHistoryItem[]).map((item) => ({
                 license_start: item.license_start,
                 license_end: item.license_end,
                 grace_expires_at: item.grace_expires_at ?? null,
@@ -106,18 +132,28 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
                 is_initial_license: item.is_initial_license
               }))
             : [],
+          history_available: true,
           has_pending_lottery: hasPendingLottery,
           is_current_owner: isCurrentOwner,
         } as FanmarkDetails);
+        }
       }
     } catch (err) {
+      if (requestId !== requestSequence.current) return;
+      if (workerDetailsEnabled && err instanceof FanmarkDetailsApiError && err.kind === 'auth_required') {
+        setError('sign-in-required');
+        setDetails(null);
+        setDetailsSourceKey(sourceKey);
+        return;
+      }
       console.error('Error fetching fanmark details:', err);
       setError('load-failed');
       setDetails(null);
+      if (workerDetailsEnabled) setDetailsSourceKey(sourceKey);
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
-  };
+  }, [authLoading, shortId, user, workerDetailsEnabled]);
 
   const toggleFavorite = async () => {
     if (!details || !user) return false;
@@ -129,26 +165,19 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
 
     try {
       if (details.is_favorited) {
-        const { data, error } = await supabase.rpc('remove_fanmark_favorite', {
-          input_emoji_ids: emojiIds,
-        });
-        if (error) throw error;
-        if (data) {
+        const removed = await removeFavoriteFanmark(emojiIds);
+        if (removed) {
           setDetails(prev => prev ? { ...prev, is_favorited: false } : null);
           invalidateFavorites();
         }
         return false;
       } else {
-        const { data, error } = await supabase.rpc('add_fanmark_favorite', {
-          input_emoji_ids: emojiIds,
-          input_display_fanmark: details.display_fanmark,
-        });
-        if (error) throw error;
-        if (data) {
+        const added = await addFavoriteFanmark(emojiIds, details.display_fanmark);
+        if (added) {
           setDetails(prev => prev ? { ...prev, is_favorited: true } : null);
           invalidateFavorites();
         }
-        return data;
+        return added;
       }
     } catch (err) {
       console.error('Error toggling favorite:', err);
@@ -157,12 +186,21 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
   };
 
   useEffect(() => {
-    fetchDetails();
-  }, [shortId]);
+    if (!workerFavoritesEnabled || !user || !details || favoritesLoading || favoritesError) return;
+    const normalizedIds = convertEmojiSequenceToIdPair(details.normalized_emoji || details.display_fanmark).normalizedEmojiIds;
+    if (normalizedIds.length === 0) return;
+    const normalizedKey = normalizedIds.join(',');
+    const isFavorited = favorites.some((favorite) => favorite.normalizedEmojiIds.join(',') === normalizedKey);
+    setDetails((current) => current && current.is_favorited !== isFavorited ? { ...current, is_favorited: isFavorited } : current);
+  }, [details, favorites, favoritesError, favoritesLoading, user, workerFavoritesEnabled]);
+
+  useEffect(() => {
+    void fetchDetails();
+  }, [fetchDetails]);
 
   return {
     details,
-    loading,
+    loading: loading || (workerDetailsEnabled && (authLoading || detailsSourceKey !== `${shortId ?? ''}:${user?.id ?? 'anonymous'}`)),
     error,
     toggleFavorite,
     refetch: fetchDetails,

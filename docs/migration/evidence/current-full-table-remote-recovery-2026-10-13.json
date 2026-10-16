@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "scope": "two isolated Cloudflare targets with synthetic nonempty source tables only",
+  "testedHead": "1a5a3212311e6bc1b2eca26ebe5dc083fda43329",
+  "successfulCI": "38304455103",
+  "acceptedAt": "2026-10-12T20:48:58.081Z",
+  "nodeVersion": "22.6.0",
+  "sourceFixture": {
+    "tableCount": 40,
+    "populatedTableCount": 40,
+    "sourceRowCount": 46
+  },
+  "authScope": "one seeded synthetic dependency user; not a credential backup or real user import",
+  "targetSourceTableRows": 45,
+  "transformedCredentialRows": 2,
+  "deferredInactiveCredentialRows": 1,
+  "checkpointSourceRows": 46,
+  "nonemptyCheckpoints": 40,
+  "committedCredentialInterruptionResumed": true,
+  "independentFixedSQLTypesAndCountsBothTargets": true,
+  "foreignKeyViolations": 0,
+  "targets": [
+    {
+      "phase": "primary",
+      "targetIncarnation": "9df2778b-9ac3-426c-aa53-fd69fbd4745d",
+      "durationMs": 206022,
+      "acceptedAt": "2026-10-12T20:47:30.443Z",
+      "cleanupVerified": true
+    },
+    {
+      "phase": "restored",
+      "targetIncarnation": "cc790255-2259-4da8-9d01-90a5ad48b4a7",
+      "durationMs": 67842,
+      "acceptedAt": "2026-10-12T20:48:47.473Z",
+      "cleanupVerified": true
+    }
+  ],
+  "masterAndR2": {
+    "bundleSHA256": "02d226ff7f01f4dd7a01a4079d1cbb027428e31af230a667c5014ed3b86f4b64",
+    "emojiVersion": "7b91ba34829d1db697e74e22e5b8c4bbfb93204736a5fe44d3d748fdc622ee97",
+    "referenceVersion": "345d60ef0fac854d6bcc4792af0d406076dc3670dc9b29f89d6feaff8314e6ef",
+    "masterEmojiCount": 3,
+    "masterTierCount": 4,
+    "masterMigrationCount": 8,
+    "retainedMasterAuthCore": true,
+    "r2ObjectCount": 2,
+    "linkedAssetsVerified": true,
+    "physicalBucketKeysVerified": true,
+    "applicationStorageReadVerified": true
+  },
+  "resourceCeiling": {
+    "maximumAccountD1Count": 12,
+    "ownedD1PerTarget": 3,
+    "providerSubscriptionQuotaAssumed": false
+  },
+  "independentCleanup": {
+    "state": "verified_independent_owned_cleanup",
+    "observedAt": "2026-10-12T20:51:41.162Z",
+    "sourceInventoryRetained": true,
+    "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+    "d1Count": 9,
+    "r2Count": 9,
+    "workerCount": 4,
+    "deletedOwnedD1Count": 6,
+    "deletedOwnedR2Count": 4,
+    "deletedOwnedWorkerCount": 2,
+    "targetDurationsMs": [
+      {
+        "phase": "primary",
+        "durationMs": 206022
+      },
+      {
+        "phase": "restored",
+        "durationMs": 67842
+      }
+    ],
+    "sourceRowCount": 46,
+    "fullMigrationAccepted": false
+  },
+  "boundaries": {
+    "allValueShapesCovered": false,
+    "fullMigrationAccepted": false,
+    "converterDeployable": false,
+    "sourceUserRowsRead": false,
+    "realUserAuthStorageMigrated": false,
+    "productionDomainChanged": false,
+    "mainWorkerDeployed": false,
+    "currentMainBackupAccepted": false,
+    "currentMainHttpTicketsTerminated": false,
+    "renderedProfileAccepted": false,
+    "physicalDeviceAccepted": false
+  }
+}

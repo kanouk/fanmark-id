@@ -1,0 +1,75 @@
+{
+  "observedAt": "2026-10-04T00:29:17.839Z",
+  "scope": "read-only staging aggregates; no repair/provider/data/domain action",
+  "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "worker": "fanmark-app-staging",
+  "version": "bddc0dad-e996-4930-bf1d-97aacc6065b7",
+  "ledgerEntries": 25,
+  "selectors": {
+    "CUTOVER_WRITE_FREEZE": "false",
+    "LICENSE_EXPIRY_BACKEND": null,
+    "LICENSE_EXPIRY_CRON": "0 0 * * *",
+    "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+    "NOTIFICATION_WAKE_BACKEND": "durable-object",
+    "NOTIFICATION_ARCHIVE_BACKEND": null,
+    "NOTIFICATION_ARCHIVE_CRON": null,
+    "STRIPE_DISPATCH_BACKEND": null,
+    "BROADCAST_SEND_BACKEND": null
+  },
+  "counts": {
+    "foreign_key_violations": 0,
+    "wake_singletons": 1,
+    "wake_requested": 17,
+    "wake_acknowledged": 17,
+    "notification_pending": 0,
+    "notification_overdue": 0,
+    "notification_stale_processing": 0,
+    "notification_failed": 0,
+    "notification_archive_candidates": 0,
+    "expiry_open_runs": 0,
+    "finalization_open_runs": 0,
+    "finite_licenses_past_end": 0,
+    "grace_licenses_past_end": 0,
+    "stripe_dead_letters": 0,
+    "stripe_overdue": 0,
+    "stripe_expired_leases": 0
+  },
+  "publicHealth": {
+    "/": 200,
+    "/api/auth/ok": 200
+  },
+  "attention": [],
+  "disabledJobs": [
+    "LICENSE_EXPIRY_BACKEND",
+    "NOTIFICATION_ARCHIVE_BACKEND",
+    "STRIPE_DISPATCH_BACKEND",
+    "BROADCAST_SEND_BACKEND"
+  ],
+  "recurringOperationsAccepted": false,
+  "providerIntegrationAccepted": false,
+  "schemaVersion": 1,
+  "runtimeHead": "0e866880f508d1d934df8e5199bf46ca3024eab0",
+  "runtimeCiRun": 37130360266,
+  "standardCiHead": "f5ceed05a1a853b42ba689933df4d48477a19ed8",
+  "standardCiRun": 37163953832,
+  "standardCiJobs": {
+    "application": "success",
+    "worker": "success",
+    "publicAccessDedicatedTestsPassed": 15
+  },
+  "observerFilesSha256": {
+    "scripts/migration/staging-operations-status.mjs": "f8e6d6a1776a92cd3e3c688e4bdbc8b7ee7a3d0689f609486e3e4f901ed7bd34",
+    "scripts/migration/staging-operations-status.sql": "0a914ef4d75310fc807179be6a203a5e7575498cc520daa03b479c4ae07465d8"
+  },
+  "workersPlan": {
+    "currentPlan": "free",
+    "observedVia": "signed-in Cloudflare dashboard current plan indicator",
+    "cpuLimitMs": 10,
+    "subscriptionsAPIStatus": 403,
+    "accountSettingsUsageModel": "standard",
+    "purchaseOrChangePerformed": false
+  },
+  "operatorAssignmentsConfirmed": false,
+  "keyCustodyAndRotationAccepted": false,
+  "rpoRtoAccepted": false
+}

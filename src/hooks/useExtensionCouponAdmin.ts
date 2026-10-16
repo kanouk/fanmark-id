@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  createExtensionCouponThroughWorker,
+  deleteExtensionCouponThroughWorker,
+  getExtensionCouponAdminBackend,
+  listExtensionCouponUsagesThroughWorker,
+  listExtensionCouponsThroughWorker,
+  updateExtensionCouponThroughWorker,
+} from '@/lib/extension-coupon-admin-api';
 
 export interface ExtensionCouponRow {
   id: string;
@@ -43,11 +51,14 @@ export const useExtensionCouponAdmin = () => {
     setLoading(true);
     setError(null);
     try {
+      if (getExtensionCouponAdminBackend() === 'worker') {
+        setCoupons(await listExtensionCouponsThroughWorker());
+        return;
+      }
       const { data, error: fetchError } = await supabase
         .from('extension_coupons')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (fetchError) throw fetchError;
       setCoupons((data as ExtensionCouponRow[]) || []);
     } catch (err) {
@@ -64,20 +75,30 @@ export const useExtensionCouponAdmin = () => {
 
   const createCoupon = async (values: CreateCouponValues): Promise<{ success: boolean; code?: string; error?: Error }> => {
     try {
-      const code = values.code?.trim().toUpperCase() || generateCouponCode();
-      
-      const { error: insertError } = await supabase
-        .from('extension_coupons')
-        .insert({
-          code,
+      const normalizedCode = values.code?.trim().toUpperCase() || null;
+      let code: string;
+      if (getExtensionCouponAdminBackend() === 'worker') {
+        const created = await createExtensionCouponThroughWorker({
+          code: normalizedCode,
           months: values.months,
-          allowed_tier_levels: values.allowedTierLevels && values.allowedTierLevels.length > 0 ? values.allowedTierLevels : null,
-          max_uses: values.maxUses,
-          expires_at: values.expiresAt || null,
+          allowedTierLevels: values.allowedTierLevels?.length ? values.allowedTierLevels : null,
+          maxUses: values.maxUses,
+          expiresAt: values.expiresAt || null,
         });
-
-      if (insertError) throw insertError;
-
+        code = created.code;
+      } else {
+        code = normalizedCode || generateCouponCode();
+        const { error: insertError } = await supabase
+          .from('extension_coupons')
+          .insert({
+            code,
+            months: values.months,
+            allowed_tier_levels: values.allowedTierLevels && values.allowedTierLevels.length > 0 ? values.allowedTierLevels : null,
+            max_uses: values.maxUses,
+            expires_at: values.expiresAt || null,
+          });
+        if (insertError) throw insertError;
+      }
       await fetchCoupons();
       return { success: true, code };
     } catch (err) {
@@ -88,13 +109,24 @@ export const useExtensionCouponAdmin = () => {
 
   const updateCoupon = async (id: string, updates: Partial<ExtensionCouponRow>): Promise<{ success: boolean; error?: Error }> => {
     try {
-      const { error: updateError } = await supabase
-        .from('extension_coupons')
-        .update(updates)
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
+      if (getExtensionCouponAdminBackend() === 'worker') {
+        const keys = Object.keys(updates);
+        if (keys.length !== 1 || !Object.prototype.hasOwnProperty.call(updates, 'is_active') || typeof updates.is_active !== 'boolean') {
+          throw new Error('Only coupon activation can be changed through this API');
+        }
+        const current = coupons.find((coupon) => coupon.id === id);
+        if (!current) throw new Error('Coupon was not found in the current list');
+        await updateExtensionCouponThroughWorker(id, {
+          isActive: updates.is_active,
+          expectedUpdatedAt: current.updated_at,
+        });
+      } else {
+        const { error: updateError } = await supabase
+          .from('extension_coupons')
+          .update(updates)
+          .eq('id', id);
+        if (updateError) throw updateError;
+      }
       await fetchCoupons();
       return { success: true };
     } catch (err) {
@@ -109,13 +141,15 @@ export const useExtensionCouponAdmin = () => {
 
   const deleteCoupon = async (id: string): Promise<{ success: boolean; error?: Error }> => {
     try {
-      const { error: deleteError } = await supabase
-        .from('extension_coupons')
-        .delete()
-        .eq('id', id);
-
-      if (deleteError) throw deleteError;
-
+      if (getExtensionCouponAdminBackend() === 'worker') {
+        await deleteExtensionCouponThroughWorker(id);
+      } else {
+        const { error: deleteError } = await supabase
+          .from('extension_coupons')
+          .delete()
+          .eq('id', id);
+        if (deleteError) throw deleteError;
+      }
       await fetchCoupons();
       return { success: true };
     } catch (err) {
@@ -126,58 +160,34 @@ export const useExtensionCouponAdmin = () => {
 
   const fetchUsages = async (couponId: string): Promise<{ success: boolean; data?: ExtensionCouponUsageRow[]; error?: Error }> => {
     try {
+      if (getExtensionCouponAdminBackend() === 'worker') {
+        return { success: true, data: await listExtensionCouponUsagesThroughWorker(couponId) };
+      }
       const { data, error: fetchError } = await supabase
         .from('extension_coupon_usages')
-        .select(`
-          id,
-          coupon_id,
-          user_id,
-          fanmark_id,
-          license_id,
-          used_at
-        `)
+        .select(`id, coupon_id, user_id, fanmark_id, license_id, used_at`)
         .eq('coupon_id', couponId)
         .order('used_at', { ascending: false });
-
       if (fetchError) throw fetchError;
-
-      // Fetch fanmark emojis and user display names separately
       const usages = data || [];
       const enrichedUsages: ExtensionCouponUsageRow[] = [];
-
       for (const usage of usages) {
         let fanmarkEmoji = '';
         let userDisplayName = '';
-
-        // Fetch fanmark display emoji
         const { data: fanmarkData } = await supabase
           .from('fanmark_licenses')
           .select('display_fanmark')
           .eq('id', usage.license_id)
           .maybeSingle();
-
-        if (fanmarkData) {
-          fanmarkEmoji = fanmarkData.display_fanmark ?? '';
-        }
-
-        // Fetch user display name
+        if (fanmarkData) fanmarkEmoji = fanmarkData.display_fanmark ?? '';
         const { data: userData } = await supabase
           .from('user_settings')
           .select('display_name, username')
           .eq('user_id', usage.user_id)
           .maybeSingle();
-
-        if (userData) {
-          userDisplayName = userData.display_name || userData.username || '';
-        }
-
-        enrichedUsages.push({
-          ...usage,
-          fanmark_emoji: fanmarkEmoji,
-          user_display_name: userDisplayName,
-        });
+        if (userData) userDisplayName = userData.display_name || userData.username || '';
+        enrichedUsages.push({ ...usage, fanmark_emoji: fanmarkEmoji, user_display_name: userDisplayName });
       }
-
       return { success: true, data: enrichedUsages };
     } catch (err) {
       console.error('Failed to fetch coupon usages:', err);
@@ -200,9 +210,6 @@ export const useExtensionCouponAdmin = () => {
 
 function generateCouponCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = 'EXT';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
+  const random = crypto.getRandomValues(new Uint8Array(6));
+  return `EXT${Array.from(random, (byte) => chars[byte & 31]).join('')}`;
 }

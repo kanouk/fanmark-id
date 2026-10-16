@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "state": "verified-local-with-explicit-storage-class-adapter",
+  "observedAt": "2026-10-07T15:02:24.635673+00:00",
+  "baseHead": "8ddd51c92e9de82e8a3bd59f83bad7b9a795d947",
+  "implementationSHA256": {
+    "workers/api/src/r2-recovery.ts": "607c5f38485231ec8f1f15a358b2dbcddc2302908e667b00e2b20873f134bb79",
+    "workers/api/test/r2-recovery.integration.mjs": "91745ad74a430fe892121aeb79345bb351e50c91d1ef4b91be5c4099a562fa2a"
+  },
+  "runtime": "local native workerd R2 bindings",
+  "testsPassed": 6,
+  "avatarObjects": 3,
+  "coverObjects": 1,
+  "archiveFormat": "fanmark-r2-recovery-v1",
+  "assertions": {
+    "bothKindsCapturedEncryptedRestored": true,
+    "emptyObjectPreserved": true,
+    "unicodeKeysAndMetadataPreserved": true,
+    "httpAndCustomMetadataExact": true,
+    "cacheExpiryPreserved": true,
+    "nativePublicAvatarGetHead": true,
+    "nativePublicCoverGet": true,
+    "paginatedInventoryReadBeforeAndAfter": true,
+    "wrongKeyAndTamperRefused": true,
+    "wrongKindRefused": true,
+    "foreignBytesOrMetadataRefusedBeforeWrites": true,
+    "unknownKeysPreserved": true,
+    "newEmptyModeRejectsNonempty": true,
+    "exactSubsetResume": true,
+    "canonicalMetadataOrderResume": true,
+    "lostAckPreservesCommittedVersion": true,
+    "lostAckWritesOnlyMissingTwoObjects": true,
+    "sourceMutationRefused": true,
+    "invalidCursorRefused": true
+  },
+  "storageClass": {
+    "pinnedMiniflareReportsEmpty": true,
+    "fixtureAdapterSuppliesStandardOnlyIfEmpty": true,
+    "productionModuleDoesNotDefaultUnknownClass": true,
+    "remotePreservationAccepted": false
+  },
+  "checks": {
+    "workerTypecheck": true,
+    "workerDryRun": true,
+    "ordinaryWorkerCIIncludesR2Recovery": true
+  },
+  "boundaries": {
+    "sourceRowsRead": false,
+    "remoteWrites": 0,
+    "workerDeployed": false,
+    "realEmailsSent": 0,
+    "combinedAtomicCaptureAccepted": false,
+    "collectorEnabled": false,
+    "operationalPolicyAdopted": false,
+    "remoteR2RecoveryAcceptedByThisProof": false,
+    "fullMigrationAccepted": false
+  }
+}

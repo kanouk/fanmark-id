@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { isBetterAuthEnabled } from '@/lib/auth-backend';
+import { deleteStorageObject, getImageStorageBackend, uploadStorageObject } from '@/lib/storage-api';
 import { useTranslation } from './useTranslation';
 
 export const useAvatarUpload = () => {
@@ -17,12 +19,17 @@ export const useAvatarUpload = () => {
     
     setUploading(true);
     try {
-      // Create a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
       // Resize image if needed
       const resizedFile = await resizeImage(file, 256, 256);
+
+      if (getImageStorageBackend(isBetterAuthEnabled()) === 'r2') {
+        const { publicUrl } = await uploadStorageObject('avatars', user.id, resizedFile);
+        return publicUrl;
+      }
+
+      // Create a unique filename for the legacy Supabase Storage backend.
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
@@ -91,6 +98,11 @@ export const useAvatarUpload = () => {
     if (!user) throw new Error(t('common.userNotAuthenticated'));
     
     try {
+      if (getImageStorageBackend(isBetterAuthEnabled()) === 'r2') {
+        await deleteStorageObject('avatars', user.id, avatarUrl);
+        return;
+      }
+
       // Extract file path from URL
       const url = new URL(avatarUrl);
       const pathSegments = url.pathname.split('/');

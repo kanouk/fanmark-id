@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "scope": "synthetic imported image references in staging; no live user or Storage migration",
+  "acceptedCodeHead": "6a1870a23788aa4680a90b1aef59519a153483e9",
+  "ciRun": 37118191381,
+  "ciUrl": "https://github.com/kanouk/fanmark-id/actions/runs/37118191381",
+  "ciJobs": [
+    "application: success",
+    "worker: success"
+  ],
+  "worker": "fanmark-app-staging",
+  "version": "51db2c90-d79b-4d83-882a-c308d93ee278",
+  "previousVersion": "e0a4b16e-d829-4016-95df-26471cd7940d",
+  "deployedAt": "2026-10-03T11:10:37.101Z",
+  "independentlyObservedAt": "2026-10-03T11:15:19.120Z",
+  "storageSourceOrigin": "https://synthetic-source.example.invalid",
+  "storagePublicOrigin": "https://fanmark-app-staging.fanmark-id.workers.dev",
+  "nativeTests": {
+    "mapping": 5,
+    "ownProfile": 11,
+    "ownerFanmarkProfile": 10,
+    "publicAccess": 15,
+    "protectedAccess": 11,
+    "storageClient": 8,
+    "combinedRecovery": 1
+  },
+  "typecheck": {
+    "worker": true,
+    "application": true
+  },
+  "lint": {
+    "changedFiles": true,
+    "publicAccessUnchangedBaselineDiagnostics": 2,
+    "introducedDiagnostics": 0
+  },
+  "actualStaging": {
+    "syntheticAccounts": 2,
+    "importedR2Images": 2,
+    "imageMime": "image/png",
+    "pngDimensions": [
+      1,
+      1
+    ],
+    "r2BytesVerified": true,
+    "ownAvatarProjected": true,
+    "ownAvatarUnchangedSavePreserved": true,
+    "browser": {
+      "actualApiResponses": true,
+      "fulfilledApiResponses": 0,
+      "importedImagesDecodedInEditor": true,
+      "importedImagesDecodedInPublicPage": true,
+      "unchangedSourceImageReferencesPreserved": true,
+      "legacyOwnerDelete": true,
+      "externalRequestsBlocked": 12,
+      "anonymousReturn": true,
+      "actualFormSignin": true,
+      "viewport390Overflow": false,
+      "failedSaveRequests": 1,
+      "failedSavePreservesRows": true,
+      "reloadRestoresDraft": true,
+      "retryPersistsInD1": true,
+      "successfulSaveClearsDraft": true,
+      "coldReopen": true,
+      "publicPrivateToggling": true,
+      "crossOwnerEditorRefused": true,
+      "suspensionRedirect": true,
+      "foreignKeyViolations": 0,
+      "realPhone": false
+    },
+    "cleaned": true,
+    "cleanupErrors": [],
+    "postDeletePublicHeadStatus": 404
+  },
+  "preserved": {
+    "businessMigrations": 25,
+    "businessSourceOwnedRows": 0,
+    "authOwnedRows": 0,
+    "masterCanonicalRows": 3944,
+    "masterReleaseRows": 7888,
+    "masterReleaseInventorySHA256": "5dddb3109b218fe1c7566d3d6c8348f5c95c7bd2b03d4b4e1d265297d3ed009e",
+    "masterReferenceRelease": "e44ecbeda38fe4a5c7c7adf66e2168e181da08b9033932543f991a54a868a036",
+    "masterReferenceGeneration": 10,
+    "newReferenceActivations": 0,
+    "referenceContentsAndHistory": true,
+    "wake": [
+      {
+        "singleton_id": 1,
+        "requested_generation": 17,
+        "acknowledged_generation": 17
+      }
+    ],
+    "mfa": [
+      {
+        "id": 1,
+        "generation": 240
+      }
+    ],
+    "secretNames": [
+      "BETTER_AUTH_SECRET",
+      "REFERENCE_MASTER_SERVICE_SECRET",
+      "VERIFIED_ACCESS_SECRET"
+    ]
+  },
+  "staticAssets": [
+    {
+      "path": "/assets/index-BLEBznrz.js",
+      "status": 200,
+      "sha256": "a576d5daab91e3b79e4d3e43795b06a8011574fd019d2d419fb194cb6c653c94",
+      "bytes": 2438450
+    },
+    {
+      "path": "/assets/index-BiDH-QSd.css",
+      "status": 200,
+      "sha256": "9af8015e127bfb40d1a8df17463379522f5675a1aba056d10856d21c90594dac",
+      "bytes": 146635
+    }
+  ],
+  "userDataMigrated": false,
+  "domainChanged": false,
+  "limitations": [
+    "Synthetic source rows were seeded for the staged application rehearsal, not exported from live users.",
+    "Actual user/Auth/Storage reconciliation remains in the deferred data stage.",
+    "390px Chrome viewport is not a real phone.",
+    "Provider integration, operating-plan acceptance, full source reconciliation and final integration remain open."
+  ],
+  "privateReports": {
+    "canary": "/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-remote-imported-images-sT72d8/journal.json",
+    "independentReadback": "/tmp/fanmark-images-6a1870a-independent-readback.json",
+    "localBrowser": "/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-local-editor-compose-jWoDHE/report.json"
+  },
+  "readbackPreparationFailure": "The first read-only helper incorrectly compared the prior reference-visibility evidence version to the newly deployed version. It stopped without writes. The comparison now pins that unchanged prior evidence to preflight.oldVersion, while independently verifying the new deployment."
+}

@@ -1,0 +1,56 @@
+{
+  "format": "fanmark-recovery-set-bundled-local-proof-v1",
+  "observedAt": "2026-10-07T16:07:51.047407+00:00",
+  "state": "verified-local-only",
+  "sourceSHA256": {
+    "scripts/migration/isolated-recovery-set-worker.mjs": "cd05a85430db765e1b39ab727fcd51c071ffc6ac5460f741c4fe51da2d6c0bb7",
+    "scripts/migration/run-isolated-recovery-set.mjs": "1e3c0c114bc23bd19c4c2bf1d4907024a8fc1545fd19e7d40af24c621780dfa7",
+    "scripts/migration/recovery-set-fixture.mjs": "f66a8cbfa383f51a3d08151e9a1fa6b72d1095b15e3efc8b4cc6c0e007cf5289",
+    "scripts/migration/test-isolated-recovery-set-worker.mjs": "5a5bf361dfe339332f33b78ddf667a790b86d54348b6359f7e5c1c130cc12b30"
+  },
+  "command": "npm --prefix workers/api run test:recovery-set",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "workerTypecheck": true,
+    "driverSyntaxCheck": true
+  },
+  "d1Queries": {
+    "collect": {
+      "auth": 24,
+      "business": 166,
+      "master": 56
+    },
+    "restore": {
+      "auth": 63,
+      "business": 401,
+      "master": 159
+    }
+  },
+  "assertions": {
+    "privateFileRoundtrip": true,
+    "allFiveStoreHashesVerified": true,
+    "sessionChallengesRevoked": true,
+    "credentialBytesRetained": true,
+    "unauthenticatedAndWrongNonceRefused": true,
+    "secondClaimRefused": true,
+    "differentArchiveRefusedBeforeWrites": true,
+    "nonterminalOrForeignObjectCleanupRefused": true,
+    "unadaptedLocalStorageClassRefused": true
+  },
+  "boundaries": {
+    "localStorageClassAdapterOnly": true,
+    "remoteCombinedCollectorAccepted": false,
+    "tinySyntheticFixture": true,
+    "newSdkLoginAccepted": false,
+    "allMasterDataCaptured": false,
+    "operationalQuiescenceAdopted": false,
+    "schedulerEnabled": false,
+    "runtimeRedeployed": false,
+    "remoteWrites": 0,
+    "sourceWrites": 0,
+    "newMail": 0,
+    "userDataMigration": false,
+    "dnsCutover": false
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "observedAt": "2026-10-05T15:29:51.064Z",
+  "scope": "downloaded broadcast authorization helper and unchanged sender callsite",
+  "sourceVersion": 36,
+  "matchedFunctions": [
+    {
+      "name": "getSupabaseServiceRoleClient",
+      "syntaxTreeSha256": "ae6ceb36cec312d04476a7297d436187a54c7e49df86236dbaf60ad082ab3afd",
+      "sourceMatchesCheckedIn": true
+    },
+    {
+      "name": "isAdminUser",
+      "syntaxTreeSha256": "bbe88ac03e536cf19b81b2eca5a0407a81f692c9a7e8fc317b13256b94cd37b7",
+      "sourceMatchesCheckedIn": true
+    }
+  ],
+  "sourceUsesUserRolesAdmin": true,
+  "sourceRequiresCurrentMfa": false,
+  "targetRequiresAuthAdminRoleAndExactSessionMfa": true,
+  "targetAlsoRequiresBusinessAdminPlan": true,
+  "sourceAndTargetAuthorizationAreIdentical": false,
+  "localOptionalMfaHelperIsNotDeployed": true,
+  "functionInvoked": false,
+  "userRowsRead": false,
+  "sourceMutationPerformed": false,
+  "allAuthorizationReconciled": false
+}

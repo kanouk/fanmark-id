@@ -1,0 +1,501 @@
+## 2026-10-13: V3通常Master公開・復元と2画像R2を確認
+
+main `cc7710d2` / source a6f600b、検証75da9c5のCI38296556032は両job成功。
+専用合成adminをwriter追跡内で用意し、実signin/TOTP/MFAで🦊のkeywordだけをimportした。
+UUID付きreadonly export→Node22.6.0の旧identity照合/3,944件生成→通常V3 stage→promotion→rollback→draft復元を確認。
+公開版なしAPIから始めた全8ページは新版/元版とも全公開8列・UUID/codepoint一致。世代5→6→7、元版10ec42c1へ戻った。
+新版a0b18942のready3,944行、2 activationと本人actorの変更監査2件は履歴として保持した。
+
+同じactorでavatars/cover-imagesへ正規PNGを各1件POSTし、匿名public GETの全バイトhash/MIME/nosniffを確認した。
+owner DELETE204の後は各404。合成Auth/profileと4 temporary Workerを除去し、別readonly processで3 schema/FK0、
+canonical8列・共通6表hash保持、owner rows/画像/Workerなし、active元版/世代7と履歴を照合した。
+MFA世代+2を保持し、前後writer active0/ownerなし/完全走査。実メール・provider callback・real data/domain移送は0。
+[限定V3 Master/R2証拠](evidence/staging-v3-master-r2-integration-2026-10-13.json)。
+programmatic統合であり、新V3の画面、Apple初回signup、実端末、自然daily、全体移行の受け入れではない。
+
+## 2026-10-13: normal split-Master publication accepted in staging
+
+The new `staging-emoji-publication.mjs` is separate from the isolated bootstrap CLIs.
+It pins the current account, `MASTER_DB` ID, split topology, recovery scope and runtime.
+The operator uses existing Cloudflare OAuth; the temporary gateway can forward only
+one selected mutation path plus read-only status. It is removed after the operation.
+The source Master is accessed through `EmojiMasterPublicationService`, a named
+[service binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/),
+with no default public HTTP route. The existing administrator import retains session/MFA protection.
+
+Node22.6.0 verifies the producer's exact files before credentials/network access.
+Worker verification checks canonical records and identity digests, module bytes,
+fixed generated JSON grammar and lookup/category semantics without evaluating code
+or regenerating locale-dependent ordering. Shared pure D1 cores retain stage/readback,
+ready immutability, continuity, activation CAS and transactional audit behavior.
+The normal path also pins the expected generation, verifies the full current draft,
+tracks `master-publication` through the entire operation, and rejects another publisher.
+It does not inspect or require empty Auth/Business databases.
+
+```sh
+node --experimental-strip-types scripts/migration/staging-emoji-publication.mjs \
+  --action stage --release-directory /private/releases/NEW_VERSION \
+  --expected-active OLD_VERSION --expected-generation GENERATION \
+  --journal /private/new-stage-operation.json
+```
+
+Use a new exclusive0600 journal for each promotion/rollback; never overwrite an
+unknown-acknowledgement journal or automatically replay the mutation. Inspection:
+
+```sh
+node --experimental-strip-types scripts/migration/staging-emoji-publication.mjs \
+  --action status --version TARGET_VERSION --activation-id OPERATION_UUID \
+  --journal /private/new-status-observation.json
+```
+
+Stage leaves the active version/history unchanged. Promotion/rollback use the same
+artifact and explicit expected-current version/generation. Rollback cannot remove
+identities introduced by the active release. Old bootstrap guards stay unchanged.
+Producer-payload4, CLI4, native publication5 and legacy stage/activation7 passed.
+Exact-source c4cd0bf / CI38278795933 passed both jobs. Runtime73d2bcae accepted
+normal MFA-protected import → UUID export → stage → promotion → all3,944 public
+records → rollback → all3,944 records → draft restoration, followed by owned cleanup
+and independent schema/count/FK/binding/asset/control readback.
+[Evidence](evidence/emoji-normal-publication-staging-2026-10-13.json).
+Stage held active generation3; promotion advanced to4 and rollback to5. The original
+public fields/IDs/codepoints were restored, while immutable release and audit history
+was retained. Existing users were preserved and disposable admin/search rows removed.
+The frontend reloaded and selected the fox with the original UUID. Its existing
+Frimousse picker searches an independent dataset; master keyword search is not
+accepted here and palette implementation remains the post-migration #26 scope.
+The Unicode18 candidate remains unpublished. Natural backup and the overall migration
+remain unaccepted; no production users or DNS were migrated.
+
+# Versioned emoji catalog artifacts
+
+The local release builder prepares the immutable artifact boundary for #36.
+Verified releases can be staged and activated in local D1. A read-only Worker
+route now serves the active release and an opt-in frontend build loads it before
+rendering. This code does not edit the administrator UI, upload to R2, or
+deploy a Worker. An isolated remote D1 now holds the verified public emoji
+master and its active release; the workers.dev staging API serves it by default.
+Production application routing and custom-domain cutover remain separate gates.
+
+## Proposed periodic Unicode source check (2026-10-11)
+
+Use the owner's suggested official source,
+<https://www.unicode.org/Public/emoji/latest/emoji-test.txt>, for update detection.
+A monthly fetch is a proposed cadence; no recurring job has been created. Save
+raw bytes, the header version, retrieval time and SHA-256 in a new candidate
+directory before conversion. Keep accepted `data/emoji/` files and D1 releases
+unchanged until the review/import/publication steps complete. Repeat checks
+should compare the previous downloaded hash and avoid duplicate notifications.
+
+The one-off fetch identifies itself as Emoji 18.0. Existing repository source
+identifies itself as 17.0. Conversion with the existing variation handling yields
+3,963 candidates versus the current accepted Master snapshot's 3,944: 19 added,
+0 removed, and 0 existing codepoint changes. Names/keywords change for 3 entries;
+sort orders change for 3,933. These are draft comparison results, not a UUID-bearing
+release artifact or an accepted upgrade. Do not manufacture UUIDs from this file.
+The current normal Master import must retain IDs for existing emoji, after which
+the UUID-bearing exporter and old-release continuity verification can be used.
+
+The official 18.0 overview still displays a preliminary-draft status, despite
+its dated release heading. A moving `latest` path and file header alone therefore
+do not establish final-release acceptance. Confirm upstream release status and
+retain exact reviewed bytes before publishing. Existing remote bootstrap guards
+and the pending normal split-Master publication work remain unchanged.
+[One-off bounded evidence](evidence/unicode-latest-candidate-review-2026-10-11.json).
+
+## 2026-10-11: current split Master export
+
+The administrator import now accepts repeated codepoints when the complete
+ordered sequence matches the emoji string. The previous uniqueness check
+rejected 534 valid records in the accepted 3,944-record snapshot, including
+family, mixed-skin-tone and kiss sequences. Native D1 regression coverage checks
+these imports, stable UUIDs on reimport, transactional audits and refusal of
+reordered/truncated sequences. This correction does not import the Unicode
+18.0 candidate or publish a release.
+
+The owner recalled the Unicode-text → catalog → Supabase-master update process.
+Repository code resolves it as Unicode text → converter CSV/JSON → administrator
+master import → UUID-bearing database export → frontend catalog generator. The
+converter only writes local files; the legacy generator reads Supabase but does
+not write it. Cloudflare administrator imports already write the canonical
+`MASTER_DB` draft and preserve existing UUIDs by emoji.
+
+`staging-emoji-master-export.mjs` now bridges that draft to the existing local
+release builder without Supabase credentials. Use exactly Node **22.6.0**:
+
+```sh
+node --experimental-strip-types scripts/migration/staging-emoji-master-export.mjs \
+  --read-only --output /private/path/new-emoji-records.json
+node --experimental-strip-types scripts/generate-emoji-catalog.ts \
+  --input /private/path/new-emoji-records.json --output /private/path/emojiCatalog.ts
+```
+
+The fixed current staging Worker/DB identity is verified before the single
+public-master SELECT and the Worker binding is verified again afterward. Only
+the eight catalog fields are emitted; JSON columns are decoded into arrays.
+The SELECT receipt must report zero writes. The exporter bounds responses,
+refuses malformed/duplicate identities, uses an exclusive 0600 output file,
+and never activates a release. An optional `--expected-active HASH` pins the
+active version observed with the draft. Credentials come from the existing
+read-only monitor Keychain item (or `FANMARK_STAGING_MONITOR_API_TOKEN`); failure
+prints only a fixed diagnostic. No OAuth or broader writer token is acquired.
+
+Pinned-runtime verification found all 3,944 draft records equal to all active
+public API records, including every UUID/emoji/codepoint sequence and the full
+release manifest. No draft update, Unicode refresh, DB write or activation was
+performed. [Bounded evidence](evidence/staging-emoji-pipeline-export-2026-10-11.json).
+Node24's ICU collation changes generated module bytes even for identical records;
+the exporter therefore rejects other runtimes before credential/network access.
+Keep the existing generator's ordering contract and use the pinned runtime.
+
+**Normal split-Master publication uses the accepted dedicated service path above.** Existing
+`emoji-master-release-remote-stage.mjs` / `remote-activate.mjs` require the old
+isolated `FANMARK_DB` topology and an empty Auth schema. Their guards must not be
+weakened or used against the normal populated split stores. The next update path
+must bind the current `MASTER_DB`, verify the previous artifact and identity
+continuity, stage/read back the immutable new release, and activate with an
+expected-current-version comparison under the writer/backup fence. Draft editing
+or a successful local export/build does not complete that publishing operation.
+
+The owner's “probably no other consumer” is uncertain evidence. The legacy emoji
+generator is a known Supabase reader; unrelated external consumers remain
+unconfirmed. This does not retire any source RPCs. Export guard tests run in
+`test:migration-data`; generator/release verification also uses the pinned Node.
+
+## 2026-10-03: bound catalog page reads by immutable ordinals
+
+The read-only API preserves its version/offset/limit/nextOffset JSON contract.
+For a verified ready release, `offset` selects the zero-based ordinal range:
+`ordinal > offset AND ordinal <= offset + limit`. The existing unique index on
+`(release_version, ordinal)` seeks that range; SQL no longer scans preceding
+rows with OFFSET. No index or remote schema change is required. The stage and
+activation helpers already verify contiguous ordinals, and deployed triggers
+keep ready release rows immutable. Each returned page still validates expected
+length, exact ordinals and DTO fields; startup validates the complete catalog.
+
+A real local D1 benchmark with 10,000 synthetic public catalog rows and the
+actual repository measured the last 500-row page (offset 9500): old OFFSET
+query 10,000 `meta.rows_read`, new range query 500, identical 9501..10000 output.
+This is a 95% reduction for that measured page, not a production-wide estimate
+or attribution of the account's current daily read exhaustion.
+Private `/tmp/fanmark-catalog-read-metrics.log` contains only synthetic metrics.
+The native-D1 regression instruments the repository's real statement results
+and enforces at most 1,000 page-row reads for this case (metadata queries are
+separate). It also covers zero-based offsets, final partial/empty pages,
+version pinning after active-pointer changes and missing/out-of-range ordinals.
+The API test fixture deliberately omits immutability triggers for corruption
+injection; separate full-migration release tests validate those triggers.
+
+Local checks: API/native D1 7/7, full-schema release/activation/rollback 7/7,
+frontend pagination/integrity 7/7, Worker typecheck and changed-file lint pass.
+`test:emoji-catalog:d1` is now included in the Worker `test:api-contracts-d1` and
+therefore normal `npm test`/CI. Remote deployment and read-metric verification
+remain pending behind exact-head CI and a complete D1 preflight. The current
+D1 Free daily limit prevents that preflight; no ready release, source data,
+provider, user migration or domain routing was changed by this repair.
+
+## Cloudflare staging のマスター編集
+
+`AdminEmojiMaster`はCloudflare staging modeで`/api/admin/emoji-master`へ接続し、
+Better Authのadmin roleと同一session/factorに結び付いた期限内MFA assuranceを
+Worker側で毎回確認する。読み書き先は`MASTER_DB`のcanonical `emoji_master`
+だけで、public APIが読むactive release stagingとは別である。追加、編集、
+CSV/JSONインポートは未公開draftを更新する。インポートは同一絵文字をupsertし、
+既存UUIDを維持する。古い画面からの上書きは`updated_at`比較で拒否される。
+
+ready releaseのいずれかに含まれるUUIDは、UUID・絵文字・コードポイントの
+変更をSQLite triggerでも拒否する。削除はAPI・UIの両方で拒否し、公開履歴と
+参照先の別レビューを必要とする。canonical draftを変えてもactive pointerと
+公開releaseの内容は変わらない。新しい公開版は成果物作成、identity continuity
+照合、remote readback、明示的activationを必要とする。通常split Masterの公開用
+runnerは未整備で、旧隔離bootstrap CLIは流用しない。
+
+ローカル検証では認証なし/MFA不足、session束縛、create/update/import、CAS競合、
+公開identity拒否、削除拒否をMiniflareで確認し、draft変更後もactive APIが元の
+release内容を返す。staging配備・ライブ認証確認はHANDOFFとlive observationsに
+別途記録する。管理画面のデプロイだけでは公開カタログの変更を意味しない。
+
+Use an authoritative database export with the UUID-bearing record format
+specified in TECH.md. Unicode conversion output has no database UUIDs and is
+not an initial migration source. JSON columns exported from D1 must first be
+decoded into arrays. Run with the repository's pinned Node version:
+
+```sh
+node --experimental-strip-types scripts/build-emoji-release.ts \
+  /private/path/emoji-records.json /private/path/emoji-releases
+```
+
+For an update, pass the previously accepted release directory as the third
+argument. The first release has no prior identity comparison and must be
+reconciled with live database UUIDs before acceptance. Subsequent release
+review requires the previous directory; omission does not prove continuity.
+
+Each completed version contains `records.json`, `emojiCatalog.ts`, and
+`manifest.json`. The manifest binds the canonical source records, module
+bytes, identity mapping, entry count, and schema version with SHA-256 hashes.
+Its content hash is the version directory name. Only the explicit public
+catalog columns are emitted; extra input fields are excluded. Input row order
+does not affect the version. The generator's existing sort/lookup behavior is
+retained; regeneration verification uses the pinned runtime and generator.
+
+A previous release is verified before comparing IDs. All previous UUIDs must
+remain and must still name exactly the same emoji and codepoint sequence.
+Metadata changes and new UUIDs are allowed. A variation-selector correction
+that changes an existing identity is therefore refused and needs a separate
+reviewed migration, rather than silently breaking stored references.
+
+Files are first written into a staging directory, read back, regenerated, and
+verified. Only then is the directory renamed to its content version. An
+existing version is verified and reused without rewriting it; incomplete or
+modified versions fail. A failed build never activates anything. A process
+crash may leave a `.staging-*` directory; consumers must never select it. The
+local rename is not a claim of remote publication atomicity or fsync durability.
+
+`verifyRelease(directory)` detects mixed versions, modified records/modules,
+and inconsistent manifest fields. A valid old release remains independently
+verifiable after a new one is built, so its bytes are available for rollback.
+Local D1 promotion/rollback and its audit pointer are described below. The
+remote staging API currently serves the verified catalog at activation
+generation 3 after the staging rollback rehearsal recorded below.
+The first pointer cannot be reset to an inactive state; after a later version is
+promoted, the normal guarded rollback can return to this version. The remote
+activation runner accepts `--action promotion` (the default) or
+`--action rollback`. Rollback requires the immutable artifact directory for a
+previously active release and the exact current version in `--expected-active`;
+the destination re-verifies both stored releases, identity continuity, the
+generation-checked pointer, and the appended activation-history row. Stale
+expected versions fail before changing the pointer, including when a promotion
+would otherwise be an idempotent no-op.
+
+Validation: `npm run test:emoji-catalog` covers generator input boundaries,
+identity preservation, version reuse, row-order independence, mixed-file
+rejection, old-version preservation, and failed identity review. These are
+local artifact checks. Remaining gates include administrator authorization,
+reference-aware release and rollback review, and production observation.
+Remote D1 staging and activation now precede the integrated #37 rehearsal, per
+the updated migration order. The active release is confined to the
+workers.dev staging API; production application routing, user data, and DNS
+remain reserved for the final #38 gate.
+
+## Isolated D1 staging (2026-09-23)
+
+`workers/api/migrations/0001_emoji_master_release_staging.sql` adds private
+release-import metadata and row staging tables. The new
+`scripts/migration/emoji-master-release-stage.mjs` verifies the immutable local
+release, checks source-shaped `emoji_master` UUID/emoji/codepoint continuity,
+loads catalog rows in bounded D1 batches, reads them back, then marks that
+version `ready`. A partial `loading` version is cleared and retried on the next
+run. A ready version is immutable to this importer: mismatching readback quarantines
+it as `failed` and fails closed.
+
+The local integration proof uses Miniflare D1 and synthetic records. It checks
+array encoding, identity conflicts, partial interruption/retry, version reuse,
+and retention of two staged versions. It leaves canonical `emoji_master`
+untouched; staging does not activate a public version, update API/frontend
+selection, provide rollback, or run against remote D1. Run it with
+`npm --prefix workers/api run test:emoji-master-release`.
+
+## Local D1 activation and rollback (2026-09-23)
+
+`workers/api/migrations/0002_emoji_master_release_activation.sql` adds a
+singleton active-version pointer and immutable activation history. The local
+activation helper re-derives the release hash from staged rows, checks them
+against the immutable artifact, preserves all active UUID/emoji/codepoint
+identities, and switches the pointer with a generation-checked write. Database
+triggers keep ready rows and activation history immutable. Rollback only
+targets a previously active version, and is refused if it would remove an
+identity introduced since that version. The local API and frontend below read
+this pointer; it is not a public release or remote activation.
+
+## Local read-only API and frontend connection (2026-09-23)
+
+`GET /api/emoji/catalog` reads only the active versioned staging tables through
+the `FANMARK_DB` binding when `EMOJI_CATALOG_BACKEND=d1` is explicit. It returns
+the public catalog fields, caps each response at 500 rows, validates row count
+and ordinal continuity, and accepts an optional pinned version for later pages.
+Missing active data fails closed; unknown backend configuration is a server
+error. The route never reads browser credentials, user tables, or canonical
+`emoji_master`.
+
+When the frontend build sets `VITE_EMOJI_CATALOG_BACKEND=worker` and
+`VITE_FANMARK_API_BASE_URL`, startup fetches all pages pinned to the first
+response's version, verifies page shape and catalog identity uniqueness, then
+installs synchronous conversion indexes before React renders. Requests omit
+credentials and disable HTTP caching. An API, network, or integrity failure
+shows a retry screen and does not fall back to Supabase or the bundled catalog.
+Without the Worker selector, the existing generated catalog is loaded as a
+separate startup chunk. The Worker-selected production build omits that chunk.
+
+Validation: three Worker-entrypoint/D1 API tests, seven D1 release tests, five
+frontend pagination/validation tests, one runtime conversion replacement test,
+API and frontend typechecks, a Worker-selected Vite build, and the Worker dry
+run passed locally. The default Worker deploy config still has no D1 binding;
+the dry run lists only synthetic Supabase variables. No remote D1 or deployment
+was changed, and the selected build has not been deployed or observed live.
+
+## Read-only source verification (2026-09-21)
+
+The builder was also run against a fresh, paginated read of the live
+`emoji_master` public catalog columns. Every source UUID/emoji/codepoint mapping
+matched the verified release, and a second complete source read matched the
+first. Credentials remained in process memory and artifacts remained in a
+private temporary directory. This proves the observed catalog can pass the
+initial artifact path; it is not a transactional snapshot, D1 import, or
+publication of that version.
+
+## Live public catalog staged locally (2026-09-23)
+
+Two independent read-only exports from the authenticated Supabase SQL Editor
+selected only `id`, `emoji`, `short_name`, `keywords`, `category`,
+`subcategory`, `codepoints`, and `sort_order`. Both contained 3,944 rows and
+normalized to the same SHA-256:
+`84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`.
+Every UUID and emoji was unique. The immutable release version is
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`.
+
+That release was staged into an ephemeral local Miniflare D1 database after
+seeding a source-shaped canonical `emoji_master` fixture. All 3,944 canonical
+rows and 3,944 separate staging rows read back, and every staged record matched
+the verified release; the version reached `ready`. This validates the release
+builder and staging path with the observed public master data. The Supabase
+source was read-only; no remote D1, user rows, Auth data, production master
+write, or public release was involved in that staging proof. The local
+canonical table was only a fixture and was unchanged outside this disposable
+database. The proof and related suites ran on the pinned Node 22.6.0. Private
+export files remain outside the repository.
+
+## Remote APAC D1 master staging (2026-09-23)
+
+The user moved explicitly approved master data ahead of the real user-data and
+domain cutover stages. Wrangler verified the intended Cloudflare account, then
+created the isolated `fanmark-emoji-master-staging` database in APAC. It is not
+bound to the default Worker config. The migration-only
+`workers/api/wrangler.emoji-staging.jsonc` has no Worker entrypoint and selects
+migrations `0000` through `0006`. `0000_emoji_master.sql` creates the
+canonical table with PostgreSQL arrays represented as JSON arrays; `0001` and
+`0002` add private release staging and an inactive promotion pointer. The
+master D1 also includes `0003_better_auth_core.sql` and reference/admin
+extensions `0004` through `0006` used by the staging app and master APIs.
+
+The remote staging command verified the account/database identity, re-verified
+the immutable artifact, appended the 3,944 public records to canonical
+`emoji_master`, staged a separate version, then compared every row after
+readback. A second independent remote readback matched both artifact hashes:
+`recordsSHA256` is
+`84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`, and
+`identitySHA256` is
+`dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`.
+Pinned-runtime release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed` contains
+3,944 rows and is `ready`. The active pointer and activation history both
+remain empty. An initial build from the shell's Node 25 runtime produced a
+different module hash despite the same record/identity hashes. Node 22.6.0
+rejected that artifact during verification, so its remote release was marked
+`failed` and its 3,944 staging rows were removed; only its failure metadata is
+retained. At the end of this initial staging step, no real users, user-owned
+data, public catalog switch, Supabase write, or DNS change had occurred. Both
+the read-only catalog Worker and the SPA/API
+staging Worker are deployed on `workers.dev`; the SPA Worker reads this release
+by its immutable version. The active pointer remains unset.
+
+Wrangler's remote migration parser rejected the existing nested `CASE ... END`
+guards in migration `0002` as incomplete SQL. Those trigger guards now use
+equivalent conditional `RAISE ... WHERE` statements; the seven-case local
+release integration suite passes. The standard remote `migrations apply` query
+path also returned `incomplete input` for `0003`; the same file succeeded in
+local D1. It was then applied to the isolated remote D1 through Wrangler's
+transactional `--file` import path with the standard `d1_migrations` record.
+Remote readback confirms all eight Auth tables, six generation triggers, the
+singleton MFA generation row, and no remaining user/account/session/factor
+rows. `d1 migrations list` reports no pending migrations.
+
+## Remote promotion and rollback rehearsal (2026-09-25 JST)
+
+The guarded remote activation runner was exercised against the isolated
+`fanmark-emoji-master-staging` D1. A temporary immutable 3,944-row release was
+built from the verified active artifact with one staging-only keyword marker;
+all UUID/emoji/codepoint identities remained identical. It was staged without
+writing the canonical `emoji_master` table, then promoted with the exact
+expected active version. The previous verified release was immediately
+restored through `--action rollback`, again with the exact expected-active
+version. Both operations read back their generation and immutable history rows.
+
+The pointer is back on release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed` at
+generation 3. The app catalog API returns HTTP 200, that version, and 3,944
+rows; the marker is absent from the active response. The temporary rehearsal
+release remains ready but inactive because its activation history is immutable.
+Canonical `emoji_master` remains at 3,944 rows. The emoji-only Wrangler config
+now includes migrations `0000` through `0006`, all of which are present in the
+remote ledger; Wrangler reports no pending migrations. No user data, Auth rows,
+production service, or domain/DNS state was changed. Node 22.6.0 checks passed:
+`npm run test:migration-data` (93/93),
+`npm --prefix workers/api run test:emoji-master-release` (7/7), CI isolation,
+and `git diff --check`.
+
+## Remote staging activation and API readback (2026-09-23)
+
+The remote re-staging guard now accepts the applied, empty Better Auth schema,
+requires all four migration ledger entries, and verifies that the active pointer
+and activation history do not change while a release is staged. Its repeat run
+reused the same `ready` release: canonical master 3,944 rows, release 3,944
+rows, active pointer 0 before activation, history 0, and all eight Auth tables
+present with user-owned Auth rows at 0. Tests cover missing schema, any Auth
+rows, changed MFA generation, and activation-state mutation.
+
+The remote activation command required the expected active state to be `none`,
+re-verified the artifact and every staged row, and promoted version
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`. Readback
+shows generation 1 and one immutable activation event. The dedicated
+workers.dev catalog API changed from 503 while inactive to 200. A full eight-page
+fetch returned all 3,944 rows; the release version, `recordsSHA256`, and
+`identitySHA256` matched the independently verified artifact. Better Auth
+user-owned rows remain at 0. No production Worker, user data, Supabase write,
+R2 bucket/object, or custom domain/DNS was changed.
+
+## Independent acceptance review (2026-09-26 JST)
+
+Astra re-ran the release builder checks (7/7), Worker release-stage and
+promotion/rollback integration (7/7), version-pinned catalog API integration
+(3/3), and the emoji-master admin client contract (4/4). Together these cover
+UUID and codepoint identity preservation, duplicate/collision rejection,
+interrupted import remaining unpublished and safe retry, immutable ready
+releases, page consistency across active-version changes, guarded promotion,
+rollback, and stale-version rejection.
+
+A fresh read-only pagination of the deployed master catalog API returned all
+3,944 rows from release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`; all
+3,944 IDs were unique and page version/offset/total metadata stayed consistent.
+The staging rollback rehearsal remains the operational evidence; this review
+performed no D1 writes or activation. The migration stage is complete for the
+isolated master D1 and workers.dev distribution path. Production API routing,
+custom domains/DNS, and user-data migration remain later stages.
+
+## Current Supabase source parity refresh (2026-09-27 JST)
+
+Using the linked project through `supabase@2.118.0 db query --linked`, a
+read-only query selected only the eight public catalog columns and all 3,944
+rows. The current-source release builder reproduced the active Cloudflare
+release exactly: `recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`,
+`identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`,
+and version `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`.
+The independent remote D1 query returned 3,944 active-release rows and matched
+all eight columns; its metadata reported `changed_db=false` and zero rows
+written. The active pointer remains generation 3/action `rollback`. No source
+rows were imported and no activation or D1 mutation occurred.
+
+## Retained release inventory readback (2026-10-03 JST)
+
+Metadata-only D1 reads at00:03:30Z confirmed two ready immutable releases:
+active10ec42 has3944 rows; inactive rollback-rehearsal d78d798 has3944 rows.
+The earlier failed35b34 import retains metadata and zero staged rows. Total
+staged rows are7888; this is retained release history, not duplicate canonical
+rows. Canonical count stays3944 and the active pointer stays generation3,
+action rollback, with the same three activation events. A private preflight
+incorrectly expected total3944 and stopped before deployment/fixtures. Its
+correction pins the complete import metadata/manifest hashes/pointer/history
+SHA-2565dddb3109b218fe1c7566d3d6c8348f5c95c7bd2b03d4b4e1d265297d3ed009e.
+Independent00:08:27Z readback matched it. No retained release was deleted and
+no canonical master, activation or legacy Auth row was changed.
+
+Known staging V2/V3 Master/scope pairs are compiled in `staging-emoji-targets.mjs`. The CLI chooses the live pair once and pins every follow-up. The exporter also rechecks the same pair. V3 uses a separate service entrypoint; arbitrary/mixed profiles and target changes are refused. Normal staging now routes V3; the pending candidate configuration remains a historical/pre-admission profile. The October13 V3 integration evidence separately verifies real publication and rollback.

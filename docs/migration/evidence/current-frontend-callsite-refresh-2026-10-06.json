@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "scope": "current bounded AST frontend callsite inventory and matching semantic map coverage; not whole-program dataflow or full source authorization approval",
+  "sourceHead": "52790bf9c5763c19a4d6baaf857b47b76700e9c9",
+  "runtimeHead": "0ed4213ac55620ec45b4d59fcc173005cb1e1de3",
+  "oldStaticCount": 211,
+  "currentStaticCount": 211,
+  "movedSourceReferences": 16,
+  "operationsTargetsAndDynamicExpressionsUnchanged": true,
+  "currentRowsSha256": "09e643d8fa5c60421b16171bf93d14593482d8e8fc5079c76b5011b92a79c43c",
+  "previousDocumentOnlyTestPassed": true,
+  "currentSourceComparisonRejectedStaleDocuments": true,
+  "sourceOrAuthRowsRead": false,
+  "deployedWorkerChanged": false,
+  "fullRuntimeReconciled": false,
+  "fullAuthorizationAccepted": false,
+  "moves": [
+    {
+      "before": "src/components/AdminDataReset.tsx:38",
+      "after": "src/components/AdminDataReset.tsx:47"
+    },
+    {
+      "before": "src/hooks/useAuth.tsx:186",
+      "after": "src/hooks/useAuth.tsx:188"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:94",
+      "after": "src/hooks/useAuthForm.tsx:95"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:153",
+      "after": "src/hooks/useAuthForm.tsx:154"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:183",
+      "after": "src/hooks/useAuthForm.tsx:184"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:192",
+      "after": "src/hooks/useAuthForm.tsx:193"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:204",
+      "after": "src/hooks/useAuthForm.tsx:205"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:259",
+      "after": "src/hooks/useAuthForm.tsx:262"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:304",
+      "after": "src/hooks/useAuthForm.tsx:307"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:340",
+      "after": "src/hooks/useAuthForm.tsx:343"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:375",
+      "after": "src/hooks/useAuthForm.tsx:378"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:403",
+      "after": "src/hooks/useAuthForm.tsx:406"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:431",
+      "after": "src/hooks/useAuthForm.tsx:434"
+    },
+    {
+      "before": "src/hooks/useAuthForm.tsx:459",
+      "after": "src/hooks/useAuthForm.tsx:462"
+    },
+    {
+      "before": "src/hooks/useEmojiProfile.tsx:115",
+      "after": "src/hooks/useEmojiProfile.tsx:125"
+    },
+    {
+      "before": "src/hooks/useEmojiProfile.tsx:154",
+      "after": "src/hooks/useEmojiProfile.tsx:168"
+    }
+  ],
+  "focusedValidation": {
+    "mappingTestsPassed": 2,
+    "inventoryExtractionFixtureSuitePassed": true
+  },
+  "remainingBoundary": "bounded AST standard receivers/imports only; indirect aliases/external clients and source/runtime/authorization semantics retain separate requirements"
+}

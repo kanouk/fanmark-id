@@ -1,0 +1,17 @@
+{
+  "state": "natural_scheduled_monitor_accepted",
+  "scriptName": "fanmark-backup-monitor-staging",
+  "scriptVersion": "c03f6a13-e888-4802-9af0-1c920907c43e",
+  "cron": "35 * * * *",
+  "scheduledTime": 1791844530000,
+  "outcome": "ok",
+  "exceptions": 0,
+  "healthyEvent": {
+    "event": "staging_backup_monitor_healthy",
+    "slot": "2026-10-12"
+  },
+  "scopeDigest": "4e924bd92fad88fc1dea4c6aae2d808d3df07f142cc3b7cd9a623427848a2801",
+  "observation": "passive wrangler tail; observer ended at its 180s timeout after healthy scheduled event",
+  "naturalDailyCaptureAccepted": false,
+  "captureSlotMustNotBeInterpretedAsNewDailyCapture": true
+}

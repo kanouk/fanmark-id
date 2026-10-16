@@ -1,0 +1,105 @@
+{
+  "format": "fanmark-real-precopy-rehearsal-v1",
+  "observedAt": "2026-10-16T11:31:37.248Z",
+  "sourceProject": "ppqgtbjykitqtiaisyji",
+  "scope": "preliminary-live-source-copy-and-private-local-native-D1",
+  "sourceFrozen": false,
+  "productionReady": false,
+  "productionImported": false,
+  "domainChanged": false,
+  "publicDatabase": {
+    "tables": 40,
+    "rows": 5770,
+    "captureElapsedMs": 79309,
+    "restoreElapsedMs": 916,
+    "allRowsHashesCountsVerified": true,
+    "sequenceStateVerified": true,
+    "schemaDeployable": false,
+    "unresolvedGates": [
+      {
+        "code": "seq_key_input_contract_requires_review",
+        "severity": "blocking",
+        "reason": "Canonical JSON indexing is a candidate for non-empty NULL-free UUID sequences; source seq_key skips NULL elements and accepts empty arrays. Review every writer/import disposition and source definition before accepting this replacement.",
+        "locations": [
+          {
+            "kind": "index",
+            "table": "fanmark_discoveries",
+            "name": "fanmark_discoveries_seq_key_idx"
+          },
+          {
+            "kind": "index",
+            "table": "fanmark_favorites",
+            "name": "fanmark_favorites_user_seq_idx"
+          },
+          {
+            "kind": "index",
+            "table": "fanmarks",
+            "name": "fanmarks_seq_key_idx"
+          }
+        ]
+      },
+      {
+        "code": "unsupported_catalog_scope",
+        "severity": "blocking",
+        "reason": "The catalog input includes functions, but this converter does not translate or verify that scope.",
+        "locations": [
+          {
+            "kind": "catalog",
+            "name": "functions"
+          }
+        ]
+      },
+      {
+        "code": "unsupported_catalog_scope",
+        "severity": "blocking",
+        "reason": "The catalog input includes rls_policies, but this converter does not translate or verify that scope.",
+        "locations": [
+          {
+            "kind": "catalog",
+            "name": "rls_policies"
+          }
+        ]
+      },
+      {
+        "code": "unsupported_catalog_scope",
+        "severity": "blocking",
+        "reason": "The catalog input includes triggers, but this converter does not translate or verify that scope.",
+        "locations": [
+          {
+            "kind": "catalog",
+            "name": "triggers"
+          }
+        ]
+      }
+    ]
+  },
+  "storage": {
+    "objects": 109,
+    "bytes": 13285729,
+    "captureElapsedMs": 61274,
+    "restoreElapsedMs": 217,
+    "inventoryStableDuringCapture": true,
+    "allObjectHashesVerifiedAfterRestore": true
+  },
+  "nativeLocalImport": {
+    "authUsers": 15,
+    "authAccounts": 28,
+    "adminMfaEnabled": true,
+    "businessMigrations": 27,
+    "authMigrations": 4,
+    "reconciledTables": 40,
+    "publicRowsReconciled": true,
+    "foreignKeyViolations": 0,
+    "elapsedMs": 70576,
+    "fullMigrationReconciled": false,
+    "deployable": false,
+    "schemaGateOverrideScope": "local-rehearsal-only; no remote binding or production guard changed"
+  },
+  "limits": [
+    "Copies were taken while source writers were live, at separate database/auth/storage times.",
+    "Storage restore was a host-file restore, not a production R2 import.",
+    "Auth was verified in local native D1; production target login remains required.",
+    "Independent off-host key custody, full remote rehearsal, source writer freeze/drain, receipt handoff and domain cutover are incomplete."
+  ],
+  "snapshotExporterSha256": "b6331dbdf4b9e48875e018fefa97f45d479e2b7328fae6bab81ae2d2c99d44f5"
+}

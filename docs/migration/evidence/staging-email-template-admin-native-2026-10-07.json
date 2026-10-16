@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "scope": "Native staging admin edit/save/refetch/restore of one Japanese auth-mail catalog template, without mail delivery",
+  "runtimeHead": "dd9317b9e4ce2a9099880091049ef7d4b3dba834",
+  "worker": "fanmark-app-staging",
+  "workerVersion": "17fdbf39-99a5-4927-bf12-bc11e19b7c3d",
+  "startedAt": "2026-10-07T13:45:57.745Z",
+  "checkedAt": "2026-10-07T13:49:35.593Z",
+  "nativeBrowser": "Chrome extension",
+  "template": {
+    "emailType": "magiclink",
+    "language": "ja",
+    "fields": [
+      "subject",
+      "body_text",
+      "button_text"
+    ],
+    "mfaSameSessionVerifiedFactor": true,
+    "allInputValuesMatchedD1": true,
+    "newlineEmojiPlaceholderAndLiteralDollarAmpersandPreserved": true,
+    "updatedAtAdvancedOnBothUiSaves": true,
+    "exactAuditRows": 2,
+    "reloadAndReopenedEditorMatched": true,
+    "originalContentRestoredInUi": true,
+    "originalRowExactlyRestoredAfterGuardedTestTimestampCleanup": true,
+    "otherTemplatesPreserved": true,
+    "activeStateChanged": false
+  },
+  "cleanup": {
+    "accepted": true,
+    "nativeLogout": true,
+    "ownedRowsRemaining": 0,
+    "syntheticCredentialsRemoved": true,
+    "auditRowsRemoved": 2,
+    "allPreexistingTableRowHashesPreserved": true,
+    "authBaseline": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "masterTableCount": 25,
+    "foreignKeyViolations": 0,
+    "mfaGenerationIncrement": 2,
+    "generationsNotRewound": true,
+    "independentReadOnlyProcessAt": "2026-10-07T13:49:35.593Z"
+  },
+  "screenshotSha256": {
+    "fanmark-email-template-native-saved-2026-10-07.png": "0f5fa6c6e8849ac0143b9dcd4af11696ced63e6752252f8c0faef41b4da90d7d",
+    "fanmark-email-template-native-refetched-2026-10-07.png": "a09d9ffc8663635d50ec631e1536e0615d3dd111addea5d77badc9bc8b08d5e0",
+    "fanmark-email-template-native-restored-2026-10-07.png": "69a50c879ab1e81211c0b00898916b87ccadd71cc6788632e284afdfb338bd0f"
+  },
+  "additionalEmails": 0,
+  "runtimeRedeployed": false,
+  "secretsChanged": false,
+  "sourceWrites": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false,
+  "remainingBoundary": "Accepts this catalog edit/save/refetch operation only. The current Better Auth callbacks send signup/recovery, not magiclink; this test makes no mail or magiclink-login acceptance claim. Overall provider/operations/final integrated and physical-device requirements remain."
+}

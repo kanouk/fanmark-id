@@ -1,0 +1,245 @@
+{
+  "verifiedAt": "2026-10-08T23:09:07.453Z",
+  "implementationHead": "e53558bcd86cad9c6c715d6797622f1ad2a62bd3",
+  "ciId": "37856413174",
+  "ciBothJobsPassed": true,
+  "runtimeRevision": "97826bff-6d43-49d2-bd4e-8ffb7f1a328e",
+  "previousRuntimeRevision": "79e75f89-8121-4d4a-8ec0-1df4f9f94383",
+  "preDeploymentWriterStatus": {
+    "owner": null,
+    "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+    "active": 34,
+    "drained": false,
+    "initialized": true
+  },
+  "postDeploymentSamples": [
+    {
+      "label": "idle_before",
+      "at": "2026-10-08T23:08:52.147Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    },
+    {
+      "label": "completed:/api/auth/ok",
+      "at": "2026-10-08T23:08:52.837Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    },
+    {
+      "label": "completed:/api/auth/capabilities",
+      "at": "2026-10-08T23:08:53.472Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    },
+    {
+      "label": "completed:/api/auth/get-session",
+      "at": "2026-10-08T23:08:53.960Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    },
+    {
+      "label": "completed:/",
+      "at": "2026-10-08T23:08:54.438Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    },
+    {
+      "label": "completed:/index.html",
+      "at": "2026-10-08T23:08:54.937Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    },
+    {
+      "label": "completed:/plans?checkout=success",
+      "at": "2026-10-08T23:08:53.374Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    },
+    {
+      "label": "completed:/sw.js",
+      "at": "2026-10-08T23:08:53.893Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    },
+    {
+      "label": "completed:/clear-legacy-api-cache.js",
+      "at": "2026-10-08T23:08:54.459Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 34,
+        "drained": false,
+        "initialized": true,
+        "tickets": {
+          "scanned": 34,
+          "complete": true,
+          "legacy": 34,
+          "attributed": 0,
+          "oldestEnteredAt": null,
+          "runtimeRevisions": {}
+        }
+      }
+    }
+  ],
+  "allTableHashesUnchanged": true,
+  "auth": {
+    "users": 3,
+    "accounts": 7,
+    "sessions": 2
+  },
+  "bindingsAndNamespacesUnchanged": true,
+  "probeCleanupVerified": true,
+  "captureAdmission": false,
+  "backupCronCount": 0,
+  "actualSourceBackup": false,
+  "causeDetermined": false,
+  "legacyRecordsRemoved": false,
+  "newOutstandingTicketCountAfterObservedGets": 0,
+  "priorRuntimeNaturalCronTail": [
+    {
+      "outcome": "ok",
+      "scriptVersion": "79e75f89-8121-4d4a-8ec0-1df4f9f94383",
+      "eventType": "http",
+      "cron": null,
+      "path": "/enter",
+      "exceptionCount": 0,
+      "logCount": 0,
+      "timestamp": 1791500323704
+    },
+    {
+      "outcome": "ok",
+      "scriptVersion": "79e75f89-8121-4d4a-8ec0-1df4f9f94383",
+      "eventType": "http",
+      "cron": null,
+      "path": "/leave",
+      "exceptionCount": 0,
+      "logCount": 0,
+      "timestamp": 1791500324201
+    },
+    {
+      "outcome": "ok",
+      "scriptVersion": "79e75f89-8121-4d4a-8ec0-1df4f9f94383",
+      "eventType": "cron",
+      "cron": "* * * * *",
+      "path": null,
+      "exceptionCount": 0,
+      "logCount": 1,
+      "timestamp": 1791500323212
+    }
+  ],
+  "comparisonGuardFailure": "JSON object property ordering; named binding values independently equal",
+  "newStartAtAndRevisionObservation": "local native regression verified; remote inspection summary verified; no outstanding attributed native writer in post-request samples",
+  "allSixAssetsUnchanged": true,
+  "assetHashes": {
+    "/": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+    "/index.html": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+    "/plans?checkout=success": "aef76636eb8d029a0502d0fcb6ff7c8b38f5b1e9e3bba16689d97c0e38092df0",
+    "/sw.js": "0d38775b5b106211fce11da5e959bda10b41cbeb24a071ca512530b4fe0b03e6",
+    "/clear-legacy-api-cache.js": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6",
+    "/assets/index-DgYC5YD0.js": "81735f15d322ae1dc75439200ba902ea75d9ad8071f73dee9aa2eb92dd316d7d"
+  }
+}

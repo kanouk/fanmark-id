@@ -1,0 +1,128 @@
+{
+  "format": "fanmark-fresh-staging-operational-backup-v1",
+  "date": "2026-10-09",
+  "runtimeSourceHead": "205b1689dd96bddfa6e8e9af7293fd5bca777a68",
+  "ciRun": "37866060471",
+  "ciBothJobsPassed": true,
+  "activationRuntime": "a8e55756-a2c6-4b7c-8e7b-89a362ed043a",
+  "admittedRuntime": "1b57012d-e5fe-4821-adaf-6e30ad7d6b0c",
+  "scope": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
+  "sourceIds": {
+    "auth": "2d1a775e-e584-4ce6-baf2-946efc62ff99",
+    "business": "c99c9f7e-b234-400e-aa89-8d15a168abcc",
+    "master": "02681378-5528-45a9-8093-76805a4705c9",
+    "avatars": "fanmark-avatars-staging-v2-e434eb11",
+    "covers": "fanmark-covers-staging-v2-e434eb11"
+  },
+  "newNamespaceBindings": [
+    {
+      "class_name": "NotificationWakeCoordinatorV2",
+      "name": "NOTIFICATION_WAKE",
+      "namespace_id": "c4db20f9eafd4faebeee612a0a399dce",
+      "type": "durable_object_namespace"
+    },
+    {
+      "class_name": "RecoveryWriterCoordinatorV2",
+      "name": "RECOVERY_DRAIN",
+      "namespace_id": "b216edc446254761892e5b12776d5ca5",
+      "type": "durable_object_namespace"
+    }
+  ],
+  "legacyNamespacesRetained": true,
+  "oldTicketCountBeforeSeparation": 34,
+  "legacyTicketsCleared": false,
+  "initialWriterSamples": 7,
+  "newScopeLegacyTickets": 0,
+  "newScopeUnfinishedTicketsAfterReadback": 0,
+  "allOldTableHashesUnchanged": true,
+  "publicAssetsUnchanged": true,
+  "readOnlyMonitorAttention": [],
+  "sourceBackupReceipt": {
+    "format": "fanmark-staging-backup-receipt-v1",
+    "slot": "2026-10-09",
+    "owner": "9952f594-51de-4048-a8b7-0bbe65e886e0",
+    "state": "verified",
+    "startedAt": "2026-10-09T00:56:05.139Z",
+    "runtimeRevision": "1b57012d-e5fe-4821-adaf-6e30ad7d6b0c",
+    "keyId": "staging-backup-89ca6819-a159-4db8-aa7d-733315a9a0ef",
+    "sourceIds": {
+      "auth": "2d1a775e-e584-4ce6-baf2-946efc62ff99",
+      "business": "c99c9f7e-b234-400e-aa89-8d15a168abcc",
+      "master": "02681378-5528-45a9-8093-76805a4705c9",
+      "avatars": "fanmark-avatars-staging-v2-e434eb11",
+      "covers": "fanmark-covers-staging-v2-e434eb11"
+    },
+    "schemaHashes": {
+      "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+      "business": "598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2",
+      "master": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56"
+    },
+    "fenceReleased": true,
+    "objectKey": "recovery/v1/archives/2026-10-09/9952f594-51de-4048-a8b7-0bbe65e886e0.json",
+    "archiveHash": "5ef3a1f516bcb1335b47956bc8fe302c89cd818be7e0eb67ed2313113657e0d8",
+    "bytes": 6739307,
+    "captureId": "10b03019-5687-4089-aea2-024314e417e5",
+    "finishedAt": "2026-10-09T00:56:13.699Z"
+  },
+  "encryptedArchiveSavedInPrivateR2": true,
+  "encryptedArchiveFileHashVerified": true,
+  "archiveAndSdkKeyCustodyVerified": true,
+  "sdkKeyId": "c370333d9e2510b262bbcead60ba30a58fe66b0b0dad6b9c26b5033ff2259772",
+  "restore": {
+    "state": "verified",
+    "durationMs": 14591,
+    "sourceRows": {
+      "auth": 1,
+      "business": 136,
+      "master": 12254
+    },
+    "sourceObjects": {
+      "avatars": 0,
+      "covers": 0
+    },
+    "sourceAuthUsers": 0,
+    "sourceAuthCredentials": 0,
+    "captureId": "10b03019-5687-4089-aea2-024314e417e5",
+    "sessionPolicy": "revoke-local-sessions-and-challenges",
+    "sessionCounts": {
+      "session": 0,
+      "mfaAssurance": 0,
+      "verification": 0
+    },
+    "foreignKeyViolations": {
+      "auth": 0,
+      "business": 0,
+      "master": 0
+    },
+    "restoredHashes": {
+      "auth": "249dd832ea6b75273351f695c9d4c5d09315fd45d337ace99c4b532a668447db",
+      "business": "952c96294c8a959d4d6718b1f2b1267bb3d4f7a83d76820cd96fa5ffac1de6ed",
+      "master": "8ce0bd867776847a76431911014dad5465d1c3b926ca48c3f1fdf9f1f6bf54e7",
+      "avatars": "6c6700c1e4d5d33c17fe9a49f20454dfdb9b57f89f339be3f33560cd1d2b5511",
+      "covers": "440e56e0a073e94ec028a006f1f035bcf85aab1fa6241c53299ceec155b33291"
+    },
+    "independentAllTableHashComparison": true,
+    "independentRecoveryTableCounts": {
+      "auth": 9,
+      "business": 80,
+      "master": 25
+    },
+    "independentR2Readback": true
+  },
+  "ownedCleanup": {
+    "databases": 3,
+    "buckets": 3,
+    "allTemporaryWorkersAbsent": true,
+    "preRestoreInventoryRestored": true
+  },
+  "sourceArchiveRetained": true,
+  "recurringBackupCronCount": 0,
+  "dailyScheduleCandidate": "5 0 * * *",
+  "dailyScheduleCandidateJst": "09:05",
+  "failureNotificationAccepted": false,
+  "rpoHoursTarget": 24,
+  "rtoHoursTarget": 4,
+  "sourceUserMigration": false,
+  "domainCutover": false,
+  "scopeLimitation": "Current fresh staging has master/global configuration, no Auth user/credential/session rows and empty image buckets. This does not prove real Supabase user migration or populated image/credential restoration. Natural daily Cron, failure monitoring, provider and final device acceptance remain open."
+}

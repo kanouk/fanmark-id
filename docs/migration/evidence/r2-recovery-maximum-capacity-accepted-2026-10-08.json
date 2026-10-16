@@ -1,0 +1,79 @@
+{
+  "observedAt": "2026-10-08T10:28:59.147Z",
+  "implementationHead": "87920b133c9440381b68bd9733563164c704540c",
+  "implementationCi": "37762268107",
+  "implementationCiBothJobsSuccess": true,
+  "r2SourceSha256": "fb6d8ab5edb72ad5410eb477ec98d6b390e694c6e894f828c03d988ad7b71075",
+  "scope": "Single-invocation isolated R2 leaf recovery at maximum raw bytes; retained prior inputs/results and same original capacity fixture",
+  "isolatedWorkerVersion": "6faed610-0fa9-4fab-bbd4-f0d7f666b835",
+  "objectBytes": [
+    8388608,
+    8388608,
+    4194304
+  ],
+  "totalRawBytes": 20971520,
+  "storageClasses": [
+    "Standard"
+  ],
+  "snapshotHash": "c75ccc01ce0f17f551af3c54178756dcee4894088e6c29ec556f0f1098f104c8",
+  "archiveCiphertextBase64Bytes": 37284032,
+  "archiveFormat": "fanmark-r2-recovery-v1",
+  "capacityLimitsChanged": false,
+  "sameOriginalMaterialAndChecks": true,
+  "testSourceInputsOrPriorResultsReleasedByHarness": false,
+  "nativeClassSupplementation": false,
+  "nativeAssertions": {
+    "maximumBytesCaptured": true,
+    "maximumEncryptedRoundtrip": true,
+    "maximumRestore": true,
+    "maximumExactResume": true,
+    "objectPlusOneRefused": true,
+    "totalPlusOneRefused": true
+  },
+  "nativeProofStartedAt": "2026-10-08T10:28:08.010Z",
+  "nativeProofFinishedAt": "2026-10-08T10:28:29.468Z",
+  "proofRunPostRequests": 1,
+  "runAcknowledgementUnknown": false,
+  "cleanup": {
+    "bucketsDeleted": 7,
+    "workerDeleted": true,
+    "originalResourceInventoryEqual": true,
+    "ephemeralRequestKeyDeleted": true
+  },
+  "independentReadback": {
+    "at": "2026-10-08T10:28:59.147Z",
+    "separateProcess": true,
+    "readCredentialOnly": true,
+    "workerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+    "allBaselineHashesEqual": true,
+    "authCounts": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "foreignKeyViolations": 0,
+    "settingsAndNamespacesEqual": true,
+    "isolatedResourceInventoryEqual": true,
+    "temporaryBucketsDeleted": 7,
+    "temporaryWorkerDeleted": true,
+    "proofState": "verified",
+    "proofFailure": null
+  },
+  "localValidation": {
+    "r2Contracts": 9,
+    "recoverySetContracts": 16,
+    "typecheck": true,
+    "lint": true,
+    "bundleDryRun": true,
+    "maximumCapacityProbe": true,
+    "localStorageClassAdapter": true
+  },
+  "mainRedeployed": false,
+  "objectCountMaximumAccepted": false,
+  "infrequentAccessMaximumAccepted": false,
+  "fullFiveStoreMaximumCapacityAccepted": false,
+  "regularBackupOperationsAccepted": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false
+}

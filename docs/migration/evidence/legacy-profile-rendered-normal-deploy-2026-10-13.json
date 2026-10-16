@@ -1,0 +1,46 @@
+{
+  "state": "legacy_profile_rendered_and_normal_staging_deployed",
+  "sourceHead": "5c1504e95a133647ec6101127dffecf6388659af",
+  "ciRun": "38356766234",
+  "ciBothJobsPassed": true,
+  "finishedAt": "2026-10-13T06:46:44.216Z",
+  "previousVersion": "34a665d2-eb78-4473-8fdf-4fe10ae7a058",
+  "normalStagingVersion": "958b5ea2-525d-4a7e-adc6-f6b15bfdcf91",
+  "localRealAuthChecks": [
+    "real Auth signature and frontend own profile",
+    "real PostgREST service-role owner update",
+    "source RPC excludes only verified owner",
+    "foreign row retained",
+    "real Auth rejects forged token before elevated access",
+    "privilege and owner input rejected before data",
+    "actual rendered legacy profile save reload and error gate",
+    "real Auth ban rejects prior access token"
+  ],
+  "ownedCleanupVerified": true,
+  "renderedScope": [
+    "Standalone actual profile component and hooks; not full application",
+    "Public language and settings fixtures; external font import omitted for network isolation",
+    "Local actual GoTrue/PostgREST through test HTTP alias; not production TLS"
+  ],
+  "preservation": {
+    "bindings": true,
+    "schemaAndCounts": true,
+    "oldHashedAssets": true,
+    "newAssets": true,
+    "backupAndMonitor": true,
+    "catalog": true
+  },
+  "sourceUserMigration": false,
+  "productionDomainChanged": false,
+  "limitations": [
+    "Scoped profile component browser proof, not full application acceptance on new normal staging version",
+    "Apple relay delivery unverified: no owned relay address",
+    "Original issue acceptance audit and final review still pending"
+  ],
+  "resolvedHarnessFailures": [
+    "Missing favicon in isolated test page",
+    "External font requests blocked by isolated network harness",
+    "Ban-check elevated request baseline predating added browser calls"
+  ],
+  "deploymentObservation": "First immediate deployment readback still showed previous version; subsequent read-only check confirmed new version, with no second deployment."
+}

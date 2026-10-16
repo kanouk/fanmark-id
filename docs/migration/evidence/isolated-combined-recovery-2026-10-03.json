@@ -1,0 +1,308 @@
+{
+  "schemaVersion": 1,
+  "scope": "checked-in synthetic fixture only; not real user migration",
+  "testedHead": "2cbf4e076e80ba6dc9ddcd933c2c52e0d4810721",
+  "ciRun": 37115000097,
+  "ciUrl": "https://github.com/kanouk/fanmark-id/actions/runs/37115000097",
+  "acceptedAt": "2026-10-03T10:16:12.536Z",
+  "independentInventoryObservedAt": "2026-10-03T10:18:30.138Z",
+  "bundleSHA256": "00c3ee02be11e4f2588d7cb3742d52f3f366156582b5fb33ffc60ce611b7bf2a",
+  "remoteSyntheticBundleAccepted": true,
+  "sourceTableCount": 40,
+  "sourceRowCount": 15,
+  "nonEmptySourceTableCount": 9,
+  "sourceTableCountsAndHashes": [
+    [
+      "audit_logs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "broadcast_emails",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "email_templates",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "emoji_master",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "enterprise_user_settings",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "extension_coupons",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_availability_rules",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_tier_extension_prices",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_tiers",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmarks",
+      3,
+      "e8c8020d75ea1a16503241064cb64874f03a2e38d8e5d1dce42804a3f3427a13"
+    ],
+    [
+      "invitation_codes",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "languages",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "notification_events",
+      1,
+      "8bb438d8c6b64089e4ccc13fff1dd0f2a3d2daf39e3eeba8fcc810a6427404a5"
+    ],
+    [
+      "notification_preferences",
+      1,
+      "c97bb8de2e25125c9a138e597628bb0584391ccf15f5775027b65c3c9a473c68"
+    ],
+    [
+      "notification_rules",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "notification_templates",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "notifications_history",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "reserved_emoji_patterns",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "system_settings",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "user_roles",
+      1,
+      "a94079c893d399ef242034e12c0fad044a1ac148aae3011d530f513ec38d5137"
+    ],
+    [
+      "user_subscriptions",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "waitlist",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_discoveries",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_licenses",
+      3,
+      "5e17c88ff81829d13aff24e51ede9ad1dc605871ce1e44e837f051dd8444c600"
+    ],
+    [
+      "notifications",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "user_settings",
+      1,
+      "7a8a1a7a0e9f488fe3e66e311003076115a032db889b6324a719ccdccd5c30ad"
+    ],
+    [
+      "extension_coupon_usages",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_access_daily_stats",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_access_logs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_basic_configs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_events",
+      1,
+      "950b96c5538ece05fe9139e034c35d12795da4445dcc939bbf86f28db24631df"
+    ],
+    [
+      "fanmark_favorites",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_lottery_entries",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_messageboard_configs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_profiles",
+      1,
+      "cc48d70d790d1727a5a39fb25d0065f1503cde4746665e925a9b51cccfacac0f"
+    ],
+    [
+      "fanmark_redirect_configs",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_transfer_codes",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_lottery_history",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ],
+    [
+      "fanmark_password_configs",
+      3,
+      "cefc9f6469f835605c4a73fdb45dba6aa336a27475ad5ebad49b9653e1dd742f"
+    ],
+    [
+      "fanmark_transfer_requests",
+      0,
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ]
+  ],
+  "auxiliary": {
+    "bundleSHA256": "00c3ee02be11e4f2588d7cb3742d52f3f366156582b5fb33ffc60ce611b7bf2a",
+    "emojiVersion": "7b91ba34829d1db697e74e22e5b8c4bbfb93204736a5fe44d3d748fdc622ee97",
+    "referenceVersion": "345d60ef0fac854d6bcc4792af0d406076dc3670dc9b29f89d6feaff8314e6ef",
+    "masterEmojiCount": 3,
+    "masterTierCount": 4,
+    "masterMigrationCount": 8,
+    "retainedMasterAuthCore": true,
+    "r2ObjectCount": 2,
+    "linkedAssetsVerified": true,
+    "physicalBucketKeysVerified": true,
+    "applicationStorageReadVerified": true
+  },
+  "targets": [
+    {
+      "phase": "primary",
+      "targetIncarnation": "17c33938-e2ad-4345-ac5d-cd30aa1bee59",
+      "databaseIds": [
+        "a8c2085e-7fe5-4873-b050-5a773bb6c082",
+        "4035656c-0878-480c-a08f-b591910febc4",
+        "c7c95563-7bb6-4a15-97f4-6d96084d96af"
+      ],
+      "workerName": "fanmark-recovery-e9c0a3b6f5d94709-assets",
+      "workerVersion": "842faddc-c397-48b1-bef0-3c0962d6838a",
+      "acceptedAt": "2026-10-03T10:14:20.870Z",
+      "syntheticProvisionAndRestoreDurationMs": 102090,
+      "committedCredentialInterruptionObserved": true,
+      "initialIdentityResponses": [
+        {
+          "code": "recovery_identity_unavailable",
+          "httpStatus": 404,
+          "transportCode": null
+        }
+      ],
+      "cleanupVerified": true
+    },
+    {
+      "phase": "restored",
+      "targetIncarnation": "48abc0fe-71ea-430a-8368-bb37bf48a6b0",
+      "databaseIds": [
+        "a386e76e-30e9-477b-b36e-cdf3acbae687",
+        "48ead5dc-4ab6-480a-8a61-17911d679106",
+        "45759143-8a51-4829-9b00-4c4be7b98db6"
+      ],
+      "workerName": "fanmark-recovery-b8258a197e8849ac-assets",
+      "workerVersion": "a011ef21-227c-455c-9342-cf5058b7cc6a",
+      "acceptedAt": "2026-10-03T10:16:01.636Z",
+      "syntheticProvisionAndRestoreDurationMs": 90726,
+      "committedCredentialInterruptionObserved": false,
+      "initialIdentityResponses": [
+        {
+          "code": "recovery_identity_unavailable",
+          "httpStatus": 404,
+          "transportCode": null
+        },
+        {
+          "code": "recovery_identity_unavailable",
+          "httpStatus": 404,
+          "transportCode": null
+        },
+        {
+          "code": "recovery_identity_unavailable",
+          "httpStatus": 404,
+          "transportCode": null
+        },
+        {
+          "code": "recovery_identity_unavailable",
+          "httpStatus": 503,
+          "transportCode": null
+        }
+      ],
+      "cleanupVerified": true
+    }
+  ],
+  "originalInventoryEqualsFinal": true,
+  "independentInventoryEqualsOriginal": true,
+  "existingResourceCounts": {
+    "d1": 3,
+    "r2": 3,
+    "workers": 2
+  },
+  "notProven": {
+    "realUserDataMigration": true,
+    "authCredentialBackupRestore": true,
+    "sourceURLRewriteAndBrowserDisplay": true,
+    "productionRTO": true,
+    "fullSourceConverterAcceptance": true
+  },
+  "converterDeployable": false,
+  "fullMigrationReconciled": false,
+  "privateJournal": "/tmp/fanmark-combined-remote-KjkWWK/journal.json",
+  "authScope": "fixed synthetic dependency user seeded under four Auth runtime migrations; no Auth credential import"
+}

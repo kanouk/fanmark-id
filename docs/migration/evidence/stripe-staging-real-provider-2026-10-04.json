@@ -1,0 +1,788 @@
+{
+  "observedAt": "2026-10-04T12:23:07.930Z",
+  "scope": "owned synthetic user and Stripe test objects only; retained human accounts and production unchanged",
+  "candidateHead": "87b61ef74e434e44396e5b5ec67fcc737c85dadf",
+  "ciRun": 37200812928,
+  "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+  "portalFixDeployment": {
+    "observedAt": "2026-10-04T12:15:39.639Z",
+    "candidateHead": "87b61ef74e434e44396e5b5ec67fcc737c85dadf",
+    "ciRun": 37200812928,
+    "configurationHead": "87b61ef74e434e44396e5b5ec67fcc737c85dadf",
+    "runtimeCodeHead": "87b61ef74e434e44396e5b5ec67fcc737c85dadf",
+    "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "worker": "fanmark-app-staging",
+    "previousVersion": "b79307ca-d955-4475-9ff6-fda4d2e9c8f9",
+    "version": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "secretNames": [
+      "APPLE_OAUTH_CLIENT_ID",
+      "APPLE_OAUTH_CLIENT_SECRET",
+      "BETTER_AUTH_SECRET",
+      "DISCORD_OAUTH_CLIENT_ID",
+      "DISCORD_OAUTH_CLIENT_SECRET",
+      "GITHUB_OAUTH_CLIENT_ID",
+      "GITHUB_OAUTH_CLIENT_SECRET",
+      "GOOGLE_OAUTH_CLIENT_ID",
+      "GOOGLE_OAUTH_CLIENT_SECRET",
+      "REFERENCE_MASTER_SERVICE_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_SECRET_KEY_TEST",
+      "STRIPE_WEBHOOK_SECRET",
+      "VERIFIED_ACCESS_SECRET"
+    ],
+    "credentialValuesExported": false,
+    "credentialConfigurationChanged": false,
+    "humanAccountPreserved": true,
+    "masterHistoryPreserved": true,
+    "mfaAndWakePreserved": true,
+    "otherBindingsPreserved": true,
+    "billingSelectors": [
+      "STRIPE_WEBHOOK_BACKEND",
+      "STRIPE_DISPATCH_BACKEND",
+      "STRIPE_PLAN_CHECKOUT_BACKEND",
+      "STRIPE_PLAN_CHANGE_BACKEND",
+      "STRIPE_CUSTOMER_PORTAL_BACKEND",
+      "STRIPE_EXTENSION_CHECKOUT_BACKEND"
+    ],
+    "crons": [
+      "* * * * *",
+      "0 0 * * *"
+    ],
+    "authCounts": {
+      "users": 2,
+      "accounts": 6,
+      "sessions": 1
+    },
+    "socialProviders": [
+      "apple",
+      "discord",
+      "github",
+      "google"
+    ],
+    "anonymousCheckoutRejected": true,
+    "foreignOriginRejected": true,
+    "unsignedWebhookRejected": true,
+    "actualStripeProviderRehearsalAccepted": false,
+    "userDataMigrated": false,
+    "productionDomainChanged": false,
+    "schemasChanged": false,
+    "syntheticFixturePreserved": true
+  },
+  "initialBillingDeploymentEvidence": "stripe-staging-billing-deployment-2026-10-04.json",
+  "flow": {
+    "startedAt": "2026-10-04T11:55:51.440Z",
+    "testOnly": true,
+    "phases": [
+      {
+        "phase": "checkout_created_by_app",
+        "idempotencyAccepted": true,
+        "amount": 1000,
+        "currency": "jpy",
+        "observedAt": "2026-10-04T11:56:02.699Z"
+      },
+      {
+        "phase": "hosted_test_payment",
+        "paid": true,
+        "complete": true,
+        "amount": 1000,
+        "currency": "jpy",
+        "observedAt": "2026-10-04T11:58:07.169Z"
+      },
+      {
+        "phase": "subscription_readback",
+        "plan": "free",
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "received",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "received",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "received",
+            "last_error_code": null,
+            "delivery_count": 1
+          }
+        ],
+        "observedAt": "2026-10-04T11:58:08.691Z"
+      },
+      {
+        "phase": "subscription_readback",
+        "plan": "free",
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "retryable",
+            "last_error_code": "subscription_price_configuration_review_required",
+            "delivery_count": 1
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "retryable",
+            "last_error_code": "invoice_reconciliation_retryable",
+            "delivery_count": 1
+          }
+        ],
+        "observedAt": "2026-10-04T11:59:12.150Z"
+      },
+      {
+        "phase": "subscription_readback",
+        "plan": "creator",
+        "subscriptionStatus": "active",
+        "amount": 1000,
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          }
+        ],
+        "observedAt": "2026-10-04T12:03:20.229Z"
+      },
+      {
+        "phase": "plan_change_requested_by_app",
+        "plan": "business",
+        "result": {
+          "success": true,
+          "updated": false,
+          "pending": true,
+          "requires_action": true
+        },
+        "observedAt": "2026-10-04T12:03:52.212Z"
+      },
+      {
+        "phase": "subscription_readback",
+        "plan": "creator",
+        "subscriptionStatus": "past_due",
+        "amount": 2000,
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          }
+        ],
+        "observedAt": "2026-10-04T12:05:01.724Z"
+      },
+      {
+        "phase": "subscription_readback",
+        "plan": "creator",
+        "subscriptionStatus": "past_due",
+        "amount": 2000,
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 2
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          }
+        ],
+        "observedAt": "2026-10-04T12:05:37.819Z"
+      },
+      {
+        "phase": "portal_created_by_app",
+        "httpsBillingPortal": true,
+        "observedAt": "2026-10-04T12:15:53.471Z"
+      },
+      {
+        "phase": "subscription_readback",
+        "plan": "business",
+        "subscriptionStatus": "active",
+        "amount": 2000,
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 2
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          }
+        ],
+        "observedAt": "2026-10-04T12:17:25.855Z"
+      },
+      {
+        "phase": "subscription_readback",
+        "plan": "business",
+        "subscriptionStatus": "active",
+        "amount": 2000,
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 3
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          }
+        ],
+        "observedAt": "2026-10-04T12:18:00.754Z"
+      },
+      {
+        "phase": "plan_change_requested_by_app",
+        "plan": "free",
+        "result": {
+          "success": true,
+          "updated": true,
+          "pending": true
+        },
+        "observedAt": "2026-10-04T12:18:32.526Z"
+      },
+      {
+        "phase": "subscription_readback",
+        "plan": "free",
+        "subscriptionStatus": "canceled",
+        "amount": 2000,
+        "receipts": [
+          {
+            "event_type": "customer.subscription.created",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 3
+          },
+          {
+            "event_type": "checkout.session.completed",
+            "status": "ignored",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.updated",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "invoice.payment_succeeded",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          },
+          {
+            "event_type": "customer.subscription.deleted",
+            "status": "applied",
+            "last_error_code": null,
+            "delivery_count": 1
+          }
+        ],
+        "observedAt": "2026-10-04T12:19:40.832Z"
+      },
+      {
+        "phase": "owned_fixture_cleanup",
+        "fixtureRemoved": true,
+        "humanIdentitiesPreserved": true,
+        "providerTestOnly": true,
+        "providerHistoryRetained": true,
+        "receiptEvidence": [
+          {
+            "eventType": "customer.subscription.created",
+            "status": "applied",
+            "deliveryCount": 3,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "checkout.session.completed",
+            "status": "ignored",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.updated",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "invoice.payment_succeeded",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          },
+          {
+            "eventType": "customer.subscription.deleted",
+            "status": "applied",
+            "deliveryCount": 1,
+            "lastErrorCode": null
+          }
+        ],
+        "observedAt": "2026-10-04T12:21:09.061Z"
+      }
+    ],
+    "actualHostedPaymentAccepted": true,
+    "actualSignedProviderEventAccepted": true,
+    "fullStripeRehearsalAccepted": false,
+    "workerVersion": "b79307ca-d955-4475-9ff6-fda4d2e9c8f9"
+  },
+  "independentReverseReplay": {
+    "observedAt": "2026-10-04T12:19:07.882Z",
+    "phase": "after-payment",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorUsed": true,
+    "retainedHumanIdentitiesMatched": true,
+    "retainedHumanCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "mfaPreserved": true,
+    "testOnlyPolicy": true,
+    "privateTestPriceConfigurationMatched": true,
+    "fixtureAuthCounts": {
+      "users": 1,
+      "accounts": 1,
+      "sessions": 1
+    },
+    "fixtureProfile": [
+      {
+        "plan_type": "business"
+      }
+    ],
+    "fixtureSubscriptions": [
+      {
+        "status": "active",
+        "amount": 2000,
+        "currency": "jpy",
+        "cancel_at_period_end": 0
+      }
+    ],
+    "receipts": [
+      {
+        "event_type": "customer.subscription.created",
+        "status": "applied",
+        "delivery_count": 3,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 4,
+        "subscription_application_count": 1,
+        "invoice_application_count": 0
+      },
+      {
+        "event_type": "checkout.session.completed",
+        "status": "ignored",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 0,
+        "invoice_application_count": 0
+      },
+      {
+        "event_type": "invoice.payment_succeeded",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 3,
+        "subscription_application_count": 0,
+        "invoice_application_count": 1
+      },
+      {
+        "event_type": "customer.subscription.updated",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 1,
+        "invoice_application_count": 0
+      },
+      {
+        "event_type": "customer.subscription.updated",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 1,
+        "invoice_application_count": 0
+      },
+      {
+        "event_type": "invoice.payment_succeeded",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 0,
+        "invoice_application_count": 1
+      },
+      {
+        "event_type": "customer.subscription.deleted",
+        "status": "received",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "pending",
+        "attempt_count": 0,
+        "subscription_application_count": 0,
+        "invoice_application_count": 0
+      }
+    ],
+    "duplicateReceiptSingleApplication": true,
+    "cleanupIndependentlyAccepted": false,
+    "realUsersMigrated": false,
+    "productionDomainChanged": false,
+    "olderCreatedEventReplayAfterNewerBusinessUpdateAccepted": true,
+    "firstDeliveryOutOfOrderAcceptance": false
+  },
+  "independentCancellation": {
+    "observedAt": "2026-10-04T12:20:55.844Z",
+    "phase": "after-payment",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorUsed": true,
+    "retainedHumanIdentitiesMatched": true,
+    "retainedHumanCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "mfaPreserved": true,
+    "testOnlyPolicy": true,
+    "privateTestPriceConfigurationMatched": true,
+    "fixtureAuthCounts": {
+      "users": 1,
+      "accounts": 1,
+      "sessions": 1
+    },
+    "fixtureProfile": [
+      {
+        "plan_type": "free"
+      }
+    ],
+    "fixtureSubscriptions": [
+      {
+        "status": "canceled",
+        "amount": 2000,
+        "currency": "jpy",
+        "cancel_at_period_end": 0
+      }
+    ],
+    "receipts": [
+      {
+        "event_type": "customer.subscription.created",
+        "status": "applied",
+        "delivery_count": 3,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 4,
+        "subscription_application_count": 1,
+        "invoice_application_count": 0
+      },
+      {
+        "event_type": "checkout.session.completed",
+        "status": "ignored",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 0,
+        "invoice_application_count": 0
+      },
+      {
+        "event_type": "invoice.payment_succeeded",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 3,
+        "subscription_application_count": 0,
+        "invoice_application_count": 1
+      },
+      {
+        "event_type": "customer.subscription.updated",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 1,
+        "invoice_application_count": 0
+      },
+      {
+        "event_type": "customer.subscription.updated",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 1,
+        "invoice_application_count": 0
+      },
+      {
+        "event_type": "invoice.payment_succeeded",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 0,
+        "invoice_application_count": 1
+      },
+      {
+        "event_type": "customer.subscription.deleted",
+        "status": "applied",
+        "delivery_count": 1,
+        "last_error_code": null,
+        "dispatch_status": "completed",
+        "attempt_count": 1,
+        "subscription_application_count": 1,
+        "invoice_application_count": 0
+      }
+    ],
+    "duplicateReceiptSingleApplication": true,
+    "cleanupIndependentlyAccepted": false,
+    "realUsersMigrated": false,
+    "productionDomainChanged": false
+  },
+  "independentFixtureCleanup": {
+    "observedAt": "2026-10-04T12:21:41.175Z",
+    "phase": "after-cleanup",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorUsed": true,
+    "retainedHumanIdentitiesMatched": true,
+    "retainedHumanCounts": {
+      "users": 2,
+      "accounts": 6
+    },
+    "mfaPreserved": true,
+    "testOnlyPolicy": true,
+    "privateTestPriceConfigurationMatched": true,
+    "fixtureAuthCounts": {
+      "users": 0,
+      "accounts": 0,
+      "sessions": 0
+    },
+    "fixtureProfile": [],
+    "fixtureSubscriptions": [],
+    "receipts": [],
+    "duplicateReceiptSingleApplication": false,
+    "cleanupIndependentlyAccepted": true,
+    "realUsersMigrated": false,
+    "productionDomainChanged": false
+  },
+  "independentPreservation": {
+    "observedAt": "2026-10-04T12:23:07.930Z",
+    "workerVersion": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "readOnlyMonitorUsed": true,
+    "humanAccountAndProfilePreserved": true,
+    "authCounts": {
+      "users": 2,
+      "accounts": 6,
+      "sessions": 1
+    },
+    "allOriginalOwnedBusinessTableCountsRestored": true,
+    "masterInventoryAndAllReferenceHistoryPreserved": true,
+    "mfaAndWakePreserved": true,
+    "schemasUnchanged": true,
+    "syntheticAuthAndBusinessRemoved": true,
+    "fullMigrationAccepted": false
+  },
+  "actualHostedCheckoutPaidAccepted": true,
+  "actualCreatorProjectionAccepted": true,
+  "actualPortalPaymentActionAccepted": true,
+  "actualBusinessProjectionAccepted": true,
+  "actualFreeCancellationAccepted": true,
+  "actualSignedProviderEventAccepted": true,
+  "duplicateSingleApplicationAccepted": true,
+  "olderAppliedEventReplayKeepsCurrentBusinessAccepted": true,
+  "naturalRetryAccepted": true,
+  "firstDeliveryOutOfOrderAccepted": false,
+  "actualExtensionCheckoutAccepted": false,
+  "failedPaymentAnd3DSMatrixAccepted": false,
+  "browserAuthenticatedAppUserMatchesSyntheticFixture": false,
+  "fullStripeProviderRehearsalAccepted": false,
+  "fullMigrationAccepted": false,
+  "userDataMigrated": false,
+  "productionStripeChanged": false,
+  "productionDomainChanged": false,
+  "testProviderHistoricalInvoicesAndEventsRetained": true,
+  "finalOperationsHealth": {
+    "observedAt": "2026-10-04T12:24:52.287Z",
+    "scope": "read-only staging aggregates; no repair/provider/data/domain action",
+    "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "worker": "fanmark-app-staging",
+    "version": "ca971193-b17b-4a44-9991-76ab6eb7f20c",
+    "ledgerEntries": 25,
+    "credentialSource": "monitor_api_token",
+    "leastPrivilegeAccepted": false,
+    "selectors": {
+      "CUTOVER_WRITE_FREEZE": "false",
+      "LICENSE_EXPIRY_BACKEND": "d1",
+      "LICENSE_EXPIRY_CRON": "0 0 * * *",
+      "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+      "NOTIFICATION_WAKE_BACKEND": "durable-object",
+      "NOTIFICATION_ARCHIVE_BACKEND": "d1",
+      "NOTIFICATION_ARCHIVE_CRON": "0 0 * * *",
+      "STRIPE_DISPATCH_BACKEND": "d1",
+      "BROADCAST_SEND_BACKEND": null
+    },
+    "counts": {
+      "foreign_key_violations": 0,
+      "wake_singletons": 1,
+      "wake_requested": 17,
+      "wake_acknowledged": 17,
+      "notification_pending": 0,
+      "notification_overdue": 0,
+      "notification_stale_processing": 0,
+      "notification_failed": 0,
+      "notification_archive_candidates": 0,
+      "expiry_open_runs": 0,
+      "finalization_open_runs": 0,
+      "finite_licenses_past_end": 0,
+      "grace_licenses_past_end": 0,
+      "stripe_dead_letters": 0,
+      "stripe_overdue": 0,
+      "stripe_expired_leases": 0
+    },
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": [],
+    "disabledJobs": [
+      "BROADCAST_SEND_BACKEND"
+    ],
+    "recurringOperationsAccepted": false,
+    "providerIntegrationAccepted": false
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "state": "representative_capacity_remote_restore_failed",
+  "head": "bb6cf423fff005c15f149db710d387b83d77b1a9",
+  "ciRun": "38330262202",
+  "workerVersion": "9982a02c-35cc-4c14-bdac-22ee38ef64c8",
+  "initialize": {
+    "state": "verified",
+    "masterRows": 20152
+  },
+  "collect": {
+    "state": "verified",
+    "capacityFixture": {
+      "users": 15,
+      "accounts": 18,
+      "avatars": 69,
+      "covers": 40,
+      "imageBytes": 13285729,
+      "maxObjectBytes": 1196603
+    },
+    "captureId": "325abfb4-8d03-49c3-8fc8-82ff590f1158"
+  },
+  "restore": {
+    "state": "failed",
+    "error": "proof_exceeded_memory",
+    "progress": [
+      {
+        "store": "master",
+        "state": "started"
+      },
+      {
+        "store": "master",
+        "state": "verified"
+      },
+      {
+        "store": "business",
+        "state": "started"
+      },
+      {
+        "store": "business",
+        "state": "verified"
+      },
+      {
+        "store": "auth",
+        "state": "started"
+      },
+      {
+        "store": "auth",
+        "state": "verified"
+      },
+      {
+        "store": "avatars",
+        "state": "started"
+      }
+    ],
+    "terminalEvidence": {
+      "source": "Cloudflare workersInvocationsAdaptive",
+      "operatorRecorded": true,
+      "invocationTerminated": true,
+      "scriptVersion": "9982a02c-35cc-4c14-bdac-22ee38ef64c8",
+      "status": "exceededMemory",
+      "requests": 1,
+      "errors": 1,
+      "invocationStartedAt": "2026-10-13T01:15:39Z"
+    }
+  },
+  "operatorFailureRecordVerified": true,
+  "proofResent": false,
+  "cleanupVerified": false,
+  "ownedResourcesRetained": true,
+  "mainChanged": false,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "metricsSha256": "3b401c5e2588731794edc652602e882a4ad9c75b2ca5a59842d05e1c5b44f7ea",
+  "repairScope": "Private proof wrapper releases its additional full snapshot before invoking shared restore; partial owned image cleanup remains hash-checked after terminal failure only",
+  "repairRemoteAccepted": false
+}

@@ -218,6 +218,94 @@ function firstArgument(call, sourceFile) {
   return { value: null, expression: compactExpression(unwrapped.getText(sourceFile)) };
 }
 
+function calledMethodAndReceiver(call) {
+  if (!ts.isCallExpression(call) || !ts.isPropertyAccessExpression(call.expression)) return null;
+  let receiver = call.expression.expression;
+  while (ts.isCallExpression(receiver)) receiver = receiver.expression;
+  const chain = propertyChain(receiver);
+  return chain ? { method: call.expression.name.text, chain } : null;
+}
+
+function stringProperty(object, propertyName) {
+  if (!object || !ts.isObjectLiteralExpression(object)) return null;
+  for (const property of object.properties) {
+    if (!ts.isPropertyAssignment(property)) continue;
+    const name = property.name;
+    const key = ts.isIdentifier(name) || ts.isStringLiteral(name) ? name.text : null;
+    if (key !== propertyName) continue;
+    const value = unwrapExpression(property.initializer);
+    if (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)) return value.text;
+    return null;
+  }
+  return null;
+}
+
+function directPropertyCallChain(expression) {
+  const calls = [];
+  let current = unwrapExpression(expression);
+  while (ts.isCallExpression(current) && ts.isPropertyAccessExpression(current.expression)) {
+    calls.push(current);
+    current = unwrapExpression(current.expression.expression);
+  }
+  return calls;
+}
+
+function realtimeChannelInfo(expression, sourceFile, identifiers) {
+  const calls = directPropertyCallChain(expression);
+  const channelCalls = calls.filter((call) => {
+    const info = calledMethodAndReceiver(call);
+    return info?.method === "channel" && identifiers.has(info.chain.base);
+  });
+  const topic = channelCalls.length === 1 ? firstArgument(channelCalls[0], sourceFile) : null;
+  const tables = new Set();
+  for (const call of calls) {
+    const callInfo = calledMethodAndReceiver(call);
+    if (
+      callInfo &&
+      identifiers.has(callInfo.chain.base) &&
+      callInfo.chain.names.includes("channel") &&
+      callInfo.method === "on" &&
+      firstArgument(call, sourceFile).value === "postgres_changes"
+    ) {
+      const table = stringProperty(call.arguments[1], "table");
+      if (table) tables.add(table);
+    }
+  }
+
+  if (channelCalls.length !== 1) {
+    return { found: channelCalls.length > 0, target: null, topicExpression: topic?.expression ?? null };
+  }
+  const target = tables.size === 1 ? [...tables][0] : tables.size === 0 ? topic?.value ?? null : null;
+  return { found: true, target, topicExpression: topic?.expression ?? null };
+}
+
+function containingChannelInfo(node, sourceFile, identifiers) {
+  for (let current = node.parent; current && !ts.isSourceFile(current); current = current.parent) {
+    if (ts.isVariableDeclaration(current) && current.initializer) {
+      return realtimeChannelInfo(current.initializer, sourceFile, identifiers);
+    }
+    if (ts.isStatement(current) || ts.isFunctionLike(current)) break;
+  }
+  return null;
+}
+
+function visibleChannelInfo(name, call, sourceFile, identifiers) {
+  for (let scope = call.parent; scope; scope = scope.parent) {
+    if (ts.isBlock(scope) || ts.isSourceFile(scope)) {
+      const statements = scope.statements ?? [];
+      for (const statement of statements) {
+        if (!ts.isVariableStatement(statement)) continue;
+        for (const declaration of statement.declarationList.declarations) {
+          if (!ts.isIdentifier(declaration.name) || declaration.name.text !== name) continue;
+          if (!declaration.initializer) return { found: true, target: null };
+          return realtimeChannelInfo(declaration.initializer, sourceFile, identifiers);
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function analyzeSourceFile(text, filePath, root) {
   const scriptKind = filePath.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   const sourceFile = ts.createSourceFile(filePath, text, ts.ScriptTarget.Latest, true, scriptKind);
@@ -241,12 +329,30 @@ function analyzeSourceFile(text, filePath, root) {
               : classification.kind === "storage"
                 ? `storage.${chainedOperation(node, classification.chain) ?? "from"}`
                 : classification.operation;
+          let target = isAuthMethod ? "auth" : argument.value ?? "<unresolved>";
+          let expression = !isAuthMethod ? argument.expression : null;
+          if (classification.operation === "realtime.channel") {
+            const channelInfo = containingChannelInfo(node, sourceFile, identifiers);
+            if (channelInfo?.target) {
+              target = channelInfo.target;
+              expression = channelInfo.topicExpression;
+            }
+          } else if (classification.operation === "realtime.removeChannel") {
+            const channelArgument = unwrapExpression(node.arguments[0]);
+            if (ts.isIdentifier(channelArgument)) {
+              const channelInfo = visibleChannelInfo(channelArgument.text, node, sourceFile, identifiers);
+              if (channelInfo?.target) {
+                target = channelInfo.target;
+                expression = null;
+              }
+            }
+          }
           const start = node.getStart(sourceFile);
           calls.push({
             kind: classification.kind,
             operation,
-            target: isAuthMethod ? "auth" : argument.value ?? "<unresolved>",
-            ...(!isAuthMethod && argument.expression ? { expression: argument.expression } : {}),
+            target,
+            ...(expression ? { expression } : {}),
             file: relativePath(root, filePath),
             line: sourceFile.getLineAndCharacterOfPosition(start).line + 1,
             location: `${relativePath(root, filePath)}:${sourceFile.getLineAndCharacterOfPosition(start).line + 1}`,
@@ -576,7 +682,7 @@ export function renderMarkdown(inventory) {
     "",
     operationSummary.length ? operationSummary.map(([operation, count]) => `- \`${operation}\`: ${count}`).join("\n") : "_none_",
     "",
-    "### Unresolved or dynamic call arguments",
+    "### Unresolved call arguments",
     "",
     unresolved.length
       ? unresolved.map((call) => `- ${inlineCode(call.location)}: ${call.kind} (${call.operation}), expression ${inlineCode(call.expression ?? "unresolved")}`).join("\n")
@@ -632,7 +738,7 @@ export function renderMarkdown(inventory) {
     "",
     "- Verify every local Edge entrypoint, configured JWT policy, deployed version, and any live-only function against the production project read-only.",
     "- Reconcile generated types and checked-in SQL snapshots with a fresh, access-controlled production schema readback; resolve drift before selecting Cloudflare D1/R2/Workers targets.",
-    "- Resolve the dynamic frontend calls listed above and map each static table/RPC/function/storage operation to an owner, data classification, and Cloudflare replacement or retention decision.",
+    "- Map each static frontend operation to an owner, data classification, and Cloudflare replacement or retention decision. Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.",
     "- Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.",
     "",
   ];

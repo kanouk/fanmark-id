@@ -1,0 +1,18 @@
+{
+  "scope": "local native recovery writer completion retry and kind attribution only",
+  "writerTests": 13,
+  "notificationTests": 22,
+  "backupTests": 23,
+  "workerTypecheck": "passed",
+  "changedCodeLint": "passed",
+  "workReplayed": false,
+  "existingRemoteTicketsRemoved": false,
+  "remoteDeploymentAccepted": false,
+  "naturalDailyBackupAccepted": false,
+  "cases": [
+    "transient leave failure before commit; work executes once",
+    "lost leave acknowledgement; other running writer retained",
+    "three failed leaves; capture still refuses",
+    "old tickets remain unknown; arbitrary path kind rejected"
+  ]
+}

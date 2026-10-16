@@ -1,6 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import {
+  createInvitationCode,
+  deleteInvitationCode,
+  getInvitationAdminBackend,
+  loadInvitationCodes,
+  updateInvitationCode,
+} from '@/lib/invitation-admin-api';
 
 // Export the Row type for use in other components
 export type InvitationCodeRow = Database['public']['Tables']['invitation_codes']['Row'];
@@ -23,6 +30,10 @@ export function useInvitationAdmin() {
     setLoading(true);
     setError(null);
     try {
+      if (getInvitationAdminBackend() === 'worker') {
+        setCodes(await loadInvitationCodes() as unknown as InvitationCodeRow[]);
+        return;
+      }
       const { data, error: fetchError } = await supabase
         .from('invitation_codes')
         .select('*')
@@ -54,6 +65,19 @@ export function useInvitationAdmin() {
       };
 
       try {
+        if (getInvitationAdminBackend() === 'worker') {
+          const created = await createInvitationCode({
+            // Let the Worker generate codes with its cryptographic RNG when
+            // the admin leaves the field blank. Keep the legacy generator on
+            // the unchanged Supabase path only.
+            code: values.code?.trim() ? values.code.trim().toUpperCase() : null,
+            max_uses: payload.max_uses,
+            expires_at: payload.expires_at ?? null,
+          special_perks: payload.special_perks ?? null,
+          });
+          await fetchCodes();
+          return { success: true, code: created.code };
+        }
         const { error: insertError } = await supabase.from('invitation_codes').insert(payload);
         if (insertError) throw insertError;
         await fetchCodes();
@@ -71,6 +95,18 @@ export function useInvitationAdmin() {
     async (id: string, updates: InvitationCodeUpdate) => {
       setError(null);
       try {
+        if (getInvitationAdminBackend() === 'worker') {
+          const row = codes.find((code) => code.id === id);
+          if (!row) throw new Error('Invitation code changed; refresh and try again');
+          const patch: Parameters<typeof updateInvitationCode>[1] = { expectedUpdatedAt: row.updated_at };
+          if (Object.prototype.hasOwnProperty.call(updates, 'max_uses') && updates.max_uses !== undefined) patch.max_uses = updates.max_uses;
+          if (Object.prototype.hasOwnProperty.call(updates, 'expires_at')) patch.expires_at = updates.expires_at ?? null;
+          if (Object.prototype.hasOwnProperty.call(updates, 'special_perks')) patch.special_perks = updates.special_perks ?? null;
+          if (Object.prototype.hasOwnProperty.call(updates, 'is_active') && updates.is_active !== undefined) patch.is_active = updates.is_active;
+          await updateInvitationCode(id, patch);
+          await fetchCodes();
+          return { success: true };
+        }
         const { error: updateError } = await supabase.from('invitation_codes').update(updates).eq('id', id);
         if (updateError) throw updateError;
         await fetchCodes();
@@ -81,7 +117,7 @@ export function useInvitationAdmin() {
         return { success: false, error: err };
       }
     },
-    [fetchCodes]
+    [codes, fetchCodes]
   );
 
   const toggleActive = useCallback(
@@ -95,6 +131,11 @@ export function useInvitationAdmin() {
     async (id: string) => {
       setError(null);
       try {
+        if (getInvitationAdminBackend() === 'worker') {
+          await deleteInvitationCode(id);
+          await fetchCodes();
+          return { success: true };
+        }
         const { error: deleteError } = await supabase.from('invitation_codes').delete().eq('id', id);
         if (deleteError) throw deleteError;
         await fetchCodes();

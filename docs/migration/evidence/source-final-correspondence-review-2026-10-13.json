@@ -1,0 +1,50 @@
+{
+  "state": "existing_source_catalog_and_current_correspondence_reviewed",
+  "sourceObservation": "2026-10-12T18:14:19.671464+00:00",
+  "newSourceRead": false,
+  "sourceRowsRead": false,
+  "runtimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+  "counts": {
+    "functions": 58,
+    "triggerBindings": 37,
+    "externalTriggerBindings": 1,
+    "eventTriggerBindings": 0,
+    "reviewedUnboundTriggerDefinitions": 4,
+    "pendingFunctionReviews": 54
+  },
+  "counterpartTrace": {
+    "functionCount": 58,
+    "missingFunctionCount": 0,
+    "traceSha256": "563a0fd7748097673c4876e0a6d5c91ffe78af22f950157ffa27ed76bc7fcb97",
+    "semanticApprovalInferred": false,
+    "boundary": "Exact source identity, definition, attributes and binding count matched to manual correspondence; feature/provider/operational acceptance and converter gates remain separate."
+  },
+  "currentCorrespondenceSha256": "8e52dd01d32e22cc703fa2986d571f3882c3e6b7084be8ec01bcd14eb65fd333",
+  "sourceAndAuthorizationAndFrontendChecksPassed": 24,
+  "sourceDocumentsChecked": 14,
+  "localReferencesChecked": 346,
+  "missingLocalReferences": 0,
+  "fullRuntimeReconciled": false,
+  "genericConverterDeployable": false,
+  "runtimeRedeployed": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "reviewScope": "identity/hash and documented current-application correspondence, references and recorded acceptance; not arbitrary PostgreSQL client equivalence",
+  "acceptancePlaceholderCorrections": [
+    "frontend broadcast send UI/signed recipients/provider retry",
+    "frontend test-send UI",
+    "source Edge broadcast later target acceptance",
+    "current operations phone/home-screen state"
+  ],
+  "remainingDataConditions": [
+    "unknown external/direct source consumers",
+    "historical empty or NULL-element identity sequences and source key collisions",
+    "real Auth provider subjects and administrator role custody"
+  ],
+  "genericConverterGateDisposition": {
+    "functions": "manual Worker/API counterparts; generic converter does not translate routines",
+    "rls_policies": "manual session/owner/MFA routes and protected projections; no generic D1 row access",
+    "triggers": "manual native D1/Worker transaction/DO wake/trusted timestamp counterparts",
+    "seq_key": "current validated writers use canonical ordered nonempty UUID JSON; historical input disposition remains #38"
+  }
+}

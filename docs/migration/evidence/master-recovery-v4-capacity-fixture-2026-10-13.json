@@ -1,0 +1,21 @@
+{
+  "state": "full_v4_non_user_master_reencrypted_for_owned_capacity_fixture",
+  "schemaHash": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56",
+  "rowsHash": "a9f02699a5c446ddff4fe9d207c0fcb2daf1a094bb31745670588a5d7337ff09",
+  "schemaObjects": 98,
+  "tables": 25,
+  "rows": 20152,
+  "archiveBytes": 10502404,
+  "archiveSha256": "7dd82fcc3594812e78969c97da0925fe3dd81e9280af4223f96923ab978bda7b",
+  "canonicalEmojiCount": 3944,
+  "referenceViewCounts": {
+    "fanmark_tiers": 4,
+    "languages": 4,
+    "reserved_emoji_patterns": 5,
+    "fanmark_tier_extension_prices": 16
+  },
+  "sourceCredentialRowsRead": false,
+  "operationalKeyCopied": false,
+  "sourceMasterCaptureEvidence": "staging-resource-scope-v4-operational-2026-10-13.json",
+  "fixtureOnlyKey": true
+}

@@ -1,0 +1,23 @@
+{
+  "state": "read_only_source_volume_census_verified",
+  "observedAt": "2026-10-13T00:28:16.416Z",
+  "projectRef": "ppqgtbjykitqtiaisyji",
+  "sourcePublicTables": 40,
+  "exactCountPerTableRecordedPrivately": true,
+  "publicTableStatisticsWereEstimatesInFirstRead": true,
+  "exactCountsArtifactSha256": "cd205c65b2ed8ae26bdfd34648d610de85a5e9d6fb27a03f9cab8b384305693f",
+  "capacityArtifactSha256": "b42ab4b18ed57811fd3252e43a8c41e9a50046cfeac2e4790e0db60e600d608b",
+  "individualUserOrObjectRowsExported": false,
+  "authCredentialsSelected": false,
+  "storageBodiesRead": false,
+  "sourceWrites": 0,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "workersPlanCurrent": "Paid",
+  "planAccount": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "planChanged": false,
+  "planScreenshotSha256": "5b8025f053b037b703409d6c7d64d7c595a2e1f4c3e6c349c403d86b2d2f6ebb",
+  "storageDeclaredMetadataOnly": true,
+  "declaredObjectsFitRecoveryCountAndByteBounds": true,
+  "combinedRuntimeCapacityAccepted": false
+}

@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-06",
+  "scope": "broadcast event ordering and completed-run reconciliation",
+  "preFix": {
+    "businessMigrationCount": 25,
+    "regressionCases": 5,
+    "failed": 5
+  },
+  "postFix": {
+    "businessMigrationCount": 26,
+    "fullRuntimeBroadcastTests": 13,
+    "passed": 13,
+    "currentBusinessAuthImportTests": 1,
+    "passedImport": 1,
+    "typecheck": "passed",
+    "eslint": "passed",
+    "monitorTests": 5,
+    "passedMonitor": 5
+  },
+  "cases": [
+    "permanent bounce and complaint preserve status after late delivery, before and after provider ACK",
+    "only actual suppression cancels future pending recipients",
+    "transient delivery recovery clears error and refreshes completed/failed campaign counts",
+    "signed raw-body validation and duplicate receipt",
+    "snapshot ACK recovery and same-payload idempotent retry",
+    "changed payload and expired idempotency window pause without another send"
+  ],
+  "sourceSHA256": {
+    "workers/api/src/broadcast-email-delivery-d1.ts": "413bc19eb586e20d08fc46f3d4ba1ae406c07b667834dc719815e1ff0f7019a4",
+    "workers/api/migrations-business/0025_broadcast_delivery_terminal_outcomes.sql": "f9f55e8299c85cd428d1e43f8096176a09e4859bec00fc6af8ae85676c200219",
+    "workers/api/test/broadcast-email-delivery-d1.integration.mjs": "1203797551d2a4266f419ba37c5a98bde14fdef7bb7b8ec19b762912d6a97261"
+  },
+  "remoteSyntheticAccepted": true,
+  "resendWebhookDeliveryAccepted": false,
+  "bulkSendAccepted": false,
+  "additionalEmailsSent": 0,
+  "mainStagingMigrationApplied": true,
+  "candidate": "eeb4f6a118946ba0ee244304235db5a836626b54",
+  "ci": {
+    "runId": "37414547662",
+    "bothJobs": "success"
+  },
+  "remote": {
+    "completedAt": "2026-10-06T04:45:52.744Z",
+    "cases": [
+      {
+        "type": "email.bounced",
+        "bounce": "Permanent",
+        "beforeAck": false,
+        "recipientStatus": "bounced",
+        "futureStatus": "suppressed",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.bounced",
+        "bounce": "Permanent",
+        "beforeAck": true,
+        "recipientStatus": "bounced",
+        "futureStatus": "suppressed",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.complained",
+        "bounce": null,
+        "beforeAck": false,
+        "recipientStatus": "suppressed",
+        "futureStatus": "suppressed",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.complained",
+        "bounce": null,
+        "beforeAck": true,
+        "recipientStatus": "suppressed",
+        "futureStatus": "suppressed",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.bounced",
+        "bounce": "Transient",
+        "beforeAck": false,
+        "recipientStatus": "delivered",
+        "futureStatus": "pending",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.bounced",
+        "bounce": "Transient",
+        "beforeAck": true,
+        "recipientStatus": "delivered",
+        "futureStatus": "pending",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.failed",
+        "bounce": null,
+        "beforeAck": false,
+        "recipientStatus": "delivered",
+        "futureStatus": "pending",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      },
+      {
+        "type": "email.failed",
+        "bounce": null,
+        "beforeAck": true,
+        "recipientStatus": "delivered",
+        "futureStatus": "pending",
+        "countsMatched": true,
+        "events": 2,
+        "audits": 1
+      }
+    ],
+    "appliedMigrationCount": 26,
+    "runtimeSchemaFingerprint": "f14b11b32f6694dae67ed44ec2249d8cb175c48bec2c20c79b749f9e6836ca7f",
+    "exactSchemaMatched": true,
+    "exactBindingsVerified": true,
+    "invalidEventsWroteNothing": true,
+    "minimizedMetadataOnly": true,
+    "foreignKeyViolations": 0,
+    "originalInventoryRestored": true,
+    "ownedD1AndWorkerRemoved": true,
+    "originalStagingVersionAndAllTableHashesRetained": true,
+    "nativePrivateWorkerGuardsPassed": true,
+    "providerCredentialsAbsent": true
+  },
+  "independentReadback": {
+    "verifiedAt": "2026-10-06T04:48:14.126Z",
+    "separateProcess": true,
+    "mainDataCredential": "read-only monitor",
+    "inventoryCredential": "verified canonical Wrangler OAuth GET-only",
+    "originalInventoryRestored": true,
+    "allOwnedResourcesAbsent": true,
+    "mainAllTablesMatchedPostMigrationBaseline": true,
+    "onlyIntendedLedgerRowChanged": true,
+    "exactNewDefinitionsAndRetainedOtherSchemaMatched": true,
+    "version": "b3ce17ce-cd56-464c-8694-2215dce51b39",
+    "businessMigrationCount": 26,
+    "broadcastDisabled": true,
+    "existingSecretsRetained": true
+  },
+  "staging": {
+    "completedAt": "2026-10-06T04:47:52.309Z",
+    "previousVersion": "8cbe1e5f-5e55-4a82-a853-65ec96051db2",
+    "version": "b3ce17ce-cd56-464c-8694-2215dce51b39",
+    "businessMigrationCount": 26,
+    "changedSchemaObjects": 3,
+    "exactThreeDefinitionsMatched": true,
+    "onlyIntendedLedgerRowChanged": true,
+    "retainedDataHashesMatched": true,
+    "foreignKeyViolations": 0,
+    "existingSecretsRetained": true,
+    "canonicalVarsAndStoresMatched": true,
+    "exactPublicAssetsMatched": 4,
+    "broadcastSendingStillDisabled": true
+  },
+  "limits": [
+    "Synthetic signed HTTP events verify the application, not delivery from Resend",
+    "Bulk send UI, real signed service delivery and provider retry/retention remain open",
+    "Historical combined remote recovery retains its 25-Business schema provenance",
+    "No historical broadcast row rewrite; existing inconsistencies require explicit reconciliation",
+    "No additional mail, real-user migration, domain cutover or production billing"
+  ]
+}

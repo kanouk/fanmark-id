@@ -1,0 +1,42 @@
+{
+  "state": "representative_capacity_one_store_decrypt_local_verified",
+  "finishedAt": "2026-10-13T02:47:44.324Z",
+  "privateResultSha256": "825921d1fda7fa3f6064ee9d70b8f43773c53ecae4795f6052daa015598a9c50",
+  "masterRows": 20152,
+  "capacityFixture": {
+    "users": 15,
+    "accounts": 18,
+    "avatars": 69,
+    "covers": 40,
+    "imageBytes": 13285729,
+    "maxObjectBytes": 1196603
+  },
+  "archiveBytes": 34575285,
+  "restoreState": "verified",
+  "restoredImageReads": {
+    "avatars": {
+      "status": 200,
+      "bytes": 1196603,
+      "sha256": "e90daf355929d17b5213b3777a6d86cc3732633c2c5dbe2d9430c63ac3d30b4e"
+    },
+    "cover-images": {
+      "status": 200,
+      "bytes": 111936,
+      "sha256": "6924db2f22d2d464a4d436b1d4d0861aca391761cc480be40cf634e640d42657"
+    }
+  },
+  "normalSdkTargetLogin": true,
+  "oldSessionRejected": true,
+  "foreignKeyViolations": 0,
+  "ownedBucketsEmpty": true,
+  "recoverySetTests": {
+    "passed": 17,
+    "failed": 0,
+    "callerCiphertextAndArrayMutationAfterMasterDoesNotAffectLaterStores": true,
+    "inputSavedFileUnchanged": true
+  },
+  "workerTypecheck": true,
+  "localStandardAdapter": true,
+  "remoteAccepted": false,
+  "mainRedeployed": false
+}

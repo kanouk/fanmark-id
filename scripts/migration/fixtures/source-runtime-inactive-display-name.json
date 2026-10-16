@@ -1,0 +1,9 @@
+{
+  "definition": "CREATE OR REPLACE FUNCTION public.validate_display_name()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  -- Check if display_name looks like an email address\n  IF NEW.display_name IS NOT NULL AND NEW.display_name LIKE '%@%.%' THEN\n    -- Replace with safe display name\n    NEW.display_name = public.generate_safe_display_name(NEW.display_name, NEW.user_id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+  "identity_arguments": "",
+  "language": "plpgsql",
+  "name": "validate_display_name",
+  "result": "trigger",
+  "security_definer": false,
+  "volatility": "v"
+}

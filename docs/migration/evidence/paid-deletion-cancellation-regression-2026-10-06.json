@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "environment": "staging test only",
+  "observedWorkerVersion": "d71e54b5-dc6f-4b0b-b92e-bf75b698d8e4",
+  "explicitHumanDeletionPermission": true,
+  "nativeFinalDeleteClickedOnce": true,
+  "stripeTestSubscriptionCanceled": true,
+  "stripeCancellationResponse": 200,
+  "authOwnedRows": 0,
+  "businessProfileAndSubscriptionRows": 0,
+  "unlimitedTierCReturnedToGrace": true,
+  "licenseOwnerNull": true,
+  "graceConfigRowsRetained": 2,
+  "deleteAuditCount": 1,
+  "foreignKeyViolations": 0,
+  "sameSafariRecoveryAccepted": true,
+  "automaticPwaUpdateDuringLockAccepted": false,
+  "observedCancellationReceiptStatus": "retryable",
+  "observedError": "subscription_customer_mapping_review_required",
+  "preFixRegressionFailed": true,
+  "localWebhookTests": {
+    "passed": 79,
+    "failed": 0,
+    "subscriptionTests": 22
+  },
+  "typecheckPassed": true,
+  "focusedLintPassed": true,
+  "changeFiles": {
+    "workers/api/src/stripe-subscription-reconciliation-d1.ts": "f5f45fff6fbc0fa79af65f6daaf1e75ff28acb65a158e2369c006651eb3d10c8",
+    "workers/api/src/stripe-webhook-d1-dispatch.ts": "f41b261cda7e47ec1be8a51b1b8c5a24847a5566f179d26cf6fcd210da061763",
+    "workers/api/src/stripe-webhook-d1-scheduled.ts": "89001a2344e2cb6797780fe48519d0ad7f38f853abd6383deb3728aa77767c87",
+    "workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs": "1cefd68496d0668749711bdd7f4d6d7c3ca5855e53d2afb0f6e2b71543e6705b"
+  },
+  "fixedRuntimeDeployed": false,
+  "realCancellationReceiptCompleted": false,
+  "exactOwnedCleanupAccepted": false,
+  "fullMigrationAccepted": false,
+  "realUserMigrationPerformed": false,
+  "domainCutoverPerformed": false
+}

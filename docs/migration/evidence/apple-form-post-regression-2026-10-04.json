@@ -1,0 +1,36 @@
+{
+  "observedFailure": {
+    "date": "2026-10-04",
+    "provider": "apple",
+    "callbackPath": "/api/auth/callback/apple",
+    "browserError": "forbidden_origin"
+  },
+  "originalGatewayReproduction": {
+    "appleOrigin": "https://appleid.apple.com",
+    "method": "POST",
+    "contentType": "application/x-www-form-urlencoded",
+    "expectedStatus": 302,
+    "actualStatus": 403
+  },
+  "fixScope": {
+    "exactAppleFormPostOnly": true,
+    "globalTrustedOriginsUnchanged": true,
+    "noCorsForAppleOrigin": true,
+    "businessPolicyAndSchemaChecksRetained": true,
+    "sdkStateCookieValidationRetained": true
+  },
+  "localValidation": {
+    "oauthSignupD1Tests": 66,
+    "authD1Tests": 48,
+    "typecheck": "passed",
+    "changedFileESLint": "passed",
+    "cookieMissingAndTamperedStateAndReplayRejected": true,
+    "nonCallbackMethodsOriginsMediaTypesAndEndpointsRejected": true,
+    "browserCookieSemanticsCovered": true
+  },
+  "stagingDeploymentAccepted": false,
+  "actualAppleLoginAccepted": false,
+  "secretValuesOrUserIdentifiersExported": false,
+  "productionDomainChanged": false,
+  "userDataMigrated": false
+}

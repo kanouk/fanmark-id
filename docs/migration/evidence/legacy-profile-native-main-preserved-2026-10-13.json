@@ -1,0 +1,12 @@
+{
+  "state": "independent_main_preservation_after_legacy_remote",
+  "observedAt": "2026-10-13T06:23:26.073Z",
+  "version": "34a665d2-eb78-4473-8fdf-4fe10ae7a058",
+  "bindings": 114,
+  "schemasEqual": true,
+  "countsEqual": true,
+  "assetsMatched": 9,
+  "catalogEqual": true,
+  "backupMonitorEqual": true,
+  "readOnly": true
+}

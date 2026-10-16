@@ -1,0 +1,45 @@
+{
+  "reviewedAt": "2026-10-05T14:58:59.924794+00:00",
+  "scope": "checked-in current application rule-table consumer control-flow review; captured SQL metadata reference scan",
+  "reviewedHead": "d2e9b398058428bb2d48b81cdfe7725e318d9da0",
+  "files": [
+    {
+      "path": "supabase/functions/register-fanmark/index.ts",
+      "sha256": "dce101654a649fd5b1ab7d76af5cf20941998ff47534a1b4c0056ee7fed455d5"
+    },
+    {
+      "path": "src/components/AdminPatternRules.tsx",
+      "sha256": "5f369bebe7054904567a5d478d0763ca0a53cf419e43fa9db125c82ac0a7fabe"
+    },
+    {
+      "path": "workers/api/src/fanmark-registration-d1-api.ts",
+      "sha256": "aba28c9e3fe1c432553069e234fda82bb42b7744e168333eaf721a864ce4750d"
+    },
+    {
+      "path": "workers/api/src/availability-d1-repository.ts",
+      "sha256": "da5712bf6fe70d6d4cdd666a484de73dd04be822e6fe1d0542c4fbefe7e232f8"
+    },
+    {
+      "path": "workers/api/src/availability-rules-admin-d1-api.ts",
+      "sha256": "c877dbbdeca7ef37dc06ddff252af2879c4bb666334421b1d071f9fbd6bae5a2"
+    }
+  ],
+  "sourceMetadataObservedAt": "2026-10-04T23:39:31.1247+00:00",
+  "capturedPublicFunctionCount": 58,
+  "capturedPublicFunctionLiteralRuleTableReferenceCount": 0,
+  "matchingValidRuleIsAvailableAlwaysTrue": true,
+  "calculatedPaymentAndPriceNotConsumedByRegistration": true,
+  "disabledAndNonMatchingRulesAllowRegistration": true,
+  "currentTargetDoesNotEnforceRuleTable": true,
+  "adminConfigurationContractRetained": true,
+  "deployedSourceEdgeBodyRead": false,
+  "allExternalConsumersReconciled": false,
+  "malformedHistoricalConfigurationReconciled": false,
+  "sourceRuntimeGateChanged": false,
+  "fullRuntimeReconciled": false,
+  "authorizationReconciled": false,
+  "converterDeployable": false,
+  "userDataReadOrMigrated": false,
+  "configurationMutationPerformed": false,
+  "productionDomainChanged": false
+}

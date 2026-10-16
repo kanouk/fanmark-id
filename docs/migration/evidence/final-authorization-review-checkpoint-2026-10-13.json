@@ -1,0 +1,78 @@
+{
+  "state": "limited_authorization_and_ci_review_recorded",
+  "observedAt": "2026-10-13T08:09:57.530Z",
+  "reviewedHead": "bf8ede2ecf1c28aeba0b7d8e8dfbe418022c12fb",
+  "code": [
+    {
+      "path": ".github/workflows/cloudflare-migration-validation.yml",
+      "sha256": "ad0646904b472a4ff4ab1dd3fcb2af9d31c52336ad3cd942e86bd8c54d4d1c38"
+    },
+    {
+      "path": ".github/workflows/supabase-deploy.yml",
+      "sha256": "31640462086687bbd7f93999552ab9b63f133d08f8e9fa1513b4ad9d4c9219be"
+    },
+    {
+      "path": "workers/api/src/index.ts",
+      "sha256": "bf914e7a4933fcb2d59dfdffab8f096a51ca4a0c23294de039f98ad6b24636e1"
+    },
+    {
+      "path": "workers/api/src/better-auth.mjs",
+      "sha256": "336c7ca4d6aa1fbf3a706901f2bad9559044d91b9edbd49148d36ab04330b7fd"
+    },
+    {
+      "path": "workers/api/src/profile-d1-repository.ts",
+      "sha256": "9e6d4f229550cb1f4ccde5beee84599bbfe6b9f57bb72b006758280fc65a5801"
+    },
+    {
+      "path": "workers/api/src/waitlist-admin-d1-api.ts",
+      "sha256": "7479d2901b11c602aa1571d33c3cb4788d6c32ccfbc95f622e8456bc1a3928e8"
+    }
+  ],
+  "reviewFindings": [
+    {
+      "scope": "Cloudflare validation workflow",
+      "finding": "Read-only permissions and synthetic local contracts; no production secrets or deploy step."
+    },
+    {
+      "scope": "Supabase production workflow",
+      "finding": "Production deploy requires main push, both validation families and Supabase environment; does not execute for PR."
+    },
+    {
+      "scope": "Current Worker owner/admin identity",
+      "finding": "Owner comes from Better Auth server session. Admin role comes from Auth D1 adminRole and current same-session verified-factor assurance, not client metadata."
+    },
+    {
+      "scope": "Profile and waitlist projections",
+      "finding": "Profile limits owner-selected row and editable fields; waitlist requires admin/MFA plus admin plan and durable audit before email reveal."
+    }
+  ],
+  "documentationCorrections": [
+    "Two stale new-provider pending statements now cite recorded invitation/Apple signup acceptances.",
+    "Stale paid integrated-UI pending statement now cites same-V4 paid journey and exact historical version."
+  ],
+  "existingEvidence": [
+    {
+      "path": "docs/migration/evidence/apple-staging-first-password-relogin-2026-10-13.json",
+      "sha256": "f577aa16fcdca8c2581ed45e0294910960faa4a9a7aa534d1b5a5c5056643ede"
+    },
+    {
+      "path": "docs/migration/evidence/staging-invitation-signup-native-2026-10-08.json",
+      "sha256": "00ec6e561fedf7f3181c4f81f3b8d875e266be1a0aca600dab9d0840504174d8"
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-paid-journey-2026-10-13.json",
+      "sha256": "526b1cb39329d5b8a66492f5c600cad349f727f028c2c1c04ff2a9554ff60f11"
+    }
+  ],
+  "newRuntimeTest": false,
+  "remoteMutation": false,
+  "fullPrReviewComplete": false,
+  "wholeSourceSemanticApproval": false,
+  "remaining": [
+    "Review remaining domain transaction families against original contracts.",
+    "Resolve original #33 broader legacy JWT bridge acceptance scope.",
+    "Human Apple Hide My Email consent and Resend login, then actual relay receive proof."
+  ],
+  "sourceUserDataMoved": false,
+  "domainChanged": false
+}

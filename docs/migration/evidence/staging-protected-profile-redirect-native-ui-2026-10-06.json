@@ -1,0 +1,55 @@
+{
+  "observedAt": "2026-10-06T00:30:23.419Z",
+  "workerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "scope": "synthetic native protected profile and redirect through short selector plus independent cleanup",
+  "uiChecks": {
+    "nativeProfileGateVisible": true,
+    "nativeCorrectCodeRenderedExactProfile": true,
+    "passwordGenerationPreservedOnAccessModeChange": true,
+    "accessGenerationAdvancedOnModeChange": true,
+    "nativeRedirectGateVisible": true,
+    "nativeCorrectCodeReachedExactRedirectTarget": true,
+    "cookieFreeShortEmojiLockedAndProfileNotFound": true
+  },
+  "setupApiSessionRevoked": true,
+  "protectedProfileAndRedirectNativeUiAccepted": true,
+  "distinctProfileSelectorUiAccepted": false,
+  "shortSelectorUiAccepted": true,
+  "retainedAccessHistoryPreserved": true,
+  "sharedExistingRequesterBucketsPreservedWithoutReset": true,
+  "ownedBusinessAndAuthRowsAbsent": true,
+  "retainedAuthCounts": {
+    "users": 4,
+    "accounts": 8,
+    "sessions": 3
+  },
+  "masterFullTableDigestsUnchanged": true,
+  "mfaAndRetainedProfilesUnchanged": true,
+  "anonymousHistoryCounts": {
+    "discoveries": 5,
+    "events": 8
+  },
+  "anonymousHistoryPreservedExceptOwnedFanmarkPointer": true,
+  "foreignKeyViolations": 0,
+  "providerCallsMade": 0,
+  "paidCheckoutReplayed": false,
+  "independentReadOnlyReadback": true,
+  "fullMigrationAccepted": false,
+  "retainedAuthComposition": {
+    "existingHuman": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "separateCapacityFixture": {
+      "users": 1,
+      "accounts": 1,
+      "sessions": 1
+    }
+  },
+  "nativeViewerWasOwner": false,
+  "nativeViewerWasAnonymous": false,
+  "cookieFreeApiChecksSeparateFromNativeUi": true,
+  "notificationWakePreserved": true,
+  "runtimeSourceCommit": "0ed4213ac55620ec45b4d59fcc173005cb1e1de3"
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchPublicFanmarkByShortId, getPublicAccessReadBackend } from '@/lib/public-access-api';
 export interface FanmarkByShortId {
   id: string;
   user_input_fanmark: string;
@@ -40,12 +41,19 @@ export const useFanmarkByShortId = (shortId: string | undefined): UseFanmarkBySh
     }
 
     let isMounted = true;
+    const controller = new AbortController();
 
     const fetchData = async () => {
       setLoading(true);
       setError(null);
 
       try {
+        if (getPublicAccessReadBackend() === 'worker') {
+          const record = await fetchPublicFanmarkByShortId(shortId, { signal: controller.signal });
+          if (isMounted) setData(record);
+          return;
+        }
+
         const { data, error } = await supabase.rpc('get_fanmark_by_short_id', {
           shortid_param: shortId,
         });
@@ -121,6 +129,7 @@ export const useFanmarkByShortId = (shortId: string | undefined): UseFanmarkBySh
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [shortId]);
 

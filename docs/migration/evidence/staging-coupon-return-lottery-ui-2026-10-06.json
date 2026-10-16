@@ -1,0 +1,81 @@
+{
+  "observedAt": "2026-10-05T23:56:43.633Z",
+  "workerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "scope": "synthetic native coupon extension return and separate lottery application cancellation UI plus independent cleanup",
+  "uiChecks": {
+    "fixtureCouponWithinUiLimit": true,
+    "couponExtendedOneMonthUi": true,
+    "couponLicenseEndUi": "2026/11/13",
+    "couponD1AppliedOnce": true,
+    "returnGraceCountdownUi": true,
+    "senderActiveCountAfterReturn": 0,
+    "returnD1Grace": true,
+    "lotteryD1Pending": true,
+    "lotteryApplicationUi": true,
+    "lotteryApplicantCountUi": 1,
+    "lotteryD1Cancelled": true,
+    "lotteryCancellationUi": true,
+    "lotteryApplicantCountAfterCancelUi": 0,
+    "finalUiLogout": true
+  },
+  "uiLogoutAccepted": true,
+  "wakePreservedAndAcknowledged": true,
+  "ownedBusinessAndAuthRowsAbsent": true,
+  "retainedAuthCounts": {
+    "users": 3,
+    "accounts": 7,
+    "sessions": 2
+  },
+  "masterFullTableDigestsUnchanged": true,
+  "existingCouponMastersUnchanged": true,
+  "mfaAndRetainedProfilesUnchanged": true,
+  "anonymousHistoryCounts": {
+    "discoveries": 5,
+    "events": 8
+  },
+  "anonymousHistoryPreservedExceptOwnedFanmarkPointer": true,
+  "foreignKeyViolations": 0,
+  "providerCallsMade": 0,
+  "paidCheckoutReplayed": false,
+  "independentReadOnlyReadback": true,
+  "fullMigrationAccepted": false,
+  "runtimeHead": "0ed4213ac55620ec45b4d59fcc173005cb1e1de3",
+  "actualNativeBrowser": "Safari separate normal window",
+  "fixtureSetup": "two synthetic credential/Free identities, one synthetic coupon and API-acquired inactive S-tier fanmark",
+  "normalSignupAcceptedByThisProof": false,
+  "sourceBackedCouponRedeemed": false,
+  "couponMonths": 1,
+  "couponLicenseEndBefore": "2026/10/13",
+  "couponLicenseEndAfter": "2026/11/13",
+  "couponCompletedCommands": 1,
+  "couponUsageRows": 1,
+  "lotteryWinnerSelectionAcceptedByThisProof": false,
+  "lotteryEntries": 1,
+  "lotteryStatusTransition": [
+    "pending",
+    "cancelled"
+  ],
+  "uiLogoutSyntheticSessionCount": 0,
+  "wakeBefore": 19,
+  "wakeAfter": 21,
+  "wakeRewound": false,
+  "processedEventTypes": [
+    "fanmark_returned_owner",
+    "lottery_application_submitted"
+  ],
+  "deliveredInAppNotifications": 1,
+  "anonymousSearchBefore": {
+    "discoveries": 4,
+    "events": 7
+  },
+  "anonymousSearchAfter": {
+    "discoveries": 5,
+    "events": 8
+  },
+  "anonymousSearchReason": "actual details search added one candidate/event; all search history retained and only owned fanmark pointer unlinked",
+  "newRuntimeDeployed": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "actualPhoneAccepted": false,
+  "wholeMultilingualFlowAccepted": false
+}

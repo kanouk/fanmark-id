@@ -1,0 +1,107 @@
+{
+  "startedAt": "2026-10-05T23:00:40.701Z",
+  "worker": "fanmark-app-staging",
+  "workerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "expectedUtcDate": "2026-10-06",
+  "expectedCron": "0 0 * * *",
+  "manualInvocation": false,
+  "runtimeRedeployed": false,
+  "tailConnected": true,
+  "invocationProofAccepted": true,
+  "completionVersionVerified": true,
+  "naturalDailyAccepted": true,
+  "events": [
+    {
+      "scheduledTime": "2026-10-06T00:00:57.000Z",
+      "outcome": "ok",
+      "exceptionCount": 0,
+      "jobs": [
+        {
+          "job": "notification-archive",
+          "status": "completed",
+          "archived": 0,
+          "remaining": 0,
+          "conflicts": 0,
+          "batches": 1
+        },
+        {
+          "job": "license-expiry-lifecycle",
+          "status": "completed",
+          "candidateCount": 0,
+          "processed": 0,
+          "conflicts": 0,
+          "pagesProcessed": 0,
+          "graceFinalizationStatus": "completed",
+          "graceFinalizationCandidates": 0,
+          "graceFinalizationProcessed": 0,
+          "graceFinalizationConflicts": 0,
+          "graceFinalizationPagesProcessed": 0
+        }
+      ],
+      "naturalDailyAccepted": true,
+      "observedAt": "2026-10-06T00:01:30.245Z"
+    }
+  ],
+  "finishedAt": "2026-10-06T00:01:31.154Z",
+  "streamFailed": false,
+  "runtimeHead": "0ed4213ac55620ec45b4d59fcc173005cb1e1de3",
+  "independentReadOnlyDbReadback": {
+    "observedAt": "2026-10-06T00:02:19.159Z",
+    "readOnly": true,
+    "license_expiry_runs": [
+      {
+        "captured_now": "2026-10-06T00:00:57.000000Z",
+        "status": "completed",
+        "candidate_count": 0,
+        "processed_count": 0,
+        "conflict_count": 0,
+        "completed_at": "2026-10-06T00:00:57.000000Z"
+      },
+      {
+        "captured_now": "2026-10-05T00:00:15.000000Z",
+        "status": "completed",
+        "candidate_count": 0,
+        "processed_count": 0,
+        "conflict_count": 0,
+        "completed_at": "2026-10-05T00:00:15.000000Z"
+      }
+    ],
+    "license_grace_finalization_runs": [
+      {
+        "captured_now": "2026-10-06T00:00:57.000000Z",
+        "status": "completed",
+        "candidate_count": 0,
+        "processed_count": 0,
+        "conflict_count": 0,
+        "completed_at": "2026-10-06T00:00:57.000000Z"
+      },
+      {
+        "captured_now": "2026-10-05T00:00:15.000000Z",
+        "status": "completed",
+        "candidate_count": 0,
+        "processed_count": 0,
+        "conflict_count": 0,
+        "completed_at": "2026-10-05T00:00:15.000000Z"
+      }
+    ],
+    "scheduleReadStatus": 200,
+    "schedules": [
+      {
+        "cron": "* * * * *",
+        "createdOn": "2026-10-04T11:53:46.476043Z",
+        "modifiedOn": "2026-10-04T14:25:51.871131Z"
+      },
+      {
+        "cron": "0 0 * * *",
+        "createdOn": "2026-09-28T07:41:31.838429Z",
+        "modifiedOn": "2026-10-04T14:25:51.871131Z"
+      }
+    ]
+  },
+  "scope": "main staging natural daily lifecycle expiry grace and notification archive handler, zero eligible rows",
+  "nonemptyArchivePayloadProvenByThisObservation": false,
+  "fullOperationsAccepted": false,
+  "fullMigrationAccepted": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false
+}

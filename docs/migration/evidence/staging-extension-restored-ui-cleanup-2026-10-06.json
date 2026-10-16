@@ -1,0 +1,32 @@
+{
+  "observedAt": "2026-10-05T23:13:32.176Z",
+  "workerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "scope": "exact reconstructed synthetic extension fixture cleanup and readback",
+  "restoredDashboardDateAccepted": true,
+  "uninterruptedCheckoutReturnAccepted": false,
+  "originalTemporaryJournalRecovered": false,
+  "reconstructedOwnedJournalAccepted": true,
+  "uiLogoutAccepted": true,
+  "exactSessionRevocationByUiAloneAccepted": false,
+  "ownedBusinessAndAuthRowsAbsent": true,
+  "retainedAuthCounts": {
+    "users": 3,
+    "accounts": 7,
+    "sessions": 2
+  },
+  "masterFullTableDigestsUnchanged": true,
+  "mfaAndRetainedProfilesUnchanged": true,
+  "anonymousHistoryCounts": {
+    "discoveries": 4,
+    "events": 7
+  },
+  "anonymousHistoryPreservedExceptOwnedFanmarkPointer": true,
+  "foreignKeyViolations": 0,
+  "providerCallsMade": 0,
+  "paidCheckoutReplayed": false,
+  "independentReadOnlyReadback": true,
+  "fullMigrationAccepted": false,
+  "masterTableCount": 24,
+  "cleanupCredentials": "identified app-config Wrangler OAuth; independent readback used read-only Keychain monitor",
+  "priorPaymentEvidence": "staging-extension-ui-payment-only-2026-10-05.json"
+}

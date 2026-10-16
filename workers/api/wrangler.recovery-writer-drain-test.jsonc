@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-recovery-writer-drain-local-proof",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "vars": {
+    "D1_TOPOLOGY": "split",
+    "RECOVERY_DRAIN_BACKEND": "durable-object",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+    "NOTIFICATION_WAKE_BACKEND": "durable-object"
+  },
+  "d1_databases": [{"binding": "FANMARK_DB", "database_name": "recovery-writer-local-fixture", "database_id": "00000000-0000-0000-0000-000000000099"}],
+  "durable_objects": {"bindings": [
+    {"name": "RECOVERY_DRAIN", "class_name": "RecoveryWriterCoordinator"},
+    {"name": "NOTIFICATION_WAKE", "class_name": "NotificationWakeCoordinator"}
+  ]},
+  "migrations": [{"tag": "recovery-writer-local-v1", "new_sqlite_classes": ["RecoveryWriterCoordinator", "NotificationWakeCoordinator"]}]
+}

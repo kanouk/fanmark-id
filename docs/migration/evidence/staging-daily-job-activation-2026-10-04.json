@@ -1,0 +1,34 @@
+{
+  "observedAt": "2026-10-04T01:41:07.801Z",
+  "codeHead": "b80fefce6a607354cb9be12faad865a2a79594cd",
+  "ciRun": "37168103288",
+  "version": "62052d66-41af-4595-ba15-ec042d3f7fce",
+  "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "ledgerEntries": 25,
+  "sourceOwnedRows": 0,
+  "authOwnedRows": 0,
+  "dailyJobActivation": {
+    "cpuMs": 30000,
+    "cron": [
+      "0 0 * * *"
+    ],
+    "licenseExpirySelected": true,
+    "notificationArchiveSelected": true,
+    "providerSelectorsDisabled": true,
+    "naturalCronExecutionAccepted": false
+  },
+  "mfaGenerationUnchanged": true,
+  "referenceContentsPreserved": true,
+  "referenceHistoryPrefixRetained": true,
+  "canonicalMasterRows": 3944,
+  "publishedMasterRows": 7888,
+  "wakeRequested": 17,
+  "wakeAcknowledged": 17,
+  "publicHealth": {
+    "/": 200,
+    "/api/auth/ok": 200
+  },
+  "attention": [],
+  "userDataMigrated": false,
+  "productionDomainChanged": false
+}

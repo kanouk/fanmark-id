@@ -1,0 +1,50 @@
+{
+  "state": "deployed_native_browser_accepted_and_owned_cleanup_verified",
+  "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "runtimeSourceCommit": "e511762850631275664597afec8ca4155419358f",
+  "runtimeSourceCi": {
+    "run": 38315685393,
+    "jobs": 2,
+    "conclusion": "success"
+  },
+  "regression": {
+    "beforeHttp": 400,
+    "beforePersisted": false,
+    "actualFrontendClientNativeTest": true,
+    "afterNativePassed": 12,
+    "clientTestsPassed": 7,
+    "normalization": "exact empty avatar string to null at frontend client; raw empty URL remains rejected by Worker"
+  },
+  "acceptance": {
+    "browserLoginObserved": true,
+    "profilePathObserved": "/profile",
+    "initialSaveHttp": 400,
+    "initialSavePersisted": false,
+    "initialNameChange": "Cloudflare V4 確認用",
+    "nativeEmptyAvatarFailureReproduced": true,
+    "nativeAfterFixPassed": 12,
+    "fixedRuntime": "cc82c298-ff27-4322-8c42-175e7be17f16",
+    "fixedRuntimeSource": "e511762850631275664597afec8ca4155419358f",
+    "fixedRuntimeCi": "38315685393",
+    "deploymentBindingsSchemasCountsCatalogAndJobsHeld": true,
+    "displayNamePersistedWithNullAvatar": true,
+    "profileReloadRetainedName": true,
+    "profileSaveUiAccepted": true,
+    "uiLogoutObserved": true,
+    "logoutLocation": "/"
+  },
+  "cleanup": {
+    "ownedAuthAndProfileRowsRemoved": true,
+    "operatorDeleted": true,
+    "schemasCommonMasterAndMfaGenerationHeld": true,
+    "writerActive": 0,
+    "writerOwnerAbsent": true,
+    "writerScanComplete": true
+  },
+  "scope": {
+    "newAvatarUploadAccepted": false,
+    "physicalMobileAccepted": false,
+    "sourceUsersMoved": false,
+    "domainChanged": false
+  }
+}

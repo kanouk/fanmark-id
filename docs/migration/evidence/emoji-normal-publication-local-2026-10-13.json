@@ -1,0 +1,19 @@
+{
+  "scope": "normal split-Master publication local implementation only",
+  "nativePublicationTests": 5,
+  "producerPayloadTests": 4,
+  "cliGuardAndAcknowledgementTests": 4,
+  "legacyStageActivationTests": 7,
+  "legacyAndSelectorGuards": 16,
+  "goldenCurrentRecords": 3944,
+  "goldenVersion": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+  "goldenProducerRuntime": "22.6.0",
+  "appAndWorkerTypecheck": "passed",
+  "changedCodeLint": "passed",
+  "stagingBundleDryRun": "passed",
+  "legacyBootstrapGuardsWeakened": false,
+  "normalRemotePublicationAccepted": false,
+  "sourceUserMigrationPerformed": false,
+  "productionDnsChanged": false,
+  "naturalDailyBackupAccepted": false
+}

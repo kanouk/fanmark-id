@@ -1,0 +1,98 @@
+{
+  "state": "shared_plaintext_release_insufficient_for_large_http_transport",
+  "runs": [
+    {
+      "head": "a4541dc4999c1b0523323aa2f160a3a3a2b4cbe2",
+      "ciRun": "38333543500",
+      "workerVersion": "d84429bd-defb-4593-b2be-22a57e95917f",
+      "restoreState": "failed",
+      "error": "business_recovery_restore_failed",
+      "progress": [
+        {
+          "store": "master",
+          "state": "started"
+        },
+        {
+          "store": "master",
+          "state": "verified"
+        },
+        {
+          "store": "business",
+          "state": "started"
+        }
+      ],
+      "d1Queries": {
+        "T_AUTH": 1,
+        "T_BUSINESS": 235,
+        "T_MASTER": 343
+      },
+      "terminalEvidence": null,
+      "restoreAcknowledgementUnknown": false,
+      "cleanupVerified": true,
+      "originalInventoryEqual": true
+    },
+    {
+      "head": "a4541dc4999c1b0523323aa2f160a3a3a2b4cbe2",
+      "ciRun": "38333543500",
+      "workerVersion": "28dedf8c-a55b-479c-b40f-e79259169547",
+      "restoreState": "failed",
+      "error": "proof_exceeded_memory",
+      "progress": [
+        {
+          "store": "master",
+          "state": "started"
+        },
+        {
+          "store": "master",
+          "state": "verified"
+        },
+        {
+          "store": "business",
+          "state": "started"
+        },
+        {
+          "store": "business",
+          "state": "verified"
+        },
+        {
+          "store": "auth",
+          "state": "started"
+        },
+        {
+          "store": "auth",
+          "state": "verified"
+        },
+        {
+          "store": "avatars",
+          "state": "started"
+        }
+      ],
+      "d1Queries": {
+        "T_AUTH": 79,
+        "T_BUSINESS": 318,
+        "T_MASTER": 343
+      },
+      "terminalEvidence": {
+        "source": "Cloudflare workersInvocationsAdaptive",
+        "operatorRecorded": true,
+        "invocationTerminated": true,
+        "scriptVersion": "28dedf8c-a55b-479c-b40f-e79259169547",
+        "status": "exceededMemory",
+        "requests": 1,
+        "errors": 1,
+        "invocationStartedAt": "2026-10-13T02:05:28Z"
+      },
+      "restoreAcknowledgementUnknown": true,
+      "cleanupVerified": true,
+      "originalInventoryEqual": true
+    }
+  ],
+  "businessFailureCause": "unconfirmed; failed before images; fresh owned reproduction passed Business then exceeded memory",
+  "proofPostsResent": false,
+  "allOwnedResourcesCleaned": true,
+  "normalMainChanged": false,
+  "userDataMigrated": false,
+  "domainChanged": false,
+  "nextTransport": "Upload the actual saved encrypted Mac file to fixed private R2 key, download and compare exact bytes, use conditional opaque ETag reference and authenticated source provenance before target writes",
+  "nextRemoteAccepted": false
+}

@@ -1,0 +1,42 @@
+{
+  "observedAt": "2026-10-08T13:35:17.863432+00:00",
+  "scope": "Local actual Chrome/Worker owner-editor network-failure fixture correction; CI remains separate",
+  "baseHead": "62a4d6c974d0b36d04008e2554d85ae8f9253b80",
+  "candidateBrowserHelperSha256": "b78018fa7053319cc55ec10f16582c375a8fc8b33c14dae2afea79c6eedbf76a",
+  "priorCi": {
+    "runId": 37782119977,
+    "attempt1ApplicationFailure": "Chrome debug port startup deadline before invitation signup",
+    "attempt2Worker": "success",
+    "attempt2ApplicationFailure": "Owner editor failure injection did not pause the actual PATCH; successful save observed instead",
+    "failedPatches": 0,
+    "pendingInjection": true
+  },
+  "localVerified": true,
+  "businessMigrations": 27,
+  "authMigrations": 4,
+  "masterMigrations": 8,
+  "serviceWorkerControlledAtFailure": true,
+  "failedSaveNetworkReceipt": true,
+  "networkReceiptMatchesExactPausedRequest": true,
+  "expectedNetworkError": "net::ERR_CONNECTION_FAILED",
+  "serviceWorkerBypassedOnlyDuringFault": true,
+  "normalRoutingRestoredBeforeReload": true,
+  "apiResponseSubstitutions": 0,
+  "failedSaveRequests": 1,
+  "failedSavePreservesRows": true,
+  "reloadRestoresDraft": true,
+  "retryPersistsInD1": true,
+  "successfulSaveClearsDraft": true,
+  "otherOwnerRejected": true,
+  "suspendedOwnerRedirected": true,
+  "foreignKeyViolations": 0,
+  "providerCalls": 0,
+  "remoteWrites": 0,
+  "stagingRedeployed": false,
+  "acceptanceLimits": {
+    "ciAccepted": false,
+    "pwaRoutedFailureAccepted": false,
+    "realPhone": false,
+    "fullMigrationAccepted": false
+  }
+}

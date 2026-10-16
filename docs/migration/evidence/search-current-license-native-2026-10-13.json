@@ -1,0 +1,153 @@
+{
+  "state": "search_current_license_native_and_normal_staging_verified",
+  "observedAt": "2026-10-13T12:20:08.662595+00:00",
+  "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a",
+  "ciRun": 38393726318,
+  "bothJobsSuccess": true,
+  "localTests": {
+    "nativeD1": 17,
+    "workerAPI": 4,
+    "frontendClient": 6
+  },
+  "nativeCases": [
+    {
+      "kind": "finite",
+      "historicalEnd": null,
+      "correctOwnerAndLicense": true,
+      "correctActiveAndBlocked": true,
+      "anonymousAndBothSessionsVerified": true,
+      "privateConfigsAbsent": true,
+      "lotteryFlagsScoped": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "finite",
+      "historicalEnd": "2099-01-01T00:00:00.000000Z",
+      "correctOwnerAndLicense": true,
+      "correctActiveAndBlocked": true,
+      "anonymousAndBothSessionsVerified": true,
+      "privateConfigsAbsent": true,
+      "lotteryFlagsScoped": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "perpetual",
+      "historicalEnd": null,
+      "correctOwnerAndLicense": true,
+      "correctActiveAndBlocked": true,
+      "anonymousAndBothSessionsVerified": true,
+      "privateConfigsAbsent": true,
+      "lotteryFlagsScoped": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "perpetual",
+      "historicalEnd": "2099-01-01T00:00:00.000000Z",
+      "correctOwnerAndLicense": true,
+      "correctActiveAndBlocked": true,
+      "anonymousAndBothSessionsVerified": true,
+      "privateConfigsAbsent": true,
+      "lotteryFlagsScoped": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "grace",
+      "historicalEnd": null,
+      "correctOwnerAndLicense": true,
+      "correctActiveAndBlocked": true,
+      "anonymousAndBothSessionsVerified": true,
+      "privateConfigsAbsent": true,
+      "lotteryFlagsScoped": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "grace",
+      "historicalEnd": "2099-01-01T00:00:00.000000Z",
+      "correctOwnerAndLicense": true,
+      "correctActiveAndBlocked": true,
+      "anonymousAndBothSessionsVerified": true,
+      "privateConfigsAbsent": true,
+      "lotteryFlagsScoped": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "history",
+      "historicalEnd": null,
+      "correctOwnerAndLicense": true,
+      "correctActiveAndBlocked": true,
+      "anonymousAndBothSessionsVerified": true,
+      "privateConfigsAbsent": true,
+      "lotteryFlagsScoped": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    },
+    {
+      "kind": "history",
+      "historicalEnd": "2099-01-01T00:00:00.000000Z",
+      "correctOwnerAndLicense": true,
+      "correctActiveAndBlocked": true,
+      "anonymousAndBothSessionsVerified": true,
+      "privateConfigsAbsent": true,
+      "lotteryFlagsScoped": true,
+      "storedRowsHeld": true,
+      "fkZero": true
+    }
+  ],
+  "declaredMigrations": {
+    "auth": 4,
+    "business": 27
+  },
+  "proofScope": "Actual source Worker on Cloudflare with its own two D1 stores and synthetic Better Auth sessions. Finite/perpetual active ownership, blocking grace and history fallback against retired NULL/longer-end records; anonymous and both synthetic sessions; private config omission and stored business row preservation. Search selection only, not master normalization or acquisition/UI acceptance.",
+  "initialCI": {
+    "run": 38392991456,
+    "wholeRunConclusion": "cancelled",
+    "workerJobConclusion": "failure",
+    "cause": "two stale five-parameter API binding expectations; exact captured clocks/owner identity assertions updated to seven parameters",
+    "localApiRetestPassed": 4
+  },
+  "cleanup": {
+    "ownedWorkerRemoved": 1,
+    "ownedD1Removed": 2,
+    "independentInventoryRestored": true,
+    "disposedSecretFilesRemoved": true
+  },
+  "normalStaging": {
+    "previous": "f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64",
+    "version": "19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd",
+    "bindingsPreserved": 114,
+    "allThreeD1SchemaAndCountsHeld": true,
+    "foreignKeysZero": true,
+    "assetsPreserved": 10,
+    "catalogHeld": true,
+    "backupAndMonitorHeld": true,
+    "independentReadonlyConfirmed": true,
+    "frontendChanged": false,
+    "schemaChanged": false,
+    "normalDatabaseWrites": false,
+    "normalSecretsChanged": false
+  },
+  "code": [
+    {
+      "path": "workers/api/src/fanmark-search-d1-api.ts",
+      "sha256": "847942a6986df4dbdd6376895a338f169bbf7a3ee77320ce2cbb5493677c6fe2"
+    },
+    {
+      "path": "workers/api/test/fanmark-search-d1.test.ts",
+      "sha256": "d75f8eea913b75a6da2ee8c7cc5c4de6e7939db5e5793e1998780c22be505aaa"
+    },
+    {
+      "path": "workers/api/test/fanmark-search-api.test.ts",
+      "sha256": "c3108d84490d74ea15f5daab78ac2cec6a60fe59b6e0901321693abf58ed6091"
+    }
+  ],
+  "sourceProductionChanged": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "wholeMigrationComplete": false
+}

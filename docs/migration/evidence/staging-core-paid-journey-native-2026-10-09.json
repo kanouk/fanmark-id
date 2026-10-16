@@ -1,0 +1,157 @@
+{
+  "scope": "One synthetic JA desktop paid journey on the fresh five-store V2 staging scope; not full migration",
+  "version": "3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74",
+  "sourceHead": "5e78396b01d27a1cc674e4e575d605a7f48ee128",
+  "backendSource": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "finishedAt": "2026-10-09T07:51:01.349Z",
+  "ui": {
+    "observedAt": "2026-10-09T07:49:57.084Z",
+    "version": "3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74",
+    "device": "Chrome desktop",
+    "locale": "ja",
+    "loginAccepted": true,
+    "acquisitionAccepted": true,
+    "creatorSandboxCheckoutAccepted": true,
+    "businessPortalPaymentAccepted": true,
+    "freeCancellationAccepted": true,
+    "returnAccepted": true,
+    "logoutAccepted": true,
+    "prePaymentPlanStayedFree": true,
+    "manualReloads": 2,
+    "callbackProfileAndMaintenanceTimeoutObserved": true,
+    "uninterruptedPaidJourneyAccepted": false,
+    "wholeMigrationAccepted": false
+  },
+  "billing": {
+    "mode": "sandbox",
+    "initialPlan": "free",
+    "checkoutCommands": 1,
+    "changeCommands": 2,
+    "finalPlan": "free",
+    "finalSubscriptionStatuses": [
+      "canceled"
+    ],
+    "signedReceipts": [
+      {
+        "type": "customer.subscription.created",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "checkout.session.completed",
+        "status": "ignored",
+        "deliveryCount": 2
+      },
+      {
+        "type": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "customer.subscription.deleted",
+        "status": "applied",
+        "deliveryCount": 1
+      }
+    ],
+    "dispatches": [
+      {
+        "status": "completed",
+        "attempt_count": 1,
+        "last_error_code": null
+      },
+      {
+        "status": "completed",
+        "attempt_count": 1,
+        "last_error_code": null
+      },
+      {
+        "status": "completed",
+        "attempt_count": 1,
+        "last_error_code": null
+      },
+      {
+        "status": "completed",
+        "attempt_count": 1,
+        "last_error_code": null
+      },
+      {
+        "status": "completed",
+        "attempt_count": 1,
+        "last_error_code": null
+      },
+      {
+        "status": "completed",
+        "attempt_count": 1,
+        "last_error_code": null
+      },
+      {
+        "status": "completed",
+        "attempt_count": 1,
+        "last_error_code": null
+      }
+    ],
+    "applications": [
+      {
+        "status": "applied",
+        "effective_plan_type": "creator",
+        "active_subscription_count": 1
+      },
+      {
+        "status": "applied",
+        "effective_plan_type": null,
+        "active_subscription_count": 0
+      },
+      {
+        "status": "applied",
+        "effective_plan_type": "business",
+        "active_subscription_count": 1
+      },
+      {
+        "status": "applied",
+        "effective_plan_type": null,
+        "active_subscription_count": 0
+      }
+    ],
+    "actorSessionsAfterLogout": 0,
+    "manualCronInvocations": 0,
+    "manualWebhookReplays": 0,
+    "livePayments": 0,
+    "providerTestCustomerAndInvoicesRetained": true
+  },
+  "cleanup": {
+    "syntheticUsersRemoved": 1,
+    "syntheticFanmarksRemoved": 1,
+    "operatorRemoved": true,
+    "currentAndRetainedOldTableHashesHeld": true,
+    "foreignKeyChecksPassed": true,
+    "changedTables": [
+      "business.notification_worker_wake_state"
+    ],
+    "wakeRequestedAcknowledgedEqual": true,
+    "bindingsAssetsNamespacesHeld": true,
+    "backupAndMonitorVersionsAndSchedulesHeld": true
+  },
+  "limits": {
+    "uninterruptedPaidJourneyAccepted": false,
+    "fullIntegrationAccepted": false,
+    "realUsersOrDomainMigrated": false,
+    "physicalPhonePwaAccepted": false,
+    "newProviderIdentityAccepted": false,
+    "r2Writes": 0
+  }
+}

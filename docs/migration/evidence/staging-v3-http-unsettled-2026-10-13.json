@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "scope": "readonly V3 guard observation and cleanup of an unseeded UI fixture",
+  "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+  "writerInspectionObservedAt": "2026-10-12T20:37:07.868395+00:00",
+  "writerInspection": {
+    "owner": null,
+    "scope": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+    "active": 2,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 2,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 2,
+      "oldestEnteredAt": 1791837149181,
+      "runtimeRevisions": {
+        "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349": 2
+      },
+      "kinds": {
+        "http": 2
+      }
+    }
+  },
+  "fixtureAccountCreated": false,
+  "fixtureRowsAbsentVerified": true,
+  "temporaryWorkerDeletedVerified": true,
+  "schemasForeignKeysCommonConfigMasterAndMfaGenerationHeld": true,
+  "renderedAnonymousAuthObserved": true,
+  "renderedProfileAccepted": false,
+  "metricsQuery": {
+    "readable": true,
+    "start": "2026-10-12T20:32:00.000Z",
+    "end": "2026-10-12T20:36:30.000Z",
+    "reportedDisconnectedRequests": 8,
+    "reportedSuccessRequests": 20,
+    "returnedErrors": 0,
+    "requestHeadersCookiesAndURLsSelected": false,
+    "perTicketCorrelationProven": false,
+    "ticketTerminationProven": false
+  },
+  "mainBackupAccepted": false,
+  "ticketDeletedOrExpired": false,
+  "newNamespaceCreated": false,
+  "mainWorkerDeployed": false,
+  "realUserDataOrDomainMigrated": false
+}

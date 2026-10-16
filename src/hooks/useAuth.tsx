@@ -1,14 +1,27 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { getOwnProfileBackend, loadOwnProfile, resolveOwnProfileAuth } from '@/lib/profile-api';
+
+interface AuthUser {
+  id: string;
+  email?: string;
+}
+
+interface AuthSession {
+  user: AuthUser;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
+  session: AuthSession | null;
   loading: boolean;
   emailConfirmed: boolean;
   requiresPasswordSetup: boolean;
+  profileGateError: boolean;
   setRequiresPasswordSetup: (value: boolean) => void;
+  refreshSession: () => Promise<boolean>;
   signOut: () => Promise<void>;
   signingOut: boolean;
 }
@@ -28,14 +41,25 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const betterAuthEnabled = isBetterAuthEnabled();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
   const [requiresPasswordSetup, setRequiresPasswordSetup] = useState(false);
+  const [profileGateError, setProfileGateError] = useState(false);
 
-  const loadUserSettings = async (userId: string) => {
+  const loadUserSettings = useCallback(async (userId: string) => {
+    const workerProfile = getOwnProfileBackend() === 'worker';
     try {
+      if (workerProfile) {
+        const auth = await resolveOwnProfileAuth(userId, false, () => supabase.auth.getSession());
+        const profile = await loadOwnProfile(auth);
+        if (profile.user_id !== userId) throw new Error('Profile identity did not match the Supabase session');
+        setRequiresPasswordSetup(profile.requires_password_setup);
+        setProfileGateError(false);
+        return;
+      }
       const { data, error } = await supabase
         .from('user_settings')
         .select('requires_password_setup')
@@ -51,30 +75,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setRequiresPasswordSetup(Boolean(data?.requires_password_setup));
     } catch (error) {
       console.error('Unexpected error loading user settings:', error);
-      setRequiresPasswordSetup(false);
+      setRequiresPasswordSetup(workerProfile);
+      if (workerProfile) setProfileGateError(true);
+    } finally {
+      if (workerProfile) setLoading(false);
     }
-  };
+  }, []);
 
-  const applySession = (nextSession: Session | null) => {
-    setSession(nextSession);
-    const nextUser = nextSession?.user ?? null;
-    const confirmed = nextUser?.email_confirmed_at ? true : false;
+  const applySession = useCallback((nextSession: Session | null) => {
+    const nextUser: AuthUser | null = nextSession?.user ? {
+      id: nextSession.user.id,
+      email: nextSession.user.email,
+    } : null;
+    setSession(nextUser ? { user: nextUser } : null);
+    const confirmed = Boolean(nextSession?.user.email_confirmed_at);
     setUser(nextUser);
     setEmailConfirmed(confirmed);
-    setLoading(false);
-
-    try {
-      const localToken = typeof localStorage !== 'undefined'
-        ? localStorage.getItem('sb-ppqgtbjykitqtiaisyji-auth-token')
-        : null;
-      console.info('[useAuth] applySession', {
-        hasSession: !!nextSession,
-        userId: nextUser?.id ?? null,
-        tokenPresent: !!localToken,
-      });
-    } catch (storageError) {
-      console.warn('[useAuth] unable to read localStorage token snapshot', storageError);
-    }
+    setProfileGateError(false);
+    const workerProfile = Boolean(nextUser) && getOwnProfileBackend() === 'worker';
+    setLoading(workerProfile);
+    if (workerProfile) setRequiresPasswordSetup(true);
 
     if (nextUser) {
       setTimeout(() => {
@@ -83,9 +103,72 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } else {
       setRequiresPasswordSetup(false);
     }
-  };
+  }, [loadUserSettings]);
+
+  const applyBetterAuthSession = useCallback(async (nextSession: Awaited<ReturnType<typeof betterAuthClient.getSession>>) => {
+    setProfileGateError(false);
+    const betterAuthUser = nextSession?.user;
+    const nextUser: AuthUser | null = betterAuthUser ? {
+      id: betterAuthUser.id,
+      email: betterAuthUser.email,
+    } : null;
+    setSession(nextUser ? { user: nextUser } : null);
+    setUser(nextUser);
+    setEmailConfirmed(Boolean(betterAuthUser?.emailVerified));
+    if (!nextUser) {
+      setRequiresPasswordSetup(false);
+      setLoading(false);
+      return false;
+    }
+
+    // The Cloudflare profile row is authoritative for the OAuth first-password
+    // gate. Keep protected routes closed if the profile read cannot be proved.
+    setLoading(true);
+    setRequiresPasswordSetup(true);
+    try {
+      const profile = await loadOwnProfile();
+      if (profile.user_id !== nextUser.id) throw new Error('Profile identity did not match the Better Auth session');
+      setRequiresPasswordSetup(profile.requires_password_setup);
+      return true;
+    } catch (error) {
+      console.error('Error loading Better Auth profile gate:', error);
+      setRequiresPasswordSetup(true);
+      setProfileGateError(true);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    if (betterAuthEnabled) {
+      try {
+        const nextSession = await betterAuthClient.getSession();
+        return await applyBetterAuthSession(nextSession);
+      } catch (error) {
+        console.error('Error loading Better Auth session:', error);
+        await applyBetterAuthSession(null);
+        return false;
+      }
+    }
+
+    try {
+      const { data: { session: nextSession } } = await supabase.auth.getSession();
+      applySession(nextSession);
+      return nextSession !== null;
+    } catch (error) {
+      console.error('Error loading Supabase session:', error);
+      applySession(null);
+      return false;
+    }
+  }, [applyBetterAuthSession, applySession, betterAuthEnabled]);
 
   useEffect(() => {
+    if (betterAuthEnabled) {
+      void refreshSession();
+      return;
+    }
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
@@ -94,12 +177,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      applySession(session);
-    });
+    void refreshSession();
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [applySession, betterAuthEnabled, refreshSession]);
 
   const [signingOut, setSigningOut] = useState(false);
 
@@ -108,29 +189,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     try {
       setSigningOut(true);
+      if (betterAuthEnabled) {
+        // Keep the authenticated UI until the server confirms revocation.
+        await betterAuthClient.signOut();
+      }
       
-      // Clear local state first
+      // Clear local state after Better Auth revocation succeeds.
       setUser(null);
       setSession(null);
       setEmailConfirmed(false);
       setRequiresPasswordSetup(false);
+      setProfileGateError(false);
       
       // Clear localStorage
       try {
-        localStorage.removeItem('sb-ppqgtbjykitqtiaisyji-auth-token');
         localStorage.clear();
       } catch (e) {
         console.warn('Failed to clear localStorage:', e);
       }
       
-      // Attempt Supabase logout (may fail if session is already invalid)
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.warn('Supabase logout error (expected if session was invalid):', error);
-        // Don't throw - local logout is sufficient
+      if (!betterAuthEnabled) {
+        // Attempt Supabase logout (may fail if session is already invalid)
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.warn('Supabase logout error (expected if session was invalid):', error);
+          // Don't throw - local logout is sufficient
+        }
       }
     } catch (error) {
       console.error('Error during logout:', error);
+      if (betterAuthEnabled) throw error;
     } finally {
       setSigningOut(false);
     }
@@ -142,7 +230,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     emailConfirmed,
     requiresPasswordSetup,
+    profileGateError,
     setRequiresPasswordSetup,
+    refreshSession,
     signOut,
     signingOut,
   };

@@ -1,0 +1,41 @@
+{
+  "status": "real_new_discord_callback_and_profile_accepted_password_setup_pending",
+  "observedAt": "2026-10-09T01:51:46.556Z",
+  "mainVersion": "98160d0f-1326-4285-ab2b-1de5d35cfbd7",
+  "sourceCommit": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "before": {
+    "authUsers": 0,
+    "providerAccounts": 0,
+    "businessProfiles": 0
+  },
+  "after": {
+    "authUsers": 1,
+    "providerAccounts": 1,
+    "businessProfiles": 1,
+    "provider": "discord",
+    "oauthSignupState": "completed",
+    "sameAuthAndBusinessOwner": true,
+    "plan": "free",
+    "requiresPasswordSetup": true,
+    "credentialAccountCreated": false
+  },
+  "browser": {
+    "origin": "https://fanmark-app-staging.fanmark-id.workers.dev",
+    "destination": "/password-setup",
+    "realProviderCallback": true,
+    "responseReplacement": false
+  },
+  "foreignKeyViolations": 0,
+  "accepted": {
+    "firstUserProvisioning": true,
+    "passwordSetup": false,
+    "logoutSessionRevocation": false,
+    "sameIdentityRelogin": false
+  },
+  "limits": [
+    "The password entry and submission are handed to the user.",
+    "Existing consent did not show a new permission prompt; no new consent acceptance is inferred.",
+    "Apple first-user and relay acceptance remain pending.",
+    "Real Supabase users and production DNS remain deferred."
+  ]
+}

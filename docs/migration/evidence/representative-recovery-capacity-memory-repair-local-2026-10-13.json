@@ -1,0 +1,43 @@
+{
+  "state": "representative_capacity_memory_repair_local_verified",
+  "finishedAt": "2026-10-13T01:20:03.024Z",
+  "privateResultSha256": "c26c3d4a559647a66a4da604233a887469eab4677147db12f837708c18cfa3e1",
+  "masterRows": 20152,
+  "capacityFixture": {
+    "users": 15,
+    "accounts": 18,
+    "avatars": 69,
+    "covers": 40,
+    "imageBytes": 13285729,
+    "maxObjectBytes": 1196603
+  },
+  "archiveBytes": 34575294,
+  "restoreState": "verified",
+  "restoredImageReads": {
+    "avatars": {
+      "status": 200,
+      "bytes": 1196603,
+      "sha256": "84d25ba6a9586def30ff579f331c496152eff9103ff437fa614de7fe7b3693d7"
+    },
+    "cover-images": {
+      "status": 200,
+      "bytes": 111936,
+      "sha256": "cef9dfbf1ca90afeade79784e3ca8b35f13c8ed46462086f4b3aaf8348454b0d"
+    }
+  },
+  "normalSdkTargetLogin": true,
+  "oldSessionRejected": true,
+  "foreignKeyViolations": 0,
+  "ownedBucketsEmpty": true,
+  "localStandardAdapter": true,
+  "regressionTests": {
+    "passed": 2,
+    "failed": 0,
+    "changedImageRejectsAllCleanup": true,
+    "inProgressCleanupRefused": true,
+    "verifiedPartialTargetCleanupRefused": true,
+    "terminalFailedExactSubsetCleanupAccepted": true
+  },
+  "actualRemoteCapacityAccepted": false,
+  "normalMainRedeployed": false
+}

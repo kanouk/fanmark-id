@@ -1,0 +1,37 @@
+{
+  "observedAt": "2026-10-04T06:08:35.841Z",
+  "runtimeVersion": "07bf9d61-d9be-43db-875e-492ed6e2e7c5",
+  "results": [
+    {
+      "path": "/auth",
+      "status": 200,
+      "contentType": "text/html",
+      "robotsHeader": "noindex, nofollow"
+    },
+    {
+      "path": "/dashboard",
+      "status": 200,
+      "contentType": "text/html",
+      "robotsHeader": "noindex, nofollow"
+    },
+    {
+      "path": "/pwa",
+      "status": 200,
+      "contentType": "text/html",
+      "robotsHeader": "noindex, nofollow"
+    },
+    {
+      "path": "/assets/absent-migration-proof.js",
+      "status": 404,
+      "contentType": null,
+      "robotsHeader": "noindex, nofollow"
+    },
+    {
+      "path": "/api/unknown-migration-proof",
+      "status": 404,
+      "contentType": "application/json; charset=utf-8",
+      "robotsHeader": null
+    }
+  ],
+  "unexpected404ForHtmlNavigation": false
+}

@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-06T06:19:28.812815+00:00",
+  "scope": "actual CUA-controlled in-app browser local legacy-to-current PWA update, with synthetic API/cache data and permitted non-user catalog",
+  "source": {
+    "legacy": {
+      "head": "c077fbfb6fe34cdada4b1de2b354c172f05c1d37",
+      "trackedSourceFilesVerified": 231,
+      "sourceTreeDigest": "b9b689428f40402cd282361c4a4f6e427d9810b15f830fead433ff9531f08cb0",
+      "modifiedSourcePaths": [
+        "src/integrations/supabase/client.ts"
+      ]
+    },
+    "current": {
+      "head": "5d616cb3c6513ba1c628d2d24c7150e57860f671",
+      "trackedSourceFilesVerified": 335,
+      "sourceTreeDigest": "da45d6e5d5415a16ad8083075637200cd20808bfed67a49cacc89e868edd7698",
+      "modifiedSourcePaths": []
+    }
+  },
+  "ci": {
+    "run": 37421614544,
+    "head": "5d616cb3c6513ba1c628d2d24c7150e57860f671",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "Validate Cloudflare Worker API",
+        "conclusion": "success"
+      },
+      {
+        "name": "Validate Cloudflare staging application",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "build": {
+    "artifacts": {
+      "legacy": {
+        "indexSha256": "444b27ab6c8c5f28ed7e6283a7d15dd8ef0e834006a4ac2df8d887dd78984c9d",
+        "swSha256": "067324b44a4ed7174b6727a8743dd4656ae2b7783440a3ffeac267d825ce6baf",
+        "mainPath": "/assets/index-CAizQdwO.js",
+        "mainSha256": "caafeb299ff948d029ca7d620558329fe1d9675c004c29feb2f373443f10203d",
+        "statusProbeInjectedOnlyByLocalServer": true
+      },
+      "current": {
+        "indexSha256": "e09e003772cb9f6a423c1c005a51ec4ae999d841b3e0d89864f637a5fb1a058a",
+        "swSha256": "b52e9ec11568d29f19599feb5e4d658402d09a37c8026aae335f0bbab44c99ce",
+        "mainPath": "/assets/index-DeTbooYa.js",
+        "mainSha256": "6b36845dbcd84cf21a87b03ba60f5518f3cfcc88bf47e9343721c768b36713cf",
+        "statusProbeInjectedOnlyByLocalServer": true
+      }
+    },
+    "runtimeSourceUnchanged": true,
+    "legacyClientApiInputSubstitutedToLocalFixture": true,
+    "currentApiBaseBuildInput": "http://localhost:63885",
+    "mainStagingBuildUntouched": true
+  },
+  "dependencyBoundary": {
+    "vite": {
+      "legacyLock": "5.4.19",
+      "currentLock": "5.4.19",
+      "sharedCurrentInstalledDependencies": true,
+      "installedVersionVerified": "5.4.19"
+    },
+    "vite-plugin-pwa": {
+      "legacyLock": "1.1.0",
+      "currentLock": "1.1.0",
+      "sharedCurrentInstalledDependencies": true,
+      "installedVersionVerified": "1.1.0"
+    },
+    "workbox-window": {
+      "legacyLock": "7.3.0",
+      "currentLock": "7.3.0",
+      "sharedCurrentInstalledDependencies": true,
+      "installedVersionVerified": "7.3.0"
+    },
+    "react": {
+      "legacyLock": "18.3.1",
+      "currentLock": "18.3.1",
+      "sharedCurrentInstalledDependencies": true,
+      "installedVersionVerified": "18.3.1"
+    }
+  },
+  "fixture": {
+    "legacySupabaseClientUrlAndPublishableKeyReplacedWithLocalSyntheticInput": true,
+    "legacyServiceWorkerConfigurationUnmodified": true,
+    "legacyApiCacheSeededByFixtureButtonNotSupabaseNetworkRequest": true,
+    "readOnlyStatusProbeInjectedByLocalServerOutsideReactRoot": true,
+    "currentApplicationApiResponsesSyntheticExceptPublicCatalog": true,
+    "catalogVersion": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+    "catalogItems": 3944,
+    "serverRejectsAllNonGetHeadRequests": true,
+    "nonGetHeadRequestsRejected": 1,
+    "catalogOnlyLiveReads": true,
+    "noApiForwardingToRealAuthOrBusiness": true
+  },
+  "before": {
+    "cacheNames": [
+      "workbox-precache-v2-http://localhost:63885/",
+      "supabase-cache",
+      "fanmark-pwa-proof-20261006-unrelated"
+    ],
+    "controlled": true,
+    "events": [
+      "controllerchange observed",
+      "synthetic caches and preference seeded"
+    ],
+    "mainScripts": [
+      "/assets/index-CAizQdwO.js"
+    ],
+    "persistedPreference": "persisted synthetic preference",
+    "phase": "legacy-seeded",
+    "precacheMainScripts": [
+      "/assets/index-CAizQdwO.js"
+    ],
+    "registrations": [
+      {
+        "active": true,
+        "scope": "http://localhost:63885/",
+        "waiting": false
+      }
+    ],
+    "unrelatedSyntheticEntryRetained": true,
+    "unsavedMemo": "unsaved synthetic note"
+  },
+  "afterAutomaticUpgrade": {
+    "cacheNames": [
+      "workbox-precache-v2-http://localhost:63885/",
+      "fanmark-pwa-proof-20261006-unrelated"
+    ],
+    "controlled": true,
+    "events": [],
+    "mainScripts": [
+      "/assets/index-DeTbooYa.js"
+    ],
+    "persistedPreference": "persisted synthetic preference",
+    "phase": "upgrade-requested",
+    "precacheMainScripts": [
+      "/assets/index-DeTbooYa.js"
+    ],
+    "registrations": [
+      {
+        "active": true,
+        "scope": "http://localhost:63885/",
+        "waiting": false
+      }
+    ],
+    "unrelatedSyntheticEntryRetained": true,
+    "unsavedMemo": ""
+  },
+  "afterFixtureCompletionAndOrdinaryReload": {
+    "headings": [
+      "ファンマを検索"
+    ],
+    "path": "/pwa",
+    "status": {
+      "cacheNames": [
+        "workbox-precache-v2-http://localhost:63885/",
+        "fanmark-pwa-proof-20261006-unrelated"
+      ],
+      "controlled": true,
+      "events": [],
+      "mainScripts": [
+        "/assets/index-DeTbooYa.js"
+      ],
+      "persistedPreference": "persisted synthetic preference",
+      "phase": "upgrade-requested",
+      "precacheMainScripts": [
+        "/assets/index-DeTbooYa.js"
+      ],
+      "registrations": [
+        {
+          "active": true,
+          "scope": "http://localhost:63885/",
+          "waiting": false
+        }
+      ],
+      "unrelatedSyntheticEntryRetained": true,
+      "unsavedMemo": ""
+    }
+  },
+  "acceptance": {
+    "legacyWorkerInstalledAndControlled": true,
+    "existingRegistrationUpdateButtonTriggeredRealAutomaticReload": true,
+    "currentModuleAndCurrentPrecacheMatchedBuild": true,
+    "legacyApiCacheRetired": true,
+    "unrelatedSyntheticCacheEntryRetained": true,
+    "persistedSyntheticPreferenceRetained": true,
+    "unsavedDomInputDiscardedByReload": true,
+    "currentPwaNormalScreenRendered": true,
+    "initialMaintenanceScreenDueToMissingFixtureEndpointRecorded": true,
+    "fixtureMaintenanceResponseAddedWithoutProductChange": true
+  },
+  "cleanup": {
+    "ownedLocalRegistrationsAndCachesAbsent": true,
+    "ownedPreferenceAndPhaseKeysRemoved": true,
+    "ownedTabClosed": true,
+    "ownedServerProcessesStopped": true,
+    "otherHumanTabsPreserved": true
+  },
+  "mainReadback": {
+    "observedAt": "2026-10-06T06:18:11.370Z",
+    "workerVersion": "d4375d19-5024-4bf6-9cd7-1e5d399ce7b5",
+    "credential": "read-only Keychain monitor",
+    "requestScope": "Worker deployments GET only",
+    "globalTableSnapshotRepeated": false
+  },
+  "screenshot": {
+    "fileKeptPrivate": true,
+    "sha256": "59a1fc5008009179be7bd3876a03b86c6a9b0e595e5510d8eebb87d13c862d2c"
+  },
+  "limits": {
+    "localPwaProtocolAcceptanceOnly": true,
+    "existingRealUserInstalledPwaAccepted": false,
+    "physicalPhoneAccepted": false,
+    "standaloneInstalledBrowserModeAccepted": false,
+    "allSupportedLanguagesAndFlowsAccepted": false,
+    "fullMigrationAccepted": false,
+    "mainDatabaseWritesPerformed": false,
+    "mainDeploymentOrSecretsChanged": false,
+    "additionalMailSent": false,
+    "realUserMigrationPerformed": false,
+    "domainCutoverPerformed": false
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "observedAt": "2026-10-08T03:00:47.217Z",
+  "scope": "Target-only signup template lifetime copy correction",
+  "workerVersion": "f6d162c5-6168-4389-bf22-c0ab2f04c5a4",
+  "actualTokenLifetimeSeconds": 3600,
+  "previousClaimHours": 24,
+  "correctedClaimHours": 1,
+  "signupLanguages": [
+    {
+      "language": "en",
+      "textAndHtmlOneHour": true
+    },
+    {
+      "language": "id",
+      "textAndHtmlOneHour": true
+    },
+    {
+      "language": "ja",
+      "textAndHtmlOneHour": true
+    },
+    {
+      "language": "ko",
+      "textAndHtmlOneHour": true
+    }
+  ],
+  "signupRowsChanged": 4,
+  "otherTemplateRowsRetained": 12,
+  "changedFields": [
+    "body_text",
+    "updated_at"
+  ],
+  "allOtherRowsAndSchemaUnchanged": true,
+  "sourceSnapshotAndSeedChanged": false,
+  "runtimeCodeChanged": false,
+  "realProviderCalls": 0,
+  "newActualMessageVerified": false,
+  "rendererUsedRealTargetRows": true,
+  "syntheticRenderProviderReceipts": 4,
+  "independentReadback": {
+    "at": "2026-10-08T03:00:47.217Z",
+    "separateProcess": true,
+    "readCredentialOnly": true,
+    "allTargetBaselineHashesEqual": true,
+    "workerUnchanged": true,
+    "authCounts": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "foreignKeyViolations": 0
+  },
+  "correctionAccepted": true,
+  "allAuthMailAccepted": false,
+  "fullMigrationAccepted": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "rollback": "Compare current body and timestamp with private plan, then restore only its four original signup rows. Do not restore unrelated rows."
+}

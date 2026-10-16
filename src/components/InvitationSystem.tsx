@@ -11,9 +11,10 @@ import { useToast } from '@/hooks/use-toast';
 interface InvitationSystemProps {
   onValidCode?: (code: string, perks?: InvitationPerks) => void;
   onReset?: () => void;
+  allowWaitlist?: boolean;
 }
 
-export function InvitationSystem({ onValidCode, onReset }: InvitationSystemProps) {
+export function InvitationSystem({ onValidCode, onReset, allowWaitlist = true }: InvitationSystemProps) {
   const { t } = useTranslation();
   const { validateCode, validationLoading, joinWaitlist } = useInvitationCode();
   const { toast } = useToast();
@@ -122,6 +123,7 @@ export function InvitationSystem({ onValidCode, onReset }: InvitationSystemProps
         </div>
       </div>
 
+      {allowWaitlist && <>
       <div className="relative flex items-center justify-center">
         <span className="h-px w-full bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
         <span className="absolute rounded-full bg-background px-3 text-xs font-medium text-muted-foreground">
@@ -162,6 +164,7 @@ export function InvitationSystem({ onValidCode, onReset }: InvitationSystemProps
           </Button>
         </div>
       </div>
+      </>}
     </section>
   );
 }

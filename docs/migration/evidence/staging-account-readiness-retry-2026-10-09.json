@@ -1,0 +1,69 @@
+{
+  "scope": "Retry UI for observed callback profile/maintenance read failures; not full migration",
+  "version": "e9f7c04f-6f05-47cd-8700-ab78329ee387",
+  "previousVersion": "3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74",
+  "backendSource": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "observedFailureVersion": "3cd3c8b6-877b-4ada-83dc-9b8ccdeacb74",
+  "localNativeProof": {
+    "observedAt": "2026-10-09T07:52:40.117Z",
+    "device": "Chrome desktop",
+    "syntheticLocalFixture": true,
+    "actualProviderAndGateComponents": true,
+    "profileReadFailureBlockedContent": true,
+    "unknownProfileDidNotRedirectToPasswordSetup": true,
+    "maintenanceReadFailureShowedRetry": true,
+    "retryRestoredOriginalUrl": "http://127.0.0.1:4187/plans?checkout=success",
+    "nativeRetries": 2,
+    "passwordChanges": 0,
+    "payments": 0,
+    "remoteFailureInjection": false
+  },
+  "stagingNativeProof": {
+    "observedAt": "2026-10-09T07:56:49.185Z",
+    "version": "e9f7c04f-6f05-47cd-8700-ab78329ee387",
+    "anonymousAuthFormAccepted": true,
+    "providerButtons": [
+      "google",
+      "apple",
+      "discord",
+      "github"
+    ],
+    "authenticatedJourneyOnThisVersionAccepted": false,
+    "remoteFailureInjection": false
+  },
+  "validation": {
+    "authAndMfaCasesPassed": 11,
+    "typecheck": "passed",
+    "cloudflareStagingBuild": "passed",
+    "builtPwaCacheBoundary": "passed",
+    "lintErrors": 0,
+    "preexistingFastRefreshWarning": 1,
+    "frontendCallsiteLocationsUpdated": 5,
+    "semanticOperationsUnchanged": true
+  },
+  "deployment": {
+    "bindingsAndCurrentAndRetainedOldTableHashesHeld": true,
+    "foreignKeyChecksPassed": true,
+    "backupAndMonitorVersionsAndSchedulesHeld": true,
+    "retainedThreePublicBundles": {
+      "/assets/index-BAb0qenK.js": "717c00d851d7fd3c0302a012e35f824cc681f88d6f68727af40a953757ece888",
+      "/assets/index-DgYC5YD0.js": "81735f15d322ae1dc75439200ba902ea75d9ad8071f73dee9aa2eb92dd316d7d",
+      "/assets/index-B55f34l0.js": "3515ffebb1f07b8014b53e8f20b151f49f9152aea14ef71e85493cef2261203b"
+    },
+    "currentAssetsMatched": {
+      "/": "2205a51d1cf96b4c7eb2df2136d1f55fa0b13acce186592cf18853b7084c3b8f",
+      "/index.html": "2205a51d1cf96b4c7eb2df2136d1f55fa0b13acce186592cf18853b7084c3b8f",
+      "/plans?checkout=success": "2205a51d1cf96b4c7eb2df2136d1f55fa0b13acce186592cf18853b7084c3b8f",
+      "/sw.js": "d2f09421f9bc2d599cbf45735dbb0506cc6bcb0774252650b51c70186c2aa1f4",
+      "/clear-legacy-api-cache.js": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6",
+      "/assets/index-bqc9x4KI.js": "588683be5b54dc7806181bdfb5f66c289fa36049682767bd7428ce49d6fc2dc3"
+    }
+  },
+  "limits": {
+    "fullIntegrationAccepted": false,
+    "remoteFailureInjection": false,
+    "sameNewVersionPaidJourneyAccepted": false,
+    "physicalPhonePwaAccepted": false,
+    "realUserMigrationOrDomainCutover": false
+  }
+}

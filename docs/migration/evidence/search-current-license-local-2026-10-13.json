@@ -1,0 +1,56 @@
+{
+  "state": "search_current_license_local_candidate_verified",
+  "observedAt": "2026-10-13T11:50:13.770509+00:00",
+  "sourceProductionChanged": false,
+  "normalStagingChanged": false,
+  "reproducedBeforeFix": {
+    "cases": 2,
+    "retiredEnd": [
+      null,
+      "2099-01-01T00:00:00.000000Z"
+    ],
+    "actual": {
+      "currentLicenseStatus": "expired",
+      "hasActiveLicense": false,
+      "blockedForRegistration": false
+    },
+    "expected": "current active finite license and blocked registration"
+  },
+  "afterFix": {
+    "fullNativeLocalD1Tests": 17,
+    "frontendClientTests": 6,
+    "typecheck": true,
+    "eslint": true,
+    "additionalCases": "active finite and blocking grace vs retired NULL/longer-end history; anonymous and two real synthetic Better Auth sessions; stored licenses unchanged",
+    "workerApiContractTests": 4
+  },
+  "selection": "live active future/perpetual, blocking grace, then source NULL-first history ordering",
+  "capturedServerClockUsedForSqlAndDto": true,
+  "code": [
+    {
+      "path": "workers/api/src/fanmark-search-d1-api.ts",
+      "sha256": "847942a6986df4dbdd6376895a338f169bbf7a3ee77320ce2cbb5493677c6fe2"
+    },
+    {
+      "path": "workers/api/test/fanmark-search-d1.test.ts",
+      "sha256": "d75f8eea913b75a6da2ee8c7cc5c4de6e7939db5e5793e1998780c22be505aaa"
+    },
+    {
+      "path": "workers/api/test/fanmark-search-api.test.ts",
+      "sha256": "c3108d84490d74ea15f5daab78ac2cec6a60fe59b6e0901321693abf58ed6091"
+    }
+  ],
+  "remaining": [
+    "exact-head CI",
+    "isolated actual Cloudflare cases and exact-owned cleanup",
+    "normal staging rollout and independent readback"
+  ],
+  "wholeMigrationComplete": false,
+  "initialCI": {
+    "run": 38392991456,
+    "workerJob": "failure",
+    "cause": "Two API binding assertions still expected five parameters; now seven parameters include the same captured server clock twice",
+    "assertionsUpdated": "exact clock and auth-owner positions; no assertion relaxation",
+    "localApiRetestPassed": 4
+  }
+}

@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isBetterAuthEnabled } from "@/lib/auth-backend";
+import { createEmojiMasterAdminApi, type EmojiMasterAdminInput } from "@/lib/emoji-master-admin-api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -24,7 +26,14 @@ type EmojiMasterRecord = {
   codepoints: string[];
   sort_order: number | null;
   updated_at: string;
+  updatedAt?: string;
+  release_protected?: boolean;
 };
+
+const emojiMasterAdminApi = createEmojiMasterAdminApi({
+  baseUrl: import.meta.env.VITE_FANMARK_API_BASE_URL?.trim() ||
+    (typeof window === "undefined" ? "https://invalid.example" : window.location.origin),
+});
 
 type EmojiFormState = {
   emoji: string;
@@ -54,6 +63,26 @@ function sanitizeSearchTerm(value: string) {
 
 async function fetchEmojiMaster(params: { page: number; pageSize: number; search: string }) {
   const { page, pageSize, search } = params;
+  if (isBetterAuthEnabled()) {
+    const result = await emojiMasterAdminApi.list(params);
+    return {
+      items: result.items.map((item): EmojiMasterRecord => ({
+        id: item.id,
+        emoji: item.emoji,
+        short_name: item.shortName,
+        keywords: item.keywords,
+        category: item.category,
+        subcategory: item.subcategory,
+        codepoints: item.codepoints,
+        sort_order: item.sortOrder,
+        updated_at: item.updatedAt,
+        updatedAt: item.updatedAt,
+        release_protected: item.releaseProtected,
+      })),
+      total: result.total,
+      activeReleaseVersion: result.activeReleaseVersion,
+    };
+  }
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -77,6 +106,7 @@ async function fetchEmojiMaster(params: { page: number; pageSize: number; search
   return {
     items: (data ?? []) as EmojiMasterRecord[],
     total: count ?? 0,
+    activeReleaseVersion: null,
   };
 }
 
@@ -116,7 +146,7 @@ type ImportRecord = {
   sort_order?: number | null;
 };
 
-async function upsertEmoji(record: EmojiFormState, id?: string) {
+async function upsertEmoji(record: EmojiFormState, id?: string, updatedAt?: string) {
   const payload = {
     emoji: record.emoji,
     short_name: record.short_name,
@@ -126,6 +156,25 @@ async function upsertEmoji(record: EmojiFormState, id?: string) {
     codepoints: parseCodepoints(record.codepoints),
     sort_order: record.sort_order ? Number(record.sort_order) : null,
   };
+
+  if (isBetterAuthEnabled()) {
+    const adminInput: EmojiMasterAdminInput = {
+      emoji: payload.emoji,
+      shortName: payload.short_name,
+      keywords: payload.keywords,
+      category: payload.category,
+      subcategory: payload.subcategory,
+      codepoints: payload.codepoints,
+      sortOrder: Number.isSafeInteger(payload.sort_order) ? payload.sort_order : null,
+    };
+    if (id) {
+      if (!updatedAt) throw new Error("編集内容を再読み込みしてください。");
+      await emojiMasterAdminApi.update(id, updatedAt, adminInput);
+    } else {
+      await emojiMasterAdminApi.create(adminInput);
+    }
+    return id ?? "created";
+  }
 
   if (id) {
     const { error } = await supabase.from("emoji_master").update(payload).eq("id", id);
@@ -139,6 +188,7 @@ async function upsertEmoji(record: EmojiFormState, id?: string) {
 }
 
 async function deleteEmoji(id: string) {
+  if (isBetterAuthEnabled()) throw new Error("Cloudflare staging の管理画面では削除できません。");
   const { error } = await supabase.from("emoji_master").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
@@ -161,6 +211,18 @@ async function importEmojiRecords(records: ImportRecord[]) {
     codepoints: record.codepoints,
     sort_order: record.sort_order ?? null,
   }));
+
+  if (isBetterAuthEnabled()) {
+    return emojiMasterAdminApi.import(prepared.map((record) => ({
+      emoji: record.emoji,
+      shortName: record.short_name,
+      keywords: record.keywords,
+      category: record.category,
+      subcategory: record.subcategory,
+      codepoints: record.codepoints,
+      sortOrder: Number.isSafeInteger(record.sort_order) ? record.sort_order : null,
+    })));
+  }
 
   const chunks = chunkArray(prepared, 500);
   for (const chunk of chunks) {
@@ -268,6 +330,7 @@ export const AdminEmojiMaster: React.FC = () => {
   const [formState, setFormState] = useState<EmojiFormState>(EMPTY_FORM);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const cloudflareAdminMode = isBetterAuthEnabled();
 
   const queryKey = useMemo(
     () => ["emoji-master-list", { page, pageSize, search }],
@@ -282,11 +345,16 @@ export const AdminEmojiMaster: React.FC = () => {
 
   const upsertMutation = useMutation({
     mutationFn: async () => {
-      await upsertEmoji(formState, selected?.id);
+      await upsertEmoji(formState, selected?.id, selected?.updatedAt ?? selected?.updated_at);
     },
     onSuccess: () => {
-      toast({ title: "保存しました", description: "絵文字マスタが更新されました。" });
-      queryClient.invalidateQueries({ queryKey });
+      toast({
+        title: cloudflareAdminMode ? "ドラフトに保存しました" : "保存しました",
+        description: cloudflareAdminMode
+          ? "公開カタログには反映されていません。"
+          : "絵文字マスタが更新されました。",
+      });
+      queryClient.invalidateQueries({ queryKey: ["emoji-master-list"] });
       setIsFormOpen(false);
       setSelected(null);
       setFormState(EMPTY_FORM);
@@ -344,9 +412,14 @@ export const AdminEmojiMaster: React.FC = () => {
         toast({ title: "インポート対象なし", description: "ファイルに有効なデータが見つかりませんでした。" });
         return;
       }
-      await importEmojiRecords(records);
-      toast({ title: "インポート完了", description: `${records.length} 件の絵文字を取り込みました。` });
-      queryClient.invalidateQueries({ queryKey });
+      const importedCount = await importEmojiRecords(records);
+      toast({
+        title: cloudflareAdminMode ? "ドラフトへインポートしました" : "インポート完了",
+        description: cloudflareAdminMode
+          ? `${importedCount ?? records.length} 件を保存しました。公開カタログには反映されていません。`
+          : `${records.length} 件の絵文字を取り込みました。`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["emoji-master-list"] });
     } catch (error) {
       toast({
         title: "インポートに失敗しました",
@@ -366,6 +439,17 @@ export const AdminEmojiMaster: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {cloudflareAdminMode && (
+        <div role="note" className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+          <p className="font-semibold">Cloudflare staging の未公開ドラフトを編集しています。</p>
+          <p className="mt-1 text-muted-foreground">
+            現在の公開版: <code>{listQuery.data?.activeReleaseVersion ?? "未公開"}</code>。追加・編集・インポートは公開版を変えません。公開には別途、版の検証と切替が必要です。
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            公開履歴のある絵文字の絵文字・コードポイントは変更できず、削除もこの画面では行えません。
+          </p>
+        </div>
+      )}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full sm:w-72">
@@ -455,6 +539,9 @@ export const AdminEmojiMaster: React.FC = () => {
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium text-foreground">{record.short_name}</span>
+                      {cloudflareAdminMode && record.release_protected && (
+                        <Badge variant="secondary" className="mt-1 w-fit text-xs">公開履歴あり・ID保護</Badge>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         {record.codepoints.join(" ")}
                       </span>
@@ -480,17 +567,19 @@ export const AdminEmojiMaster: React.FC = () => {
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(record)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => {
-                          setSelected(record);
-                          setIsDeleteOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!cloudflareAdminMode && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => {
+                            setSelected(record);
+                            setIsDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -551,6 +640,7 @@ export const AdminEmojiMaster: React.FC = () => {
                 onChange={(event) => setFormState((prev) => ({ ...prev, emoji: event.target.value }))}
                 maxLength={8}
                 placeholder="😊"
+                disabled={cloudflareAdminMode && Boolean(selected?.release_protected)}
               />
             </div>
             <div className="grid gap-2">
@@ -590,8 +680,14 @@ export const AdminEmojiMaster: React.FC = () => {
               <Input
                 value={formState.codepoints}
                 onChange={(event) => setFormState((prev) => ({ ...prev, codepoints: event.target.value }))}
+                disabled={cloudflareAdminMode && Boolean(selected?.release_protected)}
               />
             </div>
+            {cloudflareAdminMode && selected?.release_protected && (
+              <p className="text-xs text-muted-foreground">
+                公開版と過去の版への参照を保つため、絵文字とコードポイントは固定されています。
+              </p>
+            )}
             <div className="grid gap-2">
               <label className="text-sm font-medium text-muted-foreground">表示順 (任意)</label>
               <Input

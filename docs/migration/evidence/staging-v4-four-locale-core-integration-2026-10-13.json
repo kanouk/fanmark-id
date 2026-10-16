@@ -1,0 +1,51 @@
+{
+  "state": "four_locales_same_v4_core_journeys_accepted",
+  "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "runtimeSource": "e511762850631275664597afec8ca4155419358f",
+  "runtimeSourceCi": 38315685393,
+  "runtimeSourceBothJobsSuccess": true,
+  "documentationHeadBeforeThisReceipt": "678d96b3778f4d6e10c325b2c341883e318ffb4d",
+  "documentationBothJobsSuccess": 38318629318,
+  "localeEvidence": {
+    "en": "staging-v4-core-journey-en-2026-10-13.json",
+    "ko": "staging-v4-core-journey-ko-2026-10-13.json",
+    "id": "staging-v4-core-journey-id-2026-10-13.json",
+    "ja": "staging-v4-core-journey-ja-2026-10-13.json"
+  },
+  "htmlLanguageAndVisibleHeading": {
+    "en": {
+      "heading": "Create your own address with emoji",
+      "htmlLang": "en"
+    },
+    "ko": {
+      "heading": "이모지로 만드는 나만의 주소",
+      "htmlLang": "ko"
+    },
+    "id": {
+      "heading": "Buat alamatmu sendiri dengan emoji",
+      "htmlLang": "id"
+    },
+    "ja": {
+      "heading": "絵文字でつくるあなただけのアドレス",
+      "htmlLang": "ja"
+    }
+  },
+  "browserLanguageRestoredToJapanese": true,
+  "syntheticUsersRemoved": 4,
+  "syntheticFanmarksRemoved": 4,
+  "fixtureOperatorsRemoved": 4,
+  "independentOwnedCleanupAndHumanAuthReadbacks": 4,
+  "koreanRead503AndDraftRecoveryObserved": true,
+  "koreanInitialBootstrap500PersistedNoOwnedRows": true,
+  "initialFailureRootCausesUnknown": true,
+  "physicalPhonePwaAccepted": true,
+  "wholeTranslationAccepted": false,
+  "allProviderAndBillingJourneysOnThisRuntimeAccepted": false,
+  "wholeMigrationAccepted": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "physicalPhoneAcceptanceBasis": "human report of requested smartphone and home-screen check",
+  "physicalPhoneEvidence": "staging-v4-smartphone-home-screen-human-2026-10-13.json",
+  "sandboxPaidJourneyAccepted": true,
+  "sandboxPaidEvidence": "staging-v4-paid-journey-2026-10-13.json"
+}

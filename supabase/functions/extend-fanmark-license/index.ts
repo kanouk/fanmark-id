@@ -12,6 +12,7 @@ import {
   createValidationErrorResponse,
 } from "../_shared/validation.ts";
 import { countActiveFanmarks, getUserFanmarkLimit } from "../_shared/plan-limits.ts";
+import { fetchCloudflareExtensionPrice } from "../_shared/cloudflare-reference-master.ts";
 
 interface FanmarkInfo {
   id: string;
@@ -166,15 +167,35 @@ serve(async (req) => {
       });
     }
 
-    const { data: pricing, error: pricingError } = await supabase
-      .from('fanmark_tier_extension_prices')
-      .select('price_yen, is_active')
-      .eq('tier_level', tierLevel)
-      .eq('months', months)
-      .maybeSingle();
-
-    if (pricingError) {
-      logSafeError('fetch_tier_pricing', pricingError);
+    const configuredPricingBackend = Deno.env.get('REFERENCE_MASTER_PRICING_BACKEND')?.trim() || 'supabase';
+    let pricing: { price_yen: number; is_active: boolean } | null = null;
+    if (configuredPricingBackend === 'cloudflare') {
+      try {
+        const remotePricing = await fetchCloudflareExtensionPrice({
+          apiBaseUrl: Deno.env.get('CLOUDFLARE_API_URL') ?? '',
+          secret: Deno.env.get('REFERENCE_MASTER_SERVICE_SECRET') ?? '',
+          tierLevel,
+          months,
+          mode: 'none',
+        });
+        pricing = { price_yen: remotePricing.priceYen, is_active: remotePricing.isActive };
+      } catch (error) {
+        logSafeError('fetch_cloudflare_tier_pricing', error);
+        return createGenericErrorResponse(corsHeaders, 500);
+      }
+    } else if (configuredPricingBackend === 'supabase') {
+      const { data, error } = await supabase
+        .from('fanmark_tier_extension_prices')
+        .select('price_yen, is_active')
+        .eq('tier_level', tierLevel)
+        .eq('months', months)
+        .maybeSingle();
+      if (error) {
+        logSafeError('fetch_tier_pricing', error);
+        return createGenericErrorResponse(corsHeaders, 500);
+      }
+      pricing = data;
+    } else {
       return createGenericErrorResponse(corsHeaders, 500);
     }
 
