@@ -1,3 +1,9 @@
+## 2026-10-16: 管理者MFA再登録の実装と本番D1のスキーマ準備
+
+所有者は認証アプリの再登録を選択した。[再登録手順](admin-reenrollment.md)のlocal helperを実装し、in-appブラウザで本人入力待ち。現在のSupabase認証を残し、旧AAL2確認後に固定SDKで新factorを作り、fresh sessionのMFA成功とsource bindingを暗号化capsuleへ保存する。capsuleの実作成・本番適用はまだ確認していない。8ded2b6をPR41へpush済み。新規/関連21件、既存Auth52件がローカル成功。CI38829670215は確認時点で実行中。
+
+本番専用D1にAuth4/Master9/Business27 migrationを適用し、別のnative local D1と全schema・migration ledger・初期seed件数を照合した。全3D1一致、FK違反0、実ユーザー投入0。`wrangler.production-schema.jsonc`はDB操作用で、アプリentry・route・cronを含まない。[読戻し証拠](evidence/production-schema-readback-2026-10-16.json)。旧サービスの停止・DNS切替・main変更はしていない。残るP1〜P8の技術条件を完成させるまで停止時間を開始しない。
+
 ## 2026-10-16: 本番実施指示・予備Auth取得・専用資源作成
 
 所有者がデータ移行とドメイン切替を明示指示。以前の本番変更禁止は更新済み。3サイトのログイン確認後、本番用の空D1 3個/R2 3個を作成し、DNS設定をexport、実Authの暗号化予備コピーと投影検査を行った。実TOTPキーは固定SDKへ単純変換できず停止。管理者MFAは所有者が移行先での再登録を選択済み。保護されたlocal helperを実装し、native SDKの再登録・fresh loginと拒否条件を合成試験で確認した。[本人の入力手順](admin-reenrollment.md)へ進む。承認不足とは扱わない。

@@ -66,6 +66,7 @@ function selectedAuthMigrationNames(config) {
 }
 
 for (const [relativePath, bindingName] of [
+  ["../../workers/api/wrangler.production-schema.jsonc", "MASTER_DB"],
   ["../../workers/api/wrangler.app-staging.jsonc", "MASTER_DB"],
   ["../../workers/api/wrangler.emoji-staging.jsonc", "FANMARK_DB"],
   ["../../workers/api/wrangler.emoji-api-staging.jsonc", "MASTER_DB"],
@@ -81,6 +82,7 @@ for (const [relativePath, bindingName] of [
 }
 
 for (const relativePath of [
+  "../../workers/api/wrangler.production-schema.jsonc",
   "../../workers/api/wrangler.app-staging.jsonc",
   "../../workers/api/wrangler.auth-staging.jsonc",
 ]) {
@@ -91,6 +93,22 @@ for (const relativePath of [
     assert.ok(!selected.includes("0007_release_audit_timestamps.sql"));
   });
 }
+
+test("production schema config selects dedicated resources and cannot deploy an application", () => {
+  const config = readConfig("../../workers/api/wrangler.production-schema.jsonc");
+  const manifest = readConfig("../../docs/migration/production-resources.json");
+  assert.equal(config.account_id, "bfc2890741f0b3fb236e2d755b6c9adc");
+  assert.equal(config.account_id, manifest.accountId);
+  assert.equal(config.workers_dev, false); assert.equal(config.preview_urls, false);
+  for (const field of ["main", "assets", "routes", "vars", "triggers", "durable_objects"]) assert.equal(config[field], undefined);
+  assert.deepEqual(config.d1_databases.map(r => r.binding).sort(), ["AUTH_DB", "FANMARK_DB", "MASTER_DB"]);
+  for (const binding of config.d1_databases) {
+    const resource = manifest.d1.find(r => r.binding === binding.binding);
+    assert.equal(binding.database_id, resource.id); assert.equal(binding.database_name, resource.name);
+    assert.match(resource.name, /^fanmark-production-/);
+  }
+  assert.equal(config.d1_databases.find(r => r.binding === "FANMARK_DB").migrations_dir, "migrations-business");
+});
 
 test("D1 trigger migrations use Cloudflare-remote-safe formatting", () => {
   for (const directory of [migrationDirectory, businessMigrationDirectory]) {

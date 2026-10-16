@@ -1,5 +1,10 @@
 # fanmark.id TECH.md
 
+本番D1のschema-only操作は`workers/api/wrangler.production-schema.jsonc`を使う。
+アプリのentry/routes/cronを含まず、作成済み専用3D1だけを指定する。
+`node scripts/migration/verify-production-empty-schema.mjs`はremoteの全構造・ledger・seedを
+別のnative local D1へ照合する読取専用checker。実データ移送後は使用しない。
+
 管理者MFAは所有者の選択に従って再登録する。[専用helperの手順](migration/admin-reenrollment.md)
 は旧Supabase AAL2確認後だけnative SDKの一時登録を許し、暗号化capsuleを最終sourceへ照合する。
 `npm run test:admin-reenrollment`で検証する。通常Workerに再登録用の公開例外は追加しない。

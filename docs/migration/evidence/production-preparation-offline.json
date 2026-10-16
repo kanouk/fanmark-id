@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "8017c10a9b2faff12d8754a8eb7417d9ea01ce49c31b5c08d3f4b67a71bf2e7c"
+    "sha256": "c23d4cbb9493658092f996de9b738ffb544ae68d9630aeed104821dc925ed7a4"
   },
   "variables": [
     {
@@ -683,6 +683,14 @@
       "sha256": "f0c8c175c0498c4892bb39389f8afec194a29862d929d2e82175a698b7335a83"
     },
     {
+      "path": "scripts/migration/test-wrangler-migration-selectors.mjs",
+      "sha256": "61d64384aa4b945bdc2fe79a7c2d644600a03f35910be4e3bde771cfb78fdc6c"
+    },
+    {
+      "path": "scripts/migration/verify-production-empty-schema.mjs",
+      "sha256": "69fa2839f1634a30229a50e0d8a4ec51342fe7852b58019bd2112ed680d5921f"
+    },
+    {
       "path": "supabase/functions/handle-stripe-webhook/index.ts",
       "sha256": "85db1354f3e5cb7fe0bb5f7abcc83985a2bc21d8c2dd0eb92c98c5bc3ef203e4"
     },
@@ -733,6 +741,10 @@
     {
       "path": "workers/api/wrangler.backup-staging.jsonc",
       "sha256": "2e623d84a63e80f7226d77d67212c10e473208c04500ffe9595807364180392a"
+    },
+    {
+      "path": "workers/api/wrangler.production-schema.jsonc",
+      "sha256": "0429fcc0eb9357e7f4e53609c667e5ef2bcaad96b26317d3d0a3556b5a4993f9"
     }
   ]
 }

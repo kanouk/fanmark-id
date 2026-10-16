@@ -37,7 +37,9 @@ SupabaseはTOTPのランダムな秘密バイト列をBase32文字列で保存�
 
 ## 残る実装・当日条件
 
-P1は空の保存先作成まで。Worker/DO/ratelimit/production config、schema適用、secret custody、バックアップ・監視は未完了。P2の本番移送runner/独立checker、P3の全source writer停止/drain、P4の旧receipt receiverと引継ぎ、P5の今回のMFA対応、P6のprovider/Stripe照合と変更・復元票、P7の実資源復旧、P8の全データ予備移送実測も残る。MFA方針は確定済みだが、再登録だけで切替可能になるわけではない。
+P1は保存先作成とschema適用・読戻しまで完了。Worker/DO/ratelimit/production application config、secret custody、バックアップ・監視は未完了。P2の本番移送runner/独立checker、P3の全source writer停止/drain、P4の旧receipt receiverと引継ぎ、P5の今回のMFAの実本人操作と本番確認、P6のprovider/Stripe照合と変更・復元票、P7の実資源復旧、P8の全データ予備移送実測も残る。MFA方針は確定済みだが、再登録だけで切替可能になるわけではない。
+
+本番D1のAuth4/Master9/Business27 migrationを適用後、`verify-production-empty-schema.mjs`が別のnative local D1と構造を完全一致で比較した。9/24/78表、30/97/225 schema object、ledgerと全初期seed件数が一致し、FK違反0。[読戻し証拠](evidence/production-schema-readback-2026-10-16.json)。このcheckerはremote SELECT/PRAGMAだけを発行し、実データが入った後はseed一致条件で停止する。元のサービスには接続しない。D1 listのnum_tablesは既存DBも0を返すため、空確認の根拠には使わずsqlite_masterを直接検査した。
 
 ソース更新、業務データの移送、DNS切替、新旧dispatcher変更、送信・実課金、mainへのmergeは行っていない。次はMFA方針に沿った移行入口を作り、上記条件を完成させる。条件がそろうまで停止時間を開始しない。
 

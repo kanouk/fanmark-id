@@ -196,6 +196,9 @@
     "scripts/migration/run-admin-reenrollment.mjs",
     "scripts/migration/test-admin-reenrollment.mjs",
     "scripts/migration/test-admin-reenrollment-server.mjs",
-    "workers/api/src/better-auth.mjs"
+    "workers/api/src/better-auth.mjs",
+    "workers/api/wrangler.production-schema.jsonc",
+    "scripts/migration/verify-production-empty-schema.mjs",
+    "scripts/migration/test-wrangler-migration-selectors.mjs"
   ]
 }

@@ -1,3 +1,7 @@
+## 2026-10-16: 本人用MFA再登録入口と本番空D1の準備
+
+所有者の再登録選択に従い、旧AAL2・native新MFA・fresh session・source bindingを要求する[local helper](admin-reenrollment.md)を実装。本人入力待ち。本番専用D1にAuth4/Master9/Business27 migrationを適用し、[独立した読戻し](evidence/production-schema-readback-2026-10-16.json)で全構造・ledger・seed一致/FK0を確認した。実データ移送、旧環境の停止、DNS変更、mergeは未実施。
+
 ## 2026-10-16: 本番実施指示に基づく予備移送と専用資源作成
 
 [実行記録](production-execution-2026-10-16.md)と[資源表](production-resources.json)を参照。Cloudflare/Supabase/Stripeの管理画面を確認、DNS exportを保存、本番Authをread-onlyで暗号化予備取得し復号一致を確認した。TOTPのBase32とSDKのUTF-8キーの相違をnative試験で再現し、実sourceも互換不可として拒否した。所有者は保護された再登録を選択済み。[local再登録helper](admin-reenrollment.md)を実装・合成試験済み。実本人の登録と本番適用は未実施。D1 3個/R2 3個の専用空資源は作成・読戻し済み。source停止、業務移送、配備、DNS変更、送信、mergeは未実施。ローカル関連試験17件成功。
