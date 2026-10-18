@@ -23,7 +23,7 @@ test('closed production candidate blocks public/Auth HTTP before stores or exter
   dev:{outboundService:{type:'fetcher',handler(){external++;throw Error('external_provider_forbidden');}}}}]});
  try {
   for(const [method,path] of [['GET','/'],['GET','/assets/private.js'],['GET','/api/auth/get-session'],
-    ['POST','/api/auth/sign-in/email'],['POST','/api/auth/two-factor/verify-totp'],['GET','/api/profile'],['POST','/api/admin/broadcast-emails']]) {
+    ['POST','/api/auth/sign-in/email'],['POST','/api/auth/two-factor/verify-totp'],['GET','/api/profile'],['POST','/api/admin/broadcast-emails'],['POST','/migration/claim'],['POST','/migration/begin']]) {
    const response=await mf.dispatchFetch('https://fanmark.id'+path,{method,redirect:'manual'});
    assert.equal(response.status,503,path);assert.ok((response.headers.get('cache-control')??'').includes('no-store'));
   }

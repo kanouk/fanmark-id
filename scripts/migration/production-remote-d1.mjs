@@ -2,17 +2,13 @@
  * Every SQL batch rechecks metadata; writes require a durable intent journal.
  * No retries or automatic resolution of an unfinished write are permitted.
  */
-import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { openProductionImportJournal, isProductionImportJournal } from './production-import-journal.mjs';
+import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 import { registerProductionRemoteD1, isProductionRemoteD1 } from './production-d1-brand.mjs';
 export { isProductionRemoteD1 } from './production-d1-brand.mjs';
-const resourceManifest = JSON.parse(readFileSync(new URL('../../docs/migration/production-resources.json', import.meta.url), 'utf8'));
-const targets = resourceManifest.d1.map(row => Object.freeze({
-  accountId: resourceManifest.accountId, databaseId: row.id,
-  databaseName: row.name, createdAt: row.createdAt,
-}));
-export const PRODUCTION_D1_TARGETS = Object.freeze(targets);
+import { PRODUCTION_D1_TARGETS as targets } from './production-d1-targets.mjs';
+export { PRODUCTION_D1_TARGETS } from './production-d1-targets.mjs';
 
 const statements = new WeakMap();
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
@@ -54,6 +50,7 @@ export function createProductionRemoteD1({ target, token, fetchImpl = fetch, tim
   if (access === 'import' && (!isProductionImportJournal(journal) || typeof journal.beforeWrite !== 'function' ||
       typeof journal.afterWrite !== 'function' || journal.targetId !== target.databaseId ||
       journal.targetIncarnation !== target.targetIncarnation)) refuse('production_import_journal_required');
+  if (access === 'import' && journal.coordinated !== true) refuse('production_import_coordinator_required');
   if (typeof token !== 'string' || token.length < 16 || /\s/u.test(token) ||
       typeof fetchImpl !== 'function' || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60000) {
     refuse('remote_transport_configuration_invalid');
@@ -163,9 +160,10 @@ export async function assertProductionRemoteD1Target(database, targetIncarnation
   return database.verifyProductionTarget();
 }
 
-export async function openProductionD1ImportTransport({ journalPath, runId, target, ...options }) {
+export async function openProductionD1ImportTransport({ journalPath, runId, target, coordinator = null, ...options }) {
   validateTarget(target);
+  if (!isProductionImportCoordinator(coordinator)) refuse('production_import_coordinator_required');
   const journal = await openProductionImportJournal({ path: journalPath, runId,
-    targetId: target.databaseId, targetIncarnation: target.targetIncarnation });
+    targetId: target.databaseId, targetIncarnation: target.targetIncarnation, coordinator });
   return createProductionRemoteD1({ ...options, target, access: 'import', journal });
 }

@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { Miniflare } from '../../workers/api/node_modules/miniflare/dist/src/index.js';
 import { PRODUCTION_D1_TARGETS, createProductionRemoteD1, openProductionD1ImportTransport } from './production-remote-d1.mjs';
 import { openProductionImportJournal } from './production-import-journal.mjs';
+import { createProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 import { createIsolatedRemoteD1 } from './isolated-remote-d1.mjs';
 import { importD1Snapshot } from './d1-import.mjs';
 
@@ -51,9 +52,25 @@ test('production D1 validates identity and durable write boundaries against nati
       return Response.json({ success: true, result: invalidResult ? [] : result });
     };
     const reader = createProductionRemoteD1({ target, token, fetchImpl });
+    let currentCoordinator;
     async function writer() {
       journalPath = join(directory, randomUUID() + '.jsonl');
-      return openProductionD1ImportTransport({ target, token, fetchImpl, journalPath, runId: randomUUID() });
+      const runId = randomUUID();
+      // Transport unit fixture. The separate coordination suite uses the real
+      // production DO + RPC to test cross-process/cross-store exclusion.
+      let state;
+      currentCoordinator = createProductionImportCoordinator({ owner: runId, manifestSha256: 'a'.repeat(64),
+        incarnations: { auth: randomUUID(), master: randomUUID(), business: target.targetIncarnation,
+          avatars: randomUUID(), covers: randomUUID() },
+        async command(action, input) {
+          if (action === 'claim') return state = { ...input, pending: null, acknowledged: 0, readbackSha256: null };
+          if (action === 'begin') { if (state.pending) throw Error('pending'); state.pending = {
+            operationId: input.operationId, batchSha256: input.batchSha256, store: input.store }; }
+          else if (action === 'acknowledge') { state.pending = null; state.acknowledged++; }
+          return state;
+        } });
+      await currentCoordinator.claim();
+      return openProductionD1ImportTransport({ target, token, fetchImpl, journalPath, runId, coordinator: currentCoordinator });
     }
     await context.test('read-only denies writes, stacked statements and mutating PRAGMAs before network', async () => {
       const before = queries;
@@ -84,6 +101,10 @@ test('production D1 validates identity and durable write boundaries against nati
         targetId: target.databaseId, targetIncarnation: target.targetIncarnation, beforeWrite() {}, afterWrite() {},
       } }), /production_import_journal_required/);
       await assert.rejects(importD1Snapshot({ database: reader, allowUnresolvedGates: true }), /production_import_runner_required/);
+      const uncoordinated = await openProductionImportJournal({ path: join(directory, 'uncoordinated'), runId: randomUUID(),
+        targetId: target.databaseId, targetIncarnation: target.targetIncarnation });
+      assert.throws(() => createProductionRemoteD1({ target, token, fetchImpl, access: 'import', journal: uncoordinated }),
+        /production_import_coordinator_required/);
     });
     await context.test('atomic batch preserves NULL, unicode and exact int64; intent/ACK are durable', async () => {
       const remote = await writer();
@@ -113,7 +134,8 @@ test('production D1 validates identity and durable write boundaries against nati
       await assert.rejects(remote.prepare('INSERT INTO probe(id,n) VALUES(5,5)').run(), /remote_request_acknowledgement_unknown/);
       assert.equal(queries, before + 1);
       assert.equal(await reader.prepare('SELECT COUNT(*) AS n FROM probe WHERE id=5').first('n'), 1);
-      const reopened = await openProductionD1ImportTransport({ target, token, fetchImpl, journalPath: savedPath, runId: identity.runId });
+      const reopened = await openProductionD1ImportTransport({ target, token, fetchImpl, journalPath: savedPath, runId: identity.runId,
+        coordinator: currentCoordinator });
       const afterRead = queries;
       await assert.rejects(reopened.prepare('INSERT INTO probe(id,n) VALUES(6,6)').run());
       assert.equal(queries, afterRead);

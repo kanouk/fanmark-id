@@ -1,3 +1,7 @@
+## 2026-10-19: 本番全storeの実行調停を追加
+
+本番writer DOで移行runを一つに固定するbinding-only RPCを追加。production D1書込はremote調停とlocal fsync journalを必須にし、別process/別journal/別storeからの重複実行・不明ACKの再送・途中停止解除を拒否する。native関連39件成功（DO22、transport/結合16、公開閉鎖1）。未配備。全store runner/独立解決、source全入口停止、provider/DNS/遠隔復旧は残るため本番開始可能とは扱わない。07de140のCI39137905597は両job成功、64cda3bをpush済み。[詳細](production-preparation-2026-10-18.md)。再認証は全準備後。main保持。
+
 ## 2026-10-18: 本番runtimeを非公開で配備
 
 `62e139b` のCI39136846799は両job成功。本番app/backup/monitorを非公開・Cron停止・秘密未設定で配備し、別の管理API読戻しでbinding/閉鎖状態/既存4 Worker保持を確認。app version `dcdf1c5e-ab45-4851-8113-3b7e3a955d1f`。本番import/source停止/DNS変更/main mergeは未実施。実Storageと同じ1.80.2の隔離APIで7種の更新拒否、開始済み通常/TUS uploadの完了拒否、元画像保持と逆操作を確認した。file backendの限定証拠で、S3/Edge等の残条件は維持。絵文字CLIの07de140をpush、CI39137905597確認中。[検証記録](production-preparation-2026-10-18.md)。再認証は最後。

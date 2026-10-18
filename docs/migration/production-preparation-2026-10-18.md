@@ -63,3 +63,13 @@ runtime commit `62e139b` のCI `39136846799` はアプリ/Worker両方成功。�
 本番のStorage APIは1.80.2。対応する公式imageをdigest固定し、外部へ接続できないDocker network上でPostgreSQLと動かした。DB停止中の新規upload/upsert/update/copy/move/delete/bucket設定を拒否し、public/authenticatedの元画像の読み出しと停止解除後の更新を確認。さらに開始済みの通常uploadと、最初のchunkを送ったTUS再開可能uploadの完了が停止後に拒否され、元objectのmetadata/本文が保持されることを確認した。5試験成功。[試験記録](evidence/source-storage-freeze-2026-10-18.json)。ローカルfile backendの証拠であり、本番S3 backendやS3 multipart、全Edge/外部副作用のdrainを済ませたとは扱わない。
 
 絵文字CLI commit `07de140` はpush済みで、CI `39137905597` の結果を確認中。再認証は引き続き全準備がそろってから行う。
+
+## 2026-10-19: 移行先全体の実行調停
+
+本番専用の内部RPC `ProductionImportCoordinatorService` を追加した。既存のproduction writer DOの同一transactionで移行runと停止ownerを取得し、manifest/hash・全5storeのincarnation集合を固定する。開始済みwriterがあれば取得せず、1つの操作がpendingの間は別process/別journal/別storeの次の操作も拒否する。操作UUIDの再利用を拒否し、TTLでpendingを解除しない。独立照合結果のhashを受け取る完了操作も停止を解除しない。完了後は通常backupの新しい停止ownerを利用できる。
+
+Node側のproduction D1書込transportは、この調停clientとprivate journalを必須とする。送信順はlocal intent fsync→remote intent→D1→remote ACK→local ACK fsync。どの応答不明でも次の書込へ進めず、任意SQLや行内容をremote調停台帳へ保存しない。読み取り専用transportは引き続き調停なしで利用できる。全store runnerとpendingの独立解決手順は未完成で、汎用importerのproduction拒否は維持する。
+
+native DOの新規7件・既存15件、native DO/RPC/D1と別filesystem journalを組み合わせた6件・既存transport10件、公開HTTP閉鎖1件が成功。別journalでの再送拒否、begin応答の消失時にD1へ送らないこと、D1 commit応答消失時に実行済み1行を保持して全storeを停止することを確認した。公開HTTPには入口を追加せず、閉鎖Workerへの `/migration/claim` と `/migration/begin` も503になる。新調停機能はまだ本番へ配備していない。
+
+先行commit `07de140` のCI `39137905597` は両job成功。配備/Storage検証記録の `64cda3b` を同じPRへpushした。main・旧source・DNSは維持し、再認証は他の準備完了後とする。
