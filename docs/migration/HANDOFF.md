@@ -1,3 +1,7 @@
+## 2026-10-19: Master変換を共通化、実予備コピーで再検証
+
+5表のstream検証とMasterへの変換を `master-snapshot-projection.mjs` に追加。月額ドル文字列の保持・一度だけのセント変換、元時刻/NULL/boolean/絵文字identityを検証。nativeを含む4試験・移行データ回帰386件と、実3,944絵文字/参照29件→25表11,881行の暗号化・別DB復元が成功（58.6秒）。[詳細](production-preparation-2026-10-18.md)。7599b0cのCI39144625165はapplication job成功、Worker job確認中。3管理画面はクラッシュのまま、Macロック解除不可のため所有者の手動解除・タブ再オープン待ち。MFAは全準備後。全store runner・外部設定/停止/遠隔復旧の未完了を保持し、本番import/source停止/DNS切替/main mergeは行わない。
+
 ## 2026-10-19: 実Masterの移送・暗号化復元もlocal成功
 
 保存済み10/16 sourceからemoji3,944/参照29行をnative Masterへ移送し、25表11,881行を暗号化→別空D1へ復元→全hash/schemaと独立readback一致。58.4秒、archive5,846,192 bytes。金額のBusiness変換（セント整数）をreference写像（ドル小数文字列）へ直渡しせず、検証済み元小数文字列を保持するようprivate試験を修正した。これで実Businessと実Masterのlocal復元は確認済み。鍵はmemory-only、全store/遠隔/custodyは未証明。MFA未使用、本番変更0。[記録](production-preparation-2026-10-18.md)。

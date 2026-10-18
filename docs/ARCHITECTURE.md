@@ -436,3 +436,5 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 ### 本番移行前の旧環境停止部品
 
 `scripts/migration/source-edge-maintenance.mjs` はFunction別のprivate backupと配備version/JWT設定を照合し、外部副作用のない503応答候補を生成する。Stripe receiverは別の受信引継ぎ条件を残す。`source-cron-pause.mjs` はCronの定義集合と元のactive状態を固定した停止・検査・逆操作SQLを生成する。どちらも本番へ接続・実行せず、開始済み処理のdrainや旧DB停止の代替にはしない。
+
+本番移送のMaster変換: `scripts/migration/master-snapshot-projection.mjs` は5表のsnapshot streamをオフラインで照合し、canonical絵文字行・承認済みidentityの公開artifact・4表のreference release入力を生成する。料金は元のdecimal dollar文字列を保持してrelease writerで一度だけセントへ変換する。source timestamps/NULL/booleanを保持し、全snapshot検証・source停止・本番書込許可は与えない。

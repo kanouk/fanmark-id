@@ -236,6 +236,7 @@
     "workers/api/wrangler.production-schema.jsonc",
     "scripts/migration/auth-import-readback.mjs",
     "scripts/migration/auth-import-stage.mjs",
-    "scripts/migration/auth-runtime-schema.mjs"
+    "scripts/migration/auth-runtime-schema.mjs",
+    "scripts/migration/master-snapshot-projection.mjs"
   ]
 }

@@ -113,3 +113,11 @@ production-stageは固定Auth D1の調停済み書込transportと、同一identi
 10/16暗号化予備コピーを検証・private領域へ一時復号し、絵文字3,944件（許可済みidentity hash一致）と料金/言語/予約pattern/延長価格29件をnative Master D1へ取り込んだ。generic Business converterの金額はセント整数であり、reference-master用のドル小数文字列とは型が異なる。最初の試験はこの境界で拒否され、検証済みsourceの元小数文字列を保持する写像へ修正した。stagingの設定をコピーせず、canonical行のtimestampも元の値を保持する。
 
 公開release選択後に別read-only呼出しでcanonical全行/公開emoji/references/active pointer/FKを照合。25表11,881行を暗号化し、別の空D1へ復元後、全表hash/schema/FKと同じ独立照合が成功した。総58.4秒、暗号化archive 5,846,192 bytes。使った鍵はmemory-onlyで、遠隔保存・端末外の鍵保管・Cloudflare runtime容量/RTO・全5store同時復旧の証明ではない。MFA capsule未使用。本番接続/書込0、scratch領域は削除済み。[限定証拠](evidence/real-master-backup-rehearsal-2026-10-19.json)。
+
+## P2: Master変換の共通化（2026-10-19）
+
+`scripts/migration/master-snapshot-projection.mjs` に5表のオフライン変換を移した。stream hash/byte数/件数/列/PK/行hash/順序と承認済み絵文字identityを検査し、canonical timestamps、NULL、booleanを保持する。`monthly_price_usd` は元のdecimal文字列を残し、reference writerが一度だけセントへ変換する。通常のBusiness converterのセント値との一致も確認する。32MiBを超える入力や不正データは内容を含めないエラーで拒否する。全snapshot検証や凍結の証拠は別に必要。
+
+単体・native D1の4試験と、移行データ回帰386件が成功。0ドル・1セント・9.99ドル・numeric(10,2)上限の実格納値を照合した。共通処理で実予備コピーを再処理し、絵文字3,944件/参照29件から25表11,881行を暗号化・別の空D1へ復元し全行hashを照合、58.6秒で成功した。[検証記録](evidence/real-master-projection-backup-rehearsal-2026-10-19.json)。旧予備コピー・ローカルMasterだけの証拠で、本番遠隔復旧や全store runnerの完成とはしない。
+
+管理画面の再確認では、Cloudflare/Supabase/Stripeの3タブが引き続きクラッシュし、さらにMacロック中で自動解除不可とツールから報告された。所有者にロック解除・タブ再オープンだけを依頼した。管理者MFAは依頼していない。残実装は全store runner/独立checker/不明ACK解決、実設定に依存する残検証はsource全入口停止・Stripe引継ぎ・DNS/provider・鍵別保管と遠隔復旧である。
