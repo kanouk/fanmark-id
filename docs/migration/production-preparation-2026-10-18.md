@@ -40,6 +40,8 @@ native D1/R2/DOで両profileの46試験が成功。更新終了待ち・失敗�
 
 10月16日の暗号化予備コピーを使い、業務40表5,770行をnative local D1へ取り込み、別呼出し照合→83表（進捗台帳を含む）の暗号化保存→新しい空DBへの復元→再照合を実施した。全行一致・FK0、archive 3,517,141 bytes、全体72.3秒（取り込み54.6秒、復元1.7秒）。再認証は使用していない。初回に復元後の連番がSQLiteのREAL型になる不整合を検出し、INTEGERへの明示変換で修正。関連18試験で整数型・削除済みID上限・既存Master/Business復旧を確認した。[実データでの保存・復元](evidence/real-business-backup-rehearsal-2026-10-18.json)。これは業務DBだけのローカル検証で、Auth/Master/R2の実資源を束ねた遠隔復旧や本番停止時間の実測ではない。
 
+絵文字更新用のproduction専用export/publication CLIも追加した。全5 bindingとscopeを検査し、Node 22.6.0で既存artifact生成を利用する。公開用一時入口は10分で失効し、更新POSTは1回だけ。既存stagingと合わせ21試験が成功。本番実行はしていない。[運用経路](emoji-releases.md#2026-10-18-production-operations)。
+
 Cloudflare account内4 Workerの全settingsを読み取り、既存rate-limit namespace3個と本番候補 `41092711/12/13` の重複がないことを確認。配備時には再確認する。[namespace照合](evidence/production-ratelimit-readback-2026-10-18.json)。本番の実binding読戻し・秘密の保管/設定・provider接続・backup admission・実restore・通知先/配送・公開前operator確認は別途残る。
 
 ## P4: 旧環境の実Stripe account確認

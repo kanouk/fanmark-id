@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "acc95b5fe6b95c8d2336b750088b46d19f1f3e0160fedc1d24965e0c279f9e19"
+    "sha256": "25976ef6b616e3be09bc67fe5e62c9da04e783eb2a3d2ea746b11f8c236904de"
   },
   "variables": [
     {
@@ -643,6 +643,18 @@
       "sha256": "2a9195cf7337b3dbe7f5600b1f28b7a49cbde2ccdee826ab6ebb09b2c75fe662"
     },
     {
+      "path": "scripts/migration/production-emoji-master-export.mjs",
+      "sha256": "90ed2c620e58c8c855564d67f14dca70f6f4afaf06e61a329e642ad8216aaf7a"
+    },
+    {
+      "path": "scripts/migration/production-emoji-publication.mjs",
+      "sha256": "8cae5faaa40c9cdc847708fe3dc43f9ea09b6f0a56160421661c7b039b41657c"
+    },
+    {
+      "path": "scripts/migration/production-emoji-target.mjs",
+      "sha256": "64d19d173dd0aa42bce12417691afddb6b0dae13bfd083054e0c73e2b228ab0e"
+    },
+    {
       "path": "scripts/migration/production-import-journal.mjs",
       "sha256": "fe741bd24f34988f3b1c53d021226073b09385a006a620c925441851d2a3796c"
     },
@@ -669,6 +681,14 @@
     {
       "path": "scripts/migration/source-scheduled-writers.sql",
       "sha256": "b7dfc1ff1b4511f51a21f3abce9b64ae074dd33621b57e60c2a95c91bf364752"
+    },
+    {
+      "path": "scripts/migration/staging-emoji-master-export.mjs",
+      "sha256": "f9eb9c52fd4da94d9dd8f460119ed24c37e6f297919a33a1f61bcf759773e8c4"
+    },
+    {
+      "path": "scripts/migration/staging-emoji-publication.mjs",
+      "sha256": "326c7893af8b9e2ebb5cde95fc5aaccc225d8ae9169790bee3c9743523a7d9fd"
     },
     {
       "path": "scripts/migration/staging-emoji-targets.mjs",

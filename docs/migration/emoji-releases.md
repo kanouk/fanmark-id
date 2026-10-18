@@ -499,3 +499,13 @@ Independent00:08:27Z readback matched it. No retained release was deleted and
 no canonical master, activation or legacy Auth row was changed.
 
 Known staging V2/V3 Master/scope pairs are compiled in `staging-emoji-targets.mjs`. The CLI chooses the live pair once and pins every follow-up. The exporter also rechecks the same pair. V3 uses a separate service entrypoint; arbitrary/mixed profiles and target changes are refused. Normal staging now routes V3; the pending candidate configuration remains a historical/pre-admission profile. The October13 V3 integration evidence separately verifies real publication and rollback.
+
+## 2026-10-18 Production operations
+
+本番もUnicode/CLDR変換→管理画面のdraft編集→draft出力→固定Nodeによるrelease生成/検証→stage→promotionの経路を使う。公開済みreleaseを戻す場合はrollbackを使う。旧Supabaseへ書くスクリプトは移行後の更新に使わない。
+
+本番用CLIを追加した（未実行。本番Worker/初回releaseの配備・照合後に使用）。Node 22.6.0で `production-emoji-master-export.mjs --read-only --output /private/path/new-records.json` は本番5 store/Worker scope・DB名/作成時刻を検査して公開8列だけを出力する。`FANMARK_PRODUCTION_MASTER_READ_TOKEN` があればそれを使い、なければ既存のfanmark account CLI OAuth profileを使う。取得処理が許可するDB SQLは固定SELECTだけ。
+
+`production-emoji-publication.mjs` の引数はstaging版と同じ（action/release-directory/expected-active/expected-generation/journal）。任意のWorker・DB IDは受け付けず、ProductionEmojiMasterPublicationServiceだけへ接続する。journalの親は0700、journalは0600の新規ファイルを必須とする。自分が作成した10分で失効する一時入口を使い、更新POSTは1回だけ。応答不明では再送せず、operation IDでstatusを照合する。片付け後は入口の404を確認する。既存stagingの対象制限は維持する。
+
+固定資源・誤ったbinding・DB再作成・途中のbinding変更・応答不明・一時入口の片付けと、既存stagingを含む21試験がlocal mock transportで成功した。実本番の公開実績ではない。

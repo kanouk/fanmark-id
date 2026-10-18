@@ -706,3 +706,5 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 本番Worker候補のbundle検査は、上記画面build後の `npm run build:cloudflare-production-worker:dry-run`。app・backup scheduler・別monitorの3 bundleを作るだけでCloudflareへ送らない。閉鎖候補の変更は `scripts/migration/production-runtime-config.mjs` の検査を通す。保存先の固定値は作成済み資源表と照合され、閉鎖候補の検査成功は本番開始条件の充足を意味しない。
 
 業務DBの取り込み台帳3表は削除せずバックアップへ含める。台帳なしの既存archive形式と、台帳を含む `fanmark-business-import-recovery-v1` を固定profileで検証し、途中欠落・未知の表を受け入れない。復元時も元の取り込み先/incarnationを保持し、新しいDBで古いrunを誤再開させない。
+
+本番絵文字マスターの出力・公開は `production-emoji-master-export.mjs` / `production-emoji-publication.mjs` を使い、staging CLIの対象制限を解除しない。[運用経路](migration/emoji-releases.md#2026-10-18-production-operations)。
