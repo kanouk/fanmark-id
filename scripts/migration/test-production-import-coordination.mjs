@@ -8,7 +8,9 @@ import {randomUUID} from 'node:crypto';
 import {build} from '../../workers/api/node_modules/esbuild/lib/main.js';
 import {Miniflare} from '../../workers/api/node_modules/miniflare/dist/src/index.js';
 import {createProductionImportCoordinator} from './production-import-coordinator-client.mjs';
-import {PRODUCTION_D1_TARGETS,openProductionD1ImportTransport} from './production-remote-d1.mjs';
+import {PRODUCTION_D1_TARGETS,openProductionD1ImportTransport,createProductionRemoteD1,isReadOnlyProductionSql} from './production-remote-d1.mjs';
+import {businessMigrationStatements} from './business-runtime-import-schema.mjs';
+import {importAuthProjectionStage} from './auth-import-stage.mjs';
 
 test('native production coordinator and separate filesystem journals jointly guard real D1 writes', {timeout:60000}, async t=>{
  const dir=await mkdtemp(join(tmpdir(),'fanmark-global-import-'));await chmod(dir,0o700);
@@ -23,7 +25,7 @@ test('native production coordinator and separate filesystem journals jointly gua
   env:{RECOVERY_DRAIN:{type:'durable-object',worker:'import-coordination-fixture',exportName:'RecoveryWriterCoordinatorProduction'},
    COORDINATOR:{type:'worker',worker:'import-coordination-fixture',exportName:'ProductionImportCoordinatorService'},
    RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d'},
-   RECOVERY_DRAIN_BACKEND:{type:'text',value:'durable-object'},CUTOVER_WRITE_FREEZE:{type:'text',value:'receipt_only'},DB:{type:'d1',name:'coordinated-fixture'}},
+   RECOVERY_DRAIN_BACKEND:{type:'text',value:'durable-object'},CUTOVER_WRITE_FREEZE:{type:'text',value:'receipt_only'},DB:{type:'d1',name:'coordinated-fixture'},AUTH_DB:{type:'d1',name:'auth-stage-fixture'}},
   manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:built.outputFiles[0].text}}}},
   dev:{outboundService:{type:'fetcher',handler(){throw Error('external_network_forbidden');}}}}]});
  try {
@@ -73,6 +75,38 @@ test('native production coordinator and separate filesystem journals jointly gua
    assert.equal(queries,before);
    // Fixture-only operation: no R2 mutation was sent. Acknowledge its known completion.
    await coordinator.afterWrite(operation);
+  });
+  await t.test('production Auth stage uses native coordination, atomic D1 and separate readonly verification',async()=>{
+   const auth=await mf.getD1Database('AUTH_DB');
+   for(const name of ['0003_better_auth_core.sql','0007_auth_signup_command.sql','0008_auth_user_suspension.sql','0009_auth_oauth_signup.sql']){
+    const sql=await readFile(new URL('../../workers/api/migrations/'+name,import.meta.url),'utf8');
+    await auth.batch(businessMigrationStatements(sql).map(sql=>auth.prepare(sql)));
+   }
+   const authTarget={...PRODUCTION_D1_TARGETS.find(row=>row.databaseName==='fanmark-production-auth'),targetIncarnation:incarnations.auth};
+   let authWrites=0;
+   const authFetch=async(_url,options)=>{
+    if(options.method==='GET')return Response.json({success:true,result:{uuid:authTarget.databaseId,name:authTarget.databaseName,created_at:authTarget.createdAt}});
+    const batch=JSON.parse(options.body).batch;
+    if(batch.some(row=>!isReadOnlyProductionSql(row.sql))){
+     authWrites++;assert.equal((await coordinator.inspect()).state.pending.store,'auth');
+    }
+    return Response.json({success:true,result:await auth.batch(batch.map(row=>auth.prepare(row.sql).bind(...row.params)))});
+   };
+   const authWriter=await openProductionD1ImportTransport({journalPath:join(dir,'auth-stage.jsonl'),runId:owner,target:authTarget,coordinator,token:'synthetic-token-only',fetchImpl:authFetch});
+   const authReader=createProductionRemoteD1({target:authTarget,token:'synthetic-token-only',fetchImpl:authFetch});
+   const id='aaaaaaaa-1111-4111-8111-111111111111',time='2026-10-19T00:00:00.000Z';
+   const projection={version:1,observedAt:time,omittedSessionState:['session','verification','mfaAssurance'],tables:{
+    user:[{id,name:'Synthetic',email:'synthetic@example.invalid',emailVerified:1,image:null,twoFactorEnabled:1,banned:0,banExpires:null,banReason:null,createdAt:time,updatedAt:time}],
+    account:[{id:'credential:'+id,accountId:id,providerId:'credential',userId:id,password:'$2b$10$'+'a'.repeat(53),createdAt:time,updatedAt:time}],
+    twoFactor:[{id:'synthetic-factor',userId:id,secret:'SYNTHETIC_ENCRYPTED',backupCodes:'SYNTHETIC_ENCRYPTED_CODES',verified:1,failedVerificationCount:0,lockedUntil:null}],
+    adminRole:[{userId:id,role:'admin'}],
+   }};
+   const report=await importAuthProjectionStage({database:authWriter,readDatabase:authReader,projection,targetIncarnation:incarnations.auth,mode:'production-stage'});
+   assert.equal(report.projectionRowsReconciled,true);assert.equal(report.productionReady,false);assert.equal(authWrites,1);
+   const state=await coordinator.inspect();assert.equal(state.state.pending,null);assert.equal(state.state.readbackSha256,null);assert.equal(state.fenceOwner,owner);
+   await assert.rejects(importAuthProjectionStage({database:authWriter,readDatabase:authWriter,projection,targetIncarnation:incarnations.auth,mode:'production-stage'}),/transport_invalid/);
+   await assert.rejects(importAuthProjectionStage({database:authWriter,readDatabase:authReader,projection,targetIncarnation:incarnations.auth,mode:'local'}),/transport_invalid/);
+   assert.equal(authWrites,1);
   });
   await t.test('lost begin response sends no D1 request and cannot be replayed with a new journal',async()=>{
    const remote=await writer();loseBegin=true;const before=queries;

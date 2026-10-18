@@ -233,6 +233,9 @@
     "workers/api/wrangler.backup-monitor-staging.jsonc",
     "workers/api/wrangler.backup-production-closed.jsonc",
     "workers/api/wrangler.backup-staging.jsonc",
-    "workers/api/wrangler.production-schema.jsonc"
+    "workers/api/wrangler.production-schema.jsonc",
+    "scripts/migration/auth-import-readback.mjs",
+    "scripts/migration/auth-import-stage.mjs",
+    "scripts/migration/auth-runtime-schema.mjs"
   ]
 }

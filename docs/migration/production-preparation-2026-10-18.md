@@ -91,3 +91,13 @@ native DOの新規7件・既存15件、native DO/RPC/D1と別filesystem journal�
 9cef0c1のCI39140191739はアプリ成功/Worker失敗。新しい専用DO試験が通常のvitest設定でも拾われ、DO bindingのない環境で起動したことをcheck annotationsで確認した。通常設定のexcludeへ追加し、専用設定での7試験は維持する。run log downloadはGitHub API403だったが、check annotationsの読取は成功した。
 
 CI修正後の通常vitest設定は10 file/109件成功。専用DO設定の7件は引き続き別設定で実行する。新規source preparationと既存preparationの計15件も成功。
+
+## P2: Authのatomic投入と独立読戻し（2026-10-19）
+
+`auth-import-stage.mjs` はAuth全件を一つのD1 transactionで投入する。現予備コピーの45行は上限99行・900 bindings・projection 256KiB以内。上限超過、管理者不在、非empty target、schema差分は開始前に拒否し、大量データを分割して途中状態を作らない。native D1で4 migrationから再構築したテーブル/index/trigger定義と照合する。transaction内でもempty状態とMFA generation 0を検査し、事前確認後の書込も拒否する。通常INSERTのみで、再実行/upsert/セッション移植/鍵再生成はしない。
+
+production-stageは固定Auth D1の調停済み書込transportと、同一identity/incarnationの別read-only transportを要求する。汎用local modeからproductionへ流用できない。途中のFK違反で全行とMFA generationがrollbackすること、commit後の応答消失では再送せず独立readbackできること、native DOがauth intentを保持した状態で一度だけbatchを送ることを確認した。全storeの完了や公開は行わない。
+
+`auth-import-readback.mjs` は投入に使った同一の暗号化済みprojectionを開始前にコピーし、全ユーザー/credential hash/provider subject/MFA ciphertext/backup-code ciphertext/admin roleを100行ずつ別読出しで比較する。余分/不足/改変行、OAuth token/signup状態の混入、旧session/verification/MFA assurance、監査行、generation不一致を拒否。schemaを前後照合し、native FKと既存identity/MFA集計も検査する。報告とエラーに個人の行/ID/資格情報/hashを含めない。source freeze・暗号化鍵保管・ログイン成功の証明は別途必要で、`unfenced-readback` / `productionReady=false` を維持する。
+
+新規10件とnative調停7件を含む関連35件成功。すべて合成データ/ローカルnative engineで、本番Authの実データ投入は未実施。残りはMaster/Business/R2を統合する本番runner・source凍結証拠・全store独立照合・不明ACKの解決、provider/DNS/遠隔復旧。管理者MFAは全準備後。

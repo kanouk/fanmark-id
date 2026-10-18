@@ -9,6 +9,8 @@ Cloudflareの通常画面は`AuthReadinessGate.tsx`で認証プロフィール�
 実アプリrouterを使用し、通常staging Workerとは別の所有targetへ限定する。
 構成と受け入れ条件は[全一式復旧](migration/full-combined-recovery.md)。
 
+本番Authの移送部品は `scripts/migration/auth-import-stage.mjs`（容量を限定したatomic投入）、`auth-import-readback.mjs`（同一暗号化projectionとの独立比較）、`auth-runtime-schema.mjs`（native schema前後照合）。固定本番transport・全store調停・private journalを使う。全store runner/source freeze/実ログイン/本番公開の代替ではない。
+
 ## リポジトリ構造
 - `src/`
   - `pages/`: 画面エントリ (`Index`, `Auth`, `Dashboard`, `PlanSelection`, `Profile`, `Favorites`, 各プレビュー/設定/詳細ページ、Admin系)。

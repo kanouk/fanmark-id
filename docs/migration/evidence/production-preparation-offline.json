@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "3209147867df20525676d0d717e0e6fff1702e90bb10982ad5f1e3fd9a056703"
+    "sha256": "3f810911e8052afb513b7bf6f751c5a396ce6c458d24c92e5b0491ad78e80a17"
   },
   "variables": [
     {
@@ -627,8 +627,20 @@
       "sha256": "28bf4b1e5856df4df1ba8597420e36acf18b9f61dd78d533c691b34d453c8b47"
     },
     {
+      "path": "scripts/migration/auth-import-readback.mjs",
+      "sha256": "833b331a21ca90f162c34f503cdd66567c7da821f3a9a3677c6893a446b3278c"
+    },
+    {
+      "path": "scripts/migration/auth-import-stage.mjs",
+      "sha256": "364cf663cc2f32ea6085eb5af20d287b1e960057ebb5d709793053611b183d00"
+    },
+    {
       "path": "scripts/migration/auth-readiness.sql",
       "sha256": "79cdef0722898082fd902ec4d24ef3fa1aec8ba178ad8281c3fde3a7190b4653"
+    },
+    {
+      "path": "scripts/migration/auth-runtime-schema.mjs",
+      "sha256": "f9f3508d1efdd3aaea76640131956cf3466b95965ab2681da8a1a9dea654d0aa"
     },
     {
       "path": "scripts/migration/d1-import.mjs",

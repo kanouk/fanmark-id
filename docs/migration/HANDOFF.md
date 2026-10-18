@@ -1,3 +1,7 @@
+## 2026-10-19: Authの一括投入・独立照合を実装
+
+`auth-import-stage.mjs` と `auth-import-readback.mjs` を追加。固定本番Auth transport/別read-only transportを要求し、schema前後一致、空target、atomic transaction、全資格情報/ID/MFA照合、旧sessionなしを確認する。新規10件・native調停7件を含む関連35件成功（合成/localのみ）。現source規模45 projected rowsに対して上限99行。容量超過は開始前に拒否。応答不明を自動再送せず、全storeの完了は主張しない。4cbe09fのCI39141770912は直近確認時app成功/Worker実行中。全store runner/ACK解決・source全入口停止/実provider・DNS/遠隔復旧は残る。本番import/停止/DNS/main mergeなし。ブラウザの手動再オープン返答待ち。管理者再認証は全準備後。[詳細](production-preparation-2026-10-18.md)。
+
 ## 2026-10-19: CIの試験設定を修正、Cron逆操作をnative検証
 
 9cef0c1/CI39140191739はアプリ成功・Worker失敗。専用DO試験を通常設定が再収集していたためexcludeを修正し、通常109件が成功。新規専用7件は別設定で実行する。source Cron停止/復元SQLはnative pg_cronで5件成功。現在のsource権限の読取はCLIのAccess token not providedで止まるため実環境では未確認。in-appタブの手動再オープンだけを非同期で依頼中（ログイン入力/MFAはまだ依頼しない）。新しいコードはまだ本番へ配備せず、残る全store runner/実際の復旧/受信引継ぎ・DNS/providerを継続する。
