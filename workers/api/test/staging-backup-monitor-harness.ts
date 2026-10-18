@@ -1,16 +1,19 @@
+export { ProductionBackupService, ProductionBackupAlertService } from "../src/production-backup-service";
 /** Local-only monitor/alert fixture. Never deploy or bind actual staging resources. */
 export { StagingBackupService, StagingBackupAlertService } from "../src/staging-backup-service";
-import monitor, { inspectStagingBackup, type BackupMonitorEnv } from "../src/staging-backup-monitor";
+import { createBackupMonitor, inspectStagingBackup, type BackupMonitorEnv } from "../src/staging-backup-monitor";
 import { sendStagingBackupAlert, type BackupAlert, type BackupAlertEnv } from "../src/staging-backup-alert";
 import scheduler from "../src/staging-backup-scheduler";
 import { STAGING_BACKUP_CRON, STAGING_BACKUP_MONITOR_CRON } from "../src/staging-backup-schedule";
 
-type FixtureEnv = BackupMonitorEnv & BackupAlertEnv & { SERVICE: { alert(input: BackupAlert): Promise<unknown> } };
+type FixtureEnv = BackupMonitorEnv & BackupAlertEnv & { FIXTURE_BACKUP_PROFILE?: "production" | "staging"; SERVICE: { alert(input: BackupAlert): Promise<unknown> } };
 export default {
   async fetch(request: Request, env: FixtureEnv) {
+    const profile = env.FIXTURE_BACKUP_PROFILE ?? "staging";
+    const monitor = createBackupMonitor(profile);
     const input = await request.json<{ path: string; now?: number; alert?: BackupAlert; mode?: string }>();
     try {
-      if (input.path === "inspect") return Response.json(await inspectStagingBackup(env, input.now));
+      if (input.path === "inspect") return Response.json(await inspectStagingBackup(env, input.now, profile));
       if (input.path === "alert") return Response.json(await env.SERVICE.alert(input.alert!));
       if (input.path === "forbidden-monitor-rpc") {
         const service = env.BACKUP_ALERT_SERVICE as unknown as {
@@ -30,7 +33,7 @@ export default {
           };
           const value = Reflect.get(target, property); return typeof value === "function" ? value.bind(target) : value;
         } });
-        return Response.json(await sendStagingBackupAlert({ ...env, STAGING_BACKUP_BUCKET: uncertain }, input.alert!));
+        return Response.json(await sendStagingBackupAlert({ ...env, STAGING_BACKUP_BUCKET: uncertain }, input.alert!, fetch, new Date(), profile));
       }
       if (input.path === "monitor") {
         await monitor.scheduled({ cron: input.mode === "wrong-cron" ? "* * * * *" : STAGING_BACKUP_MONITOR_CRON } as ScheduledController,

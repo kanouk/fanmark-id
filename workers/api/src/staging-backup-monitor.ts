@@ -1,6 +1,6 @@
 import type { BackupReceipt } from "./staging-backup";
 import type { BackupAlert, BackupAlertCode } from "./staging-backup-alert";
-import { stagingBackupScope } from "./staging-backup";
+import { operationalBackupScope, backupReceiptFormat, type BackupProfile } from "./operational-backup-profile";
 import { STAGING_BACKUP_MONITOR_CRON } from "./staging-backup-schedule";
 export { STAGING_BACKUP_MONITOR_CRON } from "./staging-backup-schedule";
 
@@ -23,17 +23,17 @@ const same = (actual: Record<string, string>, expected: Record<string, string>) 
   Object.keys(expected).every(key => actual[key] === expected[key]);
 
 /** Reads only control receipts and archive HEAD. No source bindings, decryption key, capture or pruning capability. */
-export async function inspectStagingBackup(env: BackupMonitorEnv, now = Date.now()): Promise<{ slot: string; code: BackupAlertCode | null }> {
+export async function inspectStagingBackup(env: BackupMonitorEnv, now = Date.now(), profile: BackupProfile = "staging"): Promise<{ slot: string; code: BackupAlertCode | null }> {
   const slot = expectedBackupSlot(now);
   const ids = JSON.parse(env.STAGING_BACKUP_SOURCE_IDS), schemas = JSON.parse(env.STAGING_BACKUP_SCHEMA_HASHES);
   if (!env.STAGING_BACKUP_BUCKET || !/^[a-f0-9]{64}$/u.test(env.RECOVERY_DRAIN_SCOPE_DIGEST) ||
-      await stagingBackupScope(ids) !== env.RECOVERY_DRAIN_SCOPE_DIGEST) throw new Error("staging_backup_monitor_identity_invalid");
+      await operationalBackupScope(ids, profile) !== env.RECOVERY_DRAIN_SCOPE_DIGEST) throw new Error("staging_backup_monitor_identity_invalid");
   const object = await env.STAGING_BACKUP_BUCKET.get(`recovery/v1/runs/${slot}.json`);
   if (!object) return { slot, code: "backup-missing" };
   if (object.size > 65_536) return { slot, code: "backup-invalid" };
   let receipt: BackupReceipt;
   try { receipt = await object.json<BackupReceipt>(); } catch { return { slot, code: "backup-invalid" }; }
-  if (receipt?.format !== "fanmark-staging-backup-receipt-v1" || receipt.slot !== slot ||
+  if (receipt?.format !== backupReceiptFormat(profile) || receipt.slot !== slot ||
       !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/u.test(receipt.owner) ||
       receipt.keyId !== env.STAGING_BACKUP_KEY_ID || !same(receipt.sourceIds, ids) || !same(receipt.schemaHashes, schemas))
     return { slot, code: "backup-invalid" };
@@ -54,18 +54,19 @@ export async function inspectStagingBackup(env: BackupMonitorEnv, now = Date.now
       Date.parse(receipt.retention.finishedAt) > now + 300_000) return { slot, code: "retention-failed" };
   return { slot, code: null };
 }
-export default {
+export function createBackupMonitor(profile: BackupProfile) { return {
   fetch() { return new Response(null, { status: 404 }); },
   async scheduled(event: ScheduledController, env: BackupMonitorEnv) {
     if (env.STAGING_BACKUP_MONITOR !== "hourly-v1") throw new Error("staging_backup_monitor_disabled");
     if (event.cron !== STAGING_BACKUP_MONITOR_CRON) throw new Error("staging_backup_monitor_cron_invalid");
     let result: Awaited<ReturnType<typeof inspectStagingBackup>>;
-    try { result = await inspectStagingBackup(env); }
+    try { result = await inspectStagingBackup(env, Date.now(), profile); }
     catch { result = { slot: expectedBackupSlot(Date.now()), code: "monitor-read-failed" }; }
     if (result.code) {
       await env.BACKUP_ALERT_SERVICE.alert({ ...result, code: result.code, scope: env.RECOVERY_DRAIN_SCOPE_DIGEST });
       throw new Error("staging_backup_monitor_unhealthy");
     }
-    console.log(JSON.stringify({ event: "staging_backup_monitor_healthy", slot: result.slot }));
+    console.log(JSON.stringify({ event: profile + "_backup_monitor_healthy", slot: result.slot }));
   },
-};
+}; }
+export default createBackupMonitor("staging");

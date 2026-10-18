@@ -1,19 +1,25 @@
 /** Local-only fixture router. Never deploy this test module or bind retained staging stores. */
 export { RecoveryWriterCoordinator } from "../src/recovery-writer-drain";
+export { ProductionBackupService } from "../src/production-backup-service";
 export { StagingBackupService } from "../src/staging-backup-service";
-import { runStagingBackup, type StagingBackupEnv } from "../src/staging-backup";
+import { runStagingBackup as runBackupCore, type StagingBackupEnv } from "../src/staging-backup";
 import { withRecoveryWriter, inspectRecoveryWriters, claimRecoveryWriterFence, releaseRecoveryWriterFence } from "../src/recovery-writer-drain";
 import scheduler, { STAGING_BACKUP_CRON } from "../src/staging-backup-scheduler";
 
-type HarnessEnv = StagingBackupEnv & { BACKUP_SERVICE: {
+type HarnessEnv = StagingBackupEnv & { FIXTURE_BACKUP_PROFILE?: "production" | "staging"; BACKUP_SERVICE: {
   run(slot: string): Promise<unknown>; status(slot: string): Promise<unknown>;
   sealAuthKey(): Promise<unknown>; prune(slot: string): Promise<unknown>;
 } };
+function runStagingBackup(env: HarnessEnv, slot: string) {
+  return runBackupCore(env, slot, new Date(), env.FIXTURE_BACKUP_PROFILE ?? "staging");
+}
 export default {
   async fetch(request: Request, env: HarnessEnv) {
     const { path, slot, owner, admission, mode } = await request.json<{ path: string; slot: string; owner?: string; admission?: string; mode?: string }>();
     try {
       switch (path) {
+        case "wrong-identity": return Response.json(await runStagingBackup({ ...env,
+          STAGING_BACKUP_SOURCE_IDS: env.STAGING_BACKUP_SOURCE_IDS!.replace("dc43ffd7-0ca8-45d6-805c-ae1e6f2b58a6", "different-auth") }, slot));
         case "rpc-run": return Response.json(await env.BACKUP_SERVICE.run(slot));
         case "rpc-status": return Response.json(await env.BACKUP_SERVICE.status(slot));
         case "escrow": return Response.json(await env.BACKUP_SERVICE.sealAuthKey());

@@ -702,3 +702,7 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 ### Cloudflare本番画面のビルド
 
 `npm run build:cloudflare-production` は固定Node 22.6.0、空envDir、継承VITE変数なしで `dist-cloudflare-production` を生成する。API/Authは `https://fanmark.id`、backend selectorはstagingと同じWorker/D1/R2一式を使い、告知送信もWorkerを選択する。本番専用modeではBetter Authを使用し、旧Supabase clientのsession保存・自動更新・URL内session検出・fetchを無効にする。PWA cache IDも分ける。このコマンドは配備せず、通常の旧本番buildやstaging buildを変更しない。
+
+本番Worker候補のbundle検査は、上記画面build後の `npm run build:cloudflare-production-worker:dry-run`。app・backup scheduler・別monitorの3 bundleを作るだけでCloudflareへ送らない。閉鎖候補の変更は `scripts/migration/production-runtime-config.mjs` の検査を通す。保存先の固定値は作成済み資源表と照合され、閉鎖候補の検査成功は本番開始条件の充足を意味しない。
+
+業務DBの取り込み台帳3表は削除せずバックアップへ含める。台帳なしの既存archive形式と、台帳を含む `fanmark-business-import-recovery-v1` を固定profileで検証し、途中欠落・未知の表を受け入れない。復元時も元の取り込み先/incarnationを保持し、新しいDBで古いrunを誤再開させない。

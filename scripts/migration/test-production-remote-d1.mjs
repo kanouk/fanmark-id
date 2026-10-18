@@ -57,11 +57,12 @@ test('production D1 validates identity and durable write boundaries against nati
     }
     await context.test('read-only denies writes, stacked statements and mutating PRAGMAs before network', async () => {
       const before = queries;
-      for (const sql of ['DELETE FROM probe', 'SELECT 1; DELETE FROM probe', 'PRAGMA writable_schema=ON',
+      for (const sql of ['DELETE FROM probe', 'SELECT 1; DELETE FROM probe', 'PRAGMA writable_schema=ON', 'PRAGMA foreign_keys=OFF',
         'WITH n AS (SELECT 1) DELETE FROM probe', 'SELECT 1 /* comment */']) {
         await assert.rejects(reader.prepare(sql).all(), error => error.code === 'production_read_only_violation');
       }
       assert.equal(queries, before);
+      assert.equal(await reader.prepare('PRAGMA foreign_keys').first('foreign_keys'), 1);
       assert.equal(await reader.prepare('SELECT ? AS label').bind("literal '; DELETE FROM probe'").first('label'), "literal '; DELETE FROM probe'");
       assert.deepEqual((await reader.prepare('PRAGMA foreign_key_check').all()).results, []);
     });

@@ -1,25 +1,27 @@
+import {PRODUCTION_STORE_IDS} from '../src/production-runtime-identity.ts';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
 import {Miniflare} from 'miniflare';
 import {createHash,randomUUID} from 'node:crypto';
-import {seedRecoverySetFixture,recoverySetFixturePins,fixtureSecret} from '../../../scripts/migration/recovery-set-fixture.mjs';
+import {seedRecoverySetFixture,recoverySetFixturePins,fixtureSecret,seedImportLedgerFixture} from '../../../scripts/migration/recovery-set-fixture.mjs';
 import {openRecoverySet,restoreRecoverySet} from '../src/recovery-set.ts';
 
+for (const profile of ['staging','production']) {
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
-const ids = {auth:'fixture-auth',business:'fixture-business',master:'fixture-master',avatars:'fixture-avatars',covers:'fixture-covers'};
+const ids = profile === 'production' ? PRODUCTION_STORE_IDS : {auth:'fixture-auth',business:'fixture-business',master:'fixture-master',avatars:'fixture-avatars',covers:'fixture-covers'};
 const names = {AUTH_DB:ids.auth,AVATARS_BUCKET:ids.avatars,COVER_IMAGES_BUCKET:ids.covers,FANMARK_DB:ids.business,MASTER_DB:ids.master};
-const scope = sha(JSON.stringify({account:'bfc2890741f0b3fb236e2d755b6c9adc',worker:'fanmark-app-staging',stores:Object.entries(names).map(([binding,value])=>binding.endsWith('_DB')?{type:'d1',binding,id:value}:{type:'r2',binding,name:value})}));
+const scope = sha(JSON.stringify({account:'bfc2890741f0b3fb236e2d755b6c9adc',worker:profile === 'production' ? 'fanmark-app-production' : 'fanmark-app-staging',stores:Object.entries(names).map(([binding,value])=>binding.endsWith('_DB')?{type:'d1',binding,id:value}:{type:'r2',binding,name:value})}));
 const prefix='recovery/v1/', slot = new Date().toISOString().slice(0,10);
 
-test('native staging backup RPC fences writers, verifies private R2 archive, revokes restored sessions and bounds retention', {timeout:120_000}, async t=>{
-  const schemas=await recoverySetFixturePins(), keyHex='a'.repeat(64);
+test(profile + ': native backup RPC fences writers, verifies private R2 archive, revokes restored sessions and bounds retention', {timeout:120_000}, async t=>{
+  const schemas=await recoverySetFixturePins({includeImportLedger:profile === 'production'}), keyHex='a'.repeat(64);
   const compiled=await build({entryPoints:[fileURLToPath(new URL('./staging-backup-harness.ts',import.meta.url))],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',conditions:['workerd'],external:['cloudflare:*']});
-  const vars={D1_TOPOLOGY:'split',RECOVERY_DRAIN_BACKEND:'durable-object',RECOVERY_DRAIN_SCOPE_DIGEST:scope,
+  const vars={FIXTURE_BACKUP_PROFILE:profile,BETTER_AUTH_URL:'https://fanmark.id',D1_TOPOLOGY:'split',RECOVERY_DRAIN_BACKEND:'durable-object',RECOVERY_DRAIN_SCOPE_DIGEST:scope,
     STAGING_BACKUP_BACKEND:'recovery-set-v1',STAGING_BACKUP_ADMISSION:'writers-verified-v1',
     STAGING_BACKUP_SOURCE_IDS:JSON.stringify(ids),STAGING_BACKUP_SCHEMA_HASHES:JSON.stringify(schemas),
-    STAGING_BACKUP_KEY_ID:'fixture-operational-key',STAGING_BACKUP_KEY:keyHex,BETTER_AUTH_SECRET:fixtureSecret};
+    STAGING_BACKUP_KEY_ID:profile === 'production' ? 'production-backup-11111111-1111-4111-8111-111111111111' : 'fixture-operational-key',STAGING_BACKUP_KEY:keyHex,BETTER_AUTH_SECRET:fixtureSecret};
   const mf=new Miniflare({workers:[{config:{name:'backup-native-fixture',type:'worker',compatibilityDate:'2026-09-18',
     exports:{RecoveryWriterCoordinator:{type:'durable-object',storage:'sqlite'}},
     env:{...Object.fromEntries(Object.entries(vars).map(([name,value])=>[name,{type:'text',value}])),
@@ -27,14 +29,18 @@ test('native staging backup RPC fences writers, verifies private R2 archive, rev
       ...Object.fromEntries(['AUTH_DB','FANMARK_DB','MASTER_DB','TARGET_AUTH','TARGET_BUSINESS','TARGET_MASTER'].map(name=>[name,{type:'d1',name}])),
       ...Object.fromEntries(['AVATARS_BUCKET','COVER_IMAGES_BUCKET','STAGING_BACKUP_BUCKET','TARGET_AVATARS','TARGET_COVERS'].map(name=>[name,{type:'r2',name}])),
       RECOVERY_DRAIN:{type:'durable-object',worker:'backup-native-fixture',exportName:'RecoveryWriterCoordinator'},
-      BACKUP_SERVICE:{type:'worker',worker:'backup-native-fixture',exportName:'StagingBackupService'}},
+      BACKUP_SERVICE:{type:'worker',worker:'backup-native-fixture',exportName:profile === 'production' ? 'ProductionBackupService' : 'StagingBackupService'}},
     manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:compiled.outputFiles[0].text}}}},
     dev:{outboundService:{type:'fetcher',handler(){throw Error('external-provider-forbidden');}}}}]});
   const request=async (path,extra={},status=200)=>{const response=await mf.dispatchFetch('https://fixture.local',{method:'POST',body:JSON.stringify({path,slot,...extra})});
     const body=await response.json();assert.equal(response.status,status,JSON.stringify(body));return body;};
   try{
     const source={auth:await mf.getD1Database('AUTH_DB'),business:await mf.getD1Database('FANMARK_DB'),master:await mf.getD1Database('MASTER_DB')};
-    await seedRecoverySetFixture(source);const bucket=await mf.getR2Bucket('STAGING_BACKUP_BUCKET');
+    await seedRecoverySetFixture(source);if(profile === 'production') await seedImportLedgerFixture(source.business);const bucket=await mf.getR2Bucket('STAGING_BACKUP_BUCKET');
+    if(profile === 'production') await t.test('production rejects an unpinned store before taking any backup lock', async()=>{
+      assert.deepEqual(await request('wrong-identity',{},409),{error:'production_backup_identity_mismatch'});
+      assert.equal(await bucket.head(prefix+'runs/'+slot+'.json'),null);
+    });
     await t.test('policy approval alone does not admit capture or create a lock',async()=>{
       assert.deepEqual(await request('blocked',{admission:'approved'},409),{error:'staging_backup_admission_required'});
       assert.equal(await bucket.head(prefix+'runs/'+slot+'.json'),null);
@@ -133,3 +139,5 @@ test('native staging backup RPC fences writers, verifies private R2 archive, rev
     });
   }finally{await mf.dispose();}
 });
+
+}

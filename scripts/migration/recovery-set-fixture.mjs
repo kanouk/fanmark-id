@@ -1,5 +1,6 @@
 /** Checked-in synthetic source only. Never bind a retained staging database. */
 import {readFile} from 'node:fs/promises';
+import {importLedgerSchemaStatements} from './d1-import.mjs';
 import {businessMigrationStatements, applyBusinessRuntimeMigrations} from './business-runtime-import-schema.mjs';
 import {BUSINESS_MIGRATION_SEQUENCE} from './business-migration-ledger.mjs';
 import {AUTH_RECOVERY_SCHEMA_SQL, authRecoveryDigest} from '../../workers/api/src/auth-d1-recovery.ts';
@@ -41,7 +42,7 @@ export async function seedRecoverySetFixture(source, {skipMaster = false} = {}) 
 }
 
 /** Independent pins come from trusted checked-in migrations in a disposable local runtime. */
-export async function recoverySetFixturePins() {
+export async function recoverySetFixturePins({includeImportLedger = false} = {}) {
   const {Miniflare} = await import('../../workers/api/node_modules/miniflare/dist/src/index.js');
   const mf = new Miniflare({workers: [{config: {name: 'recovery-set-schema-pins', type: 'worker', compatibilityDate: '2026-09-18',
     env: Object.fromEntries(['auth', 'business', 'master'].map(name => [name, {type: 'd1', name}])),
@@ -49,8 +50,19 @@ export async function recoverySetFixturePins() {
   try {
     const source = Object.fromEntries(await Promise.all(['auth', 'business', 'master'].map(async name => [name, await mf.getD1Database(name)])));
     await seedRecoverySetFixture(source);
+    if (includeImportLedger) await seedImportLedgerFixture(source.business);
     return {auth: await authRecoveryDigest((await source.auth.prepare(AUTH_RECOVERY_SCHEMA_SQL).all()).results),
       business: await d1RecoveryDigest((await source.business.prepare(D1_RECOVERY_SCHEMA_SQL).all()).results),
       master: await d1RecoveryDigest((await source.master.prepare(D1_RECOVERY_SCHEMA_SQL).all()).results)};
   } finally {await mf.dispose();}
+}
+
+/** Real importer DDL with synthetic completed progress. Never clear it after restore. */
+export async function seedImportLedgerFixture(database) {
+  await database.batch(importLedgerSchemaStatements().map(sql => database.prepare(sql)));
+  await database.prepare(`INSERT INTO __fanmark_d1_import_runs
+    (run_id,destination_id,target_incarnation,manifest_digest,catalog_fingerprint,schema_report_fingerprint,schema_digest,
+     codec_version,table_count,completed_tables,status,deployable,full_migration_reconciled,created_at,updated_at)
+    VALUES ('fixture-import','fixture-business','fixture-original-incarnation',?,?,?, ?,1,0,0,'public_rows_reconciled',0,0,?,?)`)
+    .bind(...Array(4).fill('a'.repeat(64)), '2026-10-18T00:00:00Z', '2026-10-18T00:00:00Z').run();
 }

@@ -420,3 +420,7 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 `scripts/migration/production-remote-d1.mjs`は本番資源IDと作成時刻を照合する専用D1 transport。既定はread-only、書込は`production-import-journal.mjs`の永続intent/ACKを必須とする。汎用importerや隔離transportのguardは迂回しない。`source-database-freeze.mjs`は旧DBの固定inventoryに対する更新拒否・検査・解除SQLを生成する部品で、Edge/外部副作用の停止は別途必要。実行範囲と残条件は[migration記録](migration/production-preparation-2026-10-18.md)を参照。
 
 本番画面の生成入口は `scripts/build-cloudflare-production.mjs`。`src/lib/auth-backend.ts` はcloudflare-productionでもBetter Authを選び、`src/integrations/supabase/client.ts` が旧環境へのHTTPを拒否する。告知メール送信selectorも同modeに対応するが、サーバーの管理者/MFA検証は継続する。生成物と本番API配備・公開は別工程。
+
+本番用運用adapterは `production-backup-service.ts`、`production-backup-{scheduler,monitor}.ts` と `ProductionEmojiMasterPublicationService`。`production-runtime-identity.ts` の固定5資源・Worker scopeを `operational-backup-profile.ts` で照合する。運用処理の本体は既存backup/publication engineを共有し、staging profileは維持する。`wrangler.*-production-closed.jsonc` は配備前の閉鎖候補であり、公開route/Cronなし、秘密・backup schema/鍵設定は未完了。
+
+移行取り込みの別呼出し照合は `scripts/migration/d1-import.mjs` の `verifyImportedD1Snapshot`。共有codecで全行・台帳・schema・FKを読み戻すが、書込/修復は行わない。全storeの停止を保証するrunnerとは分け、単独の成功を公開許可にしない。

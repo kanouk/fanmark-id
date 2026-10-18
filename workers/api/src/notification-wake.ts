@@ -172,3 +172,6 @@ export async function handleNotificationWakeRepairRequest(request: Request, env:
     return new Response(JSON.stringify({ success: true }), { headers });
   } catch { return response("notification_wake_unavailable", 503); }
 }
+
+/** Separate production namespace; never reuses staging state or alarms. */
+export class NotificationWakeCoordinatorProduction extends NotificationWakeCoordinator {}

@@ -1,4 +1,5 @@
-/** Staging-only operational adapter. No public routes and no implicit capture admission. */
+import { operationalBackupScope, backupReceiptFormat, type BackupProfile } from "./operational-backup-profile";
+/** Operational backup engine. Named entrypoints select the profile; HTTP input never does. */
 import type { Env } from "./repository";
 import { RECOVERY_SET_STORES, collectRecoverySet, openRecoverySet,
   type RecoverySetArchive, type RecoverySetContext } from "./recovery-set";
@@ -16,7 +17,7 @@ export interface StagingBackupEnv extends Env {
   STAGING_BACKUP_BUCKET?: R2Bucket;
 }
 export type BackupReceipt = {
-  format: "fanmark-staging-backup-receipt-v1"; slot: string; owner: string;
+  format: "fanmark-staging-backup-receipt-v1" | "fanmark-production-backup-receipt-v1"; slot: string; owner: string;
   state: "claimed" | "collecting" | "stored" | "verified" | "failed";
   startedAt: string; finishedAt?: string; runtimeRevision: string; keyId: string;
   sourceIds: RecoverySetContext["sourceIds"]; schemaHashes: RecoverySetContext["schemaHashes"];
@@ -47,13 +48,10 @@ const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b
 
 /** Matches the existing staging census identity format, including account/Worker and binding names. */
 export async function stagingBackupScope(ids: RecoverySetContext["sourceIds"]): Promise<string> {
-  const names = { AUTH_DB: ids.auth, AVATARS_BUCKET: ids.avatars, COVER_IMAGES_BUCKET: ids.covers,
-    FANMARK_DB: ids.business, MASTER_DB: ids.master };
-  return d1RecoveryDigest({ account: "bfc2890741f0b3fb236e2d755b6c9adc", worker: "fanmark-app-staging",
-    stores: Object.entries(names).map(([binding, value]) => binding.endsWith("_DB")
-      ? { type: "d1", binding, id: value } : { type: "r2", binding, name: value }) });
+  return operationalBackupScope(ids, "staging");
 }
-async function configuration(env: StagingBackupEnv, capture: boolean) {
+
+async function configuration(env: StagingBackupEnv, capture: boolean, profile: BackupProfile) {
   if (env.STAGING_BACKUP_BACKEND !== "recovery-set-v1" || env.D1_TOPOLOGY !== "split" ||
       !env.AUTH_DB || !env.FANMARK_DB || !env.MASTER_DB || !env.AVATARS_BUCKET || !env.COVER_IMAGES_BUCKET ||
       !env.STAGING_BACKUP_BUCKET || !ID.test(env.STAGING_BACKUP_KEY_ID ?? "") ||
@@ -66,7 +64,9 @@ async function configuration(env: StagingBackupEnv, capture: boolean) {
       !equal(Object.keys(schemas!).sort(), ["auth", "business", "master"]) ||
       Object.values(ids!).some(id => typeof id !== "string" || !ID.test(id)) || new Set(Object.values(ids!)).size !== 5 ||
       Object.values(schemas!).some(hash => typeof hash !== "string" || !HASH.test(hash)) ||
-      await stagingBackupScope(ids!) !== env.RECOVERY_DRAIN_SCOPE_DIGEST) fail("identity_mismatch");
+      await operationalBackupScope(ids!, profile) !== env.RECOVERY_DRAIN_SCOPE_DIGEST) fail("identity_mismatch");
+  if (profile === "production" && (env.BETTER_AUTH_URL !== "https://fanmark.id" ||
+      !/^production-backup-[a-f0-9-]{36}$/u.test(env.STAGING_BACKUP_KEY_ID ?? ""))) fail("production_configuration_invalid");
   // Set only after independent binding readback and exclusion of every untracked writer.
   // A fresh set of stores may use a fresh census when retained legacy invocations
   // can only reach the old stores; replacing the census alone is never sufficient.
@@ -87,39 +87,39 @@ const receiptKey = (slot: string) => PREFIX + "runs/" + slot + ".json";
 async function rawHash(value: string): Promise<string> {
   return [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)))].map(x => x.toString(16).padStart(2, "0")).join("");
 }
-function receiptValid(receipt: BackupReceipt, slot: string): boolean {
-  return receipt?.format === "fanmark-staging-backup-receipt-v1" && receipt.slot === slot &&
+function receiptValid(receipt: BackupReceipt, slot: string, profile: BackupProfile): boolean {
+  return receipt?.format === backupReceiptFormat(profile) && receipt.slot === slot &&
     /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/u.test(receipt.owner) &&
     ["claimed", "collecting", "stored", "verified", "failed"].includes(receipt.state) &&
     typeof receipt.fenceReleased === "boolean";
 }
 /** Read-only control-plane status; no source Auth rows, cookies, keys or archives leave RPC. */
-export async function stagingBackupStatus(env: StagingBackupEnv, slot: string) {
+export async function stagingBackupStatus(env: StagingBackupEnv, slot: string, profile: BackupProfile = "staging") {
   if (!validSlot(slot)) fail("slot_invalid");
-  const { bucket, context } = await configuration(env, false);
+  const { bucket, context } = await configuration(env, false, profile);
   const object = await bucket.get(receiptKey(slot));
   const receipt = object ? await object.json<BackupReceipt>() : null;
-  if (receipt && !receiptValid(receipt, slot)) fail("receipt_invalid");
+  if (receipt && !receiptValid(receipt, slot, profile)) fail("receipt_invalid");
   return { admission: env.STAGING_BACKUP_ADMISSION === "writers-verified-v1", runtimeRevision: context.runtimeRevision,
     keyId: context.keyId, sourceIds: context.sourceIds, schemaHashes: context.schemaHashes, receipt,
     writers: await inspectRecoveryWriters(env) };
 }
 /** SDK-key escrow stays encrypted separately from the R2 archive; only an internal operator binding may call this. */
-export async function sealStagingBackupAuthKey(env: StagingBackupEnv) {
-  const { key, context } = await configuration(env, false);
+export async function sealStagingBackupAuthKey(env: StagingBackupEnv, profile: BackupProfile = "staging") {
+  const { key, context } = await configuration(env, false, profile);
   const authKeyId = await d1RecoveryDigest(["better-auth-recovery-key-v1", context.authSecret]);
   const nonce = crypto.getRandomValues(new Uint8Array(12));
-  const header = { format: "fanmark-staging-auth-key-escrow-v1", keyId: context.keyId, authKeyId };
+  const header = { format: profile === "production" ? "fanmark-production-auth-key-escrow-v1" : "fanmark-staging-auth-key-escrow-v1", keyId: context.keyId, authKeyId };
   const plaintext = new TextEncoder().encode(context.authSecret);
   try { return { ...header, nonce: [...nonce], ciphertext: [...new Uint8Array(await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce, additionalData: new TextEncoder().encode(JSON.stringify(header)) }, key, plaintext))] }; }
   finally { plaintext.fill(0); }
 }
 /** One attempt per UTC slot. Incomplete/lost acknowledgments require operator inspection, never automatic replay. */
-export async function runStagingBackup(env: StagingBackupEnv, slot: string, now = new Date()): Promise<BackupReceipt> {
+export async function runStagingBackup(env: StagingBackupEnv, slot: string, now = new Date(), profile: BackupProfile = "staging"): Promise<BackupReceipt> {
   if (!validSlot(slot) || slot !== now.toISOString().slice(0, 10)) fail("slot_invalid");
-  const { key, context, bucket, bindings } = await configuration(env, true);
-  const receipt: BackupReceipt = { format: "fanmark-staging-backup-receipt-v1", slot, owner: crypto.randomUUID(),
+  const { key, context, bucket, bindings } = await configuration(env, true, profile);
+  const receipt: BackupReceipt = { format: backupReceiptFormat(profile), slot, owner: crypto.randomUUID(),
     state: "claimed", startedAt: now.toISOString(), runtimeRevision: context.runtimeRevision, keyId: context.keyId,
     sourceIds: context.sourceIds, schemaHashes: context.schemaHashes, fenceReleased: false };
   // A strongly consistent conditional object is the attempt lock. Its owner is never reused by another invocation.
@@ -186,12 +186,12 @@ export async function runStagingBackup(env: StagingBackupEnv, slot: string, now 
   return receipt;
 }
 /** Retain thirty UTC dates. Only verified/released receipts authorize deletion of their exact owned archive. */
-export async function pruneStagingBackups(env: StagingBackupEnv, today: string) {
+export async function pruneStagingBackups(env: StagingBackupEnv, today: string, profile: BackupProfile = "staging") {
   if (!validSlot(today)) fail("slot_invalid");
-  const { bucket } = await configuration(env, true);
+  const { bucket } = await configuration(env, true, profile);
   const current = await bucket.get(receiptKey(today));
   const latest = current ? await current.json<BackupReceipt>() : null;
-  if (!latest || !receiptValid(latest, today) || latest.state !== "verified" || !latest.fenceReleased) fail("retention_requires_success");
+  if (!latest || !receiptValid(latest, today, profile) || latest.state !== "verified" || !latest.fenceReleased) fail("retention_requires_success");
   if (latest.objectKey !== PREFIX + "archives/" + today + "/" + latest.owner + ".json" || !HASH.test(latest.archiveHash ?? ""))
     fail("retention_requires_success");
   const newest = await bucket.get(latest.objectKey);
@@ -205,7 +205,7 @@ export async function pruneStagingBackups(env: StagingBackupEnv, today: string) 
       if (object.key !== receiptKey(slot) || !validSlot(slot) || Date.parse(slot + "T00:00:00Z") >= cutoff) continue;
       const body = await bucket.get(object.key); if (!body) continue;
       const old = await body.json<BackupReceipt>();
-      if (!receiptValid(old, slot) || old.state !== "verified" || !old.fenceReleased ||
+      if (!receiptValid(old, slot, profile) || old.state !== "verified" || !old.fenceReleased ||
           old.objectKey !== PREFIX + "archives/" + slot + "/" + old.owner + ".json" || !HASH.test(old.archiveHash ?? "")) continue;
       const archive = await bucket.get(old.objectKey);
       if (archive && await rawHash(await archive.text()) !== old.archiveHash) fail("retention_hash_mismatch");

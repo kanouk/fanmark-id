@@ -1,3 +1,4 @@
+import { PRODUCTION_RUNTIME, PRODUCTION_STORE_IDS } from "./production-runtime-identity";
 import {WorkerEntrypoint} from "cloudflare:workers";
 import {selectD1Database,type Env} from "./repository";
 import {inspectRecoveryWriters,withRecoveryWriter} from "./recovery-writer-drain";
@@ -5,18 +6,21 @@ import {canonicalReleaseValue,rebuildStoredEmojiRelease,verifyEmojiReleasePayloa
 import {stageVerifiedEmojiMasterRelease} from "../../../scripts/migration/emoji-master-release-stage-core.mjs";
 import {activateVerifiedEmojiMasterRelease} from "../../../scripts/migration/emoji-master-release-activation-core.mjs";
 
-import {STAGING_EMOJI_PUBLICATION_TARGETS,type StagingEmojiTarget} from "../../../scripts/migration/staging-emoji-targets.mjs";
+import {STAGING_EMOJI_PUBLICATION_TARGETS} from "../../../scripts/migration/staging-emoji-targets.mjs";
 
 const HASH=/^[a-f0-9]{64}$/u,UUID=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/u;
 type PublicationEnv=Env&{EMOJI_PUBLICATION_BACKEND?:string;STAGING_BACKUP_SOURCE_IDS?:string};
+type PublicationTarget = { readonly masterId: string; readonly scope: string; readonly backend?: "production-service" };
 type Active={release_version:string;generation:number;activation_id:string;action:string;previous_release_version:string|null};
 const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{"cache-control":"no-store"}});
 function unavailable():never {throw new Error("publication_unavailable");}
-function databaseFor(env:PublicationEnv,request:Request,target:StagingEmojiTarget):D1Database {
+function databaseFor(env:PublicationEnv,request:Request,target:PublicationTarget):D1Database {
   let source:Record<string,unknown>;try{source=JSON.parse(env.STAGING_BACKUP_SOURCE_IDS??"");}catch{unavailable();}
-  if(env.EMOJI_PUBLICATION_BACKEND!=="staging-service"||env.D1_TOPOLOGY!=="split"||source.master!==target.masterId||
+  if(env.EMOJI_PUBLICATION_BACKEND!==(target.backend ?? "staging-service")||env.D1_TOPOLOGY!=="split"||source.master!==target.masterId||
       env.RECOVERY_DRAIN_BACKEND!=="durable-object"||env.RECOVERY_DRAIN_SCOPE_DIGEST!==target.scope||
       !UUID.test(env.CF_VERSION_METADATA?.id??"")||request.headers.get("x-fanmark-publication-runtime")!==env.CF_VERSION_METADATA?.id)unavailable();
+  if (target.backend === "production-service" && (Object.keys(source).sort().join(",") !== Object.keys(PRODUCTION_STORE_IDS).sort().join(",") ||
+      Object.entries(PRODUCTION_STORE_IDS).some(([key,value]) => source[key] !== value))) unavailable();
   const database=selectD1Database(env,"master");if(!database)unavailable();return database;
 }
 async function active(database:D1Database):Promise<Active>{
@@ -30,7 +34,7 @@ async function assertDraft(database:D1Database,artifact:VerifiedEmojiArtifact):P
   if(canonicalReleaseValue(records)!==canonicalReleaseValue(artifact.records))throw new Error("draft_artifact_mismatch");
 }
 /** A control-plane service binding only. The default public HTTP router never calls this entrypoint. */
-async function publicationFetch(request:Request,env:PublicationEnv,context:Pick<ExecutionContext,"waitUntil">,target:StagingEmojiTarget):Promise<Response>{
+async function publicationFetch(request:Request,env:PublicationEnv,context:Pick<ExecutionContext,"waitUntil">,target:PublicationTarget):Promise<Response>{
     const url=new URL(request.url);
     if(url.origin!=="https://emoji-publication.internal")return json({error:"not_found"},404);
     try{
@@ -86,4 +90,9 @@ export class EmojiMasterPublicationServiceV3 extends WorkerEntrypoint<Publicatio
 }
 export class EmojiMasterPublicationServiceV4 extends WorkerEntrypoint<PublicationEnv>{
  async fetch(request:Request):Promise<Response>{return publicationFetch(request,this.env,this.ctx,STAGING_EMOJI_PUBLICATION_TARGETS[2]);}
+}
+
+export class ProductionEmojiMasterPublicationService extends WorkerEntrypoint<PublicationEnv>{
+ async fetch(request:Request):Promise<Response>{return publicationFetch(request,this.env,this.ctx,
+   {masterId:PRODUCTION_STORE_IDS.master,scope:PRODUCTION_RUNTIME.scope,backend:"production-service"});}
 }

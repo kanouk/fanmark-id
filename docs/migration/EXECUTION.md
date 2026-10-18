@@ -1,3 +1,11 @@
+## 2026-10-18: 実データの業務バックアップ復元と読取専用照合
+
+業務40表5,770行の予備コピーで取り込み→暗号化保存→別DB復元→再照合が成功。取り込み台帳をbackupへ含める修正と、復元時の連番のSQLite型を整数に保つ修正を追加した。別呼出しcheckerは行/進捗/schema/FK/連番を検査し、DBを変更しない。本番用Backup/monitor/絵文字公開・閉鎖configもlocal検証済み。全store本番runner/source全入口停止/provider・DNS/遠隔復旧は残るため、まだ本番開始可能ではない。[検証範囲と残条件](production-preparation-2026-10-18.md)。再認証は準備完了後。main/旧本番保持。
+
+## 2026-10-18: 本番画面・運用adapter・閉鎖設定を追加
+
+PR41既存branchを継続。認証のstaging限定を修正し、本番画面buildではBetter Authを選び旧Supabase通信を拒否。production Backup/monitor/絵文字公開service・固定資源scope・専用DOと、非公開/Cron停止の3 Worker設定候補を追加。旧Stripe実keyのaccount/集計をread-onlyで確認し、一時診断Functionは削除済み。本番import・source停止・公開/mergeはまだ行わない。先行D1/source停止commit e76e34cのCI39133067109は両job成功。画面build commit 0d88fe6のCI39134134434も両job成功。運用adapter変更のCIは別途確認する。[実装と残条件](production-preparation-2026-10-18.md)。再認証は全準備がそろってから依頼する。
+
 ## 2026-10-18: 本番専用接続とsource DB停止部品を追加
 
 [実装・検証記録](production-preparation-2026-10-18.md)。production専用D1 transport/journalとsource更新拒否・逆操作を追加し、native D1/隔離PostgreSQLで検証。実3D1はread-onlyでschema/seed/FK一致を再確認。source75表の権限を調べ、管理表のTRIGGER権限と専用関数の逆操作へ対応した。本番の全store runner・全source停止・Stripe引継ぎ・本番設定/復旧は未完了。再認証は残準備完了後に依頼する。旧capsuleの期限は延長しない。PR41既存ブランチ/main保持。

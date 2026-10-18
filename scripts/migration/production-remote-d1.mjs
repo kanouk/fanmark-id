@@ -37,7 +37,7 @@ export function isReadOnlyProductionSql(sql) {
   const masked = sql.replace(/'(?:''|[^'])*'|"(?:""|[^"])*"/gu, "''").trim();
   if (/;|--|\/\*|\*\//u.test(masked)) return false;
   return /^SELECT\s/iu.test(masked) ||
-    /^PRAGMA\s+(?:foreign_key_check|integrity_check|quick_check)$/iu.test(masked) ||
+    /^PRAGMA\s+(?:foreign_key_check|foreign_keys|integrity_check|quick_check)$/iu.test(masked) ||
     /^PRAGMA\s+(?:table_info|table_xinfo|index_list|index_info|foreign_key_list)\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*|'')\s*\)$/iu.test(masked);
 }
 function params(values) {

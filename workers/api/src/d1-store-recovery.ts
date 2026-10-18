@@ -182,7 +182,9 @@ export function createD1Recovery<Format extends string>(profile: {format: Format
       // Inserted AUTOINCREMENT rows create counters; replace only on this new empty target.
       statements.push(database.prepare("DELETE FROM sqlite_sequence"));
       for (const row of desired.tables.sqlite_sequence) statements.push(database.prepare(
-        "INSERT INTO sqlite_sequence(name,seq) VALUES (?,?)").bind(row.name, row.seq));
+        // sqlite_sequence has no declared column affinity. D1 binds JS numbers
+        // as REAL, so use a validated canonical integer string and explicit cast.
+        "INSERT INTO sqlite_sequence(name,seq) VALUES (?,CAST(? AS INTEGER))").bind(row.name, String(row.seq)));
     }
     // Import history before installing mutation/audit triggers.
     for (const object of desired.schema.filter(o => o.type !== "table")) statements.push(database.prepare(object.sql));

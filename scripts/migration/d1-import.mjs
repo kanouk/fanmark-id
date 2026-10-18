@@ -45,6 +45,7 @@ import { readBusinessRuntimeImportSchema } from "./business-runtime-import-schem
 import { openSnapshotBundle } from "./snapshot-encryption.mjs";
 import { assertIsolatedRemoteD1Target, isIsolatedRemoteD1 } from "./isolated-remote-d1.mjs";
 import { isProductionRemoteD1 } from "./production-d1-brand.mjs";
+import { isReadOnlyProductionSql, assertProductionRemoteD1Target } from "./production-remote-d1.mjs";
 import {
   CREDENTIAL_NONCREDENTIAL_COLUMNS,
   CREDENTIAL_SOURCE_RELATION,
@@ -582,7 +583,7 @@ async function runBatch(database, statements) {
   return results;
 }
 
-function ledgerSchemaStatements() {
+export function importLedgerSchemaStatements() {
   return [
     `CREATE TABLE IF NOT EXISTS ${quoteIdentifier(LEDGER_TABLES.runs)} (
       run_id TEXT PRIMARY KEY NOT NULL,
@@ -632,8 +633,12 @@ function ledgerSchemaStatements() {
 }
 
 async function ensureLedgerSchema(database) {
-  const schemaStatements = ledgerSchemaStatements();
-  await runBatch(database, schemaStatements.map((sql) => database.prepare(sql)));
+  await runBatch(database, importLedgerSchemaStatements().map((sql) => database.prepare(sql)));
+  await assertLedgerSchema(database);
+}
+
+async function assertLedgerSchema(database) {
+  const schemaStatements = importLedgerSchemaStatements();
   const expected = {
     [LEDGER_TABLES.runs]: ["run_id", "destination_id", "target_incarnation", "manifest_digest", "credential_descriptor_digest", "catalog_fingerprint", "schema_report_fingerprint", "schema_digest", "codec_version", "table_count", "completed_tables", "status", "deployable", "full_migration_reconciled", "created_at", "updated_at", "last_error_code"],
     [LEDGER_TABLES.checkpoints]: ["run_id", "table_name", "destination_id", "target_incarnation", "manifest_digest", "credential_descriptor_digest", "generation", "next_ordinal", "last_pk_json", "prefix_digest", "rows_imported", "bytes_imported", "last_chunk_start", "last_chunk_end", "last_chunk_digest", "status"],
@@ -1186,6 +1191,7 @@ async function reconcileCredentialTable(database, snapshot, tablePlan, entry, op
         tablePlan,
         sourceRow.converted.credentialProjection,
         options,
+        { allowReconcile: options.readOnlyVerification !== true },
       );
       if (validated.disposition === "deferred_inactive") {
         if (!targetNext.done) {
@@ -1242,7 +1248,7 @@ async function reconcileCredentialTable(database, snapshot, tablePlan, entry, op
   }
 }
 
-async function reconcileTable(database, snapshot, tablePlan, entry, { maxRowBytes, scanBatchRows, maxTargetRowBytes, destinationId, targetIncarnation, expectedTargetProfile, now }) {
+async function reconcileTable(database, snapshot, tablePlan, entry, { maxRowBytes, scanBatchRows, maxTargetRowBytes, destinationId, targetIncarnation, expectedTargetProfile, now, readOnlyVerification = false }) {
   if (tablePlan.credentialProjection) {
     return reconcileCredentialTable(database, snapshot, tablePlan, entry, {
       maxRowBytes,
@@ -1252,6 +1258,7 @@ async function reconcileTable(database, snapshot, tablePlan, entry, { maxRowByte
       targetIncarnation,
       expectedTargetProfile,
       now,
+      readOnlyVerification,
     });
   }
   const sourceIterator = readSourceIterator({ filePath: path.join(snapshot.outputDir, entry.file), entry, tablePlan, maxRowBytes })[Symbol.asyncIterator]();
@@ -1398,7 +1405,7 @@ async function* readSourceIterator({ filePath, entry, tablePlan, maxRowBytes }) 
 }
 
 async function existingCredentialLedgerObjects(database) {
-  const expected = ledgerSchemaStatements().map((sql) => {
+  const expected = importLedgerSchemaStatements().map((sql) => {
     const match = sql.match(/^CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+("[^"]+"|[A-Za-z_][A-Za-z0-9_]*)/iu);
     if (!match) throw fail("ledger_schema_definition_invalid");
     const name = match[1].startsWith('"') ? match[1].slice(1, -1).replaceAll('""', '"') : match[1];
@@ -2157,6 +2164,122 @@ async function updateRunError(database, snapshot, code, now) {
   // A losing concurrent runner must not overwrite a winner's terminal
   // public_rows_reconciled state after the winner commits.
   await runStatement(database, `UPDATE ${quoteIdentifier(LEDGER_TABLES.runs)} SET status = 'failed', updated_at = ?, last_error_code = ? WHERE run_id = ? AND status = 'in_progress'`, [nowIso(now), code, snapshot.manifest.runId]).catch(() => {});
+}
+
+/** Separate readback invocation: no report/ledger repair and no mutation capability.
+ * It reuses the reviewed codec, not the importer's success report. Cross-store
+ * fencing and schema-gate admission remain the responsibility of the cutover runner.
+ */
+export async function verifyImportedD1Snapshot({manifestPath, database, destinationId, targetIncarnation,
+  expectedTargetProfile = null, canonicalBusinessSchema = false, resolveAuthUserIds = null,
+  scanBatchRows = DEFAULT_SCAN_BATCH_ROWS, maxRowBytes = DEFAULT_MAX_ROW_BYTES,
+  maxTargetRowBytes = DEFAULT_MAX_TARGET_ROW_BYTES} = {}) {
+  validateDatabase(database);
+  validateIdentity(destinationId, "invalid_destination_id");
+  validateIdentity(targetIncarnation, "invalid_target_incarnation");
+  if (typeof canonicalBusinessSchema !== "boolean" || (canonicalBusinessSchema && !expectedTargetProfile))
+    throw fail("invalid_runtime_schema_option");
+  validateOptions({maxRowsPerBatch: DEFAULT_MAX_ROWS_PER_BATCH, maxBatchBytes: DEFAULT_MAX_BATCH_BYTES,
+    maxBindingsPerBatch: DEFAULT_MAX_BINDINGS_PER_BATCH, scanBatchRows, maxRowBytes, maxTargetRowBytes});
+  const original = database;
+  if (isProductionRemoteD1(original)) {
+    if (original.access !== "read-only" || !canonicalBusinessSchema || !expectedTargetProfile)
+      throw fail("production_verification_read_only_profile_required");
+    await assertProductionRemoteD1Target(original, targetIncarnation);
+  }
+  // Defense in depth: even a future shared helper cannot write through this facade.
+  const prepared = new WeakMap();
+  const prepare = (sql, bindings = []) => {
+    if (!isReadOnlyProductionSql(sql)) throw fail("verification_write_forbidden");
+    const native = original.prepare(sql).bind(...bindings);
+    const statement = Object.freeze({bind: (...values) => prepare(sql, values),
+      all: () => native.all(), first: column => native.first(column),
+      run: () => {throw fail("verification_write_forbidden");}});
+    prepared.set(statement, native); return statement;
+  };
+  database = Object.freeze({prepare, batch: statements => {
+    if (!Array.isArray(statements) || statements.some(statement => !prepared.has(statement)))
+      throw fail("verification_statement_invalid");
+    return original.batch(statements.map(statement => prepared.get(statement)));
+  }});
+  const snapshot = await loadVerifiedSnapshot(manifestPath);
+  if (canonicalBusinessSchema) {
+    const runtime = await readBusinessRuntimeImportSchema();
+    snapshot.schemaDigest = sha256Hex({sourceSchemaDigest:snapshot.schemaDigest, runtimeSchemaFingerprint:runtime.fingerprint});
+    snapshot.runtimeSchemaFingerprint = runtime.fingerprint;
+  }
+  if (!expectedTargetProfile) assertCredentialTransformBoundary(snapshot.catalog);
+  // Reading unresolved source representations is not permission to publish them.
+  const plan = buildImportPlan(snapshot.catalog, snapshot.convertedSchema, {allowUnresolvedGates:true,
+    credentialDescriptor:snapshot.manifest.credentialDescriptor ?? undefined});
+  await preflightExternalIdentities(snapshot, plan, resolveAuthUserIds, {maxRowBytes});
+  await assertLedgerSchema(database);
+  await assertTargetSchema(database, snapshot, plan, {credentialProfile:expectedTargetProfile, canonicalBusinessSchema});
+  const ledger = async () => ({runs:await allRows(database, `SELECT * FROM ${quoteIdentifier(LEDGER_TABLES.runs)} ORDER BY run_id`),
+    checkpoints:await allRows(database, `SELECT * FROM ${quoteIdentifier(LEDGER_TABLES.checkpoints)} ORDER BY run_id, table_name`),
+    guards:await allRows(database, `SELECT * FROM ${quoteIdentifier(LEDGER_TABLES.guards)} ORDER BY token`)});
+  const before = await ledger();
+  const run = before.runs[0];
+  if (before.runs.length !== 1 || before.guards.length || !run ||
+      run.run_id !== snapshot.manifest.runId || run.destination_id !== destinationId || run.target_incarnation !== targetIncarnation ||
+      run.manifest_digest !== snapshot.manifestDigest || run.credential_descriptor_digest !== snapshot.manifest.credentialDescriptorDigest ||
+      run.catalog_fingerprint !== snapshot.catalogFingerprint || run.schema_report_fingerprint !== snapshot.schemaReportFingerprint ||
+      run.schema_digest !== snapshot.schemaDigest || run.codec_version !== D1_IMPORT_CODEC_VERSION ||
+      run.table_count !== plan.importOrder.length || run.completed_tables !== plan.importOrder.length ||
+      run.status !== "public_rows_reconciled" || run.last_error_code !== null || before.checkpoints.length !== plan.importOrder.length)
+    throw fail("verification_run_incomplete_or_mismatched");
+  const tables = [];
+  for (const table of plan.importOrder) {
+    const entry = snapshot.tablesByName.get(table);
+    const checkpoint = before.checkpoints.find(row => row.table_name === table);
+    if (!entry || !checkpoint || checkpoint.run_id !== run.run_id || checkpoint.destination_id !== destinationId ||
+        checkpoint.target_incarnation !== targetIncarnation || checkpoint.manifest_digest !== snapshot.manifestDigest ||
+        checkpoint.credential_descriptor_digest !== snapshot.manifest.credentialDescriptorDigest || checkpoint.status !== "complete" ||
+        String(checkpoint.rows_imported) !== entry.rowCount || String(checkpoint.next_ordinal) !== entry.rowCount ||
+        String(checkpoint.bytes_imported) !== entry.byteCount)
+      throw fail("verification_checkpoint_incomplete_or_mismatched");
+    validateCheckpoint(checkpoint, Number(entry.rowCount));
+    if (!Number.isSafeInteger(checkpoint.last_chunk_start) || !Number.isSafeInteger(checkpoint.last_chunk_end) ||
+        checkpoint.last_chunk_start < 0 || checkpoint.last_chunk_start > checkpoint.last_chunk_end || checkpoint.last_chunk_end !== Number(entry.rowCount) ||
+        (Number(entry.rowCount) > 0 && (checkpoint.last_chunk_start >= checkpoint.last_chunk_end ||
+          checkpoint.last_chunk_end - checkpoint.last_chunk_start > MAX_ROWS_PER_BATCH)))
+      throw fail("verification_checkpoint_chunk_invalid");
+    let prefix = ZERO_DIGEST, lastPk = null;
+    const lastChunkHashes = [];
+    await readTableRecords({filePath:path.join(snapshot.outputDir,entry.file),entry,tablePlan:plan.tables.get(table),maxRowBytes,
+      onRecord:async row => {
+        prefix = nextPrefixDigest(prefix,row.rowHash); lastPk = JSON.stringify(row.record.primaryKey);
+        if (row.ordinal >= checkpoint.last_chunk_start) lastChunkHashes.push(row.rowHash);
+      }});
+    const lastChunkDigest = Number(entry.rowCount) === 0 ? ZERO_DIGEST : sha256Hex({table,
+      startOrdinal:checkpoint.last_chunk_start,endOrdinal:checkpoint.last_chunk_end,rowHashes:lastChunkHashes});
+    if (checkpoint.prefix_digest !== prefix || checkpoint.last_pk_json !== lastPk || checkpoint.last_chunk_digest !== lastChunkDigest)
+      throw fail("verification_checkpoint_source_mismatch");
+    const result = await reconcileTable(database, snapshot, plan.tables.get(table), entry, {maxRowBytes,scanBatchRows,
+      maxTargetRowBytes,destinationId,targetIncarnation,expectedTargetProfile,now:() => new Date(),readOnlyVerification:true});
+    tables.push({table,...result});
+  }
+  const sequences = [];
+  for (const state of validateSequenceStates(snapshot.catalog, snapshot.manifest.sequenceStates)) {
+    if (state.schema !== SUPPORTED_SEQUENCE_TARGET.schema || state.name !== SUPPORTED_SEQUENCE_TARGET.name)
+      throw fail("sequence_target_unsupported");
+    const source = state.isCalled ? BigInt(state.lastValue) : BigInt(state.startValue) - BigInt(state.incrementBy);
+    const row = await oneRow(database, `SELECT CAST(COALESCE(MAX(${quoteIdentifier(state.ownerColumn)}),0) AS TEXT) AS maxId FROM ${quoteIdentifier(state.ownerTable)}`, [], "sequence_target_readback_invalid");
+    const target = await oneRow(database, 'SELECT CAST(seq AS TEXT) AS seq FROM sqlite_sequence WHERE name = ?', [state.ownerTable], "sequence_target_readback_invalid");
+    const actual = canonicalInt64(target.seq, "sequence_target_readback_invalid");
+    if (actual < source || actual < canonicalInt64(row.maxId, "sequence_target_readback_invalid") || actual > BigInt(SUPPORTED_SEQUENCE_TARGET.maxValue))
+      throw fail("verification_sequence_rewind_or_exhaustion");
+    sequences.push({name:state.name, sourceWatermark:source.toString(), targetWatermark:actual.toString()});
+  }
+  await assertForeignKeys(database);
+  await assertLedgerSchema(database);
+  await assertTargetSchema(database, snapshot, plan, {credentialProfile:expectedTargetProfile, canonicalBusinessSchema});
+  if (canonicalJson(before) !== canonicalJson(await ledger())) throw fail("verification_ledger_changed");
+  if (isProductionRemoteD1(original)) await assertProductionRemoteD1Target(original, targetIncarnation);
+  return {format:"fanmark-d1-readback-v1", publicRowsReconciled:true, databaseWrites:0,
+    consistency:"unfenced-readback", fullMigrationReconciled:false, deployable:false,
+    unresolvedGateCount:snapshot.convertedSchema.report.unresolvedGateCount,
+    destinationId,targetIncarnation,manifestDigest:snapshot.manifestDigest,tables,sequences};
 }
 
 export async function importD1Snapshot({

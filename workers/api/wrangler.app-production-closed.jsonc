@@ -1,0 +1,195 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-app-production",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "workers_dev": false,
+  "limits": {
+    "cpu_ms": 30000
+  },
+  "assets": {
+    "directory": "../../dist-cloudflare-production",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "404-page",
+    "run_worker_first": [
+      "/*"
+    ]
+  },
+  "triggers": {
+    "crons": []
+  },
+  "ratelimits": [
+    {
+      "name": "WAITLIST_SIGNUP_LIMITER",
+      "namespace_id": "41092711",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    },
+    {
+      "name": "FANMARK_SEARCH_LIMITER",
+      "namespace_id": "41092712",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    },
+    {
+      "name": "FANMARK_ACCESS_ANALYTICS_LIMITER",
+      "namespace_id": "41092713",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "FANMARK_DB",
+      "database_name": "fanmark-production-business",
+      "database_id": "84599147-e2c7-41d8-80ae-33c61b158314",
+      "migrations_dir": "migrations-business",
+      "remote": true
+    },
+    {
+      "binding": "AUTH_DB",
+      "database_name": "fanmark-production-auth",
+      "database_id": "dc43ffd7-0ca8-45d6-805c-ae1e6f2b58a6",
+      "migrations_dir": "migrations",
+      "migrations_pattern": "migrations/{0003_better_auth_core.sql,0007_auth_signup_command.sql,0008_auth_user_suspension.sql,0009_auth_oauth_signup.sql}",
+      "remote": true
+    },
+    {
+      "binding": "MASTER_DB",
+      "database_name": "fanmark-production-master",
+      "database_id": "5973e9f4-cae3-4a2b-b99d-16c2f0ae76da",
+      "migrations_dir": "migrations",
+      "migrations_pattern": "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}",
+      "remote": true
+    }
+  ],
+  "vars": {
+    "D1_TOPOLOGY": "split",
+    "LICENSE_EXPIRY_CRON": "0 0 * * *",
+    "NOTIFICATION_ARCHIVE_CRON": "0 0 * * *",
+    "LICENSE_EXPIRY_TARGET_INCARNATION": "b6c05ab6-a0d8-4bf0-9c59-76d76329262a",
+    "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST": "370662758a78a7f0ab01f2ee005bf082c5858065a2ed850aca373350dcef86a9",
+    "LICENSE_EXPIRY_MAX_PAGES": "4",
+    "LIFECYCLE_RUN_BACKEND": "d1",
+    "EMOJI_CATALOG_BACKEND": "d1",
+    "REFERENCE_MASTER_BACKEND": "d1",
+    "EMOJI_MASTER_ADMIN_BACKEND": "d1",
+    "EMOJI_PUBLICATION_BACKEND": "production-service",
+    "AUTH_BACKEND": "better-auth",
+    "AUTH_EMAIL_BACKEND": "resend",
+    "RESEND_FROM_EMAIL": "fanmark.id <no-reply@fanmark.id>",
+    "INVITATION_SIGNUP_BACKEND": "d1",
+    "AUTH_SOCIAL_BACKEND": "better-auth",
+    "AUTH_SOCIAL_PROVISIONING_BACKEND": "d1",
+    "RECENT_FANMARKS_BACKEND": "d1",
+    "AVAILABILITY_BACKEND": "d1",
+    "PUBLIC_ACCESS_BACKEND": "d1",
+    "PROFILE_BACKEND": "d1",
+    "ACCOUNT_DELETION_BACKEND": "d1",
+    "ADMIN_DATA_RESET_BACKEND": "d1",
+    "OWNED_FANMARKS_BACKEND": "d1",
+    "FANMARK_PROFILE_BACKEND": "d1",
+    "FANMARK_SETTINGS_BACKEND": "d1",
+    "FANMARK_RETURN_BACKEND": "d1",
+    "FANMARK_REGISTRATION_BACKEND": "d1",
+    "FANMARK_LOTTERY_BACKEND": "d1",
+    "FANMARK_TRANSFER_BACKEND": "d1",
+    "FANMARK_SEARCH_BACKEND": "d1",
+    "FANMARK_DETAILS_BACKEND": "d1",
+    "FANMARK_ANALYTICS_BACKEND": "d1",
+    "FANMARK_ACCESS_ANALYTICS_BACKEND": "d1",
+    "FAVORITES_BACKEND": "d1",
+    "NOTIFICATIONS_BACKEND": "d1",
+    "NOTIFICATION_MASTER_BACKEND": "d1",
+    "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+    "INVITATION_ADMIN_BACKEND": "d1",
+    "WAITLIST_ADMIN_BACKEND": "d1",
+    "BROADCAST_EMAIL_BACKEND": "d1",
+    "BROADCAST_WEBHOOK_BACKEND": "d1",
+    "WAITLIST_SIGNUP_BACKEND": "d1",
+    "REFERENCE_MASTER_ADMIN_BACKEND": "d1",
+    "EXTENSION_COUPON_BACKEND": "d1",
+    "EXTENSION_COUPON_ADMIN_BACKEND": "d1",
+    "ADMIN_USER_MANAGEMENT_BACKEND": "d1",
+    "AUTH_USER_STATUS_BACKEND": "d1",
+    "EMAIL_TEMPLATE_ADMIN_BACKEND": "d1",
+    "AUTH_EMAIL_TEMPLATE_BACKEND": "d1",
+    "AVAILABILITY_RULES_ADMIN_BACKEND": "d1",
+    "MAINTENANCE_SETTINGS_BACKEND": "d1",
+    "CUTOVER_WRITE_FREEZE": "receipt_only",
+    "LIFECYCLE_SETTINGS_BACKEND": "d1",
+    "SYSTEM_SETTINGS_BACKEND": "d1",
+    "SUBSCRIPTION_BACKEND": "d1",
+    "STRIPE_MODE_POLICY": "",
+    "STRIPE_WEBHOOK_BACKEND": "d1",
+    "STRIPE_PLAN_CHECKOUT_BACKEND": "d1",
+    "STRIPE_PLAN_CHANGE_BACKEND": "d1",
+    "STRIPE_CUSTOMER_PORTAL_BACKEND": "d1",
+    "STRIPE_EXTENSION_CHECKOUT_BACKEND": "d1",
+    "VERIFIED_ACCESS_BACKEND": "d1",
+    "STORAGE_BACKEND": "r2",
+    "STORAGE_LEGACY_ORIGIN": "https://ppqgtbjykitqtiaisyji.supabase.co",
+    "STORAGE_PUBLIC_BASE_URL": "https://fanmark.id",
+    "BETTER_AUTH_URL": "https://fanmark.id",
+    "CORS_ALLOWED_ORIGINS": "https://fanmark.id",
+    "STAGING_NO_INDEX": "true",
+    "NOTIFICATION_WAKE_BACKEND": "durable-object",
+    "RECOVERY_DRAIN_BACKEND": "durable-object",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d",
+    "STAGING_BACKUP_BACKEND": "recovery-set-v1",
+    "STAGING_BACKUP_ADMISSION": "pending",
+    "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"dc43ffd7-0ca8-45d6-805c-ae1e6f2b58a6\",\"business\":\"84599147-e2c7-41d8-80ae-33c61b158314\",\"master\":\"5973e9f4-cae3-4a2b-b99d-16c2f0ae76da\",\"avatars\":\"fanmark-avatars-production\",\"covers\":\"fanmark-covers-production\"}",
+    "STAGING_BACKUP_SCHEMA_HASHES": "",
+    "STAGING_BACKUP_KEY_ID": "",
+    "STAGING_BACKUP_ALERT_BACKEND": "disabled",
+    "STAGING_BACKUP_ALERT_TO": ""
+  },
+  "r2_buckets": [
+    {
+      "binding": "AVATARS_BUCKET",
+      "bucket_name": "fanmark-avatars-production"
+    },
+    {
+      "binding": "COVER_IMAGES_BUCKET",
+      "bucket_name": "fanmark-covers-production"
+    },
+    {
+      "binding": "STAGING_BACKUP_BUCKET",
+      "bucket_name": "fanmark-backups-production"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "NOTIFICATION_WAKE",
+        "class_name": "NotificationWakeCoordinatorProduction"
+      },
+      {
+        "name": "RECOVERY_DRAIN",
+        "class_name": "RecoveryWriterCoordinatorProduction"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "production-coordinators-v1",
+      "new_sqlite_classes": [
+        "NotificationWakeCoordinatorProduction",
+        "RecoveryWriterCoordinatorProduction"
+      ]
+    }
+  ],
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  },
+  "preview_urls": false,
+  "routes": []
+}

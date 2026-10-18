@@ -4,7 +4,7 @@ import type { D1RecoveryRow, D1RecoveryObject, D1RecoverySnapshot, D1RecoveryArc
 export type BusinessRecoveryRow = D1RecoveryRow;
 export type BusinessRecoveryObject = D1RecoveryObject;
 export type BusinessRecoverySnapshot = D1RecoverySnapshot;
-export type BusinessRecoveryArchive = D1RecoveryArchive<"fanmark-business-recovery-v1">;
+export type BusinessRecoveryArchive = D1RecoveryArchive<"fanmark-business-recovery-v1" | "fanmark-business-import-recovery-v1">;
 export const BUSINESS_RECOVERY_TABLES = Object.freeze([
   "admin_data_reset_commands",
   "audit_logs",
@@ -92,7 +92,41 @@ export const businessRecoveryDigest = d1RecoveryDigest;
 const recovery = createD1Recovery({format: "fanmark-business-recovery-v1", errorPrefix: "business_recovery",
   tables: BUSINESS_RECOVERY_TABLES, internalTables: ["sqlite_sequence"],
   maxSchemaObjects: 300, maxRestoreStatements: 900});
-export const captureBusinessRecoverySnapshot = recovery.capture;
-export const sealBusinessRecoverySnapshot = recovery.seal;
-export const openBusinessRecoverySnapshot = recovery.open;
-export const restoreBusinessRecoverySnapshot = recovery.restore;
+// Import checkpoints are durable migration evidence, including after recovery to a
+// different target incarnation. Never drop them to make a backup profile fit.
+export const BUSINESS_IMPORT_RECOVERY_TABLES = Object.freeze([
+  "__fanmark_d1_import_checkpoints", "__fanmark_d1_import_guards", "__fanmark_d1_import_runs"
+]);
+const importedRecovery = createD1Recovery({format: "fanmark-business-import-recovery-v1", errorPrefix: "business_recovery",
+  tables: [...BUSINESS_RECOVERY_TABLES, ...BUSINESS_IMPORT_RECOVERY_TABLES], internalTables: ["sqlite_sequence"],
+  maxSchemaObjects: 310, maxRestoreStatements: 900});
+function snapshotRecovery(snapshot: BusinessRecoverySnapshot) {
+  const names = Object.keys(snapshot?.tables ?? {});
+  return BUSINESS_IMPORT_RECOVERY_TABLES.some(name => names.includes(name)) ? importedRecovery : recovery;
+}
+export async function captureBusinessRecoverySnapshot(database: D1Database, expectedSchemaHash: string): Promise<BusinessRecoverySnapshot> {
+  // This read selects one of two fixed profiles; capture rechecks the complete
+  // schema and trusted hash within its own atomic batch. Partial ledgers fail.
+  let result: D1Result<D1RecoveryObject>;
+  try { result = await database.prepare(BUSINESS_RECOVERY_SCHEMA_SQL).all<D1RecoveryObject>(); }
+  catch { throw new Error("business_recovery_capture_failed"); }
+  if (!result.success) throw new Error("business_recovery_capture_failed");
+  const selected = result.results.some(row => BUSINESS_IMPORT_RECOVERY_TABLES.includes(row.name)) ? importedRecovery : recovery;
+  return selected.capture(database, expectedSchemaHash);
+}
+export async function sealBusinessRecoverySnapshot(snapshot: BusinessRecoverySnapshot, key: CryptoKey,
+  expectedSchemaHash: string): Promise<BusinessRecoveryArchive> {
+  return snapshotRecovery(snapshot).seal(snapshot, key, expectedSchemaHash);
+}
+export async function openBusinessRecoverySnapshot(archive: BusinessRecoveryArchive, key: CryptoKey,
+  expectedSchemaHash: string): Promise<BusinessRecoverySnapshot> {
+  if (archive?.format === "fanmark-business-import-recovery-v1")
+    return importedRecovery.open({...archive, format: archive.format}, key, expectedSchemaHash);
+  if (archive?.format === "fanmark-business-recovery-v1")
+    return recovery.open({...archive, format: archive.format}, key, expectedSchemaHash);
+  throw new Error("business_recovery_schema_mismatch");
+}
+export async function restoreBusinessRecoverySnapshot(database: D1Database, snapshot: BusinessRecoverySnapshot,
+  expectedSchemaHash: string): Promise<BusinessRecoverySnapshot> {
+  return snapshotRecovery(snapshot).restore(database, snapshot, expectedSchemaHash);
+}

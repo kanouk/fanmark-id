@@ -6,7 +6,7 @@ import staging from '../migrations/0001_emoji_master_release_staging.sql?raw';
 import activation from '../migrations/0002_emoji_master_release_activation.sql?raw';
 import audits from '../migrations/0008_emoji_master_change_audits.sql?raw';
 import {checkedInSqlStatements} from './schema-statements';
-import {EmojiMasterPublicationService} from '../src/emoji-publication-service';
+import {EmojiMasterPublicationService,ProductionEmojiMasterPublicationService} from '../src/emoji-publication-service';
 import {verifyEmojiReleasePayload, type ReleaseManifest} from '../src/emoji-release-artifact';
 import {stageVerifiedEmojiMasterRelease} from '../../../scripts/migration/emoji-master-release-stage-core.mjs';
 import {activateVerifiedEmojiMasterRelease} from '../../../scripts/migration/emoji-master-release-activation-core.mjs';
@@ -19,7 +19,8 @@ const runtime=env as unknown as Env;
 const database=runtime.MASTER_DB!;
 const lifecycles:Promise<unknown>[]=[];
 const context={waitUntil(p:Promise<unknown>){lifecycles.push(p);}} as ExecutionContext;
-const service=new EmojiMasterPublicationService(context,env as never);
+const Service = (env as unknown as {EMOJI_PUBLICATION_BACKEND?:string}).EMOJI_PUBLICATION_BACKEND === "production-service" ? ProductionEmojiMasterPublicationService : EmojiMasterPublicationService;
+const service=new Service(context,env as never);
 const artifacts=inject('publicationArtifacts');
 const version=artifacts.original.manifest.version;
 async function send(path:string,body?:unknown,instance=service){return instance.fetch(new Request('https://emoji-publication.internal'+path,{method:body?'POST':'GET',
@@ -32,7 +33,7 @@ beforeAll(async()=>{
  await stageVerifiedEmojiMasterRelease({database,artifact:original});await activateVerifiedEmojiMasterRelease({database,artifact:original,rebuild:rebuildStoredEmojiRelease});
 });
 it('runs a normal draft update, verified stage, promotion and rollback without touching populated Business/Auth bindings',async()=>{
- const isolated=new EmojiMasterPublicationService(context,{...env,AUTH_DB:{prepare(){throw new Error('Auth access prohibited');}},FANMARK_DB:{prepare(){throw new Error('Business access prohibited');}}} as never);
+ const isolated=new Service(context,{...env,AUTH_DB:{prepare(){throw new Error('Auth access prohibited');}},FANMARK_DB:{prepare(){throw new Error('Business access prohibited');}}} as never);
  const draft=await verifyEmojiReleasePayload(artifacts.updated),r=draft.records[0];
  await database.prepare('UPDATE emoji_master SET keywords=? WHERE id=?').bind(JSON.stringify(r.keywords),r.id).run();
  const body={artifact:artifacts.updated,activationId:'00000000-0000-4000-8000-000000000021',expectedActive:version,expectedGeneration:1};
@@ -65,9 +66,9 @@ it('refuses stage under a backup fence and returns read-only status without ente
 it('rejects other runtime, default/combined topology and unsupported URLs before any publication',async()=>{
  expect((await service.fetch(new Request('https://app.example.test/stage'))).status).toBe(404);
  expect((await service.fetch(new Request('https://emoji-publication.internal/status'))).status).toBe(503);
- const off=new EmojiMasterPublicationService(context,{...env,EMOJI_PUBLICATION_BACKEND:undefined} as never);
+ const off=new Service(context,{...env,EMOJI_PUBLICATION_BACKEND:undefined} as never);
  expect((await send('/status',undefined,off)).status).toBe(503);
- const combined=new EmojiMasterPublicationService(context,{...env,D1_TOPOLOGY:undefined} as never);
+ const combined=new Service(context,{...env,D1_TOPOLOGY:undefined} as never);
  expect((await send('/status',undefined,combined)).status).toBe(503);
  const gate=runtime.RECOVERY_DRAIN!.get(runtime.RECOVERY_DRAIN!.idFromName('recovery-writers-v1'));
  await runInDurableObject(gate,async(_instance,state)=>{expect((await state.storage.list({prefix:'writer:'})).size).toBe(0);});
@@ -77,7 +78,7 @@ it('retains the writer across actual D1 batch work, refuses another publisher, a
  let entered!:()=>void,finish!:()=>void;
  const started=new Promise<void>(r=>{entered=r;}),done=new Promise<void>(r=>{finish=r;});
  const delayed={prepare:database.prepare.bind(database),async batch(statements:D1PreparedStatement[]){entered();await done;return database.batch(statements);}} as unknown as D1Database;
- const instance=new EmojiMasterPublicationService(context,{...env,MASTER_DB:delayed} as never);
+ const instance=new Service(context,{...env,MASTER_DB:delayed} as never);
  const candidate=await verifyEmojiReleasePayload(artifacts.next),record=candidate.records[0];
  await database.prepare('UPDATE emoji_master SET keywords=? WHERE id=?').bind(JSON.stringify(record.keywords),record.id).run();
  const body={artifact:artifacts.next,activationId:'00000000-0000-4000-8000-000000000025',expectedActive:version,expectedGeneration:3};
@@ -90,4 +91,13 @@ it('retains the writer across actual D1 batch work, refuses another publisher, a
  expect((await database.prepare('SELECT status FROM fanmark_emoji_master_release_imports WHERE release_version=?').bind(candidate.version).first())?.status).toBe('loading');
  finish();expect((await pending).status).toBe(200);await assertRecoveryWriterFence(runtime,owner);await releaseRecoveryWriterFence(runtime,owner);
  expect((await database.prepare('SELECT status FROM fanmark_emoji_master_release_imports WHERE release_version=?').bind(candidate.version).first())?.status).toBe('ready');
+});
+
+it('production and staging publication entrypoints reject each other and wrong source store identities',async()=>{
+ const other = Service === ProductionEmojiMasterPublicationService ? EmojiMasterPublicationService : ProductionEmojiMasterPublicationService;
+ expect((await send('/status',undefined,new other(context,env as never))).status).toBe(503);
+ if(Service === ProductionEmojiMasterPublicationService) {
+   const ids=JSON.parse((env as unknown as {STAGING_BACKUP_SOURCE_IDS:string}).STAGING_BACKUP_SOURCE_IDS);
+   expect((await send('/status',undefined,new Service(context,{...env,STAGING_BACKUP_SOURCE_IDS:JSON.stringify({...ids,auth:'unowned'})} as never))).status).toBe(503);
+ }
 });

@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-10-18T14:07:54.861Z",
+  "scope": "account-worker-settings-readonly",
+  "workersChecked": 4,
+  "proposedNamespaceIds": [
+    "41092711",
+    "41092712",
+    "41092713"
+  ],
+  "collisionFree": true,
+  "mutations": 0,
+  "existingNamespaceIds": [
+    "41092701",
+    "41092702",
+    "41092703"
+  ],
+  "sourceEvidenceSha256": "5cda5d58fde6b26ce1218f5acb88a87378ada98a991e42ea33ab3570c5023296",
+  "productionReady": false
+}

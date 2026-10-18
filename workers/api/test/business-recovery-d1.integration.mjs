@@ -2,13 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Miniflare } from 'miniflare';
 import { applyBusinessRuntimeMigrations } from '../../../scripts/migration/business-runtime-import-schema.mjs';
+import { importLedgerSchemaStatements } from '../../../scripts/migration/d1-import.mjs';
 import { BUSINESS_MIGRATION_SEQUENCE } from '../../../scripts/migration/business-migration-ledger.mjs';
 import { BUSINESS_RECOVERY_TABLES, BUSINESS_RECOVERY_SCHEMA_SQL, businessRecoveryDigest,
   captureBusinessRecoverySnapshot as capture, sealBusinessRecoverySnapshot as seal,
   openBusinessRecoverySnapshot as open, restoreBusinessRecoverySnapshot as restore } from '../src/business-d1-recovery.ts';
 
 const schema = async db => (await db.prepare(BUSINESS_RECOVERY_SCHEMA_SQL).all()).results;
-const canonical = tables => Object.fromEntries(BUSINESS_RECOVERY_TABLES.map(name => [name,
+const canonical = tables => Object.fromEntries(Object.keys(tables).sort().map(name => [name,
   tables[name].map(row => Object.fromEntries(Object.keys(row).sort().map(key => [key, row[key]])))
     .sort((a, b) => JSON.stringify(a) < JSON.stringify(b) ? -1 : JSON.stringify(a) > JSON.stringify(b) ? 1 : 0)]));
 const changed = async (snapshot, change) => {
@@ -22,7 +23,7 @@ function wrapped(db, batch) {
   }});
 }
 
-test('Business recovery preserves actual runtime journals, wake and deleted ID high-water marks', {timeout: 90_000}, async t => {
+for (const imported of [false, true]) test(`Business recovery preserves ${imported ? 'import checkpoints and ' : ''}runtime journals, wake and deleted ID high-water marks`, {timeout: 90_000}, async t => {
   const mf = new Miniflare({workers: [{config: {
     name: 'business-recovery-local', type: 'worker', compatibilityDate: '2026-09-18',
     env: Object.fromEntries(['SOURCE', 'TARGET', 'FAILED', 'ACK'].map(name =>
@@ -56,15 +57,30 @@ test('Business recovery preserves actual runtime journals, wake and deleted ID h
       source.prepare('DELETE FROM fanmark_events WHERE id=9000'),
     ]);
     // Pin trusted local migration definitions before opening an archive.
+    if (imported) {
+      await source.batch(importLedgerSchemaStatements().map(sql => source.prepare(sql)));
+      await source.prepare(`INSERT INTO __fanmark_d1_import_runs
+        (run_id,destination_id,target_incarnation,manifest_digest,catalog_fingerprint,schema_report_fingerprint,schema_digest,
+         codec_version,table_count,completed_tables,status,deployable,full_migration_reconciled,created_at,updated_at)
+        VALUES ('synthetic-run','synthetic-destination','original-incarnation',?,?,?, ?,1,1,1,'public_rows_reconciled',0,0,?,?)`)
+        .bind(...Array(4).fill('a'.repeat(64)), timestamp, timestamp).run();
+      await source.prepare(`INSERT INTO __fanmark_d1_import_checkpoints
+        (run_id,table_name,destination_id,target_incarnation,manifest_digest,generation,next_ordinal,prefix_digest,
+         rows_imported,bytes_imported,last_chunk_start,last_chunk_end,last_chunk_digest,status)
+        VALUES ('synthetic-run','fanmark_events','synthetic-destination','original-incarnation',?,1,1001,?,1001,12345,1000,1001,?,'complete')`)
+        .bind(...Array(3).fill('b'.repeat(64))).run();
+    }
     const expectedSchemaHash = await businessRecoveryDigest(await schema(source));
     const snapshot = await capture(source, expectedSchemaHash);
-    assert.equal(snapshot.schema.length, 226); assert.equal(Object.keys(snapshot.tables).length, 80);
+    assert.equal(snapshot.schema.length, imported ? 229 : 226); assert.equal(Object.keys(snapshot.tables).length, imported ? 83 : 80);
     assert.equal(snapshot.tables.fanmark_events.length, 1001);
     assert.deepEqual(snapshot.tables.sqlite_sequence, [{name: 'd1_migrations', seq: 100}, {name: 'fanmark_events', seq: 9000}]);
     const key = await crypto.subtle.generateKey({name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
     const archive = await seal(snapshot, key, expectedSchemaHash);
     const reopened = await open(JSON.parse(JSON.stringify(archive)), key, expectedSchemaHash);
     assert.deepEqual(reopened, snapshot);
+    assert.equal(archive.format, imported ? 'fanmark-business-import-recovery-v1' : 'fanmark-business-recovery-v1');
+    if (imported) assert.equal(reopened.tables.__fanmark_d1_import_runs[0].target_incarnation, 'original-incarnation');
     assert.ok(!JSON.stringify(archive).includes('synthetic-owner'));
 
     await t.test('archive identity, integrity and sequence validation reject before writes', async () => {
@@ -95,7 +111,9 @@ test('Business recovery preserves actual runtime journals, wake and deleted ID h
       const sizes = [];
       const measured = wrapped(target, async statements => {sizes.push(statements.length); return target.batch(statements);});
       assert.deepEqual(await restore(measured, reopened, expectedSchemaHash), snapshot);
-      assert.ok(sizes[0] <= 900); assert.equal(sizes[1], 83);
+      assert.ok(sizes[0] <= 900); assert.equal(sizes[1], imported ? 86 : 83);
+      assert.deepEqual((await target.prepare('SELECT name,typeof(seq) AS storage_type,CAST(seq AS TEXT) AS seq FROM sqlite_sequence ORDER BY name').all()).results,
+        [{name:'d1_migrations',storage_type:'integer',seq:'100'},{name:'fanmark_events',storage_type:'integer',seq:'9000'}]);
       restoreStatements = sizes[0];
       assert.equal(await target.prepare('SELECT used_count FROM invitation_codes WHERE id=\'synthetic-code\'').first('used_count'), 1);
       assert.deepEqual(await target.prepare('SELECT requested_generation,acknowledged_generation FROM notification_worker_wake_state').first(), {requested_generation: 9, acknowledged_generation: 7});
@@ -120,9 +138,13 @@ test('Business recovery preserves actual runtime journals, wake and deleted ID h
       assert.deepEqual(await capture(ack, expectedSchemaHash), snapshot);
     });
     assert.deepEqual(await capture(source, expectedSchemaHash), snapshot);
-    console.info(JSON.stringify({proof: 'business-recovery-native-d1', tables: 79, internalSequenceTable: 1,
-      schemaObjects: 226, schemaHash: expectedSchemaHash, migrations: 27, syntheticEventRows: 1001,
-      captureStatements: 83, restoreStatements,
+    if (imported) await t.test('partial ledger refuses capture even with its current schema hash', async () => {
+      await source.prepare('DROP TABLE __fanmark_d1_import_guards').run();
+      await assert.rejects(capture(source, await businessRecoveryDigest(await schema(source))), /capture_failed|schema_mismatch/);
+    });
+    console.info(JSON.stringify({proof: 'business-recovery-native-d1', tables: imported ? 82 : 79, internalSequenceTable: 1, importLedgerPreserved: imported,
+      schemaObjects: imported ? 229 : 226, schemaHash: expectedSchemaHash, migrations: 27, syntheticEventRows: 1001,
+      captureStatements: imported ? 86 : 83, restoreStatements,
       archiveRoundTrip: true, atomicRollback: true, uncertainCommitPreserved: true,
       historyTriggersDeferred: true, deletedIdHighWaterPreserved: true, remoteWrites: 0}));
   } finally {await mf.dispose();}

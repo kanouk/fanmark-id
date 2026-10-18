@@ -52,7 +52,7 @@ import {
   reserveCredentialImportArtifact,
 } from "../../../scripts/migration/credential-import-transform.mjs";
 import { exportSnapshot } from "../../../scripts/migration/snapshot-export.mjs";
-import { importD1Snapshot } from "../../../scripts/migration/d1-import.mjs";
+import { importD1Snapshot, verifyImportedD1Snapshot } from "../../../scripts/migration/d1-import.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
@@ -483,6 +483,10 @@ test("D1 importer atomically writes credential row, coverage, artifact and check
     const resumed = await importD1Snapshot(importOptions);
     assert.equal(resumed.status, "public_rows_reconciled");
     assert.equal(resumed.publicRowsReconciled, true);
+    const verified = await verifyImportedD1Snapshot(importOptions);
+    assert.equal(verified.publicRowsReconciled, true);
+    assert.equal(verified.databaseWrites, 0);
+    assert.equal(verified.deployable, false);
     assert.equal(resumed.fullMigrationReconciled, false);
     assert.equal(resumed.deployable, false);
 

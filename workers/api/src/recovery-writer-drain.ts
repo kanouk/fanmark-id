@@ -224,3 +224,6 @@ export class RecoveryWriterCoordinatorV2 extends RecoveryWriterCoordinator {}
 /** New five-store candidate; existing V1/V2 namespaces remain intact. */
 export class RecoveryWriterCoordinatorV3 extends RecoveryWriterCoordinator {}
 export class RecoveryWriterCoordinatorV4 extends RecoveryWriterCoordinator {}
+
+/** Separate production namespace; never reuses staging state or alarms. */
+export class RecoveryWriterCoordinatorProduction extends RecoveryWriterCoordinator {}

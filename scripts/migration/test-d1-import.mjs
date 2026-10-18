@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { test } from "node:test";
 
 import { convertSchema } from "./schema-convert.mjs";
-import { D1_IMPORT_CODEC_VERSION, createTargetIncarnation, importD1Snapshot, importEncryptedD1Snapshot } from "./d1-import.mjs";
+import { D1_IMPORT_CODEC_VERSION, createTargetIncarnation, importD1Snapshot, importEncryptedD1Snapshot, verifyImportedD1Snapshot } from "./d1-import.mjs";
 import { exportSnapshot } from "./snapshot-export.mjs";
 import { sealSnapshotDirectory } from "./snapshot-encryption.mjs";
 
@@ -988,3 +988,61 @@ if (isMain) {
     }
   });
 }
+
+if (isMain) test("standalone readback rejects drift without modifying rows or completion ledgers", async t => {
+  const fixture = await openFixture(sequenceFixture());
+  try {
+    const options = importOptions(fixture);
+    await importD1Snapshot(options);
+    const checkpoint = await fixture.database.prepare('SELECT * FROM __fanmark_d1_import_checkpoints ORDER BY table_name').all();
+    const run = await fixture.database.prepare('SELECT * FROM __fanmark_d1_import_runs').all();
+    // The import report is not input to the verifier.
+    await fs.writeFile(fixture.reportPath, '{"status":"untrusted"}');
+    const result = await verifyImportedD1Snapshot(options);
+    assert.equal(result.publicRowsReconciled, true);
+    assert.equal(result.databaseWrites, 0);
+    assert.equal(result.deployable, false);
+    assert.equal(result.consistency, 'unfenced-readback');
+    assert.equal(result.tables.length, 4);
+    assert.equal(result.sequences[0].targetWatermark, '25');
+    await t.test('wrong incarnation and incomplete checkpoint are rejected', async () => {
+      await assert.rejects(verifyImportedD1Snapshot({...options,targetIncarnation:'different-incarnation'}), /verification_run/);
+      await fixture.database.prepare("UPDATE __fanmark_d1_import_checkpoints SET status='in_progress' WHERE table_name='parent'").run();
+      await assert.rejects(verifyImportedD1Snapshot(options), /verification_checkpoint/);
+      await fixture.database.prepare("UPDATE __fanmark_d1_import_checkpoints SET status='complete' WHERE table_name='parent'").run();
+    });
+    await t.test('missing row and changed value are rejected without repairing either', async () => {
+      const original = await fixture.database.prepare('SELECT label FROM parent').first('label');
+      await fixture.database.prepare("UPDATE parent SET label='changed'").run();
+      await assert.rejects(verifyImportedD1Snapshot(options), /target_value_mismatch/);
+      assert.equal(await fixture.database.prepare('SELECT label FROM parent').first('label'),'changed');
+      await fixture.database.prepare('UPDATE parent SET label=?').bind(original).run();
+      const child = await fixture.database.prepare('SELECT * FROM child').first();
+      await fixture.database.prepare('DELETE FROM child').run();
+      await assert.rejects(verifyImportedD1Snapshot(options), /target_missing_rows/);
+      assert.equal(await fixture.database.prepare('SELECT COUNT(*) AS n FROM child').first('n'),0);
+      await fixture.database.prepare(`INSERT INTO child (${Object.keys(child).map(x=>'"'+x+'"').join(',')}) VALUES (${Object.keys(child).map(()=>'?').join(',')})`).bind(...Object.values(child)).run();
+    });
+    await t.test('corrupt source prefix is rejected despite matching rows and counts', async () => {
+      const original = await fixture.database.prepare("SELECT prefix_digest FROM __fanmark_d1_import_checkpoints WHERE table_name='parent'").first('prefix_digest');
+      await fixture.database.prepare("UPDATE __fanmark_d1_import_checkpoints SET prefix_digest=? WHERE table_name='parent'").bind('f'.repeat(64)).run();
+      await assert.rejects(verifyImportedD1Snapshot(options), /verification_checkpoint_source_mismatch/);
+      await fixture.database.prepare("UPDATE __fanmark_d1_import_checkpoints SET prefix_digest=? WHERE table_name='parent'").bind(original).run();
+    });
+    await t.test('rewound ID watermark is rejected without repair', async () => {
+      await fixture.database.prepare("UPDATE sqlite_sequence SET seq=1 WHERE name='fanmark_events'").run();
+      await assert.rejects(verifyImportedD1Snapshot(options), /verification_sequence_rewind/);
+      assert.equal(await fixture.database.prepare("SELECT seq FROM sqlite_sequence WHERE name='fanmark_events'").first('seq'),1);
+      await fixture.database.prepare("UPDATE sqlite_sequence SET seq=25 WHERE name='fanmark_events'").run();
+    });
+    await t.test('an unexpected persistent transaction guard prevents verification', async () => {
+      await fixture.database.prepare("INSERT INTO __fanmark_d1_import_guards VALUES ('unsettled',1)").run();
+      await assert.rejects(verifyImportedD1Snapshot(options), /verification_run/);
+      await fixture.database.prepare("DELETE FROM __fanmark_d1_import_guards WHERE token='unsettled'").run();
+    });
+    assert.equal((await verifyImportedD1Snapshot(options)).publicRowsReconciled,true);
+    assert.deepEqual((await fixture.database.prepare('SELECT * FROM __fanmark_d1_import_checkpoints ORDER BY table_name').all()).results,checkpoint.results);
+    assert.deepEqual((await fixture.database.prepare('SELECT * FROM __fanmark_d1_import_runs').all()).results,run.results);
+    assert.equal(await fs.readFile(fixture.reportPath,'utf8'),'{"status":"untrusted"}');
+  } finally { await fixture.close(); }
+});

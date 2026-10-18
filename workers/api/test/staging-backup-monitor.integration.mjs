@@ -1,3 +1,4 @@
+import {PRODUCTION_STORE_IDS} from '../src/production-runtime-identity.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -6,20 +7,21 @@ import { createHash, randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
 import { Miniflare } from 'miniflare';
 
+for (const profile of ['staging','production']) {
 const sha = value => createHash('sha256').update(value).digest('hex');
-const ids = { auth:'monitor-fixture-auth',business:'monitor-fixture-business',master:'monitor-fixture-master',
+const ids = profile === 'production' ? PRODUCTION_STORE_IDS : { auth:'monitor-fixture-auth',business:'monitor-fixture-business',master:'monitor-fixture-master',
   avatars:'monitor-fixture-avatars',covers:'monitor-fixture-covers' };
 const names={AUTH_DB:ids.auth,AVATARS_BUCKET:ids.avatars,COVER_IMAGES_BUCKET:ids.covers,FANMARK_DB:ids.business,MASTER_DB:ids.master};
-const scope=sha(JSON.stringify({account:'bfc2890741f0b3fb236e2d755b6c9adc',worker:'fanmark-app-staging',
+const scope=sha(JSON.stringify({account:'bfc2890741f0b3fb236e2d755b6c9adc',worker:profile === 'production' ? 'fanmark-app-production' : 'fanmark-app-staging',
   stores:Object.entries(names).map(([binding,value])=>binding.endsWith('_DB')?{type:'d1',binding,id:value}:{type:'r2',binding,name:value})}));
 const schemas={auth:'a'.repeat(64),business:'b'.repeat(64),master:'c'.repeat(64)};
 const today=new Date().toISOString().slice(0,10), midnight=Date.parse(today+'T00:00:00Z');
 const now=midnight+40*60_000, keyId='monitor-fixture-key';
 
-test('independent native monitor detects missing, failed, stale and incomplete retention; alert RPC does not replay unknown ACKs',async t=>{
+test(profile + ': independent native monitor detects missing, failed, stale and incomplete retention; alert RPC does not replay unknown ACKs',async t=>{
   const compiled=await build({entryPoints:[fileURLToPath(new URL('./staging-backup-monitor-harness.ts',import.meta.url))],bundle:true,
     write:false,format:'esm',platform:'browser',target:'es2022',conditions:['workerd'],external:['cloudflare:*']});
-  const vars={STAGING_BACKUP_SOURCE_IDS:JSON.stringify(ids),STAGING_BACKUP_SCHEMA_HASHES:JSON.stringify(schemas),
+  const vars={FIXTURE_BACKUP_PROFILE:profile,STAGING_BACKUP_SOURCE_IDS:JSON.stringify(ids),STAGING_BACKUP_SCHEMA_HASHES:JSON.stringify(schemas),
     STAGING_BACKUP_KEY_ID:keyId,RECOVERY_DRAIN_SCOPE_DIGEST:scope,STAGING_BACKUP_ALERT_BACKEND:'resend-v1',
     STAGING_BACKUP_ALERT_TO:'fanmark.id+staging-test05@gmail.com',RESEND_API_KEY:'fixture-not-a-real-secret',
     RESEND_FROM_EMAIL:'fanmark.id staging <no-reply@fanmark.id>'};
@@ -27,8 +29,8 @@ test('independent native monitor detects missing, failed, stale and incomplete r
   const mf=new Miniflare({workers:[{config:{name:'monitor-native-fixture',type:'worker',compatibilityDate:'2026-09-18',
     env:{...Object.fromEntries(Object.entries(vars).map(([name,value])=>[name,{type:'text',value}])),
       STAGING_BACKUP_BUCKET:{type:'r2',name:'isolated-monitor-control'},
-      SERVICE:{type:'worker',worker:'monitor-native-fixture',exportName:'StagingBackupService'},
-      BACKUP_ALERT_SERVICE:{type:'worker',worker:'monitor-native-fixture',exportName:'StagingBackupAlertService'}},
+      SERVICE:{type:'worker',worker:'monitor-native-fixture',exportName:profile === 'production' ? 'ProductionBackupService' : 'StagingBackupService'},
+      BACKUP_ALERT_SERVICE:{type:'worker',worker:'monitor-native-fixture',exportName:profile === 'production' ? 'ProductionBackupAlertService' : 'StagingBackupAlertService'}},
     manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:compiled.outputFiles[0].text}}}},
     dev:{outboundService:{type:'fetcher',async handler(request){
       assert.equal(request.url,'https://api.resend.com/emails');assert.equal(request.method,'POST');
@@ -42,7 +44,7 @@ test('independent native monitor detects missing, failed, stale and incomplete r
     {method:'POST',body:JSON.stringify({path,now,...extra})});const body=await response.json();assert.equal(response.status,status,JSON.stringify(body));return body;};
   const bucket=await mf.getR2Bucket('STAGING_BACKUP_BUCKET'), receiptKey=slot=>'recovery/v1/runs/'+slot+'.json';
   const owner=randomUUID(), archive='fixture encrypted archive';
-  const receipt={format:'fanmark-staging-backup-receipt-v1',slot:today,owner,state:'verified',
+  const receipt={format:profile === 'production' ? 'fanmark-production-backup-receipt-v1' : 'fanmark-staging-backup-receipt-v1',slot:today,owner,state:'verified',
     startedAt:new Date(midnight+5*60_000).toISOString(),finishedAt:new Date(midnight+6*60_000).toISOString(),runtimeRevision:'fixture-runtime',
     keyId,sourceIds:ids,schemaHashes:schemas,objectKey:`recovery/v1/archives/${today}/${owner}.json`,archiveHash:sha(archive),
     bytes:Buffer.byteLength(archive),captureId:randomUUID(),fenceReleased:true,
@@ -119,6 +121,8 @@ test('independent native monitor detects missing, failed, stale and incomplete r
     });
   }finally{await mf.dispose();}
 });
+
+}
 
 test('backup monitor candidate pins the active stores and has no source DB, image bucket or decryption secret binding',()=>{
   const config=name=>JSON.parse(readFileSync(new URL('../'+name,import.meta.url),'utf8'));

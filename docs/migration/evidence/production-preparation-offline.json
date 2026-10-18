@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "9fe7a06b6921e01f4873b99c4bb96863f793e4ca0537dfa457c5b9cf9f46a267"
+    "sha256": "acc95b5fe6b95c8d2336b750088b46d19f1f3e0160fedc1d24965e0c279f9e19"
   },
   "variables": [
     {
@@ -632,7 +632,7 @@
     },
     {
       "path": "scripts/migration/d1-import.mjs",
-      "sha256": "bc73e52e505834bb55f9e39049571bc1d4fa411f745af0b663360dcf91812848"
+      "sha256": "a831ccee7545387a2c8ef023770166e836e4e29bfa88968bf3f624aa4a835924"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
@@ -652,7 +652,11 @@
     },
     {
       "path": "scripts/migration/production-remote-d1.mjs",
-      "sha256": "956182d1c23936e8db839e03267dd7cb6fd70a0c3825537fe08c6b8d027385c0"
+      "sha256": "34ee94c951157a1b3661f8d85c036328630ad8ff2f764db949dd65c85cd24db3"
+    },
+    {
+      "path": "scripts/migration/production-runtime-config.mjs",
+      "sha256": "6cf3057d711301a9a5624d6609573da35b16d3481e73eb9465e3f236b5f5172a"
     },
     {
       "path": "scripts/migration/run-admin-reenrollment.mjs",
@@ -703,6 +707,10 @@
       "sha256": "bb3e74c3088bef4ca74a4bb2e4b1f135923711d4a733dc452f62e7945b9ae706"
     },
     {
+      "path": "scripts/migration/test-production-runtime-config.mjs",
+      "sha256": "aa4bf9f76a719340490e40ffae5262cfd6f9d375d67326d041d77dc40ee03096"
+    },
+    {
       "path": "scripts/migration/test-supabase-auth-projection.mjs",
       "sha256": "f0c8c175c0498c4892bb39389f8afec194a29862d929d2e82175a698b7335a83"
     },
@@ -739,44 +747,92 @@
       "sha256": "eb18c8d2e9dadf7996a56904ee63fb92e1661a04dbb1827d02df0a6c5b735152"
     },
     {
+      "path": "workers/api/src/business-d1-recovery.ts",
+      "sha256": "55d050fde5504126b3b6cfc78c52a112f5727cb2550ab4f82376db72ec88f08f"
+    },
+    {
       "path": "workers/api/src/cutover-write-freeze.ts",
       "sha256": "a6ee94260a7758d1f6af59e539f00260d6b63e878bae67f2755cc4623e86bbc2"
     },
     {
+      "path": "workers/api/src/d1-store-recovery.ts",
+      "sha256": "fce71727cbca2a7a41ec9427277f268e5c0f9fc20f82ab6db192e9addb7f7ad5"
+    },
+    {
       "path": "workers/api/src/emoji-publication-service.ts",
-      "sha256": "cfd979f4b705247bb7629ddd81756aa4c330b11e6794a705ab450a09f81d6668"
+      "sha256": "0271775a675e5874ea06100664794e0e261820b00a8e4458c08ac1ff5890b166"
     },
     {
       "path": "workers/api/src/index.ts",
-      "sha256": "a72b6cb88a2a097371ac4e6f5d1aa3ff8b59128d4b91e29778a8ef602c0c3cb5"
+      "sha256": "03212c613bbf5bab40ed32044d83086d3997e2db99d86b3773fd79be6467d365"
     },
     {
       "path": "workers/api/src/notification-wake.ts",
-      "sha256": "38d1f4f7c3f66a1c93e68f2ff6f6a642bb296c0e245304c8c162a0e0baff3c21"
+      "sha256": "8c124cd5a97a71ec7f51aa6eb56323a35edba261f48a741d21d5739641dbfd0a"
+    },
+    {
+      "path": "workers/api/src/operational-backup-profile.ts",
+      "sha256": "1b6e0ab344f87a4e38106b6d04e51e856c83ab09e009f19beff3854fa4ae2f0f"
+    },
+    {
+      "path": "workers/api/src/production-backup-monitor.ts",
+      "sha256": "54d0a0201e4d5e20bf99a2de504910ae255e98b64c0a4185e244f4c32c0c19b5"
+    },
+    {
+      "path": "workers/api/src/production-backup-scheduler.ts",
+      "sha256": "1ec329f65678597c47680bad345fbed416f538c7587db4f485a623703b1feb1d"
+    },
+    {
+      "path": "workers/api/src/production-backup-service.ts",
+      "sha256": "b8b78ee4498e160f9d088e7b123c9e5768be5307a828c7e23d2a3fd11e7311d2"
+    },
+    {
+      "path": "workers/api/src/production-runtime-identity.ts",
+      "sha256": "6a3fe436fcf40e3a9c55b1b1e6af1850ceb5aea09057a3c3819b41a88aeaf35f"
+    },
+    {
+      "path": "workers/api/src/recovery-writer-drain.ts",
+      "sha256": "0729fca7c519f04611c0f3e042c3bb7ce1156cf3b52f0df1ca26569ee7290b60"
     },
     {
       "path": "workers/api/src/repository.ts",
       "sha256": "0a812d883967c0decfd1e2283c029203f2983d05c9668b41e023c8d7ac590a3f"
     },
     {
+      "path": "workers/api/src/staging-backup-alert.ts",
+      "sha256": "811baa45f77e7f98df6c0c802b4a1bfb990599a3c5eaa4516328aa374e2119b7"
+    },
+    {
       "path": "workers/api/src/staging-backup-monitor.ts",
-      "sha256": "7bee2b20934538be9cbd10c9b5fff9681e87856feaada11a02de380afdbb945e"
+      "sha256": "eef9934a9688311817ffb4fd25d5d355069e4e3423c27d5c8976252a86f924b9"
     },
     {
       "path": "workers/api/src/staging-backup-scheduler.ts",
-      "sha256": "5b83b2947317cbe2313657259a4a276064c8a204c80297265b0ab6b5ecbcc456"
+      "sha256": "5c8be17e584b69c7390c4ae55308b60cacf96bfb9722e6b9e9e68b81cb9d5c14"
     },
     {
       "path": "workers/api/src/staging-backup.ts",
-      "sha256": "031ee58e74b31b30de77cff5f7bd7cf8449a45188f0660b65765834105163f53"
+      "sha256": "1d9f17f80914f67c70bb3c9d40a65f65d982f252d96831e4a2891063945764f1"
     },
     {
       "path": "workers/api/src/stripe-mode-policy.ts",
       "sha256": "a6aa4016c3330396604a05c64db417f8937d0e08ee2dd68e2fd741cee75a5f1e"
     },
     {
+      "path": "workers/api/wrangler.app-production-closed.jsonc",
+      "sha256": "eec8381de13ce4e4ee8ca5020c8497bc83c55ff8715b6b22c9254e6a41abcb34"
+    },
+    {
+      "path": "workers/api/wrangler.backup-monitor-production-closed.jsonc",
+      "sha256": "e18287e4f349328c36ac0803f915bda4e86e31ce12f09151609c2aa1935bce6c"
+    },
+    {
       "path": "workers/api/wrangler.backup-monitor-staging.jsonc",
       "sha256": "ec746665f1aa0592323b7ac08025b7a4b43bfbeffa71fa925c2bced250124933"
+    },
+    {
+      "path": "workers/api/wrangler.backup-production-closed.jsonc",
+      "sha256": "411e0fdf1c2bbcaa36781504bcdabd6f9d5aba6655cae680ee458efb84d27517"
     },
     {
       "path": "workers/api/wrangler.backup-staging.jsonc",
