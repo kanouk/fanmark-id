@@ -226,7 +226,7 @@ async function captureActiveState(database) {
   return { activeRows, auditRows };
 }
 
-export async function stageReferenceMasterRelease({ database, snapshot, snapshotSha256, maxRowsPerBatch = 25, hooks = {} }) {
+export async function stageReferenceMasterRelease({ database, snapshot, snapshotSha256, maxRowsPerBatch = 25, hooks = {}, freshOnly = false }) {
   if (!Number.isInteger(maxRowsPerBatch) || maxRowsPerBatch < 1 || maxRowsPerBatch > 100) {
     fail("reference_master_batch_size_invalid");
   }
@@ -238,6 +238,7 @@ export async function stageReferenceMasterRelease({ database, snapshot, snapshot
     [release.releaseVersion]);
 
   if (existing.length > 0) {
+    if (freshOnly) fail("reference_master_initial_target_not_empty");
     const row = existing[0];
     if (row.source_snapshot_sha256 !== snapshotSha256 || row.manifest_json !== manifestJson) {
       fail("reference_master_release_conflict");

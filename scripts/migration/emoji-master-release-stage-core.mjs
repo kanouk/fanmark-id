@@ -225,8 +225,9 @@ async function readImport(database, version) {
   return rows[0] ?? null;
 }
 
-async function prepareImport(database, version, manifestJson, rowCount) {
+async function prepareImport(database, version, manifestJson, rowCount, freshOnly) {
   const current = await readImport(database, version);
+  if (current && freshOnly) throw fail("initial_import_target_not_empty");
   if (!current) {
     const createdAt = utcMicrosecondTimestamp();
     const result = await database.prepare(
@@ -261,6 +262,7 @@ export async function stageVerifiedEmojiMasterRelease({
   artifact,
   maxRowsPerBatch = 50,
   hooks = {},
+  freshOnly = false,
 }) {
   if (!database || typeof database.prepare !== "function" || typeof database.batch !== "function") {
     throw fail("d1_binding_required");
@@ -286,7 +288,7 @@ export async function stageVerifiedEmojiMasterRelease({
   await assertStagingSchema(database);
   await assertTargetIdentityContinuity(database, records);
 
-  const alreadyReady = await prepareImport(database, verified.version, manifestJson, records.length);
+  const alreadyReady = await prepareImport(database, verified.version, manifestJson, records.length, freshOnly);
   if (alreadyReady) {
     try {
       await assertStageReadback(database, verified.version, records);

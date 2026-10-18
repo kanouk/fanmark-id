@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "8c4899dd77371bd44174d74f82727cb19f7ea19f2ebf9dcb5ddd8646005be9b0"
+    "sha256": "08e3bfb0dc9d85e1230c037ebe2551c968847b4e056d945ab8fe1a8a65dd760e"
   },
   "variables": [
     {
@@ -649,6 +649,18 @@
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
       "sha256": "d43a55b2a4a239495853a0e2c901ae025965f4d2b50ed8d313931b9d9dc46772"
+    },
+    {
+      "path": "scripts/migration/master-import-readback.mjs",
+      "sha256": "c4c41dd6c319864f31c9602bdf28a7c455e3902f91528bb07b2981b0d5e49be7"
+    },
+    {
+      "path": "scripts/migration/master-import-stage.mjs",
+      "sha256": "f3465d31b63b156eb1249b75bc79c3b5dbe2df3b6353e53063fe1810fdadbd76"
+    },
+    {
+      "path": "scripts/migration/master-runtime-schema.mjs",
+      "sha256": "9007c1806d5bed472e1025c4908a96249f7c4ddefa78e61eaa09d71eb60a89e8"
     },
     {
       "path": "scripts/migration/master-snapshot-projection.mjs",

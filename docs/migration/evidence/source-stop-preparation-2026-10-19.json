@@ -1,0 +1,82 @@
+{
+  "format": "fanmark-source-stop-preparation-v1",
+  "observedAt": "2026-10-18T22:42:44.925549+00:00",
+  "runId": "4fc15fec-ffc0-46d3-8447-904b858a4bbf",
+  "projectRef": "ppqgtbjykitqtiaisyji",
+  "relationCount": 75,
+  "protectedRelationCount": 71,
+  "excludedRelations": [
+    "auth.schema_migrations",
+    "storage.buckets_vectors",
+    "storage.migrations",
+    "storage.vector_indexes"
+  ],
+  "requiresOriginReplicationRole": true,
+  "inventorySha256": "06b81cc9c1ef92a5a2950dbc3687ff9ac92afb002c29251c2955355d314aaf06",
+  "freezeSha256": "160d45f911294457b63361ae259d917c959119e00f5050fcfb838e4e7ea232cb",
+  "resumeSha256": "4822cb6d1a86690f8c7acb7e04502975938267a6ffaae897e612aa0b36a2d92c",
+  "cron": {
+    "jobCount": 2,
+    "activeJobCount": 1,
+    "inventorySha256": "89450ce161ac82f7e84f011e862cff743ccbcec22617e95fe171444e1cbd247b",
+    "pauseSha256": "c4cedf02a6827cfe40961a8da9b2099af96fc6d4eb3b35bdd149c3d5b83cb760",
+    "resumeSha256": "3dc368c13b921eaf13ed8bc83a19e74aa98584674c8c793c6664bfd8547a96c2"
+  },
+  "runtime": {
+    "canCreateSchema": true,
+    "cronAlterFunctions": [
+      {
+        "canExecute": true,
+        "signature": "cron.alter_job(bigint,text,text,text,text,boolean)"
+      }
+    ],
+    "cronJobSelect": true,
+    "databaseTransactions": 0,
+    "inProgressCron": 0,
+    "observedAt": "2026-10-18T22:42:44.925549+00:00",
+    "replicationRole": "origin",
+    "role": "postgres",
+    "schemaFreezeTriggers": 0,
+    "writerReplicationRoles": [
+      {
+        "canSetReplicationRole": false,
+        "role": "authenticated",
+        "superuser": false
+      },
+      {
+        "canSetReplicationRole": false,
+        "role": "anon",
+        "superuser": false
+      },
+      {
+        "canSetReplicationRole": false,
+        "role": "service_role",
+        "superuser": false
+      },
+      {
+        "canSetReplicationRole": false,
+        "role": "authenticator",
+        "superuser": false
+      },
+      {
+        "canSetReplicationRole": false,
+        "role": "supabase_auth_admin",
+        "superuser": false
+      },
+      {
+        "canSetReplicationRole": false,
+        "role": "supabase_storage_admin",
+        "superuser": false
+      }
+    ]
+  },
+  "sourceChanged": false,
+  "productionReady": false,
+  "candidateSqlOnly": true,
+  "runningJobsDrained": false,
+  "limitations": [
+    "single readonly observation while source remains live",
+    "candidates must be regenerated or revalidated against cutover snapshot",
+    "Edge/Auth/Storage ingress and external effects still require stop and drain proof"
+  ]
+}

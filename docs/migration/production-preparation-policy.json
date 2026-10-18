@@ -237,6 +237,9 @@
     "scripts/migration/auth-import-readback.mjs",
     "scripts/migration/auth-import-stage.mjs",
     "scripts/migration/auth-runtime-schema.mjs",
-    "scripts/migration/master-snapshot-projection.mjs"
+    "scripts/migration/master-snapshot-projection.mjs",
+    "scripts/migration/master-import-stage.mjs",
+    "scripts/migration/master-import-readback.mjs",
+    "scripts/migration/master-runtime-schema.mjs"
   ]
 }

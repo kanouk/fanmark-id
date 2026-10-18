@@ -121,3 +121,22 @@ production-stageは固定Auth D1の調停済み書込transportと、同一identi
 単体・native D1の4試験と、移行データ回帰386件が成功。0ドル・1セント・9.99ドル・numeric(10,2)上限の実格納値を照合した。共通処理で実予備コピーを再処理し、絵文字3,944件/参照29件から25表11,881行を暗号化・別の空D1へ復元し全行hashを照合、58.6秒で成功した。[検証記録](evidence/real-master-projection-backup-rehearsal-2026-10-19.json)。旧予備コピー・ローカルMasterだけの証拠で、本番遠隔復旧や全store runnerの完成とはしない。
 
 管理画面の再確認では、Cloudflare/Supabase/Stripeの3タブが引き続きクラッシュし、さらにMacロック中で自動解除不可とツールから報告された。所有者にロック解除・タブ再オープンだけを依頼した。管理者MFAは依頼していない。残実装は全store runner/独立checker/不明ACK解決、実設定に依存する残検証はsource全入口停止・Stripe引継ぎ・DNS/provider・鍵別保管と遠隔復旧である。
+
+
+## P2: Masterの初回投入・独立照合（2026-10-19）
+
+`master-import-stage.mjs` / `master-import-readback.mjs` / `master-runtime-schema.mjs` を追加した。9 migrationからnative schemaを再構成して前後照合し、固定本番Masterの書込transport・別read-only transport・一致するincarnationを要求する。最初のbatch内でも空DBを確認する。以後は複数transactionで投入するため、全体atomicとは扱わない。途中失敗・応答不明では停止し、自動再送・途中再開・既存行の削除をしない。既存release helperに初回投入専用の `freshOnly` を追加し、通常の更新経路の動作は維持する。
+
+独立checkerはcanonical絵文字の全10列（元の時刻を含む）、公開artifact、4参照表の内容・金額・manifest、初回activationの指定ID/世代/監査、各表の件数、未使用Auth領域の空状態、FKを照合する。初回絵文字監査の内容・件数・ID/日時形式も照合するが、生成日時をsource時刻と同一視しない。projectionとactivation IDは処理開始時にコピーし、読み取り中の呼出し側変更の影響を受けない。これは停止証拠や全store runnerの代替ではない。
+
+native 9試験（内容改変・schema欠落・空DB確認後の競合・2回目batchの応答消失・101行のpaging等）、移行回帰395件、既存emoji/reference release統合13件が成功。実予備コピーを共通stage/checkerで再処理し、絵文字3,944/参照29件→25表11,881行の暗号化・別DB復元・全行hashと独立readback一致を64.0秒で確認した。[実データ検証](evidence/real-master-stage-backup-rehearsal-2026-10-19.json)。10/16の稼働中sourceの予備コピー、local native D1、memory-only鍵であり、本番停止時間・遠隔復旧・鍵別保管の証拠にはしない。
+
+## P3/P4/P6: 管理画面復旧後の読み取り確認（2026-10-19）
+
+所有者のMacロック解除・タブ再オープン後、Cloudflare/Supabase/Stripeにログイン済みであることを確認。保存済みSupabase CLI credentialをプロセス内で読み取り専用APIへ使用し、値を表示/保存せずDB接続を復旧した。75 relation中71のTRIGGER権限、schema作成、Cronの参照/alter権限、writer roleのreplication変更不可を確認。観測時点の実行中Cron/他transactionは0だったが、継続的なdrain確認ではない。Cronは2件中1件active。停止/確認/逆操作のSQL候補6本を同一run IDでprivate保存し、未実行。[source停止準備](evidence/source-stop-preparation-2026-10-19.json)。
+
+DNSの変更前BINDをprivate保存。既存Workerルート0、Page Rules 0、Single Redirect Rules 0、TLS mode Full、apex/wildcardのUniversal SSL active（2026-12-28期限）を確認。BINDにはAPI record IDがなく、DNS APIの操作権限/正確な逆操作の確認は未完了。Supabaseでは4 OAuth providerが有効でclient ID/secretあり、site URLは `https://fanmark.id/`、メール確認が必要。provider管理画面の本番callback登録/新環境の秘密設定は別途必要。
+
+Stripeは現在の同一accountで、本番のイベント送信先画面が未設定表示、testはstaging向け1件activeを確認。旧DBの解約済み契約1件は現accountのlive APIで404、test検索でも見つからなかった。検索をAPI全件照合の代わりにせず、別account/sandboxの利用歴を所有者に確認中。履歴は保持し、課金/延長/削除/再送はしない。[管理画面記録](evidence/dashboard-readback-2026-10-19.json)。
+
+作業開始時の `1cbb5b9` / CI [39145660388](https://github.com/kanouk/fanmark-id/actions/runs/39145660388) は両job成功。Mac/管理画面の障害は解消したが、全store runner・不明ACKの解決、source全入口の停止/外部effect終了、Stripe所属と引継ぎ、provider/DNS実設定・鍵別保管/遠隔復旧は残る。管理者MFAは全準備後。本番実データimport/source停止/DNS変更/main mergeは未実施。

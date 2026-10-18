@@ -1,3 +1,9 @@
+## 2026-10-19: 管理画面復旧、Master初回投入と独立照合を追加
+
+`1cbb5b9` のCI39145660388は両job成功。Mac解除後のCloudflare/Supabase/Stripeと旧DBの読み取り接続を確認した。DB停止/Cron停止の権限を確認し、同一runの停止・確認・逆操作SQL候補6本をprivate保存（未実行）。DNS BIND保存、既存Worker/ページ/単一redirectルール各0、apex/wildcard証明書active。Stripeの旧解約済み契約1件は現accountのlive API/test検索で未検出、別account/sandbox利用歴を所有者に確認中。データは保持。
+
+Masterの空DB初回投入・別接続の全内容照合・schema前後確認を追加。部分失敗/不明ACKは再送・削除・自動再開しない。新規native9試験、移行回帰395件、既存release統合13件成功。実予備コピー3,944絵文字/参照29件を共通stage/checkerで投入し、25表11,881行の暗号化→別DB復元→全hash/独立照合が64.0秒で成功（local限定）。[詳細と残条件](production-preparation-2026-10-18.md)。全store runner/不明ACK解決、source全入口停止・Stripe引継ぎ、provider/DNS・鍵別保管/遠隔復旧は残る。MFAは全準備後。本番import/source停止/DNS切替/main mergeなし。
+
 ## 2026-10-19: Master変換を共通化、実予備コピーで再検証
 
 5表のstream検証とMasterへの変換を `master-snapshot-projection.mjs` に追加。月額ドル文字列の保持・一度だけのセント変換、元時刻/NULL/boolean/絵文字identityを検証。nativeを含む4試験・移行データ回帰386件と、実3,944絵文字/参照29件→25表11,881行の暗号化・別DB復元が成功（58.6秒）。[詳細](production-preparation-2026-10-18.md)。7599b0cのCI39144625165はapplication job成功、Worker job確認中。3管理画面はクラッシュのまま、Macロック解除不可のため所有者の手動解除・タブ再オープン待ち。MFAは全準備後。全store runner・外部設定/停止/遠隔復旧の未完了を保持し、本番import/source停止/DNS切替/main mergeは行わない。
