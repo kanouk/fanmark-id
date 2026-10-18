@@ -1,3 +1,11 @@
+## 2026-10-19: CI成功、画像の初回投入・独立照合と実予備コピー復元
+
+`a634104` のCI39174607042はApplication/Worker両job成功。所有者は旧解約済み契約を自分のテスト時のデータと思うと説明し、記録保持を指示。既存sandboxの同一顧客を確認済みだが契約本体は未検出。元の履歴・移行対象は保持し、由来説明だけ別記録に残した。
+
+分割R2の初回stage/独立checkerを追加。空target、全key/size/etag/version、全画像hash/MIME/由来metadataを照合し、既存画像/既存report/競合/不明ACKを再利用・自動再送しない。native15試験と移行データ回帰410件成功。実予備コピー109画像/13,285,729 bytesを投入・暗号化・別bucket復元・全内容照合し91.7秒で成功。local Miniflareの空storageClassだけ既存試験と同じfixture補正を使用し、remote保存クラス/復旧の証明とはしない。[詳細と残条件](production-preparation-2026-10-18.md)。
+
+本番R2専用transport/全store調停接続・Business stage/全store runner・不明ACK解決、source停止/Stripe引継ぎ、OAuth/DNSの実設定/逆操作、鍵別保管/実資源の一式復旧は未完了。MFAは全準備後。本番import/source停止/DNS切替/main mergeはしていない。
+
 ## 2026-10-19: 管理画面復旧、Master初回投入と独立照合を追加
 
 `1cbb5b9` のCI39145660388は両job成功。Mac解除後のCloudflare/Supabase/Stripeと旧DBの読み取り接続を確認した。DB停止/Cron停止の権限を確認し、同一runの停止・確認・逆操作SQL候補6本をprivate保存（未実行）。DNS BIND保存、既存Worker/ページ/単一redirectルール各0、apex/wildcard証明書active。Stripeの旧解約済み契約1件は現accountのlive API/test検索で未検出、別account/sandbox利用歴を所有者に確認中。データは保持。

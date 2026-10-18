@@ -1,0 +1,16 @@
+{
+  "format": "fanmark-stripe-legacy-history-disposition-v1",
+  "observedAt": "2026-10-18T23:27:51.267702+00:00",
+  "sourceCanceledSubscriptionCount": 1,
+  "exactSourceCustomerMatchedExistingSandbox": true,
+  "sameAmountAndDisplayedStartTimeTestPaymentObserved": true,
+  "subscriptionObjectStillMissing": true,
+  "ownerReportsProbableSelfTest": true,
+  "ownerRequestsRecordPreservation": true,
+  "sourceRecordModified": false,
+  "excludedFromMigration": false,
+  "liveBillingRelationshipProven": false,
+  "billingEffectsExecuted": false,
+  "productionReady": false,
+  "disposition": "Retain original canceled history. Record likely self-test provenance separately; do not create active entitlement, replay billing, or silently classify a missing subscription as confirmed."
+}

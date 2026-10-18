@@ -612,8 +612,9 @@ async function withTimeout(promise, timeoutMs, onTimeout, code) {
   }
 }
 
-async function copyOrVerify(r2, entry, object, { maxObjectBytes, chunkSize, operationTimeoutMs }) {
+async function copyOrVerify(r2, entry, object, { maxObjectBytes, chunkSize, operationTimeoutMs, freshOnly }) {
   const existing = await readTarget(r2, object, { maxObjectBytes, operationTimeoutMs });
+  if (existing.exists && freshOnly) throw fail("initial_target_already_exists");
   if (existing.exists) return "skipped";
 
   const sourcePath = path.resolve(entry.localFilePath);
@@ -643,6 +644,7 @@ async function copyOrVerify(r2, entry, object, { maxObjectBytes, chunkSize, oper
 
   if (putResult === null) {
     await cancelSource(source);
+    if (freshOnly) throw fail("initial_conditional_create_conflict");
     const raced = await readTarget(r2, object, { maxObjectBytes, operationTimeoutMs });
     if (!raced.exists) throw fail("conditional_create_lost");
     return "skipped";
@@ -674,6 +676,31 @@ function validateReportAgainstManifest(report, expected, manifestSHA256) {
   applyCounts(report);
 }
 
+/** Verified source expectations for independent readback; never uses import status. */
+export async function prepareStorageImportReadback({ exportDir, maxObjectBytes = DEFAULT_MAX_OBJECT_BYTES }) {
+  positiveInteger(maxObjectBytes, "invalid_max_object_bytes", MAX_SINGLE_UPLOAD_BYTES);
+  const verified = await readVerifiedManifest(exportDir);
+  const objects = verified.manifest.objects.map(entry => expectedObject(entry, { maxObjectBytes }));
+  return Object.freeze({ manifestSHA256: verified.manifestSHA256,
+    buckets: Object.freeze([...verified.manifest.buckets]), objects: Object.freeze(objects) });
+}
+
+/** No put/report-repair capability is required or invoked. */
+export async function verifyStorageImportReadback({ exportDir, r2,
+  maxObjectBytes = DEFAULT_MAX_OBJECT_BYTES, operationTimeoutMs = DEFAULT_OPERATION_TIMEOUT_MS }) {
+  if (!r2 || typeof r2.get !== "function") throw fail("invalid_read_only_r2_binding");
+  positiveInteger(operationTimeoutMs, "invalid_operation_timeout", MAX_OPERATION_TIMEOUT_MS);
+  const expected = await prepareStorageImportReadback({ exportDir, maxObjectBytes });
+  for (const object of expected.objects) {
+    if (!(await readTarget(r2, object, { maxObjectBytes, operationTimeoutMs })).exists) throw fail("readback_object_missing");
+  }
+  const after = await prepareStorageImportReadback({ exportDir, maxObjectBytes });
+  if (after.manifestSHA256 !== expected.manifestSHA256) throw fail("readback_source_changed");
+  return { manifestSHA256: expected.manifestSHA256, objectCount: expected.objects.length,
+    totalBytes: expected.objects.reduce((sum, object) => sum + object.size, 0), objectWrites: 0,
+    fullMigrationReconciled: false, productionReady: false };
+}
+
 export async function importStorageExport({
   exportDir,
   reportPath,
@@ -682,8 +709,10 @@ export async function importStorageExport({
   chunkSize = DEFAULT_CHUNK_SIZE,
   operationTimeoutMs = DEFAULT_OPERATION_TIMEOUT_MS,
   now = () => new Date(),
+  freshOnly = false,
 }) {
   validateR2(r2);
+  if (typeof freshOnly !== "boolean") throw fail("invalid_fresh_only_option");
   positiveInteger(maxObjectBytes, "invalid_max_object_bytes", MAX_SINGLE_UPLOAD_BYTES);
   positiveInteger(chunkSize, "invalid_chunk_size", MAX_CHUNK_SIZE);
   positiveInteger(operationTimeoutMs, "invalid_operation_timeout", MAX_OPERATION_TIMEOUT_MS);
@@ -695,7 +724,9 @@ export async function importStorageExport({
     const object = expectedObject(entry, { maxObjectBytes });
     return { ...object, localFilePath: path.resolve(verified.exportDir, entry.localFile) };
   });
-  const report = (await readReport(absoluteReportPath)) ?? initialReport({
+  const existingReport = await readReport(absoluteReportPath);
+  if (freshOnly && existingReport) throw fail("initial_import_report_exists");
+  const report = existingReport ?? initialReport({
     manifest: verified.manifest,
     manifestSHA256: verified.manifestSHA256,
     expected,
@@ -729,6 +760,7 @@ export async function importStorageExport({
         maxObjectBytes,
         chunkSize,
         operationTimeoutMs,
+        freshOnly,
       });
       state.status = "verified";
       delete state.errorCode;

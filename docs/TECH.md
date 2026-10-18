@@ -708,3 +708,7 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 業務DBの取り込み台帳3表は削除せずバックアップへ含める。台帳なしの既存archive形式と、台帳を含む `fanmark-business-import-recovery-v1` を固定profileで検証し、途中欠落・未知の表を受け入れない。復元時も元の取り込み先/incarnationを保持し、新しいDBで古いrunを誤再開させない。
 
 本番絵文字マスターの出力・公開は `production-emoji-master-export.mjs` / `production-emoji-publication.mjs` を使い、staging CLIの対象制限を解除しない。[運用経路](migration/emoji-releases.md#2026-10-18-production-operations)。
+
+## 初回の分割R2移送検証
+
+`npm run test:split-r2-import-stage` はnative local R2で初回投入と別呼出しの読み取り照合を検証する。新規作成の応答消失、競合、保存先入替え、同サイズの内容改変、metadata差分、余分な画像、列挙cursor不正を確認する。通常の再開可能な画像importの既定は維持し、初回stageのみ`freshOnly=true`を要求する。remote認証・本番R2 identity・全store調停への接続は、このlocal部品の成功とは別の受け入れ項目。

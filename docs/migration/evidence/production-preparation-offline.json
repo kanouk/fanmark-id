@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "08e3bfb0dc9d85e1230c037ebe2551c968847b4e056d945ab8fe1a8a65dd760e"
+    "sha256": "bd2b345e13c62da13e130563f18c7637308b91b0b7df3448ec1c11095df04d6a"
   },
   "variables": [
     {
@@ -727,6 +727,10 @@
       "sha256": "b7dfc1ff1b4511f51a21f3abce9b64ae074dd33621b57e60c2a95c91bf364752"
     },
     {
+      "path": "scripts/migration/split-r2-import-stage.mjs",
+      "sha256": "bf1743e5c282d842e3dc04f8790cc9bc4abc0070bd462d3ae093cabda3dfa7ab"
+    },
+    {
       "path": "scripts/migration/staging-emoji-master-export.mjs",
       "sha256": "f9eb9c52fd4da94d9dd8f460119ed24c37e6f297919a33a1f61bcf759773e8c4"
     },
@@ -740,7 +744,7 @@
     },
     {
       "path": "scripts/migration/storage-r2-import.mjs",
-      "sha256": "3cda6711b692cf94d068a64bc0a715df234df92f904595644203c43aeb5f9bf2"
+      "sha256": "f5ff8fb0a91f9016f22db10e19216493d4f19e4848ca0d48dba03623fd3625c9"
     },
     {
       "path": "scripts/migration/stripe-handoff-check.mjs",

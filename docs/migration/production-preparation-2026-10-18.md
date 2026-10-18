@@ -140,3 +140,19 @@ DNSの変更前BINDをprivate保存。既存Workerルート0、Page Rules 0、Si
 Stripeは現在の同一accountで、本番のイベント送信先画面が未設定表示、testはstaging向け1件activeを確認。旧DBの解約済み契約1件は現accountのlive APIで404、test検索でも見つからなかった。検索をAPI全件照合の代わりにせず、別account/sandboxの利用歴を所有者に確認中。履歴は保持し、課金/延長/削除/再送はしない。[管理画面記録](evidence/dashboard-readback-2026-10-19.json)。
 
 作業開始時の `1cbb5b9` / CI [39145660388](https://github.com/kanouk/fanmark-id/actions/runs/39145660388) は両job成功。Mac/管理画面の障害は解消したが、全store runner・不明ACKの解決、source全入口の停止/外部effect終了、Stripe所属と引継ぎ、provider/DNS実設定・鍵別保管/遠隔復旧は残る。管理者MFAは全準備後。本番実データimport/source停止/DNS変更/main mergeは未実施。
+
+## P4: 旧解約済み契約の由来と保持（2026-10-19）
+
+旧DBの顧客IDと完全に一致する顧客が、既存の「ファンマID サンドボックス」に存在した。同じ金額・表示上の期間開始日時のテスト決済も確認した。契約ID自体は見つからず、削除理由やStripe上の契約状態を推測で埋めない。所有者は「それは自分でテストしたときのデータだと思います」と説明し、記録を残したまま準備を続けるよう指示した。説明は別の由来記録として残し、元の解約履歴を削除・移行除外・有効化・再課金しない。メールや顧客識別子を含む照合原本はGit外に保持。[個人情報を含まない判定記録](evidence/stripe-legacy-history-disposition-2026-10-19.json)。管理者MFAは全準備後のまま。
+
+直前HEAD `a634104` のCI [39174607042](https://github.com/kanouk/fanmark-id/actions/runs/39174607042) はApplication/Workerの両job成功。
+
+## P2/P7: 初回の分割R2投入と独立照合（2026-10-19）
+
+`split-r2-import-stage.mjs` を追加。2 bucketの全inventoryが空であることを確認し、初回専用の`freshOnly`で既存report・既存画像・条件付き作成競合を拒否する。途中失敗や応答不明は残したまま停止し、自動再送・再開・削除はしない。通常importの再開動作は既定のまま維持する。
+
+独立checkerは投入reportを読まず、source manifestを再検証し、分割bucketの全key/size/etag/versionの前後一致、画像全byteのSHA-256、MIME、元bucket/key/hash/size metadataを照合する。余分な画像、別bucket、ページングの循環や不足、読戻し中の変更を拒否する。別実行のcheckerにput/delete能力は不要。これはfenceのない観測であり、実本番binding identity/調停接続/source停止を証明しない。
+
+native local R2の15試験（ページ分割、同じkeyを両bucketで使用、空byte、同サイズ改変、metadata、余分な画像、保存先入替え、応答消失、競合、再実行拒否等）と移行データ回帰410件が成功。全store runner・本番R2専用transport/永続調停、不明ACKの独立解決、Stripe受信引継ぎ、source停止、OAuth/DNS、鍵別保管/実資源での一式復旧は引き続き未完了。
+
+実予備コピー109画像（avatars69/covers40、13,285,729 bytes）を新stageで分割R2へ投入し、各bucketをAES-GCM暗号化→別の空bucketへ復元→全内容hashと独立checkerで照合した。91.7秒で成功。[限定証拠](evidence/real-split-r2-stage-backup-rehearsal-2026-10-19.json)。固定MiniflareがstorageClassを空欄で返す既知の制限により最初はbackup検証で拒否された。既存native復旧試験と同じlocal専用fixture補正（空欄だけStandardへ）で再試験し、production recoveryの検証規則は緩めていない。remote保存クラスの証明ではなく、10/16予備コピー・local R2・memory-only鍵の証拠。実CloudflareのRTOや鍵別保管、全5store同時復旧は未証明。
