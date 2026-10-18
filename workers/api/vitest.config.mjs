@@ -30,6 +30,7 @@ export default defineConfig({
       "./test/notifications-d1.test.ts",
       "./test/notification-wake.test.ts",
       "./test/recovery-writer-drain.test.ts",
+      "./test/production-import-coordinator.test.ts",
       "./test/favorites-d1.test.ts",
       "./test/fanmark-search-d1.test.ts",
       "./test/fanmark-profile-d1.test.ts",

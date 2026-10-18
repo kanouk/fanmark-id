@@ -1,3 +1,11 @@
+## 2026-10-19: CIの試験設定を修正、Cron逆操作をnative検証
+
+9cef0c1/CI39140191739はアプリ成功・Worker失敗。専用DO試験を通常設定が再収集していたためexcludeを修正し、通常109件が成功。新規専用7件は別設定で実行する。source Cron停止/復元SQLはnative pg_cronで5件成功。現在のsource権限の読取はCLIのAccess token not providedで止まるため実環境では未確認。in-appタブの手動再オープンだけを非同期で依頼中（ログイン入力/MFAはまだ依頼しない）。新しいコードはまだ本番へ配備せず、残る全store runner/実際の復旧/受信引継ぎ・DNS/providerを継続する。
+
+## 2026-10-19: 旧Function 35件の保存・切り戻しbundleを準備
+
+全35 Function/61 source fileをprivate保存し、前後inventoryとファイルhashを照合。公式Edge Runtimeで全35 rollback bundleと停止用bundleをlocal生成した。6試験成功。本番再配備/停止は未実施。34件の停止候補とStripe受信引継ぎ待ち1件を明示。9cef0c1（全store実行調停）をpush、CI39140191739確認中。64cda3bのCI39139074913は両job成功。in-app管理画面はクラッシュし、取得がURL policyで拒否。ブラウザ回避はせず、独立作業を継続。再認証は他の準備完了後。[記録](production-preparation-2026-10-18.md)。
+
 ## 2026-10-19: 本番全storeの実行調停を追加
 
 本番writer DOで移行runを一つに固定するbinding-only RPCを追加。production D1書込はremote調停とlocal fsync journalを必須にし、別process/別journal/別storeからの重複実行・不明ACKの再送・途中停止解除を拒否する。native関連39件成功（DO22、transport/結合16、公開閉鎖1）。未配備。全store runner/独立解決、source全入口停止、provider/DNS/遠隔復旧は残るため本番開始可能とは扱わない。07de140のCI39137905597は両job成功、64cda3bをpush済み。[詳細](production-preparation-2026-10-18.md)。再認証は全準備後。main保持。

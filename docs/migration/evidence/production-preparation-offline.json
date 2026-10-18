@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "c0879b40235963937d6e92465e4d4c7b417c63d82093dce15bd38a3fecbf9265"
+    "sha256": "3209147867df20525676d0d717e0e6fff1702e90bb10982ad5f1e3fd9a056703"
   },
   "variables": [
     {
@@ -683,8 +683,16 @@
       "sha256": "12c8be4fb24cbc70096a2b0be1b0649e4349ab5aa4436ec8435e7171a2b8c2d9"
     },
     {
+      "path": "scripts/migration/source-cron-pause.mjs",
+      "sha256": "2e8f9f1f2a2c5115bbc4d6c7fa2f52ae6d3c7d4a65f070f30408a46e6c81a964"
+    },
+    {
       "path": "scripts/migration/source-database-freeze.mjs",
       "sha256": "022dc43ea82ef78496613dc4983d140e3744e4484b1a1b21721f4bbe23a6f830"
+    },
+    {
+      "path": "scripts/migration/source-edge-maintenance.mjs",
+      "sha256": "4dbdd786de4996afc0f122098dbaa88fb566f74a6d3433649b597a3b8a8109bc"
     },
     {
       "path": "scripts/migration/source-scheduled-writers.sql",

@@ -429,3 +429,8 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 移行取り込みの別呼出し照合は `scripts/migration/d1-import.mjs` の `verifyImportedD1Snapshot`。共有codecで全行・台帳・schema・FKを読み戻すが、書込/修復は行わない。全storeの停止を保証するrunnerとは分け、単独の成功を公開許可にしない。
 
 本番Masterの運用入口: `scripts/migration/production-emoji-master-export.mjs`（固定SELECTによるdraft出力）、`production-emoji-publication.mjs`（固定Production serviceへのstage/promotion/rollback/status）。対象固定と全5 bindingの照合は `production-emoji-target.mjs`。
+
+
+### 本番移行前の旧環境停止部品
+
+`scripts/migration/source-edge-maintenance.mjs` はFunction別のprivate backupと配備version/JWT設定を照合し、外部副作用のない503応答候補を生成する。Stripe receiverは別の受信引継ぎ条件を残す。`source-cron-pause.mjs` はCronの定義集合と元のactive状態を固定した停止・検査・逆操作SQLを生成する。どちらも本番へ接続・実行せず、開始済み処理のdrainや旧DB停止の代替にはしない。

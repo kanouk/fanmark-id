@@ -73,3 +73,21 @@ Node側のproduction D1書込transportは、この調停clientとprivate journal
 native DOの新規7件・既存15件、native DO/RPC/D1と別filesystem journalを組み合わせた6件・既存transport10件、公開HTTP閉鎖1件が成功。別journalでの再送拒否、begin応答の消失時にD1へ送らないこと、D1 commit応答消失時に実行済み1行を保持して全storeを停止することを確認した。公開HTTPには入口を追加せず、閉鎖Workerへの `/migration/claim` と `/migration/begin` も503になる。新調停機能はまだ本番へ配備していない。
 
 先行commit `07de140` のCI `39137905597` は両job成功。配備/Storage検証記録の `64cda3b` を同じPRへpushした。main・旧source・DNSは維持し、再認証は他の準備完了後とする。
+
+## 2026-10-19: 旧Edge Functionの保存と停止候補
+
+稼働中35 Functionの配備metadataを読取り、各Functionの専用private directoryへsourceと共有ファイルを保存した（計61ファイル）。同名の共有パスを別配備の内容で上書きしない。取得前後の全inventoryが一致し、各ファイルのhash・権限・配備version/JWT設定を読み戻した。公式Edge Runtime 1.76.2をdigest固定し、全35 Functionの切り戻し用bundleをローカルで生成、出力hashを再確認。実際の再配備や元binaryと同一であることは検証していない。旧形式2件ではprovider bundle hashが返らず、CLIのDocker downloadを使用した。[限定証拠](evidence/source-edge-preparation-2026-10-19.json)。
+
+`source-edge-maintenance.mjs` はprivate backupの改変・versionずれ・symlink・不正pathを拒否し、入力本文/環境変数/外部providerへ触れない503応答を生成する。元のplatform JWT設定を保持する票とし、通常34件を候補、`handle-stripe-webhook` 1件はreceipt引継ぎ待ちに分ける。署名通知の保存を失う503への単純置換は行わない。6試験成功、停止用bundleもnetworkなしで生成成功。本番への配備・Cron停止・DB停止は0。
+
+本番管理画面の再確認ではin-appのタブがクラッシュしており、タブ取得がURL security policyで拒否された。回避操作は行わない。現在のブラウザ経由のDNS/provider確認は未完了で、CLIで可能な準備を続ける。管理者MFAの再認証は依頼していない。
+
+## 2026-10-19: Cron停止/復元SQLとCI修正
+
+`source-cron-pause.mjs` は既存job集合、schedule、command hash、DB/role、接続先、active状態を照合し、もともとactiveだったjobだけを `cron.alter_job` で停止するSQLと逆操作を生成する。private run schemaにmarkerを残し、異なるrun・追加job・設定変更・command変更がある復元は拒否する。元からinactiveだったjobを有効にしない。管理tableへの直接UPDATE権限は要求しない。ACCESS SHARE lockはDDL保護だけで、管理者による再設定は別途停止が必要。開始済みCron/HTTP/Edgeの終了確認を代行しない。
+
+公式Supabase PostgreSQL17.6/pg_cron1.6.4の隔離containerで、SELECTとalter_job実行権限だけのpostgres roleを使って5試験成功。試験環境にだけalter_jobのEXECUTEを付与した。sourceの現在の権限を読むCLI呼出しは `Access token not provided` で失敗し、Node22.6での再確認でも同じだったため、本番で同じSQLが実行可能とはまだ判定しない。sourceに権限変更・停止SQLは適用していない。
+
+9cef0c1のCI39140191739はアプリ成功/Worker失敗。新しい専用DO試験が通常のvitest設定でも拾われ、DO bindingのない環境で起動したことをcheck annotationsで確認した。通常設定のexcludeへ追加し、専用設定での7試験は維持する。run log downloadはGitHub API403だったが、check annotationsの読取は成功した。
+
+CI修正後の通常vitest設定は10 file/109件成功。専用DO設定の7件は引き続き別設定で実行する。新規source preparationと既存preparationの計15件も成功。
