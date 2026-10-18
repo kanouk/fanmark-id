@@ -83,7 +83,7 @@ export function getAdminBroadcastSendBackend(
 ): "disabled" | "worker" {
   const backend = value?.trim();
   if (!backend || backend === "disabled") return "disabled";
-  if (backend === "worker") return mode === "cloudflare-staging" ? "worker" : "disabled";
+  if (backend === "worker") return mode === "cloudflare-staging" || mode === "cloudflare-production" ? "worker" : "disabled";
   throw new AdminBroadcastEmailApiError("configuration");
 }
 

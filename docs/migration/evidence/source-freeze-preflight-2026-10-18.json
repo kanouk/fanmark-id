@@ -1,0 +1,56 @@
+{
+  "observedAt": "2026-10-18T13:48:17.500Z",
+  "projectRef": "ppqgtbjykitqtiaisyji",
+  "relations": 75,
+  "protectedRelations": 71,
+  "excludedRelations": [
+    "auth.schema_migrations",
+    "storage.buckets_vectors",
+    "storage.migrations",
+    "storage.vector_indexes"
+  ],
+  "requiresOriginReplicationRole": true,
+  "inventorySha256": "06b81cc9c1ef92a5a2950dbc3687ff9ac92afb002c29251c2955355d314aaf06",
+  "sourceRuntimeRoles": [
+    {
+      "canChangeReplicationRole": false,
+      "name": "anon",
+      "superuser": false
+    },
+    {
+      "canChangeReplicationRole": false,
+      "name": "authenticated",
+      "superuser": false
+    },
+    {
+      "canChangeReplicationRole": false,
+      "name": "authenticator",
+      "superuser": false
+    },
+    {
+      "canChangeReplicationRole": false,
+      "name": "service_role",
+      "superuser": false
+    },
+    {
+      "canChangeReplicationRole": false,
+      "name": "supabase_auth_admin",
+      "superuser": false
+    },
+    {
+      "canChangeReplicationRole": false,
+      "name": "supabase_storage_admin",
+      "superuser": false
+    }
+  ],
+  "currentReplicationRole": "origin",
+  "vectorBuckets": 0,
+  "vectorIndexes": 0,
+  "freezeSqlSha256": "0e8959033058ffa9a6485f53ce3f8baf5b2ac912200c29c8cc1ce5fdb4a44cf7",
+  "resumeSqlSha256": "49ce19014b8853f273592b2494fe9fd6a9d8bad85e66400f2c0f137c3f75044e",
+  "remoteReadOnly": true,
+  "sourceFreezeExecuted": false,
+  "productionReady": false,
+  "localPostgresTests": 7,
+  "fullSourceDrainVerified": false
+}

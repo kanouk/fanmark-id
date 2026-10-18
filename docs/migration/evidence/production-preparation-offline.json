@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "343d4331a3c2904eccafa1b74ddcd2c02c2592cb00a4e0957608866ad2364c78"
+    "sha256": "9fe7a06b6921e01f4873b99c4bb96863f793e4ca0537dfa457c5b9cf9f46a267"
   },
   "variables": [
     {
@@ -603,6 +603,10 @@
       "sha256": "b6d7d8ebf20c5dbfd7fe092f15021ca90b99875ab933e612693fc70e74020280"
     },
     {
+      "path": "scripts/build-cloudflare-production.mjs",
+      "sha256": "13dde62a1c35377c80772cfeacba026e6cf0ef685afb93c20a41c458aa7554c5"
+    },
+    {
       "path": "scripts/migration/admin-reenrollment-capsule.mjs",
       "sha256": "4fc07d7e36daf3a8830bcaed91f4a57543eb3627029f1cc3d75b09e780fc0d7a"
     },
@@ -644,7 +648,7 @@
     },
     {
       "path": "scripts/migration/production-preparation-audit.mjs",
-      "sha256": "069bd9752319c39f9b48453133f0d2a49d405c510628a476a5a5418ac75672b4"
+      "sha256": "5d2a3738aaf3753f594f75f13dafbe87dc99de8c587272f727f1a2d4bcae050d"
     },
     {
       "path": "scripts/migration/production-remote-d1.mjs",
@@ -709,6 +713,22 @@
     {
       "path": "scripts/migration/verify-production-empty-schema.mjs",
       "sha256": "43c5673ebbff8fb3f39ec6b1327ca0ca9c57991d6c3af08d54e2fa5691ee638e"
+    },
+    {
+      "path": "scripts/test-cloudflare-production-build.mjs",
+      "sha256": "9e47fc30b35abbafbeb49df84d385e548deb1b3546514003afda2661d0cc6d7b"
+    },
+    {
+      "path": "src/integrations/supabase/client.ts",
+      "sha256": "b25d16e5a057c1a7b67882df79d6019aa85530f6aaf46a509c50ffa7a3e7ebac"
+    },
+    {
+      "path": "src/lib/admin-broadcast-email-api.ts",
+      "sha256": "a58a44e4037eb345acfffdbdd32349a6c73584e59c2cfeae118891b902daa5d4"
+    },
+    {
+      "path": "src/lib/auth-backend.ts",
+      "sha256": "e1a80380ef6613a199d2d57b2531ed6d5be9d19e51b70b2c235c154f38ab1e6f"
     },
     {
       "path": "supabase/functions/handle-stripe-webhook/index.ts",

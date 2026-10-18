@@ -24,7 +24,7 @@ export function createPreparationReport({ config, policy, read, list }) {
   same(config.r2_buckets.map(({ binding }) => binding), policy.r2Bindings, "unreviewed_r2_binding");
   same(config.durable_objects.bindings.map(({ name }) => name), policy.doBindings, "unreviewed_do_binding");
   const fingerprint = (path) => {
-    if (!/^(workers\/api|scripts\/migration|supabase\/functions|docs\/migration)\/[\w./-]+$/.test(path) || path.includes("..")) {
+    if (!/^(workers\/api|scripts|src|supabase\/functions|docs\/migration)\/[\w./-]+$/.test(path) || path.includes("..")) {
       throw new Error("unsafe_inventory_path");
     }
     return { path, sha256: hash(read(path)) };

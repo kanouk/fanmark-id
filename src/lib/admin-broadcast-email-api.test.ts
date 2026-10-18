@@ -42,6 +42,7 @@ test("broadcast email selector defaults to Supabase and rejects unknown values",
   assert.throws(() => getAdminBroadcastTestSendBackend("supabase"), /configuration/u);
   assert.equal(getAdminBroadcastSendBackend(undefined), "disabled");
   assert.equal(getAdminBroadcastSendBackend(" worker ", "cloudflare-staging"), "worker");
+  assert.equal(getAdminBroadcastSendBackend("worker", "cloudflare-production"), "worker");
   assert.equal(getAdminBroadcastSendBackend("worker", "production"), "disabled");
   assert.throws(() => getAdminBroadcastSendBackend("resend"), /configuration/u);
 });

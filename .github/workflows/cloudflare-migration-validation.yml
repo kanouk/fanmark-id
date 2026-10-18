@@ -109,6 +109,9 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_fixture_only
         run: npm run build:cloudflare-staging
 
+      - name: Verify production auth boundary and build without local environment files
+        run: npm run test:cloudflare-production-build && npm run build:cloudflare-production
+
       - name: Test rendered owner profile editor
         run: npm run test:staging-profile-editor-ui
 

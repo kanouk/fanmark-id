@@ -22,6 +22,16 @@ native D1で新規10試験を確認し、既存isolated transport/importerと合
 
 これはDB境界の部品であり、本番での停止実行ではない。外部副作用を伴うEdge、Stripe receiver、Cron、Auth/Storage HTTP受付と開始済みupload、DDL/deployの停止・drainを含む全source停止の受け入れは未完了。DB triggerによるHTTP失敗だけで、メールや保存済み画像本文の副作用がないとは判定しない。
 
+## P1: 本番画面ビルド
+
+本番modeで旧Supabase認証へ戻る問題と告知送信selectorのstaging限定を修正。専用buildは空envDirで既存VITE値を捨て、production originと全backend selectorを固定する。旧Supabase clientの通信・保存session・自動refreshを停止し、PWA cacheを分離する。認証境界2試験、告知API試験、application typecheckと実buildで検証。未配備。先行するD1/source停止のcommit `e76e34c` はCI `39133067109` の両jobが成功した。
+
+## P4: 旧環境の実Stripe account確認
+
+旧Supabaseに保存されているSTRIPE_SECRET_KEYからGETのみを行い、live keyが `acct_1SFjhvJk0VCfiKUp` に属することを確認。全ページを読み取り、購読0、Invoice0、Checkout3（期限切れ2・支払済み完了1）、v1 Webhook endpoint0、直近30日event0を確認した。既存35 Functionのinventoryは確認前後で一致し、確認用の一時Functionは削除済み。課金・送信・Webhook変更は行っていない。[集計証拠](evidence/source-stripe-readback-2026-10-18.json)。
+
+この結果は営業中の一時点の参照であり、停止境界の証拠ではない。過去の支払済みCheckout1件とsource記録の対応、sourceにある解約済み購読のmode、切替直前の再照合は残る。API v1 endpoint一覧だけで他のevent destinationの不在を断定しない。
+
 ## 残条件
 
 P1の本番アプリ・秘密・公開/backup/monitor adapter、P2の全store runnerと独立checker・再開、P3の全入口停止と実source同等環境試験、P4のStripe実台帳・旧受信引継ぎ、P6のprovider/DNS設定と復元票、P7/P8の本番資源復旧・全体実測は残る。本番D1への実データ取り込み、旧サービス停止、DNS切替、main mergeは未実施。

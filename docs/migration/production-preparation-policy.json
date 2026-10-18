@@ -204,6 +204,11 @@
     "workers/api/src/better-auth.mjs",
     "workers/api/wrangler.production-schema.jsonc",
     "scripts/migration/verify-production-empty-schema.mjs",
-    "scripts/migration/test-wrangler-migration-selectors.mjs"
+    "scripts/migration/test-wrangler-migration-selectors.mjs",
+    "scripts/build-cloudflare-production.mjs",
+    "scripts/test-cloudflare-production-build.mjs",
+    "src/lib/auth-backend.ts",
+    "src/lib/admin-broadcast-email-api.ts",
+    "src/integrations/supabase/client.ts"
   ]
 }

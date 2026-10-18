@@ -685,7 +685,7 @@ service roleをVite/clientへ渡さない。通常V4はBetter Auth/D1で、候�
 詳細は[契約](migration/legacy-supabase-bridge.md)。
 
 旧Authフロントのprofile-only bridgeは`VITE_PROFILE_BACKEND=worker`を選び、
-Better Authを選ぶcloudflare-staging mode以外でSupabase sessionを使う。API/認証originの一致は維持する。
+Better Authを選ぶcloudflare-staging / cloudflare-production mode以外でSupabase sessionを使う。API/認証originの一致は維持する。
 CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの7項目を追加した。
 実画面・remote採用は別のgate。[契約](migration/legacy-supabase-bridge.md)を参照。
 
@@ -698,3 +698,7 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 `npm run migration:prepare-production`は、staging Appの設定分類・migration SQL・重要実装のhashを保存済み一覧と照合する。設定値や秘密は出力せず、配備設定や本番実行許可も生成しない。`npm run test:production-preparation`は設定/schema変更の検知とStripe引継ぎ投影の比較を検証し、既存`test:migration-data`にも含まれる。
 
 `scripts/migration/stripe-handoff-check.mjs`は、同じ閉じた境界から取得した受信/効果投影を読み取り専用で比較する。実台帳adapter、停止・全件取得の証明、境界後streamの回収は別途必要。[準備状況・操作票・判断事項](migration/production-preparation.md)を参照。本番用runner、資源・秘密の設定、実ユーザーデータ移送、DNS切替は未実施。
+
+### Cloudflare本番画面のビルド
+
+`npm run build:cloudflare-production` は固定Node 22.6.0、空envDir、継承VITE変数なしで `dist-cloudflare-production` を生成する。API/Authは `https://fanmark.id`、backend selectorはstagingと同じWorker/D1/R2一式を使い、告知送信もWorkerを選択する。本番専用modeではBetter Authを使用し、旧Supabase clientのsession保存・自動更新・URL内session検出・fetchを無効にする。PWA cache IDも分ける。このコマンドは配備せず、通常の旧本番buildやstaging buildを変更しない。
