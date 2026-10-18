@@ -55,6 +55,14 @@ jobs:
         timeout-minutes: 5
         run: npm run test:source-database-freeze
 
+      - name: Test source Storage freeze on isolated file and S3 backends
+        timeout-minutes: 5
+        run: |
+          docker pull postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+          docker pull supabase/storage-api:v1.80.2@sha256:95b217a9c59e0ac06c6dcb539df3189a1668a2445fb43dbf29660d6968ffd7d2
+          npm run test:source-storage-freeze
+          npm run test:source-storage-s3-freeze
+
       # Master artifact generation also imports the application's catalog tools.
       # This job installs both application and Worker dependency trees.
       - name: Test combined Business Auth Master and split R2 recovery

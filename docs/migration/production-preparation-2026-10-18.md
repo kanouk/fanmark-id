@@ -101,3 +101,15 @@ production-stageは固定Auth D1の調停済み書込transportと、同一identi
 `auth-import-readback.mjs` は投入に使った同一の暗号化済みprojectionを開始前にコピーし、全ユーザー/credential hash/provider subject/MFA ciphertext/backup-code ciphertext/admin roleを100行ずつ別読出しで比較する。余分/不足/改変行、OAuth token/signup状態の混入、旧session/verification/MFA assurance、監査行、generation不一致を拒否。schemaを前後照合し、native FKと既存identity/MFA集計も検査する。報告とエラーに個人の行/ID/資格情報/hashを含めない。source freeze・暗号化鍵保管・ログイン成功の証明は別途必要で、`unfenced-readback` / `productionReady=false` を維持する。
 
 新規10件とnative調停7件を含む関連35件成功。すべて合成データ/ローカルnative engineで、本番Authの実データ投入は未実施。残りはMaster/Business/R2を統合する本番runner・source凍結証拠・全store独立照合・不明ACKの解決、provider/DNS/遠隔復旧。管理者MFAは全準備後。
+
+## P3: S3 backendと分割uploadの凍結試験（2026-10-19）
+
+実sourceと同版Storage API 1.80.2をS3 backendで起動し、隔離した別Storage APIのS3互換入口/file storeを保存先にした。PostgreSQLも別DBを使用し、外部接続なしのDocker network、host port非公開、合成データのみで検証した。通常7種の変更拒否、公開/認証GETの元bytes保持、凍結前に物理データを送信開始した12MiB overwriteの完了拒否、開始済みTUSの完了拒否が成功した。さらにStorageのS3 APIで5MiB+64KiBのpartsを先に保存し、凍結後のCompleteMultipartUploadが拒否され、元object metadata/公開bytesが保たれることを確認した。解除SQLも成功。6件成功、所有container/networkはfinallyで削除済み。
+
+この試験はS3 adapter・versioned object公開境界を検査する。AWSなど本番保存先の動作や、そのbucketへStorageを介さず直接書くclientの停止、孤立した物理part/objectが一切増えないことは証明しない。source本番への接続/書込は0。[限定証拠](evidence/source-storage-s3-freeze-native-2026-10-19.json)。既存file backend試験とともにCIへ追加した。
+
+## P2/P7: 実予備コピーのMaster移送・復元（2026-10-19）
+
+10/16暗号化予備コピーを検証・private領域へ一時復号し、絵文字3,944件（許可済みidentity hash一致）と料金/言語/予約pattern/延長価格29件をnative Master D1へ取り込んだ。generic Business converterの金額はセント整数であり、reference-master用のドル小数文字列とは型が異なる。最初の試験はこの境界で拒否され、検証済みsourceの元小数文字列を保持する写像へ修正した。stagingの設定をコピーせず、canonical行のtimestampも元の値を保持する。
+
+公開release選択後に別read-only呼出しでcanonical全行/公開emoji/references/active pointer/FKを照合。25表11,881行を暗号化し、別の空D1へ復元後、全表hash/schema/FKと同じ独立照合が成功した。総58.4秒、暗号化archive 5,846,192 bytes。使った鍵はmemory-onlyで、遠隔保存・端末外の鍵保管・Cloudflare runtime容量/RTO・全5store同時復旧の証明ではない。MFA capsule未使用。本番接続/書込0、scratch領域は削除済み。[限定証拠](evidence/real-master-backup-rehearsal-2026-10-19.json)。

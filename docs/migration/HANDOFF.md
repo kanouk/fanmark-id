@@ -1,3 +1,11 @@
+## 2026-10-19: 実Masterの移送・暗号化復元もlocal成功
+
+保存済み10/16 sourceからemoji3,944/参照29行をnative Masterへ移送し、25表11,881行を暗号化→別空D1へ復元→全hash/schemaと独立readback一致。58.4秒、archive5,846,192 bytes。金額のBusiness変換（セント整数）をreference写像（ドル小数文字列）へ直渡しせず、検証済み元小数文字列を保持するようprivate試験を修正した。これで実Businessと実Masterのlocal復元は確認済み。鍵はmemory-only、全store/遠隔/custodyは未証明。MFA未使用、本番変更0。[記録](production-preparation-2026-10-18.md)。
+
+## 2026-10-19: S3 backend・分割uploadの凍結をnative検証
+
+Storage API 1.80.2をS3 backendにした隔離試験6件と、既存file backendの回帰5件が成功。通常更新、開始済み12MiB overwrite/TUS、Storage S3 APIの準備済みmultipart完了を凍結中に拒否し、元metadata/公開bytes保持と解除を確認。本番provider・保存bucket直アクセスや孤立した物理partなしの証明ではない。実source接続0・本番変更0。両backendの試験をCIへ組み込み、固定image pullだけの許可に対するCI隔離9件成功。4cbe09fのCI39141770912は両job成功。119364eのCI39142894683も両job成功。KeychainにCLIログイン記録はあるがcredential読取は成功せず、値の表示/保存もなし。ブラウザ再オープン返答待ち、管理者MFAは全準備後。[詳細](production-preparation-2026-10-18.md)。
+
 ## 2026-10-19: Authの一括投入・独立照合を実装
 
 `auth-import-stage.mjs` と `auth-import-readback.mjs` を追加。固定本番Auth transport/別read-only transportを要求し、schema前後一致、空target、atomic transaction、全資格情報/ID/MFA照合、旧sessionなしを確認する。新規10件・native調停7件を含む関連35件成功（合成/localのみ）。現source規模45 projected rowsに対して上限99行。容量超過は開始前に拒否。応答不明を自動再送せず、全storeの完了は主張しない。4cbe09fのCI39141770912は直近確認時app成功/Worker実行中。全store runner/ACK解決・source全入口停止/実provider・DNS/遠隔復旧は残る。本番import/停止/DNS/main mergeなし。ブラウザの手動再オープン返答待ち。管理者再認証は全準備後。[詳細](production-preparation-2026-10-18.md)。

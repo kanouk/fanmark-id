@@ -118,7 +118,8 @@
     "test:source-storage-freeze": "node --experimental-strip-types --test scripts/migration/test-source-storage-freeze.mjs",
     "test:source-edge-maintenance": "node --test scripts/migration/test-source-edge-maintenance.mjs",
     "test:source-cron-pause": "node --test scripts/migration/test-source-cron-pause.mjs",
-    "test:auth-import-readback": "node --test scripts/migration/test-auth-import-readback.mjs"
+    "test:auth-import-readback": "node --test scripts/migration/test-auth-import-readback.mjs",
+    "test:source-storage-s3-freeze": "FANMARK_TEST_STORAGE_BACKEND=s3 node --experimental-strip-types --test scripts/migration/test-source-storage-freeze.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

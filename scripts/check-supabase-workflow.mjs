@@ -89,7 +89,11 @@ assert(/^permissions:\s*\n^  contents:\s*read\s*$/m.test(cloudflareWorkflow), "C
 // on CLI/project access, allowing only the complete fixed test command line.
 const localAuthProofLine = '        run: node --experimental-strip-types scripts/migration/test-legacy-profile-supabase-local.mjs "$RUNNER_TEMP/legacy-profile-supabase-local.json"\n';
 assert(cloudflareWorkflow.split(localAuthProofLine).length === 2, "Cloudflare validation must run exactly one fixed local Auth integration proof");
-const cloudflareExternalActions = cloudflareWorkflow.replace(localAuthProofLine, "");
+// A pinned public test image is not a project CLI command. Accept only this
+// complete pull line; extra arguments/commands and different images still fail.
+const localStorageImageLine = '          docker pull supabase/storage-api:v1.80.2@sha256:95b217a9c59e0ac06c6dcb539df3189a1668a2445fb43dbf29660d6968ffd7d2\n';
+assert(cloudflareWorkflow.split(localStorageImageLine).length === 2, "Cloudflare validation must pull exactly one pinned local Storage test image");
+const cloudflareExternalActions = cloudflareWorkflow.replace(localAuthProofLine, "").replace(localStorageImageLine, "");
 assert(!/secrets\.|\bsupabase\b|\bwrangler\s+deploy\b|--remote\b|\bgit\s+push\b/i.test(cloudflareExternalActions), "Cloudflare migration validation must not access secrets or deploy/write remotely");
 assert(/run: npm run test:migration-data\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must test migration data boundaries");
 assert(/run: npm run check:cloudflare-schedules\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must check configured scheduled job coverage");

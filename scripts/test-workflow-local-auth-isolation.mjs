@@ -26,3 +26,12 @@ for(const [name,mutate] of [
   ['secret access',text=>text+'\n      - run: echo "${{ secrets.SUPABASE_ACCESS_TOKEN }}"\n'],
   ['duplicate proof command',text=>text+'\n        run: '+command+'\n'],
 ])test('local Auth allowance rejects '+name,async()=>{await assert.rejects(verify(mutate(cloudflare)),error=>{assert.notEqual(error.code,0);assert.match(error.stderr,/must not access secrets|exactly one fixed local Auth/);return true;});});
+
+const imageLine='          docker pull supabase/storage-api:v1.80.2@sha256:95b217a9c59e0ac06c6dcb539df3189a1668a2445fb43dbf29660d6968ffd7d2\n';
+for(const [name,mutate] of [
+  ['unpinned image',text=>text.replace(imageLine,'          docker pull supabase/storage-api:latest\n')],
+  ['appended project write',text=>text.replace(imageLine,imageLine.trimEnd()+' && supabase db push\n')],
+  ['duplicate image pull',text=>text+imageLine],
+])test('local Storage image allowance rejects '+name,async()=>{
+  await assert.rejects(verify(mutate(cloudflare)),error=>{assert.notEqual(error.code,0);assert.match(error.stderr,/exactly one pinned local Storage/);return true;});
+});

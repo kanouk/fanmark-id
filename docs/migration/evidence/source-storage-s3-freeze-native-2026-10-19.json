@@ -1,0 +1,27 @@
+{
+  "proof": "isolated-storage-freeze",
+  "storageVersion": "1.80.2",
+  "storageImage": "supabase/storage-api:v1.80.2@sha256:95b217a9c59e0ac06c6dcb539df3189a1668a2445fb43dbf29660d6968ffd7d2",
+  "postgresImage": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+  "backend": "s3",
+  "protectedTables": 12,
+  "mutationsRejected": 7,
+  "inFlightOverwriteRejected": true,
+  "resumableCompletionRejected": true,
+  "s3ApiMultipartCompletionRejected": true,
+  "originalBytesPreserved": true,
+  "resumeVerified": true,
+  "sourceConnections": 0,
+  "productionWrites": 0,
+  "limitations": [
+    "isolated S3-compatible server backed by separate native Storage API/file store; production provider and direct backing-bucket clients remain separate proof"
+  ],
+  "observedAt": "2026-10-18T16:10:25.103665+00:00",
+  "scope": "synthetic isolated S3 backend and source S3 API multipart protocol",
+  "tests": 6,
+  "passed": 6,
+  "productionReady": false,
+  "sourceFrozen": false,
+  "physicalBackingStoreNoWritesClaimed": false,
+  "cleanup": "owned containers and internal Docker network removed by fixture finally block"
+}
