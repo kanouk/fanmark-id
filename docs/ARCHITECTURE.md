@@ -414,3 +414,7 @@ V4候補は `workers/api/wrangler.app-staging-v4-candidate.jsonc` の独立3D1/3
 旧AuthのWorker profile選択時は`useProfile.tsx`と`useAuth.tsx`が`resolveOwnProfileAuth`を使う。
 `profile-api.ts`は明示Bearer/cookieを分け、期待する本人IDを確認する。
 Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使う。
+
+## 本番移行の接続・停止準備（2026-10-18）
+
+`scripts/migration/production-remote-d1.mjs`は本番資源IDと作成時刻を照合する専用D1 transport。既定はread-only、書込は`production-import-journal.mjs`の永続intent/ACKを必須とする。汎用importerや隔離transportのguardは迂回しない。`source-database-freeze.mjs`は旧DBの固定inventoryに対する更新拒否・検査・解除SQLを生成する部品で、Edge/外部副作用の停止は別途必要。実行範囲と残条件は[migration記録](migration/production-preparation-2026-10-18.md)を参照。

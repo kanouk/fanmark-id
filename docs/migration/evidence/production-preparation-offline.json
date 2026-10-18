@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "c23d4cbb9493658092f996de9b738ffb544ae68d9630aeed104821dc925ed7a4"
+    "sha256": "343d4331a3c2904eccafa1b74ddcd2c02c2592cb00a4e0957608866ad2364c78"
   },
   "variables": [
     {
@@ -591,6 +591,10 @@
   "productionWorker": null,
   "implementationFingerprints": [
     {
+      "path": "docs/migration/production-resources.json",
+      "sha256": "da5f49f40fd2bb6bdc65c80ede7003f2de6af001b50fee2c1cb9abee00137c4e"
+    },
+    {
       "path": "docs/migration/source-edge-bodies-review.md",
       "sha256": "5d2af016b03d328771b7b9c51106df4a5e43518792316307acc3b255322247e3"
     },
@@ -624,19 +628,35 @@
     },
     {
       "path": "scripts/migration/d1-import.mjs",
-      "sha256": "f1824d8f8b06e630a74e24b1c8524f5f641c0071605afe71bb42a0aff4bb66df"
+      "sha256": "bc73e52e505834bb55f9e39049571bc1d4fa411f745af0b663360dcf91812848"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
       "sha256": "d43a55b2a4a239495853a0e2c901ae025965f4d2b50ed8d313931b9d9dc46772"
     },
     {
+      "path": "scripts/migration/production-d1-brand.mjs",
+      "sha256": "2a9195cf7337b3dbe7f5600b1f28b7a49cbde2ccdee826ab6ebb09b2c75fe662"
+    },
+    {
+      "path": "scripts/migration/production-import-journal.mjs",
+      "sha256": "fe741bd24f34988f3b1c53d021226073b09385a006a620c925441851d2a3796c"
+    },
+    {
       "path": "scripts/migration/production-preparation-audit.mjs",
       "sha256": "069bd9752319c39f9b48453133f0d2a49d405c510628a476a5a5418ac75672b4"
     },
     {
+      "path": "scripts/migration/production-remote-d1.mjs",
+      "sha256": "956182d1c23936e8db839e03267dd7cb6fd70a0c3825537fe08c6b8d027385c0"
+    },
+    {
       "path": "scripts/migration/run-admin-reenrollment.mjs",
       "sha256": "12c8be4fb24cbc70096a2b0be1b0649e4349ab5aa4436ec8435e7171a2b8c2d9"
+    },
+    {
+      "path": "scripts/migration/source-database-freeze.mjs",
+      "sha256": "022dc43ea82ef78496613dc4983d140e3744e4484b1a1b21721f4bbe23a6f830"
     },
     {
       "path": "scripts/migration/source-scheduled-writers.sql",
@@ -688,7 +708,7 @@
     },
     {
       "path": "scripts/migration/verify-production-empty-schema.mjs",
-      "sha256": "69fa2839f1634a30229a50e0d8a4ec51342fe7852b58019bd2112ed680d5921f"
+      "sha256": "43c5673ebbff8fb3f39ec6b1327ca0ca9c57991d6c3af08d54e2fa5691ee638e"
     },
     {
       "path": "supabase/functions/handle-stripe-webhook/index.ts",

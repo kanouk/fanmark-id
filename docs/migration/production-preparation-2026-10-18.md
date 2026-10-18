@@ -1,0 +1,27 @@
+# 2026-10-18 本番移行の実装・検証
+
+PR #41の既存ブランチを継続。本番準備完了とは判定しない。本人の再認証は、他の準備がそろってから行う。10月16日の再登録capsuleは期限切れで、期限を書き換えたり検査を迂回したりしない。
+
+## P2: 本番専用D1 transport
+
+`production-remote-d1.mjs`は保存済み本番資源表のaccount/DB UUID/名前/作成時刻に固定し、SQL batchごとにAPI metadataを再確認する。既定は読み取り専用。SELECTと限定した読取PRAGMAだけを許し、複文や不明SQLを拒否する。既存isolated-remoteの対象制限は維持する。
+
+書込transportは0700ディレクトリ・0600ファイルのjournalを必須とする。送信前にintentをfsyncし、全結果を受け取り検証した後にだけACKを保存する。途中終了・応答不明・結果欠落ではpendingとlockを保持し、同じjournalの別processからも追加書込を拒否する。記録には行・資格情報を含めずbatch hashだけを保存する。異なるjournalを使った同一DBへの同時書込の防止、pendingの独立照合・解決、全storeの取り込みを指揮するrunnerは未実装。transport単体を本番import開始の許可と扱わない。汎用importerへproduction transportをlocalとして渡す経路も拒否する。
+
+native D1で新規10試験を確認し、既存isolated transport/importerと合わせて39試験成功。実Cloudflareへの接続は読み取り専用で確認し、全3DBのschema・初期seed・migration ledger一致とFK0を再確認。[実環境の確認](evidence/production-schema-readback-2026-10-18.json)。実データのINSERTは行っていない。
+
+## P3: DB更新拒否と逆操作
+
+`source-database-freeze.mjs`は実inventoryに一致する関係だけに対し、更新拒否トリガー、読戻し検査、解除SQLを生成する。接続・実行は行わない。設置前後に全関係集合と権限を照合し、ACCESS EXCLUSIVE lockで開始済みSQLの終了を待つ。lock timeout 5秒・statement timeout 30秒。途中失敗は同じtransaction全体を取り消す。
+
+実sourceのread-only検査ではpublic40/auth27/storage8の計75表。管理された35表はpostgres所有ではなく、所有者専用のALTER/DROP TRIGGERを直接使えない。TRIGGER権限のある71表については、所有表をENABLE ALWAYS、管理表を通常triggerで拒否する。逆操作はrun固有の関数・全依存triggerの定義と件数を照合してから、その関数だけをCASCADEで削除する。これは[Supabaseの管理schemaのtrigger解除手順](https://supabase.com/docs/guides/database/postgres/triggers)に基づく。所有権の変更はしない。
+
+除外する4表はauth.schema_migrations/storage.migrationsと、未使用のstorage.buckets_vectors/storage.vector_indexes。vector2表が非空なら生成した停止SQLは拒否する。現在はいずれも0件。通常runtimeの6roleはsuperuserではなくsession_replication_roleのSET権限もないことをread-onlyで確認した。一般writerがreplica modeで通常triggerを回避できる構成は拒否する。管理者・プラットフォームのDDL/migration/role設定変更は別途停止し、除外したmigration metadataと全schemaを確定copy前後で照合する必要がある。
+
+隔離PostgreSQL17で7試験成功。通常role/service_role/ownerのINSERT・UPDATE・DELETE・TRUNCATEと0行更新、所有表のreplica mode、非所有者のTRIGGER権限だけでの設置・解除、誤inventory/誤inverse/改変triggerの拒否、実行中transactionとのlock timeoutと全体rollbackを確認した。ポートを公開せず、専用containerはID/name/labelを照合して削除した。初回のtest harnessは初期化中の一時socketをreadyと判定して失敗し、最終TCP listenerで判定する修正後に成功した。
+
+これはDB境界の部品であり、本番での停止実行ではない。外部副作用を伴うEdge、Stripe receiver、Cron、Auth/Storage HTTP受付と開始済みupload、DDL/deployの停止・drainを含む全source停止の受け入れは未完了。DB triggerによるHTTP失敗だけで、メールや保存済み画像本文の副作用がないとは判定しない。
+
+## 残条件
+
+P1の本番アプリ・秘密・公開/backup/monitor adapter、P2の全store runnerと独立checker・再開、P3の全入口停止と実source同等環境試験、P4のStripe実台帳・旧受信引継ぎ、P6のprovider/DNS設定と復元票、P7/P8の本番資源復旧・全体実測は残る。本番D1への実データ取り込み、旧サービス停止、DNS切替、main mergeは未実施。

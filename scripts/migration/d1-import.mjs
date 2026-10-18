@@ -44,6 +44,7 @@ import { inspectCredentialTransformSchema } from "./credential-transform-schema.
 import { readBusinessRuntimeImportSchema } from "./business-runtime-import-schema.mjs";
 import { openSnapshotBundle } from "./snapshot-encryption.mjs";
 import { assertIsolatedRemoteD1Target, isIsolatedRemoteD1 } from "./isolated-remote-d1.mjs";
+import { isProductionRemoteD1 } from "./production-d1-brand.mjs";
 import {
   CREDENTIAL_NONCREDENTIAL_COLUMNS,
   CREDENTIAL_SOURCE_RELATION,
@@ -2180,6 +2181,7 @@ export async function importD1Snapshot({
 } = {}) {
   validateDatabase(database);
   if (mode !== "local" && mode !== "isolated-remote") throw fail("unsupported_import_mode");
+  if (isProductionRemoteD1(database)) throw fail("production_import_runner_required");
   if (mode === "local" && isIsolatedRemoteD1(database)) throw fail("remote_binding_requires_remote_mode");
   if (allowUnresolvedGates !== true && allowUnresolvedGates !== false) throw fail("invalid_gate_option");
   if (canonicalBusinessSchema !== true && canonicalBusinessSchema !== false) throw fail("invalid_runtime_schema_option");

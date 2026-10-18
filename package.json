@@ -107,6 +107,7 @@
     "test:staging-monitor-api": "node --test scripts/migration/test-staging-monitor-api.mjs",
     "test:staging-invitation-signup-local": "node scripts/migration/test-invitation-signup-local-browser.mjs",
     "migration:prepare-production": "node scripts/migration/production-preparation-audit.mjs --check",
+    "test:source-database-freeze": "node --test scripts/migration/test-source-database-freeze.mjs",
     "test:production-preparation": "node --test scripts/migration/test-production-preparation.mjs",
     "test:auth-identity-preflight": "node --test scripts/migration/test-auth-identity-preflight.mjs",
     "test:supabase-auth-projection": "node --test scripts/migration/test-supabase-auth-projection.mjs",

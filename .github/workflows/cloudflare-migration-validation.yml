@@ -51,6 +51,10 @@ jobs:
       - name: Test migration data boundaries
         run: npm run test:migration-data
 
+      - name: Test source database freeze and inverse on isolated PostgreSQL
+        timeout-minutes: 5
+        run: npm run test:source-database-freeze
+
       # Master artifact generation also imports the application's catalog tools.
       # This job installs both application and Worker dependency trees.
       - name: Test combined Business Auth Master and split R2 recovery

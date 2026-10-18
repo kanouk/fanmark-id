@@ -4,7 +4,8 @@
 import { readFile, readdir } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { createProductionRemoteD1 } from "./production-remote-d1.mjs";
 import { fileURLToPath } from "node:url";
 import { Miniflare } from "../../workers/api/node_modules/miniflare/dist/src/index.js";
 import { businessMigrationStatements } from "./business-runtime-import-schema.mjs";
@@ -23,22 +24,28 @@ try {
   const manifest = JSON.parse(await readFile(new URL("../../docs/migration/production-resources.json", import.meta.url), "utf8"));
   if (config.account_id !== "bfc2890741f0b3fb236e2d755b6c9adc" || config.account_id !== manifest.accountId || config.main || config.routes || config.assets || config.workers_dev !== false || config.preview_urls !== false || config.d1_databases?.length !== 3) throw Error("config_rejected");
   if (digest(config.d1_databases.map(r => r.binding).sort()) !== digest(["AUTH_DB", "FANMARK_DB", "MASTER_DB"])) throw Error("binding_rejected");
-  const call = async args => JSON.parse((await run("./workers/api/node_modules/.bin/wrangler", [...args, "--config", "workers/api/wrangler.production-schema.jsonc", "--profile", "fanmark-staging-inapp", "--json"], { cwd: root, timeout: 90000, maxBuffer: 8 * 1024 * 1024 })).stdout);
-  phase = "remote-inventory";
-  const inventory = await call(["d1", "list"]), reports = [];
+  phase = "remote-authentication";
+  const auth = JSON.parse((await run("./workers/api/node_modules/.bin/wrangler", ["auth", "token", "--profile", "fanmark-staging-inapp", "--json"], {
+    cwd: root, timeout: 90000, maxBuffer: 1024 * 1024,
+  })).stdout);
+  const reports = [];
   for (const binding of config.d1_databases) {
     const expected = manifest.d1.find(r => r.binding === binding.binding);
     if (!expected || binding.database_id !== expected.id || binding.database_name !== expected.name || !expected.name.startsWith("fanmark-production-")) throw Error("binding_rejected");
-    const actual = inventory.find(r => r.uuid === expected.id);
-    if (actual?.name !== expected.name || actual.created_at !== expected.createdAt) throw Error("incarnation_rejected");
+    const database = createProductionRemoteD1({ token: auth.token, target: {
+      accountId: manifest.accountId, databaseId: expected.id, databaseName: expected.name,
+      createdAt: expected.createdAt, targetIncarnation: randomUUID(),
+    } });
+    phase = "remote-identity";
+    await database.verifyProductionTarget();
     const files = binding.binding === "AUTH_DB" ? authFiles : binding.binding === "MASTER_DB" ? masterFiles : BUSINESS_MIGRATION_SEQUENCE;
     const directory = binding.binding === "FANMARK_DB" ? "migrations-business" : "migrations";
     if (binding.migrations_dir !== directory) throw Error("migration_directory_rejected");
     if (directory === "migrations-business" && digest((await readdir(new URL(`../../workers/api/${directory}/`, import.meta.url))).filter(f => f.endsWith(".sql")).sort()) !== digest([...files].sort())) throw Error("business_files_rejected");
     const query = async sql => {
-      const result = await call(["d1", "execute", binding.binding, "--remote", "--command", sql]);
-      if (result.length !== 1 || result[0].success !== true) throw Error("read_rejected");
-      return result[0].results;
+      const result = await database.prepare(sql).all();
+      if (result.success !== true || result.meta.rows_written !== 0) throw Error("read_rejected");
+      return result.results;
     };
     phase = "local-runtime";
     const mf = new Miniflare({ workers: [{ config: { name: "production-schema-comparison", type: "worker", compatibilityDate: "2026-09-18",

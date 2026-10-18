@@ -1,3 +1,7 @@
+## 2026-10-18: 本番専用接続とsource DB停止部品を追加
+
+[実装・検証記録](production-preparation-2026-10-18.md)。production専用D1 transport/journalとsource更新拒否・逆操作を追加し、native D1/隔離PostgreSQLで検証。実3D1はread-onlyでschema/seed/FK一致を再確認。source75表の権限を調べ、管理表のTRIGGER権限と専用関数の逆操作へ対応した。本番の全store runner・全source停止・Stripe引継ぎ・本番設定/復旧は未完了。再認証は残準備完了後に依頼する。旧capsuleの期限は延長しない。PR41既存ブランチ/main保持。
+
 ## 2026-10-16: 実データの暗号化予備コピーとローカル移送
 
 コード修正58dd606のCI38894830871はApplication/Worker両job成功。関連ローカル試験はsnapshot20/encryption4/preparation9件成功。mainは`e5a553c0bcc938a308def6f3770f1a84db88d389`を保持。以後の追加commitは検証記録のみ。
