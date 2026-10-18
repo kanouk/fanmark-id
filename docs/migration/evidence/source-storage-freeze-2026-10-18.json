@@ -1,0 +1,22 @@
+{
+  "proof": "isolated-storage-freeze",
+  "storageVersion": "1.80.2",
+  "storageImage": "supabase/storage-api:v1.80.2@sha256:95b217a9c59e0ac06c6dcb539df3189a1668a2445fb43dbf29660d6968ffd7d2",
+  "postgresImage": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+  "protectedTables": 12,
+  "mutationsRejected": 7,
+  "inFlightOverwriteRejected": true,
+  "resumableCompletionRejected": true,
+  "originalBytesPreserved": true,
+  "resumeVerified": true,
+  "sourceConnections": 0,
+  "productionWrites": 0,
+  "limitations": [
+    "local file backend; production S3 backend and S3 multipart uploads remain separate proof"
+  ],
+  "productionReady": false,
+  "sourceVersionObserved": "1.80.2",
+  "sourceCodeCommit": "db42280506a07a165376219b2d6ac7bc92ccdfcc",
+  "sourceCodeUrl": "https://github.com/supabase/storage/blob/db42280506a07a165376219b2d6ac7bc92ccdfcc/src/storage/uploader.ts",
+  "testsPassed": 5
+}

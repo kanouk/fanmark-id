@@ -1,3 +1,7 @@
+## 2026-10-18: 本番runtimeを非公開で配備
+
+`62e139b` のCI39136846799は両job成功。本番app/backup/monitorを非公開・Cron停止・秘密未設定で配備し、別の管理API読戻しでbinding/閉鎖状態/既存4 Worker保持を確認。app version `dcdf1c5e-ab45-4851-8113-3b7e3a955d1f`。本番import/source停止/DNS変更/main mergeは未実施。実Storageと同じ1.80.2の隔離APIで7種の更新拒否、開始済み通常/TUS uploadの完了拒否、元画像保持と逆操作を確認した。file backendの限定証拠で、S3/Edge等の残条件は維持。絵文字CLIの07de140をpush、CI39137905597確認中。[検証記録](production-preparation-2026-10-18.md)。再認証は最後。
+
 ## 2026-10-18: 実データの業務バックアップ復元と読取専用照合
 
 業務40表5,770行の予備コピーで取り込み→暗号化保存→別DB復元→再照合が成功。取り込み台帳をbackupへ含める修正と、復元時の連番のSQLite型を整数に保つ修正を追加した。別呼出しcheckerは行/進捗/schema/FK/連番を検査し、DBを変更しない。本番用Backup/monitor/絵文字公開・閉鎖configもlocal検証済み。全store本番runner/source全入口停止/provider・DNS/遠隔復旧は残るため、まだ本番開始可能ではない。[検証範囲と残条件](production-preparation-2026-10-18.md)。再認証は準備完了後。main/旧本番保持。

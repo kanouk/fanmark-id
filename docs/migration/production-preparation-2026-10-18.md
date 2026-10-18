@@ -55,3 +55,11 @@ Cloudflare account内4 Workerの全settingsを読み取り、既存rate-limit na
 ## 残条件
 
 P1の本番配備・秘密・公開/backup/monitorの実接続と受け入れ、P2の全store runnerと独立checker・再開、P3の全入口停止と実source同等環境試験、P4のStripe実台帳・旧受信引継ぎ、P6のprovider/DNS設定と復元票、P7/P8の本番資源復旧・全体実測は残る。本番D1への実データ取り込み、旧サービス停止、DNS切替、main mergeは未実施。
+
+## 非公開runtimeの実配備とStorage停止検証
+
+runtime commit `62e139b` のCI `39136846799` はアプリ/Worker両方成功。本番専用アプリ・backup・monitorの3 Workerを公開経路/Cronなしで配備した。秘密はまだ設定せず、backup admission=pending、アプリはreceipt_only。管理APIで全binding集合、3 D1/3 R2、service entrypoint、専用DO namespace、rate-limit ID、変数、workers.dev/preview無効、Cron 0を別途読み戻し、既存4 Workerのsettingsとzone routesの保持を確認した。[実配備の照合](evidence/production-closed-runtime-2026-10-18.json)。本番データの取り込み・source停止・ドメイン切替は未実施。
+
+本番のStorage APIは1.80.2。対応する公式imageをdigest固定し、外部へ接続できないDocker network上でPostgreSQLと動かした。DB停止中の新規upload/upsert/update/copy/move/delete/bucket設定を拒否し、public/authenticatedの元画像の読み出しと停止解除後の更新を確認。さらに開始済みの通常uploadと、最初のchunkを送ったTUS再開可能uploadの完了が停止後に拒否され、元objectのmetadata/本文が保持されることを確認した。5試験成功。[試験記録](evidence/source-storage-freeze-2026-10-18.json)。ローカルfile backendの証拠であり、本番S3 backendやS3 multipart、全Edge/外部副作用のdrainを済ませたとは扱わない。
+
+絵文字CLI commit `07de140` はpush済みで、CI `39137905597` の結果を確認中。再認証は引き続き全準備がそろってから行う。

@@ -592,7 +592,7 @@
   "implementationFingerprints": [
     {
       "path": "docs/migration/production-resources.json",
-      "sha256": "da5f49f40fd2bb6bdc65c80ede7003f2de6af001b50fee2c1cb9abee00137c4e"
+      "sha256": "99945ab62b066e8f5e12c6a29d9760af8520d851fc5261ec2add273b419fe50c"
     },
     {
       "path": "docs/migration/source-edge-bodies-review.md",

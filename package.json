@@ -114,7 +114,8 @@
     "test:auth-identity-preflight": "node --test scripts/migration/test-auth-identity-preflight.mjs",
     "test:supabase-auth-projection": "node --test scripts/migration/test-supabase-auth-projection.mjs",
     "test:admin-reenrollment": "node --test scripts/migration/test-admin-reenrollment.mjs scripts/migration/test-admin-reenrollment-server.mjs",
-    "build:cloudflare-production-worker:dry-run": "npm --prefix workers/api run build:production-closed:dry-run"
+    "build:cloudflare-production-worker:dry-run": "npm --prefix workers/api run build:production-closed:dry-run",
+    "test:source-storage-freeze": "node --experimental-strip-types --test scripts/migration/test-source-storage-freeze.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

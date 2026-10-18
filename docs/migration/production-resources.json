@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "state": "schema_applied_unbound",
+  "state": "closed_runtime_deployed",
   "productionReady": false,
   "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
   "zoneId": "6a2c39c92ba1c4106b7c19f87ada0a7e",
@@ -74,5 +74,29 @@
   "domainChanged": false,
   "backupRestoreVerified": false,
   "schemaVerifiedAt": "2026-10-16T00:33:36.509Z",
-  "schemaEvidence": "evidence/production-schema-readback-2026-10-16.json"
+  "schemaEvidence": "evidence/production-schema-readback-2026-10-16.json",
+  "runtime": {
+    "observedAt": "2026-10-18T14:55:26.404Z",
+    "ciValidatedRuntimeCommit": "62e139b64f584031176d04643e308c8f021d20f7",
+    "workers": [
+      {
+        "name": "fanmark-app-production",
+        "version": "dcdf1c5e-ab45-4851-8113-3b7e3a955d1f"
+      },
+      {
+        "name": "fanmark-backup-production",
+        "version": "e0f3d5c9-1cc8-4d7c-b577-b02ea24ab38c"
+      },
+      {
+        "name": "fanmark-backup-monitor-production",
+        "version": "a6684ff9-a2e8-4b3e-86e6-1dad547e9768"
+      }
+    ],
+    "publicRoutes": 0,
+    "cronTriggers": 0,
+    "secretsConfigured": false,
+    "sourceStopped": false,
+    "dataImported": false,
+    "domainSwitched": false
+  }
 }
