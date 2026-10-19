@@ -1,3 +1,27 @@
+## 2026-10-19: 本番専用鍵を保管し、遠隔から復号確認
+
+本番専用の独立したarchive鍵・認証用秘密鍵を作成し、Macキーチェーンと非公開Vaultへ保存した。Vaultは0600/0700、Obsidian SyncのFully syncedと3つのhash一致を確認。さらにSyncサーバーの対象versionを直接取得し、全内容のSHA-256一致と認証escrowの復号・鍵ID一致を確認した。既存鍵での再実行拒否とnote不変も実検証。値は公開記録へ出していない。[操作契約](production-key-custody.md) / [限定証拠](evidence/production-key-custody-2026-10-19.json)。
+
+Cloudflareへのsecret設定、運用backupの実資源復旧、別端末での復旧は未実施。鍵保管だけで本番準備完了とはしない。CI39200786556はWorker成功、app失敗。先行の再送fixture修正と今回の準備をまとめて既存PRへ反映し、CIを再確認する。
+
+当日の停止/外部結果照合、OAuth provider設定、DNS逆操作、実資源復旧が残る。管理者MFAは最後。本番source停止/移送/DNS/main mergeなし。旧解約済みテスト契約は保持。
+
+## 2026-10-19: CIの再送fixtureを修正、DB/Cronの実観測を追加
+
+7da5afeのCI39200786556はappの受信移行試験で失敗、Workerは継続中。duplicate試験が毎回`event.created`を現在秒で作り直しており、秒境界を越えると同ID/異内容として正しく503になっていた。event本体を固定し、別timestampの署名による再送成功と、同IDでcreatedを変えた通知の503拒否を明示検証した。runtimeの条件は変更せず、修正後のnative受信回帰23件成功。
+
+`source-inflight-observation.sql`を追加し、実sourceのREAD ONLY transactionで確認した。観測時の他client transaction・write xid・prepared transaction・未終了Cron・pg_net待機要求はいずれも0。queue消費後のHTTP完了は判定できないため、全停止の成功にはしない。[観測証拠](evidence/source-inflight-readback-2026-10-19.json)。本番データ変更0、MFA依頼なし。
+
+ログ収集と本修正は既存branchのlocalに保存。先行Worker jobの終了を確認してまとめてPRへ反映する。当日の停止/外部結果照合、provider設定、DNS逆操作、鍵別保管/実資源復旧は引き続き未完了。
+
+## 2026-10-19: 旧Edgeの実行ログを全ページ取得し終了を照合
+
+`source-execution-logs.mjs`を追加。固定projectへGETし、本文/URL/HTTPヘッダーを除いた実行ID・配備版・開始終了metadataだけを取得する。前後の件数と全ページを照合し、欠落・変化・identity不一致では終了の証拠にしない。HTTP 200だけの実行は未終了、timeout等は異常終了として保持する。
+
+実24時間の40行・6ページから10実行すべての正常終了を確認した。旧35関数の保存inventoryと一致したのは管理者一覧4実行・期限処理1実行。残り5実行も保存済みinventoryから所有する一時診断関数へ対応付けた。APIの日時指定と同時刻UUIDの並び順を実取得で修正した。合成6件・準備9件成功。[実証と限界](evidence/source-execution-logs-readback-2026-10-19.json) / [停止票への組込み](source-stop-and-resume.md)。
+
+ログ取得だけでは、未記録処理やDB/Storage/Stripe/メールの完了を証明できない。当日の全入口停止・旧配備版/終了イベント・外部結果との照合を残す。sourceは稼働中で変更なし。PR上の7da5afe/CI39200786556は実行中のため、本変更はlocalで保存し、先行CIをcancelせず完了後にpushする。MFAは最後。本番移送/DNS/main mergeなし。
+
 ## 2026-10-19: Stripe回収の暗号化保管・実行journal・応答不明時照合を接続
 
 15714a5のCI39198697249はapp/Worker両job成功。公開前の受信回収候補へ、固定本番D1の読取・保持中writer fence確認・暗号化archiveの保存/独立再検査を接続した。固定Supabase projectの生成SQL専用adapterと、一度の実行前intent保存・別要求の全件読戻し・応答不明時の再送禁止も追加した。

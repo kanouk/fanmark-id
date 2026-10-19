@@ -1,6 +1,10 @@
 # fanmark.id TECH.md
 
+`node --test scripts/migration/test-production-key-custody.mjs` は本番鍵の独立性、Worker WebCryptoとの復号互換、改変拒否を検査する。実保管はmacOS専用で、鍵値をargv/ログに出さず、VaultをfsyncしてからKeychainへ保存する。Sync確認と遠隔からの復号確認は別途実施する。[操作契約](migration/production-key-custody.md)。
+
 `node --test scripts/migration/test-source-stripe-inventory.mjs` は旧Stripeの全ページ取得、live/test分離、未完了決済の抽出、資格情報・個人情報の出力抑止を合成応答で検証する。root移行CIにも含める。[停止・中止手順](migration/source-stop-and-resume.md)。
+`node --test scripts/migration/test-source-execution-logs.mjs` は旧Edgeログの同時刻cursor、件数/全ページ整合、実行ID/配備版の結合、HTTP成功だけの未完了判定、異常終了・欠落metadata、API診断の秘密抑止を検証する。実ClickHouse APIのUUID順序と文字列順序の差を避け、ORDER BYとcursorの両方で`toString(id)`を使う。
+`source-inflight-observation.sql`は明示READ ONLY transactionでDB/Cron/HTTP queueの件数を確認する。旧本番で実行し、観測時は各0だった。停止判定・送信中HTTPの終了確認とは区別する。
 
 本番移送executorの復旧は[限定手順](migration/production-import-recovery.md)を参照。`test-initial-import-set-readback.mjs` は終了した子processのlock・native全store/DO・独立clientを使い、stage境界の引継ぎと再開を検査する。
 

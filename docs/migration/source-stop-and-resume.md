@@ -10,7 +10,7 @@
 | --- | --- |
 | source原本 | 35 Edge Functionの原本、各ID/version/JWT設定、個別依存file hashを保存済み。開始直前に全件再照合する |
 | 停止・逆操作SQL | Cron、71保護relation、保存専用Stripe receiverの候補あり。同じrunの14 fileへ再生成し、独立にhash/権限を確認した。当日のinventory再取得・再生成は未実施 |
-| 旧handlerの終了確認 | Functionの差替えやDB transaction 0だけでは、旧版Edgeの開始済み外部処理の終了を証明できない。実行・送信・決済の対応を確認するcollectorは未完了 |
+| 旧handlerの終了確認 | 実行ID/配備版/開始終了ログの全ページcollectorを実装し、実24時間40件・10実行の終了を照合済み。Function差替えやログだけでは全処理・外部副作用の完了を証明できない。当日の停止境界、DB/Storage・送信・決済との対応は別途必要 |
 | Stripe棚卸し | 下記GET専用collectorを実装。元の秘密鍵を移出しない一時診断adapterでlive取得とsource照合を実施済み。当日の停止境界での再照合は未完了 |
 | 中止時の受信記録 | source streamの暗号化保存・D1への移送、逆方向のatomic SQL・固定読取adapter・暗号化保管・一度の実行journal/別要求読戻しを実装、native往復検証済み。実資源の閉鎖・旧処理終了・実回収は未実施 |
 | 移行先の閉鎖 | 一般HTTP/Auth/Cronと業務dispatcherを止める。受信専用経路も開ける前に当該Worker version・binding・署名鍵・台帳を照合する |
@@ -98,7 +98,41 @@ Sessionの作成日とEventの作成日は同じとは限らない。
 [取得結果と制限](evidence/source-stripe-inventory-readback-2026-10-19.json)。
 本番の停止・drain・最終snapshotはまだ行っていない。
 
-## 停止時間
+## Edge実行ログによる終了確認
+
+`collectSourceExecutionLogs({ token, from, to })`は固定projectのManagement APIへGETだけを行う。
+UTCの分境界・24時間以内の明示範囲を要求し、同じ範囲をSQLにも指定する。本文・URL・HTTP
+ヘッダーは取得せず、実行ID・関数ID・配備版・時刻・event種別・終了理由・HTTP statusだけを
+privateに保存する。2 sourceの件数を取得前後に比較し、全ページの行数と一致しなければ拒否する。
+同時刻のcursorは`timestamp, toString(id)`で順序を固定する。UUID型の既定順序に依存しない。
+
+実行IDごとに関数/配備版が一致し、終了イベントが1件で、その後の活動が記録されていない
+場合だけ「終了を観測」とする。HTTP 200だけでは未終了、identity欠落は未照合、timeout等は
+異常終了として残す。`EarlyDrop`/`EventLoopCompleted`でもDB・決済・送信の成功は認定しない。
+
+当日は入口を閉じる前から取得窓を開始し、保存した35関数原本と停止後の配備版を区別して
+照合する。ログの保持期限・取得遅延・記録制限があるため、空の取得結果や全行照合の成功を
+全処理の終了に読み替えない。DB transaction、Cron/queue、Storageの実bytes、Stripe/メールの
+外部結果を別に確認する。未照合・異常終了は対象の処理結果が解決するまで公開を止める。
+
+2026-10-18 04:47〜10-19 04:47 UTCの実取得は40行・6ページ、実行10件すべて終了を観測、
+identity欠落/未終了/異常終了0。保存済み旧inventoryとの照合では`admin-list-users`4件と
+`check-expired-licenses`1件を含む。他5件は旧35関数以外の診断関数の記録として保持する。
+sourceは稼働中のままで、これは停止の実証ではない。[取得証拠](evidence/source-execution-logs-readback-2026-10-19.json)。
+
+`source-inflight-observation.sql`も当日の確認に使う。10/19 04:53:50 UTCの実READ ONLY観測で、
+他clientのtransaction・write xidのあるtransaction・prepared transaction・未終了Cron・
+pg_net待機要求は各0だった。観測要求自身は集計から除外する。query本文やHTTPのURL/headers/bodyは
+取得しない。[実観測](evidence/source-inflight-readback-2026-10-19.json)。
+pg_stat_activityは実時間の統計であり、repeatable-readでも全サービスのatomic snapshotにはならない。
+pg_netの[queue消費と応答保存は別処理](https://github.com/supabase/pg_net/blob/master/src/core.c)なので、
+待機0を送信完了と扱わず、`pg_net_inflight_known=false`を維持する。
+
+参照: [公式ログAPI](https://supabase.com/docs/reference/api/v1-get-project-logs)、
+[ログの照会](https://supabase.com/docs/guides/observability/advanced-log-filtering)、
+[終了理由](https://supabase.com/docs/guides/troubleshooting/edge-function-shutdown-reasons-explained)。
+
+## 停止時間の見積もり
 
 現状は本番の停止時間を確定できない。準備済みデータ量のlocal restore測定を本番RTOに
 読み替えない。最終snapshot/暗号化・5 store import/独立比較・Stripe効果照合・認証確認・

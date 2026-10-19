@@ -1,6 +1,10 @@
 # fanmark.id ARCHITECTURE.md
 
+本番用の鍵保管は `scripts/migration/production-key-custody.mjs`。独立したarchive鍵と認証秘密鍵を作成し、暗号化escrow・Macキーチェーン・非公開Vaultへ保存する。既存鍵や保存先は再利用せず拒否する。[保管と復旧の範囲](migration/production-key-custody.md)。
+
 旧Stripe決済のGET専用棚卸しは `scripts/migration/source-stripe-inventory.mjs`。停止と公開前中止の順序は[実行票候補](migration/source-stop-and-resume.md)を参照。
+旧Edge処理の実行証拠は `scripts/migration/source-execution-logs.mjs`。固定projectのログAPIから本文・HTTPヘッダーを除いた実行ID/配備版/開始終了のmetadataだけを取得し、ページ欠落や取得中の件数変化を拒否する。記録済み処理の終了と、source全体の停止・外部副作用の完了は別判定。
+`scripts/migration/source-inflight-observation.sql`はDB transaction・prepared transaction・未終了Cron・pg_net待機件数の読取専用観測。HTTP送信中の完了判定は含まない。
 `stripe-receipt-transfer.mjs`の`prepareStripeReceiptReturn`は、元exportと閉鎖後targetの2表から旧側へのatomic回収SQLを生成する。同moduleのcollectorは固定本番D1のread-only接続と保持中のwriter fenceを確認し、暗号化archiveを保存・再照合する。`source-stripe-return-transport.mjs`は固定Supabase projectへの生成SQLだけを扱い、`stripe-receipt-return-execution.mjs`が永続intent、一度の実行、別要求での全件読戻し、応答不明時の再送禁止を担う。実環境の停止・旧処理終了・業務未公開の証拠は別途必要。
 
 本番移送の実行者lockは `scripts/migration/production-import-execution-lock.mjs`。一括runnerが取得前に保存し、終了済み実行者の引継ぎは `recoverInitialImportExecution` でstage全件照合と遠隔CASを行う。[復旧範囲](migration/production-import-recovery.md)。

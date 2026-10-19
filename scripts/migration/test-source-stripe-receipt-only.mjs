@@ -78,17 +78,23 @@ test('receipt-only candidate uses native PostgreSQL transactions and real Stripe
     assert.equal(options.auth.persistSession,false);return {rpc};
    },Deno:{env:{get:key=>({SUPABASE_URL:'https://ppqgtbjykitqtiaisyji.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'synthetic-service',STRIPE_WEBHOOK_SECRET:secret,STRIPE_SECRET_KEY:'sk_test_synthetic_only'})[key]},serve:fn=>{handler=fn;}},
   });
-  const deliver=async (eventId,livemode=false,valid=true)=>{
-   const body=JSON.stringify({id:eventId,type:'checkout.session.completed',object:'event',created:Math.floor(Date.now()/1000),
+  // Stripe retries the same immutable event. Only the delivery signature may
+  // change; regenerating event.created on every request races the second boundary.
+  const eventCreated=Math.floor(Date.now()/1000);
+  const deliver=async (eventId,livemode=false,valid=true,{created=eventCreated,signatureTimestamp}={})=>{
+   const body=JSON.stringify({id:eventId,type:'checkout.session.completed',object:'event',created,
     api_version:'2025-08-27.basil',livemode,data:{object:{id:'cs_synthetic',object:'checkout.session',mode:'payment',
      status:'complete',payment_status:'paid',amount_total:1200,currency:'jpy',metadata:{type:'license_extension',months:'3'}}}});
-   const signature=stripe.webhooks.generateTestHeaderString({payload:body,secret:valid?secret:'whsec_wrong'});
+   const signature=stripe.webhooks.generateTestHeaderString({payload:body,secret:valid?secret:'whsec_wrong',timestamp:signatureTimestamp});
    return handler(new Request('https://example.test/webhook',{method:'POST',headers:{'stripe-signature':signature},body}));
   };
   await t.test('signature failures never call SQL; durable duplicate and live/test records remain separate',async()=>{
    assert.equal((await deliver('evt_bad',false,false)).status,400);assert.equal(rpcCalls,0);
    const first=await deliver('evt_same');assert.equal(first.status,200);assert.equal(first.headers.get('x-fanmark-cutover'),plan.runId);
-   assert.equal((await deliver('evt_same')).status,200);assert.equal((await deliver('evt_same',true)).status,200);
+   assert.equal((await deliver('evt_same',false,true,{signatureTimestamp:eventCreated+1})).status,200);
+   assert.equal((await deliver('evt_same',true)).status,200);
+   // A genuinely changed event with the same identity remains a conflict.
+   assert.equal((await deliver('evt_same',false,true,{created:eventCreated+1})).status,503);
    assert.equal(sql('SELECT count(*) FROM billing_ingress.stripe_webhook_receipts'),'2');
    assert.equal(sql('SELECT count(*) FROM billing_ingress.stripe_webhook_dispatches'),'2');
    assert.equal(sql('SELECT sum(delivery_count) FROM billing_ingress.stripe_webhook_receipts'),'3');sql(plan.verifySql);

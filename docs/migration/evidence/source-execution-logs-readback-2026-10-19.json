@@ -1,0 +1,48 @@
+{
+  "format": "fanmark-source-execution-logs-readback-v1",
+  "observedAt": "2026-10-19T04:49:00.577Z",
+  "from": "2026-10-18T04:47:00Z",
+  "to": "2026-10-19T04:47:00Z",
+  "counts": {
+    "function_edge_logs": 10,
+    "function_logs": 30
+  },
+  "pages": 6,
+  "executionCount": 10,
+  "terminationObservedCount": 10,
+  "unresolvedExecutionCount": 0,
+  "uncorrelatedRows": 0,
+  "abnormalTerminationCount": 0,
+  "savedOriginalFunctionsObserved": {
+    "admin-list-users": 4,
+    "check-expired-licenses": 1
+  },
+  "ownedTemporaryDiagnosticExecutions": 5,
+  "temporaryFunctionOwnershipMatchedSavedInventories": true,
+  "privateEvidenceSha256": "e40d6523e978edcb188c48344a46d8683469fd5d297a93f0797fbc9dcb74fa2f",
+  "rowsSha256": "bf701e7f9b384539063c9e29ec964334a2e15d61b70df3170d84646a0410ad21",
+  "sourceWrites": 0,
+  "queryRowsAccountedFor": true,
+  "providerCaptureComplete": false,
+  "sourceDrainVerified": false,
+  "externalEffectsVerified": false,
+  "productionReady": false,
+  "tests": {
+    "sourceExecutionLogsPassed": 6,
+    "productionPreparationPassed": 9
+  },
+  "implementationSha256": {
+    "scripts/migration/source-execution-logs.mjs": "cea6fdb5e78f6696b842de9ef29e960dcdf0738de6527676a51c05412684d2f5",
+    "scripts/migration/test-source-execution-logs.mjs": "05af64fd80c3105559c640df8f0245bd0b4c8d0992b0916ea036d0ab92b1b39a"
+  },
+  "diagnosticCorrections": [
+    "Management API timestamps require UTC Z rather than offset representation",
+    "native UUID sorting differs from returned string order; ORDER BY and cursor now both use toString(id), verified across real six-page query"
+  ],
+  "limits": [
+    "Recorded executions in the supplied window only; source continues running",
+    "No log messages, request URLs or HTTP headers collected",
+    "HTTP response or runtime termination does not prove external effects completed",
+    "Provider capture loss, retention and ingestion delay are not controlled by collector"
+  ]
+}

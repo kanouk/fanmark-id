@@ -1,0 +1,34 @@
+{
+  "format": "fanmark-production-key-custody-evidence-v1",
+  "observedAt": "2026-10-19T05:02:30.677Z",
+  "keyId": "production-backup-b7453682-6750-41f1-be11-4ce71ca3fa55",
+  "scopeDigest": "6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d",
+  "acceptance": {
+    "independentlyGeneratedProductionKeys": true,
+    "keychainReadbackMatched": true,
+    "vaultPrivateMode": "0600/0700",
+    "obsidianSyncFullySyncedAndHashesMatched": true,
+    "remoteVersionDownloadedAndSha256Matched": true,
+    "remoteAuthEscrowDecryptedAndKeyIdMatched": true,
+    "existingKeyRefusalAndNotePreservation": true,
+    "secretValuesEmitted": false
+  },
+  "hashes": {
+    "noteSha256": "da0a4e22fc2681f2d8e2a58702f4bafdfab9ddb6e39367d0209fbd24a966ddef",
+    "archiveKeySha256": "bb3168427ed46ba2d13243ee8b80471ca83ac3fcbd1accc3866f3cb89f462176",
+    "authKeyId": "ac7c57eff0fcd5721af6dc521be1166eb60c7b23c1d1e454f474e001a4bf2411"
+  },
+  "privateReceiptHashes": {
+    "production-key-custody-local.json": "6f987f42ccfa1885b0b7595023258dc1440e326f5749c737294b304774875753",
+    "production-key-custody-remote.json": "e824e69d590f442c1a076d088b3e673cc30dcb2ae2b6bbfe0688bee67318762e",
+    "production-key-custody-no-rotation.json": "ee4feebf579bd10a416e19a2cdcc24e1a453ffb195f17cea29b9f2d9241d8937"
+  },
+  "scope": {
+    "cloudflareSecretsConfigured": false,
+    "operationalBackupRestored": false,
+    "independentDeviceRecoveryVerified": false,
+    "sourceWrites": 0,
+    "domainCutoverPerformed": false,
+    "productionReady": false
+  }
+}

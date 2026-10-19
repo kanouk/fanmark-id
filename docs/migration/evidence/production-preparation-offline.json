@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "286204d8da40013523a598f83fcd134da1e7e2406c3a68bcea7598a6f1239f56"
+    "sha256": "5b7d6c0da13a30d9a993616f254d7ab530920322142f6ba3cdd9a9db12f24fe4"
   },
   "variables": [
     {
@@ -715,6 +715,10 @@
       "sha256": "e630244019bc5bc0c083144e6496ca2a65c95f9563f0fd5095c27dd16bf667c8"
     },
     {
+      "path": "scripts/migration/production-key-custody.mjs",
+      "sha256": "8c599fdfb7f45a80c2f2fc7650e76f223d49889db30571d4ad642ee9d48c4b9b"
+    },
+    {
       "path": "scripts/migration/production-preparation-audit.mjs",
       "sha256": "5d2a3738aaf3753f594f75f13dafbe87dc99de8c587272f727f1a2d4bcae050d"
     },
@@ -753,6 +757,14 @@
     {
       "path": "scripts/migration/source-edge-maintenance.mjs",
       "sha256": "4dbdd786de4996afc0f122098dbaa88fb566f74a6d3433649b597a3b8a8109bc"
+    },
+    {
+      "path": "scripts/migration/source-execution-logs.mjs",
+      "sha256": "cea6fdb5e78f6696b842de9ef29e960dcdf0738de6527676a51c05412684d2f5"
+    },
+    {
+      "path": "scripts/migration/source-inflight-observation.sql",
+      "sha256": "9adfe177a4da78ac63dc1ab3978e03daf2c71099af94b1f00396d10eaebfa657"
     },
     {
       "path": "scripts/migration/source-scheduled-writers.sql",

@@ -1,0 +1,18 @@
+{
+  "role": "postgres",
+  "format": "fanmark-source-inflight-observation-v1",
+  "observed_at": "2026-10-19T04:53:50.802738+00:00",
+  "source_writes": 0,
+  "cron_unfinished": [],
+  "queued_http_requests": 0,
+  "pg_net_inflight_known": false,
+  "prepared_transactions": 0,
+  "source_drain_verified": false,
+  "transaction_read_only": "on",
+  "other_client_transactions": 0,
+  "other_assigned_write_transactions": 0,
+  "sqlSha256": "9adfe177a4da78ac63dc1ab3978e03daf2c71099af94b1f00396d10eaebfa657",
+  "privateEvidenceSha256": "bf7134b0e52a011b846b17bf725bb2c7b6989175c08250657989cc4dbbf1a280",
+  "productionReady": false,
+  "observationOnly": true
+}
