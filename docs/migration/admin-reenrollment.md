@@ -3,6 +3,9 @@
 所有者は2026-10-16に移行先での再登録を選択した。Supabaseの既存factorは変更しない。
 この手順は本番データ移送・DNS切替の許可を取り直すためのものではなく、本人だけが行える認証操作である。
 
+最新の保存検証は[2026-10-20の証拠](evidence/admin-reenrollment-verified-2026-10-20.json)。
+当日の票が期限内・最終source一致ならhelperを再実行しない。
+
 ## 実施経路
 
 Node 22で、Git外の所有者専用0700ディレクトリを指定する。
@@ -49,3 +52,13 @@ AES-256-GCMのAADはprojectとpurposeを固定する。source bindingは同じ�
 2026-10-16 20:20 JSTに実本人の再登録が完了し、20:21 JSTに暗号化capsule読戻し、最新source binding、全Auth投影と管理者MFA有効を確認した。[検証記録](evidence/admin-reenrollment-verified-2026-10-16.json)。有効期限は翌17日20:20:41 JST。
 prod key custody、停止後の最終snapshot照合、本番import、実targetの管理者ログインは未完了。
 その他P1〜P8の条件が揃うまで旧サービスを停止せず、ドメインを切り替えない。
+
+2026-10-20 00:24:45 JSTに本人が再登録を完了し、00:25 JSTに別processで保存票の復号・
+最新source binding・全Auth投影とMFA/管理者権限を検証した。15 user / 28 account /
+1 twoFactor / 1 adminRoleをRAM内で投影し、実target用の既存Auth鍵による暗号化往復も一致。
+一時native D1/Better Authのfresh session確認であり、本番targetへのimport/loginではない。
+有効期限は2026-10-21 00:24:45 JST。専用helperは検証後に終了した。
+
+最初の画面は20分で終了し、票なし・process終了を確認した後、本人の更新指示で次の試行を作った。
+旧状態を保持し、既存の32byte暗号化鍵を再利用した。初回launcherの実行環境差はprivate記録に残す。
+新しい有効票がある間は、最初の失敗/期限切れ記録を根拠にhelperを再起動しない。

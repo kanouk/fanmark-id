@@ -6,9 +6,11 @@ G4はmaintenance/TLS/Stripe保存を確認し、実画面/Auth/Resend配信は�
 
 2026-10-19再開後: 旧Aを保持する[Worker Routeの代替票](production-route-alternative.md)を実地検証に基づいて準備した。従来のCustom Domain案を当日に黙って置き換えず、G0で方式と逆操作を固定する。新Webhook driverは両方式を明示的に区別する。
 
-> 2026-10-19更新：現在の指示は「本番移行直前まで準備」。専用資源・schema・閉鎖配備と予備コピーは作成済み。一括runner、source停止候補、Stripe保存専用候補と受信stream移送を追加した。旧環境の停止・本番ユーザーデータ投入・DNS切替は未実施。MFAの以前の再登録結果は期限切れで、全準備後に再認証する。[最新handoff](HANDOFF.md)と[準備記録](production-preparation-2026-10-18.md)を現在の実施状況として優先する。
+> 2026-10-20更新：現在の指示は「本番移行直前まで準備」。専用資源・schema・閉鎖配備と予備コピーは作成済み。一括runner、source停止候補、Stripe保存専用候補と受信stream移送を追加した。旧環境の停止・本番ユーザーデータ投入・DNS切替は未実施。管理者MFAは10月20日に再登録・保存検証済み（10月21日00:24:45 JSTまで、最終source再照合が必要）。[最新handoff](HANDOFF.md)と[最新準備記録](PREPARATION-2026-10-19.md)を現在の実施状況として優先する。
 
-更新日: 2026-10-19 JST。状態: **移行直前までの準備中。旧環境が引き続き正。**
+更新日: 2026-10-20 JST。状態: **事前準備・管理者MFAの保存検証済み。当日のG0〜G5は未実施。旧環境が引き続き正。**
+
+[開始前確認票](CUTOVER-ENTRY-2026-10-20.md)はP1〜P8の準備証拠と当日再確認、残る所有者の判断を対応付ける。
 
 対象は[issue #38](https://github.com/kanouk/fanmark-id/issues/38)。[PR #41](https://github.com/kanouk/fanmark-id/pull/41) / `codex/cloudflare-api-preparation`を継続する。本番確認までGitの`main`を維持し、確認後に旧デプロイ経路を整理してマージする。
 
@@ -45,7 +47,7 @@ P4の引継ぎ票には、旧receiverの最終commit境界、進行中受信0、
 
 Git外の専用ディレクトリに、run ID、source project、target account/各resource IDと作成世代、schema/commit、実施者・照合者、UTC/JST時刻、変更前後の設定、実行コマンド/API引数、結果ファイルのhash、復元コマンドを保存する。各票は`準備済み→実行中→照合済み`か`不明/失敗`で管理する。
 
-必要な票は`source-freeze`、`source-export`、`target-import`、`reconcile`、`receipt-handoff`、`domain-switch`、`open-writer`、`pre-write-revert`、`forward-recovery`。名称は計画上の分類で、既存CLI名ではない。現在は本番用票・コマンドが未完成。担当は実施担当、開始・例外・公開の判断は所有者とする。照合は別プロセス・読み取り専用資格情報で行い、実施ログの成功表示だけを根拠にしない。本計画に対する新たな独立Astraレビューは未実施。
+必要な票は`source-freeze`、`source-export`、`target-import`、`reconcile`、`receipt-handoff`、`domain-switch`、`open-writer`、`pre-write-revert`、`forward-recovery`。名称は計画上の分類で、既存CLI名ではない。現在のrunner/停止/受信引継ぎ/復旧/Route/本人確認の操作票は[開始前確認票](CUTOVER-ENTRY-2026-10-20.md)へ集約済み。各run・実行時刻・最終snapshot・最新原本はG0以降で固定し、空欄が残れば実行しない。担当は実施担当、開始・例外・公開の判断は所有者とする。照合は別プロセス・読み取り専用資格情報で行い、実施ログの成功表示だけを根拠にしない。本計画に対する新たな独立Astraレビューは未実施。
 
 ## 2. URLを維持し、Webの配信先だけを切り替える
 
@@ -55,16 +57,16 @@ Git外の専用ディレクトリに、run ID、source project、target account/
 
 | 対象 | 変更案 | 切り替え前に固定する情報・確認 |
 | --- | --- | --- |
-| `fanmark.id` | 本番WorkerのCustom Domainへ切り替える | zone/account、現A/AAAA/CNAMEとproxy、既存routes/redirects/WAF、Worker ID、証明書、管理APIの変更差分・復元手順 |
+| `fanmark.id` | 元Aを保持するWorker Routeで本番Workerへ接続する候補。G0で所有者が方式を固定 | zone/account、現A/AAAA/CNAMEとproxy、既存routes/redirects/WAF、Worker ID、証明書、管理APIの変更差分・復元手順 |
 | `www.fanmark.id` | `https://fanmark.id`へpath/queryを保って誘導 | 現行URL契約を確認。切替試験中は一時redirect、受け入れ後に恒久化を判断。APIのPOSTを無条件redirectしない |
-| `admin.fanmark.id` | 現行の管理入口を維持する | 現行path変換・認証を調査。`/admin`への固定転送か別host継続かをP6で決定。未調査の全pathをapexへ流さない |
+| `admin.fanmark.id` | 専用aliasからapexの`/admin`へ一時誘導する候補 | queryなしルートだけを固定変換し、旧認証URL/API/秘密queryを転送しない。G0で方式を固定し実hostのTLSはG4/G5で確認 |
 | `auth.fanmark.id` | 当日は旧認証URLの互換・案内用に保持する案 | 新Better Authは同一originの`fanmark.id/api/auth`を推奨。旧token/codeを新APIへ転送しない。旧メールリンクは新しい再発行へ案内。旧側での更新は閉鎖 |
 | 画像 | アプリのAPIで旧Storage参照をR2配信URLへ対応させる | 実source origin、bucket/key/MIME/hash、外部に貼られた旧Storage URLの維持策。アプリ内変換だけで外部URLは直らない |
 | OAuth 4 provider | 本番Better Authのcallbackへ対応させる | 同じ既存client/subjectを維持できるか確認。provider別の正確なcallback、許可origin、旧callbackの保持・復元を記録。追加登録できないproviderは切替時に変更 |
 | メール | 既存送信元と配送設定を維持し、確認・resetリンクを新本番へ向ける | Resend送信元、Apple relayの許可、実受信、リンク期限、未完了の旧リンク再発行方法。自動で一斉再送しない |
 | Stripe/Resend通知 | 本番専用の固定受信先へ切り替える | endpoint ID、署名鍵の保管先、mode/API version/event一覧。新Stripe pathは`/api/stripe/webhook`。DNS切替前にも到達できる受信hostをP4/P6で確定 |
 
-Custom DomainはWorkerを配信元とする構成に合い、DNSと証明書の作成を伴う。apexとwwwは別hostとして扱う。既存DNSとの衝突を解消する操作も本番変更なので、データ照合前にapexへ登録しない。[Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)。
+以下のCustom Domainは代替案の参照。現在の推奨は[元Aを保持するRoute票](production-route-alternative.md)で、G0の方式承認までは接続しない。Custom DomainはWorkerを配信元とする構成に合い、DNSと証明書の作成を伴う。apexとwwwは別hostとして扱う。既存DNSとの衝突を解消する操作も本番変更なので、データ照合前にapexへ登録しない。[Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)。
 
 P6では、別の検証hostで同じ構成を試し、apexのTLSを途切れさせず変更できることを確認する。既存証明書の継続・新証明書の準備方法が未確定なら延期する。既存proxied DNSを使うWorker Routeは代替案だが、優先順位・originへのフォールバック・復旧操作を検証して計画を改訂した場合だけ採用する。当日に方式を変更しない。[Cloudflare Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/)。
 
@@ -103,13 +105,13 @@ proxied recordのTTLは通常Auto=300秒で編集できず、端末のcacheに�
 | G0 停止前 | P1〜P8を完了。所有者が日程・停止枠・対象・復旧案を確認。実施commit、各操作票、旧配備版、鍵・復旧先を固定。二人目相当の照合は別processで行う | 全票の未確定欄0、成功CI、予備移送と復旧の実測、初期監視正常。本番実行について所有者の明示的な指示を得る |
 | G1 停止境界 | 旧画面を閉じ、旧API/RPC/Storage/Auth更新と管理操作、Cron/外部writerを停止。旧Webhookは永続受信のみ残す。進行中のSQL・Edge・queue・外部処理をdrainする | 各経路の拒否試験と、停止前に開始した処理の完了記録。実時刻・処理済みevent/Checkout Session・受信台帳の境界を保存。終了不明があれば停止を維持 |
 | G2 確定コピー | 同じ停止境界でpublic DB、Auth、Storageをそれぞれ収集。旧受信台帳は増え続ける別streamとして管理。暗号化原本を検証し、空の本番targetへ移送する | source/target ID、manifest/schema/credential変換版、各batchのcheckpoint、全表・Auth・画像の読戻し結果 |
-| G3 データ照合 | 下の照合表を独立checkerで検査。旧受信の差分を新側へ引き継ぎ、新受信へ切り替える。旧dispatcherは停止したまま、新dispatcherもまだ開始しない | 停止境界のDB写像の未説明差分0、FK違反0。以後のStripe変化は受信/決済台帳に全件対応付け、未分類0。新受信の永続保存確認後、旧受信を止める。旧receiverの最終commitと進行中0を確認し、遅着・重複をevent ID/効果キーで統合、処理済み/未処理を再照合 |
-| G4 公開先変更 | データ照合成功後、2節のDNS/Custom Domain・OAuth等を変更。一般の新操作は閉じたまま、TLS/host/path/asset/APIの到達を確認 | 別回線/リゾルバから正しい新version、証明書、API no-store、旧PWA更新、公開/保護URLを確認。公開GETに書き込みがある経路は停止境界へ分類 |
-| G5 新側のみ再開 | 所有者が復旧境界を確認。実施者の確認操作と単独dispatcherを開始し、受信済みイベントを適用する。Stripe現在値と適用結果を照合してから一般操作、通知、必要なcronを順に再開 | 最初の業務更新/外部副作用の時刻とIDを記録。旧側更新0、二重適用0、主要操作と管理者MFA正常。確認時点までの未処理を回収し、後続イベントにも未説明差分がないことを追跡。公開再開時刻を記録 |
+| G3 データ照合 | 下の照合表を独立checkerで検査。旧receiverをsealした最終境界の受信streamを新側へ引き継ぎ、全内容を照合する。旧新dispatcherは停止したまま、新provider受信の開始はG4 | 停止境界のDB写像の未説明差分0、FK違反0。旧receiverの最終commit・進行中0と全journal、処理済み/未処理・Checkout効果を独立照合。seal以後のStripe変化/配送は別境界として保存し、G4/G5でも未分類0を要求 |
+| G4 閉鎖中の接続・受信 | G3と移送後backupの後、承認済み方式でapexだけをreceipt_onlyへ接続。TLS/503/no-storeを確認してWebhook登録・遠隔custody・実binding鍵一致と受信引継ぎを行う。OAuth callbackは保存済み | 別回線/リゾルバで固定新versionのmaintenance/証明書を確認。Stripe署名receiptの永続化と新旧受信境界、切替中の失敗配送/遅着/重複をID・業務効果ごとに独立照合。実画面/Auth/旧PWA/保護URLはG5で確認 |
+| G5 新側のみ再開 | 所有者が本人確認モードへの進行と前進復旧境界を確認。有効化前に潜在的write開始を記録。一般503を保って実画面/OAuth/MFA/Resend受信を検証し、単独dispatcher・一般write・通知/Cron/aliasを順に開始する。Stripe現在値と適用結果も照合する | 最初の業務更新/外部副作用の時刻とIDを記録。旧側更新0、二重適用0、主要操作と管理者MFA正常。確認時点までの未処理を回収し、後続イベントにも未説明差分がないことを追跡。公開再開時刻を記録 |
 
 新側で最初の本番業務更新を受け付けた後は、Cloudflareを正として修復する「前進復旧」（6節B）を行う。一般公開前でも、実施者の更新、課金操作、イベント適用、ライフサイクル処理が始まれば同じ扱いとする。応答が不明なら「書き込みなし」と仮定しない。
 
-確認済み原本の取り込みと移送台帳の記録は、新たな業務更新とは区別する。ログインによるsession生成等は別に記録し、旧側へ切り戻す場合は新側を閉鎖する。
+確認済み原本の取り込みと移送台帳の記録は、新たな業務更新とは区別する。ログインによるsession生成等も別に記録する。G5本人確認モードはResendの業務台帳更新を許すため、有効化前を潜在的write開始として固定し、それ以後の旧側復帰は行わない。
 
 ### コピーと照合は、保存先ごとに行う
 
@@ -132,7 +134,7 @@ MFAは、既存TOTPを検証済み変換で移せるか、安全な本人確認�
 
 旧Checkout/Portalはブラウザを閉じても残り得る。P4で未完了Session・非同期決済・停止期間の請求を列挙し、完了済み効果と未処理通知を区別する。旧版には新intentがない場合もあるため、イベント再送だけで延長権利を再付与しない。旧適用の証拠と現在のStripe値を使い、曖昧なものは自動適用を止めて照合する。
 
-`CUTOVER_WRITE_FREEZE=true`はWorker用でSupabaseを停止しない。コード上はStripe受信、一部の認証、GET/HEADなどを許すため、全ストア無更新や管理者だけのアクセスを保証しない。2026-10-15にローカル実装した`receipt_only`はStripe受信以外のHTTPと業務Cronを閉じ、2026-10-19に閉鎖配備を確認した。開始済み処理のdrainは別途必要。G4のasset/API確認はこのモードでは行えないため、一般公開を閉じた実施者用の確認方法をP3/P6で検証する。`RECOVERY_WRITE_FREEZE`は受信も止めるため、Webhookの継続受信の代わりには使わない。
+`CUTOVER_WRITE_FREEZE=true`はWorker用でSupabaseを停止しない。コード上はStripe受信、一部の認証、GET/HEADなどを許すため、全ストア無更新や管理者だけのアクセスを保証しない。2026-10-15にローカル実装した`receipt_only`はStripe受信以外のHTTPと業務Cronを閉じ、2026-10-19に閉鎖配備を確認した。開始済み処理のdrainは別途必要。G4のasset/Auth確認はこのモードでは行わず、閉鎖配備・native試験済みの[G5本人確認モード](production-owner-acceptance.md)へ接続する。実本番での本人ログインは移送後に確認する。`RECOVERY_WRITE_FREEZE`は受信も止めるため、Webhookの継続受信の代わりには使わない。
 
 古いSPA/PWAや漏れた直接APIからの書き込みは、DNS変更だけでは防げない。Supabase projectの直接URL、旧service-role処理、Auth/Storageを含むバックエンド側の拒否を検証する。元の権限・job・設定を復元可能な形で保存し、`main`へのマージを停止手段に使わない。
 

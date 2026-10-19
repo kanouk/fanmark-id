@@ -1,0 +1,39 @@
+{
+  "format": "fanmark-administrator-reenrollment-verified-v1",
+  "observedAt": "2026-10-19T15:25:19.523Z",
+  "sourceProject": "ppqgtbjykitqtiaisyji",
+  "savedCapsuleReadback": true,
+  "sourceBindingMatchesCurrent": true,
+  "sourceAal2Verified": true,
+  "newMfaFreshSessionVerified": true,
+  "registeredAt": "2026-10-19T15:24:45.147Z",
+  "validUntil": "2026-10-20T15:24:45.147Z",
+  "authProjectionPassed": true,
+  "adminMfaEnabled": true,
+  "targetAuthEncryptionRoundtripMatched": true,
+  "authTableCounts": {
+    "user": 15,
+    "account": 28,
+    "twoFactor": 1,
+    "adminRole": 1
+  },
+  "oldSourceFactorPreserved": true,
+  "priorCapsuleAndKeyPreserved": true,
+  "existingEncryptionKeyReused": true,
+  "protectedCliLatestPreserved": true,
+  "omittedSessionState": [
+    "session",
+    "verification",
+    "mfaAssurance"
+  ],
+  "capsuleSha256": "5015fba1f6627883391d3cd252bae6ffe867b002abea1996b41f69ded7539acf",
+  "productionReady": false,
+  "productionImported": false,
+  "productionAdminLoginVerified": false,
+  "dnsSwitched": false,
+  "mainMerged": false,
+  "localHelperClosed": true,
+  "priorExpiredHumanSessionPreserved": true,
+  "actualProductionTargetLoginVerified": false,
+  "verificationScope": "source Supabase AAL2 plus temporary native D1/Better Auth fresh session and in-memory production Auth projection; no production import"
+}

@@ -1,3 +1,24 @@
+## 2026-10-20: 管理者MFA再登録の保存・最新source・全Auth投影を独立検証
+
+本人は00:24:45 JSTに新しいMFA登録を完了。暗号化capsuleを別processで復号し、最新の旧source binding、
+旧Supabase AAL2、一時native D1/Better Authで新MFAを使うfresh session確認、15 user/28 account/
+1 twoFactor/1 adminRoleの投影、実target用Auth鍵の暗号化往復、管理者MFA有効を検証した。
+期限は10月21日00:24:45 JST。[保存証拠](evidence/admin-reenrollment-verified-2026-10-20.json)。
+本番targetへのimportと実targetログインの証拠ではない。旧factor/10月16日鍵・票を保持した。
+本人操作以外の準備を先に完了し、7bce7efのCI39266284696もapp/Workerとも成功した後に依頼した。
+
+private rootは引き続きfanmark-cutover-2026-10-19。現capsuleは
+administrator-reenrollment-after-preparation/attempt-2-2026-10-20/配下で、
+independent-verification.jsonと終了code0を確認済み。最初の画面は期限切れ・票なし・process終了を
+照合してから本人の更新指示で次へ進んだ。両方の記録を保持し、現在の有効票を上書きしない。
+初回browser側launcherは本人認証前にCLI結果形式の相違で終了し、確認済みterminal環境へ移した。
+秘密を含む原応答は公開しない。保存後の専用helperは終了済み。QR/復旧コードを読取り・撮影していない。
+
+[最新準備](PREPARATION-2026-10-19.md)と[当日の開始票](CUTOVER-ENTRY-2026-10-20.md)を現在状態とする。
+閉鎖runtimeはfbf9f7cd/source9a2a740のまま。今回の証拠/docs更新でruntimeを再配備しない。
+本番source停止/実データ投入/本番host接続変更/main mergeは未実施。main e5a553cと既存cli-latest変更を保持。
+以下は当時の履歴。以前のMFA未依頼/期限切れ/旧versionを現在へ流用しない。
+
 ## 2026-10-19: G5本人確認候補を無効設定で閉鎖配備・独立照合済み
 
 実装9a2a740のCI39258437749はapp/Workerとも成功。source byte一致を確認して閉鎖appへ一度だけ配備し、
