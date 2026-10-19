@@ -1,0 +1,40 @@
+{
+  "observedAt": "2026-10-19T07:15:53.056Z",
+  "source": "read-only Resend API and independent Obsidian Sync download/decryption",
+  "resend": {
+    "httpStatus": 200,
+    "inventoryComplete": true,
+    "endpointCount": 1,
+    "existingStagingEndpointPreserved": true,
+    "productionEndpointCount": 0,
+    "enabledEvents": [
+      "email.sent",
+      "email.delivered",
+      "email.bounced",
+      "email.complained",
+      "email.failed",
+      "email.suppressed"
+    ],
+    "providerMutations": 0,
+    "emailsSent": 0
+  },
+  "verifiedAccessCustody": {
+    "keyId": "verified-access-production-4a413417-cba0-48a0-bde5-f0986ebeca23",
+    "noteSha256": "64b4c3975313c9a9f9c7ccfb7e2dc194ad8e613fc27fb596d94c3cc56c968012",
+    "envelopeSha256": "282580ef74ef3f5a493c22fe14bc2b72cff6c9e79798cc8a066d6a906058fc58",
+    "remoteDownloaded": true,
+    "remoteNoteMatchesLocal": true,
+    "decryptedKeyMatchesKeychain": true,
+    "hmacVerified": true,
+    "jsonSyncEligible": false,
+    "markdownSyncEligible": true,
+    "syncSettingsChanged": false,
+    "plaintextFileWritten": false
+  },
+  "limitations": [
+    "Remote download used the same Mac; recovery on another device is not proven.",
+    "Webhook creation and provider delivery remain unexecuted.",
+    "No source freeze, user import, DNS switch or main merge."
+  ],
+  "productionReady": false
+}

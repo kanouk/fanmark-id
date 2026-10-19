@@ -1,3 +1,11 @@
+## 2026-10-19: 公開ページ署名鍵の遠隔保管を修正・検証し、Webhook実行票を準備
+
+538100c / CI39213660700はapp成功、Worker継続中（この記録時点）。公開ページ署名鍵のJSONがObsidian Sync対象外と判明し、同じ暗号化envelopeをMarkdownにも保管した。形式filterを確認し、Vault reload後にlocal/synced/server hash一致、遠隔version downloadの全byte一致、別processで復号・Keychain一致・HMACを検証した。鍵の再生成・Sync設定変更なし。別端末の復旧は未実証。[限定証拠](evidence/webhook-inventory-and-key-custody-2026-10-19.json)。
+
+ResendのGET全一覧はstaging向けenabled 1件のみ。Stripe/Resendとも作成時disabledの保証がないため、旧siteへ向くURLに先行登録しない。[Webhook実行候補](production-webhook-activation.md)へ本番URL、Stripe10/Resend6 event、固定API version、登録前の到達確認・鍵保管・応答不明・中止の扱いを整理した。event一覧とAPI versionは現runtimeへ機械照合済み。provider変更・メール送信・課金なし。実登録driver/独立readbackとG4/G5での受入れは残る。
+
+app版b03de981/runtime794564cを保持。次はCI完了、Webhook登録/鍵保存driver、部分stageの中止とsource復帰、DNS逆操作/HTTPS、監視通知を詰める。Google/Discord/Apple callback保存の確認とGitHub owner loginは既存の質問待ち。管理者MFAは最後。source停止・実ユーザー移送・domain切替・main mergeなし。
+
 ## 2026-10-19: 閉鎖appの資格情報を準備し、Stripe本番通知先の欠落を確認
 
 5faf9b4 / CI39211160698はapp・Workerとも成功。外部ログイン8件、Stripe/Resend4件、公開ページ用署名鍵1件を閉鎖appへ設定した。既存2件と合計15 secret binding。別processで全binding/varsと閉鎖状態を照合し、現版は `b03de981-0764-445f-bade-cdc024d7e8c0`。runtime codeは794564cのまま。公開route/Custom Domain/Cron0、backup/monitor/既存Worker不変。[設定と残件](production-provider-secrets.md)、[限定証拠](evidence/production-application-secrets-readiness-2026-10-19.json)。
