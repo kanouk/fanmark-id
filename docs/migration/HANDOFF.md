@@ -1,3 +1,23 @@
+## 2026-10-19: G5本人確認候補を無効設定で閉鎖配備・独立照合済み
+
+実装9a2a740のCI39258437749はapp/Workerとも成功。source byte一致を確認して閉鎖appへ一度だけ配備し、
+現versionはfbf9f7cd-9927-41ad-8258-dd442c25f358。本人確認backendはdisabledのまま。
+通常画面/認証/本人session/Resend受信の4入口で503・no-store、実binding issuerの拒否、writer0・ownerなし、
+固定5 store/schema/key一致・実画像2bucket各0を独立確認した。status専用operator削除後inventory8。
+別processでDNS17件全属性・他7 Worker設定・公開route/domain/Cron0・workers.dev/previews無効を確認。
+保持daily/manual archiveへ全114表の全行/schema/FKも新versionで再照合し、新captureは行っていない。
+[現状](PREPARATION-2026-10-19.md) / [証拠](evidence/production-owner-closed-runtime-2026-10-19.json)。
+
+private owner-runtime-9a2a740の初回deployはupload ACK後、追加flagのJSON項目順相違で照合停止した。
+保存済みintent/dispatch/logと別GETからrecursive key正規化で値/型一致を確認してresultを保存した。
+配備は再送していない。deploy helperを再実行しない。各保存物とread-only continuationを保持する。
+後続の証拠/docs-only commitでruntimeを再配備しない。
+
+本番source停止・実利用者移送・本番host接続変更・main mergeは未実施。main e5a553cを保持。
+本人はクレジットを使った準備継続を了承済み。管理者MFAは独立準備の証拠反映後に依頼する。
+旧10月16日の鍵/capsuleと10月19日のpreflightを保持し、期限切れcapsuleを延長しない。
+以下は当時の履歴。過去の未配備/CI待ち/旧versionを現在状態に流用しない。
+
 ## 2026-10-19: 一般503を保持するG5本人確認経路を追加（未配備）
 
 481f3daのCI39254192309はapp/Workerとも成功。実行計画の読合せでreceipt_onlyのままでは
