@@ -1,0 +1,24 @@
+{
+  "format": "fanmark-provider-readback-adapter-validation-v1",
+  "observedAt": "2026-10-19T07:27:56.164Z",
+  "provider": "resend",
+  "target": "existing-staging-endpoint",
+  "senderDomain": {
+    "name": "fanmark.id",
+    "status": "verified"
+  },
+  "endpointUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/api/webhooks/resend/broadcast-delivery",
+  "status": "enabled",
+  "eventCount": 6,
+  "signingSecretReturned": true,
+  "readOnly": true,
+  "providerMutationRequests": 0,
+  "emailsSent": 0,
+  "productionRegistrationVerified": false,
+  "productionReady": false,
+  "localTests": {
+    "relatedKeyCustodyAndReadback": 21,
+    "workflowIsolation": 9,
+    "providerMutationDuringTests": false
+  }
+}

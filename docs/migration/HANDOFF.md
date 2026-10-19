@@ -1,3 +1,13 @@
+## 2026-10-19: 3 providerのcallbackを保存し、Webhookの鍵保管とGET照合を追加
+
+538100c / [CI39213660700](https://github.com/kanouk/fanmark-id/actions/runs/39213660700)はapp・Workerとも成功。前turnの遠隔鍵保管修正と今回の変更をまとめて既存PRへ反映する。runtime code794564c/app b03de981は不変。
+
+本人がGoogle/Discord/Appleの各1 callback追加を確認したため保存した。旧本番/stagingを残し、3管理画面の再表示で永続化を確認。Appleの初回session expiredは未保存を読戻し後にsessionを更新し、保存し直した。鍵・権限・App groupingは保持。GitHub owner loginは引き続き待ち。[限定証拠](evidence/production-oauth-callback-save-2026-10-19.json)。実OAuthログイン成功とは区別する。
+
+`production-webhook-custody.mjs`は固定provider要求、同directoryで一度だけのintent、完全応答の暗号化保管、独立readback照合、private processでの鍵取出しを担当。失敗応答も先に暗号化保管する。`production-webhook-readback.mjs`は固定provider host/account/domainへのGET専用。関連21件・workflow isolation9件成功。既存Resend staging endpointへのGETで実API形状も確認済み。[保管手順](production-webhook-activation.md) / [検証範囲](evidence/production-webhook-custody-validation-2026-10-19.json)。本番作成POSTと最新のG4開始条件の接続、unknown応答の所有特定・復旧、runtime鍵設定と実配送は残る。
+
+source停止・ユーザー移送・domain切替・main mergeなし。管理者MFAは依頼していない。残りはWebhook登録の実行接続、部分stageからの中止/source復帰、DNS逆操作/HTTPSと監視通知。旧解約済み自己テスト記録を保持する。
+
 ## 2026-10-19: 公開ページ署名鍵の遠隔保管を修正・検証し、Webhook実行票を準備
 
 538100c / CI39213660700はapp成功、Worker継続中（この記録時点）。公開ページ署名鍵のJSONがObsidian Sync対象外と判明し、同じ暗号化envelopeをMarkdownにも保管した。形式filterを確認し、Vault reload後にlocal/synced/server hash一致、遠隔version downloadの全byte一致、別processで復号・Keychain一致・HMACを検証した。鍵の再生成・Sync設定変更なし。別端末の復旧は未実証。[限定証拠](evidence/webhook-inventory-and-key-custody-2026-10-19.json)。

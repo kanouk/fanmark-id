@@ -62,3 +62,15 @@ G5前に署名検証と受信DBの照合を完了し、業務メール送信の�
 作成・設定の不確定時は一般公開と新規課金・メール送信を開始しない。自分の操作で作ったendpointだけをID/URL/account/metadataで特定し、履歴を暗号化保管する。削除・無効化で配信記録を失っていないか確認し、Stripeの新受信は[旧側への回収手順](stripe-receipt-transfer.md)に従う。旧live通知先は元から0件なので、「元URLへ戻す」操作で復旧完了とはしない。
 
 実行には、登録応答の秘密値を暗号化保存するdriver、応答不明時の同一要求照合、登録後の独立読戻し、G4/G5の接続検証が必要。これらの本番実行は未実施。本書だけで移行準備完了とは判定しない。
+
+## 登録前後の保管処理
+
+`scripts/migration/production-webhook-custody.mjs` と `production-webhook-readback.mjs` を追加した。providerへのPOSTやG4/G5の開始許可は提供しない。保管と読戻しの成功をsource停止や受信先への到達証拠の代わりにしない。
+
+1. `beginProductionWebhookRegistration` に固定provider・operation UUID・本番archive鍵ID/鍵とGit外0700 directoryを渡す。固定名のintentを0600・排他的作成/fsyncしてから要求bodyを返す。同じproviderは別UUIDでも同directoryで再開始できない。運用では新しいdirectoryへ逃げて再試行しない。
+2. 別の実行処理がG4の前提を確認して一度POSTする。固定body、Stripeのidempotency key、同じprivate intentを使う。現在このPOST接続と最新到達確認は未実装。
+3. HTTP応答が得られたら `captureProductionWebhookResponse` へstatusとJSONを渡す。成功判定より先に全応答をAES-GCMで保管する。エラーや予想外の応答に署名鍵が含まれても平文fileへ出さない。通信切断で応答自体がない場合はintentだけを保持する。captureの再送・上書きは拒否する。
+4. `readProductionWebhookRegistration` で別GETを行う。Stripeはlive accountを照合後にendpoint、Resendはdomain全ページとfanmark.id verifiedを確認後にendpointを読む。結果に署名鍵を含む場合があるため、ログ/平文fileへ出さず直接 `verifyProductionWebhookRegistration` へ渡す。
+5. verifierは元応答とGETのID、固定URL・event・statusを照合する。Stripeはlivemode・API version・operation metadata・Connect applicationなしも確認。暗号化応答・intent・検証reportのhashを指定したprivate processでだけ `openProductionWebhookSecret` を使い、別のruntime設定処理へ値を渡す。取出し値を出力しない。
+
+21件の関連検査（鍵保管の既存3件を含む）が成功。既存Resend staging endpointでは新GET adapterの実domain/endpoint取得も確認したが、これは本番登録・配送の証明ではない。HTTP失敗時はprovider本文/キーを例外へ含めない。遠隔custodyへの追加保管・runtime設定・署名付き実受信・応答不明時の所有endpoint特定と復旧は引き続き必要。
