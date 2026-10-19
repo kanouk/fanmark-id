@@ -5,6 +5,7 @@ import pathModule from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { PRODUCTION_R2_TARGETS } from './production-r2-targets.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
+import { importJournalHostHash } from './production-import-inspection.mjs';
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 const HASH = /^[0-9a-f]{64}$/u;
@@ -71,12 +72,19 @@ export async function openProductionImportJournal({ path, runId, targetId, targe
     runId, targetId, targetIncarnation, coordinated: coordinator !== null,
     async beforeWrite(batchSha256) {
       if (!HASH.test(batchSha256 ?? '') || active) fail('production_journal_write_conflict');
+      const operationId = randomUUID();
       // O_EXCL also serializes independent processes using this journal.
       const lock = await open(path + '.lock', constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
-      try { await lock.sync(); } finally { await lock.close(); }
+      try {
+        await lock.writeFile(JSON.stringify({ format: 'fanmark-production-import-lock-v1', runId, targetId, targetIncarnation,
+          operationId, processId: process.pid, hostHash: importJournalHostHash() }) + '\n');
+        await lock.sync();
+      } finally { await lock.close(); }
+      const directory = await open(pathModule.dirname(path), constants.O_RDONLY);
+      try { await directory.sync(); } finally { await directory.close(); }
       const current = await inspect();
       if (current.pending) fail('production_journal_unresolved_write');
-      active = randomUUID();
+      active = operationId;
       await append({ type: 'intent', operationId: active, batchSha256 });
       activeHash = batchSha256;
       // A failed/lost remote begin leaves this local intent locked. Neither

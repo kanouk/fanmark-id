@@ -1,3 +1,9 @@
+## 2026-10-19: 中断した移送記録の独立照合・local ACK補修
+
+`80542a6`のCI39186411244はapp成功、Worker確認中。調停DOへread-only操作別照合を追加し、5 storeのprivate journalを遠隔ACK全件・総数・前後状態へ照合する部品を追加した。実子process終了/native D1/DOで、遠隔完了確定後に失われたlocal ACKだけを補修し、元データを再送しないことを検証。未知commit/未知R2 PUTは保留を維持し、生存process/旧空lock/別host/不正fileは補修しない。[操作・制限](production-import-recovery.md)。新コード未配備。
+
+全store runner/部分stageの解決、source全入口停止とStripe引継ぎ、外部設定/DNS逆操作、鍵別保管/遠隔復旧を継続。管理者MFAは最後。本番import/source停止/domain切替/main mergeなし。旧解約済み契約は記録保持。
+
 ## 2026-10-19: 最新CI成功、非公開runtime更新と実R2読戻し
 
 `f2053aa`のCI39184804271は両job成功。非公開appをversion `9b7e6820-fcbc-4491-b27d-f631e64f0b9e`へ更新し、全binding/変数・公開経路0・Cron0、既存Worker/backup/monitor保持を管理APIで確認した。

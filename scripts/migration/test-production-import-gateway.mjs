@@ -34,6 +34,8 @@ test('native operator gateway requires bearer, expiration and explicit read/writ
       assert.equal((await call(name, '/coordinator/reset', { method: 'POST', body: '{}' })).status, 404);
       const result = await call(name, '/coordinator/inspect', { method: 'POST', body: '{"owner":"fixture"}' });
       assert.deepEqual(await result.json(), { action: 'inspect', input: { owner: 'fixture' } });
+      const operation = await call(name, '/coordinator/operation', { method: 'POST', body: '{"owner":"fixture","operationId":"fixture"}' });
+      assert.deepEqual(await operation.json(), { action: 'operation', input: { owner: 'fixture', operationId: 'fixture' } });
       assert.equal((await call(name, '/coordinator/inspect', { method: 'POST', body: 'a'.repeat(1025) })).status, 413);
     }
     assert.equal((await call('readonly', '/coordinator/claim', { method: 'POST', body: '{}' })).status, 404);

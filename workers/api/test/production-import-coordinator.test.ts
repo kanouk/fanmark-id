@@ -17,6 +17,38 @@ const call = (action: string, body: unknown) => gate().fetch("https://recovery-w
 const stored = () => runInDurableObject(gate(), async (_instance, ctx) => [...await ctx.storage.list()]);
 beforeEach(async () => { await runInDurableObject(gate(), async (_instance, ctx) => { await ctx.storage.deleteAll(); }); });
 
+it("independent operation inspection distinguishes missing, pending, dispatched and acknowledged without writes", async () => {
+  const query = { owner, operationId: operation.operationId };
+  expect(await (await call("operation", query)).json()).toMatchObject({ state: null, pending: null, acknowledged: null, dispatched: null });
+  expect(await stored()).toEqual([]);
+  await call("claim", identity);
+  const image = { ...operation, store: "avatars" };
+  await call("begin", image);
+  let before = await stored();
+  expect(await (await call("operation", query)).json()).toMatchObject({ pending: { store: "avatars" }, acknowledged: null, dispatched: null });
+  expect(await stored()).toEqual(before);
+  await call("dispatch", image);
+  before = await stored();
+  expect(await (await call("operation", query)).json()).toMatchObject({ pending: { store: "avatars" }, acknowledged: null, dispatched: { store: "avatars" } });
+  expect(await stored()).toEqual(before);
+  await call("acknowledge", image); // Its response may be lost to the importer.
+  before = await stored();
+  expect(await (await call("operation", query)).json()).toMatchObject({ pending: null, acknowledged: { store: "avatars" }, dispatched: { store: "avatars" } });
+  expect((await call("operation", { ...query, owner: other })).status).toBe(409);
+  expect((await call("operation", { ...query, operationId: "invalid" })).status).toBe(400);
+  expect(await stored()).toEqual(before);
+});
+
+it("a corrupt durable operation receipt is never reported as acknowledged", async () => {
+  await call("claim", identity); await call("begin", operation); await call("acknowledge", operation);
+  await runInDurableObject(gate(), async (_instance, ctx) => {
+    await ctx.storage.put("import-operation:" + operation.operationId, { operationId: other, batchSha256: operation.batchSha256, store: "business" });
+  });
+  const before = await stored();
+  expect((await call("operation", { owner, operationId: operation.operationId })).status).toBe(409);
+  expect(await stored()).toEqual(before);
+});
+
 it("read-only inspection leaves the native DO uninitialized; invalid inputs cannot claim", async () => {
   expect(await (await call("inspect", { owner })).json()).toMatchObject({ state: null, active: 0, fenceOwner: null });
   expect(await stored()).toEqual([]);

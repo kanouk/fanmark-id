@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {mkdtemp,chmod,rm,readFile} from 'node:fs/promises';
+import {mkdtemp,chmod,rm,readFile,writeFile,symlink,unlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -11,6 +11,11 @@ import {createProductionImportCoordinator} from './production-import-coordinator
 import {PRODUCTION_D1_TARGETS,openProductionD1ImportTransport,createProductionRemoteD1,isReadOnlyProductionSql} from './production-remote-d1.mjs';
 import {businessMigrationStatements} from './business-runtime-import-schema.mjs';
 import {importAuthProjectionStage} from './auth-import-stage.mjs';
+import {inspectProductionImportSet,inspectProductionImportJournal,inspectProductionImportAttempt,recoverAcknowledgedProductionImport} from './production-import-inspection.mjs';
+import {openProductionImportJournal} from './production-import-journal.mjs';
+import {PRODUCTION_R2_TARGETS} from './production-r2-targets.mjs';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 
 test('native production coordinator and separate filesystem journals jointly guard real D1 writes', {timeout:60000}, async t=>{
  const dir=await mkdtemp(join(tmpdir(),'fanmark-global-import-'));await chmod(dir,0o700);
@@ -30,11 +35,12 @@ test('native production coordinator and separate filesystem journals jointly gua
   dev:{outboundService:{type:'fetcher',handler(){throw Error('external_network_forbidden');}}}}]});
  try {
   const native=await mf.getD1Database('DB');await native.prepare('CREATE TABLE proof(id INTEGER PRIMARY KEY)').run();
-  let loseBegin=false,loseWrite=false,queries=0;
+  let loseBegin=false,loseWrite=false,loseAck=false,queries=0;
   const command=async(action,input)=>{
    const r=await mf.dispatchFetch('https://fixture.local',{method:'POST',body:JSON.stringify({action,input})});
    if(r.status!==200)throw Error('refused');
    if(action==='begin'&&loseBegin){loseBegin=false;throw Error('lost begin response');}
+   if(action==='acknowledge'&&loseAck){loseAck=false;throw Error('lost durable acknowledgement response');}
    return r.json();
   };
   const owner=randomUUID(),incarnations=Object.fromEntries(['auth','master','business','avatars','covers'].map(store=>[store,randomUUID()]));
@@ -67,6 +73,85 @@ test('native production coordinator and separate filesystem journals jointly gua
    assert.deepEqual(rows.map(row=>row.type),['identity','intent','acknowledged']);
    assert.equal(await native.prepare('SELECT count(*) AS n FROM proof').first('n'),1);
    const inspected=await coordinator.inspect();assert.equal(inspected.state.pending,null);assert.equal(inspected.state.acknowledged,1);
+  });
+  await t.test('all five journals reconcile independently; substituted or omitted acknowledged history rejects',async()=>{
+   const journalPaths={business:lastPath};
+   for(const store of ['auth','master','avatars','covers']){
+    journalPaths[store]=join(dir,store+'.jsonl');
+    const targetId=PRODUCTION_D1_TARGETS.find(row=>row.databaseName==='fanmark-production-'+store)?.databaseId ??
+     PRODUCTION_R2_TARGETS.find(row=>row.store===store).bucketName;
+    await openProductionImportJournal({path:journalPaths[store],runId:owner,targetId,targetIncarnation:incarnations[store]});
+   }
+   const independent=createProductionImportCoordinator(options),before=await independent.inspect(),beforeQueries=queries;
+   const report=await inspectProductionImportSet({journalPaths,coordinator:independent});
+   assert.equal(report.journalsReconciled,true);assert.equal(report.remoteAcknowledged,1);
+   assert.equal(report.fullMigrationReconciled,false);assert.equal(report.productionReady,false);
+   assert.equal(queries,beforeQueries);assert.deepEqual(await independent.inspect(),before);
+   const content=await readFile(journalPaths.business,'utf8');
+   await writeFile(journalPaths.business,content.split('\n')[0]+'\n');
+   await assert.rejects(inspectProductionImportSet({journalPaths,coordinator:independent}));
+   await writeFile(journalPaths.business,content);
+   await assert.rejects(inspectProductionImportSet({journalPaths:{...journalPaths,covers:journalPaths.avatars},coordinator:independent}));
+   await writeFile(journalPaths.master+'.lock','',{mode:0o600});
+   assert.equal((await inspectProductionImportSet({journalPaths,coordinator:independent})).journalsReconciled,false);
+   assert.equal((await inspectProductionImportAttempt({journalPath:journalPaths.master,coordinator:independent})).classification,'local-no-pending-lock-retained');
+   await unlink(journalPaths.master+'.lock');
+  });
+  await t.test('exited importer with a durable remote ACK can repair only its local log and continue without replay',async()=>{
+   const journalPath=join(dir,'exited-importer.jsonl');
+   const moduleUrl=new URL('./production-import-journal.mjs',import.meta.url).href;
+   const args={path:journalPath,runId:owner,targetId:target.databaseId,targetIncarnation:target.targetIncarnation};
+   // A separate real process owns this lock and exits before inspection. The
+   // native DO and D1 below model commit + durable ACK with its local ACK lost.
+   await promisify(execFile)(process.execPath,['--input-type=module','-e',
+    `import {openProductionImportJournal} from ${JSON.stringify(moduleUrl)};const j=await openProductionImportJournal(${JSON.stringify(args)});await j.beforeWrite('${'e'.repeat(64)}');`]);
+   const local=await inspectProductionImportJournal(journalPath),operation={...local.pending,store:'business'};
+   await coordinator.beforeWrite(operation);
+   await native.prepare('INSERT INTO proof VALUES(7)').run();
+   await coordinator.afterWrite(operation);
+   const independent=createProductionImportCoordinator(options),beforeQueries=queries;
+   const beforeState=await independent.inspect();
+   assert.equal((await inspectProductionImportAttempt({journalPath,coordinator:independent})).classification,'remote-acknowledged-local-pending');
+   const lockText=await readFile(journalPath+'.lock','utf8');
+   const foreign=JSON.parse(lockText);foreign.hostHash='0'.repeat(64);
+   await writeFile(journalPath+'.lock',JSON.stringify(foreign)+'\n');
+   await assert.rejects(recoverAcknowledgedProductionImport({journalPath,coordinator:independent}));
+   assert.equal((await inspectProductionImportJournal(journalPath)).pending.operationId,operation.operationId);
+   await writeFile(journalPath+'.lock',lockText);
+   // Earlier releases wrote empty lock files. Absence of owner evidence must
+   // never turn a confirmed remote ACK into permission to remove that lock.
+   await writeFile(journalPath+'.lock','');
+   await assert.rejects(recoverAcknowledgedProductionImport({journalPath,coordinator:independent}));
+   await writeFile(journalPath+'.lock',lockText);
+   const originalJournal=await readFile(journalPath,'utf8');
+   await writeFile(journalPath,originalJournal.slice(0,-1));
+   await assert.rejects(inspectProductionImportJournal(journalPath));
+   await writeFile(journalPath,originalJournal);
+   await chmod(journalPath,0o644);
+   await assert.rejects(recoverAcknowledgedProductionImport({journalPath,coordinator:independent}));
+   await chmod(journalPath,0o600);
+   const link=join(dir,'journal-symlink');await symlink(journalPath,link);
+   await assert.rejects(inspectProductionImportJournal(link));await unlink(link);
+   const recovered=await recoverAcknowledgedProductionImport({journalPath,coordinator:independent});
+   assert.equal(recovered.localAcknowledgementRecovered,true);assert.equal(recovered.providerWrites,0);
+   assert.equal(queries,beforeQueries);assert.deepEqual(await independent.inspect(),beforeState);
+   const repaired=await inspectProductionImportJournal(journalPath);assert.equal(repaired.pending,null);assert.equal(repaired.lock,null);
+   assert.equal(await native.prepare('SELECT count(*) AS n FROM proof WHERE id=7').first('n'),1);
+   await assert.rejects(recoverAcknowledgedProductionImport({journalPath,coordinator:independent}));
+   const resumed=await openProductionD1ImportTransport({journalPath,runId:owner,target,coordinator,token:'synthetic-token-only',fetchImpl});
+   await resumed.prepare('INSERT INTO proof VALUES(8)').run();
+   assert.equal((await inspectProductionImportJournal(journalPath)).operations.length,2);
+  });
+  await t.test('lost remote ACK is distinguishable but an importer still alive cannot have its lock reclaimed',async()=>{
+   const remote=await writer();loseAck=true;
+   await assert.rejects(remote.prepare('INSERT INTO proof VALUES(9)').run(),/coordination_unconfirmed/);
+   const journalPath=lastPath,original=await readFile(journalPath,'utf8'),before=queries;
+   const independent=createProductionImportCoordinator(options);
+   assert.equal((await inspectProductionImportAttempt({journalPath,coordinator:independent})).classification,'remote-acknowledged-local-pending');
+   await assert.rejects(recoverAcknowledgedProductionImport({journalPath,coordinator:independent}));
+   assert.equal(await readFile(journalPath,'utf8'),original);assert.equal(queries,before);
+   assert.ok((await inspectProductionImportJournal(journalPath)).lock);
+   assert.equal(await native.prepare('SELECT count(*) AS n FROM proof WHERE id=9').first('n'),1);
   });
   await t.test('another store holds the same fence; a different journal cannot send a D1 request',async()=>{
    const operation={operationId:randomUUID(),batchSha256:'b'.repeat(64),store:'covers'};
@@ -115,6 +200,9 @@ test('native production coordinator and separate filesystem journals jointly gua
    const independent=createProductionImportCoordinator(options);
    await assert.rejects(independent.claim(),/coordination_unconfirmed/);
    const status=await coordinator.inspect();assert.ok(status.state.pending);
+   const classification=await inspectProductionImportAttempt({journalPath:lastPath,coordinator:createProductionImportCoordinator(options)});
+   assert.equal(classification.classification,'remote-pending-unresolved');
+   await assert.rejects(recoverAcknowledgedProductionImport({journalPath:lastPath,coordinator}));
    // Independent fixture readback proves no store request was made above.
    await coordinator.afterWrite(status.state.pending);
   });

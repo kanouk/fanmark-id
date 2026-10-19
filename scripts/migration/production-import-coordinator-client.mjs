@@ -41,6 +41,24 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
       if(result.state!==null)validate(result.state);
       return result;
     },
+    async inspectOperation(operationId){
+      if(!UUID.test(operationId??''))fail();
+      const result=await invoke('operation',{owner,operationId});
+      if(result?.scope!==SCOPE||result.operationId!==operationId||!Number.isSafeInteger(result.active)||result.active<0||
+        (result.fenceOwner!==null&&result.fenceOwner!==owner))fail();
+      if(result.state!==null)validate(result.state);
+      for(const key of ['pending','acknowledged','dispatched']){
+        const row=result[key];
+        if(row!==null&&(!row||row.operationId!==operationId||!HASH.test(row.batchSha256??'')||
+          !Object.hasOwn(frozenIncarnations,row.store)))fail();
+      }
+      if((result.acknowledged&&!(result.state?.acknowledged>=1))||(result.pending&&result.acknowledged)||(result.dispatched&&
+        (!['avatars','covers'].includes(result.dispatched.store)||
+         ['operationId','batchSha256','store'].some(key=>result.dispatched[key]!==(result.acknowledged??result.pending)?.[key]))))fail();
+      if((result.state===null&&(result.pending||result.acknowledged||result.dispatched))||
+        (result.pending?['operationId','batchSha256','store'].some(key=>result.pending[key]!==result.state?.pending?.[key]):result.state?.pending?.operationId===operationId))fail();
+      return result;
+    },
     assertTarget(targetId,targetIncarnation){
       const row=PRODUCTION_D1_TARGETS.find(item=>item.databaseId===targetId);
       const store=row?.databaseName.replace('fanmark-production-','') ?? PRODUCTION_R2_TARGETS.find(item=>item.bucketName===targetId)?.store;

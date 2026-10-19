@@ -446,3 +446,5 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 業務DBの初回投入は `scripts/migration/d1-import.mjs` の `importInitialBusinessSnapshot`。通常の再開可能importと内部codecを共有し、公開entryを分ける。`business-import-initial-target.mjs` が全runtime schema・初期seed・連番を検査し、最初の台帳作成transactionでも初期行を再確認する。production-stageは固定Businessのjournal付きwriterと同じidentityのread-only transportを要求する。失敗/ACK不明後は当該試行のDB操作を止め、修復や再送をせず独立checkerへ引き継ぐ。全store runner・source停止・公開判定は別工程。
 
 本番画像移送の接続: `production-remote-r2.mjs` / `production-r2-import-stage.mjs` は固定2 bucketの作成日時、実アプリと一時gatewayの配備版/bindingを照合し、独立read-only接続で検査する。`ProductionR2ImportService`（`workers/api/src/production-r2-import-service.ts`）は非公開service bindingからだけ呼び、全store DOに一度限りのdispatch記録を残してから条件付き作成する。`production-import-gateway.mjs` はread-only/importを分けた2時間限定のbearer入口を新しいUUID名で生成し、所有/配備版確認後に削除する。通常の公開routerへ移送用APIは追加しない。
+
+移送中断の独立照合は `scripts/migration/production-import-inspection.mjs`。private journalを変更せず、調停DOのread-only `operation` でUUID/hash/storeを照合する。5 storeの一括照合は各1 journalを要求し、遠隔ACK総数との一致と前後の記録保持を確認する。遠隔ACK確定・同一hostの元process終了が確認された場合に限り、local ACKを補修する。未知のprovider結果や部分stageの再開は許可しない。[操作と制限](migration/production-import-recovery.md)。

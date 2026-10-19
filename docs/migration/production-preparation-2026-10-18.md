@@ -205,3 +205,12 @@ service native6件、client/stage/native調停接続4件、gatewayのnative認�
 [ドメイン操作票](production-domain-operations.md)に、実値、適用前preview、限定した逆操作、4 providerの本番callback候補、www/admin入口の調査を追加した。apex1件のchangeset previewは追加1・更新/削除/conflict0、管理API状態は前後一致。DNS画面を再読込し17件と元の接続先を確認。DNS API403、record ID付きJSON原本と逆操作実地試験、provider実登録、alias handlerは未完了。GitHubは現在複数callbackを許すため、旧callback置換を前提にせず既存Appへの追加を候補とする。根拠は操作票内の公式資料。
 
 全store runner/不明ACKの独立解決と再開、source全入口停止・drain/Stripe引継ぎ、secret/provider/DNS、鍵別保管・遠隔一式復旧は残る。管理者MFAはこれらの準備後。source停止/確定import/domain切替/main mergeは未実施。
+
+## 2026-10-19: 中断した移送の調査とlocal ACK補修
+
+- 調停DOのread-only `operation` は操作UUIDごとのpending/dispatch/ACKを返す。scope・run・manifest/incarnation・store/hashを検証し、状態を変更しない。
+- private journalの独立readerは正確なidentityとintent/ACK順序、0600/0700・通常file・symlinkなし・1 hardlink・完結行を確認する。5 store一括検査は各1 journalを照合し、欠落ACK・誤store・重複ID・途中変更を拒否する。残lockやlocal pendingがあれば整合済みにしない。
+- 限定復旧はremote ACKが存在し、元processが同一hostで終了し、停止owner/active0/pendingなしが一致した場合のみlocal ACKを補修する。DB/R2/遠隔journalは変更せず、再送もしない。旧空lock・別host・生存process・不明保存結果は保持。補修失敗時も専用lockを保持する。
+- native D1/DO + 実子processの結合10件を含む関連44件、Worker側の専用9件、Worker typecheckが成功。画像PUT応答消失は別readerで画像が見えても未解決のまま。全5 storeのデータ確認や部分stage自動再開を実装したとは扱わない。[手順](production-import-recovery.md)。
+
+本番への新コード配備、データ投入、source停止、ドメイン切替、main mergeはこの変更では行っていない。管理者MFAは準備完了後。

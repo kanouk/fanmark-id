@@ -16,13 +16,14 @@ type Input = { owner: string; manifestSha256?: string; incarnationsSha256?: stri
   operationId?: string; batchSha256?: string; store?: string; readbackSha256?: string };
 const shapes: Record<string, string> = {
   claim: "incarnationsSha256,manifestSha256,owner", inspect: "owner",
+  operation: "operationId,owner",
   begin: "batchSha256,operationId,owner,store", acknowledge: "batchSha256,operationId,owner,store",
   complete: "owner,readbackSha256", dispatch: "batchSha256,operationId,owner,store",
 };
 function json(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { "cache-control": "no-store" } });
 }
-function sameOperation(a: Pending, b: Input) {
+function sameOperation(a: Pending, b: Pick<Input, "operationId" | "batchSha256" | "store">) {
   return a.operationId === b.operationId && a.batchSha256 === b.batchSha256 && a.store === b.store;
 }
 function validState(value: ProductionImportState) {
@@ -46,7 +47,7 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
       !env.RECOVERY_DRAIN || ctx.id.toString() !== env.RECOVERY_DRAIN.idFromName(NAME).toString()) return json(null, 409);
   // Inspection stays available after opening the application. New import
   // operations are admitted only while the application is explicitly closed.
-  if (action !== "inspect" && env.CUTOVER_WRITE_FREEZE !== "receipt_only") return json(null, 409);
+  if (!["inspect", "operation"].includes(action) && env.CUTOVER_WRITE_FREEZE !== "receipt_only") return json(null, 409);
   let input: Input;
   try {
     if (Number(request.headers.get("content-length") ?? 0) > 1024) return json(null, 400);
@@ -55,6 +56,7 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     input = JSON.parse(text);
     if (!input || Object.keys(input).sort().join(",") !== shapes[action] || !UUID.test(input.owner)) return json(null, 400);
     if (action === "claim" && (!HASH.test(input.manifestSha256 ?? "") || !HASH.test(input.incarnationsSha256 ?? ""))) return json(null, 400);
+    if (action === "operation" && !UUID.test(input.operationId ?? "")) return json(null, 400);
     if (["begin", "acknowledge", "dispatch"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
         !["auth", "master", "business", "avatars", "covers"].includes(input.store ?? ""))) return json(null, 400);
     if (action === "complete" && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
@@ -70,6 +72,19 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
         (scope !== undefined && (!Number.isSafeInteger(active) || active! < 0))) return json(null, 409);
     if (action === "inspect") return json({ state: state ?? null, scope: PRODUCTION_RUNTIME.scope, active: active ?? 0,
       fenceOwner: fence?.owner ?? null });
+    if (action === "operation") {
+      const acknowledged = await storage.get<Pending>("import-operation:" + input.operationId);
+      const dispatched = await storage.get<Pending>("import-dispatch:" + input.operationId);
+      const pending = state?.pending && state.pending.operationId === input.operationId ? state.pending : null;
+      const valid = (row: Pending) => UUID.test(row.operationId) && row.operationId === input.operationId &&
+        HASH.test(row.batchSha256) && ["auth", "master", "business", "avatars", "covers"].includes(row.store);
+      if ((acknowledged && (!state || state.acknowledged < 1 || !valid(acknowledged) || pending)) ||
+          (dispatched && (!state || !valid(dispatched) || !["avatars", "covers"].includes(dispatched.store) ||
+            !(acknowledged ?? pending) || !sameOperation(dispatched, (acknowledged ?? pending)!)))) return json(null, 409);
+      return json({ state: state ?? null, scope: PRODUCTION_RUNTIME.scope, active: active ?? 0,
+        fenceOwner: fence?.owner ?? null, operationId: input.operationId,
+        pending, acknowledged: acknowledged ?? null, dispatched: dispatched ?? null });
+    }
     if ((active ?? 0) !== 0 || (await storage.list({ prefix: "writer:", limit: 1 })).size ||
         (fence && (fence.owner !== input.owner || fence.scope !== PRODUCTION_RUNTIME.scope))) return json(null, 409);
     if (action === "claim") {

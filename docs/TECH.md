@@ -729,3 +729,9 @@ R2保存はlocal intent→remote begin→Worker内のdurable dispatch→条件�
 
 
 一時production import gatewayのworkers.dev有効化はWrangler 4.135.0と同じAPI日付headerを使用し、preview無効を明示する。応答と独立GETの両方が一致してからopen扱いにする。失敗時のprivate journalはHTTP status・数字error code・工程だけを保存し、本文/秘密を含めない。`test-production-import-gateway.mjs`で拒否時の所有cleanupと再送なしを検証する。実R2読戻しとDNS操作票は[2026-10-19の記録](migration/production-preparation-2026-10-18.md)を参照。
+
+## 移送記録の独立照合と限定復旧
+
+`production-import-inspection.mjs` はprivate journalの読取り、遠隔操作別記録との照合、5 store一括照合、確定済みremote ACKに対応するlocal ACKの補修を提供する。read-only gatewayも `operation` を許可するが、遠隔記録の変更・providerへの再送は行わない。補修は同一run/manifest/incarnation・hash/store一致・停止owner保持・active0・遠隔pendingなし・元process終了を再確認し、専用lockとfsyncで記録する。古い空lock、別host、生存process、不完全journal、未知ACKは拒否する。補修中に失敗した場合は `.recovery.lock` を保持する。
+
+`test-production-import-coordination.mjs` は実子process終了とnative D1/DOでlocal補修・再送なしを検証する。`test-production-remote-r2.mjs` はPUT後の応答消失で、画像が読めてもdispatchを完了扱いしないことを確認する。5 store照合成功は記録の整合だけで、データ照合・source停止・全体再開許可ではない。[中断時の手順](migration/production-import-recovery.md)。

@@ -11,6 +11,7 @@ import { PRODUCTION_RUNTIME, PRODUCTION_STORE_IDS } from '../../workers/api/src/
 import { PRODUCTION_D1_TARGETS } from './production-d1-targets.mjs';
 import { PRODUCTION_R2_TARGETS } from './production-r2-targets.mjs';
 import { createProductionImportCoordinator } from './production-import-coordinator-client.mjs';
+import { inspectProductionImportAttempt, recoverAcknowledgedProductionImport } from './production-import-inspection.mjs';
 import { createProductionRemoteR2, openProductionR2ImportTransport } from './production-remote-r2.mjs';
 import { importProductionSplitR2Export, verifyProductionSplitR2Export } from './production-r2-import-stage.mjs';
 import { objectIdentityHash } from './storage-export.mjs';
@@ -121,6 +122,11 @@ test('production R2 client joins fixed control-plane identities, native service,
       assert.equal((await coordinator.inspect()).state.pending.store, 'avatars');
       assert.equal(JSON.parse((await readFile(join(dir, 'avatars.jsonl'), 'utf8')).trim().split('\n').at(-1)).type, 'intent');
       const read = await readBuckets.avatars.get(key); assert.equal(Buffer.from(await read.arrayBuffer()).toString(), bytes.toString());
+      const journalPath = join(dir, 'avatars.jsonl');
+      const inspection = await inspectProductionImportAttempt({ journalPath, coordinator });
+      assert.equal(inspection.classification, 'remote-dispatched-unresolved');
+      assert.equal(inspection.replayAllowed, false);
+      await assert.rejects(recoverAcknowledgedProductionImport({ journalPath, coordinator }));
       const before = puts, another = await writer('avatars', 'different-journal');
       await assert.rejects(another.putWithSize(key, new Response(bytes).body, options, bytes.length), /coordination_unconfirmed/);
       assert.equal(puts, before);
