@@ -2,7 +2,7 @@
 
 旧Stripe受信の移行候補は[保存専用受信の手順](migration/source-stripe-receipt-only.md)を参照。
 `npm run test:source-stripe-receipt-only` は生成entry・実署名検証・独立PostgreSQL transactionによる
-受付終了待ちを検査する。本番配備や受信記録の移送は実行しない。
+受付終了待ちと暗号化取得→native D1への全内容移送を検査する。本番配備や受信記録の移送は実行しない。
 
 本番D1のschema-only操作は`workers/api/wrangler.production-schema.jsonc`を使う。
 アプリのentry/routes/cronを含まず、作成済み専用3D1だけを指定する。

@@ -1,3 +1,11 @@
+## 2026-10-19: 旧Stripe受信streamを暗号化取得から一括移送へ接続
+
+sealed sourceの同一snapshotから2表を取得し、Git外の0600 archiveへ暗号化・fsync・独立読戻しするcollectorを追加。元ID/全時刻/受信回数/正規化内容を保持してBusinessへ移し、別readerで全列照合する。全store runnerは同じBusiness journal/executorでBusiness→receipts→画像と進み、本番は明示的な空streamも必須。[手順・制限](stripe-receipt-transfer.md)。
+
+native PostgreSQL→暗号化file→native D1と競合/改変/85組の分割/応答消失の16件、native全5store/本番executor14件、準備inventory9件成功。途中の試験fixtureの括弧と暗号文改変が同値になり得る指定を修正後に通過した。source保存候補の既存SQL/entry/hashを保持したままexport SQLをprivate追加。a6e43e3/CI39193035726はapp/Worker両job成功。新コード未配備。
+
+[証拠](evidence/source-stripe-receipt-transfer-2026-10-19.json)。旧handlerの副作用/逆方向の回収、source全入口drainの当日collector、未確定stage/executor復旧、provider設定/operator、DNS逆操作、鍵別保管/本番資源の一式復旧・実行票を継続。旧source停止/本番import/domain切替/main mergeなし。MFAは最後。
+
 ## 2026-10-19: 旧Stripe受信の保存専用候補と受付終了の実PostgreSQL検証
 
 旧sourceにprivate受信schema/RPCが未作成であること、Webhookが保存原本と同じversion 172/JWT設定であることをread-only確認。原本35関数の全file hashを再検査した。共通署名handlerと既存receipt foundationを再利用し、run固定・保存中transactionを待つseal・記録保持reopenの候補を追加。通常handlerの差し替えなし。[手順・復旧境界](source-stripe-receipt-only.md)。

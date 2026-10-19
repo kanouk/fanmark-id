@@ -125,7 +125,7 @@
     "test:split-r2-import-stage": "node --test scripts/migration/test-split-r2-import-stage.mjs",
     "test:business-import-stage": "node --experimental-strip-types --test scripts/migration/test-business-import-stage.mjs",
     "test:production-r2-import": "node --experimental-strip-types --test scripts/migration/test-production-r2-import-service.mjs scripts/migration/test-production-remote-r2.mjs scripts/migration/test-production-import-gateway.mjs",
-    "test:source-stripe-receipt-only": "node --experimental-strip-types --test scripts/migration/test-source-stripe-receipt-only.mjs"
+    "test:source-stripe-receipt-only": "node --experimental-strip-types --test scripts/migration/test-source-stripe-receipt-only.mjs scripts/migration/test-stripe-receipt-transfer.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

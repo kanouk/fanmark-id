@@ -244,3 +244,12 @@ native7件、Deno型検査、Edge Runtime bundle生成成功。旧sourceはschem
 Webhook version 172をread-only確認。原本35関数のfile hash保持も検証した。
 [詳細](source-stripe-receipt-only.md)。受信streamの移送・照合と旧副作用drainは未完了。
 source配備/SQL変更/実Stripeイベント送信はしていない。MFAは全準備後。
+
+## 2026-10-19 Stripe受信streamの暗号化取得と一括移送
+
+旧受付をsealした後の同一snapshotから2表を取得するSQL、private暗号化fileと独立読戻し、
+元ID/時刻/受信回数を保持するBusiness stageを接続した。全store runnerはBusiness→receipts→画像、
+本番では0件でもsealed exportを必須とする。native16件・全store/executor14件・inventory9件成功。
+[限定証拠](evidence/source-stripe-receipt-transfer-2026-10-19.json) / [操作と復旧境界](stripe-receipt-transfer.md)。
+旧sourceにはまだ適用していない。旧handlerの既適用効果・逆方向回収・実provider再送の受け入れは残る。
+MFA再認証は全準備後。本番import/source停止/domain切替/main mergeなし。

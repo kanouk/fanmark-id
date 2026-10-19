@@ -21,6 +21,7 @@ import { isIsolatedRemoteD1 } from './isolated-remote-d1.mjs';
 import { isProductionRemoteR2 } from './production-remote-r2.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 import { inspectProductionImportSet } from './production-import-inspection.mjs';
+import { prepareStripeReceiptTransfer, importStripeReceiptTransfer, verifyStripeReceiptTransfer } from './stripe-receipt-transfer.mjs';
 
 const plans = new WeakMap(), UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 const stores = ['auth', 'avatars', 'business', 'covers', 'master'];
@@ -32,7 +33,7 @@ const same = (a, b) => canonicalJson(a) === canonicalJson(b);
  * The descriptor binds inputs/targets, but does not certify final-source custody.
  */
 async function prepareSet({ manifestPath, storageExportDir, authProjection, approvedEmojiIdentity,
-  runId, incarnations, activationIds, businessDestinationId, expectedTargetProfile, sourceEvidenceSha256 = null } = {}) {
+  runId, incarnations, activationIds, businessDestinationId, expectedTargetProfile, sourceEvidenceSha256 = null, stripeReceiptExport = null } = {}) {
   if (![manifestPath, storageExportDir].every(path => typeof path === 'string' && isAbsolute(path)) || !UUID.test(runId ?? '') ||
       !incarnations || Object.keys(incarnations).sort().join(',') !== stores.join(',') ||
       Object.values(incarnations).some(value => !UUID.test(value)) || new Set(Object.values(incarnations)).size !== 5 ||
@@ -40,6 +41,8 @@ async function prepareSet({ manifestPath, storageExportDir, authProjection, appr
       Object.values(activationIds).some(value => !UUID.test(value)) || activationIds.emoji === activationIds.reference ||
       typeof businessDestinationId !== 'string' || !businessDestinationId || !expectedTargetProfile) fail('identity_invalid');
   if (sourceEvidenceSha256 !== null && !/^[a-f0-9]{64}$/u.test(sourceEvidenceSha256)) fail('source_evidence_hash_invalid');
+  const receipts = stripeReceiptExport === null ? null : structuredClone(stripeReceiptExport);
+  const receiptProjection = receipts === null ? null : await prepareStripeReceiptTransfer(receipts,{runId});
   const auth = prepareAuthImportProjection(authProjection).expected;
   const identity = structuredClone({ runId, incarnations, activationIds, businessDestinationId });
   const profile = structuredClone(expectedTargetProfile);
@@ -68,12 +71,13 @@ async function prepareSet({ manifestPath, storageExportDir, authProjection, appr
   }
   const storage = await prepareStorageImportReadback({ exportDir: storageExportDir });
   const descriptor = { format: 'fanmark-initial-import-set-v1', ...identity, sourceEvidenceSha256,
+    stripeReceiptExportSha256:receiptProjection?.sourceSha256??null,
     businessManifestSha256: sha256Hex(bytes), authProjectionSha256: sha256Hex(auth),
     masterProjectionSha256: sha256Hex(master), storageManifestSha256: storage.manifestSHA256,
     expectedTargetProfileSha256: sha256Hex(profile) };
   const prepared = Object.freeze({ identitySha256: sha256Hex(descriptor), runId,
     sourceFreezeVerified: false, productionReady: false });
-  plans.set(prepared, { descriptor, auth, master, profile, manifestPath, storageExportDir });
+  plans.set(prepared, { descriptor, auth, master, profile, manifestPath, storageExportDir, receipts });
   return prepared;
 }
 
@@ -102,6 +106,7 @@ async function verifySet({ prepared, databases, buckets, mode = 'local', coordin
       !images.avatars || !images.covers || images.avatars === images.covers) fail('stores_invalid');
   const production = mode === 'production-stage';
   if (production) {
+    if(!plan.receipts)fail('stripe_receipt_export_required');
     if (!isProductionImportCoordinator(coordinator) || coordinator.owner !== descriptor.runId ||
         coordinator.manifestSha256 !== prepared.identitySha256 || !same(coordinator.incarnations, descriptor.incarnations)) fail('coordinator_invalid');
     for (const [store, database] of Object.entries(db)) if (!isProductionRemoteD1(database) || database.access !== 'read-only' ||
@@ -133,6 +138,8 @@ async function verifySet({ prepared, databases, buckets, mode = 'local', coordin
   const business = await verifyImportedD1Snapshot({ manifestPath: plan.manifestPath, database: db.business,
     destinationId: descriptor.businessDestinationId, targetIncarnation: descriptor.incarnations.business,
     canonicalBusinessSchema: true, expectedTargetProfile: plan.profile, resolveAuthUserIds });
+  const receipts = plan.receipts === null ? null : await verifyStripeReceiptTransfer({source:plan.receipts,
+    database:db.business,runId:descriptor.runId,targetIncarnation:descriptor.incarnations.business});
   const storage = await (production ? verifyProductionSplitR2Export : verifyImportedSplitR2Export)({ exportDir: plan.storageExportDir, buckets: images });
   await source();
   // Auth/Master may be individually valid at different times: repeat their
@@ -142,7 +149,7 @@ async function verifySet({ prepared, databases, buckets, mode = 'local', coordin
   const after = production ? await fence() : null;
   if (!same(before, after)) fail('journals_changed');
   const report = { format: 'fanmark-initial-import-set-readback-v1', identitySha256: prepared.identitySha256,
-    allExpectedStoreContentsMatched: true, auth, master, business, storage,
+    allExpectedStoreContentsMatched: true, auth, master, business, receipts, storage,
     journalInspectionSha256: before ? sha256Hex(before) : null,
     consistency: production ? 'held-import-fence-readback' : 'unfenced-local-readback',
     sourceFreezeVerified: false, fullMigrationReconciled: false, productionReady: false,
@@ -153,7 +160,7 @@ async function verifySet({ prepared, databases, buckets, mode = 'local', coordin
 // Filesystem/JSON/provider exception text can contain private source material.
 // Preserve only this module's bounded codes or known checker namespaces.
 function safeError(error, fallback) {
-  if (/^(?:initial_import_set|auth_import_readback|master_import_readback|split_r2_import|production_import_inspection|production_r2_transport)_[a-z0-9_]{1,90}$/u.test(error?.message ?? '')) throw error;
+  if (/^(?:initial_import_set|auth_import_readback|master_import_readback|split_r2_import|production_import_inspection|production_r2_transport|stripe_receipt_transfer)_[a-z0-9_]{1,90}$/u.test(error?.message ?? '')) throw error;
   fail(fallback);
 }
 export async function prepareInitialImportSet(options) {
@@ -173,7 +180,7 @@ export async function rehearseInitialImportSet(options = {}) {
 }
 async function rehearseSet({ prepared, databases, readDatabases, buckets, readBuckets,
   businessReportPath, storageReportPath, resumeAfter = null, stopAfter = 'storage', ...extra } = {}, execution = null) {
-  const plan = plans.get(prepared), stages = ['auth', 'master', 'business', 'storage'];
+  const plan = plans.get(prepared), stages = ['auth', 'master', 'business', ...(plan?.receipts?['receipts']:[]), 'storage'];
   if (!plan || Object.keys(extra).length || (resumeAfter !== null && !stages.includes(resumeAfter)) ||
       !stages.includes(stopAfter) || stages.indexOf(resumeAfter) > stages.indexOf(stopAfter)) fail('rehearsal_options_invalid');
   const write = { ...databases }, read = { ...readDatabases }, images = { ...buckets }, imageRead = { ...readBuckets };
@@ -200,10 +207,12 @@ async function rehearseSet({ prepared, databases, readDatabases, buckets, readBu
   const master = { projection: plan.master, targetIncarnation: descriptor.incarnations.master, activationIds: descriptor.activationIds };
   const business = { manifestPath: plan.manifestPath, destinationId: descriptor.businessDestinationId,
     targetIncarnation: descriptor.incarnations.business, expectedTargetProfile: plan.profile, resolveAuthUserIds };
+  const receiptOptions={source:plan.receipts,runId:descriptor.runId,targetIncarnation:descriptor.incarnations.business};
   const checks = {
     auth: () => verifyImportedAuthProjection({ ...auth, database: read.auth }),
     master: () => verifyImportedMasterProjection({ ...master, database: read.master }),
     business: () => verifyImportedD1Snapshot({ ...business, database: read.business, canonicalBusinessSchema: true }),
+    receipts: () => verifyStripeReceiptTransfer({...receiptOptions,database:read.business}),
     storage: () => (execution ? verifyProductionSplitR2Export : verifyImportedSplitR2Export)({ exportDir: plan.storageExportDir, buckets: imageRead }),
   };
   const imports = {
@@ -211,6 +220,7 @@ async function rehearseSet({ prepared, databases, readDatabases, buckets, readBu
     master: () => importMasterProjectionStage({ ...master, mode, database: write.master, readDatabase: read.master }),
     business: () => importInitialBusinessSnapshot({ ...business, mode, database: write.business, readDatabase: read.business,
       reportPath: businessReportPath, allowUnresolvedGates: true }),
+    receipts: () => importStripeReceiptTransfer({...receiptOptions,mode,database:write.business,readDatabase:read.business}),
     storage: () => (execution ? importProductionSplitR2Export : importInitialSplitR2Export)({ exportDir: plan.storageExportDir, buckets: images, readBuckets: imageRead, reportPath: storageReportPath }),
   };
   const completed = [], resumed = [], reports = {};
@@ -245,6 +255,7 @@ export async function executeInitialImportSet(options = {}) {
 }
 async function executeSet({ coordinator, journalPaths, sourceEvidencePath, ...options } = {}) {
   const plan = plans.get(options.prepared), paths = { ...journalPaths };
+  if(plan && !plan.receipts)fail('stripe_receipt_export_required');
   if (!plan || !plan.descriptor.sourceEvidenceSha256 || !isAbsolute(sourceEvidencePath ?? '') ||
       !isProductionImportCoordinator(coordinator) || coordinator.owner !== plan.descriptor.runId ||
       coordinator.manifestSha256 !== options.prepared.identitySha256 ||

@@ -98,6 +98,19 @@ END $verify$;`;
  'receiptCount',(SELECT count(*) FROM billing_ingress.stripe_webhook_receipts),
  'deliveryCount',(SELECT coalesce(sum(delivery_count),0) FROM billing_ingress.stripe_webhook_receipts))
  FROM billing_ingress.cutover_control WHERE singleton;`;
+  const times = (alias, columns) => columns.map(name => `${literal(name)},to_char(${alias}.${name} AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`).join(',');
+  const exportSql = 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\n' + verifyBody + `
+DO $sealed$ BEGIN IF (SELECT accepting FROM billing_ingress.cutover_control WHERE singleton)
+ THEN RAISE EXCEPTION 'source_stripe_export_requires_seal'; END IF; END $sealed$;
+SELECT jsonb_build_object('format','fanmark-source-stripe-receipts-v1','projectRef',${literal(PROJECT)},
+ 'runId',run_id,'foundationSha256',foundation_sha256,'originalFunctionSha256',${literal(originalFunction.sourceTreeSha256)},
+ 'sealedAt',to_char(sealed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+ 'receiptCount',sealed_receipts,'deliveryCount',sealed_deliveries,
+ 'receipts',(SELECT coalesce(jsonb_agg(to_jsonb(r)||jsonb_build_object(${times('r',['first_received_at','last_received_at','terminal_at','created_at','updated_at'])}) ORDER BY r.id),'[]'::jsonb) FROM billing_ingress.stripe_webhook_receipts r),
+ 'dispatches',(SELECT coalesce(jsonb_agg(to_jsonb(d)||jsonb_build_object(${times('d',['available_at','claimed_at','completed_at','created_at','updated_at'])}) ORDER BY d.id),'[]'::jsonb) FROM billing_ingress.stripe_webhook_dispatches d))
+ FROM billing_ingress.cutover_control WHERE singleton;
+COMMIT;
+`;
   const lock = 'SELECT singleton FROM billing_ingress.cutover_control WHERE singleton FOR UPDATE;\n';
   const transition = accepting => start + lock + verifyBody + `
 DO $transition$ BEGIN
@@ -143,7 +156,7 @@ Deno.serve(async request => {
   return Object.freeze({ format:'fanmark-source-stripe-receipt-only-v1',projectRef,runId,
     originalFunction:{...originalFunction},foundationSha256,installSql,
     verifySql:'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\n'+verifyBody+'\n'+summary+'\nCOMMIT;\n',
-    sealSql:transition(false),reopenSql:transition(true),entrySource,entrySha256:hash(entrySource),
+    sealSql:transition(false),reopenSql:transition(true),exportSql,entrySource,entrySha256:hash(entrySource),
     files,sourceTreeSha256:hash(JSON.stringify(files.map(({source,...file})=>file))),
     sourceDrainVerified:false,productionReady:false });
 }

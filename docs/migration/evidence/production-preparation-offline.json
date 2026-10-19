@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "4d9a291b05932fe926194820c16514774bfc8d0615a488c118584325bb2a67fa"
+    "sha256": "b34cb0dc4fea34d336d34c6dc83b7ff610980aa06e271b3e27def9f91327e48a"
   },
   "variables": [
     {
@@ -652,7 +652,7 @@
     },
     {
       "path": "scripts/migration/initial-import-set-readback.mjs",
-      "sha256": "d90c6638b42ec895184dd93a8612f512dbe8e7f4010764be1d5f6455118d829a"
+      "sha256": "c26f330d566758a6f98f4c5a7a7de8f9bc6731b6d54c192d1ae35e7b4818256d"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
@@ -756,7 +756,7 @@
     },
     {
       "path": "scripts/migration/source-stripe-receipt-only.mjs",
-      "sha256": "bdc61567c32f181cc82531b07a08a10bfff4cfb25ed4257f7f855c4477e11733"
+      "sha256": "53e75c52fd0feae3ee6126a8e1cbd54ae027a6cbb3c57cf71bada59a3fe1c3ba"
     },
     {
       "path": "scripts/migration/split-r2-import-stage.mjs",
@@ -781,6 +781,10 @@
     {
       "path": "scripts/migration/stripe-handoff-check.mjs",
       "sha256": "8c50ebca6599ab93f65cea19c714c1535542e0fc1d1b98376b61d81ef19e0a12"
+    },
+    {
+      "path": "scripts/migration/stripe-receipt-transfer.mjs",
+      "sha256": "e1fb2c031f0d4557e26840e9a8b8022bb766b7b1ca5bb62d3ab83a1425125495"
     },
     {
       "path": "scripts/migration/supabase-auth-projection.mjs",

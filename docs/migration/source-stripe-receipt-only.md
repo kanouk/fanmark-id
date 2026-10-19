@@ -3,7 +3,8 @@
 `scripts/migration/source-stripe-receipt-only.mjs` は、旧環境の業務更新停止中に
 Stripe通知だけを保存するSQLとEdge Functionの候補を生成する。ネットワーク接続、
 SQL実行、配備はしない。通常の `handle-stripe-webhook/index.ts` も置き換えない。
-**受信記録の移送・照合まで完成する前に、この候補を本番へ適用しない。**
+受信記録の移送・照合は[専用streamの手順](stripe-receipt-transfer.md)へ接続した。
+旧handlerの副作用照合と当日の停止/取得確認が終わる前に、本候補を本番へ適用しない。
 
 2026-10-19の読み取りでは、旧projectの `billing_ingress` schemaと同名public RPCは
 存在しない。既存Webhookはversion 172、JWT検証なし。35関数の保存済み原本を全file
@@ -37,9 +38,9 @@ hashで検査し、管理APIからもWebhookのID/version/JWT設定が同じで�
    同じslug・JWT設定で配備する。新bundleのversion/hashを読み戻す。原本は保持する。
 3. 他の旧入口・Cronを停止し、開始済みの外部副作用とDB/Storage処理を照合する。
    `source-database-freeze.mjs` の対象public/auth/storageを止めてもprivate受信は継続する。
-4. 新環境への受信経路を整え、旧受信をsealし、別接続で検査する。その固定境界から
+4. 新環境への受信経路を未有効のまま準備し、旧受信をsealして別接続で検査する。その固定境界から
    receipt/dispatchを別streamとしてexport・暗号化・移送・全内容照合する。
-   業務snapshotだけのimportで受信記録まで移ったことにしない。
+   業務snapshotだけのimportで受信記録まで移ったことにしない。移送・照合後に新受信を有効化する。
 5. 旧経路でseal後に届く通知は503になる。新旧のevent ID/live modeと、既に旧handlerで
    適用された業務結果を突き合わせ、再送・未処理イベントの処遇を確定してから公開する。
 
@@ -62,5 +63,6 @@ seal後503、関数/権限変更の検出、記録を残したreopenを検査す
 
 このロックが証明するのは新しい保存専用RPCの完了待ちだけ。旧versionの実行中Edge、
 旧handlerの複数transaction間の部分適用、Stripe外部副作用、全入口停止の証明は残る。
-受信streamのexport/import・両環境の効果照合も未接続で、`productionReady=false` を維持する。
+受信streamのexport/importは一括runnerへ接続した。両環境の効果照合と実停止/取得の確認が
+残るため、`productionReady=false` を維持する。
 管理者MFA再認証はこれらと他の移行準備がそろった後に行う。

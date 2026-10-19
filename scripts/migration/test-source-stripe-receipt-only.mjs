@@ -3,10 +3,16 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { createRequire } from 'node:module';
 import { execFileSync, spawn } from 'node:child_process';
-import { randomUUID, createHash } from 'node:crypto';
+import { randomUUID, createHash, randomBytes } from 'node:crypto';
 import { once } from 'node:events';
+import {mkdtemp,rm,readdir,stat} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import { renderSourceStripeReceiptOnly } from './source-stripe-receipt-only.mjs';
 import { renderSourceDatabaseFreeze } from './source-database-freeze.mjs';
+import { prepareStripeReceiptTransfer, collectSourceStripeReceipts, loadStripeReceiptExport, importStripeReceiptTransfer } from './stripe-receipt-transfer.mjs';
+import { Miniflare } from '../../workers/api/node_modules/miniflare/dist/src/index.js';
+import { applyBusinessRuntimeMigrations } from './business-runtime-import-schema.mjs';
 import { canonicalizeNormalizedPayload, createStripeReceiptIngress, createSupabaseReceiptPersister } from '../../supabase/functions/_shared/stripe-receipt-ingress/index.ts';
 
 const require = createRequire(new URL('../../experiments/stripe-receipts/package.json',import.meta.url));
@@ -85,6 +91,7 @@ test('receipt-only candidate uses native PostgreSQL transactions and real Stripe
    assert.equal(sql('SELECT count(*) FROM billing_ingress.stripe_webhook_receipts'),'2');
    assert.equal(sql('SELECT count(*) FROM billing_ingress.stripe_webhook_dispatches'),'2');
    assert.equal(sql('SELECT sum(delivery_count) FROM billing_ingress.stripe_webhook_receipts'),'3');sql(plan.verifySql);
+   assert.match(sql(plan.exportSql,true),/source_stripe_export_requires_seal/);
   });
   await t.test('source business freeze still allows receipts, without license or payment effects',async()=>{
    const relations=['auth','public','storage'].map(schema=>({schema,name:'items',kind:'r',partition:false,owner_role_available:true,trigger_privilege:true}));
@@ -131,6 +138,31 @@ test('receipt-only candidate uses native PostgreSQL transactions and real Stripe
    assert.equal(sql('SELECT sealed_receipts FROM billing_ingress.cutover_control'),'4');
    assert.equal((await deliver('evt_after_seal')).status,503);
    assert.equal(sql('SELECT count(*) FROM billing_ingress.stripe_webhook_receipts'),'4');
+  });
+  await t.test('sealed PostgreSQL stream survives authenticated encryption and imports every receipt into native D1',async()=>{
+   const source=JSON.parse(sql(plan.exportSql)),projection=await prepareStripeReceiptTransfer(source,{runId:plan.runId});
+   assert.equal(projection.receiptCount,4);assert.equal(projection.deliveryCount,5);
+   const key=randomBytes(32),directory=await mkdtemp(join(tmpdir(),'fanmark-receipt-capture-'));
+   let restored;
+   try{
+    const options={projectRef:plan.projectRef,runId:plan.runId,originalFunction,query:async text=>JSON.parse(sql(text)),encryptionKey:key,archivePath:join(directory,'receipts.json')};
+    const collected=await collectSourceStripeReceipts(options);
+    assert.equal(collected.plaintextFiles,0);assert.deepEqual(await readdir(directory),['receipts.json']);
+    assert.equal((await stat(options.archivePath)).mode&0o777,0o600);
+    restored=await loadStripeReceiptExport({...options,expectedArchiveSha256:collected.archiveSha256});assert.deepEqual(restored,source);
+    await assert.rejects(loadStripeReceiptExport({...options,expectedArchiveSha256:'f'.repeat(64)}),/archive_file_changed/);
+    await assert.rejects(collectSourceStripeReceipts({...options,query:()=>{throw Error('must not query again');}}),/archive_already_exists/);
+    await assert.rejects(collectSourceStripeReceipts({...options,archivePath:join(directory,'wrong-original.json'),query:async()=>({...source,originalFunctionSha256:'f'.repeat(64)})}),/source_original_mismatch/);
+    assert.deepEqual(await readdir(directory),['receipts.json']);
+   }finally{await rm(directory,{recursive:true,force:true});}
+   const mf=new Miniflare({workers:[{config:{name:'sealed-stripe-transfer',type:'worker',compatibilityDate:'2026-09-18',
+    env:{DB:{type:'d1',name:'sealed-stripe-transfer'}},manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:"export default {fetch(){return new Response('ok')}}"}}}}}]});
+   try {
+    const database=await mf.getD1Database('DB');await applyBusinessRuntimeMigrations(database);
+    const report=await importStripeReceiptTransfer({source:restored,database,readDatabase:database,runId:plan.runId});
+    assert.equal(report.receiptCount,4);assert.equal(report.billingEffectsApplied,false);
+    assert.equal((await database.prepare('SELECT count(*) AS n FROM fanmark_licenses').all()).results[0].n,0);
+   } finally {await mf.dispose();}
   });
   await t.test('verification rejects changed function or privilege; reopen retains every original receipt',async()=>{
    sql(`ALTER FUNCTION public.accept_stripe_webhook_receipt(${signature}) SET search_path=public`);

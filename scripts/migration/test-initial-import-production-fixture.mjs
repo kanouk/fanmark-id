@@ -60,6 +60,7 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
     const mutation=batch.some(row=>!isReadOnlyProductionSql(row.sql));if(mutation)counters.d1Writes++;
     const result=await native[store].batch(batch.map(row=>native[store].prepare(row.sql).bind(...(row.params??[]))));
     if(mutation&&store==='master'&&counters.loseCommittedMaster){counters.loseCommittedMaster=false;throw Error('synthetic lost committed response');}
+    if(mutation&&store==='business'&&counters.loseCommittedReceipts&&batch.some(row=>/INSERT INTO "stripe_webhook_receipts"/u.test(row.sql))){counters.loseCommittedReceipts=false;throw Error('synthetic lost receipt response');}
     return Response.json({success:true,result});
    }
    let result;

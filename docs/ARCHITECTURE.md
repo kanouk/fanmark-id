@@ -2,7 +2,9 @@
 
 移行時の旧Stripe受信候補は `scripts/migration/source-stripe-receipt-only.mjs`。
 共通署名検証handlerとprivate PostgreSQL receipt保存を再利用し、保存transactionの
-完了待ち・受付停止・記録を残した再開を生成する。[手順と未完了条件](migration/source-stripe-receipt-only.md)。
+完了待ち・受付停止・記録を残した再開を生成する。
+`stripe-receipt-transfer.mjs` はsealed streamの暗号化取得・Businessへの移送・独立照合を担い、
+一括runnerのBusinessと画像の間へ接続する。[手順と未完了条件](migration/source-stripe-receipt-only.md)。
 
 Cloudflare検証環境はWorkers・Better Auth・D1・R2を使い、本番Supabaseとは分離する。2026-10-13の本人判断で全APIへの旧JWT中継を対象から外し、既存ユーザー移送・再ログインと本番domain/DNSは最後の#38とした。[範囲判断](migration/evidence/owner-migration-scope-decision-2026-10-13.json)。
 

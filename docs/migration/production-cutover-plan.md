@@ -1,20 +1,20 @@
 # #38 本番データ・ドメイン移行の実行計画
 
-> 2026-10-16更新：所有者から本番実施の指示を受けた。専用資源とスキーマ、実Authの予備コピーを作成した。TOTP互換性は本人の再登録と暗号化保存・source照合で対応した。本番取り込み・ログイン確認と他の開始条件は残る。[現在の実行記録](production-execution-2026-10-16.md)を優先する。以下は計画作成時の条件・見積もり。
+> 2026-10-19更新：現在の指示は「本番移行直前まで準備」。専用資源・schema・閉鎖配備と予備コピーは作成済み。一括runner、source停止候補、Stripe保存専用候補と受信stream移送を追加した。旧環境の停止・本番ユーザーデータ投入・DNS切替は未実施。MFAの以前の再登録結果は期限切れで、全準備後に再認証する。[最新handoff](HANDOFF.md)と[準備記録](production-preparation-2026-10-18.md)を現在の実施状況として優先する。
 
-更新日: 2026-10-15 JST。状態: **確認用の計画案。本番実行は未承認・未実施。**
+更新日: 2026-10-19 JST。状態: **移行直前までの準備中。旧環境が引き続き正。**
 
 対象は[issue #38](https://github.com/kanouk/fanmark-id/issues/38)。[PR #41](https://github.com/kanouk/fanmark-id/pull/41) / `codex/cloudflare-api-preparation`を継続する。本番確認までGitの`main`を維持し、確認後に旧デプロイ経路を整理してマージする。
 
-サービス所有者と実施担当向けの文書。最初に1〜3節で開始条件と停止時間を確認し、当日は4〜7節を参照する。不明点や例外は#38の実施記録へ集約し、所有者が継続・延期を判断する。現時点では読み取り、公開DNSの照会、文書作成のみ。ユーザー行・認証秘密の取得、資源作成、デプロイ、送信、DNS変更は行っていない。
+サービス所有者と実施担当向けの文書。最初に1〜3節で開始条件と停止時間を確認し、当日は4〜7節を参照する。不明点や例外は#38の実施記録へ集約し、所有者が継続・延期を判断する。実施済みの準備・非公開配備・予備コピーは上記記録に残す。準備期間に旧環境の停止や本番ユーザーデータ投入・DNS切替を行わない。
 
 準備の実施状況・設定一覧・操作票・所有者の判断事項は[本番移行の準備記録](production-preparation.md)を参照する。ローカル準備の成功と、本番実施条件の充足は区別する。
 
 ## 1. 準備済みの検証結果と、本番前に完成させる作業
 
-Cloudflare側の定義済み機能範囲は[2026-10-14の受け入れ記録](evidence/target-pre-cutover-acceptance-2026-10-14.json)で確認済み。今回のGitHub読戻しでも、先頭`ab0b8c7`、PR draft、CI38419354073のアプリ・Worker両job成功を確認した。本番移送・本番運用の受け入れは含まない。
+Cloudflare側の定義済み機能範囲は[2026-10-14の受け入れ記録](evidence/target-pre-cutover-acceptance-2026-10-14.json)で確認済み。計画作成時には先頭`ab0b8c7`、PR draft、CI38419354073のアプリ・Worker両job成功を確認した。最新commitのCIはhandoffを参照する。本番移送・本番運用の受け入れは含まない。
 
-コードを確認すると、本番用の実行経路には次の不足がある。これらを停止時間中に実装しない。すべての開始条件がそろってから移行日を決める。
+以下はP1〜P8の要求であり、すべてを未実装という意味ではない。準備では実装・隔離試験・実環境の読み取り確認・当日の実行票をそろえる。本番停止後の実行中処理0、最終snapshot一致などは当日の停止条件として確認する。これらの証拠を先取りするために準備中の本番を停止しない。
 
 移送プログラム（runner）がデータを取り込み、読み取り専用の照合プログラム（checker）が結果を検査する。Webhookの受信・保存処理（receiver）と、受信内容を業務データへ適用する処理（dispatcher）は分けて停止・再開する。以下のsourceは移行元、targetは移行先、writerは更新を行う処理を指す。
 
@@ -29,7 +29,7 @@ Cloudflare側の定義済み機能範囲は[2026-10-14の受け入れ記録](evi
 | P7 | 本番資源を使うバックアップ・復旧・監視を検証する | Git外の暗号化保存から別の専用資源へ復旧し、全storeと操作台帳を照合。所有者が確認した本番RPOと復旧可能な最終操作点、新資源IDでのguard、鍵の別保管、失敗通知を確認 |
 | P8 | 実データの予備コピーによる移送リハーサルと当日コマンドを確定する | 別途許可された予備export/importの所要時間、独立照合、例外一覧、後片付け。本番用の実行票をレビューし、最新成功CIのcommitを固定 |
 
-P2の既存部品は`importD1Snapshot()` / `importEncryptedD1Snapshot()`と`importStorageExport()`。D1は`local`か`isolated-remote`だけを受け付け、remote transportも所有する隔離資源に限定される。R2にも単独の本番CLIはない。[D1 importer](d1-import.md) / [Storage importer](storage-r2-import.md)。検証用の資源名への偽装、`allowUnresolvedGates`の指定だけ、本番bindingの差し込みで制限を迂回しない。本番用runnerを別途レビューする。
+P2は[本番一括runner/checker](initial-import-set.md)へ接続済み。固定3 D1/2 R2、同じ調停executor/操作journal、Business後の[Stripe受信stream](stripe-receipt-transfer.md)を扱う。汎用`importD1Snapshot()` / `importEncryptedD1Snapshot()`は引き続きlocal/isolated-remote限定で、本番制限を迂回しない。実停止・取得証拠、未確定操作の復旧、当日の秘密供給と実行票は別途確認する。
 
 P4は特に重要。[実配備Edgeの記録](source-edge-bodies-review.md)では、旧Webhookは直接業務を書き換える版だった。リポジトリにある受信台帳のコードが本番配備済みとは限らない。受信を残したまま旧業務更新を止めることを証明できなければ、移行を開始しない。
 
@@ -139,11 +139,11 @@ MFAは、既存TOTPを検証済み変換で移せるか、安全な本人確認�
 | source事前検査 | `scripts/migration/identity-readiness.sql`、`auth-readiness.sql`、`source-scheduled-writers.sql`、`storage-cron-readiness.sql` | verified source接続、read-only/timeout、private保存先、対象全表への読取権限。個別SQLの観測を同一snapshotとしない |
 | DB暗号化export | `node scripts/migration/snapshot-export-encrypted.mjs --catalog <private-catalog> --bundle <new-private-bundle> --role postgres --credential-descriptor <private-descriptor>` | 固定Node版・catalog/descriptor hash、PG接続と暗号鍵をプロセス環境から供給。秘密をargv/ログへ入れない |
 | 画像export | `node scripts/migration/storage-export.mjs --output-dir <new-private-directory> --buckets avatars,cover-images` | 実source照合、容量制限、環境変数の供給、暗号化・平文cleanup。事前コピーを確定コピーと扱わない |
-| Auth/Business/Master/R2 import | 既存libraryと合成復旧runnerを部品として利用 | **P2で本番用runner・全resource allowlist・操作票を新規作成する。現時点で実行可能な本番CLIはない** |
-| source停止/再開・受信引継ぎ | P3/P4の対象表と配備版を基に作る | **正確なSQL/API/配備操作と逆操作は未完成。既存guardが本番sourceにあると仮定しない** |
+| Auth/Business/Master/R2 import | `prepareInitialImportSet` / `executeInitialImportSet` / `verifyInitialImportSet` | 固定資源、確定snapshot、Stripe受信export、停止証拠file、全journal、秘密供給を結んだ当日票。libraryの存在だけで実施可能とはしない |
+| source停止/再開・受信引継ぎ | `source-database-freeze.mjs`、`source-cron-pause.mjs`、`source-edge-maintenance.mjs`、`source-stripe-receipt-only.mjs` | 保存済み原本version、停止/逆操作SQL、配備前後の照合、旧副作用drainと逆方向の受信回収票。候補guardはまだsourceに配備していない |
 | DNS/Custom Domain | Cloudflareのverified zone/Workerに対する管理操作 | record/route/certificateの変更前後JSONとhash、競合処理、独立readback、逆操作。現在の公開A回答をorigin値として復元しない |
 
-本番runnerは`prepare`/読み取り検証と`apply`を分離し、source/target/run/commit/schemaを照合してから変更を許す設計とする。自動retryで書き込みを重ねず、同じmanifestとtarget世代のcheckpointを読んで再開する。これは追加実装の要件であり、現在存在するコマンド名ではない。
+本番runnerは`prepare`/読み取り検証と`apply`を分離し、source/target/run/commit/schemaを照合してから変更を許す設計とする。自動retryで書き込みを重ねず、同じmanifestとtarget世代のcheckpointを読んで再開する。本番runnerはこれらをlibrary入口として実装した。当日CLI/呼出し票は秘密を出力しない形で固定する。
 
 ## 6. 最初の新業務書き込みの前後で復旧方法を変える
 

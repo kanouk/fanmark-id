@@ -20,6 +20,7 @@ import { PRODUCTION_R2_TARGETS } from './production-r2-targets.mjs';
 import { createProductionRemoteR2 } from './production-remote-r2.mjs';
 import { createProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 import { createNativeProductionSetFixture } from './test-initial-import-production-fixture.mjs';
+import { syntheticStripeReceiptExport } from './test-stripe-receipt-transfer-fixture.mjs';
 import { PRODUCTION_RUNTIME, PRODUCTION_STORE_IDS } from '../../workers/api/src/production-runtime-identity.ts';
 
 
@@ -61,6 +62,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
  const activationIds = { emoji: randomUUID(), reference: randomUUID() };
  const input = { manifestPath: fixture.manifestPath, storageExportDir, authProjection, approvedEmojiIdentity, runId: randomUUID(),
   incarnations, activationIds, businessDestinationId: PRODUCTION_D1_TARGETS.find(row => row.databaseName === 'fanmark-production-business').databaseId, expectedTargetProfile: fixture.expectedTargetProfile };
+ input.stripeReceiptExport=await syntheticStripeReceiptExport(input.runId,0);
  const prepared = await prepareInitialImportSet(input);
  const databases = { auth: await mf.getD1Database('AUTH'), master: await mf.getD1Database('MASTER'), business: await mf.getD1Database('BUSINESS') };
  for (const [store, migrations] of Object.entries({ auth: ['0003_better_auth_core.sql', '0007_auth_signup_command.sql', '0008_auth_user_suspension.sql', '0009_auth_oauth_signup.sql'], master: MASTER_RUNTIME_MIGRATIONS })) {
@@ -102,7 +104,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
   const candidate = await prepareInitialImportSet(input);
   assert.equal(candidate.identitySha256, prepared.identitySha256);
   const result = await rehearseInitialImportSet({ ...rehearsal, prepared: candidate, resumeAfter: 'auth' });
-  assert.deepEqual(result.completedStages, ['auth', 'master', 'business', 'storage']);
+  assert.deepEqual(result.completedStages, ['auth', 'master', 'business', 'receipts', 'storage']);
   assert.deepEqual(result.verifiedBeforeResume, ['auth']);
   assert.equal(result.readback.allExpectedStoreContentsMatched, true);
   assert.equal(result.sourceFreezeVerified, false); assert.equal(result.productionReady, false);
@@ -116,7 +118,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
   const result = await rehearseInitialImportSet({ ...rehearsal, prepared: await prepareInitialImportSet(input),
     databases: readOnlyWriters, buckets: { avatars: { put: deny }, covers: { put: deny } }, resumeAfter: 'storage' });
   assert.equal(writes, 0); assert.equal(result.readback.allExpectedStoreContentsMatched, true);
-  assert.deepEqual(result.verifiedBeforeResume, ['auth', 'master', 'business', 'storage']);
+  assert.deepEqual(result.verifiedBeforeResume, ['auth', 'master', 'business', 'receipts', 'storage']);
   await assert.rejects(rehearseInitialImportSet({ ...rehearsal, mode: 'production-stage' }), /rehearsal_options_invalid/);
  });
  const options = { prepared, databases, buckets };
@@ -236,6 +238,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
   const sourceEvidencePath=join(root,'synthetic-source-evidence.json'),evidence=Buffer.from('{"synthetic":true,"notProductionEvidence":true}');
   await writeFile(sourceEvidencePath,evidence,{mode:0o600});
   const productionInput={...input,runId:randomUUID(),sourceEvidenceSha256:sha256Hex(evidence)};
+  productionInput.stripeReceiptExport=await syntheticStripeReceiptExport(productionInput.runId,2);
   const candidate=await prepareInitialImportSet(productionInput);
   const runtime=await createNativeProductionSetFixture({directory:join(root,'native-production-execution'),prepared:candidate,input:productionInput});
   try {
@@ -252,7 +255,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    assert.equal((await runtime.coordinator.inspect()).executorId,null);assert.equal(runtime.counters.r2Writes,0);
    await runtime.coordinator.claim();
    const final=await executeInitialImportSet({...args,prepared:await prepareInitialImportSet(productionInput),resumeAfter:'auth'});
-   assert.equal(final.readback.allExpectedStoreContentsMatched,true);assert.equal(final.coordinatorCompleted,true);
+   assert.equal(final.readback.allExpectedStoreContentsMatched,true);assert.equal(final.coordinatorCompleted,true);assert.equal(final.readback.receipts.receiptCount,2);
    assert.equal(final.sourceFreezeVerified,false);assert.equal(final.productionReady,false);assert.equal(runtime.counters.r2Writes,2);
    const state=await runtime.coordinator.inspect();assert.equal(state.state.pending,null);assert.equal(state.fenceOwner,productionInput.runId);
    assert.equal(state.state.readbackSha256,final.readback.readbackSha256);
@@ -264,6 +267,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
  await t.test('committed Master response loss retains executor and journals and blocks a new process without further writes', async()=>{
   const evidence=Buffer.from('synthetic-only'),sourceEvidencePath=join(root,'synthetic-failure-evidence');await writeFile(sourceEvidencePath,evidence,{mode:0o600});
   const productionInput={...input,runId:randomUUID(),sourceEvidenceSha256:sha256Hex(evidence)};
+  productionInput.stripeReceiptExport=await syntheticStripeReceiptExport(productionInput.runId,2);
   const candidate=await prepareInitialImportSet(productionInput),runtime=await createNativeProductionSetFixture({directory:join(root,'native-production-failure'),prepared:candidate,input:productionInput});
   try{
    const selected=Object.fromEntries(['coordinator','journalPaths','databases','readDatabases','buckets','readBuckets'].map(key=>[key,runtime[key]]));
@@ -279,9 +283,31 @@ test('one native five-store readback binds the actual 40-table export, Master pr
   }finally{await runtime.dispose();}
  });
 
+ await t.test('receipt commit without acknowledgement retains the Business journal and never starts images',async()=>{
+  const evidence=Buffer.from('synthetic receipt boundary'),sourceEvidencePath=join(root,'synthetic-receipt-evidence');await writeFile(sourceEvidencePath,evidence,{mode:0o600});
+  const productionInput={...input,runId:randomUUID(),sourceEvidenceSha256:sha256Hex(evidence)};
+  productionInput.stripeReceiptExport=await syntheticStripeReceiptExport(productionInput.runId,2);
+  const missing=await prepareInitialImportSet({...productionInput,stripeReceiptExport:null});
+  await assert.rejects(executeInitialImportSet({prepared:missing}),/stripe_receipt_export_required/);
+  const candidate=await prepareInitialImportSet(productionInput),runtime=await createNativeProductionSetFixture({directory:join(root,'native-receipt-failure'),prepared:candidate,input:productionInput});
+  try{
+   const selected=Object.fromEntries(['coordinator','journalPaths','databases','readDatabases','buckets','readBuckets'].map(key=>[key,runtime[key]]));
+   const args={...selected,prepared:candidate,sourceEvidencePath,businessReportPath:join(root,'receipt-failed-business-report.json'),storageReportPath:join(storageExportDir,'receipt-failed-storage-report.json')};
+   runtime.counters.loseCommittedReceipts=true;
+   await assert.rejects(executeInitialImportSet(args),/stripe_receipt_transfer_write_acknowledgement_unknown/);
+   const state=await runtime.coordinator.inspect(),writes=runtime.counters.d1Writes;
+   assert.ok(state.executorId);assert.equal(state.state.pending.store,'business');assert.equal(runtime.counters.r2Writes,0);
+   assert.equal((await runtime.native.business.prepare('SELECT count(*) AS n FROM stripe_webhook_receipts').all()).results[0].n,2);
+   assert.equal((await runtime.native.business.prepare('SELECT count(*) AS n FROM stripe_webhook_dispatches').all()).results[0].n,2);
+   await assert.rejects(executeInitialImportSet({...args,prepared:await prepareInitialImportSet(productionInput),resumeAfter:'receipts'}),/journals_unresolved/);
+   assert.equal(runtime.counters.d1Writes,writes);assert.deepEqual(await runtime.coordinator.inspect(),state);
+  }finally{await runtime.dispose();}
+ });
+
  await t.test('lost final completion response retains the exact fsynced readback and never replays imports', async()=>{
   const evidence=Buffer.from('synthetic completion evidence'),sourceEvidencePath=join(root,'synthetic-completion-evidence');await writeFile(sourceEvidencePath,evidence,{mode:0o600});
   const productionInput={...input,runId:randomUUID(),sourceEvidenceSha256:sha256Hex(evidence)};
+  productionInput.stripeReceiptExport=await syntheticStripeReceiptExport(productionInput.runId,2);
   const candidate=await prepareInitialImportSet(productionInput),directory=join(root,'native-production-completion');
   const runtime=await createNativeProductionSetFixture({directory,prepared:candidate,input:productionInput});
   try{

@@ -251,6 +251,7 @@
     "scripts/migration/production-import-gateway.mjs",
     "scripts/migration/production-import-inspection.mjs",
     "scripts/migration/initial-import-set-readback.mjs",
-    "scripts/migration/source-stripe-receipt-only.mjs"
+    "scripts/migration/source-stripe-receipt-only.mjs",
+    "scripts/migration/stripe-receipt-transfer.mjs"
   ]
 }

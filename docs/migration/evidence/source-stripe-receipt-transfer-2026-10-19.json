@@ -1,0 +1,31 @@
+{
+  "format": "fanmark-source-stripe-receipt-transfer-preparation-v1",
+  "observedDate": "2026-10-19",
+  "scope": "isolated-native-postgres-and-d1-only",
+  "candidateRunId": "dfa52e43-d7ec-496d-8404-8fe69cfe580e",
+  "exportSqlSha256": "ff8393d6e6fd8484c4a81d340b54918339b2a16a1a0cd851b8caf36eb7eba279",
+  "originalCandidatesUnchanged": true,
+  "validation": {
+    "sourceCaptureTransferAndFaultTests": 16,
+    "nativeAllStoreAndProductionExecutorTests": 14,
+    "preparationInventoryTests": 9,
+    "nativeSqlCapture": true,
+    "privateEncryptedFileRoundTrip": true,
+    "fullReceiptAndDispatchContentReadback": true,
+    "chunked85PairTransfer": true,
+    "committedResponseLossStopsLaterBatches": true,
+    "productionBusinessJournalRetainedOnReceiptResponseLoss": true,
+    "productionControlPlane": "synthetic",
+    "realStripeProviderRetryVerified": false
+  },
+  "boundaries": {
+    "sourceChanged": false,
+    "productionImport": false,
+    "sourceLegacyEffectsReconciled": false,
+    "sourceReceiptStreamActuallyCollected": false,
+    "domainSwitched": false,
+    "mainMerged": false,
+    "mfaReenrollmentRequested": false,
+    "productionReady": false
+  }
+}
