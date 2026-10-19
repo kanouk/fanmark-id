@@ -1,5 +1,9 @@
 # fanmark.id ARCHITECTURE.md
 
+移行時の旧Stripe受信候補は `scripts/migration/source-stripe-receipt-only.mjs`。
+共通署名検証handlerとprivate PostgreSQL receipt保存を再利用し、保存transactionの
+完了待ち・受付停止・記録を残した再開を生成する。[手順と未完了条件](migration/source-stripe-receipt-only.md)。
+
 Cloudflare検証環境はWorkers・Better Auth・D1・R2を使い、本番Supabaseとは分離する。2026-10-13の本人判断で全APIへの旧JWT中継を対象から外し、既存ユーザー移送・再ログインと本番domain/DNSは最後の#38とした。[範囲判断](migration/evidence/owner-migration-scope-decision-2026-10-13.json)。
 
 Cloudflareの通常画面は`AuthReadinessGate.tsx`で認証プロフィールの取得完了を待つ。取得失敗時はURLを保って再試行し、`PasswordSetupGate.tsx`は確認済みの未設定状態だけをパスワード設定へ送る。`MaintenanceGate.tsx`も設定取得の失敗とメンテナンス有効を別表示にする。

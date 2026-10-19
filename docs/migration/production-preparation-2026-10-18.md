@@ -236,3 +236,11 @@ DNSのapex編集欄はA/185.158.133.1/proxy有効/TTL自動/コメント空を�
 `executeInitialImportSet`は固定本番transportと同じrun/client/journalを束ね、source証拠file hashを入力descriptorへ含める。非失効executorで同一runの並行processも拒否し、正常な境界でだけyieldして全内容を再検査して再開する。最後のreadbackをprivate fileへfsync後にcompleteし、一般write停止は保持する。証拠fileの意味は自動認定せずsourceFreezeVerified/productionReadyはfalse。
 
 本番入口→native3 D1/2 R2・実service/DOの全体/準備22試験、既存接続35試験、DO11試験とWorker型検査成功。Masterの実commit後に応答を失った場合の後続停止・executor/pending保持、最終complete応答だけ失った場合のディスクreportと遠隔hash一致も検証。外部管理APIは合成。本番実行/配備はしていない。停止executorの引継ぎと部分stageの未知結果解決、source/Stripe/外部設定/DNS/遠隔復旧は残る。
+
+## 2026-10-19 旧Stripe受信の保存専用候補
+
+共通署名検証とprivate receipt foundationを再利用し、保存transactionを待ってsealする候補を追加。
+native7件、Deno型検査、Edge Runtime bundle生成成功。旧sourceはschema/RPCなし、
+Webhook version 172をread-only確認。原本35関数のfile hash保持も検証した。
+[詳細](source-stripe-receipt-only.md)。受信streamの移送・照合と旧副作用drainは未完了。
+source配備/SQL変更/実Stripeイベント送信はしていない。MFAは全準備後。

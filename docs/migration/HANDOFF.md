@@ -1,3 +1,11 @@
+## 2026-10-19: 旧Stripe受信の保存専用候補と受付終了の実PostgreSQL検証
+
+旧sourceにprivate受信schema/RPCが未作成であること、Webhookが保存原本と同じversion 172/JWT設定であることをread-only確認。原本35関数の全file hashを再検査した。共通署名handlerと既存receipt foundationを再利用し、run固定・保存中transactionを待つseal・記録保持reopenの候補を追加。通常handlerの差し替えなし。[手順・復旧境界](source-stripe-receipt-only.md)。
+
+native PostgreSQL/実Stripe SDKで7件成功。Docker未起動による初回失敗後に起動して検証した。生成entryのDeno型検査、Edge Runtime v1.76.2のbundle生成も成功。CIへnative試験を追加。e5f9086のCI39191570351はapp/Worker両job成功。受信stream移送/全内容照合・旧処理の部分適用照合は未接続なので、本候補を本番へ適用しない。
+
+本番source変更/import/domain切替/main mergeなし。MFAは最後。残件はsource全入口停止/drain、Stripe stream引継ぎ、部分stage/停止executor復旧、provider設定/operator、DNS逆操作、鍵別保管/実資源の一式復旧。
+
 ## 2026-10-19: 本番用一括runnerと実行者所有権を接続
 
 `executeInitialImportSet`を追加。同じprepared/実停止証拠file hash・固定3 D1/2 R2・同じ調停client/全journalへ限定し、Auth→Master→Business→画像を順次実行する。DOのexecutorは同一runの別processも排除し、正常なstage境界でだけyieldする。全件readbackをprivate fileへfsyncした後にcompleteし、公開用の更新停止は保持する。source証拠のhash固定は内容の真実性を証明しないため、実source停止/取得確認は別工程。[実行契約](initial-import-set.md)。

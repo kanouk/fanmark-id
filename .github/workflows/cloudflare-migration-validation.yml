@@ -71,6 +71,10 @@ jobs:
       - name: Install Stripe receipt migration test dependencies
         run: npm ci --prefix experiments/stripe-receipts
 
+      - name: Test source receipt-only drain on isolated PostgreSQL
+        timeout-minutes: 5
+        run: npm run test:source-stripe-receipt-only
+
       - name: Test Stripe receipt, billing, and invoice migration contracts
         run: npm --prefix experiments/stripe-receipts test
 

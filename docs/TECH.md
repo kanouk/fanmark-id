@@ -1,5 +1,9 @@
 # fanmark.id TECH.md
 
+旧Stripe受信の移行候補は[保存専用受信の手順](migration/source-stripe-receipt-only.md)を参照。
+`npm run test:source-stripe-receipt-only` は生成entry・実署名検証・独立PostgreSQL transactionによる
+受付終了待ちを検査する。本番配備や受信記録の移送は実行しない。
+
 本番D1のschema-only操作は`workers/api/wrangler.production-schema.jsonc`を使う。
 アプリのentry/routes/cronを含まず、作成済み専用3D1だけを指定する。
 `node scripts/migration/verify-production-empty-schema.mjs`はremoteの全構造・ledger・seedを

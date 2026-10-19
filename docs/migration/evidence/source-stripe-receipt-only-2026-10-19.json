@@ -1,0 +1,53 @@
+{
+  "format": "fanmark-source-stripe-receipt-only-preparation-v1",
+  "observedDate": "2026-10-19",
+  "scope": "offline-candidate-and-readonly-source-inventory",
+  "projectRef": "ppqgtbjykitqtiaisyji",
+  "runId": "dfa52e43-d7ec-496d-8404-8fe69cfe580e",
+  "originalFunction": {
+    "id": "867b6a4b-d54b-4eef-b706-68d12aa9b716",
+    "slug": "handle-stripe-webhook",
+    "version": 172,
+    "verify_jwt": false,
+    "providerBundleSha256": "f567731a4a52ef7cfcec931562db996b9c82beb71d8948569e7afbadf0c9791b",
+    "sourceTreeSha256": "60d71f9dbcc3f7c926641b3db7b7a2515b6f9cb5ca351ef67626e3e610e34530",
+    "fileCount": 2
+  },
+  "verifiedBackupFunctions": 35,
+  "sourcePreflight": {
+    "schemaExists": false,
+    "publicRpcCount": 0,
+    "originalIdentityUnchanged": true
+  },
+  "candidate": {
+    "entrySha256": "8ea60bf0fbb468388f03a6684b03a2a69a181b0ca858e78e4f94ca649a2f71c6",
+    "sourceTreeSha256": "e5a470c63d0283f7ed4f685db70800f7ca578ee93ff1c8766d24f4ac168fd2d0",
+    "foundationSha256": "64ca67dbd5545c44d4eb8419500136c35d60bb33c4e60ee24de22930b9eb122e",
+    "sqlSha256": {
+      "installSql": "6eea172946bd1fa266348dc99a93ba59ff3d8a35798e3e89a61f91b985e60d22",
+      "verifySql": "d7312bfa2aa82691042ef4cdc64be2c5d4f6b5a1025cb76b9372d6f94d0210eb",
+      "sealSql": "00e00e29a2b2124eab162336a33f9594dd6a422149a2c0e40bb7b973de7ab72b",
+      "reopenSql": "5a15b972049b7250821ac18e0fd7159876208a2677242bc5242f9295d6516591"
+    }
+  },
+  "validation": {
+    "nativePostgresTests": 7,
+    "sourceBackupAndPreparationRegressionTests": 15,
+    "denoCheck": "passed",
+    "edgeRuntimeBundle": {
+      "success": true,
+      "bytes": 709526,
+      "sha256": "2cff0f4743a55f11e4d77e9a8ce46ffa4f575f28b8118f47d3ef20a4d2754d47",
+      "sourceChanged": false
+    },
+    "nonSuperuserInstallSealReopen": true
+  },
+  "boundaries": {
+    "sourceChanged": false,
+    "realStripeEventsSent": 0,
+    "receiptStreamTransferred": false,
+    "legacyEdgeDrainVerified": false,
+    "productionReady": false,
+    "adminMfaRequested": false
+  }
+}

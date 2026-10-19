@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "8410d80419afb5b4a715d18d7328b4ee2cdba089325e4de3c39018e5a26ebb59"
+    "sha256": "4d9a291b05932fe926194820c16514774bfc8d0615a488c118584325bb2a67fa"
   },
   "variables": [
     {
@@ -753,6 +753,10 @@
     {
       "path": "scripts/migration/source-scheduled-writers.sql",
       "sha256": "b7dfc1ff1b4511f51a21f3abce9b64ae074dd33621b57e60c2a95c91bf364752"
+    },
+    {
+      "path": "scripts/migration/source-stripe-receipt-only.mjs",
+      "sha256": "bdc61567c32f181cc82531b07a08a10bfff4cfb25ed4257f7f855c4477e11733"
     },
     {
       "path": "scripts/migration/split-r2-import-stage.mjs",
