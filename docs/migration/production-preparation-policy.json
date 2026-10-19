@@ -271,6 +271,7 @@
     "scripts/migration/production-webhook-secret-install.mjs",
     "workers/api/src/production-https.ts",
     "workers/api/src/production-webhook-key-proof.ts",
-    "scripts/migration/production-backup-alert-test.mjs"
+    "scripts/migration/production-backup-alert-test.mjs",
+    "scripts/migration/production-webhook-remote-custody.mjs"
   ]
 }

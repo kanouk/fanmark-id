@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "c58872c265f0a5b553ca8142c770509366cf595d9bb2483537a613925af63d76"
+    "sha256": "d7f9a543f434b36674a384408d89838b10d9c435b2ac11ccec4ca83d07d8a8ce"
   },
   "variables": [
     {
@@ -773,6 +773,10 @@
     {
       "path": "scripts/migration/production-webhook-readback.mjs",
       "sha256": "eb3eac2b8187c02993a85656bb4ae1efca006b8056540aa2220c85de552107f1"
+    },
+    {
+      "path": "scripts/migration/production-webhook-remote-custody.mjs",
+      "sha256": "7d3a3da0c6614b05320ec7f0a956fe871ee744dd024fd59574c1f4a335ec67f0"
     },
     {
       "path": "scripts/migration/production-webhook-secret-install.mjs",

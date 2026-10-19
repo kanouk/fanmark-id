@@ -1,4 +1,10 @@
-# 本番監視通知の到達検証票（未送信）
+# 本番監視通知の到達検証票
+
+2026-10-19は本人承認の1通だけを実送信し、R2 receipt/Resendの同じmessage ID・delivered・
+対象Gmailの受信トレイ/本文/宛先/署名元/TLSを確認済み。
+[限定証拠](evidence/production-notification-delivery-2026-10-19.json)。
+alert disabled/宛先空へ復元済み、一時operator削除済み。以下は手順の記録であり、再実行指示ではない。
+同日のclaimとprivate approved-alert-deliveryの全journalを保持し、2通目を送らない。
 
 本人の承認した宛先へ`delivery-test`を1通だけ送る候補。通常のバックアップ失敗通知と同じ
 `ProductionBackupService.alert`・既存Resend送信処理・R2の一度だけのclaimを使う。

@@ -1,5 +1,9 @@
 # fanmark.id TECH.md
 
+再開後の本番準備の現状は[2026-10-19更新](migration/PREPARATION-2026-10-19.md)。
+Webhook遠隔custodyは`node --test scripts/migration/test-production-webhook-remote-custody.mjs`で
+独立復号/固定Sync CLI/PTY framing/誤応答拒否を確認する。実provider登録は実行しない。
+
 `test-production-backup-alert-test.mjs`は、固定runtime/schema/日付/writer0を確認した通知試験operatorの期限/bearer/入力拒否と、delivery-testだけのRPCをnativeで検査する。実メールの送信と本人受信は別に承認・照合する。
 
 `test-production-webhook-secret-install.mjs`は暗号化保管からの一度だけのsecret PUT、遠隔保管欠落/設定相違/誤鍵の拒否、PUT応答消失後のGET/RPCのみの照合を検査する。`test-production-webhook-key-proof.mjs`は実native service/proxyでHMACのdomain separation、Stripe文字列/Svix bytes、期限/bearer/本文制限と本番閉鎖条件を検証する。秘密値は合成。通常CIへ含める。

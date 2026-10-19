@@ -1,5 +1,10 @@
 # 本番ドメインの操作票（実行前）
 
+再開後の現状は[準備更新](PREPARATION-2026-10-19.md)。本番callback4件の保存・再表示は完了済み。
+Universal active/backup_issuedのpack/certificate IDも[API読戻し](evidence/production-certificates-readback-2026-10-19.json)へ保存した。
+全状態の列挙は[公式の`status=all` GET](https://developers.cloudflare.com/ssl/edge-certificates/advanced-certificate-manager/api-commands/)を使用。
+証明書の新規発行/設定変更は行っていない。aliasは閉鎖配備済みで、本番host未接続。
+
 再開後の専用host実検証に基づく、旧Aを保持する[Worker Route代替票](production-route-alternative.md)を追加した。Custom DomainのDNS逆操作の未検証部分を隠さず、当日の方式をG0で固定する。本番hostの切替はまだ行っていない。
 
 2026-10-19時点。G4の準備票であり、実行済みではない。source停止・最終コピー・独立照合・Webhook引継ぎ・閉鎖中の本人確認が完了するまで適用しない。
@@ -67,7 +72,7 @@ DNS record IDと保存原本・API body候補は取得済みだが、逆操作�
 
 ## OAuthの登録票
 
-本番設定の `BETTER_AUTH_URL=https://fanmark.id` と既存のBetter Auth callback構造から、追加候補を次の4本へ固定する。実provider管理画面での追加・照合と本番ログインは未実施。
+本番設定の `BETTER_AUTH_URL=https://fanmark.id` と既存のBetter Auth callback構造から、追加先を次の4本へ固定した。4件とも本人承認を受けて保存・再表示確認済み。本番ログインは未実施。
 
 | Provider | 本番へ追加するcallback |
 | --- | --- |
@@ -94,7 +99,7 @@ repositoryの `src/hooks/useSubdomain.tsx` と `src/App.tsx` はadmin hostだけ
 推奨候補はadminの既知の入口 `/` をapex `/admin` へ一時誘導し、本番認証をapex originへそろえること。wwwはpath/queryを保ってapexへ誘導する候補。ただし旧認証のcode/token、API POST、未調査pathを一律転送しない。alias用handlerと検証、変更前後のCustom Domain/redirect票が必要であり、まだ有効化していない。既存Supabase cookieがapexのBetter Auth sessionになるとは扱わない。
 
 
-## alias専用Workerの候補（未配備）
+## alias専用Worker（閉鎖配備済み・本番host未接続）
 
 `workers/api/src/production-domain-alias.mjs` と
 `workers/api/wrangler.alias-production-closed.jsonc` を追加した。DB・画像・秘密値・

@@ -1,0 +1,18 @@
+{
+  "format": "fanmark-webhook-remote-custody-transport-evidence-v1",
+  "observedAt": "2026-10-19T12:38:03.673Z",
+  "transport": "read-only Obsidian Sync CLI through macOS PTY",
+  "existingEncryptedNote": "verified-access production custody",
+  "syncVersionIndex": 0,
+  "bytes": 792,
+  "downloadSha256": "64b4c3975313c9a9f9c7ccfb7e2dc194ad8e613fc27fb596d94c3cc56c968012",
+  "expectedSha256": "64b4c3975313c9a9f9c7ccfb7e2dc194ad8e613fc27fb596d94c3cc56c968012",
+  "exactNoteBytesMatched": true,
+  "newWebhookEndpointCreated": false,
+  "newWebhookSecretInstalled": false,
+  "newWebhookNoteCreated": false,
+  "newKeyGenerated": false,
+  "plaintextSecretWritten": false,
+  "separateDeviceRestoreVerified": false,
+  "productionReady": false
+}

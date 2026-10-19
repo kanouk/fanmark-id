@@ -1,3 +1,35 @@
+## 2026-10-19: 再開後の閉鎖runtime・4 callback・証明書ID・実通知到達を確認
+
+最新の準備状況と当日の条件は [PREPARATION-2026-10-19.md](PREPARATION-2026-10-19.md)。
+758641cのCI39248993491、221f6c8のCI39250792126はいずれもapp/Worker成功。
+成功CIとruntime入力一致を確認して閉鎖appを配備し、通知試験のenable/restore後の現versionは
+06ce6cf3-b648-40ca-a0fb-7368f7f8bcff。後続operator/docs変更で再配備しない。
+
+本人承認の試験メール1通はR2 receipt・Resend message ID/本文・delivered・対象Gmail受信トレイ/
+宛先/本文/署名元/TLSまで確認した。通知disabled/宛先空へ復元、一時operator削除済み。
+最初のlocal TypeScript読込み停止後は元設定とjournalを照合して続行し、設定保存を繰り返していない。
+operator有効化直後のunauth応答は記録不足で原因不明、別GETの401確認後に同じoperatorから一度送信した。
+private approved-alert-deliveryのintent/全journal/receiptを保持し、試験を再送しない。
+
+GitHub owner fanmark-idのApp3230369/client一致を確認し、本人承認後に新callbackを追加保存・reloadした。
+旧callback/wildcard・client/秘密値・所有者を保持。Google/Discord/Appleの保存操作は繰り返していない。
+既存DNS tokenへ承認済みSSL/Certificates Readだけを保存し、status=allでUniversal activeと
+backup_issuedのpack/certificate IDを取得した。token再発行/延長・証明書/DNS変更はない。
+
+別processの最終GETで元DNS17件全属性・他7 Worker設定・inventory8・公開route/domain/Cron0を確認。
+新しい読取りoperatorからwriter0/ownerなし・backup admission=false・固定5 store/schema/key ID、
+実画像一覧2bucket各0を照合し、operatorを削除した。新captureは行わず、保持daily/manual archiveへ
+全114表のschema/全行/FKを独立照合した。移送後backupの証拠ではない。
+
+Webhook遠隔custody adapterを追加。固定Sync CLIの通常pipeが空応答になるため、macOS PTYと
+厳格なpath/version framingを使い、別directoryへ暗号化3fileを再構成・独立復号する。
+既存暗号化noteの実Sync版は792 bytes全一致、新規5件を含む関連46件、workflow isolation9件・lint成功。
+新Webhook作成/秘密値設定はG4まで行わない。新鍵/backup/解約済み自己テスト契約の操作なし。
+
+本番source停止/実利用者移送/本番host切替/main mergeなし。main e5a553cを保持。
+管理者MFAは未依頼。今回のoperator更新のCIを確認し、独立準備が全部揃ってから本人認証へ進む。
+以下は時系列の過去記録であり、当時の旧version/回答待ち/CI実行中を現在状態へ流用しない。
+
 ## 2026-10-19: alias閉鎖配備・通知試験票・次のruntime配備前確認
 
 alias source/configは成功済み773bcfeとbyte一致を確認して閉鎖配備した。version efbdedac-a0fa-4361-86f6-d1e965f20107、誘導disabled・公開route/domain/Cron0、DB/画像/秘密値なし。別processで元DNS17件・元7 Worker settings/inventoryを保持照合し、今のWorker inventoryは8件。[証拠](evidence/production-alias-closed-2026-10-19.json)。private alias-closed-preparationのintent/journalを保持し、install helperを再実行しない。

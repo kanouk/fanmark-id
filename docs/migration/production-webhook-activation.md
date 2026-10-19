@@ -68,7 +68,7 @@ G5前に署名検証と受信DBの照合を完了し、業務メール送信の�
 `scripts/migration/production-webhook-custody.mjs` と `production-webhook-readback.mjs` を追加した。providerへのPOSTやG4/G5の開始許可は提供しない。保管と読戻しの成功をsource停止や受信先への到達証拠の代わりにしない。
 
 1. `beginProductionWebhookRegistration` に固定provider・operation UUID・本番archive鍵ID/鍵とGit外0700 directoryを渡す。固定名のintentを0600・排他的作成/fsyncしてから要求bodyを返す。同じproviderは別UUIDでも同directoryで再開始できない。運用では新しいdirectoryへ逃げて再試行しない。
-2. 別の実行処理がG4の前提を確認して一度POSTする。固定body、Stripeのidempotency key、同じprivate intentを使う。現在このPOST接続と最新到達確認は未実装。
+2. `production-webhook-execution.mjs`がG4の前提と最新到達を再確認して一度POSTする。固定body、Stripeのidempotency key、同じprivate intentを使う。下記の追加節と同じ接続を使用する。
 3. HTTP応答が得られたら `captureProductionWebhookResponse` へstatusとJSONを渡す。成功判定より先に全応答をAES-GCMで保管する。エラーや予想外の応答に署名鍵が含まれても平文fileへ出さない。通信切断で応答自体がない場合はintentだけを保持する。captureの再送・上書きは拒否する。
 4. `readProductionWebhookRegistration` で別GETを行う。Stripeはlive accountを照合後にendpoint、Resendはdomain全ページとfanmark.id verifiedを確認後にendpointを読む。結果に署名鍵を含む場合があるため、ログ/平文fileへ出さず直接 `verifyProductionWebhookRegistration` へ渡す。
 5. verifierは元応答とGETのID、固定URL・event・statusを照合する。Stripeはlivemode・API version・operation metadata・Connect applicationなしも確認。暗号化応答・intent・検証reportのhashを指定したprivate processでだけ `openProductionWebhookSecret` を使い、別のruntime設定処理へ値を渡す。取出し値を出力しない。
@@ -137,6 +137,31 @@ PUT応答消失時は同じintentを保持し、`inspectProductionWebhookSecretI
 元intent hash・別GET・実runtime HMACを照合する。PUTは0件、`providerPutAcknowledged=false`
 のまま鍵一致の観測だけを返す。key proofが失敗すれば未確定のまま閉鎖を維持する。
 実providerの配送・署名通知のDB保存とG5受け入れはこの証明とは別工程。
+
+## 遠隔保管から秘密値設定への接続
+
+`production-webhook-remote-custody.mjs`の`prepareProductionWebhookRemoteCustody`は、
+独立GET済みの同じintent/暗号化response/検証reportをhash確認して、新しいMarkdown1件へ
+保管する。固定Vaultの既存secret-keys配下へprovider/operation UUID名で0600・排他保存し、
+既存noteは上書きしない。平文Webhook鍵・archive鍵はnoteへ含めない。
+
+Sync完了と`obsidian sync:history`の版番号を読取り、
+`createObsidianSyncWebhookCustodyVerifier({options,note,remoteVersion})`が返す関数を
+`installProductionWebhookSecret`の`verifyRemoteCustody`へ渡す。
+`remoteVersion`はCLI履歴のindex（最新は0）で、Sync内部のserver revision IDとは別。
+設定変更やrestoreは呼ばない。
+
+macOSではSync CLIが通常のpipe接続で空応答を返したため、固定`/usr/bin/script -q /dev/null`
+経由でPTYを与える。読取りcommand/path/versionとCLIの見出しを厳格照合し、端末CRLFと
+既知のEOF表示だけを除く。note本文の末尾をtrimせず、全byteのhash一致を要求する。
+暗号化3fileを別の0700一時directoryへ再構成して独立復号し、local鍵とのconstant-time一致後だけ
+install用のremoteDownloaded/independentlyDecryptedを返す。空応答・改変・別operation・別鍵は拒否する。
+
+既存の暗号化公開ページ鍵noteでは実Sync CLIから792 bytesを取得し、元noteとhashを全一致確認した。
+[輸送層の実検証](evidence/production-webhook-remote-custody-transport-2026-10-19.json)。
+新規Webhook noteの作成・遠隔版取得・実鍵設定はendpointが存在するG4で行う。
+5件の合成検査は両providerの独立復号・固定CLI引数・PTY framing・空応答/改変/誤鍵の拒否を確認する。
+このMacでのSync読戻しを、別端末での復旧実証とは扱わない。
 
 Stripe登録前の一覧ではv1全ページに加え、既存調査と同じ固定API版でv2が完全な空集合で
 あることも要求する。v2が非空/途中なら作成せず所有者の照合へ戻す。新しい通知先を
