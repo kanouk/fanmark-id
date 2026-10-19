@@ -115,3 +115,12 @@ apexの逆操作と同じ所有ID確認・応答不明時のGET・NS共存制約
 この検証用Appへ本番callbackを追加せず、旧本番Appの所有先特定を残件とした。
 Supabase設定APIの4 provider secretは64文字の不透明な値で、取得できた認証用秘密値とは
 扱わない。非空であるだけではsecretを移送できる根拠にならない。
+
+
+## 2026-10-19の追加読取りと資格情報の準備
+
+Supabase管理APIの不透明値とは別に、ログイン済み管理画面の正規Revealで4 providerの実秘密値を取得できた。元Client IDと照合し、値は非公開領域へ暗号化保存した。Google/Discord/GitHubは既存値を保持し、Appleは旧JWTが2026-05-25に失効していたため、旧署名と一致する既存鍵で同じTeam/Services IDの候補を作成した。候補の有効期限は2027-03-18、別processのWebCryptoで署名を確認済み。Apple側での鍵の有効性や実ログインの証拠ではない。[限定証拠](evidence/production-oauth-material-preparation-2026-10-19.json)。
+
+Googleのfanmark-id projectとDiscordのfanmark.id applicationは元Client IDに一致し、旧本番・stagingのcallbackを確認した。新本番callbackはどちらも未登録で、設定は変更していない。GitHubの承認済みOAuth Apps一覧から、旧本番Appの所有者は [fanmark-id](https://github.com/fanmark-id) と判明した。kanouk所有のstaging Appとは別である。所有者での管理画面ログインとApple Developerへのログインは本人に依頼中。
+
+Custom Domainの解除時は、関連するAdvanced Certificateが自動削除されない点も復元票へ含める。[Cloudflare公式説明](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#certificates)。元証明書一覧を保存し、当該runで新規発行した証明書だけをhostname/IDで対応付ける。既存Universal証明書は削除しない。DNS原本の復元可能性・証明書読戻しは引き続き未検証。

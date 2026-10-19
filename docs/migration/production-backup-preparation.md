@@ -34,7 +34,7 @@ operatorはDNSラベル上限63文字以内の名前を使う。最初の64文�
 
 これは移送前の初期状態（Auth1/Business30/Master10行、画像0件）の実資源復旧であり、実ユーザーを移送した証拠や、本番停止時間の保証ではない。保存4.806秒・復旧5.382秒はこの初期状態の1回の値。
 
-## 同日追加保存の候補（未配備）
+## 同日追加保存の経路
 
 日次serviceのUTC2026-10-19 slotは使用済みで、既存receipt/archiveを削除して再利用しない。`ProductionBackupService.runManual(operationId)` は小文字UUID v4を一度だけ占有し、同じ共通engineでwriter停止・全5store収集・暗号化・読戻し照合・停止解除を行う。日次保存と別の操作IDなら同日にも保存できる。通常scheduler/monitorは日次経路を使い続ける。
 
@@ -44,4 +44,6 @@ operatorの `productionManualBackupCaptureSource()` は操作IDと実行日を�
 
 実行前に操作ID・期待runtime/schema・目的をprivate intentへ保存する。応答不明なら `statusManual(operationId)` と独立R2読取りで確認し、同じPOSTを再送しない。claimed/collecting/stored/failedが残る場合は元処理とwriter状態を調査する。失敗を迂回するためだけに新しい操作IDを発行しない。別IDの次操作は、元処理の終了とfence解除を確認した後に行う。
 
-**残件:** 新しい手動経路のCI、閉鎖runtimeへの配備と実R2保存の読戻し。移送後はBusiness台帳を含むschemaを再固定し、移送した実データの確定backupを手動で保存する。既存の初期状態backupをその代用にはしない。
+2026-10-19にCI39205951900の両job成功後、閉鎖runtimeへ配備して実R2保存・別CLI取得・復号・114表照合を確認した。日次archive/receiptは不変、一時operatorを削除してadmissionをpendingへ戻した。[限定証拠](evidence/production-manual-backup-2026-10-19.json)。
+
+**残件:** 移送後はBusiness台帳を含むschemaを再固定し、移送した実データの確定backupを手動で保存する。既存の初期状態backupをその代用にはしない。

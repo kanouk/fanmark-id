@@ -1,0 +1,50 @@
+{
+  "format": "fanmark-production-manual-backup-evidence-v1",
+  "observedAt": "2026-10-19T06:01:08.525Z",
+  "commit": "2af768084561afd7216729b7d1ce8e553325cd86",
+  "ciRun": 39205951900,
+  "ciAllJobsSucceeded": true,
+  "scope": "actual-production-pre-import-baseline-only",
+  "operationId": "9fe8732f-a36d-4ae0-bdd2-d6ebdfcd3aff",
+  "capture": {
+    "captureId": "556a8712-e94a-44a1-bc50-04c71cac2aa1",
+    "runtimeRevision": "3eef174e-f3fb-4d9f-829b-792cb8626d77",
+    "slot": "2026-10-19",
+    "state": "verified",
+    "bytes": 424441,
+    "archiveHash": "94feb3b61672078514f1fccc044598777237b2975706bbfd816a324008515085",
+    "fenceReleased": true
+  },
+  "durationSeconds": 10.357,
+  "independentVerification": {
+    "separateCliDownloadMatched": true,
+    "receiptMatched": true,
+    "archiveDecrypted": true,
+    "tableCounts": {
+      "auth": 9,
+      "business": 80,
+      "master": 25
+    },
+    "sourceAllRowsUnchanged": true,
+    "imageObjects": {
+      "avatars": 0,
+      "covers": 0
+    },
+    "priorDailyArchiveUnchanged": true,
+    "priorDailyReceiptUnchanged": true
+  },
+  "cleanup": {
+    "temporaryOperatorDeleted": true,
+    "workerInventoryReturned": true,
+    "backupAdmission": "pending",
+    "currentAppVersion": "4878820d-6698-49fa-a703-a4382c6bf037",
+    "publicRoutes": 0,
+    "cronTriggers": 0,
+    "otherWorkerSettingsPreserved": true
+  },
+  "productionUsersImported": false,
+  "sourceStopped": false,
+  "domainSwitched": false,
+  "mainMerged": false,
+  "productionReady": false
+}

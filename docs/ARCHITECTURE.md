@@ -1,6 +1,6 @@
 # fanmark.id ARCHITECTURE.md
 
-固定UTC slotの明示保存operatorは `scripts/migration/production-backup-capture.mjs`。読み取り専用inspectorとは別で、run/statusだけを公開し、既存receipt・writer・runtime不一致を拒否する。日次slotは一度だけ使用する。同日の追加保存は本番専用 `ProductionBackupService.runManual/statusManual` と `productionManualBackupCaptureSource` の固定UUID経路を使う。手動receipt/archiveは `recovery/manual/v1/` に分離し、日次の保持処理は削除しない。候補は未配備。
+固定UTC slotの明示保存operatorは `scripts/migration/production-backup-capture.mjs`。読み取り専用inspectorとは別で、run/statusだけを公開し、既存receipt・writer・runtime不一致を拒否する。日次slotは一度だけ使用する。同日の追加保存は本番専用 `ProductionBackupService.runManual/statusManual` と `productionManualBackupCaptureSource` の固定UUID経路を使う。手動receipt/archiveは `recovery/manual/v1/` に分離し、日次の保持処理は削除しない。閉鎖本番で初期状態の実保存・別取得/復号照合を確認済み。admissionはpendingへ戻している。
 
 本番backupの内部読取り候補は `scripts/migration/production-backup-inspection.mjs`。固定版・固定scope・期限付きbearerでstatus/暗号化escrowだけを許可する。[閉鎖中の準備](migration/production-backup-preparation.md)。
 

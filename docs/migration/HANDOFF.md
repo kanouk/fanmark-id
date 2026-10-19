@@ -1,3 +1,13 @@
+## 2026-10-19: 手動backupの実保存・照合とOAuth秘密値の保管を完了
+
+2af7680/CI39205951900はアプリ・Worker両job成功。閉鎖appへ配備し、日次receiptを保持したまま固定操作IDの手動保存に成功した。424,441 bytes、保存10.357秒。別CLI取得・復号・114表のschema/全行/FK照合、日次archive/receipt不変を確認。一時operatorを削除し、appを4878820d/pendingへ戻した。7 Workerの元inventory、他Worker設定、公開経路/Cron0を独立確認した。[実証範囲](evidence/production-manual-backup-2026-10-19.json)。初期41行/画像0件の検証で、本番実ユーザーの移送証拠ではない。
+
+Supabase管理画面の正規Revealで4 providerの実秘密値を取得し、旧Client IDとの一致を確認。平文を保存せず本番保管鍵で暗号化し、別processで復号照合した。Appleの旧JWTは期限切れだったが、保管済みNYM8ZP23HA鍵で旧署名の一致を確認。同じTeam/Services ID・150日有効の候補を作り、別WebCrypto署名検証を通過した。旧Supabase設定・Cloudflare secretsは変更していない。[限定証拠](evidence/production-oauth-material-preparation-2026-10-19.json)。
+
+Google/Discordの既存client管理画面には旧本番とstaging callbackがあり、新本番callbackは未登録。GitHubの旧Appは承認済みApp一覧で所有者fanmark-idと特定したため、旧所有者の心当たりを尋ねた質問は解決。Apple DeveloperとGitHub fanmark-idの管理画面ログインを本人へ依頼中。fanmark.id管理者MFAは依頼していない。
+
+次はprovider callback/閉鎖targetへの資格情報設定、source全入口停止と外部効果照合、部分stage/未知commitの復旧、DNS逆操作、監視通知を詰める。移送後のschema再固定・確定backup・本人MFA/ログインは当日の最終工程。本番source停止/import/DNS/main mergeなし。goalは未完了。
+
 ## 2026-10-19: 本番用の保存と実資源への一式復旧を確認
 
 閉鎖appの保存admissionだけを一時的に有効にし、固定UTC slotへ424,468 bytesを暗号化保存した。読戻し検証とfence解除を確認し、別CLIでもdownload/hash一致。保存operatorを削除し、appを11a3db8c/pendingへ戻した。公開経路/Cron0、他bindingと既存Workerを保持。
