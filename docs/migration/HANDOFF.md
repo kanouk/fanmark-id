@@ -1,3 +1,13 @@
+## 2026-10-19: 復旧候補のCI成功と閉鎖runtimeへの反映、provider/TLSの読戻し
+
+794564c / [CI39209187570](https://github.com/kanouk/fanmark-id/actions/runs/39209187570) はapp・Workerとも成功。production build後、外部公開していないappへ配備した。現版は `0d0ffe20-fea0-40fb-ba83-c88fa3bf1e94`。別processで全binding/vars、公開route・Custom Domain・Cronが0、workers.dev/previews無効、receipt_only・backup admission pendingを確認。backup/monitorの版・設定と既存4 Workerの設定を保持した。[配備証拠](evidence/atomic-auth-closed-deployment-2026-10-19.json)。本番のAuth移送や障害復旧を実行した証拠ではない。
+
+Apple Developerのログインを確認し、既存鍵・Team・Services ID・primary Appを暗号化候補へ照合した。Google/Discord/Appleは旧本番・staging URLを残した追加案が入力済みで、保存直前の確認待ち。まだ保存していない。GitHubは旧App所有者fanmark-idでのログイン待ち。管理者MFAは依頼していない。
+
+全DNS17件は保存原本と不変。Cloudflare画面でUniversal active・Backup issued、Full、Always Use HTTPS off、Page Rules 0・Single Redirect 0を確認。証明書IDのAPI取得は403で未完了。旧HTTPの301だけでは新Workerへの切替後のHTTPS転送を保証できないため、[ドメイン操作票](production-domain-operations.md)へ公開前の確認・対策を追加した。[画面の限定証拠](evidence/provider-domain-console-readiness-2026-10-19.json)。
+
+次はprovider保存の回答/GitHubログイン、部分stageからの公開前中止・source側の受信回収、DNS逆操作のprovider受け入れとHTTP/TLS確認、通知を詰める。source停止・最終移送・公開切替は未実施。旧解約済みテスト契約を保持し、mainは維持。MFAは独立準備がそろった後。
+
 ## 2026-10-19: 初回Authの応答不明を全件照合から復旧する候補
 
 `recoverInitialAuthImportExecution` を追加。元のatomic batchのhash・終了済み同一端末/PID・初回Authだけpending・全5 journalを照合し、固定read-only接続でAuthの全行/資格情報/MFA/schema/FKを確認する。専用CASはACKと証拠hashだけを保存する。local ACK補修後にexecutorだけを返し、停止fenceと全履歴は保持。DBへの再送はしない。[条件と対象外](production-import-recovery.md)。

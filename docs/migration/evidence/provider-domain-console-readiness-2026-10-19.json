@@ -1,0 +1,73 @@
+{
+  "format": "fanmark-provider-domain-console-readiness-v1",
+  "observedAt": "2026-10-19T06:38:28.386514+00:00",
+  "apple": {
+    "format": "fanmark-apple-console-identity-v1",
+    "observedAt": "2026-10-19T06:29:54.570Z",
+    "candidateEnvelopeSha256": "009cc0ee883f862e43865fa98b2ead8b2e06b4bc6ac3426b9382bd3a131d71f2",
+    "keyUiSha256": "9906244229d23614ffe6722f23add9ed1d6d525fd2afc0390074ce0364006334",
+    "keyListedInAppleConsole": true,
+    "keyEnabledForExpectedPrimaryApp": true,
+    "candidateMatchesConsoleKeyTeamService": true,
+    "servicesIdPrimaryAppMatched": true,
+    "oldReturnUrlsPreservedInUnsavedDraft": true,
+    "callbackSaved": false,
+    "providerLoginVerified": false,
+    "productionReady": false
+  },
+  "callbackDrafts": {
+    "google": "https://fanmark.id/api/auth/callback/google",
+    "discord": "https://fanmark.id/api/auth/callback/discord",
+    "apple": "https://fanmark.id/api/auth/callback/apple"
+  },
+  "callbackSaved": false,
+  "callbackSaveConfirmation": "pending",
+  "githubOwner": "fanmark-id",
+  "githubOwnerLogin": "pending",
+  "dnsRecords": 17,
+  "dnsRecordsUnchanged": true,
+  "dnsApiReadbackSha256": "09735bcc6fa456c0eff44c96d9ca466594e763530d01d453e626559d02d9eea6",
+  "certificateReadbackSource": "Cloudflare dashboard UI; certificate pack API denied with 403",
+  "certificates": [
+    {
+      "type": "universal",
+      "status": "active",
+      "hosts": [
+        "fanmark.id",
+        "*.fanmark.id"
+      ],
+      "expires": "2026-12-28",
+      "ca": "Google Trust Services"
+    },
+    {
+      "type": "backup",
+      "status": "issued",
+      "hosts": [
+        "fanmark.id",
+        "*.fanmark.id"
+      ],
+      "expires": "2027-01-06",
+      "ca": "Let's Encrypt"
+    }
+  ],
+  "certificateIdsVerified": false,
+  "sslMode": "Full",
+  "alwaysUseHttps": false,
+  "minimumTlsVersion": "1.0",
+  "tls13": true,
+  "pageRuleCount": 0,
+  "singleRedirectRuleCount": 0,
+  "uiReadbackSha256": {
+    "domain-tls-ui-backup-before.txt": "05d97b5a82beb4556a201e98d4d1ccdf5e54983c3f1b68931a3a404e2a02672b",
+    "domain-tls-ui-universal-before.txt": "7cda24ada15c9130a6d37f5f3858d4e82eed5de4d9daf2a9f7084ed630ad2492",
+    "domain-ssl-overview-ui-before.txt": "f69cd068d507f43dce734c64f4bf7e356aa99b7f42ca67fb90e587d0b20b7cff",
+    "domain-page-rules-ui-before.txt": "855ec372f70c547b0affc40a06b899592bcc481fbfefe5a2d5099bda9bea65c1",
+    "domain-redirect-rules-ui-before.txt": "00d013dfc99c1c5a7544270fa6808a245a8362be49b814b665390dcb70cd3fc9"
+  },
+  "publicTlsAfterCutoverVerified": false,
+  "dnsInverseVerified": false,
+  "productionReady": false,
+  "productionProviderSettingsChanged": false,
+  "domainSwitched": false,
+  "mfaRequested": false
+}

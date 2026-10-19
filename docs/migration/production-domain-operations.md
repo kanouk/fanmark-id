@@ -124,3 +124,16 @@ Supabase管理APIの不透明値とは別に、ログイン済み管理画面の
 Googleのfanmark-id projectとDiscordのfanmark.id applicationは元Client IDに一致し、旧本番・stagingのcallbackを確認した。新本番callbackはどちらも未登録で、設定は変更していない。GitHubの承認済みOAuth Apps一覧から、旧本番Appの所有者は [fanmark-id](https://github.com/fanmark-id) と判明した。kanouk所有のstaging Appとは別である。所有者での管理画面ログインとApple Developerへのログインは本人に依頼中。
 
 Custom Domainの解除時は、関連するAdvanced Certificateが自動削除されない点も復元票へ含める。[Cloudflare公式説明](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#certificates)。元証明書一覧を保存し、当該runで新規発行した証明書だけをhostname/IDで対応付ける。既存Universal証明書は削除しない。DNS原本の復元可能性・証明書読戻しは引き続き未検証。
+
+
+## 2026-10-19の管理画面読戻しと追加前の確認
+
+Google/Discord/Appleの既存設定へ、新本番callbackだけを追加する案を入力した。旧本番・stagingのURLは保持し、まだ保存していない。ブラウザ操作の規則に従い、認証結果の新しい返送先を許可する保存操作について本人の確認待ち。GitHubの旧App所有者fanmark-idでのログインも未完了。Appleのログイン待ちは解消し、NYM8ZP23HA鍵が既存primary AppでSign in with Appleに有効であることを管理画面から確認。暗号化候補のkid/Team/Services IDとの一致は別processで確認したが、provider側の実ログイン成功ではない。
+
+全DNS17件はAPI原本と不変。Cloudflareの証明書画面はapexとwildcardを含むUniversal active（Google Trust Services、2026-12-28期限）とBackup issued（Let's Encrypt、2027-01-06期限）。Backupは配信中の証明書とは扱わない。SSLはFull、Always Use HTTPSはoff、TLS 1.3はon、minimum TLSは1.0。Page RulesとSingle Redirectはともに0件。設定は変更していない。証明書packと設定のAPI取得は403で、ID付き証明書の原本と変更後の所有判定は残る。[限定証拠](evidence/provider-domain-console-readiness-2026-10-19.json)。
+
+### HTTPからHTTPSへの誘導を公開条件に含める
+
+現行apexのHTTP HEADはHTTPSへの301を返したが、この応答が新しいWorkerでも維持されるとは確認できていない。Workerのfetch入口にも汎用のHTTPS誘導はない。切替前にapex・www・adminについて、HTTPのGET/HEADが同じpath/queryのHTTPSへ安全に誘導され、HTTPから認証・業務処理が実行されないことを確認する。
+
+推奨は対象3hostに限定したCloudflareのSingle Redirectを切替票へ用意すること。全hostへ作用するAlways Use HTTPSより、旧auth等への影響範囲を限定できる。これは未適用の案であり、設定保存前には正確な式・転送status・query保持と逆操作をレビューする。[公式のHTTPS設定説明](https://developers.cloudflare.com/ssl/edge-certificates/additional-options/always-use-https/)でも、一部hostだけに適用する場合はSingle Redirectが案内されている。新しいredirectの実IDを保存し、中止時は当該runで追加したその1件だけを解除する。既存TLS設定・NS/mail設定を併せて変更しない。
