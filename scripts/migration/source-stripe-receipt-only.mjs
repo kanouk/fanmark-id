@@ -154,7 +154,7 @@ Deno.serve(async request => {
     {path:'supabase/functions/_shared/stripe-receipt-ingress/index.ts',source:sharedSource},
   ].map(file=>({...file,sha256:hash(file.source),bytes:Buffer.byteLength(file.source)}));
   return Object.freeze({ format:'fanmark-source-stripe-receipt-only-v1',projectRef,runId,
-    originalFunction:{...originalFunction},foundationSha256,installSql,
+    originalFunction:{...originalFunction},foundationSha256,installSql,verifyStatements:verifyBody,
     verifySql:'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\n'+verifyBody+'\n'+summary+'\nCOMMIT;\n',
     sealSql:transition(false),reopenSql:transition(true),exportSql,entrySource,entrySha256:hash(entrySource),
     files,sourceTreeSha256:hash(JSON.stringify(files.map(({source,...file})=>file))),

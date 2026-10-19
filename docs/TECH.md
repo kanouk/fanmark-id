@@ -9,6 +9,8 @@
 旧Stripe受信の移行候補は[保存専用受信の手順](migration/source-stripe-receipt-only.md)を参照。
 `npm run test:source-stripe-receipt-only` は生成entry・実署名検証・独立PostgreSQL transactionによる
 受付終了待ちと暗号化取得→native D1への全内容移送を検査する。本番配備や受信記録の移送は実行しない。
+同じ試験でD1に新規/重複通知を追加し、公開前の旧側へのatomic回収SQLと全件比較、途中失敗のrollbackも検査する。[回収候補と未接続部分](migration/stripe-receipt-transfer.md)。
+`test-stripe-receipt-return-custody.mjs`はnative D1/DO/PostgreSQLを使い、暗号化保管、固定adapter、永続intent、commit後の応答消失と読戻しを検査する。Management APIは合成応答であり、本番へのSQL適用はしない。読取りSQLは明示的なREAD ONLY transactionを使う。APIのread_only指定による専用ロールではprivate受信schemaを読めないため、管理者接続の固定SQLに限定する。
 
 本番D1のschema-only操作は`workers/api/wrangler.production-schema.jsonc`を使う。
 アプリのentry/routes/cronを含まず、作成済み専用3D1だけを指定する。

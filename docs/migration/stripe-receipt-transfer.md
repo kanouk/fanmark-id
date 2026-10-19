@@ -61,3 +61,65 @@ dispatchや公開を始めない。sourceのreopenは取得境界を無効にす
 一括runnerのnative3 D1/2 R2・実調停DO試験では、同じBusiness journalで受信記録を移し、
 保存応答が失われると未確定operationを残して画像に進まないことを確認する。
 本番データの実移送、旧handlerの副作用照合、provider再送の受け入れとは区別する。
+
+## 公開前に旧側へ戻すSQL候補
+
+`prepareStripeReceiptReturn({ sourceBefore, targetTables, runId, originalFunction, closedAt })`
+は、元のsealed source exportと新側の2表から、旧PostgreSQLへ戻すSQLを生成する。
+接続・実行・dispatch・Stripe API呼出しは行わない。targetの受付と進行中保存を止めた証拠は
+別に必要で、返り値の`targetDrainVerified`と`productionReady`はfalse。
+
+- 元の全receipt/dispatchを必須とし、ID・mode/event・payload/hash・初回受信時刻・dispatchを
+  保持する。重複受信によるdelivery_countの増加とlast_received_at/updated_atだけを許す。
+  count不変の時刻変更、count減少、時刻逆転、closedAt以後の記録は拒否する。
+- 新しい通知もreceived/pending・attempt_count 0・claim_generation 0・leaseなしが必須。
+  処理済み、処理中、再試行、内容不一致、元の行の欠落は回収候補にしない。
+- SQLは同じrunのcontrol行と受信2表をロックし、関数定義・権限・sealed状態を検査する。
+  sourceの全行が元exportと一致することを型付き比較で確認してから、targetにある全内容を
+  一つのtransactionで反映する。追加trigger/ruleを拒否し、業務表には書き込まない。
+- 更新後も全行・件数・状態を検査し、受信はsealedのまま保持する。途中失敗は全体を
+  rollbackする。`reopen.sql`や旧handlerへの復帰は別操作で、適用効果の確認前には行わない。
+
+返り値のSQLと`returnedSource`はprivate情報を含む。以下の保管・実行部品を接続したが、
+実環境の停止と回収は未実施。SQL成功だけで旧サービスを再開しない。
+
+native試験は実PostgreSQL→暗号化→D1→本番と同じD1受信関数で重複/新規受信→旧側への
+SQL回収→全内容比較を通した。4 receipt/5 deliveryから5 receipt/7 deliveryとなり、元の
+記録・microsecondsとpending状態を保持する。dispatchへの挿入を制約で失敗させると、
+先行receipt更新もcontrol件数も元に戻ること、改変・処理履歴・追加trigger・再適用の
+拒否も確認した。実環境の受付停止・通知回収の実証ではない。
+
+## 暗号化保管と一度だけの返却実行
+
+`collectStripeReceiptReturn`は同runの完了済みimport、保持中のwriter fence、進行中writer 0、
+未確定操作なしを要求する。固定本番Business D1のread-only adapterでschemaと全2表を取得し、
+run・元export hash・manifest・資源incarnation・fence状態を認証対象としてAES-256-GCMで保存する。
+worktree外の0700 directory/0600新規fileにfsyncし、復号・全内容・現target/fenceを再検査する。
+失敗時も生成済みarchiveを保持する。collector自身はfenceを取得・解除せず、D1へ書き込まない。
+
+`source-stripe-return-transport.mjs`は固定projectのManagement APIへ、生成したSQLだけを送る。
+読取りは管理者接続の明示的なrepeatable-read/READ ONLY transaction。APIの`read_only:true`は
+private schemaを読めない専用ロールへ切り替わるため使用しない。読み取り専用adapterには
+返却実行を許さず、任意SQLも受け取らない。資格情報・API例外本文は出力しない。
+
+`executeStripeReceiptReturn`には保管済みarchive/hash、元export、同runの調停/読取D1、
+sourceReaderとsourceWriter、未使用のprivate journalPathを渡す。順序は次のとおり。
+
+1. archiveと現target/fence、旧側の全内容が元exportに一致することを確認する。
+2. run・内容hash・生成SQL hashだけのintentをexclusive作成し、file/directoryをfsyncする。
+3. target/fenceを再確認し、元内容の一致条件付きSQLを一度送る。
+4. 別の読取り要求で旧側export全件を照合し、target/fenceを再検査して別fileに検証結果を保存する。
+
+既存intentがあれば再送しない。応答不明時は`inspectStripeReceiptReturnExecution`へ同archiveと
+intent hashを渡し、現在の旧側を「返却後の内容」「元の内容」「いずれとも不一致」に分ける。
+元の内容に一致しても、先行transactionの終了を証明できないため再実行は許可しない。
+読戻しで返却後の一致を確認できても、自動reopen・dispatch・fence解除はしない。
+
+native DO/D1/PostgreSQL試験で暗号化、同一run/資源/manifestの固定、未完了・進行中writer拒否、
+保存後のtarget変更検出、一度の実行、commit後の応答消失と再送なしの照合を確認した。
+管理API応答は合成。実sourceではrole/transaction設定のREAD ONLY確認のみ実施し、
+`billing_ingress`未導入を確認した。生成SQLの本番適用はしていない。
+
+このfence検査は追跡対象writerの停止を確認するだけで、過去に業務書込みが公開されていないことや
+旧handlerの終了・外部決済効果を証明しない。実受付の閉鎖・旧handler終了、業務未公開の証拠、
+実資源への適用と全件読戻し、旧処理効果の照合は最終実行の前提として残る。

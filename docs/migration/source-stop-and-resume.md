@@ -12,7 +12,7 @@
 | 停止・逆操作SQL | Cron、71保護relation、保存専用Stripe receiverの候補あり。同じrunの14 fileへ再生成し、独立にhash/権限を確認した。当日のinventory再取得・再生成は未実施 |
 | 旧handlerの終了確認 | Functionの差替えやDB transaction 0だけでは、旧版Edgeの開始済み外部処理の終了を証明できない。実行・送信・決済の対応を確認するcollectorは未完了 |
 | Stripe棚卸し | 下記GET専用collectorを実装。元の秘密鍵を移出しない一時診断adapterでlive取得とsource照合を実施済み。当日の停止境界での再照合は未完了 |
-| 中止時の受信記録 | source streamの暗号化保存・D1への移送は接続済み。新側で受けた別streamを旧側へ戻す実adapterと全内容比較は未完了 |
+| 中止時の受信記録 | source streamの暗号化保存・D1への移送、逆方向のatomic SQL・固定読取adapter・暗号化保管・一度の実行journal/別要求読戻しを実装、native往復検証済み。実資源の閉鎖・旧処理終了・実回収は未実施 |
 | 移行先の閉鎖 | 一般HTTP/Auth/Cronと業務dispatcherを止める。受信専用経路も開ける前に当該Worker version・binding・署名鍵・台帳を照合する |
 
 未完了のまま停止を始めない。特に、障害時に旧サービスを戻すための手順が書かれている
@@ -46,7 +46,7 @@ StripeのSession仕様ではcompleteでも支払い処理が進行中のこと�
    executor、未確定operation、private journal、部分投入データを消さない。
 2. 新側受信を一度も開けていなければ、source receiverの実seal状態と保存済みstreamを
    照合する。開けた後なら、新側の受付中保存を完了させ、境界後streamを回収して旧側に
-   永続保存・全内容照合する。現時点では後者の実adapterが未完了なので再開不可。
+   永続保存・全内容照合する。[回収adapterとjournal](stripe-receipt-transfer.md)を使うが、実閉鎖と旧処理終了の証拠・本番回収の読戻しがそろうまで再開不可。
 3. sourceがseal済みなら、同じrunの `verify.sql` で確認して `reopen.sql` を実行する。
    既にopenなら再実行しない。応答不明は状態を読み直す。受信記録を削除しない。
 4. 通知ごとにsource業務の適用結果を確認する。保存済み通知に200を返した後では、

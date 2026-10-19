@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "a9eb08de71c70fb2239a48456935988bd698b1fd127e0c5384832ff5044792f8"
+    "sha256": "286204d8da40013523a598f83fcd134da1e7e2406c3a68bcea7598a6f1239f56"
   },
   "variables": [
     {
@@ -760,7 +760,11 @@
     },
     {
       "path": "scripts/migration/source-stripe-receipt-only.mjs",
-      "sha256": "53e75c52fd0feae3ee6126a8e1cbd54ae027a6cbb3c57cf71bada59a3fe1c3ba"
+      "sha256": "99b6068e0e64019f515cd4edc5d4d70dd7f403cf6a44d238ec9e7178869dea97"
+    },
+    {
+      "path": "scripts/migration/source-stripe-return-transport.mjs",
+      "sha256": "cee6d2743323825bc62b5ea677ab602972d98b26140e55c3f99685ab9a7d2ead"
     },
     {
       "path": "scripts/migration/split-r2-import-stage.mjs",
@@ -787,8 +791,12 @@
       "sha256": "8c50ebca6599ab93f65cea19c714c1535542e0fc1d1b98376b61d81ef19e0a12"
     },
     {
+      "path": "scripts/migration/stripe-receipt-return-execution.mjs",
+      "sha256": "333970479ab638a4e0177d9f81480f208520966a03fa4f9c5146f60f086773b4"
+    },
+    {
       "path": "scripts/migration/stripe-receipt-transfer.mjs",
-      "sha256": "e1fb2c031f0d4557e26840e9a8b8022bb766b7b1ca5bb62d3ab83a1425125495"
+      "sha256": "d28bf3d828f39475f58b46f99e02f00c2c9fcf705b6fd5041f66425322d91b5e"
     },
     {
       "path": "scripts/migration/supabase-auth-projection.mjs",

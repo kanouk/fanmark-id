@@ -10,10 +10,11 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import { renderSourceStripeReceiptOnly } from './source-stripe-receipt-only.mjs';
 import { renderSourceDatabaseFreeze } from './source-database-freeze.mjs';
-import { prepareStripeReceiptTransfer, collectSourceStripeReceipts, loadStripeReceiptExport, importStripeReceiptTransfer } from './stripe-receipt-transfer.mjs';
+import { prepareStripeReceiptTransfer, collectSourceStripeReceipts, loadStripeReceiptExport, importStripeReceiptTransfer, prepareStripeReceiptReturn } from './stripe-receipt-transfer.mjs';
+import { acceptStripeWebhookReceiptIntoD1 } from '../../workers/api/src/stripe-webhook-d1-ingress.ts';
 import { Miniflare } from '../../workers/api/node_modules/miniflare/dist/src/index.js';
 import { applyBusinessRuntimeMigrations } from './business-runtime-import-schema.mjs';
-import { canonicalizeNormalizedPayload, createStripeReceiptIngress, createSupabaseReceiptPersister } from '../../supabase/functions/_shared/stripe-receipt-ingress/index.ts';
+import { canonicalizeNormalizedPayload, createStripeReceiptIngress, createSupabaseReceiptPersister, buildReceiptPersistenceInput } from '../../supabase/functions/_shared/stripe-receipt-ingress/index.ts';
 
 const require = createRequire(new URL('../../experiments/stripe-receipts/package.json',import.meta.url));
 const Stripe = require('stripe');
@@ -139,7 +140,7 @@ test('receipt-only candidate uses native PostgreSQL transactions and real Stripe
    assert.equal((await deliver('evt_after_seal')).status,503);
    assert.equal(sql('SELECT count(*) FROM billing_ingress.stripe_webhook_receipts'),'4');
   });
-  await t.test('sealed PostgreSQL stream survives authenticated encryption and imports every receipt into native D1',async()=>{
+  await t.test('sealed PostgreSQL stream survives encryption, native D1 receipt arrivals, and atomic prewrite return',async()=>{
    const source=JSON.parse(sql(plan.exportSql)),projection=await prepareStripeReceiptTransfer(source,{runId:plan.runId});
    assert.equal(projection.receiptCount,4);assert.equal(projection.deliveryCount,5);
    const key=randomBytes(32),directory=await mkdtemp(join(tmpdir(),'fanmark-receipt-capture-'));
@@ -161,6 +162,50 @@ test('receipt-only candidate uses native PostgreSQL transactions and real Stripe
     const database=await mf.getD1Database('DB');await applyBusinessRuntimeMigrations(database);
     const report=await importStripeReceiptTransfer({source:restored,database,readDatabase:database,runId:plan.runId});
     assert.equal(report.receiptCount,4);assert.equal(report.billingEffectsApplied,false);
+    assert.equal((await database.prepare('SELECT count(*) AS n FROM fanmark_licenses').all()).results[0].n,0);
+    const row=source.receipts[0],at=new Date(Date.now()+1000).toISOString();
+    const originalInput={stripeEventId:row.stripe_event_id,livemode:row.livemode,eventType:row.event_type,
+      objectType:row.object_type,objectId:row.object_id,apiVersion:row.api_version,normalizedSchemaVersion:1,
+      normalizedPayload:row.normalized_payload,normalizedPayloadSha256:row.normalized_payload_sha256,rawPayloadSha256:row.raw_payload_sha256};
+    await acceptStripeWebhookReceiptIntoD1({database,event:originalInput,now:at});
+    const event={id:'evt_return_new',object:'event',created:Math.floor(Date.now()/1000),livemode:false,
+      api_version:'2025-08-27.basil',type:'checkout.session.completed',data:{object:{id:'cs_return_new',object:'checkout.session',
+        mode:'payment',status:'complete',payment_status:'paid',amount_total:1000,currency:'jpy',metadata:{type:'license_extension',months:'1'}}}};
+    const input=await buildReceiptPersistenceInput(event,new TextEncoder().encode(JSON.stringify(event)));
+    await acceptStripeWebhookReceiptIntoD1({database,event:input,now:at});
+    const targetTables=Object.fromEntries(await Promise.all(['stripe_webhook_receipts','stripe_webhook_dispatches'].map(async table=>
+      [table,(await database.prepare(`SELECT * FROM ${table} ORDER BY id`).all()).results])));
+    for(const rows of Object.values(targetTables))rows.reverse();
+    const closedAt=new Date(Date.now()+2000).toISOString().replace(/\.(\d{3})Z$/u,'.$1000Z');
+    const options={sourceBefore:source,targetTables,runId:plan.runId,originalFunction,closedAt};
+    const returnPlan=await prepareStripeReceiptReturn(options);
+    assert.equal(returnPlan.receiptCount,5);assert.equal(returnPlan.deliveryCount,7);
+    assert.equal(returnPlan.targetDrainVerified,false);assert.equal(returnPlan.productionReady,false);
+    for(const change of [t=>{t.stripe_webhook_dispatches[0].claim_generation=1;},
+      t=>{t.stripe_webhook_receipts.find(r=>r.id===row.id).delivery_count=0;},
+      t=>{t.stripe_webhook_receipts.find(r=>r.id===row.id).raw_payload_sha256='f'.repeat(64);},
+      t=>{t.stripe_webhook_dispatches[0].attempt_count=1;},
+      t=>{t.stripe_webhook_receipts.find(r=>r.id===row.id).first_received_at=closedAt;}]){
+      const changed=structuredClone(targetTables);change(changed);
+      await assert.rejects(prepareStripeReceiptReturn({...options,targetTables:changed}),/stripe_receipt_transfer_/);
+    }
+    const sourceBefore=sql('SELECT jsonb_agg(to_jsonb(r) ORDER BY id) FROM billing_ingress.stripe_webhook_receipts r');
+    sql(`CREATE FUNCTION public.return_test_trigger() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
+      CREATE TRIGGER return_test BEFORE INSERT ON billing_ingress.stripe_webhook_receipts FOR EACH ROW EXECUTE FUNCTION public.return_test_trigger()`);
+    assert.match(sql(returnPlan.sql,true),/unexpected_trigger_or_rule/);
+    assert.equal(sql('SELECT jsonb_agg(to_jsonb(r) ORDER BY id) FROM billing_ingress.stripe_webhook_receipts r'),sourceBefore);
+    sql('DROP TRIGGER return_test ON billing_ingress.stripe_webhook_receipts; DROP FUNCTION public.return_test_trigger()');
+    sql("ALTER TABLE billing_ingress.stripe_webhook_dispatches ADD CONSTRAINT return_test_failure CHECK(stripe_event_id <> 'evt_return_new')");
+    assert.match(sql(returnPlan.sql,true),/return_test_failure/);
+    assert.equal(sql('SELECT jsonb_agg(to_jsonb(r) ORDER BY id) FROM billing_ingress.stripe_webhook_receipts r'),sourceBefore);
+    assert.equal(sql('SELECT sealed_receipts FROM billing_ingress.cutover_control'),'4');
+    sql('ALTER TABLE billing_ingress.stripe_webhook_dispatches DROP CONSTRAINT return_test_failure');
+    sql('SET ROLE source_operator;\n'+returnPlan.sql);
+    const returned=JSON.parse(sql(plan.exportSql));
+    assert.deepEqual(await prepareStripeReceiptTransfer(returned,{runId:plan.runId}),
+      await prepareStripeReceiptTransfer(returnPlan.returnedSource,{runId:plan.runId}));
+    assert.match(sql(returnPlan.sql,true),/source_not_sealed|content_changed/);
+    assert.equal(sql('SELECT count(*) FROM public.items'),'1');
     assert.equal((await database.prepare('SELECT count(*) AS n FROM fanmark_licenses').all()).results[0].n,0);
    } finally {await mf.dispose();}
   });

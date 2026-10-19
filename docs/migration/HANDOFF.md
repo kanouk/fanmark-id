@@ -1,3 +1,21 @@
+## 2026-10-19: Stripe回収の暗号化保管・実行journal・応答不明時照合を接続
+
+15714a5のCI39198697249はapp/Worker両job成功。公開前の受信回収候補へ、固定本番D1の読取・保持中writer fence確認・暗号化archiveの保存/独立再検査を接続した。固定Supabase projectの生成SQL専用adapterと、一度の実行前intent保存・別要求の全件読戻し・応答不明時の再送禁止も追加した。
+
+native D1/DO/PostgreSQLでcommit後の応答消失を再現し、元intentを保持したまま読取りで返却後の一致を確認。関連23件と準備9件成功、CIの既存受信試験にも追加。実sourceは同adapterの固定READ ONLY preflightだけ実行し、postgres/on・受信schema未導入を確認した。source write 0。SQLの本番適用なし。[検証範囲](evidence/stripe-return-custody-validation-2026-10-19.json) / [操作契約](stripe-receipt-transfer.md)。
+
+fenceは追跡対象writerの停止だけを確認する。実受付の閉鎖、旧handler終了、業務未公開の証拠、旧決済効果の照合・本番の全件読戻しは別途必要。旧GitHub OAuth Appの作成先は回答待ち。他の準備を継続し、管理者MFAは最後。本番source停止/移送/DNS/main mergeなし。旧解約済みテスト契約は保持。
+
+## 2026-10-19: 公開前のStripe受信回収SQLをnative往復検証
+
+`prepareStripeReceiptReturn`を追加。元sealed exportの全記録を保持し、D1の重複受信count/時刻と新規received/pending通知を旧側へ回収するatomic SQLを生成する。run/関数/権限/sealと元の全内容を確認し、追加trigger/rule、処理履歴、count減少/元情報の改変を拒否する。回収後もsealedを保持し、業務適用/公開はしない。
+
+PostgreSQL→暗号化→native D1→実D1 ingressで重複/新規受信→旧PostgreSQL→全件比較を確認。4 receipt/5 deliveryから5/7へ保持。dispatch insertを失敗させ、先行receipt/control更新もrollbackすることを検査した。関連native16件・準備9件成功。[限定証拠](evidence/stripe-receipt-return-native-2026-10-19.json) / [契約](stripe-receipt-transfer.md)。
+
+本番の閉鎖/進行中保存の終了確認、実target取得/返却archive暗号化保管、source実行journalと別接続読戻しは未接続。SQL生成だけで本番復旧可能とはしない。
+
+PR上の15714a5は先行のGET棚卸し/実測まで反映済み、CI39198697249実行中。この回収候補は既存branchのlocalに保存し、先行CIをcancelしないよう完了後にpushする。GitHubの現在kanoukアカウントはOAuth Appsにstaging1件、Organization0件。旧本番Appの作成先をユーザーへ質問中。MFAは最後、本番移送/DNS/main mergeなし。
+
 ## 2026-10-19: Stripe live全6 collection取得とsource照合
 
 前turnのGET collectorと同じ実装hashを一時診断adapterから実行した。既存Stripe鍵はsource環境内だけで使用。未完了Checkout、complete未入金、非終端PaymentIntent、継続Subscription/Invoice、有効Payment Link、配信待ちEventは0。Session3件（expired2/paid1）、PaymentIntent succeeded1、他4 collection0。source canceled契約1件を保持。paid1件は旧expired licenseと所有者/fanmark一致、Session/延長監査0のため適用状態は未確定で再送しない。

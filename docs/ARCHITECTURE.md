@@ -1,6 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
 旧Stripe決済のGET専用棚卸しは `scripts/migration/source-stripe-inventory.mjs`。停止と公開前中止の順序は[実行票候補](migration/source-stop-and-resume.md)を参照。
+`stripe-receipt-transfer.mjs`の`prepareStripeReceiptReturn`は、元exportと閉鎖後targetの2表から旧側へのatomic回収SQLを生成する。同moduleのcollectorは固定本番D1のread-only接続と保持中のwriter fenceを確認し、暗号化archiveを保存・再照合する。`source-stripe-return-transport.mjs`は固定Supabase projectへの生成SQLだけを扱い、`stripe-receipt-return-execution.mjs`が永続intent、一度の実行、別要求での全件読戻し、応答不明時の再送禁止を担う。実環境の停止・旧処理終了・業務未公開の証拠は別途必要。
 
 本番移送の実行者lockは `scripts/migration/production-import-execution-lock.mjs`。一括runnerが取得前に保存し、終了済み実行者の引継ぎは `recoverInitialImportExecution` でstage全件照合と遠隔CASを行う。[復旧範囲](migration/production-import-recovery.md)。
 
