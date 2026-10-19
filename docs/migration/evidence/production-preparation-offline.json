@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "55a52df091ac368f7b633291f3fe1c0b0347159f51ae9420e1876f61334ca4a1"
+    "sha256": "a9eb08de71c70fb2239a48456935988bd698b1fd127e0c5384832ff5044792f8"
   },
   "variables": [
     {
@@ -652,7 +652,7 @@
     },
     {
       "path": "scripts/migration/initial-import-set-readback.mjs",
-      "sha256": "c26f330d566758a6f98f4c5a7a7de8f9bc6731b6d54c192d1ae35e7b4818256d"
+      "sha256": "2a5a16a62c007d4270468dcc434180b8102c12be89d29cbfba43576df6c9bf3c"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
@@ -696,11 +696,15 @@
     },
     {
       "path": "scripts/migration/production-import-coordinator-client.mjs",
-      "sha256": "958569ea7e2c5ae92f1f184ccc282ba8ed1ec5d21c8db6a5d5450fa3ffb43849"
+      "sha256": "d16ec973ace36ede38f38584cbaae13e85b9c42b0f63beb15ce434cdbc2f5033"
+    },
+    {
+      "path": "scripts/migration/production-import-execution-lock.mjs",
+      "sha256": "a493a676052fb4c4b0719b6605909ce2985d98f85b4d1f535ae69259dced1bfd"
     },
     {
       "path": "scripts/migration/production-import-gateway.mjs",
-      "sha256": "66a026bdbf19523ed8c2b8f0bcbbecf5d38f92fc755e8773f77660ebfa2d4a77"
+      "sha256": "6f19e1bbe09405289dc592511e7270a19f1a76d3ac3028e0ed5857a9c71e9ffe"
     },
     {
       "path": "scripts/migration/production-import-inspection.mjs",
@@ -776,7 +780,7 @@
     },
     {
       "path": "scripts/migration/storage-r2-import.mjs",
-      "sha256": "f5ff8fb0a91f9016f22db10e19216493d4f19e4848ca0d48dba03623fd3625c9"
+      "sha256": "3105426fcc546218a3ad520aeaa863f58efa48680277e3f82d930e2346162c41"
     },
     {
       "path": "scripts/migration/stripe-handoff-check.mjs",
@@ -896,7 +900,7 @@
     },
     {
       "path": "workers/api/src/production-import-coordinator.ts",
-      "sha256": "573971ae6351323d3c0aea04dfcb10cffefcd96bafab12cb9a714d0ae0e2e62b"
+      "sha256": "d6e1ba512d2f40003fcd217824a089653915e122deb0c3bfd069b6de56427dbb"
     },
     {
       "path": "workers/api/src/production-r2-import-contract.ts",

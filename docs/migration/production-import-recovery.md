@@ -1,6 +1,6 @@
 # 本番移送中断時の照合と限定復旧
 
-対象はPR #41の専用5 store移送。停止設定と調停ownerを保持したまま、元のrun・manifest・incarnation・private journalを使う。全体runnerは`executeInitialImportSet`へ接続済みだが、部分stageの修復・停止したexecutorの引継ぎは未完了。この手順だけで本番開始や再開を許可しない。
+対象はPR #41の専用5 store移送。停止設定と調停ownerを保持したまま、元のrun・manifest・incarnation・private journalを使う。全体runnerは`executeInitialImportSet`へ接続済み。終了した同一端末のexecutorは、未確定書込みなし・完了済みstageの独立照合を条件に引き継げる。部分stageや未確定commitの復旧は未完了。この手順だけで本番開始や再開を許可しない。
 
 ## まず読み取りだけで調べる
 
@@ -41,4 +41,34 @@ native local D1/DOと実子processを使い、遠隔ACK後のlocal記録消失�
 
 `inspect()`と操作別照合は現在の`executorId`も返す。executorは自動失効しない。既存のlocal ACK補修はexecutorを解除せず、補修成功だけで別processが書き込みを再開できるとは扱わない。正常なstage境界でrunnerが`yieldExecution`を完了した場合にだけ、新しい実行者が取得できる。取得後は旧形式の実行者なしwriteへ戻れない。
 
-runnerはyield/completeを送る前に同じprivate journal directoryへ`initial-set-<executorId>.json`を0600で作成・fsyncする。最終応答不明では、別read-only clientでDOの`state.readbackSha256`と保存reportの`report.readback.readbackSha256`を照合する。この一致は元の比較結果を遠隔が受理した証拠であり、一般writeの開始やsource再開を認めるものではない。file欠落/改変、hash不一致、未確定operationがある場合は保留する。削除・再送・executor強制解除のコマンドは提供しない。
+runnerはyield/completeを送る前に同じprivate journal directoryへ`initial-set-<executorId>.json`を0600で作成・fsyncする。最終応答不明では、別read-only clientでDOの`state.readbackSha256`と保存reportの`report.readback.readbackSha256`を照合する。この一致は元の比較結果を遠隔が受理した証拠であり、一般writeの開始やsource再開を認めるものではない。file欠落/改変、hash不一致、未確定operationがある場合は保留する。未確定operationの削除・再送・無条件のexecutor解除は提供しない。
+
+
+## 終了済みexecutorをstage境界で引き継ぐ
+
+runnerは遠隔実行権を取得する前に、5 journalと同じ0700 directoryへ
+`.initial-import-execution.lock` を0600・排他的作成し、file/directoryをfsyncする。
+run・manifest/source証拠hash・executor UUID・PID・端末hashを固定する。
+正常なyield/complete応答後にだけ自分のlockを取り除く。取得応答消失やprocess終了なら保持する。
+
+`recoverInitialImportExecution({ prepared, coordinator, journalPaths, sourceEvidencePath,
+readDatabases, readBuckets, resumeAfter })` には同じ入力から再作成したpreparedと
+独立したcoordinator client、read-onlyの3 D1/2 R2接続を渡す。resumeAfterは完全に
+終わっている `auth/master/business/receipts/storage` のいずれかを明示する。
+
+1. 同一端末の元PIDが終了したことをsignal 0で確認する。PID再利用で別processが存在する場合も拒否する。
+2. ローカル5 journalの全ACK・lockなしを遠隔台帳へ照合する。pendingは0、一般writerも0、移行停止ownerは同じrunを要求する。
+3. source証拠と入力fileのhashを確認し、完了済みprefixを各storeのcheckerで全件再照合する。受信streamもprefixに含む場合は全内容を検査する。
+4. 前後の遠隔状態・元lockの内容/inodeを照合し、復旧reportをGit外0600 fileへfsyncする。
+5. サーバーで元executor UUIDとACK件数を比較して実行権だけを解除する。pendingが入った場合、件数が変わった場合、別実行者なら拒否する。移行停止・全operation記録は残す。使用済みexecutor UUIDは再取得できない。
+6. 独立した読戻しの成功後、ローカルの実行lockと復旧lockを取り除く。
+
+復旧後はpreparedと書込接続を再作成し、同じrun/manifest/journalへ新しいclientでclaimし、
+確認したresumeAfterから一括runnerを呼ぶ。runnerは完了prefixを再検査し、次stageの
+初期状態検査を実施する。復旧関数自体のprovider書込みは0件。
+
+途中失敗は `.initial-import-execution.lock.recovery` とreportを保持する。
+遠隔解除の応答不明時に解除要求を再送しない。元lockがない旧形式の実行、取得直後で
+完了stageがないケース、partial stage、pending provider操作、complete済みのlock掃除は
+この自動復旧の対象外。確認済みprefixの後に部分書込みがあれば、次stageの初期検査で
+止まる。この復旧成功だけで全移送の再開可能性や本番移行準備完了を主張しない。

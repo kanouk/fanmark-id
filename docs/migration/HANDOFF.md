@@ -1,3 +1,11 @@
+## 2026-10-19: 終了した移送executorのstage境界復旧
+
+一括runnerは遠隔実行権取得前にPID/端末/run/入力hashをprivate lockへfsyncする。終了済み同一端末・未確定操作0・全journal一致・完了stageの全件照合を条件に、遠隔executor ID/ACK件数のCASで実行権だけを引き継ぐ。停止fenceと全履歴を残し、旧executor UUIDの再取得を拒否する。[手順と対象外](production-import-recovery.md)。
+
+終了した実子process/native全5store/DOで引継ぎ→残り全stage→全件一致を確認した。通し16件、DO12件、coordination11件、gateway5件、Storage14件、準備9件成功。型検査/非公開bundle dry-runも成功。最初の新試験では画像reportの指定先がexport外で失敗したため、fixtureを修正し、同じ誤指定を実行権取得・DB書込み前に拒否する検査も追加した。改変prefix、生存PID/別端末、stale ID、pending操作、応答消失は解除せず記録を保持。
+
+a06dd46のCI39196064857はapp成功、Worker試験継続中。今回のruntime変更は未配備。非公開appは前turnの9bf2eb60を維持。部分stage/未知commit、復旧解除応答不明後のcleanup、source全入口drain/Stripe効果・逆回収、provider/operator/DNS逆操作、鍵別保管/実資源復旧が残る。本番source停止/import/domain切替/main mergeなし。MFAは最後。
+
 ## 2026-10-19: 非公開runtime更新とwww/adminの誘導候補
 
 非公開appを `9bf2eb60-7b2e-4013-a850-8e399fc0926d` へ更新した。配備対象runtime/build入力は両job成功済みa6e43e3/CI39193035726と同一。候補HEADはa82b26eで、そのCI39194702760も後続確認でapp/Worker両job成功。配備後の全binding/script runtime、公開経路0/Cron0、既存4 Workerとbackup/monitorの保持を独立読戻しした。app settings全体のhashは変わり、version APIではscript本体・metadataの変更とbinding/runtime一致を確認した。[証拠](evidence/production-closed-executor-update-2026-10-19.json)。

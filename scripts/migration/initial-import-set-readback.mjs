@@ -13,7 +13,7 @@ import { verifyImportedD1Snapshot, importInitialBusinessSnapshot } from './d1-im
 import { importAuthProjectionStage } from './auth-import-stage.mjs';
 import { importMasterProjectionStage } from './master-import-stage.mjs';
 import { importInitialSplitR2Export } from './split-r2-import-stage.mjs';
-import { prepareStorageImportReadback } from './storage-r2-import.mjs';
+import { prepareStorageImportReadback,resolveStorageImportReportPath } from './storage-r2-import.mjs';
 import { verifyImportedSplitR2Export } from './split-r2-import-stage.mjs';
 import { verifyProductionSplitR2Export, importProductionSplitR2Export } from './production-r2-import-stage.mjs';
 import { isProductionRemoteD1 } from './production-remote-d1.mjs';
@@ -22,6 +22,7 @@ import { isProductionRemoteR2 } from './production-remote-r2.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 import { inspectProductionImportSet } from './production-import-inspection.mjs';
 import { prepareStripeReceiptTransfer, importStripeReceiptTransfer, verifyStripeReceiptTransfer } from './stripe-receipt-transfer.mjs';
+import {createImportExecutionLock,recoverExitedImportExecution} from './production-import-execution-lock.mjs';
 
 const plans = new WeakMap(), UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 const stores = ['auth', 'avatars', 'business', 'covers', 'master'];
@@ -191,6 +192,8 @@ async function rehearseSet({ prepared, databases, readDatabases, buckets, readBu
         !group.avatars || !group.covers || group.avatars === group.covers || (!execution && Object.values(group).some(isProductionRemoteR2))) ||
       ![businessReportPath, storageReportPath].every(path => typeof path === 'string' && isAbsolute(path)) ||
       businessReportPath === storageReportPath) fail('rehearsal_transport_or_paths_invalid');
+  // Reject a wrong report destination before Auth/Master/Business can write.
+  resolveStorageImportReportPath(plan.storageExportDir,storageReportPath);
   // One attempt per in-memory plan. Reconstructing a plan after interruption
   // still requires full content readback of every explicitly skipped stage.
   if (rehearsals.has(prepared)) fail('rehearsal_already_attempted');
@@ -267,6 +270,7 @@ async function executeSet({ coordinator, journalPaths, sourceEvidencePath, ...op
   // THIS coordinator and exactly the journal inspected below, not another run.
   const captured = { ...options, databases: { ...options.databases }, readDatabases: { ...options.readDatabases },
     buckets: { ...options.buckets }, readBuckets: { ...options.readBuckets } };
+  resolveStorageImportReportPath(plan.storageExportDir,captured.storageReportPath);
   for (const store of stores) {
     const image = ['avatars', 'covers'].includes(store), write = (image ? captured.buckets : captured.databases)[store];
     const read = (image ? captured.readBuckets : captured.readDatabases)[store];
@@ -297,7 +301,9 @@ async function executeSet({ coordinator, journalPaths, sourceEvidencePath, ...op
     ...Object.values(captured.buckets), ...Object.values(captured.readBuckets)]) await binding.verifyProductionTarget();
   // Acquire exactly once. If its response is lost, remote ownership remains;
   // another client, even with the same run identity, cannot continue writing.
-  const acquired = await coordinator.acquireExecution();
+  const ownership = await createImportExecutionLock({directory:dirname(paths.auth),runId:plan.descriptor.runId,
+    manifestSha256:options.prepared.identitySha256,sourceEvidenceSha256:plan.descriptor.sourceEvidenceSha256});
+  const acquired = await coordinator.acquireExecution(ownership.executorId);
   const report = await rehearseSet(captured, { coordinator, journalPaths: paths, verifyEvidence, verifyJournal });
   await verifyEvidence(); await verifyJournal();
   // Persist the exact comparison before the remote completion/yield. A lost
@@ -313,8 +319,65 @@ async function executeSet({ coordinator, journalPaths, sourceEvidencePath, ...op
   try { await directory.sync(); } finally { await directory.close(); }
   if (report.readback) {
     await coordinator.complete(report.readback.readbackSha256);
+    await ownership.release();
     return { ...report, executionReportPath, coordinatorCompleted: true, sourceEvidenceSha256: plan.descriptor.sourceEvidenceSha256 };
   }
   await coordinator.yieldExecution(sha256Hex(report));
+  await ownership.release();
   return { ...report, executionReportPath, executorYielded: true, sourceEvidenceSha256: plan.descriptor.sourceEvidenceSha256 };
+}
+
+/** Reclaim a dead same-host executor at a fully verified stage boundary.
+ * This never resolves a pending write or resumes a partially imported stage.
+ * Reconstruct the prepared plan and connections before the next execution.
+ */
+export async function recoverInitialImportExecution({prepared,coordinator,journalPaths,sourceEvidencePath,readDatabases,readBuckets,resumeAfter}={}){
+  try{
+    const plan=plans.get(prepared),paths={...journalPaths},databases={...readDatabases},buckets={...readBuckets};
+    const stages=['auth','master','business','receipts','storage'];
+    if(!plan?.receipts||!plan.descriptor.sourceEvidenceSha256||!stages.includes(resumeAfter)||
+      !isProductionImportCoordinator(coordinator)||coordinator.owner!==plan.descriptor.runId||
+      coordinator.manifestSha256!==prepared.identitySha256||!same(coordinator.incarnations,plan.descriptor.incarnations)||
+      Object.keys(paths).sort().join(',')!==stores.join(',')||new Set(Object.values(paths)).size!==5||
+      Object.values(paths).some(path=>!isAbsolute(path??''))||new Set(Object.values(paths).map(dirname)).size!==1||
+      !isAbsolute(sourceEvidencePath??''))fail('recovery_identity_invalid');
+    for(const store of stores){
+      const image=['avatars','covers'].includes(store),binding=(image?buckets:databases)[store];
+      if(!(image?isProductionRemoteR2:isProductionRemoteD1)(binding)||binding.access!=='read-only'||
+        binding.targetIdentity.targetIncarnation!==plan.descriptor.incarnations[store]||
+        (image?binding.targetIdentity.store!==store:binding.targetIdentity.databaseName!=='fanmark-production-'+store))fail('recovery_transport_invalid');
+    }
+    const directory=dirname(paths.auth);
+    const verifyEvidence=async()=>{
+      const file=await open(sourceEvidencePath,constants.O_RDONLY|constants.O_NOFOLLOW);
+      try{const stat=await file.stat();
+        if(!stat.isFile()||stat.nlink!==1||(stat.mode&0o777)!==0o600||stat.size>4*1024*1024)fail('source_evidence_file_invalid');
+        const bytes=await file.readFile(),after=await file.stat();
+        if(after.size!==stat.size||after.mtimeMs!==stat.mtimeMs||sha256Hex(bytes)!==plan.descriptor.sourceEvidenceSha256)fail('source_evidence_changed');
+      }finally{await file.close();}
+    };
+    const verifyJournal=async()=>{const result=await inspectProductionImportSet({journalPaths:paths,coordinator});if(!result.journalsReconciled)fail('journals_unresolved');return result;};
+    return await recoverExitedImportExecution({directory,runId:plan.descriptor.runId,manifestSha256:prepared.identitySha256,
+      sourceEvidenceSha256:plan.descriptor.sourceEvidenceSha256,
+      verify:async executorId=>{
+        await verifyEvidence();const before=await coordinator.inspect();
+        if(before.executorId!==executorId||before.state?.pending!==null||before.state?.readbackSha256!==null||
+          before.active!==0||before.fenceOwner!==coordinator.owner)fail('recovery_remote_state_invalid');
+        await verifyJournal();
+        for(const binding of [...Object.values(databases),...Object.values(buckets)])await binding.verifyProductionTarget();
+        const report=await rehearseSet({prepared,databases,readDatabases:databases,buckets,readBuckets:buckets,
+          businessReportPath:join(directory,'recovery-business-unused.json'),storageReportPath:join(plan.storageExportDir,'recovery-storage-unused.json'),
+          resumeAfter,stopAfter:resumeAfter},{coordinator,journalPaths:paths,verifyEvidence,verifyJournal});
+        await verifyEvidence();const journals=await verifyJournal(),after=await coordinator.inspect();
+        if(!same(before,after))fail('recovery_remote_state_changed');
+        const proof={executorId,acknowledged:after.state.acknowledged,resumeAfter,report,journals};
+        return {...proof,proofSha256:sha256Hex(proof)};
+      },
+      release:async(executorId,proof)=>{
+        await coordinator.recoverExecution({executorId,acknowledged:proof.acknowledged,readbackSha256:proof.proofSha256});
+        const after=await coordinator.inspect();
+        if(after.executorId!==null||after.state?.pending!==null||after.state?.readbackSha256!==null||after.active!==0||
+          after.state?.acknowledged!==proof.acknowledged||after.fenceOwner!==coordinator.owner)fail('recovery_release_unconfirmed');
+      }});
+  }catch(error){safeError(error,'recovery_unconfirmed');}
 }

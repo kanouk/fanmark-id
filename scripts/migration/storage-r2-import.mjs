@@ -178,7 +178,7 @@ async function readVerifiedManifest(exportDir) {
   };
 }
 
-function resolveReportPath(exportDir, reportPath) {
+export function resolveStorageImportReportPath(exportDir, reportPath) {
   const absoluteReport = path.resolve(reportPath ?? path.join(exportDir, DEFAULT_REPORT_FILE));
   if (path.dirname(absoluteReport) !== exportDir || !insideDirectory(exportDir, absoluteReport)) {
     throw fail("report_outside_export");
@@ -719,7 +719,7 @@ export async function importStorageExport({
   if (typeof now !== "function") throw fail("invalid_clock");
 
   const verified = await readVerifiedManifest(exportDir);
-  const absoluteReportPath = resolveReportPath(verified.exportDir, reportPath);
+  const absoluteReportPath = resolveStorageImportReportPath(verified.exportDir, reportPath);
   const expected = verified.manifest.objects.map((entry) => {
     const object = expectedObject(entry, { maxObjectBytes });
     return { ...object, localFilePath: path.resolve(verified.exportDir, entry.localFile) };

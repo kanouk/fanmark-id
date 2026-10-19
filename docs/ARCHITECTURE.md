@@ -1,5 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
+本番移送の実行者lockは `scripts/migration/production-import-execution-lock.mjs`。一括runnerが取得前に保存し、終了済み実行者の引継ぎは `recoverInitialImportExecution` でstage全件照合と遠隔CASを行う。[復旧範囲](migration/production-import-recovery.md)。
+
 本番aliasの候補は `workers/api/src/production-domain-alias.mjs`。DB等を持たない専用Workerでwww/adminからapexへの限定誘導を担う。初期状態は無効・未配備。[操作票](migration/production-domain-operations.md)。
 
 移行時の旧Stripe受信候補は `scripts/migration/source-stripe-receipt-only.mjs`。

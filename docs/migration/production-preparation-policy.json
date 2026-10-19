@@ -254,6 +254,7 @@
     "scripts/migration/source-stripe-receipt-only.mjs",
     "scripts/migration/stripe-receipt-transfer.mjs",
     "workers/api/src/production-domain-alias.mjs",
-    "workers/api/wrangler.alias-production-closed.jsonc"
+    "workers/api/wrangler.alias-production-closed.jsonc",
+    "scripts/migration/production-import-execution-lock.mjs"
   ]
 }

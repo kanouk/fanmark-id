@@ -221,3 +221,25 @@ test('native production coordinator and separate filesystem journals jointly gua
   });
  }finally{await mf.dispose();await rm(dir,{recursive:true,force:true});}
 });
+
+
+test('lost executor-release acknowledgement retains durable proof and both locks and cannot be replayed',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'fanmark-executor-ack-'));await chmod(directory,0o700);
+ try{
+  const moduleUrl=new URL('./production-import-execution-lock.mjs',import.meta.url).href;
+  const identity={directory,runId:randomUUID(),manifestSha256:'a'.repeat(64),sourceEvidenceSha256:'b'.repeat(64)};
+  await promisify(execFile)(process.execPath,['--input-type=module','-e',
+   `import {createImportExecutionLock} from ${JSON.stringify(moduleUrl)};await createImportExecutionLock(JSON.parse(process.argv[1]));`,JSON.stringify(identity)]);
+  const {recoverExitedImportExecution}=await import('./production-import-execution-lock.mjs');
+  const lock=JSON.parse(await readFile(join(directory,'.initial-import-execution.lock'),'utf8'));
+  let releases=0;
+  const options={...identity,verify:async executorId=>({executorId,synthetic:true}),release:async()=>{releases++;throw Error('lost release response');}};
+  await assert.rejects(recoverExitedImportExecution(options),/lost release response/);
+  const proof=JSON.parse(await readFile(join(directory,'execution-recovery-'+lock.executorId+'.json'),'utf8'));
+  assert.equal(proof.owner.executorId,lock.executorId);assert.equal(proof.proof.synthetic,true);
+  assert.ok(await readFile(join(directory,'.initial-import-execution.lock')));
+  assert.ok(await readFile(join(directory,'.initial-import-execution.lock.recovery')));
+  await assert.rejects(recoverExitedImportExecution(options),{code:'EEXIST'});
+  assert.equal(releases,1);
+ }finally{await rm(directory,{recursive:true,force:true});}
+});

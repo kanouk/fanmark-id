@@ -11,7 +11,10 @@ import { applyBusinessRuntimeMigrations, businessMigrationStatements } from './b
 import { MASTER_RUNTIME_MIGRATIONS } from './master-runtime-schema.mjs';
 import { projectSupabaseAuth } from './supabase-auth-projection.mjs';
 import { createEmojiReleaseArtifacts } from '../build-emoji-release.ts';
-import { prepareInitialImportSet, verifyInitialImportSet, rehearseInitialImportSet, executeInitialImportSet } from './initial-import-set-readback.mjs';
+import { prepareInitialImportSet, verifyInitialImportSet, rehearseInitialImportSet, executeInitialImportSet, recoverInitialImportExecution } from './initial-import-set-readback.mjs';
+import {importAuthProjectionStage} from './auth-import-stage.mjs';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import { LOCAL_R2_IMPORT_WORKER, createLocalR2ImportTransport } from './local-r2-import-transport.mjs';
 import { objectIdentityHash } from './storage-export.mjs';
 import { sha256Hex } from './snapshot-format.mjs';
@@ -250,6 +253,8 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    assert.equal((await runtime.coordinator.inspect()).executorId,null);assert.equal(runtime.counters.d1Writes,0);
    await writeFile(sourceEvidencePath,evidence,{mode:0o600});
    await assert.rejects(executeInitialImportSet({...args,databases:{...args.databases,auth:args.readDatabases.auth}}),/execution_transport_invalid/);
+   await assert.rejects(executeInitialImportSet({...args,storageReportPath:join(root,'outside-images.json')}),/execution_unconfirmed/);
+   assert.equal((await runtime.coordinator.inspect()).executorId,null);assert.equal(runtime.counters.d1Writes,0);
    const first=await executeInitialImportSet({...args,stopAfter:'auth'});
    assert.deepEqual(first.completedStages,['auth']);assert.equal(first.executorYielded,true);
    assert.equal((await runtime.coordinator.inspect()).executorId,null);assert.equal(runtime.counters.r2Writes,0);
@@ -322,6 +327,66 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    assert.equal(saved.report.readback.allExpectedStoreContentsMatched,true);
    await assert.rejects(executeInitialImportSet({...args,prepared:await prepareInitialImportSet(productionInput),resumeAfter:'storage'}),/execution_unconfirmed/);
    assert.deepEqual({d1:runtime.counters.d1Writes,r2:runtime.counters.r2Writes},writes);
+  }finally{await runtime.dispose();}
+ });
+
+ await t.test('exited executor at a verified Auth boundary is reclaimed without provider writes, then the full set resumes',async()=>{
+  const evidence=Buffer.from('synthetic recovery boundary'),sourceEvidencePath=join(root,'executor-recovery-evidence');await writeFile(sourceEvidencePath,evidence,{mode:0o600});
+  const productionInput={...input,runId:randomUUID(),sourceEvidenceSha256:sha256Hex(evidence)};
+  productionInput.stripeReceiptExport=await syntheticStripeReceiptExport(productionInput.runId,2);
+  const candidate=await prepareInitialImportSet(productionInput),directory=join(root,'executor-recovery');
+  const runtime=await createNativeProductionSetFixture({directory,prepared:candidate,input:productionInput});
+  try{
+   const moduleUrl=new URL('./production-import-execution-lock.mjs',import.meta.url).href;
+   const child=await promisify(execFile)(process.execPath,['--experimental-strip-types','--input-type=module','-e',
+    `import {createImportExecutionLock} from ${JSON.stringify(moduleUrl)};const lock=await createImportExecutionLock(JSON.parse(process.argv[1]));console.log(lock.executorId);`,
+    JSON.stringify({directory,runId:productionInput.runId,manifestSha256:candidate.identitySha256,sourceEvidenceSha256:productionInput.sourceEvidenceSha256})]);
+   const executorId=child.stdout.trim();await runtime.coordinator.acquireExecution(executorId);
+   await importAuthProjectionStage({database:runtime.databases.auth,readDatabase:runtime.readDatabases.auth,projection:productionInput.authProjection,targetIncarnation:productionInput.incarnations.auth,mode:'production-stage'});
+   const path=join(directory,'.initial-import-execution.lock'),original=await readFile(path,'utf8'),owner=JSON.parse(original);
+   const args={prepared:candidate,coordinator:runtime.newCoordinator(),journalPaths:runtime.journalPaths,sourceEvidencePath,readDatabases:runtime.readDatabases,readBuckets:runtime.readBuckets,resumeAfter:'auth'};
+   const before=await runtime.coordinator.inspect(),writes=runtime.counters.d1Writes;
+   await writeFile(path,JSON.stringify({...owner,processId:process.pid})+'\n',{mode:0o600});
+   await assert.rejects(recoverInitialImportExecution(args),/execution_lock_unconfirmed/);
+   await writeFile(path,JSON.stringify({...owner,hostHash:'0'.repeat(64)})+'\n',{mode:0o600});
+   await assert.rejects(recoverInitialImportExecution(args),/execution_lock_unconfirmed/);
+   await writeFile(path,original,{mode:0o600});assert.deepEqual(await runtime.coordinator.inspect(),before);
+   const result=await recoverInitialImportExecution(args);
+   assert.equal(result.executionOwnershipRecovered,true);assert.equal(result.providerWrites,0);assert.equal(result.productionReady,false);
+   assert.equal(runtime.counters.d1Writes,writes);assert.equal(runtime.counters.r2Writes,0);
+   assert.deepEqual((await runtime.coordinator.inspect()).state,before.state);
+   assert.equal((await runtime.coordinator.inspect()).executorId,null);
+   const proof=JSON.parse(await readFile(result.reportPath,'utf8'));
+   assert.equal(proof.owner.executorId,executorId);assert.deepEqual(proof.proof.report.verifiedBeforeResume,['auth']);
+   await assert.rejects(readFile(path),{code:'ENOENT'});
+   await assert.rejects(runtime.coordinator.beforeWrite({operationId:randomUUID(),batchSha256:'e'.repeat(64),store:'auth'}),/coordination_unconfirmed/);
+   const next=runtime.newCoordinator();await next.claim();const writers=await runtime.reopenWriters(next);
+   const resumed=await executeInitialImportSet({...writers,journalPaths:runtime.journalPaths,readDatabases:runtime.readDatabases,readBuckets:runtime.readBuckets,
+    prepared:await prepareInitialImportSet(productionInput),sourceEvidencePath,resumeAfter:'auth',businessReportPath:join(root,'recovered-business.json'),storageReportPath:join(storageExportDir,'recovered-images.json')});
+   assert.equal(resumed.coordinatorCompleted,true);assert.equal(resumed.readback.allExpectedStoreContentsMatched,true);
+  }finally{await runtime.dispose();}
+ });
+
+ await t.test('a dead executor with a changed completed Auth prefix remains locked and never releases the remote fence',async()=>{
+  const evidence=Buffer.from('synthetic changed prefix'),sourceEvidencePath=join(root,'executor-changed-evidence');await writeFile(sourceEvidencePath,evidence,{mode:0o600});
+  const productionInput={...input,runId:randomUUID(),sourceEvidenceSha256:sha256Hex(evidence)};
+  productionInput.stripeReceiptExport=await syntheticStripeReceiptExport(productionInput.runId,2);
+  const candidate=await prepareInitialImportSet(productionInput),directory=join(root,'executor-changed');
+  const runtime=await createNativeProductionSetFixture({directory,prepared:candidate,input:productionInput});
+  try{
+   const moduleUrl=new URL('./production-import-execution-lock.mjs',import.meta.url).href;
+   const child=await promisify(execFile)(process.execPath,['--experimental-strip-types','--input-type=module','-e',
+    `import {createImportExecutionLock} from ${JSON.stringify(moduleUrl)};const lock=await createImportExecutionLock(JSON.parse(process.argv[1]));console.log(lock.executorId);`,
+    JSON.stringify({directory,runId:productionInput.runId,manifestSha256:candidate.identitySha256,sourceEvidenceSha256:productionInput.sourceEvidenceSha256})]);
+   await runtime.coordinator.acquireExecution(child.stdout.trim());
+   await importAuthProjectionStage({database:runtime.databases.auth,readDatabase:runtime.readDatabases.auth,projection:productionInput.authProjection,targetIncarnation:productionInput.incarnations.auth,mode:'production-stage'});
+   await runtime.native.auth.prepare('UPDATE "user" SET name = ?').bind('changed fixture').run();
+   const before=await runtime.coordinator.inspect(),writes=runtime.counters.d1Writes;
+   await assert.rejects(recoverInitialImportExecution({prepared:candidate,coordinator:runtime.newCoordinator(),journalPaths:runtime.journalPaths,
+    sourceEvidencePath,readDatabases:runtime.readDatabases,readBuckets:runtime.readBuckets,resumeAfter:'auth'}),/auth_import_readback_/);
+   assert.deepEqual(await runtime.coordinator.inspect(),before);assert.equal(runtime.counters.d1Writes,writes);assert.equal(runtime.counters.r2Writes,0);
+   assert.ok(await readFile(join(directory,'.initial-import-execution.lock')));
+   assert.ok(await readFile(join(directory,'.initial-import-execution.lock.recovery')));
   }finally{await runtime.dispose();}
  });
 

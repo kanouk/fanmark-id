@@ -34,9 +34,10 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
       if(state.pending!==null||state.readbackSha256!==null)fail();
       admitted=true;return state;
     },
-    async acquireExecution(){
+    async acquireExecution(candidate=randomUUID()){
       if(!admitted||executorId!==null)fail();
-      const candidate=randomUUID(),result=await invoke('acquire',{owner,executorId:candidate});
+      if(!UUID.test(candidate??''))fail();
+      const result=await invoke('acquire',{owner,executorId:candidate});
       const state=validate(result);
       if(result.executorId!==candidate||state.pending!==null||state.readbackSha256!==null)fail();
       executorId=candidate;return {executorId};
@@ -46,6 +47,12 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
       const result=await invoke('yield',{owner,executorId,readbackSha256}),state=validate(result);
       if(result.executorId!==null||state.pending!==null||state.readbackSha256!==null)fail();
       executorId=null;admitted=false;return state;
+    },
+    async recoverExecution({executorId:previous,acknowledged,readbackSha256}){
+      if(executorId!==null||!UUID.test(previous??'')||!Number.isSafeInteger(acknowledged)||acknowledged<0||!HASH.test(readbackSha256??''))fail();
+      const result=await invoke('recover',{owner,executorId:previous,acknowledged,readbackSha256}),state=validate(result);
+      if(result.executorId!==null||state.pending!==null||state.readbackSha256!==null||state.acknowledged!==acknowledged)fail();
+      admitted=false;return state;
     },
     async inspect(){
       const result=await invoke('inspect',{owner});

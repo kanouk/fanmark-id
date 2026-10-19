@@ -42,8 +42,9 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
  for (const [store, migrations] of Object.entries({ auth: ['0003_better_auth_core.sql','0007_auth_signup_command.sql','0008_auth_user_suspension.sql','0009_auth_oauth_signup.sql'], master: MASTER_RUNTIME_MIGRATIONS }))
   for (const name of migrations) await native[store].batch(businessMigrationStatements(await readFile(new URL('../../workers/api/migrations/' + name, import.meta.url),'utf8')).map(sql => native[store].prepare(sql)));
  await applyBusinessRuntimeMigrations(native.business);
- const coordinator = createProductionImportCoordinator({ owner: input.runId, incarnations: input.incarnations, manifestSha256: prepared.identitySha256,
+ const newCoordinator = () => createProductionImportCoordinator({ owner: input.runId, incarnations: input.incarnations, manifestSha256: prepared.identitySha256,
  command: async (action, args) => { const r = await mf.dispatchFetch('https://fixture.local/command/' + action,{ method:'POST',body:JSON.stringify(args) }); if(r.status!==200)throw Error('native_coordinator_refused');const value=await r.json();if(action==='complete'&&counters.loseComplete){counters.loseComplete=false;throw Error('synthetic lost completion response');}return value; } });
+ const coordinator = newCoordinator();
  await coordinator.claim();
  const runtimeBindings = [
   ...PRODUCTION_D1_TARGETS.map(row => ({ type:'d1',name:{auth:'AUTH_DB',master:'MASTER_DB',business:'FANMARK_DB'}[row.databaseName.replace('fanmark-production-','')],id:row.databaseId })),
@@ -83,6 +84,14 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
  for(const row of PRODUCTION_R2_TARGETS){const store=row.store,target={...row,targetIncarnation:input.incarnations[store]},common={target,runtimeVersion:version,gatewayVersion,bearer:'b'.repeat(64),token:'synthetic_token_only',fetchImpl};journalPaths[store]=join(directory,store+'.jsonl');
   readBuckets[store]=createProductionRemoteR2({...common,gatewayOrigin:origins['read-only']});
   buckets[store]=await openProductionR2ImportTransport({...common,gatewayOrigin:origins.import,journalPath:journalPaths[store],runId:input.runId,coordinator});}
- return { coordinator, journalPaths, databases, readDatabases, buckets, readBuckets, counters, native, dispose:()=>mf.dispose() };
+ const reopenWriters=async client=>{
+  const nextDatabases={},nextBuckets={};
+  for(const row of PRODUCTION_D1_TARGETS){const store=row.databaseName.replace('fanmark-production-','');
+   nextDatabases[store]=await openProductionD1ImportTransport({target:{...row,targetIncarnation:input.incarnations[store]},token:'synthetic_token_only',fetchImpl,journalPath:journalPaths[store],runId:input.runId,coordinator:client});}
+  for(const row of PRODUCTION_R2_TARGETS){const store=row.store;
+   nextBuckets[store]=await openProductionR2ImportTransport({target:{...row,targetIncarnation:input.incarnations[store]},runtimeVersion:version,gatewayVersion,bearer:'b'.repeat(64),token:'synthetic_token_only',fetchImpl,gatewayOrigin:origins.import,journalPath:journalPaths[store],runId:input.runId,coordinator:client});}
+  return {coordinator:client,databases:nextDatabases,buckets:nextBuckets};
+ };
+ return { coordinator, newCoordinator, reopenWriters, journalPaths, databases, readDatabases, buckets, readBuckets, counters, native, dispose:()=>mf.dispose() };
  }catch(error){await mf.dispose();throw error;}
 }

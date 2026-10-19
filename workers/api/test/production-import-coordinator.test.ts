@@ -173,3 +173,23 @@ it("R2 dispatch follows the admitted operation without bypassing the executor", 
   expect((await call("acknowledge", image)).status).toBe(409);
   expect((await call("acknowledge", { ...image, executorId })).status).toBe(200);
 });
+
+
+it("executor recovery CAS preserves all receipts and the fence and refuses stale, pending or reused ownership", async () => {
+  await call("claim", identity);
+  const executorId=crypto.randomUUID();await call("acquire",{owner,executorId});
+  await call("begin",{...operation,executorId});
+  const recovery={owner,executorId,acknowledged:0,readbackSha256:"f".repeat(64)};
+  expect((await call("recover",recovery)).status).toBe(409);
+  await call("acknowledge",{...operation,executorId});
+  expect((await call("recover",recovery)).status).toBe(409);
+  expect((await call("recover",{...recovery,acknowledged:1,executorId:other})).status).toBe(409);
+  expect((await call("recover",{...recovery,acknowledged:1})).status).toBe(200);
+  expect(await (await call("inspect",{owner})).json()).toMatchObject({executorId:null,fenceOwner:owner,state:{acknowledged:1,pending:null,readbackSha256:null}});
+  expect(await (await call("operation",{owner,operationId:operation.operationId})).json()).toMatchObject({acknowledged:{operationId:operation.operationId}});
+  expect((await call("recover",{...recovery,acknowledged:1})).status).toBe(409);
+  expect((await call("acquire",{owner,executorId})).status).toBe(409);
+  expect((await call("begin",{...operation,operationId:other,executorId})).status).toBe(409);
+  expect((await call("acquire",{owner,executorId:crypto.randomUUID()})).status).toBe(200);
+  await expect(releaseRecoveryWriterFence(runtime,owner)).rejects.toThrow("recovery_writer_unavailable");
+});

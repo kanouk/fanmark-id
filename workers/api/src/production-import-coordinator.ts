@@ -14,10 +14,11 @@ export type ProductionImportState = {
   pending: Pending | null; acknowledged: number; readbackSha256: string | null;
 };
 type Input = { owner: string; manifestSha256?: string; incarnationsSha256?: string;
-  operationId?: string; batchSha256?: string; store?: string; readbackSha256?: string; executorId?: string };
+  operationId?: string; batchSha256?: string; store?: string; readbackSha256?: string; executorId?: string; acknowledged?: number };
 const shapes: Record<string, string> = {
   claim: "incarnationsSha256,manifestSha256,owner", inspect: "owner",
   operation: "operationId,owner", acquire: "executorId,owner", yield: "executorId,owner,readbackSha256",
+  recover: "acknowledged,executorId,owner,readbackSha256",
   begin: "batchSha256,operationId,owner,store", acknowledge: "batchSha256,operationId,owner,store",
   complete: "owner,readbackSha256", dispatch: "batchSha256,operationId,owner,store",
 };
@@ -65,7 +66,8 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     if (action === "operation" && !UUID.test(input.operationId ?? "")) return json(null, 400);
     if (["begin", "acknowledge", "dispatch"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
         !["auth", "master", "business", "avatars", "covers"].includes(input.store ?? ""))) return json(null, 400);
-    if (["complete", "yield"].includes(action) && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
+    if (["complete", "yield", "recover"].includes(action) && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
+    if (action === "recover" && (!Number.isSafeInteger(input.acknowledged) || input.acknowledged! < 0)) return json(null, 400);
   } catch { return json(null, 400); }
   return ctx.blockConcurrencyWhile(async () => ctx.storage.transaction(async storage => {
     let state = await storage.get<ProductionImportState>(IMPORT_STATE_KEY);
@@ -113,13 +115,25 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     if (action === "acquire") {
       // A whole-run owner never expires. Lost acquire responses and crashes
       // require inspection; even the same executor ID cannot reacquire.
-      if (executorId !== undefined || state.pending) return json(null, 409);
-      await storage.put({ [IMPORT_EXECUTOR_KEY]: input.executorId!, "production-import-execution-required-v1": true });
+      if (executorId !== undefined || state.pending || await storage.get("production-import-executor-used:" + input.executorId)) return json(null, 409);
+      await storage.put({ [IMPORT_EXECUTOR_KEY]: input.executorId!, "production-import-execution-required-v1": true,
+        ["production-import-executor-used:" + input.executorId]: true });
       return json({ ...state, executorId: input.executorId });
     }
     if (executionRequired && executorId === undefined && ["begin", "acknowledge", "complete"].includes(action)) return json(null, 409);
-    if (["begin", "acknowledge", "complete", "yield"].includes(action) &&
+    if (["begin", "acknowledge", "complete", "yield", "recover"].includes(action) &&
         (executorId ?? null) !== (input.executorId ?? null)) return json(null, 409);
+    if (action === "recover") {
+      // The operator has verified an exited local executor and independently
+      // checked its completed prefix. CAS excludes a late begin/ACK or another
+      // recovery. No pending provider outcome can be cleared by this command.
+      if (!executorId || state.pending || state.acknowledged !== input.acknowledged) return json(null, 409);
+      await storage.put("production-import-recovery:" + executorId, {
+        executorId, readbackSha256: input.readbackSha256!, acknowledged: state.acknowledged,
+      });
+      await storage.delete(IMPORT_EXECUTOR_KEY);
+      return json({ ...state, executorId: null });
+    }
     if (action === "yield") {
       if (!executorId || state.pending || state.acknowledged === 0) return json(null, 409);
       await storage.put("production-import-checkpoint-v1", { executorId, readbackSha256: input.readbackSha256!, acknowledged: state.acknowledged });
