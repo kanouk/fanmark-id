@@ -1,5 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
+本番Webhook鍵の一度だけの設定候補は `scripts/migration/production-webhook-secret-install.mjs`。遠隔保管確認callback、排他intent、固定CF secret PUT、別GETとbinding-only `workers/api/src/production-webhook-key-proof.ts` のHMAC照合を使う。公開HTTP入口・鍵export・DB操作は追加しない。応答不明の読取専用照合はPUTを再送しない。
+
 本番apexのHTTP拒否/HTTPS誘導は `workers/api/src/production-https.ts`。`index.ts`の実fetchとhandleRequestの両入口で、writer追跡やAuth/DB/receiptの前に処理する。固定の本番originにだけ適用し、aliasと旧authは別契約。
 
 部分移送の恒久中止は `scripts/migration/production-import-quarantine.mjs`。終了済みexecutorと全5 journalを照合し、`production-import-coordinator.ts` のquarantine CASへ接続する。pending/ACK/executor/fenceを保持して全移送mutationとfence解除を拒否する。source再開や未確定commitの成功認定は行わない。

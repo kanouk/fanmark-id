@@ -109,3 +109,35 @@ Stripe metadataが一致しても一度だけ返される鍵はGETで回収で�
 この追加でruntime秘密値設定・遠隔保管・実provider配送・G5開始は完了しない。
 Cloudflare制御面の読戻しと外部HTTPは同時transactionではないため、当日は外部の
 設定変更担当を止め、固定した実行票を単独実行する。
+
+## 登録鍵を一度だけ設定し、実際の鍵の一致を確認する候補
+
+`production-webhook-secret-install.mjs`の`installProductionWebhookSecret`は、検証済みの
+暗号化応答だけから鍵を開く。遠隔noteを独立download/復号し、抽出した暗号化応答のhashが
+一致する確認callbackを要求する。これはObsidian Syncの実処理を代行するものではない。
+新しい応答ができた当日、既存の遠隔読戻し手順を同じ保存物へ接続する。localコピーや
+旧鍵の遠隔保管reportを新Webhook鍵の証拠として流用しない。
+
+閉鎖Workerのversion・全settings hash・Cron0・対象binding欠落を照合し、排他intentを
+fsyncしてから固定Workerのsecret APIへ一度だけPUTする。値はメモリからHTTPS bodyへ渡し、
+stdout/argv/平文fileへ出さない。元binding/vars等の不変を別GETで照合する。
+
+新しいbinding-only `ProductionWebhookKeyProofService.prove` は、閉鎖本番の固定scope・
+origin・実runtime versionを要求する。固定providerとUUID nonceだけを受け、実binding鍵で
+domain-separated HMACを返す。呼出し側で保管鍵による独立HMACとconstant-time比較する。
+鍵・暗号化escrow・利用者データは返さず、DB/R2/write/outbound fetchも行わない。
+署名対象はWebhookのevent形式と異なり、任意のprovider event署名には使えない。
+
+一時operator用`productionWebhookKeyProofProxySource`は固定PROOF service bindingと
+期限/bearer、POST `/proof`だけを持つ。本文1024 byte以内、query/他routeは拒否する。
+当日は所有version・service/entrypointを独立照合して使い、検査後は所有operatorだけを
+既存の操作journal方式で除去する。今回このoperatorは作成していない。
+
+PUT応答消失時は同じintentを保持し、`inspectProductionWebhookSecretInstallation`で
+元intent hash・別GET・実runtime HMACを照合する。PUTは0件、`providerPutAcknowledged=false`
+のまま鍵一致の観測だけを返す。key proofが失敗すれば未確定のまま閉鎖を維持する。
+実providerの配送・署名通知のDB保存とG5受け入れはこの証明とは別工程。
+
+Stripe登録前の一覧ではv1全ページに加え、既存調査と同じ固定API版でv2が完全な空集合で
+あることも要求する。v2が非空/途中なら作成せず所有者の照合へ戻す。新しい通知先を
+作成するために既存先を削除しない。

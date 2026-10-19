@@ -1,6 +1,7 @@
 export { ProductionR2ImportService } from "./production-r2-import-service";
 export { ProductionBackupService, ProductionBackupAlertService } from "./production-backup-service";
 export { ProductionImportCoordinatorService } from "./production-import-coordinator";
+export { ProductionWebhookKeyProofService } from "./production-webhook-key-proof";
 import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from "./notification-wake";
 export { NotificationWakeCoordinatorProduction, NotificationWakeCoordinator, NotificationWakeCoordinatorV2, NotificationWakeCoordinatorV3, NotificationWakeCoordinatorV4 } from "./notification-wake";
 export { RecoveryWriterCoordinatorProduction, RecoveryWriterCoordinator, RecoveryWriterCoordinatorV2, RecoveryWriterCoordinatorV3, RecoveryWriterCoordinatorV4 } from "./recovery-writer-drain";

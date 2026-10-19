@@ -132,12 +132,17 @@ async function loadIntent({directory, provider, expectedIntentSha256, archiveKey
 
 // Payload-free, fixed-name execution records share the same verified attempt.
 // These records never grant a retry or accept arbitrary paths.
-const recordNames = new Set(['dispatch', 'admission', 'inventory']);
+const recordNames = new Set(['dispatch', 'admission', 'inventory', 'secret-install-intent', 'secret-install-verified']);
 export async function saveProductionWebhookExecutionRecord(options = {}) {
   options = {...options, record: structuredClone(options.record)};
   const {path, request} = await loadIntent(options);
   if (!recordNames.has(options.kind)) fail('record_invalid');
   return save(resolve(path, request.provider + '-registration-' + options.kind + '.json'), options.record);
+}
+export async function readProductionWebhookExecutionRecord(options = {}) {
+  const {path, request} = await loadIntent(options);
+  if (!recordNames.has(options.kind)) fail('record_invalid');
+  return read(resolve(path, request.provider + '-registration-' + options.kind + '.json'), options.expectedRecordSha256);
 }
 
 export async function readProductionWebhookAttempt(options = {}) {

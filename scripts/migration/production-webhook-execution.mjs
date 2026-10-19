@@ -40,9 +40,9 @@ async function body(response, limit = 128 * 1024) {
   } finally { for (const chunk of chunks) chunk.fill(0); reader.releaseLock(); }
 }
 
-async function get(url, token, fetchImpl, cloudflare = false) {
+async function get(url, token, fetchImpl, cloudflare = false, extraHeaders = {}) {
   let r;
-  try { r = await fetchImpl(url, {method: 'GET', headers: {authorization: 'Bearer ' + token},
+  try { r = await fetchImpl(url, {method: 'GET', headers: {authorization: 'Bearer ' + token, ...extraHeaders},
     redirect: 'error', signal: AbortSignal.timeout(30000)}); } catch { fail('read_unconfirmed'); }
   if (!r.ok) { await r.body?.cancel().catch(() => {}); fail('read_rejected'); }
   let json; try { json = JSON.parse(await body(r)); } catch { fail('read_invalid'); }
@@ -61,6 +61,14 @@ export async function collectProductionWebhookInventory({provider, apiKey, fetch
   credentials(provider, apiKey, 'inventory-read-only');
   const stripe = provider === 'stripe';
   if (stripe && (await get('https://api.stripe.com/v1/account', apiKey, fetchImpl)).id !== accountId) fail('account_mismatch');
+  if (stripe) {
+    // The known production baseline has no v2 destinations. A nonempty or
+    // truncated v2 list needs operator review, rather than silently duplicating
+    // an existing snapshot/thin destination while creating the v1 endpoint.
+    const v2 = await get('https://api.stripe.com/v2/core/event_destinations?limit=100&include%5B0%5D=webhook_endpoint.url',
+      apiKey, fetchImpl, false, {'stripe-version':'2026-09-30.endive'});
+    if (!Array.isArray(v2.data) || v2.data.length !== 0 || v2.next_page_url !== null) fail('v2_destinations_require_review');
+  }
   const rows = [], seen = new Set(); let after = null;
   for (let page = 0; page < 20; page++) {
     const url = new URL(stripe ? 'https://api.stripe.com/v1/webhook_endpoints' : 'https://api.resend.com/webhooks');

@@ -1,3 +1,11 @@
+## 2026-10-19: Webhook鍵の一度だけの設定とbinding-only照合候補
+
+閉鎖本番の`ProductionWebhookKeyProofService`と、暗号化custodyから固定CF secret APIへ一度だけPUTするoperator libraryを追加した。遠隔保管確認callback、元settings/version/Cron、排他intent、別GETと実bindingによるnonce付きHMACを照合する。鍵export・DB操作・公開routeは追加しない。PUT応答消失後は元intent hashを使うGET/RPCだけの照合を行い、PUT ACKの成功は捏造しない。新規Stripe v1登録前にv2空集合の独立確認も追加。関連31件、準備inventoryを含め40件、native proxy/鍵設定の関連5件成功。実provider/key設定/一時operator作成は未実施。
+
+7893cfbのCI39246611481はapp側がコードhash一覧の更新漏れ1件で停止（502件成功）。Worker側は継続中。この変更の新規critical fileをpolicyへ追加し、既存generatorでoffline inventoryを再生成、該当9件を通過した。PASS判定の手編集はしていない。runtime差分はCI成功後の閉鎖配備待ち。
+
+Cloudflare UIでUniversal active/Backup issuedを再確認したがIDは表示されなかった。既存DNS tokenへfanmark.id限定SSL/証明書Readだけを追加する案を保存直前まで準備し、ブラウザの権限追加規則に従って本人へ確認中。新鍵作成/期限延長/設定保存はしていない。GitHub owner loginもin-appで本人操作待ち。管理者MFAは未依頼。本番source停止/import/DNS/main mergeなし。
+
 ## 2026-10-19: 本番HTTPの処理拒否とHTTPS誘導を追加（未配備）
 
 `production-https.ts`を本番apexの実fetch/handleRequestへ接続した。HTTP GET/HEADはpath/queryを保つHTTPSへの307、HTTP書込み/Authorization/非標準portは400。writer追跡・Auth・receipt・DB・通知wakeの前に判定する。停止境界を含むnative12件、Worker型チェック成功。DNS/redirect rule/TLS設定は変更していない。公開TLSと逆操作の実証は別途必要。

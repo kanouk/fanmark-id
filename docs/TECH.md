@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`test-production-webhook-secret-install.mjs`は暗号化保管からの一度だけのsecret PUT、遠隔保管欠落/設定相違/誤鍵の拒否、PUT応答消失後のGET/RPCのみの照合を検査する。`test-production-webhook-key-proof.mjs`は実native service/proxyでHMACのdomain separation、Stripe文字列/Svix bytes、期限/bearer/本文制限と本番閉鎖条件を検証する。秘密値は合成。通常CIへ含める。
+
 `vitest.maintenance-settings.config.mjs test/cutover-write-freeze.test.ts` は本番HTTPのGET/HEAD誘導・書込み拒否・外部hostへの誤誘導防止・全bindingアクセス0と、既存の停止境界をnative Workerで確認する。
 
 `test-production-import-quarantine.mjs` は終了した実子processのlock、native DO/D1/R2で部分保存・未確定ACK・全journal保持とquarantine応答消失を検証する。`vitest.production-import.config.mjs` は各storeのterminal拒否とfence保持を検査する。未知commitをACKへ書き換えず、中止後のtargetは再利用しない。

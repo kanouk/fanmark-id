@@ -58,6 +58,10 @@ async function fixture(t, provider = 'stripe') {
       return Response.json(provider==='stripe'?{...endpoint,secret}:{id:endpoint.id,signing_secret:secret},{status:201});
     }
     if(url.endsWith('/account'))return Response.json({id:'acct_1SFjhvJk0VCfiKUp'});
+    if(url.includes('/v2/core/event_destinations')){
+      assert.equal(o.headers['stripe-version'],'2026-09-30.endive');
+      return Response.json({data:[],next_page_url:null});
+    }
     if(url.includes('/domains?'))return Response.json({has_more:false,data:[{id:randomUUID(),name:'fanmark.id',status:'verified'}]});
     if(url.includes('/webhooks/')||url.includes('/webhook_endpoints/'))return Response.json(endpoint);
     return Response.json({has_more:false,data:state.registered?[endpoint]:[]});

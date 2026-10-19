@@ -263,6 +263,13 @@
     "scripts/migration/production-import-execution-lock.mjs",
     "docs/migration/production-backup-pins.json",
     "scripts/migration/production-backup-inspection.mjs",
-    "scripts/migration/production-backup-capture.mjs"
+    "scripts/migration/production-backup-capture.mjs",
+    "scripts/migration/production-import-quarantine.mjs",
+    "scripts/migration/production-webhook-custody.mjs",
+    "scripts/migration/production-webhook-readback.mjs",
+    "scripts/migration/production-webhook-execution.mjs",
+    "scripts/migration/production-webhook-secret-install.mjs",
+    "workers/api/src/production-https.ts",
+    "workers/api/src/production-webhook-key-proof.ts"
   ]
 }
