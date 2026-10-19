@@ -442,3 +442,5 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 本番Masterの初回投入部品: `scripts/migration/master-import-stage.mjs` は空targetを確認してcanonical行と2種のreleaseを投入する。`master-import-readback.mjs` は別read-only transportで全内容・初回activation・監査・未使用Auth領域を比較し、`master-runtime-schema.mjs` が9 migrationとschemaの一致を確認する。複数transactionの途中失敗は自動再開しない。全store runner/source停止・公開許可は別工程。
 
 画像の初回投入と独立照合: `scripts/migration/split-r2-import-stage.mjs` は分割された2つのR2 bindingを列挙し、空状態でのみ投入する。既存の`storage-r2-import.mjs`へ初回専用の`freshOnly`を追加し、既存report/画像/条件付き作成の競合を再利用しない。独立checkerはreportを参照せず、前後の全key・size・etag/version、各画像のSHA-256・MIME・由来metadataを照合する。画像や進捗の削除/修復はしない。現在はcaller注入bindingのlocal rehearsal部品で、本番資源identity・全store調停・source停止の証拠は別途必要。
+
+業務DBの初回投入は `scripts/migration/d1-import.mjs` の `importInitialBusinessSnapshot`。通常の再開可能importと内部codecを共有し、公開entryを分ける。`business-import-initial-target.mjs` が全runtime schema・初期seed・連番を検査し、最初の台帳作成transactionでも初期行を再確認する。production-stageは固定Businessのjournal付きwriterと同じidentityのread-only transportを要求する。失敗/ACK不明後は当該試行のDB操作を止め、修復や再送をせず独立checkerへ引き継ぐ。全store runner・source停止・公開判定は別工程。

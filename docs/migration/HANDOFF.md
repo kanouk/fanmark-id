@@ -1,5 +1,13 @@
 ## 2026-10-19: CI成功、画像の初回投入・独立照合と実予備コピー復元
 
+## 2026-10-19: 業務DBの初回投入と不明ACK停止を追加
+
+`48fd081`のCI39176801478は両job成功。初回専用`importInitialBusinessSnapshot`を追加し、固定本番Businessのjournal付きwriter/独立read-only transport、78表のschema/seed/連番一致、最初のtransactionでの初期行検査を要求する。失敗/不明ACK後はDBへの追加操作を止め、既存行・台帳・journalを保持して自動再開しない。通常importの再開動作は維持。新規native17件を含む移行回帰427件、従来Business/Auth再開・復旧試験1件成功。
+
+本番Businessは読み取りで初期状態一致を確認（write0）。実10/16予備コピー40表5,770行を新stageでlocal投入し、83表の暗号化→別DB復元→全hash/独立照合が121.5秒で成功。前回の復元済み実画像109件について、実アプリhandler GET/HEAD計218応答の一致記録も追加した。いずれもlocalの受け入れで、本番一式復旧や公開許可ではない。[詳細・証拠・残条件](production-preparation-2026-10-18.md)。
+
+残り: 本番R2 transport/全store調停接続、5 store runner/不明ACKの独立解決、source全入口停止/drain/Stripe受信引継ぎ、OAuth/secret/operator、DNS具体的逆操作、鍵別保管/実資源の一式復旧。管理者MFAはこれらの準備後。本番import/source停止/DNS切替/main mergeはしていない。旧解約済み契約1件は所有者の「自分のテストと思う」という回答を保持し、除外・再課金せず履歴を維持する。
+
 `a634104` のCI39174607042はApplication/Worker両job成功。所有者は旧解約済み契約を自分のテスト時のデータと思うと説明し、記録保持を指示。既存sandboxの同一顧客を確認済みだが契約本体は未検出。元の履歴・移行対象は保持し、由来説明だけ別記録に残した。
 
 分割R2の初回stage/独立checkerを追加。空target、全key/size/etag/version、全画像hash/MIME/由来metadataを照合し、既存画像/既存report/競合/不明ACKを再利用・自動再送しない。native15試験と移行データ回帰410件成功。実予備コピー109画像/13,285,729 bytesを投入・暗号化・別bucket復元・全内容照合し91.7秒で成功。local Miniflareの空storageClassだけ既存試験と同じfixture補正を使用し、remote保存クラス/復旧の証明とはしない。[詳細と残条件](production-preparation-2026-10-18.md)。

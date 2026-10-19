@@ -71,7 +71,13 @@ export async function readBusinessRuntimeImportSchema() {
       await applyBusinessRuntimeMigrations(database, migrations);
       const objects = await schemaObjects(database);
       const fingerprint = sha256Hex({ migrationDigests, objects });
-      return Object.freeze({ migrationDigests, objects, fingerprint });
+      const initialTables = [];
+      for (const table of [...objects.filter(o => o.type === "table").map(o => o.name), "sqlite_sequence"]) {
+        const result = await database.prepare(`SELECT * FROM "${table}"`).all();
+        if (result.success !== true || !Array.isArray(result.results)) throw new Error("business_initial_state_invalid");
+        initialTables.push(Object.freeze({ name: table, rows: Object.freeze(result.results.map(row => Object.freeze(row))) }));
+      }
+      return Object.freeze({ migrationDigests, objects, fingerprint, initialTables: Object.freeze(initialTables) });
     } finally {
       await miniflare.dispose();
     }

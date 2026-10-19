@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "bd2b345e13c62da13e130563f18c7637308b91b0b7df3448ec1c11095df04d6a"
+    "sha256": "e70f2ec04823b322044b2699e8c19adcf4cccc1800110464ea140e463af8b5e3"
   },
   "variables": [
     {
@@ -643,8 +643,12 @@
       "sha256": "f9f3508d1efdd3aaea76640131956cf3466b95965ab2681da8a1a9dea654d0aa"
     },
     {
+      "path": "scripts/migration/business-import-initial-target.mjs",
+      "sha256": "0e3a0395f7863cd4c25e1aba3a183aada07ab11ba08176ad05f836c6e31eaa15"
+    },
+    {
       "path": "scripts/migration/d1-import.mjs",
-      "sha256": "a831ccee7545387a2c8ef023770166e836e4e29bfa88968bf3f624aa4a835924"
+      "sha256": "239ad732eb6ebc16e263e096f39b4b16fed8d08f67319f6a4b088c3cac5602b2"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",

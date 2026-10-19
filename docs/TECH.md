@@ -712,3 +712,9 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 ## 初回の分割R2移送検証
 
 `npm run test:split-r2-import-stage` はnative local R2で初回投入と別呼出しの読み取り照合を検証する。新規作成の応答消失、競合、保存先入替え、同サイズの内容改変、metadata差分、余分な画像、列挙cursor不正を確認する。通常の再開可能な画像importの既定は維持し、初回stageのみ`freshOnly=true`を要求する。remote認証・本番R2 identity・全store調停への接続は、このlocal部品の成功とは別の受け入れ項目。
+
+## 初回の業務DB移送検証
+
+`npm run test:business-import-stage` は40 source表を含むnative D1合成データで、初回専用投入・別read-only照合・途中応答消失を検証する。移行台帳が存在するtargetや既存reportは再開しない。schemaだけでなく78表の初期seedとSQLite連番を照合する。providerの`d1_migrations`等の連番は除外するが、未知の連番は拒否する。
+
+最初の台帳3表作成は`IF NOT EXISTS`を使わず、初期行条件を同一batch内で確認する。通常importの再開動作は維持し、専用entryだけはDBの例外・不完全ACK後に読み書きとも停止する。共有helperの再読込やエラー保存もDBへ届かない。source/schema/全storeの排他性をこの部品だけで保証しない。`production-stage`の試験は本番transportと永続journalをnative D1へ接続した合成HTTPであり、実資源への書き込み試験ではない。

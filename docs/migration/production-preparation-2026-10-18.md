@@ -156,3 +156,22 @@ Stripeは現在の同一accountで、本番のイベント送信先画面が未�
 native local R2の15試験（ページ分割、同じkeyを両bucketで使用、空byte、同サイズ改変、metadata、余分な画像、保存先入替え、応答消失、競合、再実行拒否等）と移行データ回帰410件が成功。全store runner・本番R2専用transport/永続調停、不明ACKの独立解決、Stripe受信引継ぎ、source停止、OAuth/DNS、鍵別保管/実資源での一式復旧は引き続き未完了。
 
 実予備コピー109画像（avatars69/covers40、13,285,729 bytes）を新stageで分割R2へ投入し、各bucketをAES-GCM暗号化→別の空bucketへ復元→全内容hashと独立checkerで照合した。91.7秒で成功。[限定証拠](evidence/real-split-r2-stage-backup-rehearsal-2026-10-19.json)。固定MiniflareがstorageClassを空欄で返す既知の制限により最初はbackup検証で拒否された。既存native復旧試験と同じlocal専用fixture補正（空欄だけStandardへ）で再試験し、production recoveryの検証規則は緩めていない。remote保存クラスの証明ではなく、10/16予備コピー・local R2・memory-only鍵の証拠。実CloudflareのRTOや鍵別保管、全5store同時復旧は未証明。
+
+
+## 2026-10-19: 業務DBの初回投入専用経路
+
+`48fd081`のCI39176801478はApplication/Workerとも成功。旧解約済み契約は所有者の「自分のテストと思う」という回答を保持し、履歴を含む全40表を引き続き移行対象とした。
+
+`importInitialBusinessSnapshot`を追加。27 migrationの78表・初期seed・アプリ連番を読み取りで照合し、既存取り込み台帳/reportを拒否する。最初の台帳作成transactionにも初期行条件を入れ、途中投入へ自動復帰しない。通常のlocal/isolated-remote importerの再開契約は変更しない。production-stageでは固定Business writer・独立read-only transport・同一identity/incarnation・全store coordinator付きjournalを要求する。
+
+旧共通処理のrace再読込を初回stageに持ち込まないため、DB例外/不完全ACK後は当該adapterの全操作を止める。DBへのエラー記録も行わず、保存済み行・台帳・journalを保持する。別checkerはreportに依存せずsource全行/credential変換/台帳/連番/FKを確認する。複数transactionであり、source停止・全store atomicity・応答不明の解決/再開をこの部品の成功とはしない。
+
+本番Businessの読み取りでschema・78表の初期状態・連番一致、import台帳未作成を確認した。実資源への書き込みは0。これは読取時点の確認で、実行時の排他証明ではない。[読取記録](evidence/production-business-initial-state-readback-2026-10-19.json)。
+
+保存済み10/16予備コピー40表5,770行を新しい初回stageでlocal native D1へ投入し、83表の暗号化→別DB復元→独立照合/全hash一致が121.5秒で成功した。archive3,517,141 bytes、取り込み台帳保持、FK違反0。並行試験中のlocal測定であり、本番RTOに換算しない。MFA capsuleは使わず、旧暗号化Auth資料はユーザーID照合だけに使用した。[実データ試験](evidence/real-initial-business-stage-backup-rehearsal-2026-10-19.json)。
+
+前回の分割R2試験の追加結果も保存した。復元済み109画像について実アプリStorage handlerのGET/HEAD計218応答を確認し、body SHA-256・MIME・length・nosniff・HEAD空bodyが一致した。local native bindingでのhandler試験であり、配備済みWorkerやブラウザ表示の受け入れではない。[配信試験](evidence/real-split-r2-app-delivery-rehearsal-2026-10-19.json)。
+
+残る実装/受け入れは、本番R2 transportと全store調停の接続、5 store runner/応答不明の独立解決、source全入口停止・drain・Stripe受信引継ぎ、OAuth/secret/operator設定、DNSの実資源に対応する逆操作、別保管鍵と実資源での一式復旧。管理者MFAはこれらの準備後に行う。本番import/source停止/DNS切替/main mergeは未実施。
+
+検証: 新規native17件を含む移行データ回帰427件成功（145.8秒）。従来のBusiness/Auth停止・再開・別DB復旧試験1件も成功（64.0秒）。新規試験では台帳作成/run/checkpoint/資格情報予約/資格情報commit/完了更新の6箇所でcommit後の応答消失を起こし、その後のnative DB呼出し0、既存状態の保持・再実行拒否を確認した。本番transportの合成HTTP試験では全writeのdurable journal/調停ACKを照合した。

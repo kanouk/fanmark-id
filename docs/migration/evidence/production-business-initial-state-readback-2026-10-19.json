@@ -1,0 +1,18 @@
+{
+  "format": "fanmark-production-business-initial-state-readback-v1",
+  "observedAt": "2026-10-19T00:55:53.014Z",
+  "scope": "production-read-only",
+  "productionReady": false,
+  "databaseWrites": 0,
+  "mfaReenrollmentUsed": false,
+  "sourceFrozen": false,
+  "databaseId": "84599147-e2c7-41d8-80ae-33c61b158314",
+  "schemaAndInitialSeedContentsMatched": true,
+  "applicationTableCount": 78,
+  "initialImportLedgerAbsent": true,
+  "sequenceStateMatched": true,
+  "limitations": [
+    "readback without execution fence",
+    "not source or all-store admission"
+  ]
+}

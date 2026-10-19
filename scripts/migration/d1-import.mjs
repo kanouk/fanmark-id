@@ -41,6 +41,7 @@ import {
 import { compileRowConverter } from "./row-conversion.mjs";
 import { SnapshotVerificationError, verifySnapshot } from "./snapshot-verify.mjs";
 import { inspectCredentialTransformSchema } from "./credential-transform-schema.mjs";
+import { prepareInitialBusinessTarget, createStopOnFailureD1 } from "./business-import-initial-target.mjs";
 import { readBusinessRuntimeImportSchema } from "./business-runtime-import-schema.mjs";
 import { openSnapshotBundle } from "./snapshot-encryption.mjs";
 import { assertIsolatedRemoteD1Target, isIsolatedRemoteD1 } from "./isolated-remote-d1.mjs";
@@ -632,8 +633,10 @@ export function importLedgerSchemaStatements() {
   ];
 }
 
-async function ensureLedgerSchema(database) {
-  await runBatch(database, importLedgerSchemaStatements().map((sql) => database.prepare(sql)));
+async function ensureLedgerSchema(database, initialGuard = null) {
+  const statements = importLedgerSchemaStatements().map(sql => database.prepare(initialGuard ? sql.replace("IF NOT EXISTS ", "") : sql));
+  if (initialGuard) statements.push(database.prepare(initialGuard));
+  await runBatch(database, statements);
   await assertLedgerSchema(database);
 }
 
@@ -2282,7 +2285,41 @@ export async function verifyImportedD1Snapshot({manifestPath, database, destinat
     destinationId,targetIncarnation,manifestDigest:snapshot.manifestDigest,tables,sequences};
 }
 
-export async function importD1Snapshot({
+export async function importD1Snapshot(options = {}) {
+  return importSnapshotCore(options);
+}
+
+/** Dedicated initial Business stage. Generic import/resume never gains production access.
+ * Every uncertain operation poisons this attempt; no error cleanup, resume or retry.
+ * Global coordinator/journal admission is enforced by the production transport.
+ */
+export async function importInitialBusinessSnapshot({ database, readDatabase, mode = "local", ...options } = {}) {
+  const production = isProductionRemoteD1(database);
+  if (!["local", "production-stage"].includes(mode) ||
+      (mode === "local" && (production || isProductionRemoteD1(readDatabase) || isIsolatedRemoteD1(database) || isIsolatedRemoteD1(readDatabase))) ||
+      (mode === "production-stage" && (!production || !isProductionRemoteD1(readDatabase)))) throw fail("business_stage_transport_invalid");
+  if (!options.expectedTargetProfile || typeof options.resolveAuthUserIds !== "function" || options.hooks !== undefined ||
+      (options.canonicalBusinessSchema !== undefined && options.canonicalBusinessSchema !== true)) throw fail("business_stage_profile_required");
+  if (production) {
+    if (database.access !== "import" || readDatabase.access !== "read-only" || database.targetIdentity.databaseName !== "fanmark-production-business" ||
+        JSON.stringify(database.targetIdentity) !== JSON.stringify(readDatabase.targetIdentity) || options.destinationId !== database.targetIdentity.databaseId)
+      throw fail("business_stage_transport_invalid");
+    await assertProductionRemoteD1Target(database, options.targetIncarnation);
+    await assertProductionRemoteD1Target(readDatabase, options.targetIncarnation);
+  }
+  const initialGuard = await prepareInitialBusinessTarget(readDatabase);
+  const stopped = createStopOnFailureD1(database);
+  try {
+    await importSnapshotCore({ ...options, database: stopped, mode, canonicalBusinessSchema: true }, { initialGuard });
+  } catch { throw fail("business_stage_partial_or_unknown_import"); }
+  let readback;
+  try { readback = await verifyImportedD1Snapshot({ ...options, database: readDatabase, canonicalBusinessSchema: true }); }
+  catch { throw fail("business_stage_independent_readback_failed"); }
+  return { ...readback, scope: "initial-business-import-stage", productionReady: false,
+    atomicWholeStore: false, sourceFreezeVerified: false, coordinatorCompleted: false };
+}
+
+async function importSnapshotCore({
   manifestPath,
   database,
   destinationId,
@@ -2301,9 +2338,9 @@ export async function importD1Snapshot({
   maxTargetRowBytes = DEFAULT_MAX_TARGET_ROW_BYTES,
   now = () => new Date(),
   hooks = {},
-} = {}) {
+} = {}, initialStage = null) {
   validateDatabase(database);
-  if (mode !== "local" && mode !== "isolated-remote") throw fail("unsupported_import_mode");
+  if (mode !== "local" && mode !== "isolated-remote" && !(initialStage && mode === "production-stage")) throw fail("unsupported_import_mode");
   if (isProductionRemoteD1(database)) throw fail("production_import_runner_required");
   if (mode === "local" && isIsolatedRemoteD1(database)) throw fail("remote_binding_requires_remote_mode");
   if (allowUnresolvedGates !== true && allowUnresolvedGates !== false) throw fail("invalid_gate_option");
@@ -2343,8 +2380,9 @@ export async function importD1Snapshot({
   if (snapshot.convertedSchema.report.unresolvedGateCount > 0 && !allowUnresolvedGates) throw fail("schema_gates_unresolved");
   await preflightExternalIdentities(snapshot, plan, resolveAuthUserIds, { maxRowBytes });
   const existingReport = await readReport(absoluteReportPath);
+  if (initialStage && existingReport) throw fail("business_stage_existing_report");
   if (existingReport) assertReportIdentity(existingReport, snapshot, { mode, destinationId, targetIncarnation }, plan);
-  await ensureLedgerSchema(database);
+  await ensureLedgerSchema(database, initialStage?.initialGuard);
   let report = existingReport;
   try {
     // A prior report without its private ledger is not a resumable target. A
@@ -2419,7 +2457,7 @@ export async function importD1Snapshot({
     };
   } catch (error) {
     const code = safeErrorCode(error);
-    await updateRunError(database, snapshot, code, now);
+    if (!initialStage) await updateRunError(database, snapshot, code, now);
     if (report) {
       report.status = "failed";
       report.publicRowsReconciled = false;
