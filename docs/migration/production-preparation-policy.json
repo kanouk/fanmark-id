@@ -249,6 +249,7 @@
     "workers/api/src/production-r2-import-contract.ts",
     "workers/api/src/production-r2-import-service.ts",
     "scripts/migration/production-import-gateway.mjs",
-    "scripts/migration/production-import-inspection.mjs"
+    "scripts/migration/production-import-inspection.mjs",
+    "scripts/migration/initial-import-set-readback.mjs"
   ]
 }

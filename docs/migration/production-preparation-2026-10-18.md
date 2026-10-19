@@ -214,3 +214,11 @@ service native6件、client/stage/native調停接続4件、gatewayのnative認�
 - native D1/DO + 実子processの結合10件を含む関連44件、Worker側の専用9件、Worker typecheckが成功。画像PUT応答消失は別readerで画像が見えても未解決のまま。全5 storeのデータ確認や部分stage自動再開を実装したとは扱わない。[手順](production-import-recovery.md)。
 
 本番への新コード配備、データ投入、source停止、ドメイン切替、main mergeはこの変更では行っていない。管理者MFAは準備完了後。
+
+## 2026-10-19: 初回移送の全5 store一括照合
+
+同じBusiness snapshotからMasterを直接導出し、Authの全ID/表示名/admin role/planを照合する `initial-import-set-readback.mjs` を追加。元のAuth暗号化値は一度だけ保持し、入力・run・5 incarnation・activation・runtime profileのdescriptorを調停manifest hashへ束ねる。Business内のuser参照は実Auth D1へ問い合わせる。全store前後にsourceとjournalを再確認し、localだけでなく固定production read-only transportでも動作する。停止取得/解除、書込、調停complete、source freezeの成功宣言はしない。
+
+native3 D1/2 R2に全40表と2画像を移し、取り違え・内容改変・source改変・管理権限/表示名不一致・配備版drift・ACK欠落を検証。production接続の管理APIと調停応答は合成であり、本番一式移送の証明ではない。`496b7f7`/CI39187569932は両job成功。新checkerの5件を含む関連24件とオフラインinventory照合が成功。新checkerを通常CIのmigration-dataへ追加。
+
+DNSのapex編集欄はA/185.158.133.1/proxy有効/TTL自動/コメント空を読み取り、保存せず閉じた。record IDは画面にも表示されず、既存DNS API403の制約は残る。全store実行・stage再開、実source境界/Stripe引継ぎ、外部設定/DNS逆操作、鍵/遠隔復旧を継続。MFAは最後。本番データ投入・停止・切替・main mergeなし。

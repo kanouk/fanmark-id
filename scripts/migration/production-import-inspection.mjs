@@ -170,7 +170,7 @@ export async function inspectProductionImportSet({ journalPaths, coordinator }) 
         JSON.stringify(now.lock) !== JSON.stringify(previous.lock)) fail();
   }
   return { format: 'fanmark-production-import-set-inspection-v1', stores: reports,
-    remoteAcknowledged: acknowledged, localPendingCount: pendingCount, retainedLockCount: lockCount,
+    remoteStateSha256: hash(JSON.stringify(after)), remoteAcknowledged: acknowledged, localPendingCount: pendingCount, retainedLockCount: lockCount,
     journalsReconciled: !!after.state && after.active === 0 && after.fenceOwner === coordinator.owner &&
       after.state.pending === null && pendingCount === 0 && lockCount === 0,
     providerWrites: 0, remoteJournalWrites: 0, sourceFreezeVerified: false,

@@ -518,9 +518,10 @@ async function buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonica
   return { catalog, tableNames, rows, sequenceStates, convertedSchema, lifecyclePlan, generationPlan, credentialPlan };
 }
 
-export async function prepareCurrentCatalogSyntheticSnapshot(catalogResultPath, { snapshotDirectory, includeAuxiliary = true, fullTableCoverage = false } = {}) {
+export async function prepareCurrentCatalogSyntheticSnapshot(catalogResultPath, { snapshotDirectory, includeAuxiliary = true, fullTableCoverage = false, mutateSyntheticRows } = {}) {
   if (typeof snapshotDirectory !== "string" || !path.isAbsolute(snapshotDirectory)) throw new Error("synthetic_snapshot_directory_required");
   const fixture = await buildCurrentCatalogSyntheticFixture(catalogResultPath, { canonicalBusinessSchema: true, includeAuxiliary, fullTableCoverage });
+  if (mutateSyntheticRows !== undefined) { assert.equal(typeof mutateSyntheticRows, "function"); mutateSyntheticRows(fixture.rows); }
   const manifestPath = await createSyntheticSnapshot(fixture.catalog, fixture.rows, fixture.sequenceStates, snapshotDirectory);
   return { ...fixture, manifestPath, syntheticAuthUserId, expectedTargetProfile: {
     credentialPlan: fixture.credentialPlan, descriptor: descriptor(), generationPlan: fixture.generationPlan, lifecyclePlan: fixture.lifecyclePlan,

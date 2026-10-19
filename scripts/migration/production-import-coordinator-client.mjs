@@ -28,7 +28,7 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
   }
   async function invoke(action,input){try{return await command(action,input);}catch{fail();}}
   const client=Object.freeze({
-    owner,incarnations:frozenIncarnations,
+    owner,manifestSha256,incarnations:frozenIncarnations,
     async claim(){
       const state=validate(await invoke('claim',identity));
       if(state.pending!==null||state.readbackSha256!==null)fail();

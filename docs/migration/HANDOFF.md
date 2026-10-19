@@ -1,3 +1,9 @@
+## 2026-10-19: 初回移送の全5 storeをまとめる独立checker
+
+`496b7f7`のCI39187569932は両job成功。`initial-import-set-readback.mjs`を追加し、同じBusiness exportからMasterを投影、AuthのID/管理権限/表示名も同じsourceへ照合する。全体descriptorを調停manifestへ固定し、本番用read-only接続と全journalを前後確認する。業務のuser参照は実Authで解決。native3 D1/2 R2の40表と画像をまとめた照合、取り違え/改変/欠落/配備版drift検出を検証した。管理API/調停は合成で、実本番の一式照合とは区別する。[契約](initial-import-set.md)。
+
+次はこの入力固定/checkerを全store実行・stage境界再開へ接続し、実source境界・Stripe handoff・外部設定/DNS・鍵/遠隔復旧を進める。MFAは最後。DNS UIはapexの全編集欄とコメント空を確認したがrecord IDなし、変更保存なし。本番import/source停止/domain切替/main mergeなし。
+
 ## 2026-10-19: 中断した移送記録の独立照合・local ACK補修
 
 `80542a6`のCI39186411244はapp成功、Worker確認中。調停DOへread-only操作別照合を追加し、5 storeのprivate journalを遠隔ACK全件・総数・前後状態へ照合する部品を追加した。実子process終了/native D1/DOで、遠隔完了確定後に失われたlocal ACKだけを補修し、元データを再送しないことを検証。未知commit/未知R2 PUTは保留を維持し、生存process/旧空lock/別host/不正fileは補修しない。[操作・制限](production-import-recovery.md)。新コード未配備。

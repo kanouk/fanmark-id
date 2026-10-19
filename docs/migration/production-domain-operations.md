@@ -15,7 +15,7 @@
 | 変更しない設定 | レジストラ・NS委任・MX・SPF・DKIM・DMARC、旧authの接続先 |
 | 現在のWorker Custom Domain / zone route | ともに0（管理API読戻し） |
 
-DNS画面には全17レコードが表示される。Git外の `fanmark-cutover-2026-10-19/dns-before.bind` を保存済み。BINDだけではCloudflareのrecord IDや全管理属性を復元できない。現CLI資格情報のDNS APIは403のため、以下のDNS JSON原本取得と逆操作の実地検証は未完了。
+DNS画面には全17レコードが表示される。追加の読取確認でapexの編集欄は名前fanmark.id・A・185.158.133.1・proxy有効・TTL自動・コメント空欄だった。画面のレコード属性にもrecord IDは表示されず、保存せずキャンセルした。Git外の `fanmark-cutover-2026-10-19/dns-before.bind` を保存済み。BINDだけではCloudflareのrecord IDや全管理属性を復元できない。現CLI資格情報のDNS APIは403のため、以下のDNS JSON原本取得と逆操作の実地検証は未完了。
 
 ## 適用前のプレビュー
 
