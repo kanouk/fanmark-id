@@ -1,10 +1,28 @@
+## 2026-10-19: Stripe live全6 collection取得とsource照合
+
+前turnのGET collectorと同じ実装hashを一時診断adapterから実行した。既存Stripe鍵はsource環境内だけで使用。未完了Checkout、complete未入金、非終端PaymentIntent、継続Subscription/Invoice、有効Payment Link、配信待ちEventは0。Session3件（expired2/paid1）、PaymentIntent succeeded1、他4 collection0。source canceled契約1件を保持。paid1件は旧expired licenseと所有者/fanmark一致、Session/延長監査0のため適用状態は未確定で再送しない。
+
+診断用Functionを削除後、35原本のID/version/JWT/provider hashを独立一覧で照合し完全一致。source業務write/金融操作/通常handler更新なし。[限定実証](evidence/source-stripe-inventory-readback-2026-10-19.json)。sourceはliveなので当日の凍結境界で再取得する。source旧版Edgeのdrainと逆方向受信回収は引き続き必要。
+
+ac28dffのCI39197227844は両job成功。未pushの棚卸し/停止票と今回の実証をまとめて既存PR #41へ反映する。本番移送/DNS切替/main mergeなし、MFA再認証は最後。
+
+## 2026-10-19: 旧StripeのGET棚卸しと同一runの停止・中止候補
+
+`source-stripe-inventory.mjs` は固定live/test account確認後に6 collectionを全ページGETし、open/complete未入金Checkout、非終端PaymentIntent/Subscription/Invoice、有効Payment Link、pending webhookを区別する。古いpaidもsource効果の照合対象に残す。重複/ページ不足/未知状態/mode不一致/API失敗では成功を返さない。秘密・メール・client secretは返さず、返るID/metadataはprivate保存する。合成7件と既存準備9件成功。実資格情報のadapter・当日の実収集/業務効果照合は未実施。
+
+[停止・公開前中止票](source-stop-and-resume.md)を追加。保存済みDB/Cron/35関数原本から同一run `6f43aea6-78a6-48a3-b85b-5bfa83c3c442` の14 fileをprivate生成し、別processで全hash・0600/0700・run一致を確認した。既存候補/原本を保持。最新source inventoryの再取得や本番実行の証拠ではない。[限定証拠](evidence/source-stop-inventory-preparation-2026-10-19.json)。
+
+Stripe live Dashboardは支払一覧1件・成功、2026/01/04 12:38表示。Workbenchイベント配信は送信先未作成と表示した。決済/設定変更なし。過去支払のsource効果、v1/v2全件API取得の代替にはしない。
+
+ac28dff/CI39197227844は後続確認でapp/Worker両job成功。本番source停止/import/DNS/mergeなし。MFAは最後。source旧版処理の終了確認、Stripe効果・逆回収、実資格情報adapter、OAuth/運用鍵/DNS逆操作/実資源復旧が残る。
+
 ## 2026-10-19: 終了した移送executorのstage境界復旧
 
 一括runnerは遠隔実行権取得前にPID/端末/run/入力hashをprivate lockへfsyncする。終了済み同一端末・未確定操作0・全journal一致・完了stageの全件照合を条件に、遠隔executor ID/ACK件数のCASで実行権だけを引き継ぐ。停止fenceと全履歴を残し、旧executor UUIDの再取得を拒否する。[手順と対象外](production-import-recovery.md)。
 
 終了した実子process/native全5store/DOで引継ぎ→残り全stage→全件一致を確認した。通し16件、DO12件、coordination11件、gateway5件、Storage14件、準備9件成功。型検査/非公開bundle dry-runも成功。最初の新試験では画像reportの指定先がexport外で失敗したため、fixtureを修正し、同じ誤指定を実行権取得・DB書込み前に拒否する検査も追加した。改変prefix、生存PID/別端末、stale ID、pending操作、応答消失は解除せず記録を保持。
 
-a06dd46のCI39196064857はapp成功、Worker試験継続中。今回のruntime変更は未配備。非公開appは前turnの9bf2eb60を維持。部分stage/未知commit、復旧解除応答不明後のcleanup、source全入口drain/Stripe効果・逆回収、provider/operator/DNS逆操作、鍵別保管/実資源復旧が残る。本番source停止/import/domain切替/main mergeなし。MFAは最後。
+a06dd46のCI39196064857はapp成功、Workerは後続pushによりcancel済み。今回のruntime変更は未配備。非公開appは前turnの9bf2eb60を維持。部分stage/未知commit、復旧解除応答不明後のcleanup、source全入口drain/Stripe効果・逆回収、provider/operator/DNS逆操作、鍵別保管/実資源復旧が残る。本番source停止/import/domain切替/main mergeなし。MFAは最後。
 
 ## 2026-10-19: 非公開runtime更新とwww/adminの誘導候補
 

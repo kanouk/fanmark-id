@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`node --test scripts/migration/test-source-stripe-inventory.mjs` は旧Stripeの全ページ取得、live/test分離、未完了決済の抽出、資格情報・個人情報の出力抑止を合成応答で検証する。root移行CIにも含める。[停止・中止手順](migration/source-stop-and-resume.md)。
+
 本番移送executorの復旧は[限定手順](migration/production-import-recovery.md)を参照。`test-initial-import-set-readback.mjs` は終了した子processのlock・native全store/DO・独立clientを使い、stage境界の引継ぎと再開を検査する。
 
 `node --test scripts/migration/test-production-domain-alias.mjs` はwww/adminの誘導先、認証情報の転送拒否、旧hash tokenのfragment継承抑止、初期閉鎖を検証する。alias候補はrootの移行CIにも含める。

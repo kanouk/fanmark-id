@@ -1,0 +1,79 @@
+{
+  "format": "fanmark-source-stripe-inventory-readback-v1",
+  "projectRef": "ppqgtbjykitqtiaisyji",
+  "accountId": "acct_1SFjhvJk0VCfiKUp",
+  "mode": "live",
+  "startedAt": "2026-10-19T04:14:33.451Z",
+  "completedAt": "2026-10-19T04:14:49.322Z",
+  "collectorSha256": "e9429c92b620b07b52e4384b0216eafff3843155854ff0cf18174a37b79c5b8a",
+  "diagnosticSha256": "ca3dc54a811a8b2528d5d95bbd22133b2e482da4bc09b608d4d5c2bbf42163ec",
+  "sourceFunctionInventorySha256": "2a989354bf4e14d50beb99d743d62b44b8a3688f4a2e0670dd4e886ef250cd8e",
+  "temporaryDiagnosticDeployed": true,
+  "temporaryDiagnosticDeleted": true,
+  "existingFunctionInventoryUnchanged": true,
+  "sourceBusinessWrites": 0,
+  "financialWrites": 0,
+  "sourceFrozen": false,
+  "productionReady": false,
+  "summary": {
+    "counts": {
+      "openCheckouts": 0,
+      "completedUnpaidCheckouts": 0,
+      "paidCheckoutsNeedingSourceCorrelation": 1,
+      "nonterminalSubscriptions": 0,
+      "nonterminalInvoices": 0,
+      "nonterminalPaymentIntents": 0,
+      "activePaymentLinks": 0,
+      "pendingWebhookDeliveries": 0
+    },
+    "collections": {
+      "checkoutSessions": {
+        "rows": 3,
+        "pages": 1
+      },
+      "subscriptions": {
+        "rows": 0,
+        "pages": 1
+      },
+      "invoices": {
+        "rows": 0,
+        "pages": 1
+      },
+      "paymentIntents": {
+        "rows": 1,
+        "pages": 1
+      },
+      "paymentLinks": {
+        "rows": 0,
+        "pages": 1
+      },
+      "recentEvents": {
+        "rows": 0,
+        "pages": 1
+      }
+    },
+    "paidCheckouts": [
+      {
+        "paymentCreated": 1767497887,
+        "sourceLicenseMatches": 1,
+        "sourceLicenseStatus": "expired",
+        "ownerAndFanmarkMatch": true,
+        "matchingSessionAudits": 0,
+        "relatedExtensionAudits": 0,
+        "applicationState": "unproven-no-replay"
+      }
+    ],
+    "sourceSubscriptions": [
+      {
+        "status": "canceled"
+      }
+    ]
+  },
+  "limitations": [
+    "live source; repeat at actual stop boundary",
+    "historical paid extension remains unproven; preserve source state and do not replay",
+    "GET lists are not an atomic provider snapshot",
+    "event destinations observed separately in Dashboard, not enumerated by collector",
+    "reverse receipt custody and source legacy Edge drain remain incomplete"
+  ]
+}
