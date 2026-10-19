@@ -1,3 +1,13 @@
+## 2026-10-19: alias閉鎖配備・通知試験票・次のruntime配備前確認
+
+alias source/configは成功済み773bcfeとbyte一致を確認して閉鎖配備した。version efbdedac-a0fa-4361-86f6-d1e965f20107、誘導disabled・公開route/domain/Cron0、DB/画像/秘密値なし。別processで元DNS17件・元7 Worker settings/inventoryを保持照合し、今のWorker inventoryは8件。[証拠](evidence/production-alias-closed-2026-10-19.json)。private alias-closed-preparationのintent/journalを保持し、install helperを再実行しない。
+
+通知試験operatorを追加し、native1件とinventoryを含む10件成功。宛先/本文/最大1通のprivate確認票を用意し、本人の明示了承を確認中。送信は未実施。[通知票](production-notification-delivery.md)。SSL Read追加・GitHub owner loginも本人回答待ち。MFA未依頼。
+
+3 D1を実readonlyで独立native schema/初期行/ledger/FKへ再照合し、全件一致・FK0・実利用者importなしを確認。status専用一時operatorでapp b03de981・writer0/ownerなし・capture admission=falseと固定5 store/schema/key ID一致を確認し、operatorを削除して8 Workerへ戻した。capture/escrowを呼んでいない。private resume-before-runtime-empty-schema.json、runtime-status-before-new-runtime/result.json。Node22の本番build・全4閉鎖bundle dry-run成功。
+
+758641c / CI39248993491は実行中。成功後に使うprivate deploy-resumed-closed-runtime.mjsを準備したがまだ実行していない。CI成功/同じruntime入力/元b03de981/全binding/閉鎖境界がそろうまで配備しない。配備応答不明はstatic attempt directoryを保持して再配備しない。source停止/実データ移送/本番host切替/main mergeなし。
+
 ## 2026-10-19: Aを保持するRouteの実TLS/逆操作・全cleanupを独立確認
 
 専用の合成hostとdata-free WorkerでRoute追加→外部TLS/HTTP→Route解除を実行した。同じAのID/全属性と元17レコードはRoute中も保持され、HTTPS通常検証/TLS1.3、503/no-store、HTTPから同path/queryのHTTPSへの307、API POST閉鎖を確認。所有Route/A/Workerを削除し、別processで元17DNS・全7 Workerのsettings/inventory・route0・Custom Domains不変を再確認した。[限定証拠](evidence/isolated-route-reversal-tls-2026-10-19.json)。

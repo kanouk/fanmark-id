@@ -158,3 +158,16 @@ DNS逆操作の受け入れをこの候補で代用しない。
 資格情報の設定状態とprovider通知先の現状は[本番アプリの資格情報](production-provider-secrets.md)を参照。10/19のlive/test別API読戻しでは、Stripeの旧Supabase向け通知はsandboxだけにあり、本番通知先は未登録だった。「既存本番endpointのURLだけを変更する」前提では実行しない。
 
 2026-10-19、本人の保存確認を受け、Google/Discord/Appleへ上記各1 callbackを保存した。全3 serviceを再表示して新URLと旧本番・staging URLの保持を確認。Appleの初回保存はsession expiredだったため、現在値を取得して未保存を確認し、session更新後に保存・再表示した。[保存証拠](evidence/production-oauth-callback-save-2026-10-19.json)。GitHubは別途所有者login待ち。本番OAuthのtoken交換/既存user紐付けは未実証。
+
+
+## 再開後: aliasの閉鎖配備
+
+成功CI773bcfe/39244655945と同じalias source/configを、公開経路0・誘導disabled・
+workers.dev/previews無効・Cron0で配備した。versionは
+`efbdedac-a0fa-4361-86f6-d1e965f20107`。DB/画像/秘密値/service bindingはない。
+別processで元7 Workerのsettings・元DNS17件・route0/Custom Domains不変を照合した。
+Workerのinventoryはこの時点から8件。[限定証拠](evidence/production-alias-closed-2026-10-19.json)。
+
+Workersの認証済みplan画面も再表示し、Paidが「現在のプラン」、Freeがダウングレードを
+提示する状態を確認した。設定/契約変更は行っていない。APIのusage_model=standardだけで
+判定したものではない。Routeのfail modeと当日の配信確認は引き続き開始票へ含める。

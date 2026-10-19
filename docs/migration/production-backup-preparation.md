@@ -47,3 +47,6 @@ operatorの `productionManualBackupCaptureSource()` は操作IDと実行日を�
 2026-10-19にCI39205951900の両job成功後、閉鎖runtimeへ配備して実R2保存・別CLI取得・復号・114表照合を確認した。日次archive/receiptは不変、一時operatorを削除してadmissionをpendingへ戻した。[限定証拠](evidence/production-manual-backup-2026-10-19.json)。
 
 **残件:** 移送後はBusiness台帳を含むschemaを再固定し、移送した実データの確定backupを手動で保存する。既存の初期状態backupをその代用にはしない。
+
+
+本番監視通知の試験操作・宛先/本文の確認・実配送と後片付けは[通知到達検証票](production-notification-delivery.md)を使う。候補operatorは準備済みで、まだ本番メールは送信していない。

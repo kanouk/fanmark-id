@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`test-production-backup-alert-test.mjs`は、固定runtime/schema/日付/writer0を確認した通知試験operatorの期限/bearer/入力拒否と、delivery-testだけのRPCをnativeで検査する。実メールの送信と本人受信は別に承認・照合する。
+
 `test-production-webhook-secret-install.mjs`は暗号化保管からの一度だけのsecret PUT、遠隔保管欠落/設定相違/誤鍵の拒否、PUT応答消失後のGET/RPCのみの照合を検査する。`test-production-webhook-key-proof.mjs`は実native service/proxyでHMACのdomain separation、Stripe文字列/Svix bytes、期限/bearer/本文制限と本番閉鎖条件を検証する。秘密値は合成。通常CIへ含める。
 
 `vitest.maintenance-settings.config.mjs test/cutover-write-freeze.test.ts` は本番HTTPのGET/HEAD誘導・書込み拒否・外部hostへの誤誘導防止・全bindingアクセス0と、既存の停止境界をnative Workerで確認する。

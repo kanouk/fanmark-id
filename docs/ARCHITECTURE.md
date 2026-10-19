@@ -23,7 +23,7 @@
 
 本番移送の実行者lockは `scripts/migration/production-import-execution-lock.mjs`。一括runnerが取得前に保存し、終了済み実行者の引継ぎは `recoverInitialImportExecution` でstage全件照合と遠隔CASを行う。[復旧範囲](migration/production-import-recovery.md)。 初回Authの応答不明は `recoverInitialAuthImportExecution` が同じatomic batchのhashと全件readbackを検査し、専用 `recover-auth` のCASでACKだけを確定する。DBへの再送は行わず、他stageのpendingは対象外。
 
-本番aliasの候補は `workers/api/src/production-domain-alias.mjs`。DB等を持たない専用Workerでwww/adminからapexへの限定誘導を担う。初期状態は無効・未配備。[操作票](migration/production-domain-operations.md)。
+本番aliasの実装は `workers/api/src/production-domain-alias.mjs`。DB等を持たない専用Workerでwww/adminからapexへの限定誘導を担う。初期状態は無効で、再開後に公開経路0の閉鎖配備を確認した。[操作票](migration/production-domain-operations.md)。
 
 移行時の旧Stripe受信候補は `scripts/migration/source-stripe-receipt-only.mjs`。
 共通署名検証handlerとprivate PostgreSQL receipt保存を再利用し、保存transactionの
