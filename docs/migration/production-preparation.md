@@ -91,6 +91,8 @@ MFAはまず形式と変換可否を技術調査する。移送できない場�
 
 ## P6 変更前・変更後・復元票
 
+2026-10-19の実値、適用前プレビュー、具体的な逆操作順、4 providerのcallback追加候補は[ドメイン操作票](production-domain-operations.md)に記録する。未取得のDNS IDや未実施の外部登録は未完了として保持する。
+
 [公開DNS記録](evidence/production-public-dns-2026-10-15.json)でCloudflareのNS、apex/www/admin/authの公開A/AAAA、apex MXを読み取った。既定の再帰resolverからの観測であり、Cloudflare管理画面のrecord ID、隠れたorigin、route、TLS、所有accountの確認ではない。CNAME応答なしを、設定なしと解釈しない。
 
 | 対象 | 変更前に保存する項目 | 変更後の案・確認 | 復元票に必要な項目 |

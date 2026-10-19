@@ -104,10 +104,17 @@ export async function openProductionImportGateway({ journalPath, runtimeVersion,
   }
   async function api(resource, method = 'GET', body) {
     const response = await request(resource, { method, ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }),
-      headers: body instanceof FormData ? {} : { 'content-type': 'application/json' } });
-    if (!response.ok) { await response.body?.cancel(); fail(); }
+      headers: body instanceof FormData ? {} : { 'content-type': 'application/json',
+        ...(resource.endsWith('/subdomain') && method === 'POST' ? { 'Cloudflare-Workers-Script-Api-Date': '2025-08-01' } : {}) } });
     let result; try { result = await response.json(); } catch { fail(); }
-    if (result.success !== true) fail(); return result.result;
+    if (!response.ok || result.success !== true) {
+      // Keep only bounded numeric diagnostics, never provider messages or bodies.
+      state.controlPlaneFailure = { stage: state.state, method, status: response.status,
+        errorCodes: (Array.isArray(result.errors) ? result.errors : []).slice(0, 8)
+          .map(row => row?.code).filter(code => Number.isSafeInteger(code) && code >= 0) };
+      fail();
+    }
+    return result.result;
   }
   const versionOf = value => {
     const versions = value?.deployments?.[0]?.versions;
@@ -139,7 +146,12 @@ export async function openProductionImportGateway({ journalPath, runtimeVersion,
     await api(resource, 'PUT', form);
     state.gatewayVersion = versionOf(await api(resource + '/deployments'));
     state.state = 'activation_requested'; await save();
-    await api(resource + '/subdomain', 'POST', { enabled: true });
+    // Pin both switches, matching Wrangler's versioned API contract. In the
+    // legacy API, enabling workers.dev can also enable preview hostnames.
+    const enabled = await api(resource + '/subdomain', 'POST', { enabled: true, previews_enabled: false });
+    if (enabled?.enabled !== true || enabled.previews_enabled !== false) fail();
+    const readback = await api(resource + '/subdomain');
+    if (readback?.enabled !== true || readback.previews_enabled !== false) fail();
     state.state = 'open'; await save();
     return { ...state, gatewayOrigin: `https://${name}.fanmark-id.workers.dev` };
   } catch {

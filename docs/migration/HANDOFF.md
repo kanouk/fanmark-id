@@ -1,4 +1,10 @@
-## 2026-10-19: CI成功、画像の初回投入・独立照合と実予備コピー復元
+## 2026-10-19: 最新CI成功、非公開runtime更新と実R2読戻し
+
+`f2053aa`のCI39184804271は両job成功。非公開appをversion `9b7e6820-fcbc-4491-b27d-f631e64f0b9e`へ更新し、全binding/変数・公開経路0・Cron0、既存Worker/backup/monitor保持を管理APIで確認した。
+
+一時gateway初回の有効化は失敗し、実状態を確認して所有分を削除。preview無効/API版を明示し設定読戻しを追加した後、別gatewayで実2画像bucketの全件0・missing GET、未認証401/書込404、移行制御未開始/active0を確認し削除した。新規診断はstatus/数字codeのみ。関連native5件成功。[配備証拠](evidence/production-closed-runtime-2026-10-19.json) / [実読戻し](evidence/production-r2-live-readonly-2026-10-19.json)。
+
+[ドメイン操作票](production-domain-operations.md)にDNSの実値・preview・逆操作・4 provider callback候補を整理した。DNS API権限/record ID・実登録等は残る。全store runner/未知ACK解決・source/Stripe引継ぎ・provider/secret/DNS・遠隔復旧/鍵の準備を継続。管理者MFAは最後。goalはactive、本番import/source停止/domain切替/main mergeなし。
 
 ## 2026-10-19: 本番R2接続・調停・一時operator入口を追加
 
@@ -13,6 +19,8 @@ UUID名・bearer・2時間期限の一時gateway作成/所有cleanup部品も追
 本番Businessは読み取りで初期状態一致を確認（write0）。実10/16予備コピー40表5,770行を新stageでlocal投入し、83表の暗号化→別DB復元→全hash/独立照合が121.5秒で成功。前回の復元済み実画像109件について、実アプリhandler GET/HEAD計218応答の一致記録も追加した。いずれもlocalの受け入れで、本番一式復旧や公開許可ではない。[詳細・証拠・残条件](production-preparation-2026-10-18.md)。
 
 残り: 本番R2 transport/全store調停接続、5 store runner/不明ACKの独立解決、source全入口停止/drain/Stripe受信引継ぎ、OAuth/secret/operator、DNS具体的逆操作、鍵別保管/実資源の一式復旧。管理者MFAはこれらの準備後。本番import/source停止/DNS切替/main mergeはしていない。旧解約済み契約1件は所有者の「自分のテストと思う」という回答を保持し、除外・再課金せず履歴を維持する。
+
+## 2026-10-19: CI成功、画像の初回投入・独立照合と実予備コピー復元
 
 `a634104` のCI39174607042はApplication/Worker両job成功。所有者は旧解約済み契約を自分のテスト時のデータと思うと説明し、記録保持を指示。既存sandboxの同一顧客を確認済みだが契約本体は未検出。元の履歴・移行対象は保持し、由来説明だけ別記録に残した。
 

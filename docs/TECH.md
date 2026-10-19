@@ -726,3 +726,6 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 R2保存はlocal intent→remote begin→Worker内のdurable dispatch→条件付きR2 put→remote ACK→local ACKの順。dispatch済みの同じoperationは再実行しない。競合・不完全ACK・応答消失はpendingのまま残す。別read-only接続は読めるが、自動的にpendingやlockを解除しない。dispatch後の部分失敗を含む独立解決/全体再開は別runnerの責任。
 
 一時gatewayは本番アプリ/ストアを変更せず、新UUID名のWorkerだけを作成する。2時間で失効し、read-onlyではget/list/identityと調停inspectのみ。importでもdelete/任意SQL/dispatchの直呼びは提供しない。gatewayの作成・有効化・削除はprivate append-only fsync journalで記録する。upload応答不明は再作成/自動削除せず、削除応答不明は一度の読戻しだけで判定する。終了時は自分のowner・配備版・bindingが一致するgatewayだけ削除する。実サービスへの配備・入口作成・全store実行はこれらのlocal試験と区別する。
+
+
+一時production import gatewayのworkers.dev有効化はWrangler 4.135.0と同じAPI日付headerを使用し、preview無効を明示する。応答と独立GETの両方が一致してからopen扱いにする。失敗時のprivate journalはHTTP status・数字error code・工程だけを保存し、本文/秘密を含めない。`test-production-import-gateway.mjs`で拒否時の所有cleanupと再送なしを検証する。実R2読戻しとDNS操作票は[2026-10-19の記録](migration/production-preparation-2026-10-18.md)を参照。

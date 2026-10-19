@@ -592,7 +592,7 @@
   "implementationFingerprints": [
     {
       "path": "docs/migration/production-resources.json",
-      "sha256": "99945ab62b066e8f5e12c6a29d9760af8520d851fc5261ec2add273b419fe50c"
+      "sha256": "89bf74210ed0cbd2f27aa6d0e468abd663988b196c807b11e3c9983546a6c57d"
     },
     {
       "path": "docs/migration/source-edge-bodies-review.md",
@@ -696,7 +696,7 @@
     },
     {
       "path": "scripts/migration/production-import-gateway.mjs",
-      "sha256": "ba8095658ce1e73178993c20d8b4292435300b1e5aad7be181e2f5f627823539"
+      "sha256": "96315769e49828060f06af4418b8708698a3a732ba8e7cf44d3af8ec0aba8857"
     },
     {
       "path": "scripts/migration/production-import-journal.mjs",

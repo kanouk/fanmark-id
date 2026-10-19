@@ -190,3 +190,18 @@ native local R2の15試験（ページ分割、同じkeyを両bucketで使用、
 service native6件、client/stage/native調停接続4件、gatewayのnative認可/期限と作成削除3件が成功。D1 transport/調停/準備inventoryを含む関連回帰も成功。全てlocal nativeまたはcontrol-plane合成応答であり、実gatewayは未作成、新Workerコードは未配備、本番画像write0。
 
 次に必要なのは、全store runnerと未知ACKの独立判定/中断・再開、source/Stripe handoff、provider/secret/operator、DNS逆操作、別保管鍵と実資源を使う一式復旧。MFAはこれらの準備後。
+
+
+## P1/P2: 更新した非公開runtimeと実R2読戻し（2026-10-19）
+
+`f2053aa`のCI39184804271は両job成功。appだけを非公開設定で更新し、version `9b7e6820-fcbc-4491-b27d-f631e64f0b9e` を管理APIで確認した。backup/monitorの配備版と設定、既存4 Worker、zone routesは保持。appの設定hashはcommit/CI annotation追加で変わるが、全binding/変数・閉鎖条件は個別検査で一致した。[配備読戻し](evidence/production-closed-runtime-2026-10-19.json)。
+
+最初のUUID gatewayはupload済み・activation要求後に失敗。別GETでworkers.dev/previewともfalse、所有と配備版を確認して削除した。元の応答診断は保持されていないため、失敗理由の断定はしない。Wrangler 4.135.0と同じversioned subdomain API headerを使用し、`enabled:true`と`previews_enabled:false`を明示、応答と別GETの一致を必須に修正した。provider失敗はHTTP status/数字error code/工程だけをprivate journalへ残す。自動再送は追加しない。native/制御API試験5件成功。
+
+修正後の別UUID/read-only gatewayでは、認証なし401、認証済みR2 PUTとcoordinator claimの404、実配備版・固定bucket作成日時・全binding照合が成功。画像2 bucketの全件列挙0件、存在しないkeyのGET404、移行state=null/active=0/fenceなしを前後で確認した。最後に所有gatewayを削除しGET404を確認。[実読み取り証拠](evidence/production-r2-live-readonly-2026-10-19.json)。新旧gatewayとも残していない。画像/D1の本番投入は0。
+
+## P6: DNS操作票と外部callback候補の具体化（2026-10-19）
+
+[ドメイン操作票](production-domain-operations.md)に、実値、適用前preview、限定した逆操作、4 providerの本番callback候補、www/admin入口の調査を追加した。apex1件のchangeset previewは追加1・更新/削除/conflict0、管理API状態は前後一致。DNS画面を再読込し17件と元の接続先を確認。DNS API403、record ID付きJSON原本と逆操作実地試験、provider実登録、alias handlerは未完了。GitHubは現在複数callbackを許すため、旧callback置換を前提にせず既存Appへの追加を候補とする。根拠は操作票内の公式資料。
+
+全store runner/不明ACKの独立解決と再開、source全入口停止・drain/Stripe引継ぎ、secret/provider/DNS、鍵別保管・遠隔一式復旧は残る。管理者MFAはこれらの準備後。source停止/確定import/domain切替/main mergeは未実施。

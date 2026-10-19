@@ -41,7 +41,7 @@ test('native operator gateway requires bearer, expiration and explicit read/writ
   } finally { await mf.dispose(); }
 });
 
-async function fixture(run, { loseUpload = false } = {}) {
+async function fixture(run, { loseUpload = false, rejectActivation = false, driftActivationReadback = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'fanmark-import-gateway-')); await chmod(root, 0o700);
   const runtimeVersion = randomUUID(), gatewayVersion = randomUUID(), journalPath = join(root, 'gateway.jsonl');
   const bindings = [
@@ -50,7 +50,7 @@ async function fixture(run, { loseUpload = false } = {}) {
     ...Object.entries({ D1_TOPOLOGY: 'split', EMOJI_PUBLICATION_BACKEND: 'production-service', RECOVERY_DRAIN_SCOPE_DIGEST: PRODUCTION_RUNTIME.scope,
       RECOVERY_DRAIN_BACKEND: 'durable-object', CUTOVER_WRITE_FREEZE: 'receipt_only', STORAGE_BACKEND: 'r2' }).map(([name, text]) => ({ name, text })),
   ];
-  let gateway = null, deletes = 0, uploads = 0, drift = false;
+  let gateway = null, deletes = 0, uploads = 0, activations = 0, drift = false;
   const fetchImpl = async (url, options) => {
     assert.equal(options.redirect, 'error'); assert.equal(options.headers.authorization, 'Bearer synthetic_control_plane_token');
     const resource = new URL(url).pathname.split('/workers/scripts/')[1]; assert.ok(resource);
@@ -71,11 +71,19 @@ async function fixture(run, { loseUpload = false } = {}) {
     if (!gateway) return new Response(null, { status: 404 });
     if (resource.endsWith('/settings')) return Response.json({ success: true, result: { bindings: gateway.bindings } });
     if (resource.endsWith('/deployments')) return Response.json({ success: true, result: { deployments: [{ versions: [{ percentage: 100, version_id: drift ? randomUUID() : gatewayVersion }] }] } });
-    if (resource.endsWith('/subdomain')) { assert.equal(options.method, 'POST'); assert.equal(JSON.parse(options.body).enabled, true); return Response.json({ success: true, result: {} }); }
+    if (resource.endsWith('/subdomain')) {
+      if (options.method === 'POST') {
+        activations++;
+        assert.deepEqual(JSON.parse(options.body), { enabled: true, previews_enabled: false });
+        assert.equal(options.headers['Cloudflare-Workers-Script-Api-Date'], '2025-08-01');
+        if (rejectActivation) return Response.json({ success: false, errors: [{ code: 10022, message: 'PRIVATE_PROVIDER_SENTINEL' }] }, { status: 400 });
+      } else assert.equal(options.method, 'GET');
+      return Response.json({ success: true, result: { enabled: true, previews_enabled: options.method === 'GET' && driftActivationReadback } });
+    }
     return Response.json({ success: true, result: {} });
   };
   const options = { journalPath, runtimeVersion, token: 'synthetic_control_plane_token', fetchImpl };
-  try { await run(options, { setDrift(value) { drift = value; }, counts: () => ({ uploads, deletes }) }); }
+  try { await run(options, { setDrift(value) { drift = value; }, counts: () => ({ uploads, deletes }), activations: () => activations }); }
   finally { await rm(root, { recursive: true, force: true }); }
 }
 test('open creates only a UUID gateway; cleanup pins ownership/version and does not replay a lost DELETE ACK', async () => fixture(async (options, control) => {
@@ -95,3 +103,23 @@ test('unknown gateway upload retains journal and refuses automatic replacement o
   const state = JSON.parse((await readFile(options.journalPath, 'utf8')).trim().split('\n').at(-1));
   assert.equal(state.state, 'upload_requested'); assert.equal(state.failure, 'requires_independent_control_plane_inspection');
 }, { loseUpload: true }));
+
+test('activation rejection records only numeric diagnostics and permits owned cleanup without retry', async () => fixture(async (options, control) => {
+  await assert.rejects(openProductionImportGateway(options), /gateway_unconfirmed/);
+  const contents = await readFile(options.journalPath, 'utf8');
+  assert.equal(contents.includes('PRIVATE_PROVIDER_SENTINEL'), false);
+  const state = JSON.parse(contents.trim().split('\n').at(-1));
+  assert.equal(state.state, 'activation_requested');
+  assert.deepEqual(state.controlPlaneFailure, { stage: 'activation_requested', method: 'POST', status: 400, errorCodes: [10022] });
+  assert.equal((await closeProductionImportGateway(options)).removed, true);
+  assert.equal(control.activations(), 1);
+  assert.deepEqual(control.counts(), { uploads: 1, deletes: 1 });
+}, { rejectActivation: true }));
+
+test('successful activation ACK cannot override a mismatched independent preview readback', async () => fixture(async (options, control) => {
+  await assert.rejects(openProductionImportGateway(options), /gateway_unconfirmed/);
+  const state = JSON.parse((await readFile(options.journalPath, 'utf8')).trim().split('\n').at(-1));
+  assert.equal(state.state, 'activation_requested');
+  assert.equal((await closeProductionImportGateway(options)).removed, true);
+  assert.equal(control.activations(), 1);
+}, { driftActivationReadback: true }));
