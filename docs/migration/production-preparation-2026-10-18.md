@@ -175,3 +175,18 @@ native local R2の15試験（ページ分割、同じkeyを両bucketで使用、
 残る実装/受け入れは、本番R2 transportと全store調停の接続、5 store runner/応答不明の独立解決、source全入口停止・drain・Stripe受信引継ぎ、OAuth/secret/operator設定、DNSの実資源に対応する逆操作、別保管鍵と実資源での一式復旧。管理者MFAはこれらの準備後に行う。本番import/source停止/DNS切替/main mergeは未実施。
 
 検証: 新規native17件を含む移行データ回帰427件成功（145.8秒）。従来のBusiness/Auth停止・再開・別DB復旧試験1件も成功（64.0秒）。新規試験では台帳作成/run/checkpoint/資格情報予約/資格情報commit/完了更新の6箇所でcommit後の応答消失を起こし、その後のnative DB呼出し0、既存状態の保持・再実行拒否を確認した。本番transportの合成HTTP試験では全writeのdurable journal/調停ACKを照合した。
+
+
+## 2026-10-19: 本番R2 transport・調停・operator gatewayを接続
+
+`5605ae2`のCI39183331479はApplication/Workerとも成功。goal「本番移行直前まで止めずに進めて」を継続し、R2の本番専用接続と一時operator入口を追加した。
+
+本番bucketのname/creation_date/Standard class、全store binding・scope、アプリ配備版、gateway配備版/service/access/expiryを各操作で読み戻す。R2 bucket metadataは[Cloudflare Get Bucket](https://developers.cloudflare.com/api/resources/r2/subresources/buckets/methods/get/)の`creation_date`等を照合する。値やAPI tokenを公開reportへ出さない。native R2の本文配信はContent-Lengthが省略される場合もあるため、存在時は一致を要求し、常に上限付きで本文全bytesと期待sizeを照合する。
+
+初回stageではlocal/remote journalを持つwriterと別read-only接続を必須にした。Workerは入力画像のSHA-256とmetadataを検証し、DOのdurable dispatch記録後に`etagDoesNotMatch=*`で保存する。重複要求・別process・別journalからの再送を拒否する。未知ACKを推測で解決せず、画像とpendingを保持する。全store完了・source停止・公開許可にはしない。
+
+`production-import-gateway.mjs` はUUID名の新Workerだけを作成する部品。bearer/2時間期限/read-onlyとimportの分離/固定serviceとruntimeを使う。公開アプリにrouteを追加しない。作成と削除はprivate fsync journal、削除はdurable lockで直列化し、upload未知は自動再作成/削除しない。削除の応答消失ではGET確認だけを行いDELETEを再送しない。
+
+service native6件、client/stage/native調停接続4件、gatewayのnative認可/期限と作成削除3件が成功。D1 transport/調停/準備inventoryを含む関連回帰も成功。全てlocal nativeまたはcontrol-plane合成応答であり、実gatewayは未作成、新Workerコードは未配備、本番画像write0。
+
+次に必要なのは、全store runnerと未知ACKの独立判定/中断・再開、source/Stripe handoff、provider/secret/operator、DNS逆操作、別保管鍵と実資源を使う一式復旧。MFAはこれらの準備後。

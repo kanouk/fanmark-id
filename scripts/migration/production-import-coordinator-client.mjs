@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {PRODUCTION_R2_TARGETS} from './production-r2-targets.mjs';
 import {PRODUCTION_D1_TARGETS} from './production-d1-targets.mjs';
 
 const HASH=/^[0-9a-f]{64}$/u, UUID=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
@@ -42,7 +43,7 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
     },
     assertTarget(targetId,targetIncarnation){
       const row=PRODUCTION_D1_TARGETS.find(item=>item.databaseId===targetId);
-      const store=row?.databaseName.replace('fanmark-production-','');
+      const store=row?.databaseName.replace('fanmark-production-','') ?? PRODUCTION_R2_TARGETS.find(item=>item.bucketName===targetId)?.store;
       if(!admitted||!store||frozenIncarnations[store]!==targetIncarnation)fail();
       return store;
     },

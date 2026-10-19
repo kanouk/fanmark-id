@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "e70f2ec04823b322044b2699e8c19adcf4cccc1800110464ea140e463af8b5e3"
+    "sha256": "831bf765bb615c3004756655d0d77c10a9b262435be1b9bd4b626404c662b912"
   },
   "variables": [
     {
@@ -692,19 +692,35 @@
     },
     {
       "path": "scripts/migration/production-import-coordinator-client.mjs",
-      "sha256": "1966e6a3f9ba864f09d95010f0b6f05611229ae53f910e5838b8da28313b223e"
+      "sha256": "75a7ea489b3901ab9331e3e25c95aba0191efa8a407a50a54f38ee028be2da43"
+    },
+    {
+      "path": "scripts/migration/production-import-gateway.mjs",
+      "sha256": "ba8095658ce1e73178993c20d8b4292435300b1e5aad7be181e2f5f627823539"
     },
     {
       "path": "scripts/migration/production-import-journal.mjs",
-      "sha256": "5450c3f6f3a0138fa10597ecee981aef2425aa16de2aaea267a826d6bd4e5900"
+      "sha256": "a31a46436d0af21ca9d427fb673bf74a20b518e546249420abd9575017c5c9f2"
     },
     {
       "path": "scripts/migration/production-preparation-audit.mjs",
       "sha256": "5d2a3738aaf3753f594f75f13dafbe87dc99de8c587272f727f1a2d4bcae050d"
     },
     {
+      "path": "scripts/migration/production-r2-import-stage.mjs",
+      "sha256": "5554b36b462facb9a9535b6f7c54fb07a28ce866fd8296498f78d4a0d7e521f7"
+    },
+    {
+      "path": "scripts/migration/production-r2-targets.mjs",
+      "sha256": "b24505b75c9839376e5f5c1513f47c750fb9baeb7ecb958ac0e274cf59c1eac4"
+    },
+    {
       "path": "scripts/migration/production-remote-d1.mjs",
       "sha256": "1bcabe6416272d97cd909c80ca9c51a26364f780e3d9945b87ca1c82379801db"
+    },
+    {
+      "path": "scripts/migration/production-remote-r2.mjs",
+      "sha256": "80bfb849db7d1c8d53e25db1ba5093cd89db761ea60f8af397eedec095e8e090"
     },
     {
       "path": "scripts/migration/production-runtime-config.mjs",
@@ -836,7 +852,7 @@
     },
     {
       "path": "workers/api/src/index.ts",
-      "sha256": "6e0db9ff481bd3a20a7dcfabb6b2740047e7fd575722a9c02ba9cecbeefb1781"
+      "sha256": "3d598045ac561a50462f1ffec0ce7c15ede0c9699d55acdd0d72d7692b0b505e"
     },
     {
       "path": "workers/api/src/notification-wake.ts",
@@ -860,7 +876,15 @@
     },
     {
       "path": "workers/api/src/production-import-coordinator.ts",
-      "sha256": "76aa09336661705b163349a7b9fea38b2b52c4bd734db4e836058b66f232725d"
+      "sha256": "c34c7720771e8c0dcdd7a661863b7b6987a6d8585e1cc99e759dbfdcdfd449ba"
+    },
+    {
+      "path": "workers/api/src/production-r2-import-contract.ts",
+      "sha256": "7165147acc3db6a08f98fd290880e1e06175627ffd642dd938ac9667b1b1b4a4"
+    },
+    {
+      "path": "workers/api/src/production-r2-import-service.ts",
+      "sha256": "6dc466f07f1b8bb06240b4e66110bf4dc7d04b85931b6ac9b7c4c139a23bc880"
     },
     {
       "path": "workers/api/src/production-runtime-identity.ts",

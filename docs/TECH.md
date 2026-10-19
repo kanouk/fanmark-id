@@ -718,3 +718,11 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 `npm run test:business-import-stage` は40 source表を含むnative D1合成データで、初回専用投入・別read-only照合・途中応答消失を検証する。移行台帳が存在するtargetや既存reportは再開しない。schemaだけでなく78表の初期seedとSQLite連番を照合する。providerの`d1_migrations`等の連番は除外するが、未知の連番は拒否する。
 
 最初の台帳3表作成は`IF NOT EXISTS`を使わず、初期行条件を同一batch内で確認する。通常importの再開動作は維持し、専用entryだけはDBの例外・不完全ACK後に読み書きとも停止する。共有helperの再読込やエラー保存もDBへ届かない。source/schema/全storeの排他性をこの部品だけで保証しない。`production-stage`の試験は本番transportと永続journalをnative D1へ接続した合成HTTPであり、実資源への書き込み試験ではない。
+
+## 本番R2移送の接続と一時operator入口
+
+`npm run test:production-r2-import` は実R2/DOを使うlocal試験とcontrol-plane合成応答で、service・client・初回stage・独立reader・private journalを接続する。`production-r2-import-contract.ts` は1画像8MiBを上限に、key/size/SHA-256/MIME/由来metadataを固定する。全sourceの上限検査を最初のwrite前に行う。現在の予備コピー最大画像1,196,603 bytesはこの範囲内。
+
+R2保存はlocal intent→remote begin→Worker内のdurable dispatch→条件付きR2 put→remote ACK→local ACKの順。dispatch済みの同じoperationは再実行しない。競合・不完全ACK・応答消失はpendingのまま残す。別read-only接続は読めるが、自動的にpendingやlockを解除しない。dispatch後の部分失敗を含む独立解決/全体再開は別runnerの責任。
+
+一時gatewayは本番アプリ/ストアを変更せず、新UUID名のWorkerだけを作成する。2時間で失効し、read-onlyではget/list/identityと調停inspectのみ。importでもdelete/任意SQL/dispatchの直呼びは提供しない。gatewayの作成・有効化・削除はprivate append-only fsync journalで記録する。upload応答不明は再作成/自動削除せず、削除応答不明は一度の読戻しだけで判定する。終了時は自分のowner・配備版・bindingが一致するgatewayだけ削除する。実サービスへの配備・入口作成・全store実行はこれらのlocal試験と区別する。

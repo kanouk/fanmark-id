@@ -242,6 +242,12 @@
     "scripts/migration/master-import-readback.mjs",
     "scripts/migration/master-runtime-schema.mjs",
     "scripts/migration/split-r2-import-stage.mjs",
-    "scripts/migration/business-import-initial-target.mjs"
+    "scripts/migration/business-import-initial-target.mjs",
+    "scripts/migration/production-r2-targets.mjs",
+    "scripts/migration/production-remote-r2.mjs",
+    "scripts/migration/production-r2-import-stage.mjs",
+    "workers/api/src/production-r2-import-contract.ts",
+    "workers/api/src/production-r2-import-service.ts",
+    "scripts/migration/production-import-gateway.mjs"
   ]
 }

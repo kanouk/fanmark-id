@@ -123,7 +123,8 @@
     "test:master-snapshot-projection": "node --experimental-strip-types --test scripts/migration/test-master-snapshot-projection.mjs",
     "test:master-import-readback": "node --experimental-strip-types --test scripts/migration/test-master-import-readback.mjs",
     "test:split-r2-import-stage": "node --test scripts/migration/test-split-r2-import-stage.mjs",
-    "test:business-import-stage": "node --experimental-strip-types --test scripts/migration/test-business-import-stage.mjs"
+    "test:business-import-stage": "node --experimental-strip-types --test scripts/migration/test-business-import-stage.mjs",
+    "test:production-r2-import": "node --experimental-strip-types --test scripts/migration/test-production-r2-import-service.mjs scripts/migration/test-production-remote-r2.mjs scripts/migration/test-production-import-gateway.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

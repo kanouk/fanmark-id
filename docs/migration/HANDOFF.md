@@ -1,5 +1,11 @@
 ## 2026-10-19: CI成功、画像の初回投入・独立照合と実予備コピー復元
 
+## 2026-10-19: 本番R2接続・調停・一時operator入口を追加
+
+`5605ae2`のCI39183331479は両job成功。goal「本番移行直前まで止めずに進めて」はactiveのまま進める。固定本番R2 transport/初回stage/独立readerを追加し、bucket作成日時、全store binding、実アプリ/gateway配備版、access/expiryを毎回照合する。Workerはdurable dispatchを一度だけ記録して条件付き画像保存し、同じoperationを再実行しない。未知ACK時は双方journal/lockと画像を保持。
+
+UUID名・bearer・2時間期限の一時gateway作成/所有cleanup部品も追加。read-onlyは画像参照とinspectだけ。upload未知は再作成/自動削除せず、DELETE未知はGETで一度確認する。新規native/合成control-plane13件成功、D1/調停/既存writer回帰とtypecheck成功。新コード未配備、実gateway未作成、本番画像write0。[詳細](production-preparation-2026-10-18.md)。次は全store runner/未知ACK解決・source/Stripe handoff・外部設定/DNS逆操作・遠隔復旧/鍵。MFAは最後。source停止/本番import/DNS/main mergeなし。
+
 ## 2026-10-19: 業務DBの初回投入と不明ACK停止を追加
 
 `48fd081`のCI39176801478は両job成功。初回専用`importInitialBusinessSnapshot`を追加し、固定本番Businessのjournal付きwriter/独立read-only transport、78表のschema/seed/連番一致、最初のtransactionでの初期行検査を要求する。失敗/不明ACK後はDBへの追加操作を止め、既存行・台帳・journalを保持して自動再開しない。通常importの再開動作は維持。新規native17件を含む移行回帰427件、従来Business/Auth再開・復旧試験1件成功。

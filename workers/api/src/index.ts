@@ -1,3 +1,4 @@
+export { ProductionR2ImportService } from "./production-r2-import-service";
 export { ProductionBackupService, ProductionBackupAlertService } from "./production-backup-service";
 export { ProductionImportCoordinatorService } from "./production-import-coordinator";
 import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from "./notification-wake";

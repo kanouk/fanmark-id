@@ -3,6 +3,7 @@ import { open, lstat, unlink } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import pathModule from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { PRODUCTION_R2_TARGETS } from './production-r2-targets.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
@@ -12,7 +13,8 @@ const journals = new WeakSet();
 export const isProductionImportJournal = journal => journals.has(journal);
 
 export async function openProductionImportJournal({ path, runId, targetId, targetIncarnation, coordinator = null }) {
-  if (!pathModule.isAbsolute(path ?? '') || ![runId,targetId,targetIncarnation].every(v => typeof v === 'string' && UUID.test(v))) fail('production_journal_identity_invalid');
+  if (!pathModule.isAbsolute(path ?? '') || (![runId,targetIncarnation].every(v => typeof v === 'string' && UUID.test(v)) ||
+      !(typeof targetId === 'string' && (UUID.test(targetId) || PRODUCTION_R2_TARGETS.some(row => row.bucketName === targetId))))) fail('production_journal_identity_invalid');
   if (coordinator !== null && (!isProductionImportCoordinator(coordinator) || coordinator.owner !== runId)) fail('production_journal_coordinator_invalid');
   const store = coordinator?.assertTarget(targetId, targetIncarnation);
   const parent = await lstat(pathModule.dirname(path));
@@ -66,7 +68,7 @@ export async function openProductionImportJournal({ path, runId, targetId, targe
     } finally { await file.close(); }
   }
   const journal = Object.freeze({
-    targetId, targetIncarnation, coordinated: coordinator !== null,
+    runId, targetId, targetIncarnation, coordinated: coordinator !== null,
     async beforeWrite(batchSha256) {
       if (!HASH.test(batchSha256 ?? '') || active) fail('production_journal_write_conflict');
       // O_EXCL also serializes independent processes using this journal.

@@ -17,7 +17,7 @@ type Input = { owner: string; manifestSha256?: string; incarnationsSha256?: stri
 const shapes: Record<string, string> = {
   claim: "incarnationsSha256,manifestSha256,owner", inspect: "owner",
   begin: "batchSha256,operationId,owner,store", acknowledge: "batchSha256,operationId,owner,store",
-  complete: "owner,readbackSha256",
+  complete: "owner,readbackSha256", dispatch: "batchSha256,operationId,owner,store",
 };
 function json(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { "cache-control": "no-store" } });
@@ -55,7 +55,7 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     input = JSON.parse(text);
     if (!input || Object.keys(input).sort().join(",") !== shapes[action] || !UUID.test(input.owner)) return json(null, 400);
     if (action === "claim" && (!HASH.test(input.manifestSha256 ?? "") || !HASH.test(input.incarnationsSha256 ?? ""))) return json(null, 400);
-    if (["begin", "acknowledge"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
+    if (["begin", "acknowledge", "dispatch"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
         !["auth", "master", "business", "avatars", "covers"].includes(input.store ?? ""))) return json(null, 400);
     if (action === "complete" && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
   } catch { return json(null, 400); }
@@ -90,6 +90,10 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
       // permission to send the associated provider write again.
       if (state.pending || await storage.get("import-operation:" + input.operationId) || state.acknowledged >= 100000) return json(null, 409);
       state.pending = { operationId: input.operationId!, batchSha256: input.batchSha256!, store: input.store! };
+    } else if (action === "dispatch") {
+      if (!state.pending || !sameOperation(state.pending, input) || !["avatars", "covers"].includes(input.store ?? "") ||
+          await storage.get("import-dispatch:" + input.operationId)) return json(null, 409);
+      await storage.put("import-dispatch:" + input.operationId, state.pending);
     } else if (action === "acknowledge") {
       if (!state.pending || !sameOperation(state.pending, input)) return json(null, 409);
       await storage.put("import-operation:" + input.operationId, state.pending);
