@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`test-production-webhook-execution.mjs` は一度だけの固定POST、G4証拠の期限、旧site/設定変化/重複先の拒否、通信断後のintent保持と再送拒否、非JSONエラー原文の暗号化を合成HTTPで検査する。runtimeを配備しないoperator処理で、当日の証拠と本番配送の受入れは別途必要。
+
 `node --test scripts/migration/test-production-webhook-custody.mjs scripts/migration/test-production-webhook-readback.mjs` は実fileの排他作成・権限・暗号化応答・WebCrypto独立復号・改変拒否・不明応答保持と、GET専用provider接続の固定host/identity/全ページ検査を確認する。root移行CIへ含める。HTTPは合成、既存Resend endpointのGETのみ別途実確認済み。本番endpoint作成と配送の受入れは別工程。
 
 `test-production-backup-capture.mjs` はnative RPCで固定日次slotと固定手動UUIDの初回保存、二重保存拒否、status保持、認証/期限/runtime/未admission/実行中writerの拒否を検証する。`staging-backup.integration.mjs` は実local D1/R2/DOで日次と同日手動2回の共存、並行同IDの一度だけの保存、claim応答消失、schema不一致、失敗後の再送拒否と手動保存物の保持を検証する。実Cloudflareの保存・隔離復旧結果は [証拠](migration/evidence/production-operational-backup-restore-2026-10-19.json)を参照。

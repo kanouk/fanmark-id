@@ -74,3 +74,38 @@ G5前に署名検証と受信DBの照合を完了し、業務メール送信の�
 5. verifierは元応答とGETのID、固定URL・event・statusを照合する。Stripeはlivemode・API version・operation metadata・Connect applicationなしも確認。暗号化応答・intent・検証reportのhashを指定したprivate processでだけ `openProductionWebhookSecret` を使い、別のruntime設定処理へ値を渡す。取出し値を出力しない。
 
 21件の関連検査（鍵保管の既存3件を含む）が成功。既存Resend staging endpointでは新GET adapterの実domain/endpoint取得も確認したが、これは本番登録・配送の証明ではない。HTTP失敗時はprovider本文/キーを例外へ含めない。遠隔custodyへの追加保管・runtime設定・署名付き実受信・応答不明時の所有endpoint特定と復旧は引き続き必要。
+
+## G4確認後に一度だけ登録する接続（2026-10-19追加）
+
+`production-webhook-execution.mjs` の `executeProductionWebhookRegistration` は
+上記の保管処理と固定hostのPOSTを接続する。CLIから自動起動せず、当日のprivate processで
+呼ぶ。今回の実装検査は合成HTTPのみで、本番登録は実行していない。
+
+入力の`gate`は`fanmark-production-webhook-g4-evidence-v1`。
+run UUID、runtime version、全settings hash、source停止境界/G3照合/受信引継ぎの各hash、
+source project、停止/外部効果照合/業務未開始/実施者承認を固定し、観測から2分以内を要求する。
+**gateは確認済み証拠を入力する契約であり、旧環境の停止を実施・実証する機能ではない。**
+各hashの原本をprivate実行票へ保存し、当日の独立確認から作成する。過去の準備証拠や
+手入力のtrueだけで開始条件を満たしたと扱わない。
+
+実行は固定Cloudflare accountのGETでsettings完全一致、receipt_only・dispatcherなし・Cron0、
+配備100%と固定version、apexの所有service/zone、workers.dev/previews無効を照合する。
+HTTPSの一般画面/Auth/未設定Webhookの503/no-storeとエラー本文を転送なしで確認し、
+provider資格情報をこれらの公開URLへ送らない。署名のない空JSONによる到達確認は
+受信記録を作成しない。provider一覧を全ページ取得し、同じURL/operationの存在を拒否する。
+
+同じdirectoryの排他intent、gate、秘密を含まない元inventoryをfsyncし、もう一度配備と
+到達を確認してから排他dispatchをfsyncする。Stripeは固定idempotency keyとform body、
+Resendは固定JSONを**一度だけ**POSTする。成功・HTTPエラー・非JSON応答ともboundedな
+原文を先にAES-GCM保管し、その後に独立GETと既存custody verifierを実行する。
+応答消失・途中保存失敗・GET失敗でもintent/dispatchを残し、自動再送しない。
+
+`inspectProductionWebhookRegistrationExecution` は元intent/dispatch hashを要求して
+GET一覧の候補だけを返す。URL一致を所有証明にせず、候補0件も作成失敗の証明にしない。
+Stripe metadataが一致しても一度だけ返される鍵はGETで回収できない。Resendの同URL追加も
+第三者操作との区別がつくまで自動採用しない。再作成・削除・鍵rotation・runtime設定を
+自動実行せず、旧側へ戻す場合は候補と配送履歴を保持して上記の回収票へ進む。
+
+この追加でruntime秘密値設定・遠隔保管・実provider配送・G5開始は完了しない。
+Cloudflare制御面の読戻しと外部HTTPは同時transactionではないため、当日は外部の
+設定変更担当を止め、固定した実行票を単独実行する。

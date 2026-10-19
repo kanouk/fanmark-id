@@ -66,7 +66,7 @@ async function read(path, expectedHash) {
   const f = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const stat = await f.stat();
-    if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o777) !== 0o600 || stat.size > 131072) fail('file_invalid');
+    if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o777) !== 0o600 || stat.size > 1048576) fail('file_invalid');
     const bytes = await f.readFile();
     if (sha256Hex(bytes) !== expectedHash) fail('file_changed');
     try { return JSON.parse(bytes.toString('utf8')); } catch { fail('file_invalid'); }
@@ -130,22 +130,53 @@ async function loadIntent({directory, provider, expectedIntentSha256, archiveKey
   return {path, intent, request};
 }
 
+// Payload-free, fixed-name execution records share the same verified attempt.
+// These records never grant a retry or accept arbitrary paths.
+const recordNames = new Set(['dispatch', 'admission', 'inventory']);
+export async function saveProductionWebhookExecutionRecord(options = {}) {
+  options = {...options, record: structuredClone(options.record)};
+  const {path, request} = await loadIntent(options);
+  if (!recordNames.has(options.kind)) fail('record_invalid');
+  return save(resolve(path, request.provider + '-registration-' + options.kind + '.json'), options.record);
+}
+
+export async function readProductionWebhookAttempt(options = {}) {
+  const {path, request} = await loadIntent(options);
+  let dispatch = null;
+  if (options.expectedDispatchSha256) dispatch = await read(
+    resolve(path, request.provider + '-registration-dispatch.json'), options.expectedDispatchSha256);
+  return {request, dispatch};
+}
+
 /** Encrypt the complete bounded provider JSON response BEFORE interpreting it.
  * Even an error/unexpected response may contain a successfully created key.
  * Returns no secret and never reports provider success by itself. */
 export async function captureProductionWebhookResponse(options = {}) {
   options = {...options};
   let bytes;
-  try { bytes = canonicalJson(options.response); } catch { fail('response_invalid'); }
+  const raw = options.rawResponseBody;
+  try { bytes = raw === undefined ? canonicalJson(options.response) : raw; } catch { fail('response_invalid'); }
   if (typeof bytes !== 'string' || Buffer.byteLength(bytes) > 65536 || !Number.isInteger(options.httpStatus) ||
     options.httpStatus < 100 || options.httpStatus > 599) fail('response_invalid');
-  const response = JSON.parse(bytes);
+  // Preserve non-JSON and escaping-heavy error bodies too. Decode only in memory
+  // after the encrypted raw body is durable; success parsing is not custody.
+  let response;
+  if (raw === undefined) response = JSON.parse(bytes);
   const {path, intent, request} = await loadIntent(options);
-  const envelope = seal({httpStatus: options.httpStatus, response},
+  const envelope = seal(raw === undefined ? {httpStatus: options.httpStatus, response} :
+    {httpStatus: options.httpStatus, rawResponseBody: raw},
     header(request, intent.archiveKeyId, 'response'), options.archiveKeyHex);
   const responseSha256 = await save(resolve(path, request.provider + '-registration-response.enc.json'), envelope);
   return {responseSha256, intentSha256: options.expectedIntentSha256, responsePreserved: true,
     registrationVerified: false, providerRequestsMade: 0, retryAllowed: false};
+}
+
+function decodeCaptured(captured) {
+  if (typeof captured.rawResponseBody === 'string') {
+    try { return {...captured, response: JSON.parse(captured.rawResponseBody)}; }
+    catch { fail('readback_mismatch'); }
+  }
+  return captured;
 }
 
 function equalEvents(actual, expected) {
@@ -177,7 +208,7 @@ export async function verifyProductionWebhookRegistration(options = {}) {
   try { observed = structuredClone(options.readback); } catch { fail('readback_mismatch'); }
   const {path, intent, request} = await loadIntent(options);
   const envelope = await read(resolve(path, request.provider + '-registration-response.enc.json'), options.expectedResponseSha256);
-  const captured = unseal(envelope, header(request, intent.archiveKeyId, 'response'), options.archiveKeyHex);
+  const captured = decodeCaptured(unseal(envelope, header(request, intent.archiveKeyId, 'response'), options.archiveKeyHex));
   const response = captured.response;
   if (captured.httpStatus < 200 || captured.httpStatus > 299 || !response || typeof response !== 'object' ||
     !endpointMatches(request.provider, observed?.endpoint, request) || observed.endpoint.id !== response.id) fail('readback_mismatch');
@@ -209,7 +240,7 @@ export async function openProductionWebhookSecret(options = {}) {
     report.binding !== request.binding || report.encryptedResponseVerified !== true ||
     report.providerEndpointReadbackVerified !== true) fail('report_invalid');
   const envelope = await read(resolve(path, request.provider + '-registration-response.enc.json'), options.expectedResponseSha256);
-  const captured = unseal(envelope, header(request, intent.archiveKeyId, 'response'), options.archiveKeyHex);
+  const captured = decodeCaptured(unseal(envelope, header(request, intent.archiveKeyId, 'response'), options.archiveKeyHex));
   const secret = request.provider === 'stripe' ? captured.response?.secret : captured.response?.signing_secret;
   if (captured.response?.id !== report.endpointId || !validSecret(request.provider, secret)) fail('report_invalid');
   return {binding: request.binding, secret};

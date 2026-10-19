@@ -1,3 +1,11 @@
+## 2026-10-19: 既存worktreeで再開・未公開3commitをPRへ反映
+
+本人の新スレッドでの再開指示を受け、停止中の作業を再開した。local773bcfe・remote538100c・dirtyな`supabase/.temp/cli-latest`を確認し、3commitを通常git pushで既存PR #41へ反映した。CLI認証は今回は成功。remote773bcfeのCI39244655945が実行中。古いMCP公開bundleは使用していない。mainはe5a553c、移行branchを継続。
+
+`production-webhook-execution.mjs`を追加。G4確認票の期限、固定accountの配備/閉鎖設定、一般画面/Auth/WebhookのHTTPS 503/no-store、全provider一覧を確認してから、排他intent/dispatchをfsyncして一度だけPOSTする。応答原文は成功/失敗/非JSONとも暗号化を先行し、独立GETへ接続する。応答不明はGET候補照合のみで再送しない。関連26件・workflow isolation9件・変更file lint成功。HTTPは合成。証拠入力は旧環境の停止実証を代行しない。遠隔custody・runtime鍵設定・実配送は未実施。
+
+本番source停止・実ユーザー移送・DNS切替・main mergeなし。runtime b03de981の再配備なし。既存鍵/backup/日次slot/解約済み自己テスト契約は保持。管理者MFAは依頼していない。GitHub owner loginは最新browser inventoryで管理タブがないため本人へ確認し、他の準備を継続している。
+
 ## 2026-10-19: ユーザー指示で停止・新スレッド向け引き継ぎ
 
 **現在は停止中。最初に [停止時の引き継ぎ](RESUME-2026-10-19.md) を読む。** 実装HEAD aa10f6eはremote538100cより2commit先で未公開。3 provider callback保存は完了済み。本番source停止・移送・DNS切替・main mergeは未実施。MFA再認証は全準備後。以下は履歴であり、古い未完了記述をそのまま現在状態と解釈しない。
