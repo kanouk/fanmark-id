@@ -1,3 +1,13 @@
+## 2026-10-19: 非公開runtime更新とwww/adminの誘導候補
+
+非公開appを `9bf2eb60-7b2e-4013-a850-8e399fc0926d` へ更新した。配備対象runtime/build入力は両job成功済みa6e43e3/CI39193035726と同一。候補HEADはa82b26eで、そのCI39194702760も後続確認でapp/Worker両job成功。配備後の全binding/script runtime、公開経路0/Cron0、既存4 Workerとbackup/monitorの保持を独立読戻しした。app settings全体のhashは変わり、version APIではscript本体・metadataの変更とbinding/runtime一致を確認した。[証拠](evidence/production-closed-executor-update-2026-10-19.json)。
+
+www/admin専用のbindingなしalias Worker候補を追加。初期無効・公開経路0、GET/HEADの限定307、認証/API拒否、空fragmentによる旧hash token継承防止を検証した。native Workerを含む関連14件とbundle dry-run成功。aliasは未配備・DNS未接続。[操作票](production-domain-operations.md)。
+
+Supabase設定APIの4 provider secretは不透明値であり実資格情報として使わない。GitHub個人所有App一覧のstaging Appは旧本番Client IDと不一致。既存本番App所有先・秘密値/callback準備は残る。旧Stripe v172の重複延長/部分適用と新handlerのbilling intent必須を確認し、[効果照合の残件](source-stripe-receipt-only.md)へ明記した。
+
+本番source停止/実データimport/domain切替/main mergeなし。MFAは最後。source全入口drain票、旧Stripe効果/逆回収、部分stage/停止executor復旧、provider/operator、DNS逆操作、鍵別保管/実資源復旧を継続。
+
 ## 2026-10-19: 旧Stripe受信streamを暗号化取得から一括移送へ接続
 
 sealed sourceの同一snapshotから2表を取得し、Git外の0600 archiveへ暗号化・fsync・独立読戻しするcollectorを追加。元ID/全時刻/受信回数/正規化内容を保持してBusinessへ移し、別readerで全列照合する。全store runnerは同じBusiness journal/executorでBusiness→receipts→画像と進み、本番は明示的な空streamも必須。[手順・制限](stripe-receipt-transfer.md)。

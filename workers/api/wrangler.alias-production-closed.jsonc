@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-alias-production",
+  "main": "src/production-domain-alias.mjs",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "triggers": { "crons": [] },
+  "vars": { "PRODUCTION_ALIAS_REDIRECT": "disabled" }
+}

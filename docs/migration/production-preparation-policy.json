@@ -252,6 +252,8 @@
     "scripts/migration/production-import-inspection.mjs",
     "scripts/migration/initial-import-set-readback.mjs",
     "scripts/migration/source-stripe-receipt-only.mjs",
-    "scripts/migration/stripe-receipt-transfer.mjs"
+    "scripts/migration/stripe-receipt-transfer.mjs",
+    "workers/api/src/production-domain-alias.mjs",
+    "workers/api/wrangler.alias-production-closed.jsonc"
   ]
 }

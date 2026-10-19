@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`node --test scripts/migration/test-production-domain-alias.mjs` はwww/adminの誘導先、認証情報の転送拒否、旧hash tokenのfragment継承抑止、初期閉鎖を検証する。alias候補はrootの移行CIにも含める。
+
 旧Stripe受信の移行候補は[保存専用受信の手順](migration/source-stripe-receipt-only.md)を参照。
 `npm run test:source-stripe-receipt-only` は生成entry・実署名検証・独立PostgreSQL transactionによる
 受付終了待ちと暗号化取得→native D1への全内容移送を検査する。本番配備や受信記録の移送は実行しない。

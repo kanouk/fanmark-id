@@ -90,3 +90,28 @@ DNS record IDと保存原本・API body候補は取得済みだが、逆操作�
 repositoryの `src/hooks/useSubdomain.tsx` と `src/App.tsx` はadmin hostだけ `AdminApp` を選択する。`src/components/AdminApp.tsx` は `/` を管理画面に割り当て、ほかのpathを `/` へ戻す。`AdminDashboard` の選択tabはcomponent stateであり、URLからは読み取らない。apex側の管理入口は `/admin/*`。この実装上の対応と、配信中のビルドの同等性は分ける。
 
 推奨候補はadminの既知の入口 `/` をapex `/admin` へ一時誘導し、本番認証をapex originへそろえること。wwwはpath/queryを保ってapexへ誘導する候補。ただし旧認証のcode/token、API POST、未調査pathを一律転送しない。alias用handlerと検証、変更前後のCustom Domain/redirect票が必要であり、まだ有効化していない。既存Supabase cookieがapexのBetter Auth sessionになるとは扱わない。
+
+
+## alias専用Workerの候補（未配備）
+
+`workers/api/src/production-domain-alias.mjs` と
+`workers/api/wrangler.alias-production-closed.jsonc` を追加した。DB・画像・秘密値・
+アプリservice bindingを持たず、外部fetchもしない。初期設定は無効、公開route・Cronは0。
+当日のapex受け入れ後、wwwとadminをこの専用Workerへ1件ずつ接続する候補とする。
+
+有効時もGET/HEADだけを一時的な307で案内する。wwwは通常のpath/queryを保ち、
+adminはqueryなしの `/` だけを `/admin` へ案内する。API・認証callback・パスワード設定/
+リセット、認証情報に関係するqueryは転送せず、apexでの再ログインを案内する。
+未調査のadmin path/queryは404。Location末尾の明示的な空fragmentは、旧Supabaseの
+hash tokenが新URLへ引き継がれることを防ぐ。no-store/no-referrerを付け、恒久redirectは使わない。
+これにより通常のページ内anchorも引き継がれない。
+
+逆操作は当該runで追加したalias domainだけを解除し、保存した各A recordの属性へ戻す。
+apexの逆操作と同じ所有ID確認・応答不明時のGET・NS共存制約が適用される。
+候補実装はDNS復元APIの受け入れや公開TLSの実証ではない。
+
+10/19のGitHub管理画面では `fanmark.id Cloudflare staging`（application 3902960）だけが
+個人所有OAuth App一覧にあり、Client IDのhashは旧Supabase設定と一致しなかった。
+この検証用Appへ本番callbackを追加せず、旧本番Appの所有先特定を残件とした。
+Supabase設定APIの4 provider secretは64文字の不透明な値で、取得できた認証用秘密値とは
+扱わない。非空であるだけではsecretを移送できる根拠にならない。

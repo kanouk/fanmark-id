@@ -66,3 +66,22 @@ seal後503、関数/権限変更の検出、記録を残したreopenを検査す
 受信streamのexport/importは一括runnerへ接続した。両環境の効果照合と実停止/取得の確認が
 残るため、`productionReady=false` を維持する。
 管理者MFA再認証はこれらと他の移行準備がそろった後に行う。
+
+
+## 旧version 172の効果照合で判明した制限
+
+保存済み原本の延長処理はライセンス期限更新、抽選取消、`LICENSE_EXTENDED`監査を
+別の呼出しで行い、延長前のevent/session重複排除がない。監査の
+`payment_session_id` は照合の手掛かりになるが、監査保存の結果を検査していないため、
+監査がないことを未適用の証明にはできない。元の通知を全件再送すると重複延長し得る。
+
+新D1 handlerはbilling intentを要求する。旧Checkout metadataの通知をそのまま
+新dispatcherへ流しても適用できない。署名済みsnapshotを改変してintentを補うことや、
+保留通知を処理済みに書き換えることはしない。
+
+当日の停止票では、旧Checkout新規発行の停止に加え、live/test別のopen/complete/expired
+Session、入金状態、対象ライセンスと監査を取得・照合する。未完了Session、旧handlerの
+実行中処理、適用結果不明の支払がある間は、新側の業務処理を開けない。
+旧側へ戻す場合も保存専用受信と受信archiveを保持し、旧handlerへの盲目的な再送を避ける。
+この棚卸しcollectorと未解決支払の個別処理は残件。既存の解約済み自己テスト契約の
+記録保持とは別の確認であり、その契約は除外・再課金しない。

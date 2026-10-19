@@ -1,5 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
+本番aliasの候補は `workers/api/src/production-domain-alias.mjs`。DB等を持たない専用Workerでwww/adminからapexへの限定誘導を担う。初期状態は無効・未配備。[操作票](migration/production-domain-operations.md)。
+
 移行時の旧Stripe受信候補は `scripts/migration/source-stripe-receipt-only.mjs`。
 共通署名検証handlerとprivate PostgreSQL receipt保存を再利用し、保存transactionの
 完了待ち・受付停止・記録を残した再開を生成する。

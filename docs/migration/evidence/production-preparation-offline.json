@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "b34cb0dc4fea34d336d34c6dc83b7ff610980aa06e271b3e27def9f91327e48a"
+    "sha256": "55a52df091ac368f7b633291f3fe1c0b0347159f51ae9420e1876f61334ca4a1"
   },
   "variables": [
     {
@@ -891,6 +891,10 @@
       "sha256": "b8b78ee4498e160f9d088e7b123c9e5768be5307a828c7e23d2a3fd11e7311d2"
     },
     {
+      "path": "workers/api/src/production-domain-alias.mjs",
+      "sha256": "c9a08e7c8cddc66672a917db9e99fd70fda40cb6a657f46b3a5b621cc9ed5808"
+    },
+    {
       "path": "workers/api/src/production-import-coordinator.ts",
       "sha256": "573971ae6351323d3c0aea04dfcb10cffefcd96bafab12cb9a714d0ae0e2e62b"
     },
@@ -933,6 +937,10 @@
     {
       "path": "workers/api/src/stripe-mode-policy.ts",
       "sha256": "a6aa4016c3330396604a05c64db417f8937d0e08ee2dd68e2fd741cee75a5f1e"
+    },
+    {
+      "path": "workers/api/wrangler.alias-production-closed.jsonc",
+      "sha256": "b2120bc178f203132b804bf5aae5185603213a72489dd7d0fcb6167087c3d15c"
     },
     {
       "path": "workers/api/wrangler.app-production-closed.jsonc",
