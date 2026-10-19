@@ -1,0 +1,115 @@
+{
+  "format": "fanmark-production-backup-configuration-evidence-v1",
+  "observedAt": "2026-10-19T05:19:19.250Z",
+  "configurationHead": "f1c10d5",
+  "runtimeInputsIdenticalToGreenCommit": "15714a54ee64d897401531f9a4aa94880e67d41f",
+  "runtimeCiRun": 39198697249,
+  "workers": [
+    {
+      "name": "fanmark-app-production",
+      "version": "8790b5a6-f28a-438a-ba0a-0e08d7ba0e38",
+      "settingsSha256": "3fef7bee8c479d1297dc589eeb8966361af56f3d76ecf2bf6d54aaaed6be79ee"
+    },
+    {
+      "name": "fanmark-backup-production",
+      "version": "e0f3d5c9-1cc8-4d7c-b577-b02ea24ab38c",
+      "settingsSha256": "178a279c601f1ad4188d31d2d6fbc20a678b7e0960a9f9784255d94d0b5eeda3"
+    },
+    {
+      "name": "fanmark-backup-monitor-production",
+      "version": "2c057173-9acc-4640-9f60-4777e8d09ce0",
+      "settingsSha256": "915a5f10d1607e3903cb5e9b22db071fd15fce0ba84b8d5b8d1ffbb5f3388515"
+    }
+  ],
+  "keyId": "production-backup-b7453682-6750-41f1-be11-4ce71ca3fa55",
+  "authKeyId": "ac7c57eff0fcd5721af6dc521be1166eb60c7b23c1d1e454f474e001a4bf2411",
+  "actualRuntimeKeysMatchedCustody": true,
+  "unauthorizedStatus": 401,
+  "writerState": {
+    "owner": null,
+    "scope": "6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d",
+    "active": 0,
+    "drained": false,
+    "initialized": false,
+    "tickets": {
+      "scanned": 0,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 0,
+      "oldestEnteredAt": null,
+      "runtimeRevisions": {},
+      "kinds": {}
+    }
+  },
+  "bindingCensus": {
+    "workerCount": 7,
+    "inventoryStable": true,
+    "applicationStoreHolders": [
+      "fanmark-app-production"
+    ],
+    "productionServiceCallers": [
+      "fanmark-backup-monitor-production",
+      "fanmark-backup-production"
+    ],
+    "externalControlPlaneClientsEnumerated": false
+  },
+  "operatorCleanup": [
+    {
+      "name": "fanmark-prod-backup-inspect-e9630646-0897-4d8e-8cbc-71a95165a753",
+      "version": "12df3973-b688-4627-9773-cf2a8a547a18",
+      "deletedReadback": true
+    },
+    {
+      "name": "fanmark-backup-inspect-aad77aa9-8d5e-46dd-8e7c-2668bfec1480",
+      "version": "bcea1c0e-c8d6-44a5-808b-8f3a1f889837",
+      "deletedReadback": true
+    }
+  ],
+  "validation": {
+    "closedConfigAndPreparationTests": 12,
+    "nativeInspectionTests": 1,
+    "productionBuild": "passed",
+    "closedBundleDryRun": "passed"
+  },
+  "observedFailures": [
+    {
+      "stage": "secret-settings-comparison",
+      "nonBindingDifference": [
+        "annotations"
+      ],
+      "nonSecretBindingsUnchanged": true,
+      "secretRequestRepeated": false
+    },
+    {
+      "stage": "operator-activation",
+      "nameLength": 64,
+      "maximumDnsLabelLength": 63,
+      "originalResponseErrorNotRetained": true,
+      "shorterNewOwnedOperatorSucceeded": true,
+      "originalOwnedOperatorDeleted": true
+    },
+    {
+      "stage": "native-inspection-test",
+      "emptyPostBodyStreamInitiallyRefused": true,
+      "fixedAndPassed": true
+    }
+  ],
+  "privateReceiptHashes": {
+    "production-backup-secret-independent-inspection.json": "1b7d81d01b99008f31ac87c2bd459acd8afa28ea06b62b00fbb107a6ab2ed27c",
+    "closed-runtime-backup-pins-readback.json": "7c265ea4b66473f11ff76ec82b43d3e49d48eed259aafc3d24007d9d6778b8c0",
+    "production-backup-internal-inspection.json": "7c6a98c2ce188c10e6ee042d6a161761c517ad11dfdde70022deea7ac8da1020",
+    "production-backup-binding-census.json": "ca7b535e583e2c9c1c01a2bdf56b17fe14a03f089c9272b2119f59c064ec3a44"
+  },
+  "scope": {
+    "publicAppRoutes": 0,
+    "cronTriggers": 0,
+    "backupAdmission": "pending",
+    "backupCaptured": false,
+    "isolatedRestoreVerified": false,
+    "sourceWrites": 0,
+    "dataImported": false,
+    "domainSwitched": false,
+    "mainMerged": false,
+    "productionReady": false
+  }
+}

@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`test-production-backup-inspection.mjs` はnative service RPCで認証/期限、runtime・scope・鍵・schema固定、run/prune/入力body拒否を検証する。空POSTが空streamとして渡る実装にも対応し、本文を一括bufferせず先頭chunkで拒否する。
+
 `node --test scripts/migration/test-production-key-custody.mjs` は本番鍵の独立性、Worker WebCryptoとの復号互換、改変拒否を検査する。実保管はmacOS専用で、鍵値をargv/ログに出さず、VaultをfsyncしてからKeychainへ保存する。Sync確認と遠隔からの復号確認は別途実施する。[操作契約](migration/production-key-custody.md)。
 
 `node --test scripts/migration/test-source-stripe-inventory.mjs` は旧Stripeの全ページ取得、live/test分離、未完了決済の抽出、資格情報・個人情報の出力抑止を合成応答で検証する。root移行CIにも含める。[停止・中止手順](migration/source-stop-and-resume.md)。

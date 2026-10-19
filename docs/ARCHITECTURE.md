@@ -1,5 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
+本番backupの内部読取り候補は `scripts/migration/production-backup-inspection.mjs`。固定版・固定scope・期限付きbearerでstatus/暗号化escrowだけを許可する。[閉鎖中の準備](migration/production-backup-preparation.md)。
+
 本番用の鍵保管は `scripts/migration/production-key-custody.mjs`。独立したarchive鍵と認証秘密鍵を作成し、暗号化escrow・Macキーチェーン・非公開Vaultへ保存する。既存鍵や保存先は再利用せず拒否する。[保管と復旧の範囲](migration/production-key-custody.md)。
 
 旧Stripe決済のGET専用棚卸しは `scripts/migration/source-stripe-inventory.mjs`。停止と公開前中止の順序は[実行票候補](migration/source-stop-and-resume.md)を参照。

@@ -20,8 +20,8 @@
     "STAGING_BACKUP_MONITOR": "disabled",
     "RECOVERY_DRAIN_SCOPE_DIGEST": "6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d",
     "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"dc43ffd7-0ca8-45d6-805c-ae1e6f2b58a6\",\"business\":\"84599147-e2c7-41d8-80ae-33c61b158314\",\"master\":\"5973e9f4-cae3-4a2b-b99d-16c2f0ae76da\",\"avatars\":\"fanmark-avatars-production\",\"covers\":\"fanmark-covers-production\"}",
-    "STAGING_BACKUP_SCHEMA_HASHES": "",
-    "STAGING_BACKUP_KEY_ID": ""
+    "STAGING_BACKUP_SCHEMA_HASHES": "{\"auth\":\"3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b\",\"business\":\"598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2\",\"master\":\"3ca374efa733a5c6db5e71918bae25e259bdc1b4a7b1b2d3d96dda1e6fba2240\"}",
+    "STAGING_BACKUP_KEY_ID": "production-backup-b7453682-6750-41f1-be11-4ce71ca3fa55"
   },
   "triggers": {
     "crons": []

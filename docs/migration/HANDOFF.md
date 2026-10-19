@@ -1,3 +1,21 @@
+## 2026-10-19: 本番鍵のruntime照合と閉鎖binding censusを完了
+
+本番appを8790b5a6、monitorを2c057173へ更新。通常runtime/build入力は両job成功済み15714a5と同一で、今回の差分は閉鎖backup設定とoperator。3 Workerの全binding/runtime・既存4 Worker・公開経路0/Cron0を独立読戻しした。
+
+内部serviceのstatus/暗号化escrowを実取得し、保管済みarchive鍵で復号した認証秘密鍵がキーチェーンと一致した。認証なし401、writer active0/ownerなし/未初期化・ticket0、保存receiptなしを確認。全7 Workerの設定を調べ、3D1/画像R2のholderは閉鎖appのみ、service callerは閉鎖backup/monitorだけだった。外部control-plane clientの全列挙を証明するものではない。
+
+最初の一時operatorは名前64文字でDNSラベル上限を超えており、activation時に停止した（元応答の詳細は未保存）。所有版を照合して削除後、短い別名で成功した。成功したoperatorも削除・404確認済み。[限定証拠](evidence/production-backup-configuration-2026-10-19.json)。
+
+保存admissionはpendingのまま。次は手動保存・隔離した実資源への復旧・全内容照合と監視/通知の準備。移送後のBusiness台帳追加に伴うschema hash再取得も必要。91be9ed/CI39202678409は後続確認でapp/Worker両job成功。今回の閉鎖設定・内部照合・cleanupをまとめて既存PRへ反映する。本番source停止/import/DNS/main mergeなし。MFAは最後。
+
+## 2026-10-19: 本番backupの閉鎖設定と内部検査候補
+
+実D1の初期定義を2回読み取り、3 storeのhashを鍵IDとともに閉鎖configへ固定した。保存admissionはpending、公開/Cronは0。鍵2件を既存本番appへ登録し、独立読取りでsecret名2件・他binding不変・公開/Cron閉鎖を確認した。最初の全settings比較はAPIが変更したannotationsで止まったため再送せず、bindingと他設定を個別照合した。鍵値のruntime照合は次工程。
+
+固定版・scope・鍵ID・schemaと期限付きbearerでstatus/暗号化escrowだけを許すoperator候補を追加。native試験では空POSTが空streamになるケースを修正して通過した。run/prune/fence操作は公開しない。[準備契約](production-backup-preparation.md)。閉鎖config/検査経路はまだ未配備。
+
+91be9ed/CI39202678409は両job進行中。appの既知失敗箇所は通過し、最後のowner editor検査へ進んでいる。runtime/build入力は両job成功済み15714a5と一致する。新しいconfigの関連12件、native inspector1件、production buildと全閉鎖bundle dry-run成功。本番source停止/import/DNS/main mergeなし。MFAは最後。
+
 ## 2026-10-19: 本番専用鍵を保管し、遠隔から復号確認
 
 本番専用の独立したarchive鍵・認証用秘密鍵を作成し、Macキーチェーンと非公開Vaultへ保存した。Vaultは0600/0700、Obsidian SyncのFully syncedと3つのhash一致を確認。さらにSyncサーバーの対象versionを直接取得し、全内容のSHA-256一致と認証escrowの復号・鍵ID一致を確認した。既存鍵での再実行拒否とnote不変も実検証。値は公開記録へ出していない。[操作契約](production-key-custody.md) / [限定証拠](evidence/production-key-custody-2026-10-19.json)。

@@ -9,7 +9,8 @@ const root=new URL('../../',import.meta.url);
 export const readClosedProductionConfigs=()=>Object.fromEntries([
   ['app','app'],['scheduler','backup'],['monitor','backup-monitor'],
 ].map(([key,name])=>[key,JSON.parse(readFileSync(new URL(`workers/api/wrangler.${name}-production-closed.jsonc`,root),'utf8'))]));
-export function validateClosedProductionConfigs({app,scheduler,monitor},resources) {
+export const readProductionBackupPins=()=>JSON.parse(readFileSync(new URL('docs/migration/production-backup-pins.json',root),'utf8'));
+export function validateClosedProductionConfigs({app,scheduler,monitor},resources,backupPins=readProductionBackupPins()) {
   if(resources.accountId!==PRODUCTION_RUNTIME.accountId)fail('account');
   const mapping={AUTH_DB:'auth',FANMARK_DB:'business',MASTER_DB:'master'};
   if(resources.d1.length!==3||resources.d1.some(d=>PRODUCTION_STORE_IDS[mapping[d.binding]]!==d.id))fail('manifest_identity');
@@ -42,8 +43,15 @@ export function validateClosedProductionConfigs({app,scheduler,monitor},resource
     STRIPE_MODE_POLICY:'',NOTIFICATION_WAKE_BACKEND:'durable-object',RECOVERY_DRAIN_BACKEND:'durable-object'}))if(v[key]!==value)fail('closed_variable_'+key);
   for(const key of ['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','LICENSE_EXPIRY_BACKEND','NOTIFICATION_ARCHIVE_BACKEND','STRIPE_DISPATCH_BACKEND'])if(key in v)fail('unexpected_writer_or_legacy');
   if(!same(JSON.parse(v.STAGING_BACKUP_SOURCE_IDS),PRODUCTION_STORE_IDS))fail('backup_sources');
-  // Blank values are explicit pending operations, not fake keys/schema digests.
-  for(const key of ['STAGING_BACKUP_SCHEMA_HASHES','STAGING_BACKUP_KEY_ID','STAGING_BACKUP_ALERT_TO'])if(v[key]!=='')fail('unreviewed_backup_activation');
+  // Pins permit internal status/escrow inspection, not capture admission or release.
+  // They describe the pre-import baseline; import-ledger DDL requires new readback.
+  if(!backupPins||backupPins.format!=='fanmark-production-backup-pins-v1'||
+    backupPins.scopeDigest!==scope||backupPins.phase!=='baseline-before-import'||
+    !/^production-backup-[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(backupPins.keyId??'')||
+    !backupPins.schemaHashes||Object.keys(backupPins.schemaHashes).sort().join(',')!=='auth,business,master'||
+    Object.values(backupPins.schemaHashes).some(x=>typeof x!=='string'||!/^[a-f0-9]{64}$/.test(x)))fail('backup_pins_invalid');
+  if(v.STAGING_BACKUP_KEY_ID!==backupPins.keyId||
+    !same(JSON.parse(v.STAGING_BACKUP_SCHEMA_HASHES),backupPins.schemaHashes)||v.STAGING_BACKUP_ALERT_TO!=='')fail('unreviewed_backup_activation');
   if(!same(app.ratelimits.map(x=>[x.name,x.namespace_id]),[['WAITLIST_SIGNUP_LIMITER','41092711'],['FANMARK_SEARCH_LIMITER','41092712'],['FANMARK_ACCESS_ANALYTICS_LIMITER','41092713']]))fail('ratelimit_identity');
   for(const [config,main,binding,entrypoint,selector] of [[scheduler,'src/production-backup-scheduler.ts','BACKUP_SERVICE','ProductionBackupService','STAGING_BACKUP_SCHEDULE'],
     [monitor,'src/production-backup-monitor.ts','BACKUP_ALERT_SERVICE','ProductionBackupAlertService','STAGING_BACKUP_MONITOR']]) {
@@ -54,5 +62,6 @@ export function validateClosedProductionConfigs({app,scheduler,monitor},resource
   for(const key of ['STAGING_BACKUP_SOURCE_IDS','STAGING_BACKUP_SCHEMA_HASHES','STAGING_BACKUP_KEY_ID'])if(monitor.vars[key]!==v[key])fail('monitor_identity');
   return {format:'fanmark-production-closed-config-v1',closedCandidateValidated:true,productionReady:false,
     worker:app.name,scope,publicRoutes:0,cronTriggers:0,
-    pending:['secret-custody-and-bindings','final-schema-hashes','backup-admission-and-recipient','independent-deployed-binding-readback','restore-and-operator-acceptance']};
+    backupPinsPhase:backupPins.phase,
+    pending:['secret-bindings-and-escrow-readback','post-import-schema-hashes','backup-admission-and-recipient','independent-deployed-binding-readback','restore-and-operator-acceptance']};
 }

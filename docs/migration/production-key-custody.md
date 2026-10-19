@@ -23,3 +23,5 @@
 ## 次の工程
 
 閉鎖中の本番Workerへ同じ鍵を設定し、内部RPCから得るescrowとの一致を確認する。実際のbackup作成と隔離したD1/R2への一式復旧を行い、既存データ・schema・鍵の組合せを照合する。鍵の保管だけでbackup admissionを成功へ変更したり、公開経路/Cronを有効にしたりしない。管理者MFAの再登録は残りの独立した準備が完了してから行う。
+
+2026-10-19、閉鎖本番Workerへ同じ鍵を設定し、実serviceから取得した暗号化escrowの復号・キーチェーン一致を確認した。[runtime検証](production-backup-preparation.md)。保存admissionはpendingで、実backup/一式復旧は次工程。
