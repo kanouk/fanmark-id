@@ -137,3 +137,6 @@ Google/Discord/Appleの既存設定へ、新本番callbackだけを追加する�
 現行apexのHTTP HEADはHTTPSへの301を返したが、この応答が新しいWorkerでも維持されるとは確認できていない。Workerのfetch入口にも汎用のHTTPS誘導はない。切替前にapex・www・adminについて、HTTPのGET/HEADが同じpath/queryのHTTPSへ安全に誘導され、HTTPから認証・業務処理が実行されないことを確認する。
 
 推奨は対象3hostに限定したCloudflareのSingle Redirectを切替票へ用意すること。全hostへ作用するAlways Use HTTPSより、旧auth等への影響範囲を限定できる。これは未適用の案であり、設定保存前には正確な式・転送status・query保持と逆操作をレビューする。[公式のHTTPS設定説明](https://developers.cloudflare.com/ssl/edge-certificates/additional-options/always-use-https/)でも、一部hostだけに適用する場合はSingle Redirectが案内されている。新しいredirectの実IDを保存し、中止時は当該runで追加したその1件だけを解除する。既存TLS設定・NS/mail設定を併せて変更しない。
+
+
+資格情報の設定状態とprovider通知先の現状は[本番アプリの資格情報](production-provider-secrets.md)を参照。10/19のlive/test別API読戻しでは、Stripeの旧Supabase向け通知はsandboxだけにあり、本番通知先は未登録だった。「既存本番endpointのURLだけを変更する」前提では実行しない。

@@ -1,3 +1,13 @@
+## 2026-10-19: 閉鎖appの資格情報を準備し、Stripe本番通知先の欠落を確認
+
+5faf9b4 / CI39211160698はapp・Workerとも成功。外部ログイン8件、Stripe/Resend4件、公開ページ用署名鍵1件を閉鎖appへ設定した。既存2件と合計15 secret binding。別processで全binding/varsと閉鎖状態を照合し、現版は `b03de981-0764-445f-bade-cdc024d7e8c0`。runtime codeは794564cのまま。公開route/Custom Domain/Cron0、backup/monitor/既存Worker不変。[設定と残件](production-provider-secrets.md)、[限定証拠](evidence/production-application-secrets-readiness-2026-10-19.json)。
+
+旧環境の必要なservice秘密値3件は、認証・期限・暗号化返却だけを持つ一時診断関数で保管した。配備前の7検査が成功し、取得後に当該関数を削除して既存関数inventory不変を確認。既存Stripe sandboxキーも暗号化保管した。APIでlive/test両アカウントとResendのfanmark.id verifiedを確認。課金・メール送信なし。
+
+**新しい確認結果:** Stripe本番のv1/v2通知先はともに0。旧Supabase向けの4 event受信はsandboxにだけ登録されている。旧署名鍵は新本番へ設定せず、本番通知先を別途準備する。Resend配送通知の署名鍵、公開ページ用鍵の遠隔Sync/復号確認、OAuth callback保存/GitHubログインも残る。公開ページ用鍵は本番専用の新規乱数で、Keychainと暗号化Vaultのローカル一致まで確認済み。
+
+source停止・ユーザーデータ移送・DNS切替・main mergeなし。旧解約済みテスト契約を保持。管理者MFAはまだ依頼していない。
+
 ## 2026-10-19: 復旧候補のCI成功と閉鎖runtimeへの反映、provider/TLSの読戻し
 
 794564c / [CI39209187570](https://github.com/kanouk/fanmark-id/actions/runs/39209187570) はapp・Workerとも成功。production build後、外部公開していないappへ配備した。現版は `0d0ffe20-fea0-40fb-ba83-c88fa3bf1e94`。別processで全binding/vars、公開route・Custom Domain・Cronが0、workers.dev/previews無効、receipt_only・backup admission pendingを確認。backup/monitorの版・設定と既存4 Workerの設定を保持した。[配備証拠](evidence/atomic-auth-closed-deployment-2026-10-19.json)。本番のAuth移送や障害復旧を実行した証拠ではない。
