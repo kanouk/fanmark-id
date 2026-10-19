@@ -450,3 +450,5 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 移送中断の独立照合は `scripts/migration/production-import-inspection.mjs`。private journalを変更せず、調停DOのread-only `operation` でUUID/hash/storeを照合する。5 storeの一括照合は各1 journalを要求し、遠隔ACK総数との一致と前後の記録保持を確認する。遠隔ACK確定・同一hostの元process終了が確認された場合に限り、local ACKを補修する。未知のprovider結果や部分stageの再開は許可しない。[操作と制限](migration/production-import-recovery.md)。
 
 `initial-import-set-readback.mjs` は初回移送の5 storeをまとめた独立checker。検証済みBusiness exportからMasterを直接投影し、Authの全user ID・管理権限・表示名を同じexportへ照合する。入力hashとrun/各incarnation/activation IDを束ね、production modeでは固定read-only接続・同じ調停manifest・全journalのACK一致を要求する。業務の外部user参照は実Auth D1で解決する。移送実行やsource停止のcollectorは提供しない。[契約](migration/initial-import-set.md)。
+
+`initial-import-set-readback.mjs` の `rehearseInitialImportSet` はlocal限定で全stageの順次実行・完了済みstageの全内容再照合と境界からの再開を行う。本番のsource停止・runner所有権は未接続。[入力・再開契約](migration/initial-import-set.md)。

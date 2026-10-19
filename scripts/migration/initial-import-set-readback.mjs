@@ -1,5 +1,5 @@
-/** Independent all-store readback bound to one immutable input descriptor.
- * This neither freezes a source nor admits/retries an import or opens a site.
+/** Independent all-store readback and local rehearsal bound to one immutable
+ * input descriptor. Neither freezes a source nor admits a production import.
  */
 import { readFile } from 'node:fs/promises';
 import { dirname, join, isAbsolute } from 'node:path';
@@ -8,7 +8,10 @@ import { verifySnapshot } from './snapshot-verify.mjs';
 import { projectMasterSnapshot, MASTER_SOURCE_TABLES } from './master-snapshot-projection.mjs';
 import { prepareAuthImportProjection, verifyImportedAuthProjection } from './auth-import-readback.mjs';
 import { verifyImportedMasterProjection } from './master-import-readback.mjs';
-import { verifyImportedD1Snapshot } from './d1-import.mjs';
+import { verifyImportedD1Snapshot, importInitialBusinessSnapshot } from './d1-import.mjs';
+import { importAuthProjectionStage } from './auth-import-stage.mjs';
+import { importMasterProjectionStage } from './master-import-stage.mjs';
+import { importInitialSplitR2Export } from './split-r2-import-stage.mjs';
 import { prepareStorageImportReadback } from './storage-r2-import.mjs';
 import { verifyImportedSplitR2Export } from './split-r2-import-stage.mjs';
 import { verifyProductionSplitR2Export } from './production-r2-import-stage.mjs';
@@ -72,6 +75,21 @@ async function prepareSet({ manifestPath, storageExportDir, authProjection, appr
   return prepared;
 }
 
+function authResolver(database) {
+  return async function resolveAuthUserIds(ids) {
+    if (!Array.isArray(ids) || ids.some(id => typeof id !== 'string')) fail('auth_reference_invalid');
+    const found = new Set();
+    for (let offset = 0; offset < ids.length; offset += 100) {
+      const part = ids.slice(offset, offset + 100);
+      const rows = await database.prepare(`SELECT id FROM "user" WHERE id IN (${part.map(() => '?').join(',')})`).bind(...part).all();
+      if (rows?.success !== true || rows.meta?.rows_written !== 0 || !Array.isArray(rows.results) ||
+          rows.results.some(row => Object.keys(row).join(',') !== 'id' || !part.includes(row.id) || found.has(row.id))) fail('auth_reference_unconfirmed');
+      for (const row of rows.results) found.add(row.id);
+    }
+    return found;
+  };
+}
+
 async function verifySet({ prepared, databases, buckets, mode = 'local', coordinator, journalPaths } = {}) {
   const plan = plans.get(prepared);
   if (!plan || !['local', 'production-stage'].includes(mode)) fail('plan_invalid');
@@ -109,18 +127,7 @@ async function verifySet({ prepared, databases, buckets, mode = 'local', coordin
     targetIncarnation: descriptor.incarnations.master, activationIds: descriptor.activationIds });
   // Actual Auth readback resolves every referenced Business identity. Never
   // accept a caller's permissive resolver or email-based identity replacement.
-  async function resolveAuthUserIds(ids) {
-    if (!Array.isArray(ids) || ids.some(id => typeof id !== 'string')) fail('auth_reference_invalid');
-    const found = new Set();
-    for (let offset = 0; offset < ids.length; offset += 100) {
-      const part = ids.slice(offset, offset + 100);
-      const rows = await db.auth.prepare(`SELECT id FROM "user" WHERE id IN (${part.map(() => '?').join(',')})`).bind(...part).all();
-      if (rows?.success !== true || rows.meta?.rows_written !== 0 || !Array.isArray(rows.results) ||
-          rows.results.some(row => Object.keys(row).join(',') !== 'id' || !part.includes(row.id) || found.has(row.id))) fail('auth_reference_unconfirmed');
-      for (const row of rows.results) found.add(row.id);
-    }
-    return found;
-  }
+  const resolveAuthUserIds = authResolver(db.auth);
   const business = await verifyImportedD1Snapshot({ manifestPath: plan.manifestPath, database: db.business,
     destinationId: descriptor.businessDestinationId, targetIncarnation: descriptor.incarnations.business,
     canonicalBusinessSchema: true, expectedTargetProfile: plan.profile, resolveAuthUserIds });
@@ -152,4 +159,71 @@ export async function prepareInitialImportSet(options) {
 }
 export async function verifyInitialImportSet(options) {
   try { return await verifySet(options); } catch (error) { safeError(error, 'readback_unconfirmed'); }
+}
+
+
+// This orchestration is deliberately local-only until source-stop custody and
+// cross-process runner ownership are connected. Individual production stages
+// remain separate; passing production transports here always rejects up front.
+const rehearsals = new WeakSet();
+export async function rehearseInitialImportSet(options = {}) {
+  try { return await rehearseSet(options); }
+  catch (error) { safeError(error, 'rehearsal_unconfirmed'); }
+}
+async function rehearseSet({ prepared, databases, readDatabases, buckets, readBuckets,
+  businessReportPath, storageReportPath, resumeAfter = null, stopAfter = 'storage', ...extra } = {}) {
+  const plan = plans.get(prepared), stages = ['auth', 'master', 'business', 'storage'];
+  if (!plan || Object.keys(extra).length || (resumeAfter !== null && !stages.includes(resumeAfter)) ||
+      !stages.includes(stopAfter) || stages.indexOf(resumeAfter) > stages.indexOf(stopAfter)) fail('rehearsal_options_invalid');
+  const write = { ...databases }, read = { ...readDatabases }, images = { ...buckets }, imageRead = { ...readBuckets };
+  if ([write, read].some(group => Object.keys(group).sort().join(',') !== 'auth,business,master' ||
+      new Set(Object.values(group)).size !== 3 || Object.values(group).some(db =>
+        typeof db?.prepare !== 'function' || typeof db?.batch !== 'function' || isProductionRemoteD1(db) || isIsolatedRemoteD1(db))) ||
+      [images, imageRead].some(group => Object.keys(group).sort().join(',') !== 'avatars,covers' ||
+        !group.avatars || !group.covers || group.avatars === group.covers || Object.values(group).some(isProductionRemoteR2)) ||
+      ![businessReportPath, storageReportPath].every(path => typeof path === 'string' && isAbsolute(path)) ||
+      businessReportPath === storageReportPath) fail('rehearsal_transport_or_paths_invalid');
+  // One attempt per in-memory plan. Reconstructing a plan after interruption
+  // still requires full content readback of every explicitly skipped stage.
+  if (rehearsals.has(prepared)) fail('rehearsal_already_attempted');
+  rehearsals.add(prepared);
+  const { descriptor } = plan, resolveAuthUserIds = authResolver(read.auth);
+  async function sourceUnchanged() {
+    await verifySnapshot(plan.manifestPath);
+    if (sha256Hex(await readFile(plan.manifestPath)) !== descriptor.businessManifestSha256 ||
+      (await prepareStorageImportReadback({ exportDir: plan.storageExportDir })).manifestSHA256 !== descriptor.storageManifestSha256) fail('source_changed');
+  }
+  const auth = { projection: plan.auth, targetIncarnation: descriptor.incarnations.auth };
+  const master = { projection: plan.master, targetIncarnation: descriptor.incarnations.master, activationIds: descriptor.activationIds };
+  const business = { manifestPath: plan.manifestPath, destinationId: descriptor.businessDestinationId,
+    targetIncarnation: descriptor.incarnations.business, expectedTargetProfile: plan.profile, resolveAuthUserIds };
+  const checks = {
+    auth: () => verifyImportedAuthProjection({ ...auth, database: read.auth }),
+    master: () => verifyImportedMasterProjection({ ...master, database: read.master }),
+    business: () => verifyImportedD1Snapshot({ ...business, database: read.business, canonicalBusinessSchema: true }),
+    storage: () => verifyImportedSplitR2Export({ exportDir: plan.storageExportDir, buckets: imageRead }),
+  };
+  const imports = {
+    auth: () => importAuthProjectionStage({ ...auth, database: write.auth, readDatabase: read.auth }),
+    master: () => importMasterProjectionStage({ ...master, database: write.master, readDatabase: read.master }),
+    business: () => importInitialBusinessSnapshot({ ...business, database: write.business, readDatabase: read.business,
+      reportPath: businessReportPath, allowUnresolvedGates: true }),
+    storage: () => importInitialSplitR2Export({ exportDir: plan.storageExportDir, buckets: images, readBuckets: imageRead, reportPath: storageReportPath }),
+  };
+  const completed = [], resumed = [], reports = {};
+  await sourceUnchanged();
+  // Check the whole requested prefix before any new stage may write.
+  for (const stage of stages.slice(0, stages.indexOf(resumeAfter) + 1)) {
+    reports[stage] = await checks[stage](); resumed.push(stage); completed.push(stage);
+  }
+  for (const stage of stages.slice(completed.length, stages.indexOf(stopAfter) + 1)) {
+    await sourceUnchanged();
+    reports[stage] = await imports[stage](); completed.push(stage);
+  }
+  await sourceUnchanged();
+  const readback = stopAfter === 'storage' ? await verifySet({ prepared, databases: read, buckets: imageRead }) : null;
+  return { format: 'fanmark-initial-import-set-rehearsal-v1', identitySha256: prepared.identitySha256,
+    completedStages: completed, verifiedBeforeResume: resumed, reports, readback,
+    consistency: 'unfenced-local-rehearsal', sourceFreezeVerified: false, productionReady: false,
+    coordinatorCompleted: false, remoteExecutionSupported: false };
 }

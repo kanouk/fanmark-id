@@ -1,6 +1,6 @@
 # 初回移送の全保存先をまとめた独立照合
 
-`initial-import-set-readback.mjs`は、Auth・Master・Businessの3 D1とavatars/coversの2 R2を読み取り専用で検査する。個別stageの成功だけで全体完了とせず、同じ入力と保存先を使ったことを確認する。全storeを実行するrunner、source停止のcollector、部分stage再開はまだ別工程。
+`initial-import-set-readback.mjs`は、Auth・Master・Businessの3 D1とavatars/coversの2 R2を読み取り専用で検査する。個別stageの成功だけで全体完了とせず、同じ入力と保存先を使ったことを確認する。隔離localでは同じ入力で全stageを実行・照合できる。本番runner、source停止のcollector、部分stageの修復はまだ別工程。
 
 ## 入力を固定する
 
@@ -24,3 +24,13 @@ Businessの全streamを既存snapshot verifierで検証する。Masterはそのs
 ## 検証
 
 40表の合成Business exportからMasterを生成し、native3 D1/2 R2へ個別stageで移送して一括照合する。別DBの混入、Auth内容/同じIDの表示名の不一致、管理権限の相違、画像改変、source改変を拒否する。本番用adapterも同じnativeデータで通し、管理APIの配備版driftと遠隔ACK欠落を拒否する。この管理API/調停は合成応答であり、本番資源への移送・全体復旧・本番ログインの証拠にはしない。
+
+## 隔離環境で一続きに実行・再開する
+
+`rehearseInitialImportSet`へ同じ`prepared`、localの3 D1 writer/readerと2 R2 writer/reader、Business/Storage reportの絶対pathを渡す。Auth→Master→Business→画像の順に既存stageを呼び、最後に全store checkerを通す。BusinessのAuth参照も実際のAuth readerで検査する。各段階の前後で元のsnapshotと画像manifestが変わっていないことを確認する。
+
+`stopAfter`は`auth`・`master`・`business`・`storage`から選ぶ。通常は`storage`まで実行する。再開時は同じprivate入力から`prepared`を再構築し、`resumeAfter`に完了済みの最後のstageを明示する。指定だけでは省略せず、先頭からそのstageまで全内容を読み直して一致した場合にだけ次へ進む。途中まで入ったstageの不足行や画像を補う機能ではない。
+
+一つの`prepared`での実行は一度だけ。失敗時は後続stageへ進まず、自動再試行・削除もしない。Auth完了後の停止、改変を検出してMasterへの投入前に拒否、Master応答不明でBusiness/画像への投入前に停止、同じ入力からの再開、全完了後の書き込みなし再照合をnative環境で検証する。
+
+この入口はlocal限定。本番/隔離remoteのD1や本番R2を渡した時点で拒否し、`mode=production-stage`の指定も受け付けない。`allowUnresolvedGates`はlocalの既存schema検証用に限って使う。本番のsource停止証拠・process間のrunner所有権・全journalの実照合は未接続であり、返す`remoteExecutionSupported`・`sourceFreezeVerified`・`productionReady`はfalseを維持する。

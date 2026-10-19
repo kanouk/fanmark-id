@@ -743,3 +743,5 @@ R2保存はlocal intent→remote begin→Worker内のdurable dispatch→条件�
 production modeでは固定read-only D1/R2と、同じdescriptor hashをclaimした調停client・全5 journalを要求する。業務の参照先userは実AuthへSELECTして解決する。全store前後のsource hashとjournal状態を確認し、Auth/Masterも最後に再照合する。停止の取得・解除、import・再送・ACK補修・調停complete・公開は行わない。sourceの最終凍結、全store実行とstage再開は別途必要。[使い方と制限](migration/initial-import-set.md)。
 
 `test-initial-import-set-readback.mjs` はnative3 D1/2 R2に40表を移し、通常localとproduction用read-only adapterの双方で照合する。後者の管理API/調停応答は合成であり、実Cloudflareの一式照合ではない。通常の`test:migration-data`へ組み込む。
+
+`initial-import-set-readback.mjs` の `rehearseInitialImportSet` はlocal限定で全stageの順次実行・完了済みstageの全内容再照合と境界からの再開を行う。本番のsource停止・runner所有権は未接続。[入力・再開契約](migration/initial-import-set.md)。

@@ -10,13 +10,8 @@ import { prepareCurrentCatalogSyntheticSnapshot } from './test-d1-import-current
 import { applyBusinessRuntimeMigrations, businessMigrationStatements } from './business-runtime-import-schema.mjs';
 import { MASTER_RUNTIME_MIGRATIONS } from './master-runtime-schema.mjs';
 import { projectSupabaseAuth } from './supabase-auth-projection.mjs';
-import { projectMasterSnapshot, MASTER_SOURCE_TABLES } from './master-snapshot-projection.mjs';
 import { createEmojiReleaseArtifacts } from '../build-emoji-release.ts';
-import { importAuthProjectionStage } from './auth-import-stage.mjs';
-import { importMasterProjectionStage } from './master-import-stage.mjs';
-import { importInitialBusinessSnapshot } from './d1-import.mjs';
-import { importInitialSplitR2Export } from './split-r2-import-stage.mjs';
-import { prepareInitialImportSet, verifyInitialImportSet } from './initial-import-set-readback.mjs';
+import { prepareInitialImportSet, verifyInitialImportSet, rehearseInitialImportSet } from './initial-import-set-readback.mjs';
 import { LOCAL_R2_IMPORT_WORKER, createLocalR2ImportTransport } from './local-r2-import-transport.mjs';
 import { objectIdentityHash } from './storage-export.mjs';
 import { sha256Hex } from './snapshot-format.mjs';
@@ -51,10 +46,6 @@ test('one native five-store readback binds the actual 40-table export, Master pr
   keywords: JSON.parse(v.keywords), category: v.category, subcategory: v.subcategory, codepoints: JSON.parse(v.codepoints), sort_order: Number(v.sort_order) }));
  const approvedEmojiIdentity = createEmojiReleaseArtifacts(emojiRows).manifest.identitySHA256;
  const manifest = JSON.parse(await readFile(fixture.manifestPath, 'utf8'));
- const tables = await Promise.all(MASTER_SOURCE_TABLES.map(async name => {
-  const entry = manifest.tables.find(row => row.table === name); return { entry, stream: await readFile(join(root, 'business', entry.file)) };
- }));
- const masterProjection = projectMasterSnapshot({ catalog: fixture.catalog, tables, approvedEmojiIdentity, credentialDescriptor: manifest.credentialDescriptor });
  const storageExportDir = join(root, 'images'); await mkdir(join(storageExportDir, 'objects'), { recursive: true, mode: 0o700 });
  const objects = [];
  for (const bucket of ['avatars', 'cover-images']) {
@@ -75,15 +66,58 @@ test('one native five-store readback binds the actual 40-table export, Master pr
   for (const name of migrations) await databases[store].batch(businessMigrationStatements(await readFile(new URL('../../workers/api/migrations/' + name, import.meta.url), 'utf8')).map(sql => databases[store].prepare(sql)));
  }
  await applyBusinessRuntimeMigrations(databases.business);
- await importAuthProjectionStage({ database: databases.auth, readDatabase: databases.auth, projection: authProjection, targetIncarnation: incarnations.auth });
- await importMasterProjectionStage({ database: databases.master, readDatabase: databases.master, projection: masterProjection, targetIncarnation: incarnations.master, activationIds });
- await importInitialBusinessSnapshot({ manifestPath: fixture.manifestPath, database: databases.business, readDatabase: databases.business,
-  destinationId: input.businessDestinationId, targetIncarnation: incarnations.business, reportPath: join(root, 'business-report.json'),
-  expectedTargetProfile: fixture.expectedTargetProfile, allowUnresolvedGates: true, resolveAuthUserIds: async ids => new Set(ids.filter(id => id === uid)) });
  const buckets = { avatars: await mf.getR2Bucket('AVATARS_BUCKET'), covers: await mf.getR2Bucket('COVER_IMAGES_BUCKET') };
  const loopbackBase = (await mf.ready).origin;
- await importInitialSplitR2Export({ exportDir: storageExportDir, reportPath: join(storageExportDir, 'images-report.json'), readBuckets: buckets,
-  buckets: Object.fromEntries(Object.entries(buckets).map(([store, bucket]) => [store, createLocalR2ImportTransport({ bucket, loopbackBase, bucketBinding: store === 'avatars' ? 'AVATARS_BUCKET' : 'COVER_IMAGES_BUCKET' })])) });
+ const rehearsal = { prepared, databases, readDatabases: databases, readBuckets: buckets,
+  buckets: Object.fromEntries(Object.entries(buckets).map(([store, bucket]) => [store, createLocalR2ImportTransport({ bucket, loopbackBase, bucketBinding: store === 'avatars' ? 'AVATARS_BUCKET' : 'COVER_IMAGES_BUCKET' })])),
+  businessReportPath: join(root, 'business-report.json'), storageReportPath: join(storageExportDir, 'images-report.json') };
+ await t.test('local orchestration stops after Auth and refuses an implicit retry', async () => {
+  const first = await rehearseInitialImportSet({ ...rehearsal, stopAfter: 'auth' });
+  assert.deepEqual(first.completedStages, ['auth']); assert.equal(first.readback, null);
+  assert.equal(first.remoteExecutionSupported, false);
+  assert.equal((await databases.master.prepare('SELECT count(*) AS n FROM emoji_master').all()).results[0].n, 0);
+  assert.equal((await buckets.avatars.list()).objects.length, 0);
+  await assert.rejects(rehearseInitialImportSet(rehearsal), /rehearsal_already_attempted/);
+ });
+ await t.test('resume checks completed contents before touching the next store', async () => {
+  const candidate = await prepareInitialImportSet(input);
+  await databases.auth.prepare('UPDATE account SET password=?').bind('SYNTHETIC_CHANGED').run();
+  await assert.rejects(rehearseInitialImportSet({ ...rehearsal, prepared: candidate, resumeAfter: 'auth' }), /auth_import_readback_row_mismatch/);
+  assert.equal((await databases.master.prepare('SELECT count(*) AS n FROM emoji_master').all()).results[0].n, 0);
+  await databases.auth.prepare('UPDATE account SET password=?').bind(authProjection.tables.account[0].password).run();
+ });
+ await t.test('an uncertain Master write stops before Business and R2 and never retries', async () => {
+  let calls = 0;
+  const candidate = await prepareInitialImportSet(input);
+  const failedMaster = { prepare: databases.master.prepare.bind(databases.master), batch: async () => { calls++; throw Error('private provider detail'); } };
+  await assert.rejects(rehearseInitialImportSet({ ...rehearsal, prepared: candidate, resumeAfter: 'auth',
+    databases: { ...databases, master: failedMaster } }), /^Error: initial_import_set_rehearsal_unconfirmed$/);
+  assert.equal(calls, 1);
+  assert.equal((await databases.business.prepare('SELECT count(*) AS n FROM user_settings').all()).results[0].n, 0);
+  assert.equal((await buckets.avatars.list()).objects.length, 0);
+  await assert.rejects(rehearseInitialImportSet({ ...rehearsal, prepared: candidate, resumeAfter: 'auth' }), /already_attempted/);
+ });
+ await t.test('reconstructed plan resumes completed Auth and runs the remaining native stores together', async () => {
+  const candidate = await prepareInitialImportSet(input);
+  assert.equal(candidate.identitySha256, prepared.identitySha256);
+  const result = await rehearseInitialImportSet({ ...rehearsal, prepared: candidate, resumeAfter: 'auth' });
+  assert.deepEqual(result.completedStages, ['auth', 'master', 'business', 'storage']);
+  assert.deepEqual(result.verifiedBeforeResume, ['auth']);
+  assert.equal(result.readback.allExpectedStoreContentsMatched, true);
+  assert.equal(result.sourceFreezeVerified, false); assert.equal(result.productionReady, false);
+  assert.doesNotMatch(JSON.stringify(result), /SYNTHETIC_CIPHER|set@example|\$2b/);
+ });
+ await t.test('a fully completed prefix is reread with no write calls', async () => {
+  let writes = 0;
+  const deny = () => { writes++; throw Error('unexpected write'); };
+  const readOnlyWriters = Object.fromEntries(Object.entries(databases).map(([store, db]) => [store,
+    { prepare: db.prepare.bind(db), batch: deny }]));
+  const result = await rehearseInitialImportSet({ ...rehearsal, prepared: await prepareInitialImportSet(input),
+    databases: readOnlyWriters, buckets: { avatars: { put: deny }, covers: { put: deny } }, resumeAfter: 'storage' });
+  assert.equal(writes, 0); assert.equal(result.readback.allExpectedStoreContentsMatched, true);
+  assert.deepEqual(result.verifiedBeforeResume, ['auth', 'master', 'business', 'storage']);
+  await assert.rejects(rehearseInitialImportSet({ ...rehearsal, mode: 'production-stage' }), /rehearsal_options_invalid/);
+ });
  const options = { prepared, databases, buckets };
  await t.test('all content and real cross-DB Auth references match, without declaring source freeze or publication', async () => {
   const report = await verifyInitialImportSet(options);
@@ -176,6 +210,10 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    createProductionRemoteD1({target:{...row,targetIncarnation:incarnations[store]},token:'synthetic_token_only',fetchImpl})];}));
   const remoteBuckets=Object.fromEntries(PRODUCTION_R2_TARGETS.map(row=>[row.store,createProductionRemoteR2({target:{...row,targetIncarnation:incarnations[row.store]},
    runtimeVersion:version,gatewayVersion,gatewayOrigin:origin,bearer:'b'.repeat(64),token:'synthetic_token_only',fetchImpl})]));
+  await assert.rejects(rehearseInitialImportSet({ ...rehearsal, prepared: await prepareInitialImportSet(input),
+   readDatabases: remoteDatabases }), /rehearsal_transport_or_paths_invalid/);
+  await assert.rejects(rehearseInitialImportSet({ ...rehearsal, prepared: await prepareInitialImportSet(input),
+   buckets: remoteBuckets }), /rehearsal_transport_or_paths_invalid/);
   const remoteOptions={prepared,databases:remoteDatabases,buckets:remoteBuckets,mode:'production-stage',coordinator,journalPaths};
   const report=await verifyInitialImportSet(remoteOptions);
   assert.equal(report.consistency,'held-import-fence-readback');assert.equal(report.allExpectedStoreContentsMatched,true);assert.equal(writes,0);

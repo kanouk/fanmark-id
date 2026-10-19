@@ -652,7 +652,7 @@
     },
     {
       "path": "scripts/migration/initial-import-set-readback.mjs",
-      "sha256": "29149e58794f9220ccce0d8610c4504b73aa332ae18b5b37ca9ccf7f47538a6a"
+      "sha256": "16d168e80e8613a24d2b7e3cd414ac719f26fba84ff6fc39e6ed3cfaca5b0db2"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",

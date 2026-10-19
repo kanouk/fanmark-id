@@ -1,3 +1,9 @@
+## 2026-10-19: 全storeのlocal順次実行・再開とDNS原本の取得
+
+`478c153`のCI39189073780はapp成功、Workerの現行DB import試験は確認中。全5 storeのlocal実行を同じ固定入力/checkerへ接続し、Auth完了境界での停止・完了済み内容の再検査からの再開・応答不明時の後続停止を追加。nativeを含む関連19件成功。最初の試験はfixture変数の削除漏れで1件失敗し、fixtureを修正後に全件成功。本番runner/source停止証拠/部分stage補修は未接続。[契約](initial-import-set.md)。
+
+所有者の「進めて」を受け、確認済み設定のfanmark.id限定DNS編集tokenを作成しMac Keychainへ保存・照合。10/26期限。全DNS17件のrecord ID/全属性をprivate保存し、別processで全件不変を確認した。apexの逆操作body候補も準備。DNS更新0、source停止/import/domain切替/main mergeなし。既存apex NSとの復元API受け入れ、www/admin票、外部provider、Stripe/鍵/遠隔復旧等は残る。管理者MFAは最後。[ドメイン票](production-domain-operations.md)。
+
 ## 2026-10-19: 初回移送の全5 storeをまとめる独立checker
 
 `496b7f7`のCI39187569932は両job成功。`initial-import-set-readback.mjs`を追加し、同じBusiness exportからMasterを投影、AuthのID/管理権限/表示名も同じsourceへ照合する。全体descriptorを調停manifestへ固定し、本番用read-only接続と全journalを前後確認する。業務のuser参照は実Authで解決。native3 D1/2 R2の40表と画像をまとめた照合、取り違え/改変/欠落/配備版drift検出を検証した。管理API/調停は合成で、実本番の一式照合とは区別する。[契約](initial-import-set.md)。

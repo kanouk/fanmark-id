@@ -222,3 +222,10 @@ service native6件、client/stage/native調停接続4件、gatewayのnative認�
 native3 D1/2 R2に全40表と2画像を移し、取り違え・内容改変・source改変・管理権限/表示名不一致・配備版drift・ACK欠落を検証。production接続の管理APIと調停応答は合成であり、本番一式移送の証明ではない。`496b7f7`/CI39187569932は両job成功。新checkerの5件を含む関連24件とオフラインinventory照合が成功。新checkerを通常CIのmigration-dataへ追加。
 
 DNSのapex編集欄はA/185.158.133.1/proxy有効/TTL自動/コメント空を読み取り、保存せず閉じた。record IDは画面にも表示されず、既存DNS API403の制約は残る。全store実行・stage再開、実source境界/Stripe引継ぎ、外部設定/DNS逆操作、鍵/遠隔復旧を継続。MFAは最後。本番データ投入・停止・切替・main mergeなし。
+
+
+## 2026-10-19: local全store実行・境界再開、DNS API原本
+
+同じprepared入力からAuth/Master/Business/画像の順次実行と全件照合を追加。完了済みprefixは全内容の再検査後だけ省略し、不明write時は後続を止める。本番transportはこのlocal入口では拒否。関連19件成功。最初のfixture変数参照漏れは修正済み。本番runner所有権・source停止証拠との接続、部分stage修復は残る。
+
+所有者の継続指示後、確認済みのzone限定DNS編集tokenを作成しKeychain保存/読戻し。APIの全17recordを非公開保存、別processで不変を確認。apex record IDと復元body候補が確定したが、実逆操作/provider受け入れは未検証。DNS変更・本番import・source停止・domain切替・main mergeなし。MFAは最後。

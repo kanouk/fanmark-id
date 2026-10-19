@@ -15,7 +15,17 @@
 | 変更しない設定 | レジストラ・NS委任・MX・SPF・DKIM・DMARC、旧authの接続先 |
 | 現在のWorker Custom Domain / zone route | ともに0（管理API読戻し） |
 
-DNS画面には全17レコードが表示される。追加の読取確認でapexの編集欄は名前fanmark.id・A・185.158.133.1・proxy有効・TTL自動・コメント空欄だった。画面のレコード属性にもrecord IDは表示されず、保存せずキャンセルした。Git外の `fanmark-cutover-2026-10-19/dns-before.bind` を保存済み。BINDだけではCloudflareのrecord IDや全管理属性を復元できない。現CLI資格情報のDNS APIは403のため、以下のDNS JSON原本取得と逆操作の実地検証は未完了。
+DNS画面には全17レコードが表示される。追加の読取確認でapexの編集欄は名前fanmark.id・A・185.158.133.1・proxy有効・TTL自動・コメント空欄だった。画面のレコード属性にもrecord IDは表示されず、保存せずキャンセルした。Git外の `fanmark-cutover-2026-10-19/dns-before.bind` を保存済み。BINDだけではCloudflareのrecord IDや全管理属性を復元できない。従来CLI資格情報のDNS APIは403だったが、10/19の所有者の継続指示後にfanmark.id限定・DNS編集・10/26期限の専用tokenを作成し、Mac Keychainへ保存・独立読戻しした。全17件のAPI原本をGit外 `dns-before-api.json` へ0600保存し、別processのGETで全recordが不変であることを確認した。DNS更新は0件。逆操作の実地検証は未完了。
+
+## 取得済みDNS原本と操作票
+
+API原本のSHA-256は `f3da2468fee6afe4f612635ed265a6952d1ba757144d4f7f823f440e715aaa57`。apex Aのrecord IDは `5170d5d64e924bd5206e4a5e751a6d07`、TTLはAPI値1、proxyはtrue、commentはnull、tagsは空配列、settingsは空objectだった。全体はA3・CNAME1・MX4・NS2・TXT7。秘密値やTXT原文はGitへ保存しない。
+
+Git外 `domain-operations-candidate.json` に、固定Worker/apexのPUT候補と所有domainのDELETE、旧A欠落時だけのPOST bodyを作成した。`override_existing_origin` と `override_existing_dns_record` はfalse。競合時に自動で上書きを許可しない。commentはnullなので新規作成bodyから省き、比較時は未指定/空の扱いを区別する。候補は実行していない。
+
+API原本にもapexのNS2件が残る。DNS公式API説明にはNSと同名の他typeの共存制限があるため、この既存状態でAを再作成できるかは未検証。NSを削除して試さない。旧Aの自動復元も仮定しない。既存Aを保持するWorker Route案も調べたが、[CloudflareはWorker自体が配信元の場合にCustom Domainを案内](https://developers.cloudflare.com/workers/configuration/routing/routes/)しており、現時点では方式を変更しない。
+
+専用tokenは2026-10-26 23:59:59 JSTに失効する。Keychain serviceは `fanmark-cutover-dns-2026-10-19`、accountは `fanmark.id`。再開時は有効性と全DNSの変化を確認し、取得済みの原本を現在値として使い回さない。
 
 ## 適用前のプレビュー
 
@@ -40,7 +50,7 @@ POST /accounts/bfc2890741f0b3fb236e2d755b6c9adc/workers/scripts/fanmark-app-prod
 6. 証明書のactive化、別resolver/回線でTLS・正しいhost/path/query・API no-store・旧PWA更新・保護URLを確認する。既存Universal証明書がactiveでも新Custom Domainでの到達成功とは扱わない。
 7. `www`・`admin`は別の固定票で適用し、apexと一括変更しない。各票には個別の逆操作を付ける。G5の新側write開始は別の判断点。
 
-この票にはまだDNS record ID、実API適用の確定body、証明書/別回線の実測、www/adminの確定票がない。したがってG0/P6完了とは判定しない。
+DNS record IDと保存原本・API body候補は取得済みだが、逆操作のprovider受け入れ、証明書/別回線の実測、www/adminの確定票がない。したがってG0/P6完了とは判定しない。
 
 ## 新側の業務write開始前の逆操作
 
