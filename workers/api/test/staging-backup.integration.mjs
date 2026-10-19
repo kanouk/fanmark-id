@@ -120,6 +120,60 @@ test(profile + ': native backup RPC fences writers, verifies private R2 archive,
       await request('rpc-run',{},409);assert.equal(await (await bucket.get(receipt.objectKey)).text(),serialized);
       assert.deepEqual((await request('rpc-status')).receipt,receipt);
     });
+    const manualCopies = new Map();
+    if(profile === 'production') await t.test('manual operations preserve daily backups, atomically deduplicate and retain uncertain claims',async()=>{
+      const daily = await (await bucket.get(prefix+'runs/'+slot+'.json')).text();
+      const manualPrefix='recovery/manual/v1/';
+      for(const operationId of ['', '../'+slot, slot, randomUUID().toUpperCase()]) {
+        await request('manual-run',{operationId},409); await request('manual-status',{operationId},409);
+      }
+      const blockedId=randomUUID();
+      await request('blocked',{operationId:blockedId,admission:'pending'},409);
+      await request('wrong-identity',{operationId:blockedId},409);
+      assert.equal((await request('manual-status',{operationId:blockedId})).receipt,null);
+      // A durable claim whose acknowledgement was lost must never trigger capture on replay.
+      const uncertain=randomUUID();
+      await request('claim-ack-loss',{operationId:uncertain},409);
+      const claimed=(await request('manual-status',{operationId:uncertain})).receipt;
+      assert.equal(claimed.state,'claimed');assert.equal(claimed.operationId,uncertain);
+      await request('manual-run',{operationId:uncertain},409);
+      assert.deepEqual((await request('manual-status',{operationId:uncertain})).receipt,claimed);
+      assert.equal((await request('writers')).owner,null);
+      // Source failures keep a terminal receipt and safely release only their own fence.
+      for(const path of ['failure','wrong-manual-schema']) {
+        const operationId=randomUUID();await request(path,{operationId},409);
+        const failed=(await request('manual-status',{operationId})).receipt;
+        assert.equal(failed.state,'failed');assert.equal(failed.fenceReleased,true);
+        await request('manual-run',{operationId},409);
+      }
+      // Same operation in parallel may capture only once. A distinct operation can capture later that day.
+      const operationId=randomUUID();
+      const raw=()=>mf.dispatchFetch('https://fixture.local',{method:'POST',body:JSON.stringify({path:'manual-run',slot,operationId})});
+      const pair=await Promise.all([raw(),raw()]);assert.deepEqual(pair.map(x=>x.status).sort(),[200,409]);
+      const first=await pair.find(x=>x.status===200).json();
+      await request('writer');
+      const second=await request('manual-run',{operationId:randomUUID()});
+      for(const result of [first,second]) {
+        assert.equal(result.format,'fanmark-production-manual-backup-receipt-v1');
+        assert.equal(result.slot,slot);assert.equal(result.state,'verified');assert.equal(result.fenceReleased,true);
+        assert.equal(result.objectKey,manualPrefix+'archives/'+result.operationId+'/'+result.owner+'.json');
+        const bytes=await (await bucket.get(result.objectKey)).text();assert.equal(sha(bytes),result.archiveHash);
+        const restored=await openRecoverySet(JSON.parse(bytes),context,key);
+        assert.equal(restored.manifest.captureId,result.captureId);
+        assert.equal(restored.snapshots.business.tables.user_settings[0].display_name,result===first?'settled-native-writer':'native-writer');
+        await request('manual-run',{operationId:result.operationId},409);
+        assert.deepEqual((await request('manual-status',{operationId:result.operationId})).receipt,result);
+      }
+      assert.notEqual(first.captureId,second.captureId);
+      assert.equal(await(await bucket.get(prefix+'runs/'+slot+'.json')).text(),daily);
+      assert.equal(await(await bucket.get(receipt.objectKey)).text(),serialized);
+      for(const object of (await bucket.list({prefix:manualPrefix})).objects)manualCopies.set(object.key,await(await bucket.get(object.key)).text());
+      // A daily receipt cannot be accepted in the manual namespace, or vice versa.
+      const corrupt=randomUUID();await bucket.put(manualPrefix+'runs/'+corrupt+'.json',daily);
+      await request('manual-status',{operationId:corrupt},409);await bucket.delete(manualPrefix+'runs/'+corrupt+'.json');
+      await bucket.put(prefix+'runs/'+slot+'.json',JSON.stringify(first));
+      await request('rpc-status',{},409);await request('prune',{},409);await bucket.put(prefix+'runs/'+slot+'.json',daily);
+    });
     await t.test('retention deletes only exact old verified archives after current archive verification',async()=>{
       const date=days=>new Date(Date.parse(slot+'T00:00:00Z')-days*86400000).toISOString().slice(0,10);
       const oldSlot=date(30),boundary=date(29),oldOwner=randomUUID();
@@ -131,6 +185,7 @@ test(profile + ': native backup RPC fences writers, verifies private R2 archive,
       const retained=(await request('rpc-status')).receipt.retention;
       assert.equal(retained.days,30);assert.equal(retained.deleted,1);assert.ok(Number.isFinite(Date.parse(retained.finishedAt)));
       assert.ok(await bucket.head(prefix+'runs/'+boundary+'.json'));assert.equal(await(await bucket.get('unrelated-keep')).text(),'keep');
+      for(const [key,bytes] of manualCopies)assert.equal(await(await bucket.get(key)).text(),bytes);
       await bucket.delete(receipt.objectKey);await request('prune',{},409);await bucket.put(receipt.objectKey,serialized);
     });
     await t.test('disabled/wrong Cron calls no service and service failure prevents retention',async()=>{

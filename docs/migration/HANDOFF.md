@@ -1,3 +1,21 @@
+## 2026-10-19: 本番用の保存と実資源への一式復旧を確認
+
+閉鎖appの保存admissionだけを一時的に有効にし、固定UTC slotへ424,468 bytesを暗号化保存した。読戻し検証とfence解除を確認し、別CLIでもdownload/hash一致。保存operatorを削除し、appを11a3db8c/pendingへ戻した。公開経路/Cron0、他bindingと既存Workerを保持。
+
+新しい隔離3D1/画像2R2/作業用1R2へ復旧した。別processでAuth9/Business80/Master25表のschema・全行hash・FK0を確認し、元3D1の全行不変も照合した。画像はsource/targetとも0件。復旧用Worker・3D1・3R2を削除して元inventoryへ戻し、元backupは保持。[限定証拠](evidence/production-operational-backup-restore-2026-10-19.json)。native capture/inspection2件・設定/準備12件成功。
+
+**次の必須修正:** 今回使った日次UTC2026-10-19 slotは再利用しない。同日に移送後の確定backupを保存できるよう、独立した操作ID/namespaceを持つ手動保存とstatusを既存engineへ追加する。日次の重複防止を緩めず、今回のarchive/receiptを保持する。詳細は[運用準備](production-backup-preparation.md)。
+
+今回の実証は移送前の初期状態41行/画像0件。保存4.806秒・復旧5.382秒は本番RTO保証ではない。移送後のschema pin/実データ一式、通知・provider/DNS/旧処理停止と不明commit復旧は残る。MFAは最後。本番source停止/import/DNS/main mergeなし。
+
+## 2026-10-19: 同日追加backupの実装とnative検証
+
+067aca2のCI39204253688はアプリ/Worker両job成功。日次保存を保持したまま、固定UUIDごとに一度だけ保存する本番専用 `runManual/statusManual` を追加した。手動receipt/archiveは別namespaceで保持し、既存共通engineの停止・暗号化・全store照合を使う。通常Cronや日次重複防止は維持する。
+
+native D1/R2/DOで日次と同日手動2回の共存、同ID並行実行の一度だけの保存、応答消失後のclaim保持、schema不一致・失敗後の再送拒否、日次prune後の手動記録保持を検証した。保存engine/旧回帰28件、operator/監視/準備32件、Worker型チェックが成功した。後者はoperator修正後の再検証を含む。試験はlocalの合成データで、新しい手動経路はまだ実Cloudflareへ配備していない。
+
+[操作と残件](production-backup-preparation.md)。先行の実資源復旧証拠と合わせて既存PRへ反映し、新しいCIの終了を確認する。閉鎖runtimeの配備・実手動保存の読戻し、移送後のschema再固定と確定backupが残る。本番source停止/import/DNS/main mergeなし。管理者MFAは最後。
+
 ## 2026-10-19: 本番鍵のruntime照合と閉鎖binding censusを完了
 
 本番appを8790b5a6、monitorを2c057173へ更新。通常runtime/build入力は両job成功済み15714a5と同一で、今回の差分は閉鎖backup設定とoperator。3 Workerの全binding/runtime・既存4 Worker・公開経路0/Cron0を独立読戻しした。

@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`test-production-backup-capture.mjs` はnative RPCで固定日次slotと固定手動UUIDの初回保存、二重保存拒否、status保持、認証/期限/runtime/未admission/実行中writerの拒否を検証する。`staging-backup.integration.mjs` は実local D1/R2/DOで日次と同日手動2回の共存、並行同IDの一度だけの保存、claim応答消失、schema不一致、失敗後の再送拒否と手動保存物の保持を検証する。実Cloudflareの保存・隔離復旧結果は [証拠](migration/evidence/production-operational-backup-restore-2026-10-19.json)を参照。
+
 `test-production-backup-inspection.mjs` はnative service RPCで認証/期限、runtime・scope・鍵・schema固定、run/prune/入力body拒否を検証する。空POSTが空streamとして渡る実装にも対応し、本文を一括bufferせず先頭chunkで拒否する。
 
 `node --test scripts/migration/test-production-key-custody.mjs` は本番鍵の独立性、Worker WebCryptoとの復号互換、改変拒否を検査する。実保管はmacOS専用で、鍵値をargv/ログに出さず、VaultをfsyncしてからKeychainへ保存する。Sync確認と遠隔からの復号確認は別途実施する。[操作契約](migration/production-key-custody.md)。

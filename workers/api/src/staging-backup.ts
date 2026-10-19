@@ -17,7 +17,8 @@ export interface StagingBackupEnv extends Env {
   STAGING_BACKUP_BUCKET?: R2Bucket;
 }
 export type BackupReceipt = {
-  format: "fanmark-staging-backup-receipt-v1" | "fanmark-production-backup-receipt-v1"; slot: string; owner: string;
+  format: "fanmark-staging-backup-receipt-v1" | "fanmark-production-backup-receipt-v1" | "fanmark-production-manual-backup-receipt-v1";
+  slot: string; owner: string; operationId?: string;
   state: "claimed" | "collecting" | "stored" | "verified" | "failed";
   startedAt: string; finishedAt?: string; runtimeRevision: string; keyId: string;
   sourceIds: RecoverySetContext["sourceIds"]; schemaHashes: RecoverySetContext["schemaHashes"];
@@ -28,6 +29,8 @@ export type BackupReceipt = {
       "readback_mismatch" | "writer_unavailable" | "unexpected_error"; activeWriters?: number };
   retention?: { days: 30; deleted: number; finishedAt: string };
 };
+const MANUAL_PREFIX = "recovery/manual/v1/";
+const OPERATION_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u;
 const PREFIX = "recovery/v1/", DAY = 86_400_000;
 const ID = /^[A-Za-z0-9:_-]{1,128}$/u, HASH = /^[a-f0-9]{64}$/u;
 class StagingBackupError extends Error {
@@ -84,11 +87,13 @@ function validSlot(slot: string): boolean {
     new Date(slot + "T00:00:00Z").toISOString().slice(0, 10) === slot;
 }
 const receiptKey = (slot: string) => PREFIX + "runs/" + slot + ".json";
+const manualReceiptKey = (operationId: string) => MANUAL_PREFIX + "runs/" + operationId + ".json";
 async function rawHash(value: string): Promise<string> {
   return [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)))].map(x => x.toString(16).padStart(2, "0")).join("");
 }
-function receiptValid(receipt: BackupReceipt, slot: string, profile: BackupProfile): boolean {
-  return receipt?.format === backupReceiptFormat(profile) && receipt.slot === slot &&
+function receiptValid(receipt: BackupReceipt, slot: string, profile: BackupProfile, operationId?: string): boolean {
+  return receipt?.format === (operationId ? "fanmark-production-manual-backup-receipt-v1" : backupReceiptFormat(profile)) &&
+    receipt.operationId === operationId && receipt.slot === slot && validSlot(receipt.slot) &&
     /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/u.test(receipt.owner) &&
     ["claimed", "collecting", "stored", "verified", "failed"].includes(receipt.state) &&
     typeof receipt.fenceReleased === "boolean";
@@ -96,10 +101,18 @@ function receiptValid(receipt: BackupReceipt, slot: string, profile: BackupProfi
 /** Read-only control-plane status; no source Auth rows, cookies, keys or archives leave RPC. */
 export async function stagingBackupStatus(env: StagingBackupEnv, slot: string, profile: BackupProfile = "staging") {
   if (!validSlot(slot)) fail("slot_invalid");
+  return backupStatus(env, slot, profile);
+}
+/** Manual attempts remain inspectable on later dates, including after an uncertain response. */
+export async function productionManualBackupStatus(env: StagingBackupEnv, operationId: string) {
+  if (!OPERATION_ID.test(operationId)) fail("operation_id_invalid");
+  return backupStatus(env, undefined, "production", operationId);
+}
+async function backupStatus(env: StagingBackupEnv, slot: string | undefined, profile: BackupProfile, operationId?: string) {
   const { bucket, context } = await configuration(env, false, profile);
-  const object = await bucket.get(receiptKey(slot));
+  const object = await bucket.get(operationId ? manualReceiptKey(operationId) : receiptKey(slot!));
   const receipt = object ? await object.json<BackupReceipt>() : null;
-  if (receipt && !receiptValid(receipt, slot, profile)) fail("receipt_invalid");
+  if (receipt && !receiptValid(receipt, slot ?? receipt.slot, profile, operationId)) fail("receipt_invalid");
   return { admission: env.STAGING_BACKUP_ADMISSION === "writers-verified-v1", runtimeRevision: context.runtimeRevision,
     keyId: context.keyId, sourceIds: context.sourceIds, schemaHashes: context.schemaHashes, receipt,
     writers: await inspectRecoveryWriters(env) };
@@ -118,15 +131,25 @@ export async function sealStagingBackupAuthKey(env: StagingBackupEnv, profile: B
 /** One attempt per UTC slot. Incomplete/lost acknowledgments require operator inspection, never automatic replay. */
 export async function runStagingBackup(env: StagingBackupEnv, slot: string, now = new Date(), profile: BackupProfile = "staging"): Promise<BackupReceipt> {
   if (!validSlot(slot) || slot !== now.toISOString().slice(0, 10)) fail("slot_invalid");
+  return captureBackup(env, slot, now, profile);
+}
+/** Explicit production-only attempts have independent immutable claims, outside daily retention. */
+export async function runProductionManualBackup(env: StagingBackupEnv, operationId: string, now = new Date()): Promise<BackupReceipt> {
+  if (!OPERATION_ID.test(operationId)) fail("operation_id_invalid");
+  return captureBackup(env, now.toISOString().slice(0, 10), now, "production", operationId);
+}
+async function captureBackup(env: StagingBackupEnv, slot: string, now: Date, profile: BackupProfile, operationId?: string): Promise<BackupReceipt> {
   const { key, context, bucket, bindings } = await configuration(env, true, profile);
-  const receipt: BackupReceipt = { format: backupReceiptFormat(profile), slot, owner: crypto.randomUUID(),
+  const runKey = operationId ? manualReceiptKey(operationId) : receiptKey(slot);
+  const receipt: BackupReceipt = { format: operationId ? "fanmark-production-manual-backup-receipt-v1" : backupReceiptFormat(profile),
+    ...(operationId ? { operationId } : {}), slot, owner: crypto.randomUUID(),
     state: "claimed", startedAt: now.toISOString(), runtimeRevision: context.runtimeRevision, keyId: context.keyId,
     sourceIds: context.sourceIds, schemaHashes: context.schemaHashes, fenceReleased: false };
   // A strongly consistent conditional object is the attempt lock. Its owner is never reused by another invocation.
-  const claim = await bucket.put(receiptKey(slot), JSON.stringify(receipt), {
+  const claim = await bucket.put(runKey, JSON.stringify(receipt), {
     onlyIf: { etagDoesNotMatch: "*" }, httpMetadata: { contentType: "application/json" }, storageClass: "Standard" });
-  if (!claim) fail("slot_already_claimed_inspect_status");
-  const save = async () => { await bucket.put(receiptKey(slot), JSON.stringify(receipt), { storageClass: "Standard",
+  if (!claim) fail(operationId ? "operation_already_claimed_inspect_status" : "slot_already_claimed_inspect_status");
+  const save = async () => { await bucket.put(runKey, JSON.stringify(receipt), { storageClass: "Standard",
     httpMetadata: { contentType: "application/json" } }); };
   let attemptedFence = false;
   let stage: NonNullable<BackupReceipt["failure"]>["stage"] = "claim-fence";
@@ -153,7 +176,7 @@ export async function runStagingBackup(env: StagingBackupEnv, slot: string, now 
     const archive = await collectRecoverySet(bindings, context, key, guard);
     stage = "archive-write";
     const bytes = JSON.stringify(archive);
-    receipt.objectKey = PREFIX + "archives/" + slot + "/" + receipt.owner + ".json";
+    receipt.objectKey = (operationId ? MANUAL_PREFIX + "archives/" + operationId : PREFIX + "archives/" + slot) + "/" + receipt.owner + ".json";
     receipt.archiveHash = await rawHash(bytes); receipt.bytes = new TextEncoder().encode(bytes).length;
     if (!await bucket.put(receipt.objectKey, bytes, { onlyIf: { etagDoesNotMatch: "*" }, storageClass: "Standard",
       httpMetadata: { contentType: "application/json" } })) fail("archive_exists");

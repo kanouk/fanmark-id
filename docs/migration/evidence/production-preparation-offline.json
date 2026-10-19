@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "797f825ebc1762d602d10b1d6a18c8d8201661baa7e4daf4aed6b41f22b8cb96"
+    "sha256": "5ed3c85e006ef309fbeca5caccc290d6c646ecc518d18c2726beace93738f4e2"
   },
   "variables": [
     {
@@ -679,6 +679,10 @@
       "sha256": "aa469c0adc9ee373006c05e836338ad7706d9f03afc904546d6b82b7c0ddd42e"
     },
     {
+      "path": "scripts/migration/production-backup-capture.mjs",
+      "sha256": "8105e0814674176f2a7c9c6865f857f8cfe97d3b4feb1e6f18dd4f354d52bcc2"
+    },
+    {
       "path": "scripts/migration/production-backup-inspection.mjs",
       "sha256": "5e5be00d2cae580caf891faa80944bfbce0731c0dd60535b7ae9ba25250e350e"
     },
@@ -920,7 +924,7 @@
     },
     {
       "path": "workers/api/src/production-backup-service.ts",
-      "sha256": "b8b78ee4498e160f9d088e7b123c9e5768be5307a828c7e23d2a3fd11e7311d2"
+      "sha256": "cb17ee7d8e6f14322019afc4d5e5f65c2c2bac3e458bcf5b81bfc772d5144ab4"
     },
     {
       "path": "workers/api/src/production-domain-alias.mjs",
@@ -964,7 +968,7 @@
     },
     {
       "path": "workers/api/src/staging-backup.ts",
-      "sha256": "1d9f17f80914f67c70bb3c9d40a65f65d982f252d96831e4a2891063945764f1"
+      "sha256": "ac58d8757f66be6c5cf416aa9e3a3084d775287e7398ae206b65d83ba1664fbf"
     },
     {
       "path": "workers/api/src/stripe-mode-policy.ts",
