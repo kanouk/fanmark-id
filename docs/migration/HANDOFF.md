@@ -1,3 +1,7 @@
+## 2026-10-19: ユーザー指示で停止・新スレッド向け引き継ぎ
+
+**現在は停止中。最初に [停止時の引き継ぎ](RESUME-2026-10-19.md) を読む。** 実装HEAD aa10f6eはremote538100cより2commit先で未公開。3 provider callback保存は完了済み。本番source停止・移送・DNS切替・main mergeは未実施。MFA再認証は全準備後。以下は履歴であり、古い未完了記述をそのまま現在状態と解釈しない。
+
 ## 2026-10-19: 3 providerのcallbackを保存し、Webhookの鍵保管とGET照合を追加
 
 538100c / [CI39213660700](https://github.com/kanouk/fanmark-id/actions/runs/39213660700)はapp・Workerとも成功。前turnの遠隔鍵保管修正と今回の変更をまとめて既存PRへ反映する。runtime code794564c/app b03de981は不変。
