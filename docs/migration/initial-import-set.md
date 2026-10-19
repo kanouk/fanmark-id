@@ -59,3 +59,5 @@ Businessの全streamを既存snapshot verifierで検証する。Masterはそのs
 ## 本番入口の隔離試験
 
 合成40表・Auth・画像を、本番用transportからnative3 D1/2 R2・実R2 service・実調停DOへ投入する。管理APIとgateway URLの配送だけを合成し、外向き通信を拒否する。Auth後の正常停止と再開、全件照合とcomplete、source証拠改変/接続取り違え、保存後のMaster/Stripe受信応答消失で後続未実行、最終complete応答消失時の永続report保持を検証する。本番資源への実投入・source停止・公開の実証ではない。
+
+初回Authのatomic commit応答消失には、別入口 `recoverInitialAuthImportExecution` を使う。終了済みexecutor・元batch hash・全件読戻しがそろった場合だけACKを確定し、書込み再送はしない。その他の部分stageは対象外。条件と残存lockの扱いは[復旧手順](production-import-recovery.md)を参照。

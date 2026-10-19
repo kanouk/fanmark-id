@@ -1,0 +1,49 @@
+{
+  "format": "fanmark-atomic-auth-import-recovery-validation-v1",
+  "date": "2026-10-19",
+  "scope": "local-native-only",
+  "priorCi": {
+    "head": "b692f733edc7399d6805acb6bef4ede31733d029",
+    "runId": 39207720326,
+    "application": "success",
+    "worker": "success"
+  },
+  "validation": {
+    "finalAllStoreAndPreparation": {
+      "passed": 30,
+      "failed": 0
+    },
+    "priorAuthAndAllStore": {
+      "passed": 31,
+      "failed": 0
+    },
+    "coordinatorNative": {
+      "passed": 13,
+      "failed": 0
+    },
+    "transportRegression": {
+      "passed": 26,
+      "failed": 0
+    },
+    "workerTypecheck": "passed",
+    "closedBundleDryRun": "passed",
+    "testGroupsOverlap": true
+  },
+  "verified": [
+    "Exact atomic Auth batch hash reconstructed from original projection",
+    "Same-host exited process owns execution and operation locks",
+    "Native Auth contents and schema independently matched before ACK recovery",
+    "Confirmed first Auth commit resumes remaining native D1 and R2 stages without replaying Auth",
+    "Uncommitted, changed-content and wrong-batch cases retain pending state and locks",
+    "Lost recovery response retains executor, local locks and durable proof",
+    "Concurrent or stale recovery CAS rejected; source fence and histories retained"
+  ],
+  "limits": [
+    "Native local D1/DO/R2 with synthetic Cloudflare control plane",
+    "Child process creates locks and intent; parent models committed native transaction with discarded response",
+    "Master, Business and image partial-stage recovery remains unsupported",
+    "Recovery-operation residual lock cleanup remains manual review",
+    "No source stop, production import, DNS change, deployment or administrator MFA"
+  ],
+  "productionReady": false
+}

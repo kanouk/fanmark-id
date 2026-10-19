@@ -10,7 +10,7 @@ import { projectMasterSnapshot, MASTER_SOURCE_TABLES } from './master-snapshot-p
 import { prepareAuthImportProjection, verifyImportedAuthProjection } from './auth-import-readback.mjs';
 import { verifyImportedMasterProjection } from './master-import-readback.mjs';
 import { verifyImportedD1Snapshot, importInitialBusinessSnapshot } from './d1-import.mjs';
-import { importAuthProjectionStage } from './auth-import-stage.mjs';
+import { importAuthProjectionStage, prepareAtomicAuthImportBatch } from './auth-import-stage.mjs';
 import { importMasterProjectionStage } from './master-import-stage.mjs';
 import { importInitialSplitR2Export } from './split-r2-import-stage.mjs';
 import { prepareStorageImportReadback,resolveStorageImportReportPath } from './storage-r2-import.mjs';
@@ -20,7 +20,7 @@ import { isProductionRemoteD1 } from './production-remote-d1.mjs';
 import { isIsolatedRemoteD1 } from './isolated-remote-d1.mjs';
 import { isProductionRemoteR2 } from './production-remote-r2.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
-import { inspectProductionImportSet } from './production-import-inspection.mjs';
+import { inspectProductionImportSet, inspectProductionImportAttempt, recoverAcknowledgedProductionImport, importJournalHostHash } from './production-import-inspection.mjs';
 import { prepareStripeReceiptTransfer, importStripeReceiptTransfer, verifyStripeReceiptTransfer } from './stripe-receipt-transfer.mjs';
 import {createImportExecutionLock,recoverExitedImportExecution} from './production-import-execution-lock.mjs';
 
@@ -331,11 +331,21 @@ async function executeSet({ coordinator, journalPaths, sourceEvidencePath, ...op
  * This never resolves a pending write or resumes a partially imported stage.
  * Reconstruct the prepared plan and connections before the next execution.
  */
-export async function recoverInitialImportExecution({prepared,coordinator,journalPaths,sourceEvidencePath,readDatabases,readBuckets,resumeAfter}={}){
+export async function recoverInitialImportExecution(options = {}) {
+  return recoverImportExecution(options, false);
+}
+
+/** Resolve only the first atomic Auth write, after full content readback.
+ * No replay, deletion, general partial-stage recovery or provider writes.
+ */
+export async function recoverInitialAuthImportExecution(options = {}) {
+  return recoverImportExecution(options, true);
+}
+async function recoverImportExecution({prepared,coordinator,journalPaths,sourceEvidencePath,readDatabases,readBuckets,resumeAfter}={}, recoverAuth){
   try{
     const plan=plans.get(prepared),paths={...journalPaths},databases={...readDatabases},buckets={...readBuckets};
     const stages=['auth','master','business','receipts','storage'];
-    if(!plan?.receipts||!plan.descriptor.sourceEvidenceSha256||!stages.includes(resumeAfter)||
+    if(!plan?.receipts||!plan.descriptor.sourceEvidenceSha256||!stages.includes(resumeAfter)||(recoverAuth&&resumeAfter!=='auth')||
       !isProductionImportCoordinator(coordinator)||coordinator.owner!==plan.descriptor.runId||
       coordinator.manifestSha256!==prepared.identitySha256||!same(coordinator.incarnations,plan.descriptor.incarnations)||
       Object.keys(paths).sort().join(',')!==stores.join(',')||new Set(Object.values(paths)).size!==5||
@@ -359,10 +369,40 @@ export async function recoverInitialImportExecution({prepared,coordinator,journa
     const verifyJournal=async()=>{const result=await inspectProductionImportSet({journalPaths:paths,coordinator});if(!result.journalsReconciled)fail('journals_unresolved');return result;};
     return await recoverExitedImportExecution({directory,runId:plan.descriptor.runId,manifestSha256:prepared.identitySha256,
       sourceEvidenceSha256:plan.descriptor.sourceEvidenceSha256,
-      verify:async executorId=>{
+      verify:async (executorId,executionOwner)=>{
         await verifyEvidence();const before=await coordinator.inspect();
-        if(before.executorId!==executorId||before.state?.pending!==null||before.state?.readbackSha256!==null||
+        if(before.executorId!==executorId||(!recoverAuth&&before.state?.pending!==null)||before.state?.readbackSha256!==null||
           before.active!==0||before.fenceOwner!==coordinator.owner)fail('recovery_remote_state_invalid');
+        if(recoverAuth){
+          if(before.state?.pending?.store!=='auth'||before.state.acknowledged!==0)fail('recovery_auth_state_invalid');
+          const journals=await inspectProductionImportSet({journalPaths:paths,coordinator});
+          if(journals.remoteAcknowledged!==0||journals.localPendingCount!==1||journals.retainedLockCount!==1||
+            Object.values(journals.stores).some(row=>row.localAcknowledged!==0))fail('recovery_auth_history_invalid');
+          const attempt=await inspectProductionImportAttempt({journalPath:paths.auth,coordinator});
+          const owner=attempt.local.lock?.owner;
+          const checkExited=()=>{
+            if(!owner||owner.hostHash!==importJournalHostHash()||owner.processId!==executionOwner.processId||
+              owner.hostHash!==executionOwner.hostHash||owner.operationId!==attempt.local.pending?.operationId)fail('recovery_auth_owner_invalid');
+            try{process.kill(owner.processId,0);fail('recovery_auth_owner_alive');}catch(error){if(error.code!=='ESRCH')throw error;}
+          };
+          checkExited();
+          const batchSha256=sha256Hex(JSON.stringify(prepareAtomicAuthImportBatch(plan.auth).items));
+          if(attempt.classification!=='remote-pending-unresolved'||attempt.local.pending.batchSha256!==batchSha256||
+            !same(attempt.remote.state,before.state)||attempt.remote.executorId!==executorId)fail('recovery_auth_batch_invalid');
+          for(const binding of [...Object.values(databases),...Object.values(buckets)])await binding.verifyProductionTarget();
+          await verifySnapshot(plan.manifestPath);
+          if(sha256Hex(await readFile(plan.manifestPath))!==plan.descriptor.businessManifestSha256||
+            (await prepareStorageImportReadback({exportDir:plan.storageExportDir})).manifestSHA256!==plan.descriptor.storageManifestSha256)fail('source_changed');
+          const auth=await verifyImportedAuthProjection({database:databases.auth,projection:plan.auth,targetIncarnation:plan.descriptor.incarnations.auth});
+          await verifyEvidence();
+          const again=await inspectProductionImportAttempt({journalPath:paths.auth,coordinator});
+          if(!same(attempt,again)||!same(journals,await inspectProductionImportSet({journalPaths:paths,coordinator}))||
+            !same(before,await coordinator.inspect()))fail('recovery_remote_state_changed');
+          checkExited();
+          const proof={executorId,acknowledged:1,resumeAfter:'auth',operation:before.state.pending,auth,journals,
+            providerWrites:0,sourceFreezeVerified:false,productionReady:false};
+          return {...proof,proofSha256:sha256Hex(proof)};
+        }
         await verifyJournal();
         for(const binding of [...Object.values(databases),...Object.values(buckets)])await binding.verifyProductionTarget();
         const report=await rehearseSet({prepared,databases,readDatabases:databases,buckets,readBuckets:buckets,
@@ -374,6 +414,12 @@ export async function recoverInitialImportExecution({prepared,coordinator,journa
         return {...proof,proofSha256:sha256Hex(proof)};
       },
       release:async(executorId,proof)=>{
+        if(recoverAuth){
+          await coordinator.recoverAuthAcknowledgement({executorId,...proof.operation,readbackSha256:proof.proofSha256});
+          await recoverAcknowledgedProductionImport({journalPath:paths.auth,coordinator});
+          await verifyEvidence();await verifyJournal();
+          await verifyImportedAuthProjection({database:databases.auth,projection:plan.auth,targetIncarnation:plan.descriptor.incarnations.auth});
+        }
         await coordinator.recoverExecution({executorId,acknowledged:proof.acknowledged,readbackSha256:proof.proofSha256});
         const after=await coordinator.inspect();
         if(after.executorId!==null||after.state?.pending!==null||after.state?.readbackSha256!==null||after.active!==0||

@@ -19,6 +19,7 @@ const shapes: Record<string, string> = {
   claim: "incarnationsSha256,manifestSha256,owner", inspect: "owner",
   operation: "operationId,owner", acquire: "executorId,owner", yield: "executorId,owner,readbackSha256",
   recover: "acknowledged,executorId,owner,readbackSha256",
+  "recover-auth": "batchSha256,executorId,operationId,owner,readbackSha256,store",
   begin: "batchSha256,operationId,owner,store", acknowledge: "batchSha256,operationId,owner,store",
   complete: "owner,readbackSha256", dispatch: "batchSha256,operationId,owner,store",
 };
@@ -64,9 +65,9 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     if ((Object.hasOwn(input, "executorId") || ["acquire", "yield"].includes(action)) && !UUID.test(input.executorId ?? "")) return json(null, 400);
     if (action === "claim" && (!HASH.test(input.manifestSha256 ?? "") || !HASH.test(input.incarnationsSha256 ?? ""))) return json(null, 400);
     if (action === "operation" && !UUID.test(input.operationId ?? "")) return json(null, 400);
-    if (["begin", "acknowledge", "dispatch"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
+    if (["begin", "acknowledge", "dispatch", "recover-auth"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
         !["auth", "master", "business", "avatars", "covers"].includes(input.store ?? ""))) return json(null, 400);
-    if (["complete", "yield", "recover"].includes(action) && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
+    if (["complete", "yield", "recover", "recover-auth"].includes(action) && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
     if (action === "recover" && (!Number.isSafeInteger(input.acknowledged) || input.acknowledged! < 0)) return json(null, 400);
   } catch { return json(null, 400); }
   return ctx.blockConcurrencyWhile(async () => ctx.storage.transaction(async storage => {
@@ -121,8 +122,23 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
       return json({ ...state, executorId: input.executorId });
     }
     if (executionRequired && executorId === undefined && ["begin", "acknowledge", "complete"].includes(action)) return json(null, 409);
-    if (["begin", "acknowledge", "complete", "yield", "recover"].includes(action) &&
+    if (["begin", "acknowledge", "complete", "yield", "recover", "recover-auth"].includes(action) &&
         (executorId ?? null) !== (input.executorId ?? null)) return json(null, 409);
+    if (action === "recover-auth") {
+      // Only the first, single-transaction Auth stage. The private recovery
+      // operator checks the dead executor, exact batch and full Auth readback.
+      // Keep ownership and the fence until local ACK repair also succeeds.
+      if (!executorId || state.acknowledged !== 0 || input.store !== "auth" ||
+          !state.pending || !sameOperation(state.pending, input) ||
+          await storage.get("import-operation:" + input.operationId)) return json(null, 409);
+      await storage.put("import-operation:" + input.operationId, state.pending);
+      await storage.put("production-import-auth-recovery:" + input.operationId, {
+        executorId, readbackSha256: input.readbackSha256!, batchSha256: input.batchSha256!,
+      });
+      state.pending = null; state.acknowledged = 1;
+      await storage.put(IMPORT_STATE_KEY, state);
+      return json(state);
+    }
     if (action === "recover") {
       // The operator has verified an exited local executor and independently
       // checked its completed prefix. CAS excludes a late begin/ACK or another

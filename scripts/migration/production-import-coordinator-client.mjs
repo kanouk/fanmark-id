@@ -54,6 +54,14 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
       if(result.executorId!==null||state.pending!==null||state.readbackSha256!==null||state.acknowledged!==acknowledged)fail();
       admitted=false;return state;
     },
+    async recoverAuthAcknowledgement({executorId:previous,operationId,batchSha256,readbackSha256}){
+      if(executorId!==null||!UUID.test(previous??'')||!UUID.test(operationId??'')||
+        !HASH.test(batchSha256??'')||!HASH.test(readbackSha256??''))fail();
+      const result=await invoke('recover-auth',{owner,executorId:previous,operationId,batchSha256,store:'auth',readbackSha256});
+      const state=validate(result);
+      if(state.pending!==null||state.readbackSha256!==null||state.acknowledged!==1)fail();
+      admitted=false;return state;
+    },
     async inspect(){
       const result=await invoke('inspect',{owner});
       if(result?.scope!==SCOPE||!Number.isSafeInteger(result.active)||result.active<0||

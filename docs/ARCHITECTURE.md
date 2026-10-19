@@ -11,7 +11,7 @@
 `scripts/migration/source-inflight-observation.sql`はDB transaction・prepared transaction・未終了Cron・pg_net待機件数の読取専用観測。HTTP送信中の完了判定は含まない。
 `stripe-receipt-transfer.mjs`の`prepareStripeReceiptReturn`は、元exportと閉鎖後targetの2表から旧側へのatomic回収SQLを生成する。同moduleのcollectorは固定本番D1のread-only接続と保持中のwriter fenceを確認し、暗号化archiveを保存・再照合する。`source-stripe-return-transport.mjs`は固定Supabase projectへの生成SQLだけを扱い、`stripe-receipt-return-execution.mjs`が永続intent、一度の実行、別要求での全件読戻し、応答不明時の再送禁止を担う。実環境の停止・旧処理終了・業務未公開の証拠は別途必要。
 
-本番移送の実行者lockは `scripts/migration/production-import-execution-lock.mjs`。一括runnerが取得前に保存し、終了済み実行者の引継ぎは `recoverInitialImportExecution` でstage全件照合と遠隔CASを行う。[復旧範囲](migration/production-import-recovery.md)。
+本番移送の実行者lockは `scripts/migration/production-import-execution-lock.mjs`。一括runnerが取得前に保存し、終了済み実行者の引継ぎは `recoverInitialImportExecution` でstage全件照合と遠隔CASを行う。[復旧範囲](migration/production-import-recovery.md)。 初回Authの応答不明は `recoverInitialAuthImportExecution` が同じatomic batchのhashと全件readbackを検査し、専用 `recover-auth` のCASでACKだけを確定する。DBへの再送は行わず、他stageのpendingは対象外。
 
 本番aliasの候補は `workers/api/src/production-domain-alias.mjs`。DB等を持たない専用Workerでwww/adminからapexへの限定誘導を担う。初期状態は無効・未配備。[操作票](migration/production-domain-operations.md)。
 

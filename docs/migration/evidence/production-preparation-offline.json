@@ -636,7 +636,7 @@
     },
     {
       "path": "scripts/migration/auth-import-stage.mjs",
-      "sha256": "364cf663cc2f32ea6085eb5af20d287b1e960057ebb5d709793053611b183d00"
+      "sha256": "3caaca407d24dd0f04c3361d3b2bdf00df6d54f84408635931ae3c99964f8341"
     },
     {
       "path": "scripts/migration/auth-readiness.sql",
@@ -656,7 +656,7 @@
     },
     {
       "path": "scripts/migration/initial-import-set-readback.mjs",
-      "sha256": "2a5a16a62c007d4270468dcc434180b8102c12be89d29cbfba43576df6c9bf3c"
+      "sha256": "faa42ddd093d4fa81283483f9733fdac5fd4d8e2209057b893c495252954d8e0"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
@@ -708,15 +708,15 @@
     },
     {
       "path": "scripts/migration/production-import-coordinator-client.mjs",
-      "sha256": "d16ec973ace36ede38f38584cbaae13e85b9c42b0f63beb15ce434cdbc2f5033"
+      "sha256": "c516eb8f67ddf66bc5a398c0370e07c1c87e9972e287d00aa99273c22aa2f837"
     },
     {
       "path": "scripts/migration/production-import-execution-lock.mjs",
-      "sha256": "a493a676052fb4c4b0719b6605909ce2985d98f85b4d1f535ae69259dced1bfd"
+      "sha256": "c7ac6d0c02aac0a75880f8231ce3e3ba287fc273c7ffb084526693fdf2d4444b"
     },
     {
       "path": "scripts/migration/production-import-gateway.mjs",
-      "sha256": "6f19e1bbe09405289dc592511e7270a19f1a76d3ac3028e0ed5857a9c71e9ffe"
+      "sha256": "967769e5c9efc28dc7b1149d2ba10d398feca27ce235908a7bb4906fae0f2a66"
     },
     {
       "path": "scripts/migration/production-import-inspection.mjs",
@@ -932,7 +932,7 @@
     },
     {
       "path": "workers/api/src/production-import-coordinator.ts",
-      "sha256": "d6e1ba512d2f40003fcd217824a089653915e122deb0c3bfd069b6de56427dbb"
+      "sha256": "5e430d4175bddd7213196960d77e6c7ec21125e3a210f0ef720dcd3ba8f1047f"
     },
     {
       "path": "workers/api/src/production-r2-import-contract.ts",

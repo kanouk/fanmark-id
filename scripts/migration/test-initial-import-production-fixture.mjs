@@ -43,7 +43,7 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
   for (const name of migrations) await native[store].batch(businessMigrationStatements(await readFile(new URL('../../workers/api/migrations/' + name, import.meta.url),'utf8')).map(sql => native[store].prepare(sql)));
  await applyBusinessRuntimeMigrations(native.business);
  const newCoordinator = () => createProductionImportCoordinator({ owner: input.runId, incarnations: input.incarnations, manifestSha256: prepared.identitySha256,
- command: async (action, args) => { const r = await mf.dispatchFetch('https://fixture.local/command/' + action,{ method:'POST',body:JSON.stringify(args) }); if(r.status!==200)throw Error('native_coordinator_refused');const value=await r.json();if(action==='complete'&&counters.loseComplete){counters.loseComplete=false;throw Error('synthetic lost completion response');}return value; } });
+ command: async (action, args) => { const r = await mf.dispatchFetch('https://fixture.local/command/' + action,{ method:'POST',body:JSON.stringify(args) }); if(r.status!==200)throw Error('native_coordinator_refused');const value=await r.json();if(action==='recover-auth'&&counters.loseAuthRecovery){counters.loseAuthRecovery=false;throw Error('synthetic lost auth recovery response');}if(action==='complete'&&counters.loseComplete){counters.loseComplete=false;throw Error('synthetic lost completion response');}return value; } });
  const coordinator = newCoordinator();
  await coordinator.claim();
  const runtimeBindings = [

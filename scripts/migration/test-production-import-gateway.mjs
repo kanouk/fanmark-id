@@ -40,6 +40,8 @@ test('native operator gateway requires bearer, expiration and explicit read/writ
     }
     assert.equal((await call('readonly', '/coordinator/claim', { method: 'POST', body: '{}' })).status, 404);
     assert.equal((await call('readonly', '/coordinator/recover', { method: 'POST', body: '{}' })).status, 404);
+    assert.equal((await call('readonly', '/coordinator/recover-auth', { method: 'POST', body: '{}' })).status, 404);
+    assert.equal((await call('writer', '/coordinator/recover-auth', { method: 'POST', body: '{}' })).status, 200);
     assert.equal((await call('writer', '/coordinator/claim', { method: 'POST', body: '{}' })).status, 200);
   } finally { await mf.dispose(); }
 });

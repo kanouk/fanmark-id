@@ -1,6 +1,6 @@
 # 本番移送中断時の照合と限定復旧
 
-対象はPR #41の専用5 store移送。停止設定と調停ownerを保持したまま、元のrun・manifest・incarnation・private journalを使う。全体runnerは`executeInitialImportSet`へ接続済み。終了した同一端末のexecutorは、未確定書込みなし・完了済みstageの独立照合を条件に引き継げる。部分stageや未確定commitの復旧は未完了。この手順だけで本番開始や再開を許可しない。
+対象はPR #41の専用5 store移送。停止設定と調停ownerを保持したまま、元のrun・manifest・incarnation・private journalを使う。全体runnerは`executeInitialImportSet`へ接続済み。終了した同一端末のexecutorは、未確定書込みなし・完了済みstageの独立照合を条件に引き継げる。初回Authのatomic commitだけは、全内容一致を条件に専用復旧を用意した。その他の部分stageや未確定commitの復旧は未完了。この手順だけで本番開始や再開を許可しない。
 
 ## まず読み取りだけで調べる
 
@@ -72,3 +72,26 @@ readDatabases, readBuckets, resumeAfter })` には同じ入力から再作成し
 完了stageがないケース、partial stage、pending provider操作、complete済みのlock掃除は
 この自動復旧の対象外。確認済みprefixの後に部分書込みがあれば、次stageの初期検査で
 止まる。この復旧成功だけで全移送の再開可能性や本番移行準備完了を主張しない。
+
+
+## 初回Auth保存の応答だけが失われた場合
+
+`recoverInitialAuthImportExecution` は `recoverInitialImportExecution` と同じ入力に
+`resumeAfter: 'auth'` を指定する。終了済み同一端末・同一PIDのexecutorと操作lockがあり、
+最初のAuth操作だけがpending、遠隔ACKが0、他4 journalに操作がない場合に限定する。
+
+元の暗号化済みAuth projectionから、通常importと同じguard付きatomic batchを再構築し、
+SQLと値のSHA-256を元intentへ照合する。固定read-only接続でAuthの全行・資格情報・MFA・
+schema・FK・空であるべきsession等を再検査する。未保存、部分一致、内容やbatchの相違は
+復旧せず、元lockと復旧lockを保持する。SQLや資格情報は復旧reportへ保存しない。
+
+照合前後の全5 journal、遠隔状態、入力証拠が一致したら、Git外へ証拠をfsyncする。
+`recover-auth` は同じexecutor・operation UUID・batch hash・Auth・ACK0を原子的に確認し、
+ACKと証拠hashだけを追加する。D1/R2への書込みは行わない。この段階ではexecutorを保持し、
+既存のlocal ACK補修と再照合が成功してから実行権だけを返す。移行の停止設定は保持する。
+新しいexecutorで `resumeAfter: 'auth'` から再開する場合も、Authを全件再検査する。
+
+復旧操作の応答も失われた場合は再送せず、元のexecutor/操作lock、復旧lockとreportを保持する。
+別clientの `inspectOperation` でACKの有無を確認する。残存復旧lockの自動掃除は提供しない。
+この専用経路をMaster/Business/画像の途中保存や、空のAuthへの再送に流用しない。
+本番での実証、source停止の確認、本番ログイン、全移行の準備完了を意味しない。

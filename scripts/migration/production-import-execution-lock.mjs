@@ -56,7 +56,7 @@ export async function recoverExitedImportExecution({directory,runId,manifestSha2
   // Preserve the recovery lock on any failure: its partial proof cannot be
   // silently discarded by a subsequent process.
   unchanged(original,await read(path));exited(owner);
-  const proof=await verify(owner.executorId);
+  const proof=await verify(owner.executorId, Object.freeze({...owner}));
   unchanged(original,await read(path));exited(owner);
   const reportPath=join(directory,'execution-recovery-'+owner.executorId+'.json');
   await write(reportPath,{format:'fanmark-import-execution-recovery-v1',owner,proof},directory);

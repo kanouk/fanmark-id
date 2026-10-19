@@ -193,3 +193,20 @@ it("executor recovery CAS preserves all receipts and the fence and refuses stale
   expect((await call("acquire",{owner,executorId:crypto.randomUUID()})).status).toBe(200);
   await expect(releaseRecoveryWriterFence(runtime,owner)).rejects.toThrow("recovery_writer_unavailable");
 });
+
+
+it("atomic Auth recovery requires the exact pending first operation and retains executor and fence", async () => {
+  await call("claim",identity);const executorId=crypto.randomUUID();
+  await call("acquire",{owner,executorId});
+  const auth={...operation,executorId,store:"auth"};await call("begin",auth);
+  const recovery={...auth,readbackSha256:"f".repeat(64)},before=await stored();
+  for(const bad of [{...recovery,store:"master"},{...recovery,operationId:other},
+    {...recovery,batchSha256:"e".repeat(64)},{...recovery,executorId:other}]){
+    expect((await call("recover-auth",bad)).status).toBe(409);expect(await stored()).toEqual(before);
+  }
+  const results=await Promise.all([call("recover-auth",recovery),call("recover-auth",recovery)]);
+  expect(results.map(r=>r.status).sort()).toEqual([200,409]);
+  expect(await (await call("inspect",{owner})).json()).toMatchObject({executorId,fenceOwner:owner,state:{pending:null,acknowledged:1,readbackSha256:null}});
+  expect((await call("begin",auth)).status).toBe(409);
+  const history=await stored();expect(history.some(([key])=>key==="production-import-auth-recovery:"+operation.operationId)).toBe(true);
+});

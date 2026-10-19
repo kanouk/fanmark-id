@@ -10,7 +10,7 @@
 `node --test scripts/migration/test-source-execution-logs.mjs` は旧Edgeログの同時刻cursor、件数/全ページ整合、実行ID/配備版の結合、HTTP成功だけの未完了判定、異常終了・欠落metadata、API診断の秘密抑止を検証する。実ClickHouse APIのUUID順序と文字列順序の差を避け、ORDER BYとcursorの両方で`toString(id)`を使う。
 `source-inflight-observation.sql`は明示READ ONLY transactionでDB/Cron/HTTP queueの件数を確認する。旧本番で実行し、観測時は各0だった。停止判定・送信中HTTPの終了確認とは区別する。
 
-本番移送executorの復旧は[限定手順](migration/production-import-recovery.md)を参照。`test-initial-import-set-readback.mjs` は終了した子processのlock・native全store/DO・独立clientを使い、stage境界の引継ぎと再開を検査する。
+本番移送executorの復旧は[限定手順](migration/production-import-recovery.md)を参照。`test-initial-import-set-readback.mjs` は終了した子processのlock・native全store/DO・独立clientを使い、stage境界の引継ぎと再開を検査する。 同じ試験に初回Authの保存済み/未保存/内容相違/batch相違/復旧応答消失を追加し、保存済みの場合だけ次stageへ再開できることを検査する。
 
 `node --test scripts/migration/test-production-domain-alias.mjs` はwww/adminの誘導先、認証情報の転送拒否、旧hash tokenのfragment継承抑止、初期閉鎖を検証する。alias候補はrootの移行CIにも含める。
 

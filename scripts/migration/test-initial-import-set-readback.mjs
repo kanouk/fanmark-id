@@ -11,8 +11,8 @@ import { applyBusinessRuntimeMigrations, businessMigrationStatements } from './b
 import { MASTER_RUNTIME_MIGRATIONS } from './master-runtime-schema.mjs';
 import { projectSupabaseAuth } from './supabase-auth-projection.mjs';
 import { createEmojiReleaseArtifacts } from '../build-emoji-release.ts';
-import { prepareInitialImportSet, verifyInitialImportSet, rehearseInitialImportSet, executeInitialImportSet, recoverInitialImportExecution } from './initial-import-set-readback.mjs';
-import {importAuthProjectionStage} from './auth-import-stage.mjs';
+import { prepareInitialImportSet, verifyInitialImportSet, rehearseInitialImportSet, executeInitialImportSet, recoverInitialImportExecution, recoverInitialAuthImportExecution } from './initial-import-set-readback.mjs';
+import {importAuthProjectionStage,prepareAtomicAuthImportBatch} from './auth-import-stage.mjs';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import { LOCAL_R2_IMPORT_WORKER, createLocalR2ImportTransport } from './local-r2-import-transport.mjs';
@@ -366,6 +366,64 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    assert.equal(resumed.coordinatorCompleted,true);assert.equal(resumed.readback.allExpectedStoreContentsMatched,true);
   }finally{await runtime.dispose();}
  });
+
+ for(const scenario of ['committed','not-committed','changed-content','wrong-batch','lost-recovery-response']) {
+ await t.test(`atomic Auth recovery: ${scenario} keeps the source fence and never replays provider writes`,async()=>{
+  const evidence=Buffer.from('synthetic atomic recovery'),sourceEvidencePath=join(root,'atomic-evidence-'+scenario);
+  await writeFile(sourceEvidencePath,evidence,{mode:0o600});
+  const productionInput={...input,runId:randomUUID(),sourceEvidenceSha256:sha256Hex(evidence)};
+  productionInput.stripeReceiptExport=await syntheticStripeReceiptExport(productionInput.runId,2);
+  const candidate=await prepareInitialImportSet(productionInput),directory=join(root,'atomic-'+scenario);
+  const runtime=await createNativeProductionSetFixture({directory,prepared:candidate,input:productionInput});
+  try{
+   const items=prepareAtomicAuthImportBatch(productionInput.authProjection).items;
+   const batchSha256=scenario==='wrong-batch'?'0'.repeat(64):sha256Hex(JSON.stringify(items));
+   // Actual child creates both durable locks and the intent, then exits.
+   // The parent models the pending native transaction whose response was lost.
+   const child=await promisify(execFile)(process.execPath,['--experimental-strip-types','--input-type=module','-e',
+    `import {createImportExecutionLock} from ${JSON.stringify(new URL('./production-import-execution-lock.mjs',import.meta.url).href)};
+     import {openProductionImportJournal} from ${JSON.stringify(new URL('./production-import-journal.mjs',import.meta.url).href)};
+     const arg=JSON.parse(process.argv[1]);const lock=await createImportExecutionLock(arg.execution);
+     const journal=await openProductionImportJournal(arg.journal);const operationId=await journal.beforeWrite(arg.batchSha256);
+     console.log(JSON.stringify({executorId:lock.executorId,operationId}));`,
+    JSON.stringify({execution:{directory,runId:productionInput.runId,manifestSha256:candidate.identitySha256,sourceEvidenceSha256:productionInput.sourceEvidenceSha256},
+      journal:{path:runtime.journalPaths.auth,runId:productionInput.runId,targetId:runtime.databases.auth.targetIdentity.databaseId,targetIncarnation:productionInput.incarnations.auth},batchSha256})]);
+   const {executorId,operationId}=JSON.parse(child.stdout);
+   await runtime.coordinator.acquireExecution(executorId);
+   await runtime.coordinator.beforeWrite({operationId,batchSha256,store:'auth'});
+   if(scenario!=='not-committed')await runtime.native.auth.batch(items.map(row=>runtime.native.auth.prepare(row.sql).bind(...row.params)));
+   if(scenario==='changed-content')await runtime.native.auth.prepare('UPDATE "user" SET name=?').bind('changed fixture').run();
+   const before=await runtime.coordinator.inspect();
+   const args={prepared:candidate,coordinator:runtime.newCoordinator(),journalPaths:runtime.journalPaths,sourceEvidencePath,
+     readDatabases:runtime.readDatabases,readBuckets:runtime.readBuckets,resumeAfter:'auth'};
+   if(scenario==='lost-recovery-response')runtime.counters.loseAuthRecovery=true;
+   if(scenario!=='committed'){
+    await assert.rejects(recoverInitialAuthImportExecution(args),scenario==='wrong-batch'?/recovery_auth_batch_invalid/:
+      scenario==='lost-recovery-response'?/recovery_unconfirmed/:/auth_import_readback_/);
+    const after=await runtime.coordinator.inspect();
+    if(scenario==='lost-recovery-response'){
+      assert.equal(after.state.pending,null);assert.equal(after.state.acknowledged,1);assert.equal(after.executorId,executorId);
+      const proof=JSON.parse(await readFile(join(directory,'execution-recovery-'+executorId+'.json'),'utf8'));
+      assert.equal(proof.proof.operation.operationId,operationId);
+    }else assert.deepEqual(after,before);
+    assert.ok(await readFile(join(directory,'.initial-import-execution.lock')));
+    assert.ok(await readFile(join(directory,'.initial-import-execution.lock.recovery')));
+    assert.ok(await readFile(runtime.journalPaths.auth+'.lock'));
+   }else{
+    const result=await recoverInitialAuthImportExecution(args);
+    assert.equal(result.executionOwnershipRecovered,true);assert.equal(result.providerWrites,0);
+    const after=await runtime.coordinator.inspect();assert.equal(after.state.pending,null);assert.equal(after.state.acknowledged,1);
+    assert.equal(after.executorId,null);assert.equal(after.fenceOwner,productionInput.runId);
+    assert.match(await readFile(runtime.journalPaths.auth,'utf8'),/recoveryProofSha256/);
+    const next=runtime.newCoordinator();await next.claim();const writers=await runtime.reopenWriters(next);
+    const result2=await executeInitialImportSet({...writers,journalPaths:runtime.journalPaths,readDatabases:runtime.readDatabases,readBuckets:runtime.readBuckets,
+      prepared:await prepareInitialImportSet(productionInput),sourceEvidencePath,resumeAfter:'auth',businessReportPath:join(root,'atomic-business-report.json'),storageReportPath:join(storageExportDir,'atomic-images-report.json')});
+    assert.equal(result2.coordinatorCompleted,true);assert.equal(result2.readback.allExpectedStoreContentsMatched,true);
+   }
+   if(scenario!=='committed'){assert.equal(runtime.counters.d1Writes,0);assert.equal(runtime.counters.r2Writes,0);}
+  }finally{await runtime.dispose();}
+ });
+ }
 
  await t.test('a dead executor with a changed completed Auth prefix remains locked and never releases the remote fence',async()=>{
   const evidence=Buffer.from('synthetic changed prefix'),sourceEvidencePath=join(root,'executor-changed-evidence');await writeFile(sourceEvidencePath,evidence,{mode:0o600});

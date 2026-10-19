@@ -1,3 +1,11 @@
+## 2026-10-19: 初回Authの応答不明を全件照合から復旧する候補
+
+`recoverInitialAuthImportExecution` を追加。元のatomic batchのhash・終了済み同一端末/PID・初回Authだけpending・全5 journalを照合し、固定read-only接続でAuthの全行/資格情報/MFA/schema/FKを確認する。専用CASはACKと証拠hashだけを保存する。local ACK補修後にexecutorだけを返し、停止fenceと全履歴は保持。DBへの再送はしない。[条件と対象外](production-import-recovery.md)。
+
+native local D1/DOと終了した実子processを使い、保存済みから残り全storeの再開、未保存/内容相違/batch相違の拒否、復旧応答消失時のlock/report保持を検査した。Cloudflare管理APIと応答消失は合成で、本番実証ではない。同一PID条件追加後の全store/準備30件、Authを含む先行31件、DO13件、接続回帰26件、Worker型チェックと全閉鎖bundle dry-runが成功した。試験群には重複がある。通常のatomic Auth容量・空target guard・本番read-only境界は保持する。
+
+先行b692f73のCI39207720326はapp/Worker両job成功。本変更は未配備。Master/Business/画像の部分stage、復旧自身の残存lock掃除、当日のsource停止/外部結果照合、provider設定・DNS逆操作・通知は残る。管理者MFAは最後。本番source停止/import/DNS/main mergeなし。旧解約済みテスト契約は保持。
+
 ## 2026-10-19: 手動backupの実保存・照合とOAuth秘密値の保管を完了
 
 2af7680/CI39205951900はアプリ・Worker両job成功。閉鎖appへ配備し、日次receiptを保持したまま固定操作IDの手動保存に成功した。424,441 bytes、保存10.357秒。別CLI取得・復号・114表のschema/全行/FK照合、日次archive/receipt不変を確認。一時operatorを削除し、appを4878820d/pendingへ戻した。7 Workerの元inventory、他Worker設定、公開経路/Cron0を独立確認した。[実証範囲](evidence/production-manual-backup-2026-10-19.json)。初期41行/画像0件の検証で、本番実ユーザーの移送証拠ではない。

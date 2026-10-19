@@ -18,7 +18,9 @@ const dirty = tables.map(table => `EXISTS (SELECT 1 FROM "${table}")`).join(' OR
 const guard = `INSERT INTO "mfaAssurance" (id,userId,sessionId,factorId,generation,verifiedAt,expiresAt)
   SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL WHERE ${dirty}`;
 
-export async function importAuthProjectionStage({ database, readDatabase, projection, targetIncarnation, mode = 'local' } = {}) {
+// This exact batch is also reconstructed during unknown-response recovery.
+// Its SHA-256 must match the original durable intent; no SQL is logged.
+export function prepareAtomicAuthImportBatch(projection) {
   const { expected } = prepareAuthImportProjection(projection);
   const rows = Object.entries(expected.tables).flatMap(([table, records]) => records.map(row => ({ table, row })));
   // The source currently has 45 projected rows. Keep this stage one atomic
@@ -26,6 +28,16 @@ export async function importAuthProjectionStage({ database, readDatabase, projec
   if (!expected.tables.user.length || !expected.tables.adminRole.length || rows.length > 99 ||
       rows.reduce((sum, { row }) => sum + Object.keys(row).length, 0) > 900 ||
       Buffer.byteLength(JSON.stringify(expected.tables)) > 256 * 1024) fail('atomic_capacity_or_admin_invalid');
+  const items = [{ sql: guard, params: [] }, ...rows.map(({ table, row }) => {
+    const columns = Object.keys(row);
+    return { sql: `INSERT INTO "${table}" (${columns.map(column => `"${column}"`).join(',')}) VALUES (${columns.map(() => '?').join(',')})`,
+      params: columns.map(column => row[column]) };
+  })];
+  return { expected, items };
+}
+
+export async function importAuthProjectionStage({ database, readDatabase, projection, targetIncarnation, mode = 'local' } = {}) {
+  const { expected, items } = prepareAtomicAuthImportBatch(projection);
   const production = isProductionRemoteD1(database);
   if (!['local', 'production-stage'].includes(mode) ||
       (mode === 'local' && (production || isProductionRemoteD1(readDatabase) || isIsolatedRemoteD1(database) || isIsolatedRemoteD1(readDatabase))) ||
@@ -51,14 +63,11 @@ export async function importAuthProjectionStage({ database, readDatabase, projec
   // leave the global coordinator and journal pending and do not retry here.
   let result;
   try {
-    const statements = [database.prepare(guard), ...rows.map(({ table, row }) => {
-      const columns = Object.keys(row);
-      return database.prepare(`INSERT INTO "${table}" (${columns.map(column => `"${column}"`).join(',')}) VALUES (${columns.map(() => '?').join(',')})`).bind(...columns.map(column => row[column]));
-    })];
+    const statements = items.map(item => database.prepare(item.sql).bind(...item.params));
     result = await database.batch(statements);
   } catch { fail('write_acknowledgement_unknown'); }
-  if (!Array.isArray(result) || result.length !== rows.length + 1 || result.some(row => row?.success !== true)) fail('write_acknowledgement_unknown');
+  if (!Array.isArray(result) || result.length !== items.length || result.some(row => row?.success !== true)) fail('write_acknowledgement_unknown');
   const readback = await verifyImportedAuthProjection({ database: readDatabase, projection: expected, targetIncarnation });
-  return { ...readback, scope: 'atomic-auth-import-stage', atomicStatements: rows.length + 1,
+  return { ...readback, scope: 'atomic-auth-import-stage', atomicStatements: items.length,
     sourceFreezeVerified: false, coordinatorCompleted: false };
 }
