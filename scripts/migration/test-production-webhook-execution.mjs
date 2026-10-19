@@ -19,7 +19,7 @@ async function fixture(t, provider = 'stripe') {
     settingsSha256:sha256Hex(settings),sourceBoundarySha256:'a'.repeat(64),reconciliationSha256:'b'.repeat(64),
     receiptHandoffSha256:'c'.repeat(64),sourceProject:'ppqgtbjykitqtiaisyji',sourceFrozen:true,
     externalEffectsReconciled:true,g3Reconciled:true,receiptHandoffReconciled:true,
-    businessWritesStarted:false,operatorApproved:true,observedAt:now};
+    businessWritesStarted:false,operatorApproved:true,observedAt:now,routingMode:'worker-route'};
   const request=prepareProductionWebhookRegistration({provider,operationId});
   const endpoint=provider==='stripe'?{id:'we_fixture',url:request.body.url,livemode:true,application:null,
     status:'enabled',api_version:request.body.api_version,metadata:request.body.metadata,enabled_events:request.body.enabled_events}:
@@ -30,10 +30,14 @@ async function fixture(t, provider = 'stripe') {
   options.fetchImpl=async (url,o)=>{
     calls.push({url,method:o.method,headers:o.headers,body:o.body});
     assert.equal(o.redirect,'error');
+    if(url.startsWith('https://api.cloudflare.com/client/v4/zones/')){
+      assert.equal(o.method,'GET');assert.equal(o.headers.authorization,'Bearer cf_private_fixture');
+      return Response.json({success:true,result:gate.routingMode==='worker-route'?[{id:'fixed',pattern:'fanmark.id/*',script:'fanmark-app-production'}]:[]});
+    }
     if(url.startsWith('https://api.cloudflare.com/')){
       assert.equal(o.method,'GET');assert.equal(o.headers.authorization,'Bearer cf_private_fixture');
       const result=url.endsWith('/settings')?state.settings:url.endsWith('/deployments')?{deployments:[{versions:[{version_id:runtimeVersion,percentage:100}]}]}:
-        url.endsWith('/domains')?[{hostname:'fanmark.id',service:'fanmark-app-production',zone_id:'6a2c39c92ba1c4106b7c19f87ada0a7e'}]:
+        url.endsWith('/domains')?(gate.routingMode==='custom-domain'?[{hostname:'fanmark.id',service:'fanmark-app-production',zone_id:'6a2c39c92ba1c4106b7c19f87ada0a7e'}]:[]):
         url.endsWith('/schedules')?{schedules:[]}:url.endsWith('/subdomain')?{enabled:false,previews_enabled:false}:assert.fail(url);
       return Response.json({success:true,result});
     }
@@ -77,6 +81,19 @@ for(const provider of ['stripe','resend'])test(provider+' makes one durable POST
   assert.ok(!JSON.stringify(result).includes(f.secret));
   for(const name of await readdir(f.options.directory))assert.ok(!(await readFile(join(f.options.directory,name),'utf8')).includes(f.secret));
   await assert.rejects(executeProductionWebhookRegistration(f.options));assert.equal(posts(f).length,1);
+});
+test('explicit Custom Domain admission also requires an otherwise empty zone route list',async t=>{
+  const f=await fixture(t);f.options.gate.routingMode='custom-domain';
+  assert.equal((await executeProductionWebhookRegistration(f.options)).providerPostAttempts,1);
+});
+test('an overlapping zone route or competing apex domain prevents registration',async t=>{
+  const f=await fixture(t),original=f.options.fetchImpl;
+  f.options.fetchImpl=async(url,o)=>url.startsWith('https://api.cloudflare.com/client/v4/zones/')?
+    Response.json({success:true,result:[{pattern:'fanmark.id/*',script:'fanmark-app-production'},{pattern:'*.fanmark.id/*',script:'other'}]}):original(url,o);
+  await assert.rejects(executeProductionWebhookRegistration(f.options),/domain_not_attached/);assert.equal(posts(f).length,0);
+  f.options.fetchImpl=async(url,o)=>url.endsWith('/domains')?
+    Response.json({success:true,result:[{hostname:'fanmark.id',service:'another-worker'}]}):original(url,o);
+  await assert.rejects(executeProductionWebhookRegistration(f.options),/domain_not_attached/);assert.equal(posts(f).length,0);
 });
 
 test('stale/incomplete G4 and old public site are rejected before any provider POST or intent',async t=>{

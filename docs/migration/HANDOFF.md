@@ -1,3 +1,13 @@
+## 2026-10-19: Aを保持するRouteの実TLS/逆操作・全cleanupを独立確認
+
+専用の合成hostとdata-free WorkerでRoute追加→外部TLS/HTTP→Route解除を実行した。同じAのID/全属性と元17レコードはRoute中も保持され、HTTPS通常検証/TLS1.3、503/no-store、HTTPから同path/queryのHTTPSへの307、API POST閉鎖を確認。所有Route/A/Workerを削除し、別processで元17DNS・全7 Workerのsettings/inventory・route0・Custom Domains不変を再確認した。[限定証拠](evidence/isolated-route-reversal-tls-2026-10-19.json)。
+
+初回はA作成ACK後の一覧件数検査で止まった。原応答は未保存のため原因不明。GETで所有A1件を特定し、同じoperation/journalの続きから実行した。Worker/A作成の再送なし。private `route-rehearsal-9369bd92-b7b5-449e-a874-b8f55362489a`のintent/全応答/journal/result/independent-readbackを保持。helperを再実行しない。
+
+旧A再作成とapex NS共存の不確定性を避ける[Route代替票](production-route-alternative.md)を追加。本番方式はG0で固定し、今日の実験を本番切替の許可にしない。Webhook G4票へroutingModeと競合Route拒否を接続し関連10件、offline inventory検査9件成功。773bcfeのCI成功、7893cfbのCI39246611481はWorker成功/appはhash一覧の更新漏れ1件のみ。修正と新鍵proofは61e2278へ保存済み。
+
+本番host・source/実データ・mainは不変、MFA未依頼。SSL Read追加の保存確認とGitHub owner loginは本人回答待ち。新しい鍵・backup・自己テスト契約操作なし。
+
 ## 2026-10-19: Webhook鍵の一度だけの設定とbinding-only照合候補
 
 閉鎖本番の`ProductionWebhookKeyProofService`と、暗号化custodyから固定CF secret APIへ一度だけPUTするoperator libraryを追加した。遠隔保管確認callback、元settings/version/Cron、排他intent、別GETと実bindingによるnonce付きHMACを照合する。鍵export・DB操作・公開routeは追加しない。PUT応答消失後は元intent hashを使うGET/RPCだけの照合を行い、PUT ACKの成功は捏造しない。新規Stripe v1登録前にv2空集合の独立確認も追加。関連31件、準備inventoryを含め40件、native proxy/鍵設定の関連5件成功。実provider/key設定/一時operator作成は未実施。

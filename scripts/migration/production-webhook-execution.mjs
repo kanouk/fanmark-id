@@ -14,14 +14,14 @@ const accountId = 'acct_1SFjhvJk0VCfiKUp';
 // Caller supplies independently checked, current G1/G3 and operator approval
 // evidence. This is an input contract, not a source freeze implementation.
 function validateGate(gate, now) {
-  if (!gate || Object.keys(gate).sort().join(',') !== 'businessWritesStarted,externalEffectsReconciled,format,g3Reconciled,observedAt,operatorApproved,receiptHandoffReconciled,receiptHandoffSha256,reconciliationSha256,runId,runtimeVersion,settingsSha256,sourceBoundarySha256,sourceFrozen,sourceProject' ||
+  if (!gate || Object.keys(gate).sort().join(',') !== 'businessWritesStarted,externalEffectsReconciled,format,g3Reconciled,observedAt,operatorApproved,receiptHandoffReconciled,receiptHandoffSha256,reconciliationSha256,routingMode,runId,runtimeVersion,settingsSha256,sourceBoundarySha256,sourceFrozen,sourceProject' ||
     gate.format !== 'fanmark-production-webhook-g4-evidence-v1' || !UUID.test(gate.runId ?? '') ||
     !UUID.test(gate.runtimeVersion ?? '') || !HASH.test(gate.settingsSha256 ?? '') ||
     !HASH.test(gate.sourceBoundarySha256 ?? '') || !HASH.test(gate.reconciliationSha256 ?? '') ||
     !HASH.test(gate.receiptHandoffSha256 ?? '') || gate.sourceProject !== 'ppqgtbjykitqtiaisyji' ||
     gate.sourceFrozen !== true || gate.externalEffectsReconciled !== true || gate.g3Reconciled !== true ||
     gate.receiptHandoffReconciled !== true || gate.businessWritesStarted !== false ||
-    gate.operatorApproved !== true || !Number.isSafeInteger(gate.observedAt) ||
+    !['worker-route','custom-domain'].includes(gate.routingMode) || gate.operatorApproved !== true || !Number.isSafeInteger(gate.observedAt) ||
     gate.observedAt > now || now - gate.observedAt > 120000) fail('g4_evidence_required');
 }
 
@@ -113,8 +113,13 @@ async function admission({gate, cloudflareToken, fetchImpl, now}, request) {
   if (versions?.length !== 1 || versions[0].percentage !== 100 || versions[0].version_id !== gate.runtimeVersion) fail('runtime_changed');
   const domains = await api('/domains');
   const apex = domains?.filter(d => d.hostname === 'fanmark.id');
-  if (apex?.length !== 1 || apex[0].service !== 'fanmark-app-production' ||
-    apex[0].zone_id !== '6a2c39c92ba1c4106b7c19f87ada0a7e') fail('domain_not_attached');
+  const routes = await get('https://api.cloudflare.com/client/v4/zones/6a2c39c92ba1c4106b7c19f87ada0a7e/workers/routes',cloudflareToken,fetchImpl,true);
+  if (!Array.isArray(apex) || !Array.isArray(routes)) fail('domain_not_attached');
+  if (gate.routingMode === 'custom-domain') {
+    if (apex.length !== 1 || apex[0].service !== 'fanmark-app-production' || routes.length !== 0 ||
+      apex[0].zone_id !== '6a2c39c92ba1c4106b7c19f87ada0a7e') fail('domain_not_attached');
+  } else if (apex.length !== 0 || routes.length !== 1 || routes[0].pattern !== 'fanmark.id/*' ||
+    routes[0].script !== 'fanmark-app-production') fail('domain_not_attached');
   const schedules = await api('/scripts/fanmark-app-production/schedules');
   if (!Array.isArray(schedules.schedules) || schedules.schedules.length) fail('cron_open');
   const subdomain = await api('/scripts/fanmark-app-production/subdomain');
