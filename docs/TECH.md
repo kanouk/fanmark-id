@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`vitest.maintenance-settings.config.mjs test/cutover-write-freeze.test.ts` は本番HTTPのGET/HEAD誘導・書込み拒否・外部hostへの誤誘導防止・全bindingアクセス0と、既存の停止境界をnative Workerで確認する。
+
 `test-production-import-quarantine.mjs` は終了した実子processのlock、native DO/D1/R2で部分保存・未確定ACK・全journal保持とquarantine応答消失を検証する。`vitest.production-import.config.mjs` は各storeのterminal拒否とfence保持を検査する。未知commitをACKへ書き換えず、中止後のtargetは再利用しない。
 
 `test-production-webhook-execution.mjs` は一度だけの固定POST、G4証拠の期限、旧site/設定変化/重複先の拒否、通信断後のintent保持と再送拒否、非JSONエラー原文の暗号化を合成HTTPで検査する。runtimeを配備しないoperator処理で、当日の証拠と本番配送の受入れは別途必要。

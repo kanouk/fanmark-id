@@ -1,5 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
+本番apexのHTTP拒否/HTTPS誘導は `workers/api/src/production-https.ts`。`index.ts`の実fetchとhandleRequestの両入口で、writer追跡やAuth/DB/receiptの前に処理する。固定の本番originにだけ適用し、aliasと旧authは別契約。
+
 部分移送の恒久中止は `scripts/migration/production-import-quarantine.mjs`。終了済みexecutorと全5 journalを照合し、`production-import-coordinator.ts` のquarantine CASへ接続する。pending/ACK/executor/fenceを保持して全移送mutationとfence解除を拒否する。source再開や未確定commitの成功認定は行わない。
 
 本番WebhookのG4確認後の一度だけのPOST接続は `scripts/migration/production-webhook-execution.mjs`。固定accountの配備/閉鎖設定・公開HTTPS到達・provider全一覧を確認し、排他dispatchを保存してから既存custodyへ応答を暗号化保管する。応答不明の調査はGETのみで、鍵の設定・G5公開・旧環境停止は行わない。

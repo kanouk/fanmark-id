@@ -1,3 +1,9 @@
+## 2026-10-19: 本番HTTPの処理拒否とHTTPS誘導を追加（未配備）
+
+`production-https.ts`を本番apexの実fetch/handleRequestへ接続した。HTTP GET/HEADはpath/queryを保つHTTPSへの307、HTTP書込み/Authorization/非標準portは400。writer追跡・Auth・receipt・DB・通知wakeの前に判定する。停止境界を含むnative12件、Worker型チェック成功。DNS/redirect rule/TLS設定は変更していない。公開TLSと逆操作の実証は別途必要。
+
+Webhook実行接続e810fc9と部分移送quarantine a511472を含め既存PRへ反映してCIを確認する。実本番runtimeはb03de981のまま。source停止/実データ移送/DNS切替/main mergeなし、MFA未依頼。GitHubは本人の希望でin-appブラウザに既存所有者fanmark-idのログイン入口を用意し、必要性を説明した。kanoukのstaging Appは変更していない。
+
 ## 2026-10-19: 部分移送を保持して恒久中止する候補・先行3commitのCI成功
 
 再開時にpushした773bcfeのCI39244655945はapp・Workerとも成功。Webhook接続はlocal e810fc9へ保存済み。新規provider登録/配備なし。

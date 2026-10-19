@@ -138,6 +138,20 @@ Google/Discord/Appleの既存設定へ、新本番callbackだけを追加する�
 
 推奨は対象3hostに限定したCloudflareのSingle Redirectを切替票へ用意すること。全hostへ作用するAlways Use HTTPSより、旧auth等への影響範囲を限定できる。これは未適用の案であり、設定保存前には正確な式・転送status・query保持と逆操作をレビューする。[公式のHTTPS設定説明](https://developers.cloudflare.com/ssl/edge-certificates/additional-options/always-use-https/)でも、一部hostだけに適用する場合はSingle Redirectが案内されている。新しいredirectの実IDを保存し、中止時は当該runで追加したその1件だけを解除する。既存TLS設定・NS/mail設定を併せて変更しない。
 
+### HTTP処理をWorker内で閉じる候補（再開後追加・未配備）
+
+`production-https.ts`を実Workerの入口と`handleRequest`の最初へ接続した。
+`BETTER_AUTH_URL=https://fanmark.id`の本番apexだけを対象に、HTTPのGET/HEADは同じ
+path/queryのHTTPSへ307/no-store/no-referrerで誘導し、旧fragmentを継承させない。
+HTTPの書込みmethod・Authorization付き・非標準portは400で拒否し、Auth/DB/画像/
+receipt/writer追跡/通知wakeへ到達させない。旧auth hostやstagingの挙動は変えない。
+alias候補もHTTPの業務処理を行わず、許可した通常GET/HEADだけをHTTPS apexへ案内する。
+
+これにより本番3hostを接続後にHTTPから業務処理が実行されないことをruntime側でも
+検証できる。別途Single Redirectを登録した証拠ではなく、現時点でルール追加はしない。
+実入口のnative12件成功、閉鎖配備・公開経路/TLSでの実測は後続。TLS証明書の準備や
+DNS逆操作の受け入れをこの候補で代用しない。
+
 
 資格情報の設定状態とprovider通知先の現状は[本番アプリの資格情報](production-provider-secrets.md)を参照。10/19のlive/test別API読戻しでは、Stripeの旧Supabase向け通知はsandboxだけにあり、本番通知先は未登録だった。「既存本番endpointのURLだけを変更する」前提では実行しない。
 

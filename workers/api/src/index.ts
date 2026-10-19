@@ -97,6 +97,7 @@ import {
 import { handleAdminDataResetRequest, isAdminDataResetPath, recordUnauthorizedDataResetAttempt } from "./admin-data-reset-d1-api";
 import { handleWaitlistSignupRequest } from "./waitlist-signup-d1-api";
 import { handleStripeWebhookD1Request, isStripeWebhookPath } from "./stripe-webhook-d1-api";
+import { productionHttpsResponse } from "./production-https";
 import { runScheduledStripeWebhookDispatches } from "./stripe-webhook-d1-scheduled";
 import {
   handleStripeExtensionCheckoutD1Request,
@@ -1055,6 +1056,8 @@ export async function handleRequest(
   availabilityClock: AvailabilityClock = () => new Date(),
   publicAccessClock: () => Date = () => new Date(),
 ): Promise<Response> {
+  const httpsResponse = productionHttpsResponse(request, env.BETTER_AUTH_URL);
+  if (httpsResponse) return httpsResponse;
   const url = new URL(request.url);
   const routeHeaders = baseHeaders();
 
@@ -1756,6 +1759,8 @@ export async function handleRequest(
 
 const worker = {
   async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
+    const httpsResponse = productionHttpsResponse(request, env.BETTER_AUTH_URL);
+    if (httpsResponse) return httpsResponse;
     try {
       const url = new URL(request.url);
       // Rejected traffic must not create writer-tracking records or run the

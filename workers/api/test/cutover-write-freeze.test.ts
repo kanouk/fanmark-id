@@ -11,6 +11,33 @@ import { shouldFreezeRecoveryWrites } from "../src/recovery-write-freeze";
 
 const runtimeEnv = env as unknown as Env;
 
+describe("production HTTP handling before writer/Auth/receipt access",()=>{
+  it("redirects only GET/HEAD to the same HTTPS apex and refuses insecure writes before all bindings",async()=>{
+    let accesses=0;const denied=()=>{accesses++;throw Error("http_binding_access");};
+    const database={prepare:denied} as unknown as D1Database;
+    const frozen:Env={...runtimeEnv,BETTER_AUTH_URL:"https://fanmark.id",CUTOVER_WRITE_FREEZE:"receipt_only",
+      FANMARK_DB:database,AUTH_DB:database,MASTER_DB:database,ASSETS:{fetch:denied} as unknown as Fetcher,
+      RECOVERY_DRAIN_BACKEND:"durable-object",RECOVERY_DRAIN:{idFromName:denied} as unknown as DurableObjectNamespace};
+    const ctx={waitUntil:denied} as unknown as ExecutionContext;
+    for(const path of ["/","/%F0%9F%8C%B8?lang=ja","/api/auth/callback/google?code=fixture&state=fixture","//evil.invalid/path"]){
+      for(const method of ["GET","HEAD"]){
+        const r=await worker.fetch(new Request("http://fanmark.id"+path,{method}),frozen,ctx);
+        expect(r.status).toBe(307);expect(r.headers.get("location")).toBe("https://fanmark.id"+path+"#");
+        expect(r.headers.get("cache-control")).toBe("no-store");expect(await r.text()).toBe("");
+      }
+    }
+    for(const path of ["/api/auth/sign-in/email","/api/auth/callback/apple","/api/stripe/webhook","/api/fanmarks/register"]){
+      const r=await worker.fetch(new Request("http://fanmark.id"+path,{method:"POST",body:"{}"}),frozen,ctx);
+      expect(r.status).toBe(400);expect(await r.json()).toEqual({error:"https_required"});expect(r.headers.get("location")).toBeNull();
+    }
+    const direct=await handleRequest(new Request("http://fanmark.id/api/auth/sign-in/email",{method:"POST"}),frozen);
+    expect(direct.status).toBe(400);expect(accesses).toBe(0);
+    const normal=await worker.fetch(new Request("https://fanmark.id/api/auth/get-session"),frozen,ctx);
+    expect(normal.status).toBe(503);expect(await normal.json()).toEqual({error:"cutover_write_freeze"});
+    expect(accesses).toBe(0);
+  });
+});
+
 describe("recovery write freeze at the real Worker entrypoints", () => {
   it("blocks auth/session GETs, provider receipts, public routes and post-response wakes before any binding access", async () => {
     let accesses = 0;
