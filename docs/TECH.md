@@ -1,6 +1,9 @@
 # fanmark.id TECH.md
 
 再開後の本番準備の現状は[2026-10-19更新](migration/PREPARATION-2026-10-19.md)。
+G5本人確認のHTTP/cookie/writer/fenceはWorkerの`production-owner-acceptance.test.ts`、
+実binding issuerはrootの`node --experimental-strip-types --test scripts/migration/test-production-owner-acceptance.mjs`で検査する。
+有効化は当日のG5判断後に限定する。[操作票](migration/production-owner-acceptance.md)。
 Webhook遠隔custodyは`node --test scripts/migration/test-production-webhook-remote-custody.mjs`で
 独立復号/固定Sync CLI/PTY framing/誤応答拒否を確認する。実provider登録は実行しない。
 

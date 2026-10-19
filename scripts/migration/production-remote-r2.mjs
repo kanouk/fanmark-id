@@ -55,6 +55,7 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
       ]);
       if (metadata?.name !== identity.bucketName || metadata.creation_date !== identity.createdAt || metadata.storage_class !== 'Standard') fail();
       resolveProductionEmojiTarget(settings);
+      if (settings.bindings.some(b => b.name === 'PRODUCTION_OWNER_ACCEPTANCE_BACKEND' && b.text !== 'disabled')) fail();
       const binding = name => settings.bindings.filter(row => row.name === name);
       for (const [name, value] of Object.entries({ CUTOVER_WRITE_FREEZE: 'receipt_only', STORAGE_BACKEND: 'r2', RECOVERY_DRAIN_BACKEND: 'durable-object' }))
         if (binding(name).length !== 1 || binding(name)[0].text !== value) fail();

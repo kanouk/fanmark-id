@@ -2,6 +2,8 @@ export { ProductionR2ImportService } from "./production-r2-import-service";
 export { ProductionBackupService, ProductionBackupAlertService } from "./production-backup-service";
 export { ProductionImportCoordinatorService } from "./production-import-coordinator";
 export { ProductionWebhookKeyProofService } from "./production-webhook-key-proof";
+export { ProductionOwnerAcceptanceService } from "./production-owner-acceptance";
+import { productionOwnerAcceptanceAllowed, productionOwnerAcceptanceIngressAllowed, productionOwnerAcceptanceResponse, privateProductionOwnerResponse } from "./production-owner-acceptance";
 import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from "./notification-wake";
 export { NotificationWakeCoordinatorProduction, NotificationWakeCoordinator, NotificationWakeCoordinatorV2, NotificationWakeCoordinatorV3, NotificationWakeCoordinatorV4 } from "./notification-wake";
 export { RecoveryWriterCoordinatorProduction, RecoveryWriterCoordinator, RecoveryWriterCoordinatorV2, RecoveryWriterCoordinatorV3, RecoveryWriterCoordinatorV4 } from "./recovery-writer-drain";
@@ -1066,6 +1068,12 @@ export async function handleRequest(
     return jsonResponse({ error: "recovery_write_freeze" }, 503, { "retry-after": "60" });
   }
 
+  const ownerEntry = await productionOwnerAcceptanceResponse(request, env);
+  if (ownerEntry) return ownerEntry;
+  if (await productionOwnerAcceptanceAllowed(request, env) || productionOwnerAcceptanceIngressAllowed(request, env)) return privateProductionOwnerResponse(
+    await handleRequest(request, { ...env, CUTOVER_WRITE_FREEZE: "false", AUTH_SOCIAL_PROVISIONING_BACKEND: "",
+      INVITATION_SIGNUP_BACKEND: "" }, outboundFetch, availabilityClock, publicAccessClock));
+
   if (blocksRequestDuringCutoverFreeze(request.method, url.pathname, env.CUTOVER_WRITE_FREEZE)) {
     if (url.pathname !== "/api" && !url.pathname.startsWith("/api/")) {
       // A closed site must explain the outage without loading app assets or Auth.
@@ -1763,11 +1771,20 @@ const worker = {
     const httpsResponse = productionHttpsResponse(request, env.BETTER_AUTH_URL);
     if (httpsResponse) return httpsResponse;
     try {
+      const ownerEntry = await productionOwnerAcceptanceResponse(request, env);
+      if (ownerEntry) return ownerEntry;
+      const ownerAllowed = await productionOwnerAcceptanceAllowed(request, env) || productionOwnerAcceptanceIngressAllowed(request, env);
+      const viewEnv = ownerAllowed ? { ...env, CUTOVER_WRITE_FREEZE: "false", AUTH_SOCIAL_PROVISIONING_BACKEND: "",
+        INVITATION_SIGNUP_BACKEND: "" } : env;
+      const view = async () => {
+        const response = await handleRequest(request, viewEnv);
+        return ownerAllowed ? privateProductionOwnerResponse(response) : response;
+      };
       const url = new URL(request.url);
       // Rejected traffic must not create writer-tracking records or run the
       // post-response notification wake. The admitted receipt still uses the
       // normal writer guard, ingress signature checks and durable D1 ledger.
-      if (blocksRequestDuringCutoverFreeze(request.method, url.pathname, env.CUTOVER_WRITE_FREEZE)) {
+      if (!ownerAllowed && blocksRequestDuringCutoverFreeze(request.method, url.pathname, env.CUTOVER_WRITE_FREEZE)) {
         return await handleRequest(request, env);
       }
       // Static/OGP responses and public Master reads do not mutate captured
@@ -1778,10 +1795,10 @@ const worker = {
       const assetRead = Boolean(env.ASSETS) && !url.pathname.startsWith("/api/") && url.pathname !== "/api";
       const masterRead = url.pathname === "/api/emoji/catalog" || isReferenceMasterPath(url);
       if (readMethod && (assetRead || masterRead)) {
-        return await withRecoveryRead(env, () => handleRequest(request, env));
+        return await withRecoveryRead(env, view);
       }
       return await withRecoveryWriter(env, async () => {
-        try { return await handleRequest(request, env); }
+        try { return await view(); }
         finally {
           // The operator route performs its own authorized force-wake. A refused
           // Origin/MFA request must never replay an outbox through this finally.

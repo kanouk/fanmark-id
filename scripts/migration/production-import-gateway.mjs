@@ -127,6 +127,7 @@ export async function openProductionImportGateway({ journalPath, runtimeVersion,
     try { await directory.sync(); } finally { await directory.close(); }
     const settings = await api('/workers/scripts/' + PRODUCTION_RUNTIME.worker + '/settings');
     resolveProductionEmojiTarget(settings);
+    if (access === 'import' && settings.bindings.some(b => b.name === 'PRODUCTION_OWNER_ACCEPTANCE_BACKEND' && b.text !== 'disabled')) fail();
     for (const [name, value] of Object.entries({ CUTOVER_WRITE_FREEZE: 'receipt_only', STORAGE_BACKEND: 'r2', RECOVERY_DRAIN_BACKEND: 'durable-object' })) {
       const rows = settings.bindings.filter(row => row.name === name); if (rows.length !== 1 || rows[0].text !== value) fail();
     }

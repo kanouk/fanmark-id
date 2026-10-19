@@ -65,3 +65,9 @@ test('unknown secret PUT retains intent and can be independently reconciled with
  f.state.proofWrong=true;await assert.rejects(inspectProductionWebhookSecretInstallation({...f.options,expectedInstallIntentSha256}));
  await assert.rejects(installProductionWebhookSecret(f.options));assert.equal(f.state.puts,1);
 });
+
+test('G4 secret installation refuses private owner acceptance before PUT',async t=>{
+ const f=await fixture(t);f.state.settings.bindings.push({name:'PRODUCTION_OWNER_ACCEPTANCE_BACKEND',type:'plain_text',text:'owner-browser-v1'});
+ f.options.expectedSettingsSha256=sha256Hex(f.state.settings);
+ await assert.rejects(installProductionWebhookSecret(f.options),/target_open/);assert.equal(f.state.puts,0);
+});

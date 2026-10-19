@@ -1,5 +1,10 @@
 # fanmark.id ARCHITECTURE.md
 
+G5で一般503を保持する本人確認経路は `workers/api/src/production-owner-acceptance.ts`。
+固定purposeの署名cookieをHTTP入口で検証し、通常Auth/権限とwriter/fenceを通す。
+短命なbinding issuer proxyは `scripts/migration/production-owner-acceptance.mjs`。
+固定Resendの署名受信もG5で確認する。[実施と復旧境界](migration/production-owner-acceptance.md)。
+
 本番Webhook鍵の一度だけの設定候補は `scripts/migration/production-webhook-secret-install.mjs`。遠隔保管確認callback、排他intent、固定CF secret PUT、別GETとbinding-only `workers/api/src/production-webhook-key-proof.ts` のHMAC照合を使う。公開HTTP入口・鍵export・DB操作は追加しない。応答不明の読取専用照合はPUTを再送しない。
 
 遠隔保管callbackの接続は `scripts/migration/production-webhook-remote-custody.mjs`。既存暗号化intent/応答/reportを排他Markdownへ保存し、固定Obsidian Sync CLIをmacOS PTY経由で読み取る。path/versionと本文hash・独立復号を照合し、空応答やlocal copyを遠隔保管完了として扱わない。新規鍵・provider作成・秘密値設定は行わない。

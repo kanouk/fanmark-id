@@ -1,3 +1,19 @@
+## 2026-10-19: 一般503を保持するG5本人確認経路を追加（未配備）
+
+481f3daのCI39254192309はapp/Workerとも成功。実行計画の読合せでreceipt_onlyのままでは
+本人の実ログイン確認も閉じる残件を確認し、[G5本人確認票](production-owner-acceptance.md)を追加した。
+最大10分・配備版固定の署名cookieを短命なbinding-only issuerから発行し、一般503を維持して
+通常Auth/MFA/role/writer/fenceを通す。新規signupと通知wake/Cronを閉じる。
+
+固定Resend署名受信も同じG5モードで検証する。モード有効化前を潜在的write開始としてjournalへ
+固定し、本人画面を開く前から前進復旧側へ移る。G4のprovider作成/鍵設定とimport新規操作は
+owner mode中に拒否する。元のreceipt_onlyと別flagの組合せを見ずに「業務writeなし」と判定しない。
+
+本人入口/停止境界18件・operator関連38件、import18/R2 6件の回帰、型チェック・lint・閉鎖4 bundle
+dry-run成功。最初のfixture時計/inspection項目の不足と、nativeの空POST streamの扱いを修正した。
+今回のruntime差分は新CI成功後、owner backend disabledの閉鎖配備と独立読戻しを行う。
+現在の本番appは06ce6cf3のまま。本番host未接続、source/import/DNS/main不変。MFA未依頼。
+
 ## 2026-10-19: 再開後の閉鎖runtime・4 callback・証明書ID・実通知到達を確認
 
 最新の準備状況と当日の条件は [PREPARATION-2026-10-19.md](PREPARATION-2026-10-19.md)。

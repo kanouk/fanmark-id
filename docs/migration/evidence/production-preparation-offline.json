@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "d7f9a543f434b36674a384408d89838b10d9c435b2ac11ccec4ca83d07d8a8ce"
+    "sha256": "1dd02655b98128f0296a2d895ab7e30604a44b4c4fe70e172e1ce14877ee0d7d"
   },
   "variables": [
     {
@@ -720,7 +720,7 @@
     },
     {
       "path": "scripts/migration/production-import-gateway.mjs",
-      "sha256": "4a72630d961fb1789464034400e18642063ff2c0e29766d0bac00057e0862bab"
+      "sha256": "a00be27a41b6878e669142d0f4ba4d106f478aa8d623047b7d9a4a83cc355980"
     },
     {
       "path": "scripts/migration/production-import-inspection.mjs",
@@ -737,6 +737,10 @@
     {
       "path": "scripts/migration/production-key-custody.mjs",
       "sha256": "8c599fdfb7f45a80c2f2fc7650e76f223d49889db30571d4ad642ee9d48c4b9b"
+    },
+    {
+      "path": "scripts/migration/production-owner-acceptance.mjs",
+      "sha256": "82975b2efe311d3d9735f660574585efcaad2e3c906cd64071f62bd95595fcd5"
     },
     {
       "path": "scripts/migration/production-preparation-audit.mjs",
@@ -756,11 +760,11 @@
     },
     {
       "path": "scripts/migration/production-remote-r2.mjs",
-      "sha256": "3a6c44afb401def95d24c29501297d3568eda6594047f00270af920fb5d36344"
+      "sha256": "b03684f9a925a5cdaa2f8f09b4619024708cfbab6f294e333aa59fa81eb137e9"
     },
     {
       "path": "scripts/migration/production-runtime-config.mjs",
-      "sha256": "39d5ec381659b2cce5be4a89d34bfdae3e3328585da61a23df1dd26d77dd28b9"
+      "sha256": "2101efef0dceec5095930dbf56e0cb29286a6e32a10c312e368a53b1dac3f58c"
     },
     {
       "path": "scripts/migration/production-webhook-custody.mjs",
@@ -768,7 +772,7 @@
     },
     {
       "path": "scripts/migration/production-webhook-execution.mjs",
-      "sha256": "0f9b8c2a5d22f0042333edf5cacb564c2c88c28590064f6ab22a161611ef8b82"
+      "sha256": "f42dc723f73025a3dfa5f2b8e4b21d88b1939b9aa84b4cf4f179d688a470958a"
     },
     {
       "path": "scripts/migration/production-webhook-readback.mjs",
@@ -780,7 +784,7 @@
     },
     {
       "path": "scripts/migration/production-webhook-secret-install.mjs",
-      "sha256": "f2232481e6650a3d35c221344b51ae10873d889ee8b78f5b0208e27f0f32768c"
+      "sha256": "182329fb7826c4f6c1e27873ca0ca54c21c8cb3a79273edc4521c0a2fdd1c58a"
     },
     {
       "path": "scripts/migration/run-admin-reenrollment.mjs",
@@ -932,7 +936,7 @@
     },
     {
       "path": "workers/api/src/index.ts",
-      "sha256": "797e64176304418694a672271785492d1f4e0e8573c8920331106e95fc6fda1a"
+      "sha256": "5927e60ea2223b60c4d5625d47b5053e5c978d4c0b9a962d1cf85a4839d7aa33"
     },
     {
       "path": "workers/api/src/notification-wake.ts",
@@ -964,7 +968,11 @@
     },
     {
       "path": "workers/api/src/production-import-coordinator.ts",
-      "sha256": "4b7f5fa13e3f61f90d0aa9c828d7bd671d40a87e0a0bdb2ba421dd906216c1d9"
+      "sha256": "a3d89ea10c8de175864b628b7bb06c741cac677bc7c8eb3ef27c50b4776e55e5"
+    },
+    {
+      "path": "workers/api/src/production-owner-acceptance.ts",
+      "sha256": "a6c8407ca03ed7a5fb887a1c9441d4c802b337119b64a90679761fab27b443bb"
     },
     {
       "path": "workers/api/src/production-r2-import-contract.ts",
@@ -972,7 +980,7 @@
     },
     {
       "path": "workers/api/src/production-r2-import-service.ts",
-      "sha256": "6dc466f07f1b8bb06240b4e66110bf4dc7d04b85931b6ac9b7c4c139a23bc880"
+      "sha256": "81b1a2f01454fdb41075144e2483dfeea1f4a45c6e13b392f0c9f7f03504ed15"
     },
     {
       "path": "workers/api/src/production-runtime-identity.ts",
@@ -988,7 +996,7 @@
     },
     {
       "path": "workers/api/src/repository.ts",
-      "sha256": "0a812d883967c0decfd1e2283c029203f2983d05c9668b41e023c8d7ac590a3f"
+      "sha256": "b0e627ee2caef6a133ef8180346faada8709fa26643d5198f191d2d54e48038c"
     },
     {
       "path": "workers/api/src/staging-backup-alert.ts",
@@ -1016,7 +1024,7 @@
     },
     {
       "path": "workers/api/wrangler.app-production-closed.jsonc",
-      "sha256": "4ae35c1d03ba1dbab7eb2644380ab75b0e2d2812d5672d8890e748a2e8ce52a9"
+      "sha256": "fda8ad53fdabd987283d7fe4d454e766f6ddc54fd6b89bc5bed7daa694ba1b57"
     },
     {
       "path": "workers/api/wrangler.backup-monitor-production-closed.jsonc",

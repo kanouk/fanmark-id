@@ -105,6 +105,7 @@ async function admission({gate, cloudflareToken, fetchImpl, now}, request) {
   if (sha256Hex(settings) !== gate.settingsSha256) fail('settings_changed');
   const binding = name => settings.bindings?.filter(b => b.name === name);
   if (binding('CUTOVER_WRITE_FREEZE')?.length !== 1 || binding('CUTOVER_WRITE_FREEZE')[0].text !== 'receipt_only' ||
+    binding('PRODUCTION_OWNER_ACCEPTANCE_BACKEND')?.some(b => b.text !== 'disabled') ||
     binding('RECOVERY_WRITE_FREEZE')?.some(b => b.text && b.text !== 'false') ||
     binding(request.binding)?.length || ['STRIPE_DISPATCH_BACKEND','LICENSE_EXPIRY_BACKEND','NOTIFICATION_ARCHIVE_BACKEND']
       .some(name => binding(name)?.length)) fail('target_not_closed');

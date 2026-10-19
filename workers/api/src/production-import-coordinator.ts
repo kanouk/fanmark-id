@@ -54,7 +54,8 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
       !env.RECOVERY_DRAIN || ctx.id.toString() !== env.RECOVERY_DRAIN.idFromName(NAME).toString()) return json(null, 409);
   // Inspection stays available after opening the application. New import
   // operations are admitted only while the application is explicitly closed.
-  if (!["inspect", "operation"].includes(action) && env.CUTOVER_WRITE_FREEZE !== "receipt_only") return json(null, 409);
+  if (!["inspect", "operation"].includes(action) && (env.CUTOVER_WRITE_FREEZE !== "receipt_only" ||
+      (env.PRODUCTION_OWNER_ACCEPTANCE_BACKEND && env.PRODUCTION_OWNER_ACCEPTANCE_BACKEND !== "disabled"))) return json(null, 409);
   let input: Input;
   try {
     if (Number(request.headers.get("content-length") ?? 0) > 1024) return json(null, 400);

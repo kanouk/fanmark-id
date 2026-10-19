@@ -19,6 +19,7 @@ PR #41・`codex/cloudflare-api-preparation`・既存migration worktreeを継続�
 | DNS復旧/TLS | 専用hostで元A保持のRoute追加→trusted TLS/503/HTTP307→Route解除→A保持を実証し、所有物を全削除。旧17DNSを保持。証明書IDの読取りも完了 |
 | OAuth | Google/Discord/Appleは既存保存を再実行せず保持。本人承認後に既存GitHub App3230369へ新callbackを追加・reload確認。4 providerの実本番ログインは当日 |
 | 監視通知 | 本人承認の1通のみ送信。R2 receiptとResend message ID一致、delivered、対象Gmail受信トレイ・本文・署名元/TLS確認。通知設定をdisabled/宛先空へ復元し一時operator削除。定期Cronの自然実行は未検証 |
+| G5の本人確認経路 | 期限/配備版限定の署名cookieで本人だけが通常routerへ進み、一般503を保持する候補を追加。通常認証/MFA/writer/fenceを維持し、新user作成は閉じる。固定Resend署名受信もG5で確認する。native検査済み、CI/閉鎖配備確認待ち。本番では有効化しない |
 
 [閉鎖環境](evidence/production-resumed-closed-runtime-2026-10-19.json) / [OAuth保存](evidence/production-oauth-callback-save-2026-10-19.json) /
 [証明書](evidence/production-certificates-readback-2026-10-19.json) / [実通知](evidence/production-notification-delivery-2026-10-19.json)。
@@ -42,9 +43,11 @@ Custom Domainへ当日自動で切り替える経路は設けない。
    稼働中の過去exportや準備時の件数を当日の確定snapshotとして使わない。
 4. 最終exportと管理者capsule照合、5 store移送、G3独立全件照合、schema再固定、移送後backupを行う。
 5. G4でapexだけをreceipt_onlyへ接続し、実TLS/503/no-storeを独立確認してWebhookを登録する。
-   遠隔custody・実binding鍵一致・署名付きreceipt保存・旧側受信引継ぎを確認する。
-6. 閉鎖下の本人確認経路でOAuth各subject/UUID、通常ログイン・管理者MFA、画像/保護URLを確認する。
-   G5で業務write・dispatcher・Cron・監視・aliasを順序通り開け、実外部効果と自然実行を検証する。
+   遠隔custody・実binding鍵一致・Stripe署名付きreceipt保存・旧側受信引継ぎを確認する。
+6. G5進行を所有者が明示してから[本人確認モード](production-owner-acceptance.md)を有効にする。
+   有効化を潜在的な新側write開始として記録し、前進復旧側へ移る。一般503を保持したままOAuth各subject/UUID、
+   通常ログイン・管理者MFA、画像/保護URL、Resend署名受信を確認する。その後、一般write・dispatcher・Cron・
+   監視・aliasを順序通り開け、実外部効果と自然実行を検証する。
 7. 新側の業務write/外部副作用開始後はRoute削除だけで旧DBへ戻さず、閉鎖して前進復旧する。
    本番検証完了までmainを保持し、その後に旧配備経路を整理してmergeする。
 

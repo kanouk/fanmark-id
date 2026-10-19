@@ -36,7 +36,7 @@ export function validateClosedProductionConfigs({app,scheduler,monitor},resource
     {name:'RECOVERY_DRAIN',class_name:'RecoveryWriterCoordinatorProduction'}]})||
     !same(app.migrations,[{tag:'production-coordinators-v1',new_sqlite_classes:['NotificationWakeCoordinatorProduction','RecoveryWriterCoordinatorProduction']}]))fail('coordinator_identity');
   const v=app.vars;
-  for(const [key,value] of Object.entries({D1_TOPOLOGY:'split',AUTH_BACKEND:'better-auth',CUTOVER_WRITE_FREEZE:'receipt_only',
+  for(const [key,value] of Object.entries({D1_TOPOLOGY:'split',AUTH_BACKEND:'better-auth',CUTOVER_WRITE_FREEZE:'receipt_only',PRODUCTION_OWNER_ACCEPTANCE_BACKEND:'disabled',
     BETTER_AUTH_URL:'https://fanmark.id',CORS_ALLOWED_ORIGINS:'https://fanmark.id',STORAGE_PUBLIC_BASE_URL:'https://fanmark.id',
     STORAGE_LEGACY_ORIGIN:'https://ppqgtbjykitqtiaisyji.supabase.co',EMOJI_PUBLICATION_BACKEND:'production-service',
     STAGING_NO_INDEX:'true',STAGING_BACKUP_ADMISSION:'pending',STAGING_BACKUP_ALERT_BACKEND:'disabled',

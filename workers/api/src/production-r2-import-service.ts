@@ -53,6 +53,7 @@ export async function productionR2ImportFetch(request: Request, env: ImportEnv):
   if (url.origin !== "https://production-import-r2.internal") return json(null, 404);
   try {
     runtime(env, request);
+    if (request.method !== "GET" && env.PRODUCTION_OWNER_ACCEPTANCE_BACKEND && env.PRODUCTION_OWNER_ACCEPTANCE_BACKEND !== "disabled") fail();
     if (request.method === "GET" && url.pathname === "/identity" && !url.search) return json({
       runtimeVersion: env.CF_VERSION_METADATA!.id, scope: PRODUCTION_RUNTIME.scope, stores: PRODUCTION_STORE_IDS,
     });

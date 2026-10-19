@@ -147,3 +147,10 @@ test('provider inventories require full pagination and correct account',async()=
   await assert.rejects(collectProductionWebhookInventory({provider:'resend',apiKey:'re_fixture',fetchImpl:async()=>
     Response.json({has_more:true,data:[]})}),/inventory_invalid/);
 });
+
+test('G4 cannot register providers during private owner acceptance even if receipt_only remains selected',async t=>{
+ const f=await fixture(t);f.state.settings.bindings.push({name:'PRODUCTION_OWNER_ACCEPTANCE_BACKEND',type:'plain_text',text:'owner-browser-v1'});
+ f.options.gate.settingsSha256=sha256Hex(f.state.settings);
+ await assert.rejects(executeProductionWebhookRegistration(f.options),/target_not_closed/);
+ assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+});

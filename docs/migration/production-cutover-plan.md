@@ -1,5 +1,9 @@
 # #38 本番データ・ドメイン移行の実行計画
 
+再開後の最新状態は[2026-10-19準備更新](PREPARATION-2026-10-19.md)を優先する。
+G4はmaintenance/TLS/Stripe保存を確認し、実画面/Auth/Resend配信は一般503を保持する
+[G5本人確認モード](production-owner-acceptance.md)へ接続する。モード有効化前に前進復旧境界を固定する。
+
 2026-10-19再開後: 旧Aを保持する[Worker Routeの代替票](production-route-alternative.md)を実地検証に基づいて準備した。従来のCustom Domain案を当日に黙って置き換えず、G0で方式と逆操作を固定する。新Webhook driverは両方式を明示的に区別する。
 
 > 2026-10-19更新：現在の指示は「本番移行直前まで準備」。専用資源・schema・閉鎖配備と予備コピーは作成済み。一括runner、source停止候補、Stripe保存専用候補と受信stream移送を追加した。旧環境の停止・本番ユーザーデータ投入・DNS切替は未実施。MFAの以前の再登録結果は期限切れで、全準備後に再認証する。[最新handoff](HANDOFF.md)と[準備記録](production-preparation-2026-10-18.md)を現在の実施状況として優先する。
@@ -128,7 +132,7 @@ MFAは、既存TOTPを検証済み変換で移せるか、安全な本人確認�
 
 旧Checkout/Portalはブラウザを閉じても残り得る。P4で未完了Session・非同期決済・停止期間の請求を列挙し、完了済み効果と未処理通知を区別する。旧版には新intentがない場合もあるため、イベント再送だけで延長権利を再付与しない。旧適用の証拠と現在のStripe値を使い、曖昧なものは自動適用を止めて照合する。
 
-`CUTOVER_WRITE_FREEZE=true`はWorker用でSupabaseを停止しない。コード上はStripe受信、一部の認証、GET/HEADなどを許すため、全ストア無更新や管理者だけのアクセスを保証しない。2026-10-15にローカル実装した`receipt_only`はStripe受信以外のHTTPと業務Cronを閉じるが、未配備であり、開始済み処理のdrainは別途必要。G4のasset/API確認はこのモードでは行えないため、一般公開を閉じた実施者用の確認方法をP3/P6で検証する。`RECOVERY_WRITE_FREEZE`は受信も止めるため、Webhookの継続受信の代わりには使わない。
+`CUTOVER_WRITE_FREEZE=true`はWorker用でSupabaseを停止しない。コード上はStripe受信、一部の認証、GET/HEADなどを許すため、全ストア無更新や管理者だけのアクセスを保証しない。2026-10-15にローカル実装した`receipt_only`はStripe受信以外のHTTPと業務Cronを閉じ、2026-10-19に閉鎖配備を確認した。開始済み処理のdrainは別途必要。G4のasset/API確認はこのモードでは行えないため、一般公開を閉じた実施者用の確認方法をP3/P6で検証する。`RECOVERY_WRITE_FREEZE`は受信も止めるため、Webhookの継続受信の代わりには使わない。
 
 古いSPA/PWAや漏れた直接APIからの書き込みは、DNS変更だけでは防げない。Supabase projectの直接URL、旧service-role処理、Auth/Storageを含むバックエンド側の拒否を検証する。元の権限・job・設定を復元可能な形で保存し、`main`へのマージを停止手段に使わない。
 

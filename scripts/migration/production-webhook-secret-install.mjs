@@ -29,6 +29,7 @@ function version(deployments){const v=deployments?.deployments?.[0]?.versions;
  if(v?.length!==1||v[0].percentage!==100||!UUID.test(v[0].version_id??''))fail('runtime_unconfirmed');return v[0].version_id;}
 function closed(settings){const bindings=settings.bindings;if(!Array.isArray(bindings)||
  bindings.filter(b=>b.name==='CUTOVER_WRITE_FREEZE'&&b.text==='receipt_only').length!==1||
+ bindings.some(b=>b.name==='PRODUCTION_OWNER_ACCEPTANCE_BACKEND'&&b.text!=='disabled')||
  bindings.some(b=>['STRIPE_DISPATCH_BACKEND','LICENSE_EXPIRY_BACKEND','NOTIFICATION_ARCHIVE_BACKEND'].includes(b.name)))fail('target_open');}
 function reader({cloudflareToken,fetchImpl=fetch}){
  if(typeof cloudflareToken!=='string'||cloudflareToken.length<16||/\s/u.test(cloudflareToken))fail('input_invalid');
