@@ -1,5 +1,7 @@
 # fanmark.id ARCHITECTURE.md
 
+部分移送の恒久中止は `scripts/migration/production-import-quarantine.mjs`。終了済みexecutorと全5 journalを照合し、`production-import-coordinator.ts` のquarantine CASへ接続する。pending/ACK/executor/fenceを保持して全移送mutationとfence解除を拒否する。source再開や未確定commitの成功認定は行わない。
+
 本番WebhookのG4確認後の一度だけのPOST接続は `scripts/migration/production-webhook-execution.mjs`。固定accountの配備/閉鎖設定・公開HTTPS到達・provider全一覧を確認し、排他dispatchを保存してから既存custodyへ応答を暗号化保管する。応答不明の調査はGETのみで、鍵の設定・G5公開・旧環境停止は行わない。
 
 本番Webhookの固定登録要求・排他intent・応答の暗号化保管・署名鍵の取出しは `scripts/migration/production-webhook-custody.mjs`。`production-webhook-readback.mjs` はStripe/Resendの固定hostへのGETだけで登録内容を取得する。provider作成・秘密値のruntime設定・G4/G5の開始許可は行わない。[操作契約](migration/production-webhook-activation.md)。

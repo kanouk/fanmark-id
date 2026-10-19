@@ -1,5 +1,7 @@
 # fanmark.id TECH.md
 
+`test-production-import-quarantine.mjs` は終了した実子processのlock、native DO/D1/R2で部分保存・未確定ACK・全journal保持とquarantine応答消失を検証する。`vitest.production-import.config.mjs` は各storeのterminal拒否とfence保持を検査する。未知commitをACKへ書き換えず、中止後のtargetは再利用しない。
+
 `test-production-webhook-execution.mjs` は一度だけの固定POST、G4証拠の期限、旧site/設定変化/重複先の拒否、通信断後のintent保持と再送拒否、非JSONエラー原文の暗号化を合成HTTPで検査する。runtimeを配備しないoperator処理で、当日の証拠と本番配送の受入れは別途必要。
 
 `node --test scripts/migration/test-production-webhook-custody.mjs scripts/migration/test-production-webhook-readback.mjs` は実fileの排他作成・権限・暗号化応答・WebCrypto独立復号・改変拒否・不明応答保持と、GET専用provider接続の固定host/identity/全ページ検査を確認する。root移行CIへ含める。HTTPは合成、既存Resend endpointのGETのみ別途実確認済み。本番endpoint作成と配送の受入れは別工程。

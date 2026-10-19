@@ -8,13 +8,16 @@ const NAME = "recovery-writers-v1";
 const ORIGIN = "https://recovery-writer.internal";
 export const IMPORT_STATE_KEY = "production-import-v1";
 export const IMPORT_EXECUTOR_KEY = "production-import-executor-v1";
+export const IMPORT_QUARANTINE_KEY = "production-import-quarantine-v1";
+type Quarantine = { owner: string; proofSha256: string; stateSha256: string; executorId: string | null };
 type Pending = { operationId: string; batchSha256: string; store: string };
 export type ProductionImportState = {
   owner: string; manifestSha256: string; incarnationsSha256: string;
   pending: Pending | null; acknowledged: number; readbackSha256: string | null;
 };
 type Input = { owner: string; manifestSha256?: string; incarnationsSha256?: string;
-  operationId?: string; batchSha256?: string; store?: string; readbackSha256?: string; executorId?: string; acknowledged?: number };
+  operationId?: string; batchSha256?: string; store?: string; readbackSha256?: string; executorId?: string | null; acknowledged?: number;
+  stateSha256?: string; proofSha256?: string };
 const shapes: Record<string, string> = {
   claim: "incarnationsSha256,manifestSha256,owner", inspect: "owner",
   operation: "operationId,owner", acquire: "executorId,owner", yield: "executorId,owner,readbackSha256",
@@ -22,6 +25,7 @@ const shapes: Record<string, string> = {
   "recover-auth": "batchSha256,executorId,operationId,owner,readbackSha256,store",
   begin: "batchSha256,operationId,owner,store", acknowledge: "batchSha256,operationId,owner,store",
   complete: "owner,readbackSha256", dispatch: "batchSha256,operationId,owner,store",
+  quarantine: "executorId,owner,proofSha256,stateSha256",
 };
 function json(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { "cache-control": "no-store" } });
@@ -62,7 +66,9 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     const optionalExecutor = ["begin", "acknowledge", "complete"].includes(action) &&
       keys === [...shapes[action].split(","), "executorId"].sort().join(",");
     if (keys !== shapes[action] && !optionalExecutor) return json(null, 400);
-    if ((Object.hasOwn(input, "executorId") || ["acquire", "yield"].includes(action)) && !UUID.test(input.executorId ?? "")) return json(null, 400);
+    if ((Object.hasOwn(input, "executorId") || ["acquire", "yield"].includes(action)) &&
+        !(action === "quarantine" && input.executorId === null) && !UUID.test(input.executorId ?? "")) return json(null, 400);
+    if (action === "quarantine" && (!HASH.test(input.stateSha256 ?? "") || !HASH.test(input.proofSha256 ?? ""))) return json(null, 400);
     if (action === "claim" && (!HASH.test(input.manifestSha256 ?? "") || !HASH.test(input.incarnationsSha256 ?? ""))) return json(null, 400);
     if (action === "operation" && !UUID.test(input.operationId ?? "")) return json(null, 400);
     if (["begin", "acknowledge", "dispatch", "recover-auth"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
@@ -74,6 +80,9 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     let state = await storage.get<ProductionImportState>(IMPORT_STATE_KEY);
     const executorId = await storage.get<string>(IMPORT_EXECUTOR_KEY);
     const executionRequired = await storage.get<boolean>("production-import-execution-required-v1");
+    const quarantine = await storage.get<Quarantine>(IMPORT_QUARANTINE_KEY);
+    if (quarantine && (!state || quarantine.owner !== state.owner || !HASH.test(quarantine.proofSha256) ||
+        !HASH.test(quarantine.stateSha256) || (quarantine.executorId !== null && !UUID.test(quarantine.executorId)))) return json(null, 409);
     if (executionRequired !== undefined && (executionRequired !== true || !state)) return json(null, 409);
     if (executorId !== undefined && (!UUID.test(executorId) || !state)) return json(null, 409);
     const scope = await storage.get<string>("scope");
@@ -84,7 +93,7 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
         (scope === undefined && (active !== undefined || fence !== undefined || state !== undefined)) ||
         (scope !== undefined && (!Number.isSafeInteger(active) || active! < 0))) return json(null, 409);
     if (action === "inspect") return json({ state: state ?? null, scope: PRODUCTION_RUNTIME.scope, active: active ?? 0,
-      executorId: executorId ?? null, fenceOwner: fence?.owner ?? null });
+      executorId: executorId ?? null, fenceOwner: fence?.owner ?? null, ...(quarantine ? {quarantine} : {}) });
     if (action === "operation") {
       const acknowledged = await storage.get<Pending>("import-operation:" + input.operationId);
       const dispatched = await storage.get<Pending>("import-dispatch:" + input.operationId);
@@ -96,8 +105,11 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
             !(acknowledged ?? pending) || !sameOperation(dispatched, (acknowledged ?? pending)!)))) return json(null, 409);
       return json({ state: state ?? null, scope: PRODUCTION_RUNTIME.scope, active: active ?? 0,
         executorId: executorId ?? null, fenceOwner: fence?.owner ?? null, operationId: input.operationId,
-        pending, acknowledged: acknowledged ?? null, dispatched: dispatched ?? null });
+        pending, acknowledged: acknowledged ?? null, dispatched: dispatched ?? null, ...(quarantine ? {quarantine} : {}) });
     }
+    // Terminal: preserve every pending/ACK/dispatch record, executor and fence.
+    // No clear/retry/release operation is provided for quarantined resources.
+    if (quarantine) return json(null, 409);
     if ((active ?? 0) !== 0 || (await storage.list({ prefix: "writer:", limit: 1 })).size ||
         (fence && (fence.owner !== input.owner || fence.scope !== PRODUCTION_RUNTIME.scope))) return json(null, 409);
     if (action === "claim") {
@@ -111,6 +123,15 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
           fence: { owner: input.owner, scope: PRODUCTION_RUNTIME.scope }, [IMPORT_STATE_KEY]: state });
       }
       return json(state);
+    }
+    if (action === "quarantine") {
+      if (!state || !fence || (executorId ?? null) !== input.executorId) return json(null, 409);
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(state)));
+      const stateSha256 = [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2,"0")).join("");
+      if (stateSha256 !== input.stateSha256) return json(null, 409);
+      const proof: Quarantine = {owner: input.owner, proofSha256: input.proofSha256!, stateSha256, executorId: executorId ?? null};
+      await storage.put(IMPORT_QUARANTINE_KEY, proof);
+      return json({state, scope: PRODUCTION_RUNTIME.scope, active: 0, fenceOwner: fence.owner, executorId: executorId ?? null, quarantine: proof});
     }
     if (!state || !fence || state.readbackSha256 !== null) return json(null, 409);
     if (action === "acquire") {

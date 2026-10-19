@@ -1,3 +1,11 @@
+## 2026-10-19: 部分移送を保持して恒久中止する候補・先行3commitのCI成功
+
+再開時にpushした773bcfeのCI39244655945はapp・Workerとも成功。Webhook接続はlocal e810fc9へ保存済み。新規provider登録/配備なし。
+
+`quarantineProductionImportExecution`を追加した。終了済み同一端末のexecutorと全5 journalを独立clientで照合し、proofをfsyncして元state hashのCASでterminal中止を保存する。pending/ACK/dispatch/executor/fenceは保持し、以後全import mutationとfence解除を拒否する。unknown commitを成功扱いにせず、部分stageを再送しない。DO18件、native接続/保持の関連20件成功。最初の保持試験はDB結果にdurationまで含めた比較だったため行内容の比較へ修正した。HTTP/control-planeは合成、本番適用・source復帰は未実施。
+
+新しい読取専用preflightで本番3 Workerの元version/閉鎖vars/Cron0、app secret15件、DNS17件の原本一致とDNS token activeを確認。証明書pack APIは403のまま。private `resume-readonly-preflight-1792409834331.json`。既存鍵/backup/helperの再実行なし。source停止/実データ移送/DNS/main mergeなし、MFA未依頼。
+
 ## 2026-10-19: 既存worktreeで再開・未公開3commitをPRへ反映
 
 本人の新スレッドでの再開指示を受け、停止中の作業を再開した。local773bcfe・remote538100c・dirtyな`supabase/.temp/cli-latest`を確認し、3commitを通常git pushで既存PR #41へ反映した。CLI認証は今回は成功。remote773bcfeのCI39244655945が実行中。古いMCP公開bundleは使用していない。mainはe5a553c、移行branchを継続。

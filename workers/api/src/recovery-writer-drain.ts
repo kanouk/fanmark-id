@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./repository";
-import { IMPORT_STATE_KEY, productionImportCommand, type ProductionImportState } from "./production-import-coordinator";
+import { IMPORT_STATE_KEY, IMPORT_QUARANTINE_KEY, productionImportCommand, type ProductionImportState } from "./production-import-coordinator";
 
 const ORIGIN = "https://recovery-writer.internal";
 const NAME = "recovery-writers-v1";
@@ -206,6 +206,7 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
           if (fence?.owner !== input.id) return { status: 409 };
         } else if (url.pathname === "/release") {
           if (fence && fence.owner !== input.id) return { status: 409 };
+          if (await storage.get(IMPORT_QUARANTINE_KEY)) return {status: 409};
           const migration = await storage.get<ProductionImportState>(IMPORT_STATE_KEY);
           if (migration && (migration.pending !== null ||
               typeof migration.readbackSha256 !== "string" || !HASH.test(migration.readbackSha256))) return { status: 409 };

@@ -70,6 +70,15 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
       if(result.state!==null)validate(result.state);
       return result;
     },
+    async quarantineExecution({executorId:previous,stateSha256,proofSha256}){
+      if(executorId!==null||(previous!==null&&!UUID.test(previous??''))||!HASH.test(stateSha256??'')||!HASH.test(proofSha256??''))fail();
+      const result=await invoke('quarantine',{owner,executorId:previous,stateSha256,proofSha256});
+      validate(result.state);
+      if(result.scope!==SCOPE||result.active!==0||result.fenceOwner!==owner||result.executorId!==previous||
+        result.quarantine?.owner!==owner||result.quarantine.proofSha256!==proofSha256||
+        result.quarantine.stateSha256!==stateSha256||result.quarantine.executorId!==previous)fail();
+      admitted=false;return result;
+    },
     async inspectOperation(operationId){
       if(!UUID.test(operationId??''))fail();
       const result=await invoke('operation',{owner,operationId});

@@ -44,6 +44,9 @@ StripeのSession仕様ではcompleteでも支払い処理が進行中のこと�
 
 1. 新側の一般HTTP/Auth/Cron/dispatcherを閉鎖したまま、移送の新規操作を止める。
    executor、未確定operation、private journal、部分投入データを消さない。
+   部分stageや応答不明があるrunは[quarantine](production-import-recovery.md)で元の全状態を
+   保持したまま新規移送を恒久拒否し、proof hashを独立inspectへ照合する。先行D1管理要求の
+   完了を取り消す操作ではない。閉鎖履歴・新業務writeなし・受信回収の証拠も別に必要。
 2. 新側受信を一度も開けていなければ、source receiverの実seal状態と保存済みstreamを
    照合する。開けた後なら、新側の受付中保存を完了させ、境界後streamを回収して旧側に
    永続保存・全内容照合する。[回収adapterとjournal](stripe-receipt-transfer.md)を使うが、実閉鎖と旧処理終了の証拠・本番回収の読戻しがそろうまで再開不可。

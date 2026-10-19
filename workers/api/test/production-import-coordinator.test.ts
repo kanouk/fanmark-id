@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { runInDurableObject } from "cloudflare:test";
 import { beforeEach, expect, it } from "vitest";
 import type { Env } from "../src/repository";
-import { IMPORT_STATE_KEY } from "../src/production-import-coordinator";
+import { IMPORT_STATE_KEY, IMPORT_QUARANTINE_KEY } from "../src/production-import-coordinator";
 import { inspectRecoveryWriters, claimRecoveryWriterFence, releaseRecoveryWriterFence, withRecoveryWriter } from "../src/recovery-writer-drain";
 
 const runtime = env as unknown as Env;
@@ -16,6 +16,43 @@ const call = (action: string, body: unknown) => gate().fetch("https://recovery-w
   { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 const stored = () => runInDurableObject(gate(), async (_instance, ctx) => [...await ctx.storage.list()]);
 beforeEach(async () => { await runInDurableObject(gate(), async (_instance, ctx) => { await ctx.storage.deleteAll(); }); });
+
+async function digest(value: unknown) {
+  const bytes = await crypto.subtle.digest("SHA-256",new TextEncoder().encode(JSON.stringify(value)));
+  return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+it.each(["master","business","avatars","covers"])("quarantine retains partial %s state and refuses all future import writes and fence release",async store=>{
+  await call("claim",identity);const executorId=crypto.randomUUID();await call("acquire",{owner,executorId});
+  const pending={...operation,executorId,store};await call("begin",pending);
+  if(["avatars","covers"].includes(store))await call("dispatch",{...operation,store});
+  const before=await stored(),state=(await (await call("inspect",{owner})).json() as {state:unknown}).state;
+  const request={owner,executorId,stateSha256:await digest(state),proofSha256:"f".repeat(64)};
+  expect((await call("quarantine",{...request,stateSha256:"0".repeat(64)})).status).toBe(409);
+  expect((await call("quarantine",{...request,executorId:other})).status).toBe(409);
+  expect((await call("quarantine",request)).status).toBe(200); // response can be lost
+  const after=await stored();
+  expect(after.filter(([key])=>key!==IMPORT_QUARANTINE_KEY)).toEqual(before);
+  for(const [action,input] of [["claim",identity],["acquire",{owner,executorId:other}],
+    ["begin",{...pending,operationId:other}],["acknowledge",pending],["dispatch",{...operation,store}],
+    ["recover-auth",{...pending,store:"auth",readbackSha256:"e".repeat(64)}],
+    ["recover",{owner,executorId,acknowledged:0,readbackSha256:"e".repeat(64)}],
+    ["complete",{owner,executorId,readbackSha256:"e".repeat(64)}],["quarantine",request]] as const)
+    expect((await call(action,input)).status).toBe(409);
+  await expect(releaseRecoveryWriterFence(runtime,owner)).rejects.toThrow("recovery_writer_unavailable");
+  expect(await (await call("inspect",{owner})).json()).toMatchObject({state,executorId,fenceOwner:owner,
+    quarantine:{proofSha256:request.proofSha256,stateSha256:request.stateSha256}});
+  expect(await (await call("operation",{owner,operationId:operation.operationId})).json()).toMatchObject({pending:{store},acknowledged:null});
+  expect(await stored()).toEqual(after);
+});
+it("quarantine also holds a completed import closed and cannot claim empty resources",async()=>{
+  const request={owner,executorId:null,stateSha256:"a".repeat(64),proofSha256:"f".repeat(64)};
+  expect((await call("quarantine",request)).status).toBe(409);
+  await call("claim",identity);await call("begin",operation);await call("acknowledge",operation);
+  await call("complete",{owner,readbackSha256:"e".repeat(64)});
+  const state=(await (await call("inspect",{owner})).json() as {state:unknown}).state;
+  expect((await call("quarantine",{...request,stateSha256:await digest(state)})).status).toBe(200);
+  await expect(releaseRecoveryWriterFence(runtime,owner)).rejects.toThrow("recovery_writer_unavailable");
+});
 
 it("independent operation inspection distinguishes missing, pending, dispatched and acknowledged without writes", async () => {
   const query = { owner, operationId: operation.operationId };

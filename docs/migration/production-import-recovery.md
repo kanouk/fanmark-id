@@ -95,3 +95,35 @@ ACKと証拠hashだけを追加する。D1/R2への書込みは行わない。�
 別clientの `inspectOperation` でACKの有無を確認する。残存復旧lockの自動掃除は提供しない。
 この専用経路をMaster/Business/画像の途中保存や、空のAuthへの再送に流用しない。
 本番での実証、source停止の確認、本番ログイン、全移行の準備完了を意味しない。
+
+## 部分stage・未確定commitを残したまま移送を中止する
+
+`quarantineProductionImportExecution` はMaster/Business/画像の部分保存を成功へ補修せず、
+そのrunを恒久的に中止する入口。新資源を閉鎖したまま旧sourceへ復帰するための一工程で、
+sourceの停止解除やDNS復元を実行するものではない。stage途中から同じtargetへ再開する
+手順とは区別する。中止後は同じtarget世代を再利用しない。
+
+1. 当日の移行用gateway以外の設定変更担当・writerを止める。公開/Auth/Cron/dispatcherは
+   一度も開始していないことを実配備履歴と業務台帳で確認する。判断不明なら前進復旧へ回す。
+2. 同じ端末の一括executorを正常終了または終了確認する。関数は元の実行lockのPIDを
+   signal 0で確認し、生存中・別端末・PID再利用を拒否する。processをkillしない。
+3. 元の5 journal・run/manifest/source証拠hash・全incarnationを使う独立clientで実行する。
+   部分stageのACKとpending/dispatchは全件照合し、元file/inode/hash、遠隔owner・active0・
+   executor UUIDと全stateが前後で一致することを要求する。データの全件一致は要求せず、
+   pendingを未解決のまま記録する。
+4. 同じ0700 directoryへ排他lockとproofを0600/fsync保存する。専用`quarantine` CASは
+   owner・executor・元state hashを照合し、proof hashを別keyへ一度保存する。
+   元state、pending、ACK、dispatch、executor、停止fenceは一切消さない。
+5. 別のinspectでproof hashと元state保持を確認する。以後claim/acquire/begin/acknowledge/
+   dispatch/complete/既存復旧とfence解除は全て拒否され、inspect/operationだけが残る。
+   quarantine応答が消えた場合は再送せず、元proof hashを独立inspectへ照合する。
+6. 一時gatewayの所有versionを照合して閉鎖し、新側をRECOVERY_WRITE_FREEZE等で閉じる。
+   先に送信済みのD1管理API要求を取り消す機能ではない。後からその要求が保存を終えても
+   新側は公開せず、元journalと内容を保持する。
+7. [旧側の復帰票](source-stop-and-resume.md)で新側の受信を回収・旧側の全内容/外部効果を
+   照合し、DNS・source入口・権限/Cronの復元を別工程として実行する。
+
+成功・失敗・応答不明ともquarantineのlock/proofと元executor lockを保持する。成功reportは
+`unknownOutcomesResolved=false`・`sourceReopened=false`であり、これだけで旧側を再開しない。
+native local DO18件、独立processと実local D1/R2を使う関連20件で部分データ・未確定ACK・
+lock保持と再送拒否を検証した。本番適用・旧source復帰の実証はまだない。

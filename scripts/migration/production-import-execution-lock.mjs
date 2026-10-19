@@ -31,6 +31,15 @@ function exited(owner){
   if(owner.hostHash!==importJournalHostHash()||!Number.isSafeInteger(owner.processId)||owner.processId<1)fail();
   try{process.kill(owner.processId,0);fail();}catch(e){if(e.code!=='ESRCH')fail();}
 }
+export async function inspectExitedImportExecution({directory,runId,manifestSha256,sourceEvidenceSha256}){
+  await parent(directory);
+  const original=await read(join(directory,name)),owner=original.value;
+  if(Object.keys(owner).sort().join(',')!=='executorId,format,hostHash,manifestSha256,processId,runId,sourceEvidenceSha256'||
+      owner.format!=='fanmark-import-execution-lock-v1'||!UUID.test(owner.executorId??'')||
+      owner.runId!==runId||owner.manifestSha256!==manifestSha256||owner.sourceEvidenceSha256!==sourceEvidenceSha256)fail();
+  exited(owner);
+  return {owner,async unchanged(){unchanged(original,await read(join(directory,name)));exited(owner);}};
+}
 export async function createImportExecutionLock({directory,runId,manifestSha256,sourceEvidenceSha256}){
   await parent(directory);
   const path=join(directory,name),executorId=randomUUID();
