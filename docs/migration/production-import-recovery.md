@@ -1,6 +1,6 @@
 # 本番移送中断時の照合と限定復旧
 
-対象はPR #41の専用5 store移送。停止設定と調停ownerを保持したまま、元のrun・manifest・incarnation・private journalを使う。全体runnerと部分stage再開はまだ未完了であり、この手順だけで本番開始や再開を許可しない。
+対象はPR #41の専用5 store移送。停止設定と調停ownerを保持したまま、元のrun・manifest・incarnation・private journalを使う。全体runnerは`executeInitialImportSet`へ接続済みだが、部分stageの修復・停止したexecutorの引継ぎは未完了。この手順だけで本番開始や再開を許可しない。
 
 ## まず読み取りだけで調べる
 
@@ -35,3 +35,10 @@
 ## 検証範囲
 
 native local D1/DOと実子processを使い、遠隔ACK後のlocal記録消失、元process生存、別host、旧空lock、途切れたjournal、権限不正、symlink、5 store履歴欠落を確認する。R2の実local PUT後の応答消失は未解決のまま保持する。本番データでの復旧・全storeの再開・ドメイン切替は未実施。
+
+
+## 全体executorを取得した後の停止
+
+`inspect()`と操作別照合は現在の`executorId`も返す。executorは自動失効しない。既存のlocal ACK補修はexecutorを解除せず、補修成功だけで別processが書き込みを再開できるとは扱わない。正常なstage境界でrunnerが`yieldExecution`を完了した場合にだけ、新しい実行者が取得できる。取得後は旧形式の実行者なしwriteへ戻れない。
+
+runnerはyield/completeを送る前に同じprivate journal directoryへ`initial-set-<executorId>.json`を0600で作成・fsyncする。最終応答不明では、別read-only clientでDOの`state.readbackSha256`と保存reportの`report.readback.readbackSha256`を照合する。この一致は元の比較結果を遠隔が受理した証拠であり、一般writeの開始やsource再開を認めるものではない。file欠落/改変、hash不一致、未確定operationがある場合は保留する。削除・再送・executor強制解除のコマンドは提供しない。

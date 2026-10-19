@@ -1,4 +1,4 @@
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {PRODUCTION_R2_TARGETS} from './production-r2-targets.mjs';
 import {PRODUCTION_D1_TARGETS} from './production-d1-targets.mjs';
 
@@ -19,7 +19,7 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
   const frozenIncarnations=Object.freeze({...incarnations});
   const incarnationsSha256=createHash('sha256').update(JSON.stringify(Object.entries(frozenIncarnations).sort())).digest('hex');
   const identity=Object.freeze({owner,manifestSha256,incarnationsSha256});
-  let admitted=false;
+  let admitted=false, executorId=null;
   function validate(state) {
     if(!state||Object.entries(identity).some(([key,value])=>state[key]!==value)||
       !Number.isSafeInteger(state.acknowledged)||state.acknowledged<0||
@@ -34,10 +34,24 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
       if(state.pending!==null||state.readbackSha256!==null)fail();
       admitted=true;return state;
     },
+    async acquireExecution(){
+      if(!admitted||executorId!==null)fail();
+      const candidate=randomUUID(),result=await invoke('acquire',{owner,executorId:candidate});
+      const state=validate(result);
+      if(result.executorId!==candidate||state.pending!==null||state.readbackSha256!==null)fail();
+      executorId=candidate;return {executorId};
+    },
+    async yieldExecution(readbackSha256){
+      if(!admitted||executorId===null||!HASH.test(readbackSha256??''))fail();
+      const result=await invoke('yield',{owner,executorId,readbackSha256}),state=validate(result);
+      if(result.executorId!==null||state.pending!==null||state.readbackSha256!==null)fail();
+      executorId=null;admitted=false;return state;
+    },
     async inspect(){
       const result=await invoke('inspect',{owner});
       if(result?.scope!==SCOPE||!Number.isSafeInteger(result.active)||result.active<0||
-        (result.fenceOwner!==null&&result.fenceOwner!==owner))fail();
+        (result.fenceOwner!==null&&result.fenceOwner!==owner)||
+        (result.executorId!=null&&!UUID.test(result.executorId)))fail();
       if(result.state!==null)validate(result.state);
       return result;
     },
@@ -45,7 +59,8 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
       if(!UUID.test(operationId??''))fail();
       const result=await invoke('operation',{owner,operationId});
       if(result?.scope!==SCOPE||result.operationId!==operationId||!Number.isSafeInteger(result.active)||result.active<0||
-        (result.fenceOwner!==null&&result.fenceOwner!==owner))fail();
+        (result.fenceOwner!==null&&result.fenceOwner!==owner)||
+        (result.executorId!=null&&!UUID.test(result.executorId)))fail();
       if(result.state!==null)validate(result.state);
       for(const key of ['pending','acknowledged','dispatched']){
         const row=result[key];
@@ -68,19 +83,19 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
     async beforeWrite({operationId,batchSha256,store}){
       if(!admitted||!UUID.test(operationId??'')||!HASH.test(batchSha256??'')||!Object.hasOwn(frozenIncarnations,store))fail();
       const pending={operationId,batchSha256,store};
-      const state=validate(await invoke('begin',{owner,...pending}));
+      const state=validate(await invoke('begin',{owner,...pending,...(executorId?{executorId}:{})}));
       if(state.readbackSha256!==null||!state.pending||Object.entries(pending).some(([key,value])=>state.pending[key]!==value))fail();
     },
     async afterWrite({operationId,batchSha256,store}){
       if(!admitted)fail();
-      const state=validate(await invoke('acknowledge',{owner,operationId,batchSha256,store}));
+      const state=validate(await invoke('acknowledge',{owner,operationId,batchSha256,store,...(executorId?{executorId}:{})}));
       if(state.pending!==null||state.readbackSha256!==null||state.acknowledged<1)fail();
     },
     async complete(readbackSha256){
       if(!admitted||!HASH.test(readbackSha256??''))fail();
-      const state=validate(await invoke('complete',{owner,readbackSha256}));
+      const state=validate(await invoke('complete',{owner,readbackSha256,...(executorId?{executorId}:{})}));
       if(state.pending!==null||state.readbackSha256!==readbackSha256)fail();
-      admitted=false;return state;
+      admitted=false;executorId=null;return state;
     },
   });
   clients.add(client);return client;

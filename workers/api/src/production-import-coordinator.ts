@@ -7,16 +7,17 @@ const HASH = /^[0-9a-f]{64}$/u;
 const NAME = "recovery-writers-v1";
 const ORIGIN = "https://recovery-writer.internal";
 export const IMPORT_STATE_KEY = "production-import-v1";
+export const IMPORT_EXECUTOR_KEY = "production-import-executor-v1";
 type Pending = { operationId: string; batchSha256: string; store: string };
 export type ProductionImportState = {
   owner: string; manifestSha256: string; incarnationsSha256: string;
   pending: Pending | null; acknowledged: number; readbackSha256: string | null;
 };
 type Input = { owner: string; manifestSha256?: string; incarnationsSha256?: string;
-  operationId?: string; batchSha256?: string; store?: string; readbackSha256?: string };
+  operationId?: string; batchSha256?: string; store?: string; readbackSha256?: string; executorId?: string };
 const shapes: Record<string, string> = {
   claim: "incarnationsSha256,manifestSha256,owner", inspect: "owner",
-  operation: "operationId,owner",
+  operation: "operationId,owner", acquire: "executorId,owner", yield: "executorId,owner,readbackSha256",
   begin: "batchSha256,operationId,owner,store", acknowledge: "batchSha256,operationId,owner,store",
   complete: "owner,readbackSha256", dispatch: "batchSha256,operationId,owner,store",
 };
@@ -54,15 +55,24 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     const text = await request.text();
     if (text.length > 1024) return json(null, 400);
     input = JSON.parse(text);
-    if (!input || Object.keys(input).sort().join(",") !== shapes[action] || !UUID.test(input.owner)) return json(null, 400);
+    if (!input || !UUID.test(input.owner)) return json(null, 400);
+    const keys = Object.keys(input).sort().join(",");
+    const optionalExecutor = ["begin", "acknowledge", "complete"].includes(action) &&
+      keys === [...shapes[action].split(","), "executorId"].sort().join(",");
+    if (keys !== shapes[action] && !optionalExecutor) return json(null, 400);
+    if ((Object.hasOwn(input, "executorId") || ["acquire", "yield"].includes(action)) && !UUID.test(input.executorId ?? "")) return json(null, 400);
     if (action === "claim" && (!HASH.test(input.manifestSha256 ?? "") || !HASH.test(input.incarnationsSha256 ?? ""))) return json(null, 400);
     if (action === "operation" && !UUID.test(input.operationId ?? "")) return json(null, 400);
     if (["begin", "acknowledge", "dispatch"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
         !["auth", "master", "business", "avatars", "covers"].includes(input.store ?? ""))) return json(null, 400);
-    if (action === "complete" && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
+    if (["complete", "yield"].includes(action) && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
   } catch { return json(null, 400); }
   return ctx.blockConcurrencyWhile(async () => ctx.storage.transaction(async storage => {
     let state = await storage.get<ProductionImportState>(IMPORT_STATE_KEY);
+    const executorId = await storage.get<string>(IMPORT_EXECUTOR_KEY);
+    const executionRequired = await storage.get<boolean>("production-import-execution-required-v1");
+    if (executionRequired !== undefined && (executionRequired !== true || !state)) return json(null, 409);
+    if (executorId !== undefined && (!UUID.test(executorId) || !state)) return json(null, 409);
     const scope = await storage.get<string>("scope");
     const active = await storage.get<number>("active");
     const fence = await storage.get<{ owner: string; scope: string }>("fence");
@@ -71,7 +81,7 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
         (scope === undefined && (active !== undefined || fence !== undefined || state !== undefined)) ||
         (scope !== undefined && (!Number.isSafeInteger(active) || active! < 0))) return json(null, 409);
     if (action === "inspect") return json({ state: state ?? null, scope: PRODUCTION_RUNTIME.scope, active: active ?? 0,
-      fenceOwner: fence?.owner ?? null });
+      executorId: executorId ?? null, fenceOwner: fence?.owner ?? null });
     if (action === "operation") {
       const acknowledged = await storage.get<Pending>("import-operation:" + input.operationId);
       const dispatched = await storage.get<Pending>("import-dispatch:" + input.operationId);
@@ -82,7 +92,7 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
           (dispatched && (!state || !valid(dispatched) || !["avatars", "covers"].includes(dispatched.store) ||
             !(acknowledged ?? pending) || !sameOperation(dispatched, (acknowledged ?? pending)!)))) return json(null, 409);
       return json({ state: state ?? null, scope: PRODUCTION_RUNTIME.scope, active: active ?? 0,
-        fenceOwner: fence?.owner ?? null, operationId: input.operationId,
+        executorId: executorId ?? null, fenceOwner: fence?.owner ?? null, operationId: input.operationId,
         pending, acknowledged: acknowledged ?? null, dispatched: dispatched ?? null });
     }
     if ((active ?? 0) !== 0 || (await storage.list({ prefix: "writer:", limit: 1 })).size ||
@@ -100,6 +110,23 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
       return json(state);
     }
     if (!state || !fence || state.readbackSha256 !== null) return json(null, 409);
+    if (action === "acquire") {
+      // A whole-run owner never expires. Lost acquire responses and crashes
+      // require inspection; even the same executor ID cannot reacquire.
+      if (executorId !== undefined || state.pending) return json(null, 409);
+      await storage.put({ [IMPORT_EXECUTOR_KEY]: input.executorId!, "production-import-execution-required-v1": true });
+      return json({ ...state, executorId: input.executorId });
+    }
+    if (executionRequired && executorId === undefined && ["begin", "acknowledge", "complete"].includes(action)) return json(null, 409);
+    if (["begin", "acknowledge", "complete", "yield"].includes(action) &&
+        (executorId ?? null) !== (input.executorId ?? null)) return json(null, 409);
+    if (action === "yield") {
+      if (!executorId || state.pending || state.acknowledged === 0) return json(null, 409);
+      await storage.put("production-import-checkpoint-v1", { executorId, readbackSha256: input.readbackSha256!, acknowledged: state.acknowledged });
+      await storage.delete(IMPORT_EXECUTOR_KEY);
+      // Yield only the executor. The migration fence and operation history stay.
+      return json({ ...state, executorId: null });
+    }
     if (action === "begin") {
       // Repeating an operation UUID, even after a successful ACK, never grants
       // permission to send the associated provider write again.

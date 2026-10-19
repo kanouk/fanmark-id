@@ -1,3 +1,11 @@
+## 2026-10-19: 本番用一括runnerと実行者所有権を接続
+
+`executeInitialImportSet`を追加。同じprepared/実停止証拠file hash・固定3 D1/2 R2・同じ調停client/全journalへ限定し、Auth→Master→Business→画像を順次実行する。DOのexecutorは同一runの別processも排除し、正常なstage境界でだけyieldする。全件readbackをprivate fileへfsyncした後にcompleteし、公開用の更新停止は保持する。source証拠のhash固定は内容の真実性を証明しないため、実source停止/取得確認は別工程。[実行契約](initial-import-set.md)。
+
+native全store/service/DOによる本番入口の正常停止・再開・全件照合、Master保存後の応答消失、最終complete応答消失時の永続report保持を確認。全体/準備22件、接続回帰35件、DO11件、Worker型検査成功。最初のDO追加試験で「complete後も明示解除を拒否」と誤って期待した1件を修正し、明示解除を呼ばずfence保持を検証した。管理APIは合成で、実本番importの証明ではない。新コード未配備。
+
+`85a99dc`のCI39190344811はapp成功/Worker継続中。実source停止collectorとStripe引継ぎ、部分stage/停止executorの復旧、外部provider、DNS逆操作の実地確認、鍵別保管/遠隔復旧が残る。MFAは最後。本番import/source停止/DNS変更/main mergeなし。
+
 ## 2026-10-19: 全storeのlocal順次実行・再開とDNS原本の取得
 
 `478c153`のCI39189073780はapp成功、Workerの現行DB import試験は確認中。全5 storeのlocal実行を同じ固定入力/checkerへ接続し、Auth完了境界での停止・完了済み内容の再検査からの再開・応答不明時の後続停止を追加。nativeを含む関連19件成功。最初の試験はfixture変数の削除漏れで1件失敗し、fixtureを修正後に全件成功。本番runner/source停止証拠/部分stage補修は未接続。[契約](initial-import-set.md)。

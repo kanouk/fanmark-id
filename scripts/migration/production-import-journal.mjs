@@ -70,6 +70,7 @@ export async function openProductionImportJournal({ path, runId, targetId, targe
   }
   const journal = Object.freeze({
     runId, targetId, targetIncarnation, coordinated: coordinator !== null,
+    coordinator, path,
     async beforeWrite(batchSha256) {
       if (!HASH.test(batchSha256 ?? '') || active) fail('production_journal_write_conflict');
       const operationId = randomUUID();

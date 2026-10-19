@@ -451,4 +451,4 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 
 `initial-import-set-readback.mjs` は初回移送の5 storeをまとめた独立checker。検証済みBusiness exportからMasterを直接投影し、Authの全user ID・管理権限・表示名を同じexportへ照合する。入力hashとrun/各incarnation/activation IDを束ね、production modeでは固定read-only接続・同じ調停manifest・全journalのACK一致を要求する。業務の外部user参照は実Auth D1で解決する。移送実行やsource停止のcollectorは提供しない。[契約](migration/initial-import-set.md)。
 
-`initial-import-set-readback.mjs` の `rehearseInitialImportSet` はlocal限定で全stageの順次実行・完了済みstageの全内容再照合と境界からの再開を行う。本番のsource停止・runner所有権は未接続。[入力・再開契約](migration/initial-import-set.md)。
+`initial-import-set-readback.mjs` の `rehearseInitialImportSet` はlocal限定。`executeInitialImportSet` は固定本番transport・全5 journal・DO executorの所有権で同じ順次実行/境界再開を行い、全件照合をfsyncしてからcompleteする。source停止の実証/部分stage修復/公開は別工程。[入力・再開契約](migration/initial-import-set.md)。

@@ -229,3 +229,10 @@ DNSのapex編集欄はA/185.158.133.1/proxy有効/TTL自動/コメント空を�
 同じprepared入力からAuth/Master/Business/画像の順次実行と全件照合を追加。完了済みprefixは全内容の再検査後だけ省略し、不明write時は後続を止める。本番transportはこのlocal入口では拒否。関連19件成功。最初のfixture変数参照漏れは修正済み。本番runner所有権・source停止証拠との接続、部分stage修復は残る。
 
 所有者の継続指示後、確認済みのzone限定DNS編集tokenを作成しKeychain保存/読戻し。APIの全17recordを非公開保存、別processで不変を確認。apex record IDと復元body候補が確定したが、実逆操作/provider受け入れは未検証。DNS変更・本番import・source停止・domain切替・main mergeなし。MFAは最後。
+
+
+## 2026-10-19: 本番一括runnerをnative全storeへ接続
+
+`executeInitialImportSet`は固定本番transportと同じrun/client/journalを束ね、source証拠file hashを入力descriptorへ含める。非失効executorで同一runの並行processも拒否し、正常な境界でだけyieldして全内容を再検査して再開する。最後のreadbackをprivate fileへfsync後にcompleteし、一般write停止は保持する。証拠fileの意味は自動認定せずsourceFreezeVerified/productionReadyはfalse。
+
+本番入口→native3 D1/2 R2・実service/DOの全体/準備22試験、既存接続35試験、DO11試験とWorker型検査成功。Masterの実commit後に応答を失った場合の後続停止・executor/pending保持、最終complete応答だけ失った場合のディスクreportと遠隔hash一致も検証。外部管理APIは合成。本番実行/配備はしていない。停止executorの引継ぎと部分stageの未知結果解決、source/Stripe/外部設定/DNS/遠隔復旧は残る。

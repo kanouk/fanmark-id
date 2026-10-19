@@ -744,4 +744,4 @@ production modeでは固定read-only D1/R2と、同じdescriptor hashをclaimし
 
 `test-initial-import-set-readback.mjs` はnative3 D1/2 R2に40表を移し、通常localとproduction用read-only adapterの双方で照合する。後者の管理API/調停応答は合成であり、実Cloudflareの一式照合ではない。通常の`test:migration-data`へ組み込む。
 
-`initial-import-set-readback.mjs` の `rehearseInitialImportSet` はlocal限定で全stageの順次実行・完了済みstageの全内容再照合と境界からの再開を行う。本番のsource停止・runner所有権は未接続。[入力・再開契約](migration/initial-import-set.md)。
+`initial-import-set-readback.mjs` の `rehearseInitialImportSet` はlocal限定。`executeInitialImportSet` は固定本番transport・全5 journal・DO executorの所有権で同じ順次実行/境界再開を行い、全件照合をfsyncしてからcompleteする。source停止の実証/部分stage修復/公開は別工程。[入力・再開契約](migration/initial-import-set.md)。

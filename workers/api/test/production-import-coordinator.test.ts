@@ -136,3 +136,40 @@ it("corrupt scope/census fails closed and remains available for independent insp
   expect((await call("inspect", { owner })).status).toBe(409);
   expect(await stored()).toEqual(before);
 });
+
+
+it("a whole-import executor excludes another process with the same run identity", async () => {
+  await call("claim", identity);
+  const first = "eeeeeeee-1111-4111-8111-111111111111", second = "ffffffff-1111-4111-8111-111111111111";
+  const responses = await Promise.all([call("acquire", { owner, executorId: first }), call("acquire", { owner, executorId: second })]);
+  expect(responses.map(r => r.status).sort()).toEqual([200,409]);
+  const executorId = responses[0].status === 200 ? first : second;
+  const loser = executorId === first ? second : first;
+  expect((await call("acquire", { owner, executorId })).status).toBe(409);
+  expect((await call("begin", operation)).status).toBe(409);
+  expect((await call("begin", { ...operation, executorId: loser })).status).toBe(409);
+  expect((await call("begin", { ...operation, executorId })).status).toBe(200);
+  expect((await call("acknowledge", operation)).status).toBe(409);
+  expect((await call("yield", { owner, executorId, readbackSha256: "f".repeat(64) })).status).toBe(409);
+  expect((await call("acknowledge", { ...operation, executorId })).status).toBe(200);
+  expect((await call("yield", { owner, executorId, readbackSha256: "f".repeat(64) })).status).toBe(200);
+  expect(await (await call("inspect", { owner })).json()).toMatchObject({ executorId: null, fenceOwner: owner, active: 0 });
+  expect((await call("begin", { ...operation, operationId: other })).status).toBe(409);
+  expect((await call("begin", { ...operation, operationId: other, executorId })).status).toBe(409);
+  expect((await call("acquire", { owner, executorId: loser })).status).toBe(200);
+  expect((await call("complete", { owner, readbackSha256: "d".repeat(64) })).status).toBe(409);
+  expect((await call("complete", { owner, executorId: loser, readbackSha256: "d".repeat(64) })).status).toBe(200);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner, active: 0, drained: true });
+});
+
+it("R2 dispatch follows the admitted operation without bypassing the executor", async () => {
+  await call("claim", identity);
+  const executorId = "eeeeeeee-1111-4111-8111-111111111111", image = { ...operation, store: "avatars" };
+  await call("acquire", { owner, executorId });
+  expect((await call("dispatch", image)).status).toBe(409);
+  await call("begin", { ...image, executorId });
+  expect((await call("dispatch", image)).status).toBe(200);
+  expect((await call("dispatch", image)).status).toBe(409);
+  expect((await call("acknowledge", image)).status).toBe(409);
+  expect((await call("acknowledge", { ...image, executorId })).status).toBe(200);
+});

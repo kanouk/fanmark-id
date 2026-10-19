@@ -652,7 +652,7 @@
     },
     {
       "path": "scripts/migration/initial-import-set-readback.mjs",
-      "sha256": "16d168e80e8613a24d2b7e3cd414ac719f26fba84ff6fc39e6ed3cfaca5b0db2"
+      "sha256": "d90c6638b42ec895184dd93a8612f512dbe8e7f4010764be1d5f6455118d829a"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
@@ -696,11 +696,11 @@
     },
     {
       "path": "scripts/migration/production-import-coordinator-client.mjs",
-      "sha256": "7762302d05933b9a5035df8b458e632afd4e1b329ceedb846693bbd13cbb798d"
+      "sha256": "958569ea7e2c5ae92f1f184ccc282ba8ed1ec5d21c8db6a5d5450fa3ffb43849"
     },
     {
       "path": "scripts/migration/production-import-gateway.mjs",
-      "sha256": "37134cdc015ba54616b51d93a129d22a83e2abdffed845fdde9187727c58353f"
+      "sha256": "66a026bdbf19523ed8c2b8f0bcbbecf5d38f92fc755e8773f77660ebfa2d4a77"
     },
     {
       "path": "scripts/migration/production-import-inspection.mjs",
@@ -708,7 +708,7 @@
     },
     {
       "path": "scripts/migration/production-import-journal.mjs",
-      "sha256": "8c20400de14d6da176481f9b572480fb52d974836577c3b54ee5232cc5d77d53"
+      "sha256": "e630244019bc5bc0c083144e6496ca2a65c95f9563f0fd5095c27dd16bf667c8"
     },
     {
       "path": "scripts/migration/production-preparation-audit.mjs",
@@ -724,11 +724,11 @@
     },
     {
       "path": "scripts/migration/production-remote-d1.mjs",
-      "sha256": "1bcabe6416272d97cd909c80ca9c51a26364f780e3d9945b87ca1c82379801db"
+      "sha256": "c96450dea44afe8adcddae4720bf2faf2dba5120a12d8691f0cfae8a914fe847"
     },
     {
       "path": "scripts/migration/production-remote-r2.mjs",
-      "sha256": "80bfb849db7d1c8d53e25db1ba5093cd89db761ea60f8af397eedec095e8e090"
+      "sha256": "3a6c44afb401def95d24c29501297d3568eda6594047f00270af920fb5d36344"
     },
     {
       "path": "scripts/migration/production-runtime-config.mjs",
@@ -884,7 +884,7 @@
     },
     {
       "path": "workers/api/src/production-import-coordinator.ts",
-      "sha256": "f7d13c91de03fc7bb4a3438dcab3005cdc9bfd6d58f51266731ac6b99b51cfa6"
+      "sha256": "573971ae6351323d3c0aea04dfcb10cffefcd96bafab12cb9a714d0ae0e2e62b"
     },
     {
       "path": "workers/api/src/production-r2-import-contract.ts",

@@ -1,7 +1,8 @@
-/** Independent all-store readback and local rehearsal bound to one immutable
- * input descriptor. Neither freezes a source nor admits a production import.
+/** All-store readback, local rehearsal and explicit coordinated production
+ * execution. Source freeze and public release remain separate operator steps.
  */
-import { readFile } from 'node:fs/promises';
+import { readFile, open } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { dirname, join, isAbsolute } from 'node:path';
 import { canonicalJson, sha256Hex } from './snapshot-format.mjs';
 import { verifySnapshot } from './snapshot-verify.mjs';
@@ -14,7 +15,7 @@ import { importMasterProjectionStage } from './master-import-stage.mjs';
 import { importInitialSplitR2Export } from './split-r2-import-stage.mjs';
 import { prepareStorageImportReadback } from './storage-r2-import.mjs';
 import { verifyImportedSplitR2Export } from './split-r2-import-stage.mjs';
-import { verifyProductionSplitR2Export } from './production-r2-import-stage.mjs';
+import { verifyProductionSplitR2Export, importProductionSplitR2Export } from './production-r2-import-stage.mjs';
 import { isProductionRemoteD1 } from './production-remote-d1.mjs';
 import { isIsolatedRemoteD1 } from './isolated-remote-d1.mjs';
 import { isProductionRemoteR2 } from './production-remote-r2.mjs';
@@ -31,13 +32,14 @@ const same = (a, b) => canonicalJson(a) === canonicalJson(b);
  * The descriptor binds inputs/targets, but does not certify final-source custody.
  */
 async function prepareSet({ manifestPath, storageExportDir, authProjection, approvedEmojiIdentity,
-  runId, incarnations, activationIds, businessDestinationId, expectedTargetProfile } = {}) {
+  runId, incarnations, activationIds, businessDestinationId, expectedTargetProfile, sourceEvidenceSha256 = null } = {}) {
   if (![manifestPath, storageExportDir].every(path => typeof path === 'string' && isAbsolute(path)) || !UUID.test(runId ?? '') ||
       !incarnations || Object.keys(incarnations).sort().join(',') !== stores.join(',') ||
       Object.values(incarnations).some(value => !UUID.test(value)) || new Set(Object.values(incarnations)).size !== 5 ||
       !activationIds || Object.keys(activationIds).sort().join(',') !== 'emoji,reference' ||
       Object.values(activationIds).some(value => !UUID.test(value)) || activationIds.emoji === activationIds.reference ||
       typeof businessDestinationId !== 'string' || !businessDestinationId || !expectedTargetProfile) fail('identity_invalid');
+  if (sourceEvidenceSha256 !== null && !/^[a-f0-9]{64}$/u.test(sourceEvidenceSha256)) fail('source_evidence_hash_invalid');
   const auth = prepareAuthImportProjection(authProjection).expected;
   const identity = structuredClone({ runId, incarnations, activationIds, businessDestinationId });
   const profile = structuredClone(expectedTargetProfile);
@@ -65,7 +67,7 @@ async function prepareSet({ manifestPath, storageExportDir, authProjection, appr
         auth.tables.adminRole.map(row => row.userId).sort())) fail('auth_roles_mismatch');
   }
   const storage = await prepareStorageImportReadback({ exportDir: storageExportDir });
-  const descriptor = { format: 'fanmark-initial-import-set-v1', ...identity,
+  const descriptor = { format: 'fanmark-initial-import-set-v1', ...identity, sourceEvidenceSha256,
     businessManifestSha256: sha256Hex(bytes), authProjectionSha256: sha256Hex(auth),
     masterProjectionSha256: sha256Hex(master), storageManifestSha256: storage.manifestSHA256,
     expectedTargetProfileSha256: sha256Hex(profile) };
@@ -162,25 +164,24 @@ export async function verifyInitialImportSet(options) {
 }
 
 
-// This orchestration is deliberately local-only until source-stop custody and
-// cross-process runner ownership are connected. Individual production stages
-// remain separate; passing production transports here always rejects up front.
+// The rehearsal entry point remains local-only. Production execution is a
+// separate explicit entry point with remote executor ownership and all journals.
 const rehearsals = new WeakSet();
 export async function rehearseInitialImportSet(options = {}) {
   try { return await rehearseSet(options); }
   catch (error) { safeError(error, 'rehearsal_unconfirmed'); }
 }
 async function rehearseSet({ prepared, databases, readDatabases, buckets, readBuckets,
-  businessReportPath, storageReportPath, resumeAfter = null, stopAfter = 'storage', ...extra } = {}) {
+  businessReportPath, storageReportPath, resumeAfter = null, stopAfter = 'storage', ...extra } = {}, execution = null) {
   const plan = plans.get(prepared), stages = ['auth', 'master', 'business', 'storage'];
   if (!plan || Object.keys(extra).length || (resumeAfter !== null && !stages.includes(resumeAfter)) ||
       !stages.includes(stopAfter) || stages.indexOf(resumeAfter) > stages.indexOf(stopAfter)) fail('rehearsal_options_invalid');
   const write = { ...databases }, read = { ...readDatabases }, images = { ...buckets }, imageRead = { ...readBuckets };
   if ([write, read].some(group => Object.keys(group).sort().join(',') !== 'auth,business,master' ||
       new Set(Object.values(group)).size !== 3 || Object.values(group).some(db =>
-        typeof db?.prepare !== 'function' || typeof db?.batch !== 'function' || isProductionRemoteD1(db) || isIsolatedRemoteD1(db))) ||
+        typeof db?.prepare !== 'function' || typeof db?.batch !== 'function' || (!execution && (isProductionRemoteD1(db) || isIsolatedRemoteD1(db))))) ||
       [images, imageRead].some(group => Object.keys(group).sort().join(',') !== 'avatars,covers' ||
-        !group.avatars || !group.covers || group.avatars === group.covers || Object.values(group).some(isProductionRemoteR2)) ||
+        !group.avatars || !group.covers || group.avatars === group.covers || (!execution && Object.values(group).some(isProductionRemoteR2))) ||
       ![businessReportPath, storageReportPath].every(path => typeof path === 'string' && isAbsolute(path)) ||
       businessReportPath === storageReportPath) fail('rehearsal_transport_or_paths_invalid');
   // One attempt per in-memory plan. Reconstructing a plan after interruption
@@ -189,10 +190,12 @@ async function rehearseSet({ prepared, databases, readDatabases, buckets, readBu
   rehearsals.add(prepared);
   const { descriptor } = plan, resolveAuthUserIds = authResolver(read.auth);
   async function sourceUnchanged() {
+    await execution?.verifyEvidence();
     await verifySnapshot(plan.manifestPath);
     if (sha256Hex(await readFile(plan.manifestPath)) !== descriptor.businessManifestSha256 ||
       (await prepareStorageImportReadback({ exportDir: plan.storageExportDir })).manifestSHA256 !== descriptor.storageManifestSha256) fail('source_changed');
   }
+  const mode = execution ? 'production-stage' : 'local';
   const auth = { projection: plan.auth, targetIncarnation: descriptor.incarnations.auth };
   const master = { projection: plan.master, targetIncarnation: descriptor.incarnations.master, activationIds: descriptor.activationIds };
   const business = { manifestPath: plan.manifestPath, destinationId: descriptor.businessDestinationId,
@@ -201,29 +204,106 @@ async function rehearseSet({ prepared, databases, readDatabases, buckets, readBu
     auth: () => verifyImportedAuthProjection({ ...auth, database: read.auth }),
     master: () => verifyImportedMasterProjection({ ...master, database: read.master }),
     business: () => verifyImportedD1Snapshot({ ...business, database: read.business, canonicalBusinessSchema: true }),
-    storage: () => verifyImportedSplitR2Export({ exportDir: plan.storageExportDir, buckets: imageRead }),
+    storage: () => (execution ? verifyProductionSplitR2Export : verifyImportedSplitR2Export)({ exportDir: plan.storageExportDir, buckets: imageRead }),
   };
   const imports = {
-    auth: () => importAuthProjectionStage({ ...auth, database: write.auth, readDatabase: read.auth }),
-    master: () => importMasterProjectionStage({ ...master, database: write.master, readDatabase: read.master }),
-    business: () => importInitialBusinessSnapshot({ ...business, database: write.business, readDatabase: read.business,
+    auth: () => importAuthProjectionStage({ ...auth, mode, database: write.auth, readDatabase: read.auth }),
+    master: () => importMasterProjectionStage({ ...master, mode, database: write.master, readDatabase: read.master }),
+    business: () => importInitialBusinessSnapshot({ ...business, mode, database: write.business, readDatabase: read.business,
       reportPath: businessReportPath, allowUnresolvedGates: true }),
-    storage: () => importInitialSplitR2Export({ exportDir: plan.storageExportDir, buckets: images, readBuckets: imageRead, reportPath: storageReportPath }),
+    storage: () => (execution ? importProductionSplitR2Export : importInitialSplitR2Export)({ exportDir: plan.storageExportDir, buckets: images, readBuckets: imageRead, reportPath: storageReportPath }),
   };
   const completed = [], resumed = [], reports = {};
   await sourceUnchanged();
+  await execution?.verifyJournal();
   // Check the whole requested prefix before any new stage may write.
   for (const stage of stages.slice(0, stages.indexOf(resumeAfter) + 1)) {
     reports[stage] = await checks[stage](); resumed.push(stage); completed.push(stage);
   }
   for (const stage of stages.slice(completed.length, stages.indexOf(stopAfter) + 1)) {
     await sourceUnchanged();
+    await execution?.verifyJournal();
     reports[stage] = await imports[stage](); completed.push(stage);
+    await execution?.verifyJournal();
   }
   await sourceUnchanged();
-  const readback = stopAfter === 'storage' ? await verifySet({ prepared, databases: read, buckets: imageRead }) : null;
-  return { format: 'fanmark-initial-import-set-rehearsal-v1', identitySha256: prepared.identitySha256,
+  const readback = stopAfter === 'storage' ? await verifySet({ prepared, databases: read, buckets: imageRead, ...(execution ? { mode, coordinator: execution.coordinator, journalPaths: execution.journalPaths } : {}) }) : null;
+  return { format: execution ? 'fanmark-initial-import-set-execution-v1' : 'fanmark-initial-import-set-rehearsal-v1', identitySha256: prepared.identitySha256,
     completedStages: completed, verifiedBeforeResume: resumed, reports, readback,
-    consistency: 'unfenced-local-rehearsal', sourceFreezeVerified: false, productionReady: false,
-    coordinatorCompleted: false, remoteExecutionSupported: false };
+    consistency: execution ? 'held-import-fence-execution' : 'unfenced-local-rehearsal', sourceFreezeVerified: false, productionReady: false,
+    coordinatorCompleted: false, remoteExecutionSupported: !!execution };
+}
+
+
+/** Explicit production entry. Source evidence is pinned, not certified by this
+ * runner: the operator must verify all ingress stop/drain/Stripe handoff first.
+ * No claim, public release, source resume, cleanup or unknown-outcome retry.
+ */
+export async function executeInitialImportSet(options = {}) {
+  try { return await executeSet(options); }
+  catch (error) { safeError(error, 'execution_unconfirmed'); }
+}
+async function executeSet({ coordinator, journalPaths, sourceEvidencePath, ...options } = {}) {
+  const plan = plans.get(options.prepared), paths = { ...journalPaths };
+  if (!plan || !plan.descriptor.sourceEvidenceSha256 || !isAbsolute(sourceEvidencePath ?? '') ||
+      !isProductionImportCoordinator(coordinator) || coordinator.owner !== plan.descriptor.runId ||
+      coordinator.manifestSha256 !== options.prepared.identitySha256 ||
+      !same(coordinator.incarnations, plan.descriptor.incarnations) ||
+      Object.keys(paths).sort().join(',') !== stores.join(',') ||
+      new Set(Object.values(paths)).size !== 5 || Object.values(paths).some(path => !isAbsolute(path ?? '')) ||
+      new Set(Object.values(paths).map(path => dirname(path))).size !== 1) fail('execution_identity_invalid');
+  // Capture all connection references before awaiting. Every writer must use
+  // THIS coordinator and exactly the journal inspected below, not another run.
+  const captured = { ...options, databases: { ...options.databases }, readDatabases: { ...options.readDatabases },
+    buckets: { ...options.buckets }, readBuckets: { ...options.readBuckets } };
+  for (const store of stores) {
+    const image = ['avatars', 'covers'].includes(store), write = (image ? captured.buckets : captured.databases)[store];
+    const read = (image ? captured.readBuckets : captured.readDatabases)[store];
+    const branded = image ? isProductionRemoteR2 : isProductionRemoteD1;
+    if (!branded(write) || !branded(read) || write.access !== 'import' || read.access !== 'read-only' ||
+        !same(write.targetIdentity, read.targetIdentity) || write.targetIdentity.targetIncarnation !== plan.descriptor.incarnations[store] ||
+        (image ? write.targetIdentity.store !== store : write.targetIdentity.databaseName !== 'fanmark-production-' + store) ||
+        write.importContext?.coordinator !== coordinator || write.importContext.journalPath !== paths[store] ||
+        write.importContext.runId !== plan.descriptor.runId) fail('execution_transport_invalid');
+    if (store === 'business' && write.targetIdentity.databaseId !== plan.descriptor.businessDestinationId) fail('execution_target_invalid');
+  }
+  async function verifyEvidence() {
+    const file = await open(sourceEvidencePath, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      const stat = await file.stat();
+      if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o777) !== 0o600 || stat.size > 4 * 1024 * 1024) fail('source_evidence_file_invalid');
+      const bytes = await file.readFile(), after = await file.stat();
+      if (after.size !== stat.size || after.mtimeMs !== stat.mtimeMs || sha256Hex(bytes) !== plan.descriptor.sourceEvidenceSha256) fail('source_evidence_changed');
+    } finally { await file.close(); }
+  }
+  async function verifyJournal() {
+    const report = await inspectProductionImportSet({ journalPaths: paths, coordinator });
+    if (!report.journalsReconciled) fail('journals_unresolved');
+  }
+  await verifyEvidence();
+  await verifyJournal();
+  for (const binding of [...Object.values(captured.databases), ...Object.values(captured.readDatabases),
+    ...Object.values(captured.buckets), ...Object.values(captured.readBuckets)]) await binding.verifyProductionTarget();
+  // Acquire exactly once. If its response is lost, remote ownership remains;
+  // another client, even with the same run identity, cannot continue writing.
+  const acquired = await coordinator.acquireExecution();
+  const report = await rehearseSet(captured, { coordinator, journalPaths: paths, verifyEvidence, verifyJournal });
+  await verifyEvidence(); await verifyJournal();
+  // Persist the exact comparison before the remote completion/yield. A lost
+  // completion response must leave enough evidence for independent inspection.
+  const executionReportPath = join(dirname(paths.auth), 'initial-set-' + acquired.executorId + '.json');
+  const file = await open(executionReportPath, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+  try {
+    await file.writeFile(JSON.stringify({ format: 'fanmark-initial-import-attempt-v1', executorId: acquired.executorId,
+      runId: plan.descriptor.runId, sourceEvidenceSha256: plan.descriptor.sourceEvidenceSha256, report }) + '\n');
+    await file.sync();
+  } finally { await file.close(); }
+  const directory = await open(dirname(executionReportPath), constants.O_RDONLY);
+  try { await directory.sync(); } finally { await directory.close(); }
+  if (report.readback) {
+    await coordinator.complete(report.readback.readbackSha256);
+    return { ...report, executionReportPath, coordinatorCompleted: true, sourceEvidenceSha256: plan.descriptor.sourceEvidenceSha256 };
+  }
+  await coordinator.yieldExecution(sha256Hex(report));
+  return { ...report, executionReportPath, executorYielded: true, sourceEvidenceSha256: plan.descriptor.sourceEvidenceSha256 };
 }

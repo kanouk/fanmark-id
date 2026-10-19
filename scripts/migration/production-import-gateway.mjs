@@ -22,7 +22,7 @@ try{
  }
  if(r.method==='POST'&&!u.search&&u.pathname.startsWith('/coordinator/')){
   const action=u.pathname.slice(13);
-  if(!['inspect','operation',...(write?['claim','begin','acknowledge','complete']:[])].includes(action))return new Response(null,{status:404});
+  if(!['inspect','operation',...(write?['claim','acquire','yield','begin','acknowledge','complete']:[])].includes(action))return new Response(null,{status:404});
   if(Number(r.headers.get('content-length')??0)>1024)return new Response(null,{status:413});
   let text='';if(r.body){const reader=r.body.getReader(),decoder=new TextDecoder();let size=0;try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>1024){await reader.cancel();return new Response(null,{status:413});}text+=decoder.decode(part.value,{stream:true});}text+=decoder.decode();}finally{reader.releaseLock();}}
   return Response.json(await e.IMPORT_COORDINATOR.command(action,JSON.parse(text)),{headers:{'cache-control':'no-store'}});

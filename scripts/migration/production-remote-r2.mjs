@@ -85,6 +85,7 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
   }
   const resource = key => gatewayOrigin + '/r2/object?' + new URLSearchParams({ store: identity.store, key });
   const bucket = Object.freeze({ targetIdentity: identity, access, verifyProductionTarget: verify,
+    importContext: access === "import" ? Object.freeze({ coordinator: journal.coordinator, journalPath: journal.path, runId: journal.runId }) : null,
     async get(key) {
       validateImportKey(key); await verify();
       const response = await request(resource(key), { headers });

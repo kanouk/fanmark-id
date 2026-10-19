@@ -146,6 +146,7 @@ export function createProductionRemoteD1({ target, token, fetchImpl = fetch, tim
       }));
     },
     verifyProductionTarget: verify,
+    importContext: access === "import" ? Object.freeze({ coordinator: journal.coordinator, journalPath: journal.path, runId: journal.runId }) : null,
     targetIdentity: identity,
     access,
   });
