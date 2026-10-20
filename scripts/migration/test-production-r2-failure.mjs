@@ -31,6 +31,11 @@ test('R2 failure records contain bounded diagnostics and cannot replace the firs
     assert.equal(before.includes('PRIVATE_'),false);
     await assert.rejects(saveProductionR2Failure({...input,phase:'acknowledge'}),{code:'EEXIST'});
     assert.equal(await readFile(path,'utf8'),before);
+    const next=randomUUID();await saveProductionR2Failure({...input,operationId:next,error:new ProductionRemoteR2Error({code:'ECONNRESET'})});
+    const later=JSON.parse(await readFile(input.journalPath+'.failure-'+next+'.json','utf8'));
+    assert.equal(later.operationId,next);assert.deepEqual(later.diagnostics,{transportCode:'ECONNRESET'});
+    assert.equal(await readFile(path,'utf8'),before);
+    await assert.rejects(saveProductionR2Failure({...input,operationId:next}),{code:'EEXIST'});
     assert.deepEqual(r2FailureDiagnostics({httpStatus:999,serviceStage:'PRIVATE_MESSAGE',cause:{code:'PRIVATE_TOKEN'}}),{});
   }finally{await rm(dir,{recursive:true,force:true});}
 });

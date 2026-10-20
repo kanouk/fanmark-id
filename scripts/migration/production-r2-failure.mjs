@@ -1,5 +1,5 @@
 /** Append no data to the import journal and never authorize a retry. */
-import {open,lstat} from 'node:fs/promises';
+import {open,lstat,readFile} from 'node:fs/promises';
 import {constants} from 'node:fs';
 import {dirname,isAbsolute} from 'node:path';
 
@@ -34,7 +34,18 @@ export async function saveProductionR2Failure({journalPath,runId,operationId,bat
   if(!stat.isDirectory()||stat.isSymbolicLink()||(stat.mode&0o777)!==0o700)throw Error('production_r2_failure_record_invalid');
   const record={format:'fanmark-production-r2-failure-v1',at:new Date().toISOString(),runId,operationId,
     batchSha256,phase,dataRequestAttempted,diagnostics:r2FailureDiagnostics(error),outcomeResolved:false,replayAllowed:false};
-  const file=await open(journalPath+'.failure.json',constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);
+  let file;
+  try{file=await open(journalPath+'.failure.json',constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);}
+  catch(error){
+    if(error.code!=='EEXIST'||operationId===null)throw error;
+    const path=journalPath+'.failure.json',stat=await lstat(path);
+    if(!stat.isFile()||stat.isSymbolicLink()||stat.nlink!==1||(stat.mode&0o777)!==0o600||stat.size>16384)throw error;
+    const prior=JSON.parse(await readFile(path,'utf8'));
+    if(prior.format!==record.format||prior.runId!==runId||!uuid.test(prior.operationId??'')||prior.operationId===operationId)throw error;
+    // Preserve the first failure verbatim. A later, newly admitted operation
+    // receives its own immutable sidecar, never an overwrite or retry grant.
+    file=await open(journalPath+'.failure-'+operationId+'.json',constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);
+  }
   try{await file.writeFile(JSON.stringify(record)+'\n');await file.sync();}finally{await file.close();}
   const directory=await open(dirname(journalPath),constants.O_RDONLY);try{await directory.sync();}finally{await directory.close();}
 }
