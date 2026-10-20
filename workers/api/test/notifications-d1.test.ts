@@ -275,7 +275,7 @@ describe("Better Auth notifications API", () => {
     expect(await response.json()).toEqual({ error: "notifications_unavailable" });
   });
 
-  it.each([undefined, ""])("marks all eligible owned notifications with an empty body (%s) and preserves excluded rows", async (body) => {
+  it.each([undefined, "", new Uint8Array(0)])("marks all eligible owned notifications with an empty body (%s) and preserves excluded rows", async (body) => {
     const cookie = await signIn(ownerEmail);
     const response = await request("/api/me/notifications/read-all", {
       method: "POST", headers: { Cookie: cookie }, ...(body === undefined ? {} : { body }),

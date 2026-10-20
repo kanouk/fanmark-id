@@ -100,13 +100,17 @@ describe("D1 invitation code admin API", () => {
     expect(forged.status).toBe(400);
   });
 
-  it("does not delete a code referenced by a user, and deletes unused codes", async () => {
+  it.each([undefined, "", new Uint8Array(0)])("keeps deletion authorization and reference guards with an empty body (%s)", async (body) => {
+    const denied = await request(`/api/admin/invitation-codes/${codeId}`, { method: "DELETE", body }, {}, denyAdmin);
+    expect(denied.status).toBe(403);
+    expect(await database!.prepare("SELECT id FROM invitation_codes WHERE id = ?").bind(codeId).first()).not.toBeNull();
     await database!.prepare("INSERT INTO user_settings (user_id, invited_by_code) VALUES ('synthetic-user', 'WELCOME')").run();
-    const referenced = await request(`/api/admin/invitation-codes/${codeId}`, { method: "DELETE" });
+    const referenced = await request(`/api/admin/invitation-codes/${codeId}`, { method: "DELETE", body });
     expect(referenced.status).toBe(409);
+    expect(await database!.prepare("SELECT id FROM invitation_codes WHERE id = ?").bind(codeId).first()).not.toBeNull();
 
     await database!.prepare("DELETE FROM user_settings").run();
-    const deleted = await request(`/api/admin/invitation-codes/${codeId}`, { method: "DELETE" });
+    const deleted = await request(`/api/admin/invitation-codes/${codeId}`, { method: "DELETE", body });
     expect(deleted.status).toBe(200);
     expect(await database!.prepare("SELECT id FROM invitation_codes WHERE id = ?").bind(codeId).first()).toBeNull();
   });
