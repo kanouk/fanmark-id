@@ -8,6 +8,7 @@ import { PRODUCTION_RUNTIME, PRODUCTION_STORE_IDS } from '../../workers/api/src/
 import { MAX_IMPORT_OBJECT_BYTES, validateImportKey, validateImportObject, importObjectDigest, importDigest, canonicalImportValue } from '../../workers/api/src/production-r2-import-contract.ts';
 import { openProductionImportJournal, isProductionImportJournal } from './production-import-journal.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
+import {isCloudflareCredentialLease,createLeaseBoundCloudflareFetch} from './cloudflare-credential-lease.mjs';
 
 const branded = new WeakSet(), UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 const fail = () => { throw Error('production_r2_transport_unconfirmed'); };
@@ -20,21 +21,25 @@ async function bytesOf(stream, max) {
   } } catch { fail(); } finally { reader.releaseLock(); }
   return Buffer.concat(chunks);
 }
-export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin, gatewayVersion, bearer, token,
+export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin, gatewayVersion, bearer, token, credentialLease = null,
   access = 'read-only', journal = null, fetchImpl = fetch, timeoutMs = 30000 } = {}) {
   const expected = PRODUCTION_R2_TARGETS.find(row => row.bucketName === target?.bucketName);
   if (!expected || Object.entries(expected).some(([key, value]) => target[key] !== value) || !UUID.test(target.targetIncarnation ?? '') ||
       !UUID.test(runtimeVersion ?? '') || !UUID.test(gatewayVersion ?? '') || !['read-only', 'import'].includes(access) ||
       !/^https:\/\/fanmark-prod-import-[0-9a-f-]{36}\.fanmark-id\.workers\.dev$/u.test(gatewayOrigin ?? '') ||
-      !/^[a-f0-9]{64}$/u.test(bearer ?? '') || typeof token !== 'string' || token.length < 16 || /\s/u.test(token) ||
+      !/^[a-f0-9]{64}$/u.test(bearer ?? '') ||
+      (credentialLease!==null&&(!isCloudflareCredentialLease(credentialLease)||credentialLease.accountId!==target.accountId)) ||
+      (credentialLease===null&&(typeof token!=='string'||token.length<16||/\s/u.test(token))) ||
       typeof fetchImpl !== 'function' || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60000) fail();
   if (access === 'import' && (!isProductionImportJournal(journal) || !journal.coordinated ||
       journal.targetId !== target.bucketName || journal.targetIncarnation !== target.targetIncarnation)) fail();
+  if (access === 'import' && !isCloudflareCredentialLease(credentialLease)) fail();
   const identity = Object.freeze({ ...expected, targetIncarnation: target.targetIncarnation, runtimeVersion });
   const base = `https://api.cloudflare.com/client/v4/accounts/${identity.accountId}`;
+  const controlFetch = credentialLease ? createLeaseBoundCloudflareFetch({lease:credentialLease,fetchImpl}) : fetchImpl;
   const gatewayName = new URL(gatewayOrigin).hostname.split('.')[0];
   async function request(url, options) {
-    try { return await fetchImpl(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(timeoutMs) }); }
+    try { return await (new URL(url).hostname==='api.cloudflare.com'?controlFetch:fetchImpl)(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(timeoutMs) }); }
     catch { fail(); }
   }
   async function json(response) {
@@ -68,7 +73,7 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
       for (const [name, value] of Object.entries({ EXPECTED_RUNTIME: runtimeVersion, GATE_ACCESS: access }))
         if (gatewayBinding(name)?.length !== 1 || gatewayBinding(name)[0].text !== value) fail();
       const expires = gatewayBinding('EXPIRES_AT');
-      if (expires?.length !== 1 || !Number.isSafeInteger(Number(expires[0].text)) || Number(expires[0].text) <= Date.now()) fail();
+      if (expires?.length !== 1 || !Number.isSafeInteger(Number(expires[0].text)) || Number(expires[0].text) - Date.now() < (access==='import'?120000:0)) fail();
       const gatewayVersions = gatewayDeployment?.deployments?.[0]?.versions;
       if (gatewayVersions?.length !== 1 || gatewayVersions[0].percentage !== 100 || gatewayVersions[0].version_id !== gatewayVersion) fail();
       const remote = await json(await request(gatewayOrigin + '/r2/identity', { headers }));
@@ -86,6 +91,7 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
   }
   const resource = key => gatewayOrigin + '/r2/object?' + new URLSearchParams({ store: identity.store, key });
   const bucket = Object.freeze({ targetIdentity: identity, access, verifyProductionTarget: verify,
+    credentialPolicy:credentialLease?'lease-v1':'static-token',
     importContext: access === "import" ? Object.freeze({ coordinator: journal.coordinator, journalPath: journal.path, runId: journal.runId }) : null,
     async get(key) {
       validateImportKey(key); await verify();
@@ -121,6 +127,7 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
         httpMetadata: options.httpMetadata ?? {}, customMetadata: options.customMetadata });
       if (options.sha256 !== object.sha256) fail();
       await verify();
+      if(credentialLease)await credentialLease.acquire();
       const digest = await importObjectDigest(object), operationId = await journal.beforeWrite(digest);
       const response = await request(resource(key), { method: 'PUT', headers: { ...headers, 'content-length': String(size),
         'x-fanmark-import-owner': journal.runId, 'x-fanmark-import-operation': operationId, 'x-fanmark-import-digest': digest,

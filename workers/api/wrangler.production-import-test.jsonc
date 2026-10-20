@@ -6,7 +6,7 @@
   "vars": {
     "D1_TOPOLOGY": "split",
     "RECOVERY_DRAIN_BACKEND": "durable-object",
-    "RECOVERY_DRAIN_SCOPE_DIGEST": "6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3",
     "NOTIFICATION_PROCESSOR_BACKEND": "d1",
     "NOTIFICATION_WAKE_BACKEND": "durable-object",
     "CUTOVER_WRITE_FREEZE": "receipt_only"
@@ -22,7 +22,7 @@
     "bindings": [
       {
         "name": "RECOVERY_DRAIN",
-        "class_name": "RecoveryWriterCoordinatorProduction"
+        "class_name": "RecoveryWriterCoordinatorProductionV2"
       },
       {
         "name": "NOTIFICATION_WAKE",
@@ -36,6 +36,13 @@
       "new_sqlite_classes": [
         "RecoveryWriterCoordinatorProduction",
         "NotificationWakeCoordinator"
+      ]
+    },
+    {
+      "tag": "production-coordinators-v2",
+      "new_sqlite_classes": [
+        "NotificationWakeCoordinatorProductionV2",
+        "RecoveryWriterCoordinatorProductionV2"
       ]
     }
   ]

@@ -31,7 +31,7 @@ async function readPrivate(path, maxBytes) {
   } finally { await file.close(); }
 }
 function targetStore(identity, coordinator) {
-  const store = PRODUCTION_D1_TARGETS.find(row => row.databaseId === identity.targetId)?.databaseName.replace('fanmark-production-', '') ??
+  const store = PRODUCTION_D1_TARGETS.find(row => row.databaseId === identity.targetId)?.store ??
     PRODUCTION_R2_TARGETS.find(row => row.bucketName === identity.targetId)?.store;
   if (!store || coordinator.owner !== identity.runId || coordinator.incarnations[store] !== identity.targetIncarnation) fail();
   return store;

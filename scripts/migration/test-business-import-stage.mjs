@@ -1,3 +1,5 @@
+const credentialLease=syntheticProductionCredential('synthetic_token_only');
+import {syntheticProductionCredential} from './fixtures/synthetic-production-credential.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, chmod, rm, unlink, writeFile, readFile } from 'node:fs/promises';
@@ -133,7 +135,7 @@ test('existing report, bypass mode and missing profile do not write', async () =
 }));
 
 test('production stage uses branded fixed Business transports and journals every native write (synthetic HTTP only)', async () => fixture(async (db, options, directory) => {
-  const target = { ...PRODUCTION_D1_TARGETS.find(t => t.databaseName === 'fanmark-production-business'), targetIncarnation: options.targetIncarnation };
+  const target = { ...PRODUCTION_D1_TARGETS.find(t => t.store === 'business'), targetIncarnation: options.targetIncarnation };
   const incarnations = Object.fromEntries(['auth', 'business', 'master', 'avatars', 'covers'].map(name => [name, name === 'business' ? options.targetIncarnation : randomUUID()]));
   let state, writes = 0;
   const coordinator = createProductionImportCoordinator({ owner: randomUUID(), manifestSha256: 'a'.repeat(64), incarnations,
@@ -154,7 +156,7 @@ test('production stage uses branded fixed Business transports and journals every
     return Response.json({ success: true, result: await db.batch(batch.map(item => db.prepare(item.sql).bind(...item.params))) });
   };
   const common = { target, token: 'synthetic_token_no_network', fetchImpl };
-  const writer = await openProductionD1ImportTransport({ ...common, journalPath: join(directory, 'journal.jsonl'), runId: coordinator.owner, coordinator });
+  const writer = await openProductionD1ImportTransport({credentialLease, ...common, journalPath: join(directory, 'journal.jsonl'), runId: coordinator.owner, coordinator });
   const reader = createProductionRemoteD1(common);
   await assert.rejects(importD1Snapshot({ ...options, database: writer }), /production_import_runner_required/);
   await assert.rejects(importInitialBusinessSnapshot({ ...options, database: writer, readDatabase: writer, mode: 'production-stage' }), /transport_invalid/);

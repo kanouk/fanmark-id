@@ -50,7 +50,7 @@ async function fixture(run, { loseUpload = false, rejectActivation = false, drif
   const root = await mkdtemp(join(tmpdir(), 'fanmark-import-gateway-')); await chmod(root, 0o700);
   const runtimeVersion = randomUUID(), gatewayVersion = randomUUID(), journalPath = join(root, 'gateway.jsonl');
   const bindings = [
-    ...PRODUCTION_D1_TARGETS.map(row => ({ type: 'd1', name: { auth: 'AUTH_DB', business: 'FANMARK_DB', master: 'MASTER_DB' }[row.databaseName.replace('fanmark-production-', '')], id: row.databaseId })),
+    ...PRODUCTION_D1_TARGETS.map(row => ({ type: 'd1', name: { auth: 'AUTH_DB', business: 'FANMARK_DB', master: 'MASTER_DB' }[row.store], id: row.databaseId })),
     ...PRODUCTION_R2_TARGETS.map(row => ({ type: 'r2_bucket', name: row.store === 'avatars' ? 'AVATARS_BUCKET' : 'COVER_IMAGES_BUCKET', bucket_name: row.bucketName })),
     ...Object.entries({ D1_TOPOLOGY: 'split', EMOJI_PUBLICATION_BACKEND: 'production-service', RECOVERY_DRAIN_SCOPE_DIGEST: PRODUCTION_RUNTIME.scope,
       RECOVERY_DRAIN_BACKEND: 'durable-object', CUTOVER_WRITE_FREEZE: 'receipt_only', STORAGE_BACKEND: 'r2' }).map(([name, text]) => ({ name, text })),

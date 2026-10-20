@@ -274,6 +274,12 @@
     "scripts/migration/production-backup-alert-test.mjs",
     "scripts/migration/production-webhook-remote-custody.mjs",
     "workers/api/src/production-owner-acceptance.ts",
-    "scripts/migration/production-owner-acceptance.mjs"
+    "scripts/migration/production-owner-acceptance.mjs",
+    "scripts/migration/cloudflare-credential-lease.mjs",
+    "scripts/migration/wrangler-credential-lease.mjs",
+    "scripts/migration/master-atomic-commit.mjs",
+    "workers/api/migrations-master-production/0000_import_operation_commits.sql",
+    "workers/api/wrangler.production-master-import-schema.jsonc",
+    "workers/api/migrations-master-production/0001_import_commit_no_replace.sql"
   ]
 }

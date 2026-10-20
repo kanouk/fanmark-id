@@ -5,8 +5,8 @@ export { ProductionWebhookKeyProofService } from "./production-webhook-key-proof
 export { ProductionOwnerAcceptanceService } from "./production-owner-acceptance";
 import { productionOwnerAcceptanceAllowed, productionOwnerAcceptanceIngressAllowed, productionOwnerAcceptanceResponse, privateProductionOwnerResponse } from "./production-owner-acceptance";
 import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from "./notification-wake";
-export { NotificationWakeCoordinatorProduction, NotificationWakeCoordinator, NotificationWakeCoordinatorV2, NotificationWakeCoordinatorV3, NotificationWakeCoordinatorV4 } from "./notification-wake";
-export { RecoveryWriterCoordinatorProduction, RecoveryWriterCoordinator, RecoveryWriterCoordinatorV2, RecoveryWriterCoordinatorV3, RecoveryWriterCoordinatorV4 } from "./recovery-writer-drain";
+export { NotificationWakeCoordinatorProductionV2, NotificationWakeCoordinatorProduction, NotificationWakeCoordinator, NotificationWakeCoordinatorV2, NotificationWakeCoordinatorV3, NotificationWakeCoordinatorV4 } from "./notification-wake";
+export { RecoveryWriterCoordinatorProductionV2, RecoveryWriterCoordinatorProduction, RecoveryWriterCoordinator, RecoveryWriterCoordinatorV2, RecoveryWriterCoordinatorV3, RecoveryWriterCoordinatorV4 } from "./recovery-writer-drain";
 export { StagingBackupService, StagingBackupAlertService } from "./staging-backup-service";
 export { ProductionEmojiMasterPublicationService, EmojiMasterPublicationService, EmojiMasterPublicationServiceV3, EmojiMasterPublicationServiceV4 } from "./emoji-publication-service";
 import {

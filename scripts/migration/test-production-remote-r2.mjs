@@ -1,3 +1,5 @@
+const credentialLease=syntheticProductionCredential('synthetic_control_plane_token');
+import {syntheticProductionCredential} from './fixtures/synthetic-production-credential.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, chmod, mkdir, writeFile, readFile, rm, unlink } from 'node:fs/promises';
@@ -22,7 +24,7 @@ test('production R2 client joins fixed control-plane identities, native service,
   const owner = randomUUID(), version = randomUUID(), gatewayVersion = randomUUID();
   const origins = Object.fromEntries(['read-only', 'import'].map(mode => [mode, 'https://fanmark-prod-import-' + randomUUID() + '.fanmark-id.workers.dev']));
   const incarnations = Object.fromEntries(['auth', 'master', 'business', 'avatars', 'covers'].map(store => [store, randomUUID()]));
-  const built = await build({ stdin: { contents: `export { RecoveryWriterCoordinatorProduction } from './recovery-writer-drain';
+  const built = await build({ stdin: { contents: `export { RecoveryWriterCoordinatorProductionV2 } from './recovery-writer-drain';
     export { ProductionR2ImportService } from './production-r2-import-service';
     export default {async fetch(r,e){const u=new URL(r.url);if(u.pathname.startsWith('/command/'))
       return e.RECOVERY_DRAIN.get(e.RECOVERY_DRAIN.idFromName('recovery-writers-v1')).fetch('https://recovery-writer.internal/migration/'+u.pathname.slice(9),{method:'POST',body:await r.text()});
@@ -31,8 +33,8 @@ test('production R2 client joins fixed control-plane identities, native service,
     format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] });
   const text = value => ({ type: 'text', value });
   const mf = new Miniflare({ workers: [{ config: { name: 'production-r2-client', type: 'worker', compatibilityDate: '2026-09-18',
-    exports: { RecoveryWriterCoordinatorProduction: { type: 'durable-object', storage: 'sqlite' } }, env: {
-      RECOVERY_DRAIN: { type: 'durable-object', worker: 'production-r2-client', exportName: 'RecoveryWriterCoordinatorProduction' },
+    exports: { RecoveryWriterCoordinatorProductionV2: { type: 'durable-object', storage: 'sqlite' } }, env: {
+      RECOVERY_DRAIN: { type: 'durable-object', worker: 'production-r2-client', exportName: 'RecoveryWriterCoordinatorProductionV2' },
       IMPORT: { type: 'worker', worker: 'production-r2-client', exportName: 'ProductionR2ImportService' },
       RECOVERY_DRAIN_SCOPE_DIGEST: text(PRODUCTION_RUNTIME.scope), RECOVERY_DRAIN_BACKEND: text('durable-object'),
       D1_TOPOLOGY: text('split'), STORAGE_BACKEND: text('r2'), CUTOVER_WRITE_FREEZE: text('receipt_only'),
@@ -49,7 +51,7 @@ test('production R2 client joins fixed control-plane identities, native service,
     await coordinator.claim();
     const base = `https://api.cloudflare.com/client/v4/accounts/${PRODUCTION_RUNTIME.accountId}`;
     const runtimeBindings = [
-      ...PRODUCTION_D1_TARGETS.map(row => ({ type: 'd1', name: { auth: 'AUTH_DB', business: 'FANMARK_DB', master: 'MASTER_DB' }[row.databaseName.replace('fanmark-production-', '')], id: row.databaseId })),
+      ...PRODUCTION_D1_TARGETS.map(row => ({ type: 'd1', name: { auth: 'AUTH_DB', business: 'FANMARK_DB', master: 'MASTER_DB' }[row.store], id: row.databaseId })),
       ...PRODUCTION_R2_TARGETS.map(row => ({ type: 'r2_bucket', name: row.store === 'avatars' ? 'AVATARS_BUCKET' : 'COVER_IMAGES_BUCKET', bucket_name: row.bucketName })),
       ...Object.entries({ D1_TOPOLOGY: 'split', EMOJI_PUBLICATION_BACKEND: 'production-service', RECOVERY_DRAIN_SCOPE_DIGEST: PRODUCTION_RUNTIME.scope,
         RECOVERY_DRAIN_BACKEND: 'durable-object', CUTOVER_WRITE_FREEZE: 'receipt_only', STORAGE_BACKEND: 'r2' }).map(([name, text]) => ({ name, type: 'plain_text', text })),
@@ -58,7 +60,7 @@ test('production R2 client joins fixed control-plane identities, native service,
     const fetchImpl = async (url, options) => {
       assert.equal(options.redirect, 'error');
       if (url.startsWith(base)) {
-        assert.equal(options.headers.authorization, 'Bearer synthetic_control_plane_token');
+        assert.equal(new Headers(options.headers).get('authorization'), 'Bearer synthetic_control_plane_token');
         let result;
         if (url.includes('/r2/buckets/')) { const target = PRODUCTION_R2_TARGETS.find(t => url.endsWith('/' + t.bucketName));
           assert.ok(target); result = { name: target.bucketName, creation_date: drift === 'bucket' ? 'changed' : target.createdAt, storage_class: 'Standard' };
@@ -75,7 +77,7 @@ test('production R2 client joins fixed control-plane identities, native service,
         return Response.json({ success: true, result });
       }
       const u = new URL(url); assert.ok(Object.values(origins).includes(u.origin));
-      assert.equal(options.headers.authorization, 'Bearer ' + 'b'.repeat(64));
+      assert.equal(new Headers(options.headers).get('authorization'), 'Bearer ' + 'b'.repeat(64));
       if (options.method === 'PUT') { puts++; lastPut = { url, options }; }
       const response = await mf.dispatchFetch('https://fixture.local' + u.pathname + u.search, options);
       if (options.method === 'PUT' && loseAck) { loseAck = false; await response.body?.cancel(); throw Error('private diagnostic after commit'); }
@@ -83,15 +85,15 @@ test('production R2 client joins fixed control-plane identities, native service,
     };
     const common = { runtimeVersion: version, gatewayVersion, bearer: 'b'.repeat(64), token: 'synthetic_control_plane_token', fetchImpl };
     const target = store => ({ ...PRODUCTION_R2_TARGETS.find(t => t.store === store), targetIncarnation: incarnations[store] });
-    const reader = store => createProductionRemoteR2({ ...common, target: target(store), gatewayOrigin: origins['read-only'] });
-    const writer = (store, journal = store) => openProductionR2ImportTransport({ ...common, target: target(store), gatewayOrigin: origins.import,
+    const reader = store => createProductionRemoteR2({credentialLease, ...common, target: target(store), gatewayOrigin: origins['read-only'] });
+    const writer = (store, journal = store) => openProductionR2ImportTransport({credentialLease, ...common, target: target(store), gatewayOrigin: origins.import,
       journalPath: join(dir, journal + '.jsonl'), runId: owner, coordinator });
     const readBuckets = { avatars: reader('avatars'), covers: reader('covers') }, buckets = { avatars: await writer('avatars'), covers: await writer('covers') };
     await t.test('control-plane bucket, runtime and gateway drift refuse before data writes', async () => {
       for (const value of ['bucket', 'version', 'gateway']) { drift = value; await assert.rejects(readBuckets.avatars.list(), /transport_unconfirmed/); }
       drift = null; assert.equal(puts, 0);
-      assert.throws(() => createProductionRemoteR2({ ...common, target: { ...target('avatars'), bucketName: 'fanmark-backups-production' }, gatewayOrigin: origins.import }), /transport_unconfirmed/);
-      assert.throws(() => createProductionRemoteR2({ ...common, target: target('avatars'), gatewayOrigin: origins.import, access: 'import' }), /transport_unconfirmed/);
+      assert.throws(() => createProductionRemoteR2({credentialLease, ...common, target: { ...target('avatars'), bucketName: 'fanmark-backups-production' }, gatewayOrigin: origins.import }), /transport_unconfirmed/);
+      assert.throws(() => createProductionRemoteR2({credentialLease, ...common, target: target('avatars'), gatewayOrigin: origins.import, access: 'import' }), /transport_unconfirmed/);
     });
     await t.test('actual initial stage and independent reader preserve split keys, empty body and missing MIME', async () => {
       await mkdir(join(dir, 'objects'), { mode: 0o700 }); const objects = [];

@@ -784,3 +784,9 @@ production modeでは固定read-only D1/R2と、同じdescriptor hashをclaimし
 `test-initial-import-set-readback.mjs` はnative3 D1/2 R2に40表を移し、通常localとproduction用read-only adapterの双方で照合する。後者の管理API/調停応答は合成であり、実Cloudflareの一式照合ではない。通常の`test:migration-data`へ組み込む。
 
 `initial-import-set-readback.mjs` の `rehearseInitialImportSet` はlocal限定。`executeInitialImportSet` は固定本番transport・全5 journal・DO executorの所有権で同じ順次実行/境界再開を行い、全件照合をfsyncしてからcompleteする。source停止の実証/部分stage修復/公開は別工程。[入力・再開契約](migration/initial-import-set.md)。
+
+### 本番再移行の期限管理とMaster確定記録
+
+[2026-10-20の再準備票](migration/RETRY-PREPARATION-2026-10-20.md)を参照する。本番importのD1/R2接続は `lease-v1` が必須で、一式runnerはread側にも要求する。Wrangler adapterは既存の暗号化profile/Keychainを使い、期限前に同じOAuth grantを更新する。更新POST・D1書込み・調停ACKは応答不明時に再送しない。
+
+本番Masterは共有schemaと専用のimmutable commit表を使用する。元DMLと確定記録が同一transactionでcommitした証拠を、同じ生存executorと元pendingに照合した場合だけ継続できる。`RETURNING`、SQL内の`changes()`等に依存する任意SQLはこの経路で扱わない。復旧結果が提供するmetadataは証明済みの直接変更件数だけであり、元のprovider計測値を作らない。確定記録はMaster backup/restoreで保持する。古い25表archiveも従来profileで復元できる。新namespaceは旧quarantineを解除せずに別scopeで動作する。

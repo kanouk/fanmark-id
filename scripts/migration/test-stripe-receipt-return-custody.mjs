@@ -1,3 +1,5 @@
+const credentialLease=syntheticProductionCredential('synthetic_token_only');
+import {syntheticProductionCredential} from './fixtures/synthetic-production-credential.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID,randomBytes} from 'node:crypto';
@@ -20,15 +22,15 @@ import {executeStripeReceiptReturn,inspectStripeReceiptReturnExecution} from './
 
 test('closed native coordinator and production readonly transport capture authenticated return custody',{timeout:60000},async t=>{
  const directory=await mkdtemp(join(tmpdir(),'fanmark-return-custody-'));await chmod(directory,0o700);
- const scope='6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d';
- const built=await build({stdin:{contents:`export {RecoveryWriterCoordinatorProduction} from './recovery-writer-drain';
+ const scope='d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3';
+ const built=await build({stdin:{contents:`export {RecoveryWriterCoordinatorProductionV2} from './recovery-writer-drain';
  export default {async fetch(r,e){const u=new URL(r.url),stub=e.RECOVERY_DRAIN.get(e.RECOVERY_DRAIN.idFromName('recovery-writers-v1'));
  return stub.fetch('https://recovery-writer.internal'+u.pathname,{method:'POST',body:await r.text(),headers:{'content-type':'application/json'}})}};`,
  resolveDir:fileURLToPath(new URL('../../workers/api/src',import.meta.url)),loader:'ts'},bundle:true,write:false,
  format:'esm',platform:'browser',target:'es2022',external:['cloudflare:*']});
  const mf=new Miniflare({workers:[{config:{name:'return-custody',type:'worker',compatibilityDate:'2026-09-18',
- exports:{RecoveryWriterCoordinatorProduction:{type:'durable-object',storage:'sqlite'}},
- env:{RECOVERY_DRAIN:{type:'durable-object',worker:'return-custody',exportName:'RecoveryWriterCoordinatorProduction'},
+ exports:{RecoveryWriterCoordinatorProductionV2:{type:'durable-object',storage:'sqlite'}},
+ env:{RECOVERY_DRAIN:{type:'durable-object',worker:'return-custody',exportName:'RecoveryWriterCoordinatorProductionV2'},
  RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:scope},RECOVERY_DRAIN_BACKEND:{type:'text',value:'durable-object'},
  CUTOVER_WRITE_FREEZE:{type:'text',value:'receipt_only'},DB:{type:'d1',name:'return-custody'}},
  manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:built.outputFiles[0].text}}}},
@@ -44,8 +46,8 @@ test('closed native coordinator and production readonly transport capture authen
    if(r.status!==200)throw Error('fixture_command_refused');return r.json();}
   const coordinator=createProductionImportCoordinator({owner:runId,manifestSha256:'a'.repeat(64),incarnations,
    command:async(action,input)=>{const result=await raw('/migration/'+action,input);if(action==='inspect'){inspectCount++;await afterInspect?.(inspectCount);}return result;}});
-  const target={...PRODUCTION_D1_TARGETS.find(r=>r.databaseName==='fanmark-production-business'),targetIncarnation:incarnations.business};
-  const database=createProductionRemoteD1({target,token:'synthetic_readonly_token',fetchImpl:async(url,options)=>{
+  const target={...PRODUCTION_D1_TARGETS.find(r=>r.store === 'business'),targetIncarnation:incarnations.business};
+  const database=createProductionRemoteD1({credentialLease,target,token:'synthetic_readonly_token',fetchImpl:async(url,options)=>{
    assert.equal(options.redirect,'error');assert.ok(url.startsWith('https://api.cloudflare.com/'));
    if(options.method==='GET')return Response.json({success:true,result:{uuid:target.databaseId,name:target.databaseName,created_at:target.createdAt}});
    const batch=JSON.parse(options.body).batch;

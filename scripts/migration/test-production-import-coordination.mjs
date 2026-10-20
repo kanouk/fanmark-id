@@ -1,3 +1,5 @@
+const credentialLease=syntheticProductionCredential('synthetic_token_only');
+import {syntheticProductionCredential} from './fixtures/synthetic-production-credential.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {mkdtemp,chmod,rm,readFile,writeFile,symlink,unlink} from 'node:fs/promises';
@@ -20,16 +22,16 @@ import {promisify} from 'node:util';
 test('native production coordinator and separate filesystem journals jointly guard real D1 writes', {timeout:60000}, async t=>{
  const dir=await mkdtemp(join(tmpdir(),'fanmark-global-import-'));await chmod(dir,0o700);
  const source=fileURLToPath(new URL('../../workers/api/src',import.meta.url));
- const built=await build({stdin:{contents:`export { RecoveryWriterCoordinatorProduction } from './recovery-writer-drain';
+ const built=await build({stdin:{contents:`export { RecoveryWriterCoordinatorProductionV2 } from './recovery-writer-drain';
  export { ProductionImportCoordinatorService } from './production-import-coordinator';
  export default { async fetch(r,e){try{const {action,input}=await r.json();return Response.json(await e.COORDINATOR.command(action,input));}
  catch{return Response.json({error:'fixture_refused'},{status:409});}}};`,resolveDir:source,loader:'ts'},
  bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',external:['cloudflare:*']});
  const mf=new Miniflare({workers:[{config:{name:'import-coordination-fixture',type:'worker',compatibilityDate:'2026-09-18',
-  exports:{RecoveryWriterCoordinatorProduction:{type:'durable-object',storage:'sqlite'}},
-  env:{RECOVERY_DRAIN:{type:'durable-object',worker:'import-coordination-fixture',exportName:'RecoveryWriterCoordinatorProduction'},
+  exports:{RecoveryWriterCoordinatorProductionV2:{type:'durable-object',storage:'sqlite'}},
+  env:{RECOVERY_DRAIN:{type:'durable-object',worker:'import-coordination-fixture',exportName:'RecoveryWriterCoordinatorProductionV2'},
    COORDINATOR:{type:'worker',worker:'import-coordination-fixture',exportName:'ProductionImportCoordinatorService'},
-   RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d'},
+   RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3'},
    RECOVERY_DRAIN_BACKEND:{type:'text',value:'durable-object'},CUTOVER_WRITE_FREEZE:{type:'text',value:'receipt_only'},DB:{type:'d1',name:'coordinated-fixture'},AUTH_DB:{type:'d1',name:'auth-stage-fixture'}},
   manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:built.outputFiles[0].text}}}},
   dev:{outboundService:{type:'fetcher',handler(){throw Error('external_network_forbidden');}}}}]});
@@ -46,7 +48,7 @@ test('native production coordinator and separate filesystem journals jointly gua
   const owner=randomUUID(),incarnations=Object.fromEntries(['auth','master','business','avatars','covers'].map(store=>[store,randomUUID()]));
   const options={owner,incarnations,manifestSha256:'a'.repeat(64),command};
   const coordinator=createProductionImportCoordinator(options);
-  const target={...PRODUCTION_D1_TARGETS.find(row=>row.databaseName==='fanmark-production-business'),targetIncarnation:incarnations.business};
+  const target={...PRODUCTION_D1_TARGETS.find(row=>row.store === 'business'),targetIncarnation:incarnations.business};
   const fetchImpl=async(_url,options)=>{
    if(options.method==='GET')return Response.json({success:true,result:{uuid:target.databaseId,name:target.databaseName,created_at:target.createdAt}});
    queries++;
@@ -58,12 +60,12 @@ test('native production coordinator and separate filesystem journals jointly gua
   let lastPath;
   const writer=async(client=coordinator)=>{
    lastPath=join(dir,randomUUID()+'.jsonl');
-   return openProductionD1ImportTransport({journalPath:lastPath,runId:owner,target,coordinator:client,token:'synthetic-token-only',fetchImpl});
+   return openProductionD1ImportTransport({credentialLease,journalPath:lastPath,runId:owner,target,coordinator:client,token:'synthetic-token-only',fetchImpl});
   };
   await t.test('no local writes before remote ownership; target incarnation mismatch rejects',async()=>{
    await assert.rejects(writer(),/coordination_unconfirmed/);
    await coordinator.claim();
-   await assert.rejects(openProductionD1ImportTransport({journalPath:join(dir,'bad'),runId:owner,
+   await assert.rejects(openProductionD1ImportTransport({credentialLease,journalPath:join(dir,'bad'),runId:owner,
     target:{...target,targetIncarnation:randomUUID()},coordinator,token:'synthetic-token-only',fetchImpl}),/coordination_unconfirmed/);
    assert.equal(queries,0);
   });
@@ -78,7 +80,7 @@ test('native production coordinator and separate filesystem journals jointly gua
    const journalPaths={business:lastPath};
    for(const store of ['auth','master','avatars','covers']){
     journalPaths[store]=join(dir,store+'.jsonl');
-    const targetId=PRODUCTION_D1_TARGETS.find(row=>row.databaseName==='fanmark-production-'+store)?.databaseId ??
+    const targetId=PRODUCTION_D1_TARGETS.find(row=>row.store === store)?.databaseId ??
      PRODUCTION_R2_TARGETS.find(row=>row.store===store).bucketName;
     await openProductionImportJournal({path:journalPaths[store],runId:owner,targetId,targetIncarnation:incarnations[store]});
    }
@@ -138,19 +140,18 @@ test('native production coordinator and separate filesystem journals jointly gua
    const repaired=await inspectProductionImportJournal(journalPath);assert.equal(repaired.pending,null);assert.equal(repaired.lock,null);
    assert.equal(await native.prepare('SELECT count(*) AS n FROM proof WHERE id=7').first('n'),1);
    await assert.rejects(recoverAcknowledgedProductionImport({journalPath,coordinator:independent}));
-   const resumed=await openProductionD1ImportTransport({journalPath,runId:owner,target,coordinator,token:'synthetic-token-only',fetchImpl});
+   const resumed=await openProductionD1ImportTransport({credentialLease,journalPath,runId:owner,target,coordinator,token:'synthetic-token-only',fetchImpl});
    await resumed.prepare('INSERT INTO proof VALUES(8)').run();
    assert.equal((await inspectProductionImportJournal(journalPath)).operations.length,2);
   });
-  await t.test('lost remote ACK is distinguishable but an importer still alive cannot have its lock reclaimed',async()=>{
+  await t.test('lost remote ACK is reconciled by the same live journal without ACK replay',async()=>{
    const remote=await writer();loseAck=true;
-   await assert.rejects(remote.prepare('INSERT INTO proof VALUES(9)').run(),/coordination_unconfirmed/);
-   const journalPath=lastPath,original=await readFile(journalPath,'utf8'),before=queries;
+   await remote.prepare('INSERT INTO proof VALUES(9)').run();
+   const journalPath=lastPath,before=queries;
    const independent=createProductionImportCoordinator(options);
-   assert.equal((await inspectProductionImportAttempt({journalPath,coordinator:independent})).classification,'remote-acknowledged-local-pending');
+   assert.equal((await inspectProductionImportAttempt({journalPath,coordinator:independent})).classification,'local-no-pending-operation');
    await assert.rejects(recoverAcknowledgedProductionImport({journalPath,coordinator:independent}));
-   assert.equal(await readFile(journalPath,'utf8'),original);assert.equal(queries,before);
-   assert.ok((await inspectProductionImportJournal(journalPath)).lock);
+   assert.equal(queries,before);assert.equal((await inspectProductionImportJournal(journalPath)).lock,null);
    assert.equal(await native.prepare('SELECT count(*) AS n FROM proof WHERE id=9').first('n'),1);
   });
   await t.test('another store holds the same fence; a different journal cannot send a D1 request',async()=>{
@@ -167,7 +168,7 @@ test('native production coordinator and separate filesystem journals jointly gua
     const sql=await readFile(new URL('../../workers/api/migrations/'+name,import.meta.url),'utf8');
     await auth.batch(businessMigrationStatements(sql).map(sql=>auth.prepare(sql)));
    }
-   const authTarget={...PRODUCTION_D1_TARGETS.find(row=>row.databaseName==='fanmark-production-auth'),targetIncarnation:incarnations.auth};
+   const authTarget={...PRODUCTION_D1_TARGETS.find(row=>row.store === 'auth'),targetIncarnation:incarnations.auth};
    let authWrites=0;
    const authFetch=async(_url,options)=>{
     if(options.method==='GET')return Response.json({success:true,result:{uuid:authTarget.databaseId,name:authTarget.databaseName,created_at:authTarget.createdAt}});
@@ -177,8 +178,8 @@ test('native production coordinator and separate filesystem journals jointly gua
     }
     return Response.json({success:true,result:await auth.batch(batch.map(row=>auth.prepare(row.sql).bind(...row.params)))});
    };
-   const authWriter=await openProductionD1ImportTransport({journalPath:join(dir,'auth-stage.jsonl'),runId:owner,target:authTarget,coordinator,token:'synthetic-token-only',fetchImpl:authFetch});
-   const authReader=createProductionRemoteD1({target:authTarget,token:'synthetic-token-only',fetchImpl:authFetch});
+   const authWriter=await openProductionD1ImportTransport({credentialLease,journalPath:join(dir,'auth-stage.jsonl'),runId:owner,target:authTarget,coordinator,token:'synthetic-token-only',fetchImpl:authFetch});
+   const authReader=createProductionRemoteD1({credentialLease,target:authTarget,token:'synthetic-token-only',fetchImpl:authFetch});
    const id='aaaaaaaa-1111-4111-8111-111111111111',time='2026-10-19T00:00:00.000Z';
    const projection={version:1,observedAt:time,omittedSessionState:['session','verification','mfaAssurance'],tables:{
     user:[{id,name:'Synthetic',email:'synthetic@example.invalid',emailVerified:1,image:null,twoFactorEnabled:1,banned:0,banExpires:null,banReason:null,createdAt:time,updatedAt:time}],

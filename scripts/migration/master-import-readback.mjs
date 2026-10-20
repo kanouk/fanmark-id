@@ -63,7 +63,7 @@ export async function verifyImportedMasterProjection({ database, projection, tar
   if (!keys(activationIds, ['emoji', 'reference']) || !uuid.test(activationIds.emoji) || !uuid.test(activationIds.reference) ||
       activationIds.emoji === activationIds.reference) fail('activation_ids_invalid');
   const ids = { ...activationIds }, production = isProductionRemoteD1(database);
-  if (production && (database.access !== 'read-only' || database.targetIdentity.databaseName !== 'fanmark-production-master')) fail('target_invalid');
+  if (production && (database.access !== 'read-only' || database.targetIdentity.store !== 'master')) fail('target_invalid');
   async function identity() {
     if (production) try { await assertProductionRemoteD1Target(database, targetIncarnation); } catch { fail('target_invalid'); }
   }

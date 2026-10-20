@@ -4,7 +4,11 @@ import {randomBytes,createHash,createCipheriv,createDecipheriv} from 'node:crypt
 import {execFileSync} from 'node:child_process';
 import {mkdir,open,lstat,realpath,readFile} from 'node:fs/promises';
 import {isAbsolute,resolve,join,basename,dirname} from 'node:path';
-const SCOPE='6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d';
+import {PRODUCTION_RUNTIME} from '../../workers/api/src/production-runtime-identity.ts';
+const SCOPE=PRODUCTION_RUNTIME.scope;
+// Existing escrow AAD binds key IDs, not stores. Retain and verify the original
+// custody record; cohort v2 uses an explicit reuse report, never a rotated key.
+const ORIGINAL_SCOPE='6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d';
 const ID=/^production-backup-[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/u;
 const HEX=/^[a-f0-9]{64}$/u;
 const digest=value=>createHash('sha256').update(value).digest('hex');
@@ -28,7 +32,7 @@ export function prepareProductionKeyCustody({keyId,archiveKeyHex,authSecret,crea
 export function openProductionKeyCustody(record){
  try{
   if(!record||Object.keys(record).sort().join(',')!==['format','keyId','scopeDigest','createdAt','archiveKeyHex','authKeyEscrow'].sort().join(',')||
-   record.format!=='fanmark-production-key-custody-v1'||record.scopeDigest!==SCOPE||!ID.test(record.keyId??'')||
+   record.format!=='fanmark-production-key-custody-v1'||![SCOPE,ORIGINAL_SCOPE].includes(record.scopeDigest)||!ID.test(record.keyId??'')||
    !HEX.test(record.archiveKeyHex??'')||!Number.isFinite(Date.parse(record.createdAt)))fail('record_invalid');
   const e=record.authKeyEscrow;
   if(!e||Object.keys(e).sort().join(',')!==['format','keyId','authKeyId','nonce','ciphertext'].sort().join(',')||
@@ -45,6 +49,13 @@ export function openProductionKeyCustody(record){
    return {archiveKeyHex:record.archiveKeyHex,authSecret};
   }finally{clear.fill(0);}
  }catch{fail('record_invalid');}
+}
+
+export function verifyProductionKeyReuse(record){
+ const keys=openProductionKeyCustody(record);
+ return {format:'fanmark-production-key-reuse-v1',keyId:record.keyId,originalScope:record.scopeDigest,
+  admittedScope:SCOPE,originalRecordSha256:digest(JSON.stringify(record)),archiveKeySha256:digest(keys.archiveKeyHex),
+  authKeyId:record.authKeyEscrow.authKeyId,existingEscrowVerified:true,keysRotated:false};
 }
 
 function security(args,input){

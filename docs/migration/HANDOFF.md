@@ -1,3 +1,5 @@
+**2026-10-20 再準備中:** [新cohort V2・期限管理と確定照合](RETRY-PREPARATION-2026-10-20.md)を優先する。旧Supabaseは稼働中。新5ストアのschema照合済み、閉鎖runtime/backup/CIの準備を進めている。実データ移送・旧側停止・Route/DNS切替・main mergeは次の所有者確認まで行わない。旧quarantineは解除しない。
+
 ## 2026-10-20: G2 Master途中で中止・target恒久封鎖、旧Supabaseを復旧
 
 **次は [中止・復旧票](CUTOVER-ABORT-2026-10-20.md) を読む。元runを再開しない。**

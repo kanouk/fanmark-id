@@ -158,13 +158,13 @@ function transport(database,readDatabase,mode,targetIncarnation) {
  if(!['local','production-stage'].includes(mode) || typeof database?.prepare!=='function' || typeof readDatabase?.prepare!=='function' ||
    mode==='local'&&(production||isProductionRemoteD1(readDatabase)||isIsolatedRemoteD1(database)||isIsolatedRemoteD1(readDatabase)) ||
    mode==='production-stage'&&(!production||!isProductionRemoteD1(readDatabase)||database.access!=='import'||readDatabase.access!=='read-only'||
-    database.targetIdentity.databaseName!=='fanmark-production-business'||!same(database.targetIdentity,readDatabase.targetIdentity)||
+    database.targetIdentity.store !== 'business'||!same(database.targetIdentity,readDatabase.targetIdentity)||
     database.targetIdentity.targetIncarnation!==targetIncarnation))fail('transport_invalid');
 }
 export async function verifyStripeReceiptTransfer({source,database,runId,targetIncarnation}={}) {
  const expected=await prepareStripeReceiptTransfer(source,{runId});
  if(isProductionRemoteD1(database)){
-  if(database.access!=='read-only'||database.targetIdentity.databaseName!=='fanmark-production-business')fail('transport_invalid');
+  if(database.access!=='read-only'||database.targetIdentity.store !== 'business')fail('transport_invalid');
   await assertProductionRemoteD1Target(database,targetIncarnation);
  }else if(isIsolatedRemoteD1(database))fail('transport_invalid');
  const before=await schema(database);
@@ -283,7 +283,7 @@ COMMIT;
 const returnHeaderKeys=['format','runId','sourceBeforeSha256','manifestSha256','businessIncarnation',
  'returnedSourceSha256','targetSchemaSha256','coordinatorStateSha256'];
 async function readReturnTarget(database,targetIncarnation) {
- if(!isProductionRemoteD1(database)||database.access!=='read-only'||database.targetIdentity.databaseName!=='fanmark-production-business')fail('return_readonly_target_required');
+ if(!isProductionRemoteD1(database)||database.access!=='read-only'||database.targetIdentity.store !== 'business')fail('return_readonly_target_required');
  await assertProductionRemoteD1Target(database,targetIncarnation);
  const schemaSha256=await schema(database);
  let values;try{values=await database.batch(tables.map(table=>database.prepare(`SELECT * FROM "${table}" ORDER BY id`)));}catch{fail('return_read_unconfirmed');}

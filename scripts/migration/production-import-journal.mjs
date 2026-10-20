@@ -95,11 +95,30 @@ export async function openProductionImportJournal({ path, runId, targetId, targe
     },
     async afterWrite(operationId) {
       if (!active || operationId !== active) fail('production_journal_operation_mismatch');
-      await coordinator?.afterWrite({ operationId, batchSha256: activeHash, store });
+      const expectedExecutor = coordinator?.executorId ?? null;
+      try { await coordinator?.afterWrite({ operationId, batchSha256: activeHash, store }); }
+      catch {
+        // A lost coordinator ACK is inspected once; never resend acknowledge.
+        // Local fsync failures below retain the lock and still require inspection.
+        const proof = await coordinator?.inspectOperation(operationId);
+        if (!proof || proof.quarantine || proof.active !== 0 || proof.fenceOwner !== runId ||
+            proof.executorId !== expectedExecutor ||
+            proof.pending !== null || proof.state?.pending !== null || proof.state?.readbackSha256 !== null ||
+            !proof.acknowledged || proof.acknowledged.operationId !== operationId ||
+            proof.acknowledged.batchSha256 !== activeHash || proof.acknowledged.store !== store) fail('production_journal_acknowledgement_unconfirmed');
+      }
       await append({ type: 'acknowledged', operationId });
       await unlink(path + '.lock');
       active = null;
       activeHash = null;
+    },
+    async inspectActive(operationId, batchSha256) {
+      if (!active || active !== operationId || activeHash !== batchSha256 || (await inspect()).pending !== active) fail('production_journal_operation_mismatch');
+      const proof = await coordinator?.inspectOperation(operationId);
+      if (!proof || proof.quarantine || proof.active !== 0 || proof.fenceOwner !== runId || !UUID.test(proof.executorId ?? '') ||
+          proof.acknowledged !== null || proof.dispatched !== null || proof.state?.readbackSha256 !== null ||
+          !proof.pending || proof.pending.operationId !== active || proof.pending.batchSha256 !== activeHash || proof.pending.store !== store) fail('production_journal_pending_unconfirmed');
+      return { executorId: proof.executorId };
     },
   });
   journals.add(journal);

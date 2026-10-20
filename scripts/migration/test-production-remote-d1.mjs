@@ -1,3 +1,5 @@
+const credentialLease=syntheticProductionCredential('synthetic_token_never_logged');
+import {syntheticProductionCredential} from './fixtures/synthetic-production-credential.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, chmod, readFile, rm, writeFile, symlink } from 'node:fs/promises';
@@ -31,7 +33,7 @@ test('production D1 validates identity and durable write boundaries against nati
     let journalPath = null;
     const fetchImpl = async (url, options) => {
       assert.equal(options.redirect, 'error');
-      assert.equal(options.headers.authorization, `Bearer ${token}`);
+      assert.equal(new Headers(options.headers).get('authorization'), `Bearer ${token}`);
       const base = `https://api.cloudflare.com/client/v4/accounts/${target.accountId}/d1/database/${target.databaseId}`;
       if (options.method === 'GET') {
         assert.equal(url, base); metadata++;
@@ -51,7 +53,7 @@ test('production D1 validates identity and durable write boundaries against nati
       if (loseAck) { loseAck = false; throw new Error('response lost after commit'); }
       return Response.json({ success: true, result: invalidResult ? [] : result });
     };
-    const reader = createProductionRemoteD1({ target, token, fetchImpl });
+    const reader = createProductionRemoteD1({credentialLease, target, token, fetchImpl });
     let currentCoordinator;
     async function writer() {
       journalPath = join(directory, randomUUID() + '.jsonl');
@@ -70,7 +72,7 @@ test('production D1 validates identity and durable write boundaries against nati
           return state;
         } });
       await currentCoordinator.claim();
-      return openProductionD1ImportTransport({ target, token, fetchImpl, journalPath, runId, coordinator: currentCoordinator });
+      return openProductionD1ImportTransport({credentialLease, target, token, fetchImpl, journalPath, runId, coordinator: currentCoordinator });
     }
     await context.test('read-only denies writes, stacked statements and mutating PRAGMAs before network', async () => {
       const before = queries;
@@ -85,7 +87,7 @@ test('production D1 validates identity and durable write boundaries against nati
     });
     await context.test('fixed identity, per-batch metadata and separate isolated guard', async () => {
       for (const field of ['accountId','databaseId','databaseName','createdAt']) {
-        assert.throws(() => createProductionRemoteD1({ target: { ...target, [field]: 'wrong' }, token, fetchImpl }), /production_target_identity_invalid/);
+        assert.throws(() => createProductionRemoteD1({credentialLease, target: { ...target, [field]: 'wrong' }, token, fetchImpl }), /production_target_identity_invalid/);
       }
       assert.throws(() => createIsolatedRemoteD1({ target, token, fetchImpl }), /isolated_target_identity_invalid/);
       const before = metadata;
@@ -97,13 +99,13 @@ test('production D1 validates identity and durable write boundaries against nati
       assert.equal(queries, beforeQueries); wrongIdentity = false;
     });
     await context.test('journal is mandatory and generic importer cannot admit production as local', async () => {
-      assert.throws(() => createProductionRemoteD1({ target, token, fetchImpl, access: 'import', journal: {
+      assert.throws(() => createProductionRemoteD1({credentialLease, target, token, fetchImpl, access: 'import', journal: {
         targetId: target.databaseId, targetIncarnation: target.targetIncarnation, beforeWrite() {}, afterWrite() {},
       } }), /production_import_journal_required/);
       await assert.rejects(importD1Snapshot({ database: reader, allowUnresolvedGates: true }), /production_import_runner_required/);
       const uncoordinated = await openProductionImportJournal({ path: join(directory, 'uncoordinated'), runId: randomUUID(),
         targetId: target.databaseId, targetIncarnation: target.targetIncarnation });
-      assert.throws(() => createProductionRemoteD1({ target, token, fetchImpl, access: 'import', journal: uncoordinated }),
+      assert.throws(() => createProductionRemoteD1({credentialLease, target, token, fetchImpl, access: 'import', journal: uncoordinated }),
         /production_import_coordinator_required/);
     });
     await context.test('atomic batch preserves NULL, unicode and exact int64; intent/ACK are durable', async () => {
@@ -134,7 +136,7 @@ test('production D1 validates identity and durable write boundaries against nati
       await assert.rejects(remote.prepare('INSERT INTO probe(id,n) VALUES(5,5)').run(), /remote_request_acknowledgement_unknown/);
       assert.equal(queries, before + 1);
       assert.equal(await reader.prepare('SELECT COUNT(*) AS n FROM probe WHERE id=5').first('n'), 1);
-      const reopened = await openProductionD1ImportTransport({ target, token, fetchImpl, journalPath: savedPath, runId: identity.runId,
+      const reopened = await openProductionD1ImportTransport({credentialLease, target, token, fetchImpl, journalPath: savedPath, runId: identity.runId,
         coordinator: currentCoordinator });
       const afterRead = queries;
       await assert.rejects(reopened.prepare('INSERT INTO probe(id,n) VALUES(6,6)').run());

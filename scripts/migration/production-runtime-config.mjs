@@ -32,9 +32,9 @@ export function validateClosedProductionConfigs({app,scheduler,monitor},resource
   const buckets=[{binding:'AVATARS_BUCKET',bucket_name:PRODUCTION_STORE_IDS.avatars},
     {binding:'COVER_IMAGES_BUCKET',bucket_name:PRODUCTION_STORE_IDS.covers},{binding:'STAGING_BACKUP_BUCKET',bucket_name:PRODUCTION_RUNTIME.backupBucket}];
   if(!same(sorted(app.r2_buckets),sorted(buckets)))fail('bucket_bindings');
-  if(!same(app.durable_objects,{bindings:[{name:'NOTIFICATION_WAKE',class_name:'NotificationWakeCoordinatorProduction'},
-    {name:'RECOVERY_DRAIN',class_name:'RecoveryWriterCoordinatorProduction'}]})||
-    !same(app.migrations,[{tag:'production-coordinators-v1',new_sqlite_classes:['NotificationWakeCoordinatorProduction','RecoveryWriterCoordinatorProduction']}]))fail('coordinator_identity');
+  if(!same(app.durable_objects,{bindings:[{name:'NOTIFICATION_WAKE',class_name:'NotificationWakeCoordinatorProductionV2'},
+    {name:'RECOVERY_DRAIN',class_name:'RecoveryWriterCoordinatorProductionV2'}]})||
+    !same(app.migrations,[{tag:'production-coordinators-v1',new_sqlite_classes:['NotificationWakeCoordinatorProduction','RecoveryWriterCoordinatorProduction']},{tag:'production-coordinators-v2',new_sqlite_classes:['NotificationWakeCoordinatorProductionV2','RecoveryWriterCoordinatorProductionV2']}]))fail('coordinator_identity');
   const v=app.vars;
   for(const [key,value] of Object.entries({D1_TOPOLOGY:'split',AUTH_BACKEND:'better-auth',CUTOVER_WRITE_FREEZE:'receipt_only',PRODUCTION_OWNER_ACCEPTANCE_BACKEND:'disabled',
     BETTER_AUTH_URL:'https://fanmark.id',CORS_ALLOWED_ORIGINS:'https://fanmark.id',STORAGE_PUBLIC_BASE_URL:'https://fanmark.id',

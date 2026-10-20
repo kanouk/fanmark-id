@@ -1,0 +1,113 @@
+{
+  "state": "permanently-quarantined",
+  "runId": "bf22744d-e772-4e9e-99c7-e07020b9594c",
+  "historicalManifest": {
+    "schemaVersion": 1,
+    "state": "closed_runtime_deployed",
+    "productionReady": false,
+    "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "zoneId": "6a2c39c92ba1c4106b7c19f87ada0a7e",
+    "sourceProject": "ppqgtbjykitqtiaisyji",
+    "creationDateJst": "2026-10-16",
+    "d1": [
+      {
+        "binding": "AUTH_DB",
+        "name": "fanmark-production-auth",
+        "id": "dc43ffd7-0ca8-45d6-805c-ae1e6f2b58a6",
+        "createdAt": "2026-10-15T23:42:57.332Z",
+        "initialObservedTables": 0,
+        "verifiedApplicationTables": 9,
+        "verifiedMigrationCount": 4
+      },
+      {
+        "binding": "MASTER_DB",
+        "name": "fanmark-production-master",
+        "id": "5973e9f4-cae3-4a2b-b99d-16c2f0ae76da",
+        "createdAt": "2026-10-15T23:43:17.005Z",
+        "initialObservedTables": 0,
+        "verifiedApplicationTables": 24,
+        "verifiedMigrationCount": 9
+      },
+      {
+        "binding": "FANMARK_DB",
+        "name": "fanmark-production-business",
+        "id": "84599147-e2c7-41d8-80ae-33c61b158314",
+        "createdAt": "2026-10-15T23:43:31.502Z",
+        "initialObservedTables": 0,
+        "verifiedApplicationTables": 78,
+        "verifiedMigrationCount": 27
+      }
+    ],
+    "r2": [
+      {
+        "purpose": "avatars",
+        "name": "fanmark-avatars-production",
+        "createdAt": "2026-10-15T23:44:14.589Z",
+        "location": "APAC",
+        "reportedObjects": 0,
+        "publicDevUrlEnabled": false
+      },
+      {
+        "purpose": "covers",
+        "name": "fanmark-covers-production",
+        "createdAt": "2026-10-15T23:44:23.195Z",
+        "location": "APAC",
+        "reportedObjects": 0,
+        "publicDevUrlEnabled": false
+      },
+      {
+        "purpose": "backups",
+        "name": "fanmark-backups-production",
+        "createdAt": "2026-10-15T23:44:26.999Z",
+        "location": "APAC",
+        "publicDevUrlEnabled": false,
+        "customDomains": [],
+        "initialReportedObjects": 0,
+        "preliminaryEncryptedObjectsVerified": 6,
+        "preliminaryEncryptedBytesVerified": 18738059,
+        "preliminaryReadbackAt": "2026-10-16T11:36:54.639Z",
+        "preliminaryEvidence": "evidence/real-precopy-offhost-2026-10-16.json"
+      }
+    ],
+    "schemaApplied": true,
+    "applicationBindingsChanged": true,
+    "workerDeployed": true,
+    "sourceFrozen": false,
+    "usersImported": false,
+    "domainChanged": false,
+    "backupRestoreVerified": false,
+    "schemaVerifiedAt": "2026-10-16T00:33:36.509Z",
+    "schemaEvidence": "evidence/production-schema-readback-2026-10-16.json",
+    "runtime": {
+      "observedAt": "2026-10-19T01:34:39.018Z",
+      "ciValidatedRuntimeCommit": "f2053aafe27fc802876196709d9592e8cbb70c12",
+      "workers": [
+        {
+          "name": "fanmark-app-production",
+          "version": "9b7e6820-fcbc-4491-b27d-f631e64f0b9e",
+          "ciValidatedRuntimeCommit": "f2053aafe27fc802876196709d9592e8cbb70c12"
+        },
+        {
+          "name": "fanmark-backup-production",
+          "version": "e0f3d5c9-1cc8-4d7c-b577-b02ea24ab38c",
+          "ciValidatedRuntimeCommit": "62e139b64f584031176d04643e308c8f021d20f7"
+        },
+        {
+          "name": "fanmark-backup-monitor-production",
+          "version": "a6684ff9-a2e8-4b3e-86e6-1dad547e9768",
+          "ciValidatedRuntimeCommit": "62e139b64f584031176d04643e308c8f021d20f7"
+        }
+      ],
+      "publicRoutes": 0,
+      "cronTriggers": 0,
+      "secretsConfigured": false,
+      "sourceStopped": false,
+      "dataImported": false,
+      "domainSwitched": false,
+      "evidence": "evidence/production-closed-runtime-2026-10-19.json",
+      "r2ReadOnlyEvidence": "evidence/production-r2-live-readonly-2026-10-19.json"
+    },
+    "applicationBindingChangeScope": "dedicated closed production target; existing service settings preserved"
+  },
+  "evidence": "evidence/production-cutover-aborted-source-restored-2026-10-20.json"
+}

@@ -1,0 +1,32 @@
+{
+  "format": "fanmark-production-atomic-receipt-cloudflare-proof-v1",
+  "observedAt": "2026-10-20T00:57:31.720Z",
+  "reports": [
+    {
+      "statementCount": 100,
+      "wrappedStatements": 202,
+      "verifiedByIndependentCommitRead": true,
+      "sqlResends": 0,
+      "discardedResponse": false
+    },
+    {
+      "statementCount": 50,
+      "wrappedStatements": 102,
+      "verifiedByIndependentCommitRead": true,
+      "sqlResends": 0,
+      "discardedResponse": true
+    }
+  ],
+  "counts": {
+    "rows": 150,
+    "audits": 150,
+    "receipts": 2,
+    "failedRows": 0
+  },
+  "rollbackAtomic": true,
+  "realCloudflareD1": true,
+  "ownedSyntheticDatabaseDeleted": true,
+  "productionStoreWrites": 0,
+  "sourceWrites": 0,
+  "realUserRowsTransferred": 0
+}

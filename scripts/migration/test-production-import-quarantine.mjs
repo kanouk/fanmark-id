@@ -19,15 +19,15 @@ for(const store of ['master','business','avatars','covers'])test('partial '+stor
  const directory=await mkdtemp(join(await realpath(tmpdir()),'fanmark-import-quarantine-'));await chmod(directory,0o700);
  t.after(()=>rm(directory,{recursive:true,force:true}));
  const source=fileURLToPath(new URL('../../workers/api/src',import.meta.url));
- const built=await build({stdin:{contents:`export { RecoveryWriterCoordinatorProduction } from './recovery-writer-drain';
+ const built=await build({stdin:{contents:`export { RecoveryWriterCoordinatorProductionV2 } from './recovery-writer-drain';
  export { ProductionImportCoordinatorService } from './production-import-coordinator';
  export default {async fetch(r,e){try{const {action,input}=await r.json();return Response.json(await e.COORDINATOR.command(action,input));}catch{return new Response(null,{status:409});}}};`,
  resolveDir:source,loader:'ts'},bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',external:['cloudflare:*']});
  const mf=new Miniflare({workers:[{config:{name:'quarantine-fixture',type:'worker',compatibilityDate:'2026-09-18',
-  exports:{RecoveryWriterCoordinatorProduction:{type:'durable-object',storage:'sqlite'}},env:{
-   RECOVERY_DRAIN:{type:'durable-object',worker:'quarantine-fixture',exportName:'RecoveryWriterCoordinatorProduction'},
+  exports:{RecoveryWriterCoordinatorProductionV2:{type:'durable-object',storage:'sqlite'}},env:{
+   RECOVERY_DRAIN:{type:'durable-object',worker:'quarantine-fixture',exportName:'RecoveryWriterCoordinatorProductionV2'},
    COORDINATOR:{type:'worker',worker:'quarantine-fixture',exportName:'ProductionImportCoordinatorService'},
-   RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d'},
+   RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3'},
    RECOVERY_DRAIN_BACKEND:{type:'text',value:'durable-object'},CUTOVER_WRITE_FREEZE:{type:'text',value:'receipt_only'},
    DB:{type:'d1',name:'partial-store'},IMAGES:{type:'r2',name:'partial-images'}},
   manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:built.outputFiles[0].text}}}},
@@ -51,7 +51,7 @@ for(const store of ['master','business','avatars','covers'])test('partial '+stor
  const operationId=randomUUID(),batchSha256='c'.repeat(64),journalPaths={};
  for(const s of Object.keys(incarnations)){
   journalPaths[s]=join(directory,s+'.jsonl');
-  const targetId=PRODUCTION_D1_TARGETS.find(r=>r.databaseName==='fanmark-production-'+s)?.databaseId??PRODUCTION_R2_TARGETS.find(r=>r.store===s).bucketName;
+  const targetId=PRODUCTION_D1_TARGETS.find(r=>r.store === s)?.databaseId??PRODUCTION_R2_TARGETS.find(r=>r.store===s).bucketName;
   const rows=[{type:'identity',format:'fanmark-production-import-journal-v1',runId,targetId,targetIncarnation:incarnations[s]}];
   if(s===store)rows.push({type:'intent',operationId,batchSha256});
   await writeFile(journalPaths[s],rows.map(r=>JSON.stringify(r)+'\n').join(''),{mode:0o600});
@@ -85,4 +85,25 @@ for(const store of ['master','business','avatars','covers'])test('partial '+stor
  for(const [p,hash] of Object.entries(filesBefore))assert.equal(sha256Hex(await readFile(p)),hash);
  assert.deepEqual(JSON.parse(await readFile(lockPath,'utf8')),lock);
  assert.ok((await readdir(directory)).includes('import-quarantine-'+child.executorId+'.json.lock'));
+});
+
+test('legacy production classes retain quarantine and alarms without touching v2 stores',async()=>{
+ const bundled=await build({stdin:{contents:`import {RecoveryWriterCoordinatorProduction} from './recovery-writer-drain';
+ import {NotificationWakeCoordinatorProduction} from './notification-wake';
+ export class OldDrainProbe extends RecoveryWriterCoordinatorProduction {
+  async seed(){await this.ctx.storage.put('retained',{pending:'old-operation',quarantine:true});}
+  async readProof(){return this.ctx.storage.get('retained');}
+ }
+ export class OldWakeProbe extends NotificationWakeCoordinatorProduction {
+  async seed(){await this.ctx.storage.put('retained',{alarm:'old-cohort'});}
+  async runLegacyAlarm(){await super.alarm();}
+  async readProof(){return this.ctx.storage.get('retained');}
+ }
+ export default {async fetch(r,e){const drain=e.OLD_DRAIN.get(e.OLD_DRAIN.idFromName('old')),wake=e.OLD_WAKE.get(e.OLD_WAKE.idFromName('old'));
+  await drain.seed();await wake.seed();const before=[await drain.readProof(),await wake.readProof()];
+  const statuses=[];for(const path of ['/migration/begin','/migration/acknowledge','/enter','/release'])statuses.push((await drain.fetch('https://legacy.internal'+path,{method:'POST',body:'{}'})).status);
+  statuses.push((await wake.fetch('https://legacy.internal/wake',{method:'POST'})).status);await wake.runLegacyAlarm();
+  return Response.json({before,after:[await drain.readProof(),await wake.readProof()],statuses});}};`,resolveDir:fileURLToPath(new URL('../../workers/api/src',import.meta.url)),loader:'ts'},bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',external:['cloudflare:*']});
+ const mf=new Miniflare({workers:[{config:{name:'legacy-seal',type:'worker',compatibilityDate:'2026-09-18',exports:{OldDrainProbe:{type:'durable-object',storage:'sqlite'},OldWakeProbe:{type:'durable-object',storage:'sqlite'}},env:{OLD_DRAIN:{type:'durable-object',worker:'legacy-seal',exportName:'OldDrainProbe'},OLD_WAKE:{type:'durable-object',worker:'legacy-seal',exportName:'OldWakeProbe'}},manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:bundled.outputFiles[0].text}}}},dev:{outboundService:{type:'fetcher',handler(){throw Error('legacy_network_forbidden');}}}}]});
+ try{const result=await (await mf.dispatchFetch('https://fixture.local')).json();assert.deepEqual(result.after,result.before);assert.deepEqual(result.statuses,[410,410,410,410,410]);}finally{await mf.dispose();}
 });

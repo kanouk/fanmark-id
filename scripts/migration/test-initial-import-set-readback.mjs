@@ -1,3 +1,5 @@
+const credentialLease=syntheticProductionCredential('synthetic_token_only');
+import {syntheticProductionCredential} from './fixtures/synthetic-production-credential.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
@@ -28,7 +30,7 @@ import { PRODUCTION_RUNTIME, PRODUCTION_STORE_IDS } from '../../workers/api/src/
 
 
 const time = '2026-10-19T00:00:00.000Z';
-test('one native five-store readback binds the actual 40-table export, Master projection, Auth and split images', { timeout: 300000 }, async t => {
+test('one native five-store readback binds the actual 40-table export, Master projection, Auth and split images', { timeout: 600000 }, async t => {
  const root = await mkdtemp(join(tmpdir(), 'fanmark-import-set-'));
  const mf = new Miniflare({ workers: [{ config: { name: 'initial-set', type: 'worker', compatibilityDate: '2026-09-18',
   env: { AUTH: { type: 'd1', name: 'set-auth' }, MASTER: { type: 'd1', name: 'set-master' }, BUSINESS: { type: 'd1', name: 'set-business' },
@@ -64,7 +66,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
  const incarnations = Object.fromEntries(['auth', 'master', 'business', 'avatars', 'covers'].map(store => [store, randomUUID()]));
  const activationIds = { emoji: randomUUID(), reference: randomUUID() };
  const input = { manifestPath: fixture.manifestPath, storageExportDir, authProjection, approvedEmojiIdentity, runId: randomUUID(),
-  incarnations, activationIds, businessDestinationId: PRODUCTION_D1_TARGETS.find(row => row.databaseName === 'fanmark-production-business').databaseId, expectedTargetProfile: fixture.expectedTargetProfile };
+  incarnations, activationIds, businessDestinationId: PRODUCTION_D1_TARGETS.find(row => row.store === 'business').databaseId, expectedTargetProfile: fixture.expectedTargetProfile };
  input.stripeReceiptExport=await syntheticStripeReceiptExport(input.runId,0);
  const prepared = await prepareInitialImportSet(input);
  const databases = { auth: await mf.getD1Database('AUTH'), master: await mf.getD1Database('MASTER'), business: await mf.getD1Database('BUSINESS') };
@@ -147,11 +149,12 @@ test('one native five-store readback binds the actual 40-table export, Master pr
   await buckets.avatars.put(key, body, { customMetadata: old.customMetadata, httpMetadata: old.httpMetadata });
  });
  await t.test('production read-only adapters pin all stores and reject control-plane or operation-history drift', async () => {
+  for(const file of ['0000_import_operation_commits.sql','0001_import_commit_no_replace.sql'])await databases.master.batch(businessMigrationStatements(await readFile(new URL('../../workers/api/migrations-master-production/'+file,import.meta.url),'utf8')).map(sql=>databases.master.prepare(sql)));
   // Control plane and coordinator are synthetic; D1 SQL and R2 bytes are native.
   // These ACK fixtures test readback only, not evidence of production import.
   const operations = new Map(), journalPaths = {}, allStores = ['auth','master','business','avatars','covers'];
   for (const store of allStores) {
-   const targetId = PRODUCTION_D1_TARGETS.find(row => row.databaseName === 'fanmark-production-' + store)?.databaseId ?? PRODUCTION_R2_TARGETS.find(row => row.store === store).bucketName;
+   const targetId = PRODUCTION_D1_TARGETS.find(row => row.store === store)?.databaseId ?? PRODUCTION_R2_TARGETS.find(row => row.store === store).bucketName;
    const operation = { operationId: randomUUID(), batchSha256: sha256Hex(store), store }; operations.set(operation.operationId, operation);
    journalPaths[store] = join(root, store + '.jsonl');
    await writeFile(journalPaths[store], [
@@ -172,7 +175,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    } });
   const version = randomUUID(), gatewayVersion = randomUUID(), origin = 'https://fanmark-prod-import-' + randomUUID() + '.fanmark-id.workers.dev';
   const runtimeBindings = [
-   ...PRODUCTION_D1_TARGETS.map(row => ({ type: 'd1', name: { auth:'AUTH_DB',business:'FANMARK_DB',master:'MASTER_DB' }[row.databaseName.replace('fanmark-production-','')], id:row.databaseId })),
+   ...PRODUCTION_D1_TARGETS.map(row => ({ type: 'd1', name: { auth:'AUTH_DB',business:'FANMARK_DB',master:'MASTER_DB' }[row.store], id:row.databaseId })),
    ...PRODUCTION_R2_TARGETS.map(row => ({ type:'r2_bucket',name:row.store==='avatars'?'AVATARS_BUCKET':'COVER_IMAGES_BUCKET',bucket_name:row.bucketName })),
    ...Object.entries({ D1_TOPOLOGY:'split',EMOJI_PUBLICATION_BACKEND:'production-service',RECOVERY_DRAIN_SCOPE_DIGEST:PRODUCTION_RUNTIME.scope,
     RECOVERY_DRAIN_BACKEND:'durable-object',CUTOVER_WRITE_FREEZE:'receipt_only',STORAGE_BACKEND:'r2' }).map(([name,text])=>({name,type:'plain_text',text})),
@@ -186,7 +189,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
      if (options.method === 'GET') return Response.json({success:true,result:{uuid:target.databaseId,name:target.databaseName,created_at:target.createdAt}});
      const batch = JSON.parse(options.body).batch;
      if (batch.some(row=>!isReadOnlyProductionSql(row.sql))) { writes++; throw Error('write_forbidden'); }
-     const native = databases[target.databaseName.replace('fanmark-production-','')];
+     const native = databases[target.store];
      return Response.json({success:true,result:await native.batch(batch.map(row=>native.prepare(row.sql).bind(...row.params)))});
     }
     assert.ok(options.method === undefined || options.method === 'GET');
@@ -212,9 +215,9 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    if (!object) return new Response(null,{status:404});
    return new Response(await object.arrayBuffer(),{headers:{'x-fanmark-import-object':Buffer.from(JSON.stringify(metadata(object))).toString('base64'),'content-length':String(object.size)}});
   };
-  const remoteDatabases=Object.fromEntries(PRODUCTION_D1_TARGETS.map(row=>{const store=row.databaseName.replace('fanmark-production-','');return [store,
-   createProductionRemoteD1({target:{...row,targetIncarnation:incarnations[store]},token:'synthetic_token_only',fetchImpl})];}));
-  const remoteBuckets=Object.fromEntries(PRODUCTION_R2_TARGETS.map(row=>[row.store,createProductionRemoteR2({target:{...row,targetIncarnation:incarnations[row.store]},
+  const remoteDatabases=Object.fromEntries(PRODUCTION_D1_TARGETS.map(row=>{const store=row.store;return [store,
+   createProductionRemoteD1({credentialLease,target:{...row,targetIncarnation:incarnations[store]},token:'synthetic_token_only',fetchImpl})];}));
+  const remoteBuckets=Object.fromEntries(PRODUCTION_R2_TARGETS.map(row=>[row.store,createProductionRemoteR2({credentialLease,target:{...row,targetIncarnation:incarnations[row.store]},
    runtimeVersion:version,gatewayVersion,gatewayOrigin:origin,bearer:'b'.repeat(64),token:'synthetic_token_only',fetchImpl})]));
   await assert.rejects(rehearseInitialImportSet({ ...rehearsal, prepared: await prepareInitialImportSet(input),
    readDatabases: remoteDatabases }), /rehearsal_transport_or_paths_invalid/);
@@ -269,7 +272,7 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    assert.equal(saved.executorId,state.executorId);
   }finally{await runtime.dispose();}
  });
- await t.test('committed Master response loss retains executor and journals and blocks a new process without further writes', async()=>{
+ await t.test('committed Master response loss reconciles the atomic receipt and completes all five stores', async()=>{
   const evidence=Buffer.from('synthetic-only'),sourceEvidencePath=join(root,'synthetic-failure-evidence');await writeFile(sourceEvidencePath,evidence,{mode:0o600});
   const productionInput={...input,runId:randomUUID(),sourceEvidenceSha256:sha256Hex(evidence)};
   productionInput.stripeReceiptExport=await syntheticStripeReceiptExport(productionInput.runId,2);
@@ -278,13 +281,11 @@ test('one native five-store readback binds the actual 40-table export, Master pr
    const selected=Object.fromEntries(['coordinator','journalPaths','databases','readDatabases','buckets','readBuckets'].map(key=>[key,runtime[key]]));
    const args={...selected,prepared:candidate,sourceEvidencePath,businessReportPath:join(root,'failed-business-report.json'),storageReportPath:join(storageExportDir,'failed-storage-report.json')};
    runtime.counters.loseCommittedMaster=true;
-   await assert.rejects(executeInitialImportSet(args),/execution_unconfirmed/);
-   const before=await runtime.coordinator.inspect(),writes=runtime.counters.d1Writes;
-   assert.ok(before.executorId);assert.equal(before.state.pending.store,'master');assert.equal(runtime.counters.r2Writes,0);
-   assert.equal((await runtime.native.business.prepare('SELECT count(*) AS n FROM user_settings').all()).results[0].n,0);
-   assert.ok((await runtime.native.master.prepare('SELECT count(*) AS n FROM emoji_master').all()).results[0].n>0);
-   await assert.rejects(executeInitialImportSet({...args,prepared:await prepareInitialImportSet(productionInput),resumeAfter:'auth'}),/journals_unresolved/);
-   assert.equal(runtime.counters.d1Writes,writes);assert.deepEqual(await runtime.coordinator.inspect(),before);
+   const report=await executeInitialImportSet(args);
+   const state=await runtime.coordinator.inspect();
+   assert.equal(state.state.pending,null);assert.equal(report.coordinatorCompleted,true);
+   assert.equal(report.readback.allExpectedStoreContentsMatched,true);assert.equal(runtime.counters.r2Writes,2);
+   assert.ok((await runtime.native.master.prepare('SELECT count(*) AS n FROM fanmark_import_operation_commits').all()).results[0].n>0);
   }finally{await runtime.dispose();}
  });
 

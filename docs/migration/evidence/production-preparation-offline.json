@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "1dd02655b98128f0296a2d895ab7e30604a44b4c4fe70e172e1ce14877ee0d7d"
+    "sha256": "493c556b7c7cb271b7c83f942a582d4ce18034e4d1e6678717d9643e15407241"
   },
   "variables": [
     {
@@ -592,11 +592,11 @@
   "implementationFingerprints": [
     {
       "path": "docs/migration/production-backup-pins.json",
-      "sha256": "642c46b08f098d61e0b1671291719a2d7183d9e05dfe1cf046a3ebee4cd303e7"
+      "sha256": "48f97333ee34d29cca2e8b2ee3896f5cb4895dde3254d4ad74fab7c002ccae36"
     },
     {
       "path": "docs/migration/production-resources.json",
-      "sha256": "89bf74210ed0cbd2f27aa6d0e468abd663988b196c807b11e3c9983546a6c57d"
+      "sha256": "2bd4497d37fd6ef9b756782733ae2a77f1cad437a14d565dfdc3e6946d6b44a1"
     },
     {
       "path": "docs/migration/source-edge-bodies-review.md",
@@ -632,11 +632,11 @@
     },
     {
       "path": "scripts/migration/auth-import-readback.mjs",
-      "sha256": "833b331a21ca90f162c34f503cdd66567c7da821f3a9a3677c6893a446b3278c"
+      "sha256": "5b9a3ecb1f0796d0448840ccb677862ffd3fc9a41c86af2cb2bf90be385eeccf"
     },
     {
       "path": "scripts/migration/auth-import-stage.mjs",
-      "sha256": "3caaca407d24dd0f04c3361d3b2bdf00df6d54f84408635931ae3c99964f8341"
+      "sha256": "50254aeb2c34c2129879c13b9090e094a82b92ff507ee767a315ed52eb315cd0"
     },
     {
       "path": "scripts/migration/auth-readiness.sql",
@@ -651,28 +651,36 @@
       "sha256": "0e3a0395f7863cd4c25e1aba3a183aada07ab11ba08176ad05f836c6e31eaa15"
     },
     {
+      "path": "scripts/migration/cloudflare-credential-lease.mjs",
+      "sha256": "70fd543463886b94e1ce756abf04a40a8a891326eb504a0e1cba16282078d4c6"
+    },
+    {
       "path": "scripts/migration/d1-import.mjs",
-      "sha256": "239ad732eb6ebc16e263e096f39b4b16fed8d08f67319f6a4b088c3cac5602b2"
+      "sha256": "e9ff892a6e05b3e61aee5839c38789e0b3cc6854880b5e43e35968d5944b98e1"
     },
     {
       "path": "scripts/migration/initial-import-set-readback.mjs",
-      "sha256": "faa42ddd093d4fa81283483f9733fdac5fd4d8e2209057b893c495252954d8e0"
+      "sha256": "246c10603086329dbdac4cc25d18f6f22a78963bdea2871bcee7272ca15f3568"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
       "sha256": "d43a55b2a4a239495853a0e2c901ae025965f4d2b50ed8d313931b9d9dc46772"
     },
     {
+      "path": "scripts/migration/master-atomic-commit.mjs",
+      "sha256": "4529228b6f21637faa695427d6af40f1e6354c76007c7ffc32df328b8aee07e2"
+    },
+    {
       "path": "scripts/migration/master-import-readback.mjs",
-      "sha256": "c4c41dd6c319864f31c9602bdf28a7c455e3902f91528bb07b2981b0d5e49be7"
+      "sha256": "fbf00df4f80f6a5fcb951bfef75fa9056e9e79cd328864f42e4ef0d0d9e2273f"
     },
     {
       "path": "scripts/migration/master-import-stage.mjs",
-      "sha256": "f3465d31b63b156eb1249b75bc79c3b5dbe2df3b6353e53063fe1810fdadbd76"
+      "sha256": "9ab64e1425027601ef48ae61d191417160b82ed2839c50ae9844134c428c7eea"
     },
     {
       "path": "scripts/migration/master-runtime-schema.mjs",
-      "sha256": "9007c1806d5bed472e1025c4908a96249f7c4ddefa78e61eaa09d71eb60a89e8"
+      "sha256": "5e5a1e241b104aefe625ab4e527265136096de9f37f557b61fb3277bdd01d663"
     },
     {
       "path": "scripts/migration/master-snapshot-projection.mjs",
@@ -696,7 +704,7 @@
     },
     {
       "path": "scripts/migration/production-d1-targets.mjs",
-      "sha256": "c3e85cb5b826decf307240d88f738dd795baa0b657ffcb6f6fb9a021f0b1773a"
+      "sha256": "e2ad3ac5c805d60f7ec2ca59c50a0f17d25c5b266303347cbed4b49700b66add"
     },
     {
       "path": "scripts/migration/production-emoji-master-export.mjs",
@@ -712,7 +720,7 @@
     },
     {
       "path": "scripts/migration/production-import-coordinator-client.mjs",
-      "sha256": "5edbb57ca1cdc8128f2f263c3a4afbb8fa23d10670f9d4d380d09b2571908b13"
+      "sha256": "aef6abd05262997c45e452ca0c217bbba2637320c16f0c5a10d45d91eb75fb40"
     },
     {
       "path": "scripts/migration/production-import-execution-lock.mjs",
@@ -724,11 +732,11 @@
     },
     {
       "path": "scripts/migration/production-import-inspection.mjs",
-      "sha256": "5db4c9b712cb0c88e7d635b3bd560d8b223ed9ee3c0b06c3dbfab35bba436596"
+      "sha256": "40c0ded8e3dea279a54426526e2bc69a066991e2763cd25a9d4d0d6dcebe138b"
     },
     {
       "path": "scripts/migration/production-import-journal.mjs",
-      "sha256": "e630244019bc5bc0c083144e6496ca2a65c95f9563f0fd5095c27dd16bf667c8"
+      "sha256": "0730aaaa319b78b4d60602bf262eee698c80ba0edf88eac5418b11ac2d5e6e3e"
     },
     {
       "path": "scripts/migration/production-import-quarantine.mjs",
@@ -736,7 +744,7 @@
     },
     {
       "path": "scripts/migration/production-key-custody.mjs",
-      "sha256": "8c599fdfb7f45a80c2f2fc7650e76f223d49889db30571d4ad642ee9d48c4b9b"
+      "sha256": "560cda4ed966c49fee4875c5c3c8caa2dca0091087a853502f097e16572d3f3f"
     },
     {
       "path": "scripts/migration/production-owner-acceptance.mjs",
@@ -756,15 +764,15 @@
     },
     {
       "path": "scripts/migration/production-remote-d1.mjs",
-      "sha256": "c96450dea44afe8adcddae4720bf2faf2dba5120a12d8691f0cfae8a914fe847"
+      "sha256": "ce3ea3eeed27d02fc37e20e38e812a73f7011f82d0d38d241aba271cac292a0e"
     },
     {
       "path": "scripts/migration/production-remote-r2.mjs",
-      "sha256": "b03684f9a925a5cdaa2f8f09b4619024708cfbab6f294e333aa59fa81eb137e9"
+      "sha256": "3c80c10e5048dec2519361e373c22954e0872fb35210a0bc432c1aa4e0a9b6cb"
     },
     {
       "path": "scripts/migration/production-runtime-config.mjs",
-      "sha256": "2101efef0dceec5095930dbf56e0cb29286a6e32a10c312e368a53b1dac3f58c"
+      "sha256": "26be7b9e8fbea525a4c9567a31fb2b9946e0a2628f69f1cbefc00e9b31411c12"
     },
     {
       "path": "scripts/migration/production-webhook-custody.mjs",
@@ -852,7 +860,7 @@
     },
     {
       "path": "scripts/migration/stripe-receipt-transfer.mjs",
-      "sha256": "d28bf3d828f39475f58b46f99e02f00c2c9fcf705b6fd5041f66425322d91b5e"
+      "sha256": "a6d7f8048299ef3cd6a9ce33133bb4c94c178fdbc393ed2c3d636add2d82a3a4"
     },
     {
       "path": "scripts/migration/supabase-auth-projection.mjs",
@@ -888,11 +896,15 @@
     },
     {
       "path": "scripts/migration/test-wrangler-migration-selectors.mjs",
-      "sha256": "61d64384aa4b945bdc2fe79a7c2d644600a03f35910be4e3bde771cfb78fdc6c"
+      "sha256": "cb1257a9de2eb4845501dc99c0d2cfdd0b06480999d3e191cd26848491599be3"
     },
     {
       "path": "scripts/migration/verify-production-empty-schema.mjs",
       "sha256": "43c5673ebbff8fb3f39ec6b1327ca0ca9c57991d6c3af08d54e2fa5691ee638e"
+    },
+    {
+      "path": "scripts/migration/wrangler-credential-lease.mjs",
+      "sha256": "4ddb21e04c6aa766e1b78f247ad783e60c4d86b2a2379e8873c28d2704040e4d"
     },
     {
       "path": "scripts/test-cloudflare-production-build.mjs",
@@ -913,6 +925,14 @@
     {
       "path": "supabase/functions/handle-stripe-webhook/index.ts",
       "sha256": "85db1354f3e5cb7fe0bb5f7abcc83985a2bc21d8c2dd0eb92c98c5bc3ef203e4"
+    },
+    {
+      "path": "workers/api/migrations-master-production/0000_import_operation_commits.sql",
+      "sha256": "bd4b4292557aa82fdfdeef3f36675ce3d3c4bb2b23da40050a882c24e7f052f6"
+    },
+    {
+      "path": "workers/api/migrations-master-production/0001_import_commit_no_replace.sql",
+      "sha256": "00bedaf68612fb9a5c932cc4f3ad09b56945fa6291b838af8d7bb0d9b4e8fa82"
     },
     {
       "path": "workers/api/src/better-auth.mjs",
@@ -936,11 +956,11 @@
     },
     {
       "path": "workers/api/src/index.ts",
-      "sha256": "5927e60ea2223b60c4d5625d47b5053e5c978d4c0b9a962d1cf85a4839d7aa33"
+      "sha256": "1d9faba35dc5527d1825fa23521a8cfdb0c432e32edab2d8e4eb4a7f551e3abf"
     },
     {
       "path": "workers/api/src/notification-wake.ts",
-      "sha256": "8c124cd5a97a71ec7f51aa6eb56323a35edba261f48a741d21d5739641dbfd0a"
+      "sha256": "2749f7b662af72b9fcfced7cf2bc1b2c1c9a3dd8e5c415b68122c839c5153fe2"
     },
     {
       "path": "workers/api/src/operational-backup-profile.ts",
@@ -984,7 +1004,7 @@
     },
     {
       "path": "workers/api/src/production-runtime-identity.ts",
-      "sha256": "6a3fe436fcf40e3a9c55b1b1e6af1850ceb5aea09057a3c3819b41a88aeaf35f"
+      "sha256": "44383b3d469672577c4657e976e81dda1326ad0708e155fe0f1f2fe7452b8235"
     },
     {
       "path": "workers/api/src/production-webhook-key-proof.ts",
@@ -992,7 +1012,7 @@
     },
     {
       "path": "workers/api/src/recovery-writer-drain.ts",
-      "sha256": "31e79401b0eb0469fcafd9ab1311144333bae30d264fbe694b8f5646b391fc6d"
+      "sha256": "fa9f14859a0620ae3fbf1b85799cacff55bca5320febea938918e58382f82f4d"
     },
     {
       "path": "workers/api/src/repository.ts",
@@ -1024,11 +1044,11 @@
     },
     {
       "path": "workers/api/wrangler.app-production-closed.jsonc",
-      "sha256": "fda8ad53fdabd987283d7fe4d454e766f6ddc54fd6b89bc5bed7daa694ba1b57"
+      "sha256": "da3600e1d67ee67483c4755acdd2746ff11982d7b46099daa0656fee321faf08"
     },
     {
       "path": "workers/api/wrangler.backup-monitor-production-closed.jsonc",
-      "sha256": "ce4c03938bcdffb43389af347b3cad322bcbc975d132520679c7043a262ec50e"
+      "sha256": "8b3dedf6bfcd044cfc0ba0fc001e691d7551ce0822651e75c9d505abfe919723"
     },
     {
       "path": "workers/api/wrangler.backup-monitor-staging.jsonc",
@@ -1036,15 +1056,19 @@
     },
     {
       "path": "workers/api/wrangler.backup-production-closed.jsonc",
-      "sha256": "411e0fdf1c2bbcaa36781504bcdabd6f9d5aba6655cae680ee458efb84d27517"
+      "sha256": "15c9e0334b8168b97a2723d6169ff7ce8a82e15349a6d8dc57595a432353a4a3"
     },
     {
       "path": "workers/api/wrangler.backup-staging.jsonc",
       "sha256": "2e623d84a63e80f7226d77d67212c10e473208c04500ffe9595807364180392a"
     },
     {
+      "path": "workers/api/wrangler.production-master-import-schema.jsonc",
+      "sha256": "78c2c2caeac972279603eb7734ab3c012b1aa9e72da828435683b66a112f9f70"
+    },
+    {
       "path": "workers/api/wrangler.production-schema.jsonc",
-      "sha256": "0429fcc0eb9357e7f4e53609c667e5ef2bcaad96b26317d3d0a3556b5a4993f9"
+      "sha256": "fe0e40f7023f54f4ad477da904f955bcb2b65817e295e7d0c4ffe62206462f19"
     }
   ]
 }

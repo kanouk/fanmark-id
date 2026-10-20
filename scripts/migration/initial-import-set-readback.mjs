@@ -111,7 +111,7 @@ async function verifySet({ prepared, databases, buckets, mode = 'local', coordin
     if (!isProductionImportCoordinator(coordinator) || coordinator.owner !== descriptor.runId ||
         coordinator.manifestSha256 !== prepared.identitySha256 || !same(coordinator.incarnations, descriptor.incarnations)) fail('coordinator_invalid');
     for (const [store, database] of Object.entries(db)) if (!isProductionRemoteD1(database) || database.access !== 'read-only' ||
-        database.targetIdentity.databaseName !== 'fanmark-production-' + store ||
+        database.targetIdentity.store !== store ||
         database.targetIdentity.targetIncarnation !== descriptor.incarnations[store]) fail('transport_invalid');
     if (db.business.targetIdentity.databaseId !== descriptor.businessDestinationId) fail('target_invalid');
     for (const [store, bucket] of Object.entries(images)) if (!isProductionRemoteR2(bucket) || bucket.access !== 'read-only' ||
@@ -276,8 +276,10 @@ async function executeSet({ coordinator, journalPaths, sourceEvidencePath, ...op
     const read = (image ? captured.readBuckets : captured.readDatabases)[store];
     const branded = image ? isProductionRemoteR2 : isProductionRemoteD1;
     if (!branded(write) || !branded(read) || write.access !== 'import' || read.access !== 'read-only' ||
+        write.credentialPolicy !== 'lease-v1' || read.credentialPolicy !== 'lease-v1' ||
+        (store === 'master' && write.masterCommitPolicy !== 'atomic-receipt-v1') ||
         !same(write.targetIdentity, read.targetIdentity) || write.targetIdentity.targetIncarnation !== plan.descriptor.incarnations[store] ||
-        (image ? write.targetIdentity.store !== store : write.targetIdentity.databaseName !== 'fanmark-production-' + store) ||
+        write.targetIdentity.store !== store ||
         write.importContext?.coordinator !== coordinator || write.importContext.journalPath !== paths[store] ||
         write.importContext.runId !== plan.descriptor.runId) fail('execution_transport_invalid');
     if (store === 'business' && write.targetIdentity.databaseId !== plan.descriptor.businessDestinationId) fail('execution_target_invalid');
@@ -355,7 +357,7 @@ async function recoverImportExecution({prepared,coordinator,journalPaths,sourceE
       const image=['avatars','covers'].includes(store),binding=(image?buckets:databases)[store];
       if(!(image?isProductionRemoteR2:isProductionRemoteD1)(binding)||binding.access!=='read-only'||
         binding.targetIdentity.targetIncarnation!==plan.descriptor.incarnations[store]||
-        (image?binding.targetIdentity.store!==store:binding.targetIdentity.databaseName!=='fanmark-production-'+store))fail('recovery_transport_invalid');
+        (image?binding.targetIdentity.store!==store:binding.targetIdentity.store !== store))fail('recovery_transport_invalid');
     }
     const directory=dirname(paths.auth);
     const verifyEvidence=async()=>{

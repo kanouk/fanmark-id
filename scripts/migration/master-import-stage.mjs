@@ -27,13 +27,14 @@ export async function importMasterProjectionStage({ database, readDatabase, proj
       (mode === 'local' && (production || isProductionRemoteD1(readDatabase) || isIsolatedRemoteD1(database) || isIsolatedRemoteD1(readDatabase))) ||
       (mode === 'production-stage' && (!production || !isProductionRemoteD1(readDatabase)))) fail('transport_invalid');
   if (production) {
-    if (database.access !== 'import' || readDatabase.access !== 'read-only' || database.targetIdentity.databaseName !== 'fanmark-production-master' ||
+    if (database.access !== 'import' || readDatabase.access !== 'read-only' || database.masterCommitPolicy !== 'atomic-receipt-v1' ||
+        database.credentialPolicy !== 'lease-v1' || readDatabase.credentialPolicy !== 'lease-v1' ||
         JSON.stringify(database.targetIdentity) !== JSON.stringify(readDatabase.targetIdentity)) fail('transport_invalid');
     try { await assertProductionRemoteD1Target(database, targetIncarnation); await assertProductionRemoteD1Target(readDatabase, targetIncarnation); }
     catch { fail('target_invalid'); }
   }
   let state;
-  try { await verifyMasterRuntimeSchema(readDatabase); state = await readDatabase.prepare(`SELECT CASE WHEN ${dirty} THEN 1 ELSE 0 END AS dirty`).all(); }
+  try { await verifyMasterRuntimeSchema(readDatabase); state = await readDatabase.prepare(`SELECT CASE WHEN ${dirty}${production?' OR EXISTS (SELECT 1 FROM fanmark_import_operation_commits)':''} THEN 1 ELSE 0 END AS dirty`).all(); }
   catch { fail('preflight_failed'); }
   if (state?.success !== true || state.meta?.rows_written !== 0 || state.results?.length !== 1 || state.results[0].dirty !== 0) fail('target_not_empty_or_invalid');
   try {
@@ -51,7 +52,12 @@ export async function importMasterProjectionStage({ database, readDatabase, proj
       expectedCurrentVersion: null, activationId: ids.emoji });
     await stageReferenceMasterRelease({ database, snapshot: expected.referenceSnapshot, snapshotSha256: expected.referenceSnapshotSha256, freshOnly: true });
     await activateReferenceMasterRelease({ database, releaseVersion: expected.referenceSnapshotSha256, expectedActiveVersion: null, activationId: ids.reference });
-  } catch { fail('partial_or_unknown_write'); }
+  } catch (error) {
+    const failure=new Error('master_import_stage_partial_or_unknown_write');
+    if(Number.isInteger(error?.httpStatus))failure.httpStatus=error.httpStatus;
+    if(Array.isArray(error?.providerCodes))failure.providerCodes=Object.freeze(error.providerCodes.filter(Number.isSafeInteger).slice(0,8));
+    throw failure;
+  }
   const report = await verifyImportedMasterProjection({ database: readDatabase, projection: expected, targetIncarnation, activationIds: ids });
   return { ...report, scope: 'initial-master-import-stage', atomicWholeStore: false, sourceFreezeVerified: false, coordinatorCompleted: false };
 }

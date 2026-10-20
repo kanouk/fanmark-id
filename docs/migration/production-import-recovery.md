@@ -1,6 +1,6 @@
 # 本番移送中断時の照合と限定復旧
 
-対象はPR #41の専用5 store移送。停止設定と調停ownerを保持したまま、元のrun・manifest・incarnation・private journalを使う。全体runnerは`executeInitialImportSet`へ接続済み。終了した同一端末のexecutorは、未確定書込みなし・完了済みstageの独立照合を条件に引き継げる。初回Authのatomic commitだけは、全内容一致を条件に専用復旧を用意した。その他の部分stageや未確定commitの復旧は未完了。この手順だけで本番開始や再開を許可しない。
+対象はPR #41の専用5 store移送。停止設定と調停ownerを保持したまま、元のrun・manifest・incarnation・private journalを使う。全体runnerは`executeInitialImportSet`へ接続済み。終了した同一端末のexecutorは、未確定書込みなし・完了済みstageの独立照合を条件に引き継げる。初回Authのatomic commitだけは、全内容一致を条件に専用復旧を用意した。新cohort V2のMasterには、同じ生存executorでatomic確定記録を照合する応答消失復旧を追加した。終了したexecutorの一般的な部分stage再実行は認めない。この手順だけで本番開始や再開を許可しない。
 
 ## まず読み取りだけで調べる
 
@@ -127,3 +127,9 @@ sourceの停止解除やDNS復元を実行するものではない。stage途中
 `unknownOutcomesResolved=false`・`sourceReopened=false`であり、これだけで旧側を再開しない。
 native local DO18件、独立processと実local D1/R2を使う関連20件で部分データ・未確定ACK・
 lock保持と再送拒否を検証した。本番適用・旧source復帰の実証はまだない。
+
+## V2の同一executor内の応答消失
+
+詳細は [再準備票](RETRY-PREPARATION-2026-10-20.md) を参照する。Masterの元DMLと同じtransactionに保存したimmutable確定記録が、run/operation/hash/target/incarnation/statement件数・各変更件数まで一致した場合だけ元のjournalへACKする。local/remote pending・停止owner・active0・生存executorを前後に照合する。元SQLは再送しない。記録がないことを未実行の証明にしない。2026-10-20にquarantineした旧cohort/runにはこの記録がなく、対象外である。
+
+遠隔ACKだけの応答消失は同じjournalが独立GETで完全一致を確認してlocal ACKを追記する。local fsync失敗はlockを残して停止する。別processからの補修条件は従来どおり。

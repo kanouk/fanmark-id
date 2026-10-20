@@ -1,0 +1,42 @@
+# 再移行に向けた準備（2026-10-20）
+
+旧Supabaseは復旧済みで稼働中。本票は準備の進捗を記録する。新しい移行先への実利用者データ移送・旧側の停止・Worker Route/DNS切替・mainへのmergeは、準備後の所有者確認まで実施しない。
+
+## 認証期限と未確定応答の修正
+
+- `cloudflare-credential-lease.mjs` は要求の直前に期限を検査する。通常の残存時間は2分以上とし、metadata確認後・write intent前にも再検査する。期限直前なら既存OAuth grantを更新する。401・通信断・5xxを受けた書込みは再送しない。
+- `wrangler-credential-lease.mjs` は既存macOS Keychain鍵と暗号化Wrangler 4.135.0 profileを使用する。同じclient/grant/scopeだけを更新し、intentと暗号化した応答を先にfsyncして、更新前file hashの一致後にprofileを原子的に置き換える。応答不明・scope変化・外部変更はlockと原本を保持して停止する。refresh POSTの自動再送はない。更新済みprofileの読戻し後には固定accountへのGET成功を要求し、初回利用や外部更新を検出した場合も検査する。新grant直後の401には、このデータ変更のないGETだけを最大5回、計7.5秒の間隔で確認する。成功前にleaseを渡さず、更新後の検査失敗ではrotated grantとlockを保持する。
+- 本番D1/R2のimport transportは期限付きleaseを必須とする。一式runnerはread側も同じpolicyを要求する。数値HTTP status/provider error codeだけをエラーに保持し、SQL・秘密値・providerの自由文は出力しない。
+- Masterには `migrations-master-production/0000_import_operation_commits.sql` を追加した。元SQLとoperation/run/hash/物理target/incarnation/各statementの直接変更件数を同じD1 batch取引で保存する。完了記録はUPDATE/DELETEできず、backupにも含める。
+- Masterの応答消失時は同じ生存executor内で、別の読取りとlocal/remote pending・停止owner・active0・executorを照合する。確定記録が完全一致した場合だけ既存operationをACKし、同じ呼出し位置から続ける。元SQLは再送しない。記録欠落・不一致は失敗の証明にせずpendingを保持する。
+- 遠隔ACKの応答だけが消えた場合は、同じjournalが正確な遠隔ACKを読み取り、local ACKを追記する。ACK要求も再送しない。local fsync不明時はlockを保持する。
+- 終了したprocessの部分stageを一般的に再実行する機能ではない。Auth専用復旧と完了stage境界の既存復旧以外は、未確定状態を保持して独立照合またはquarantineする。
+
+D1 batchの取引とrollbackの仕様は[Cloudflareの公式文書](https://developers.cloudflare.com/d1/worker-api/d1-database/)を確認した。native D1/DOの失敗注入に加え、別の実Cloudflare合成DBで100件/50件のDMLを202/102 statementへ包み、確定記録の別読取り・trigger変更・全取引rollbackを検証した。[実Cloudflare試験の証拠](evidence/production-atomic-receipt-cloudflare-2026-10-20.json)。合成DBは所有identityを照合して削除した。実利用者データと新本番5ストアへの試験行投入は0件。
+
+## 新しい移行先
+
+[現行資源表](production-resources.json)のcohortGeneration 2を使う。
+
+| store | 新資源 |
+| --- | --- |
+| Auth | `fanmark-production-auth-20261020` / `d25388d6-fa19-46ba-a128-4fa537210e4b` |
+| Master | `fanmark-production-master-20261020` / `ef4cee01-bd28-4fd5-8eb8-6744b4331d07` |
+| Business | `fanmark-production-business-20261020` / `a418f597-ff73-40a9-8847-91e3a6dddcf4` |
+| avatars | `fanmark-avatars-production-20261020` |
+| covers | `fanmark-covers-production-20261020` |
+
+scopeは `d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3`。
+Auth 4、Master共有9 + 本番確定記録2、Business 27 migrationを適用し、全canonical schemaとseed baselineを照合済み。画像bucketの公開URLは無効、custom domainなし。本番専用の追加schema設定は `wrangler.production-master-import-schema.jsonc`。共有9件の設定と追加2件を分け、stagingのschemaは変更しない。適用済み操作の再実行指示ではない。
+
+DOは `RecoveryWriterCoordinatorProductionV2` と `NotificationWakeCoordinatorProductionV2` の新namespaceを使用する。旧classとmigration履歴は保持し、旧classのfetchは410を返す。旧通知alarmも新ストアへ書き込まない。旧run・ACK・pending・quarantine・物理ストアを初期化しない。
+
+旧資源表とbackup pinは `production-resources-quarantined-2026-10-20.json` / `production-backup-pins-quarantined-2026-10-20.json` に保存した。元のbackup bucket、archive、鍵、MFA票、private journal、解約済み自己テスト契約、登録済みOAuth callbackと通知試験記録を保持する。旧鍵の原Vault note hash・escrow復号・Keychainを照合し、新scopeへの再利用票をprivateに保存した。鍵は作り直さない。
+
+## 残る準備と開始条件
+
+現時点では準備中。新cohortの閉鎖runtime配備・binding/namespace/秘密の読戻し、実運用鍵での初回backupと隔離復元、CI最終結果、次回G0/停止時間の見積もりをそろえる。これらの完了前に再移行開始を求めない。
+
+次回の開始確認後には、旧35関数の復元後versionと原本・稼働中データ・provider効果・受信stream・DNS/TLS/Route競合・最新MFA票を新たに確認する。稼働再開前のsnapshotを最新値として使用しない。保存MFA候補の期限は2026-10-21 00:24:45 JST。必要な本人操作は独立した準備を終えてから依頼する。
+
+元 `production-cutover-2026-10-20/` の実行/停止/復旧helperは再実行禁止。新しいprivate準備記録は `retry-preparation-2026-10-20/`。intentがある操作はACK・実状態を照合してから扱い、作成・schema適用・backupを盲目的に再実行しない。

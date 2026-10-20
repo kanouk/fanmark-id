@@ -174,4 +174,10 @@ export async function handleNotificationWakeRepairRequest(request: Request, env:
 }
 
 /** Separate production namespace; never reuses staging state or alarms. */
-export class NotificationWakeCoordinatorProduction extends NotificationWakeCoordinator {}
+export class NotificationWakeCoordinatorProduction extends NotificationWakeCoordinator {
+  override fetch(_request: Request): Promise<Response> {
+    return Promise.resolve(new Response("production_cohort_v1_quarantined", {status: 410}));
+  }
+  override async alarm(): Promise<void> { /* Retain v1 state; never wake a v2 writer. */ }
+}
+export class NotificationWakeCoordinatorProductionV2 extends NotificationWakeCoordinator {}

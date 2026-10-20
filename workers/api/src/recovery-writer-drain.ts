@@ -230,8 +230,14 @@ export class RecoveryWriterCoordinatorV2 extends RecoveryWriterCoordinator {}
 export class RecoveryWriterCoordinatorV3 extends RecoveryWriterCoordinator {}
 export class RecoveryWriterCoordinatorV4 extends RecoveryWriterCoordinator {}
 
-/** Separate production namespace; never reuses staging state or alarms. */
+/** Permanently sealed v1 namespace. Its storage and quarantine are retained. */
 export class RecoveryWriterCoordinatorProduction extends RecoveryWriterCoordinator {
+  override fetch(_request: Request): Promise<Response> {
+    return Promise.resolve(new Response("production_cohort_v1_quarantined", {status: 410}));
+  }
+}
+/** Fresh v2 namespace; no v1 import state or tickets can reach these bindings. */
+export class RecoveryWriterCoordinatorProductionV2 extends RecoveryWriterCoordinator {
   override fetch(request: Request): Promise<Response> {
     if (new URL(request.url).pathname.startsWith("/migration/")) return productionImportCommand(this.ctx, this.env, request);
     return super.fetch(request);

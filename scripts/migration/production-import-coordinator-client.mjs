@@ -3,7 +3,7 @@ import {PRODUCTION_R2_TARGETS} from './production-r2-targets.mjs';
 import {PRODUCTION_D1_TARGETS} from './production-d1-targets.mjs';
 
 const HASH=/^[0-9a-f]{64}$/u, UUID=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
-const SCOPE='6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d';
+const SCOPE='d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3';
 const clients=new WeakSet();
 const fail=()=>{throw Error('production_import_coordination_unconfirmed');};
 export const isProductionImportCoordinator=client=>clients.has(client);
@@ -29,6 +29,7 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
   async function invoke(action,input){try{return await command(action,input);}catch{fail();}}
   const client=Object.freeze({
     owner,manifestSha256,incarnations:frozenIncarnations,
+    get executorId(){return executorId;},
     async claim(){
       const state=validate(await invoke('claim',identity));
       if(state.pending!==null||state.readbackSha256!==null)fail();
@@ -100,7 +101,7 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
     },
     assertTarget(targetId,targetIncarnation){
       const row=PRODUCTION_D1_TARGETS.find(item=>item.databaseId===targetId);
-      const store=row?.databaseName.replace('fanmark-production-','') ?? PRODUCTION_R2_TARGETS.find(item=>item.bucketName===targetId)?.store;
+      const store=row?.store ?? PRODUCTION_R2_TARGETS.find(item=>item.bucketName===targetId)?.store;
       if(!admitted||!store||frozenIncarnations[store]!==targetIncarnation)fail();
       return store;
     },

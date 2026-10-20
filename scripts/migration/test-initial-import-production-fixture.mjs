@@ -1,3 +1,5 @@
+const credentialLease=syntheticProductionCredential('synthetic_token_only');
+import {syntheticProductionCredential} from './fixtures/synthetic-production-credential.mjs';
 /** Native stores/services/DO with a synthetic Cloudflare control plane. No network. */
 import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
@@ -18,7 +20,7 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
  await mkdir(directory, { mode: 0o700 });
  const version = randomUUID(), gatewayVersion = randomUUID(), counters = { d1Writes: 0, r2Writes: 0, loseCommittedMaster: false, loseComplete: false };
  const origins = Object.fromEntries(['read-only', 'import'].map(mode => [mode, 'https://fanmark-prod-import-' + randomUUID() + '.fanmark-id.workers.dev']));
- const bundled = await build({ stdin: { contents: `export { RecoveryWriterCoordinatorProduction } from './recovery-writer-drain';
+ const bundled = await build({ stdin: { contents: `export { RecoveryWriterCoordinatorProductionV2 } from './recovery-writer-drain';
  export { ProductionR2ImportService } from './production-r2-import-service';
  export default {async fetch(r,e){const u=new URL(r.url);if(u.pathname.startsWith('/command/'))
  return e.RECOVERY_DRAIN.get(e.RECOVERY_DRAIN.idFromName('recovery-writers-v1')).fetch('https://recovery-writer.internal/migration/'+u.pathname.slice(9),{method:'POST',body:await r.text()});
@@ -27,8 +29,8 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
  format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] });
  const text = value => ({ type: 'text', value });
  const mf = new Miniflare({ workers: [{ config: { name: 'initial-production-fixture', type: 'worker', compatibilityDate: '2026-09-18',
- exports: { RecoveryWriterCoordinatorProduction: { type: 'durable-object', storage: 'sqlite' } }, env: {
- RECOVERY_DRAIN: { type: 'durable-object', worker: 'initial-production-fixture', exportName: 'RecoveryWriterCoordinatorProduction' },
+ exports: { RecoveryWriterCoordinatorProductionV2: { type: 'durable-object', storage: 'sqlite' } }, env: {
+ RECOVERY_DRAIN: { type: 'durable-object', worker: 'initial-production-fixture', exportName: 'RecoveryWriterCoordinatorProductionV2' },
  IMPORT: { type: 'worker', worker: 'initial-production-fixture', exportName: 'ProductionR2ImportService' },
  RECOVERY_DRAIN_SCOPE_DIGEST: text(PRODUCTION_RUNTIME.scope), RECOVERY_DRAIN_BACKEND: text('durable-object'),
  D1_TOPOLOGY: text('split'), STORAGE_BACKEND: text('r2'), CUTOVER_WRITE_FREEZE: text('receipt_only'),
@@ -41,13 +43,14 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
  const native = { auth: await mf.getD1Database('AUTH_DB'), master: await mf.getD1Database('MASTER_DB'), business: await mf.getD1Database('FANMARK_DB') };
  for (const [store, migrations] of Object.entries({ auth: ['0003_better_auth_core.sql','0007_auth_signup_command.sql','0008_auth_user_suspension.sql','0009_auth_oauth_signup.sql'], master: MASTER_RUNTIME_MIGRATIONS }))
   for (const name of migrations) await native[store].batch(businessMigrationStatements(await readFile(new URL('../../workers/api/migrations/' + name, import.meta.url),'utf8')).map(sql => native[store].prepare(sql)));
+ for(const file of ['0000_import_operation_commits.sql','0001_import_commit_no_replace.sql'])await native.master.batch(businessMigrationStatements(await readFile(new URL('../../workers/api/migrations-master-production/'+file,import.meta.url),'utf8')).map(sql=>native.master.prepare(sql)));
  await applyBusinessRuntimeMigrations(native.business);
  const newCoordinator = () => createProductionImportCoordinator({ owner: input.runId, incarnations: input.incarnations, manifestSha256: prepared.identitySha256,
  command: async (action, args) => { const r = await mf.dispatchFetch('https://fixture.local/command/' + action,{ method:'POST',body:JSON.stringify(args) }); if(r.status!==200)throw Error('native_coordinator_refused');const value=await r.json();if(action==='recover-auth'&&counters.loseAuthRecovery){counters.loseAuthRecovery=false;throw Error('synthetic lost auth recovery response');}if(action==='complete'&&counters.loseComplete){counters.loseComplete=false;throw Error('synthetic lost completion response');}return value; } });
  const coordinator = newCoordinator();
  await coordinator.claim();
  const runtimeBindings = [
-  ...PRODUCTION_D1_TARGETS.map(row => ({ type:'d1',name:{auth:'AUTH_DB',master:'MASTER_DB',business:'FANMARK_DB'}[row.databaseName.replace('fanmark-production-','')],id:row.databaseId })),
+  ...PRODUCTION_D1_TARGETS.map(row => ({ type:'d1',name:{auth:'AUTH_DB',master:'MASTER_DB',business:'FANMARK_DB'}[row.store],id:row.databaseId })),
   ...PRODUCTION_R2_TARGETS.map(row => ({ type:'r2_bucket',name:row.store==='avatars'?'AVATARS_BUCKET':'COVER_IMAGES_BUCKET',bucket_name:row.bucketName })),
   ...Object.entries({D1_TOPOLOGY:'split',EMOJI_PUBLICATION_BACKEND:'production-service',RECOVERY_DRAIN_SCOPE_DIGEST:PRODUCTION_RUNTIME.scope,RECOVERY_DRAIN_BACKEND:'durable-object',CUTOVER_WRITE_FREEZE:'receipt_only',STORAGE_BACKEND:'r2'}).map(([name,text])=>({name,type:'plain_text',text})),
  ];
@@ -57,7 +60,7 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
    if(u.pathname.includes('/d1/database/')){
     const target=PRODUCTION_D1_TARGETS.find(row=>u.pathname.includes('/'+row.databaseId));assert.ok(target);
     if(options.method==='GET')return Response.json({success:true,result:{uuid:target.databaseId,name:target.databaseName,created_at:target.createdAt}});
-    const store=target.databaseName.replace('fanmark-production-',''),body=JSON.parse(options.body),batch=body.batch??[body];
+    const store=target.store,body=JSON.parse(options.body),batch=body.batch??[body];
     const mutation=batch.some(row=>!isReadOnlyProductionSql(row.sql));if(mutation)counters.d1Writes++;
     const result=await native[store].batch(batch.map(row=>native[store].prepare(row.sql).bind(...(row.params??[]))));
     if(mutation&&store==='master'&&counters.loseCommittedMaster){counters.loseCommittedMaster=false;throw Error('synthetic lost committed response');}
@@ -78,18 +81,18 @@ export async function createNativeProductionSetFixture({ directory, prepared, in
   return mf.dispatchFetch('https://fixture.local'+u.pathname+u.search,options);
  };
  const journalPaths={},databases={},readDatabases={},buckets={},readBuckets={};
- for(const row of PRODUCTION_D1_TARGETS){const store=row.databaseName.replace('fanmark-production-',''),target={...row,targetIncarnation:input.incarnations[store]};journalPaths[store]=join(directory,store+'.jsonl');
-  readDatabases[store]=createProductionRemoteD1({target,token:'synthetic_token_only',fetchImpl});
-  databases[store]=await openProductionD1ImportTransport({target,token:'synthetic_token_only',fetchImpl,journalPath:journalPaths[store],runId:input.runId,coordinator});}
+ for(const row of PRODUCTION_D1_TARGETS){const store=row.store,target={...row,targetIncarnation:input.incarnations[store]};journalPaths[store]=join(directory,store+'.jsonl');
+  readDatabases[store]=createProductionRemoteD1({credentialLease,target,token:'synthetic_token_only',fetchImpl});
+  databases[store]=await openProductionD1ImportTransport({credentialLease,target,token:'synthetic_token_only',fetchImpl,journalPath:journalPaths[store],runId:input.runId,coordinator});}
  for(const row of PRODUCTION_R2_TARGETS){const store=row.store,target={...row,targetIncarnation:input.incarnations[store]},common={target,runtimeVersion:version,gatewayVersion,bearer:'b'.repeat(64),token:'synthetic_token_only',fetchImpl};journalPaths[store]=join(directory,store+'.jsonl');
-  readBuckets[store]=createProductionRemoteR2({...common,gatewayOrigin:origins['read-only']});
-  buckets[store]=await openProductionR2ImportTransport({...common,gatewayOrigin:origins.import,journalPath:journalPaths[store],runId:input.runId,coordinator});}
+  readBuckets[store]=createProductionRemoteR2({credentialLease,...common,gatewayOrigin:origins['read-only']});
+  buckets[store]=await openProductionR2ImportTransport({credentialLease,...common,gatewayOrigin:origins.import,journalPath:journalPaths[store],runId:input.runId,coordinator});}
  const reopenWriters=async client=>{
   const nextDatabases={},nextBuckets={};
-  for(const row of PRODUCTION_D1_TARGETS){const store=row.databaseName.replace('fanmark-production-','');
-   nextDatabases[store]=await openProductionD1ImportTransport({target:{...row,targetIncarnation:input.incarnations[store]},token:'synthetic_token_only',fetchImpl,journalPath:journalPaths[store],runId:input.runId,coordinator:client});}
+  for(const row of PRODUCTION_D1_TARGETS){const store=row.store;
+   nextDatabases[store]=await openProductionD1ImportTransport({credentialLease,target:{...row,targetIncarnation:input.incarnations[store]},token:'synthetic_token_only',fetchImpl,journalPath:journalPaths[store],runId:input.runId,coordinator:client});}
   for(const row of PRODUCTION_R2_TARGETS){const store=row.store;
-   nextBuckets[store]=await openProductionR2ImportTransport({target:{...row,targetIncarnation:input.incarnations[store]},runtimeVersion:version,gatewayVersion,bearer:'b'.repeat(64),token:'synthetic_token_only',fetchImpl,gatewayOrigin:origins.import,journalPath:journalPaths[store],runId:input.runId,coordinator:client});}
+   nextBuckets[store]=await openProductionR2ImportTransport({credentialLease,target:{...row,targetIncarnation:input.incarnations[store]},runtimeVersion:version,gatewayVersion,bearer:'b'.repeat(64),token:'synthetic_token_only',fetchImpl,gatewayOrigin:origins.import,journalPath:journalPaths[store],runId:input.runId,coordinator:client});}
   return {coordinator:client,databases:nextDatabases,buckets:nextBuckets};
  };
  return { coordinator, newCoordinator, reopenWriters, journalPaths, databases, readDatabases, buckets, readBuckets, counters, native, dispose:()=>mf.dispose() };

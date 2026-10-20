@@ -2301,7 +2301,7 @@ export async function importInitialBusinessSnapshot({ database, readDatabase, mo
   if (!options.expectedTargetProfile || typeof options.resolveAuthUserIds !== "function" || options.hooks !== undefined ||
       (options.canonicalBusinessSchema !== undefined && options.canonicalBusinessSchema !== true)) throw fail("business_stage_profile_required");
   if (production) {
-    if (database.access !== "import" || readDatabase.access !== "read-only" || database.targetIdentity.databaseName !== "fanmark-production-business" ||
+    if (database.access !== "import" || readDatabase.access !== "read-only" || database.targetIdentity.store !== 'business' ||
         JSON.stringify(database.targetIdentity) !== JSON.stringify(readDatabase.targetIdentity) || options.destinationId !== database.targetIdentity.databaseId)
       throw fail("business_stage_transport_invalid");
     await assertProductionRemoteD1Target(database, options.targetIncarnation);

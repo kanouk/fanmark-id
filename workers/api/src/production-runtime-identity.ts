@@ -1,14 +1,14 @@
-/** Fixed production cohort. Resource replacement requires a reviewed identity update. */
+/** Fixed production cohort v2. V1 resources remain quarantined and retained. */
 export const PRODUCTION_RUNTIME = Object.freeze({
   "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
   "worker": "fanmark-app-production",
-  "scope": "6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d",
+  "scope": "d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3",
   "backupBucket": "fanmark-backups-production"
 });
 export const PRODUCTION_STORE_IDS = Object.freeze({
-  "auth": "dc43ffd7-0ca8-45d6-805c-ae1e6f2b58a6",
-  "business": "84599147-e2c7-41d8-80ae-33c61b158314",
-  "master": "5973e9f4-cae3-4a2b-b99d-16c2f0ae76da",
-  "avatars": "fanmark-avatars-production",
-  "covers": "fanmark-covers-production"
+  "auth": "d25388d6-fa19-46ba-a128-4fa537210e4b",
+  "business": "a418f597-ff73-40a9-8847-91e3a6dddcf4",
+  "master": "ef4cee01-bd28-4fd5-8eb8-6744b4331d07",
+  "avatars": "fanmark-avatars-production-20261020",
+  "covers": "fanmark-covers-production-20261020"
 });

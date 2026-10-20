@@ -121,3 +121,12 @@ test("D1 trigger migrations use Cloudflare-remote-safe formatting", () => {
     }
   }
 });
+
+test('production Master commit DDL uses its own fixed cohort config and leaves staging selection unchanged',()=>{
+  const config=readConfig('../../workers/api/wrangler.production-master-import-schema.jsonc');
+  const resource=readConfig('../../docs/migration/production-resources.json').d1.find(row=>row.binding==='MASTER_DB');
+  assert.equal(config.workers_dev,false);assert.equal(config.preview_urls,false);
+  assert.equal(config.main,undefined);assert.equal(config.durable_objects,undefined);
+  assert.deepEqual(config.d1_databases,[{binding:'MASTER_DB',database_name:resource.name,database_id:resource.id,migrations_dir:'migrations-master-production',remote:true}]);
+  assert.deepEqual(readdirSync(new URL('../../workers/api/migrations-master-production/',import.meta.url)),['0000_import_operation_commits.sql','0001_import_commit_no_replace.sql']);
+});

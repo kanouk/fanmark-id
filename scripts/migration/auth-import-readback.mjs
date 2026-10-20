@@ -49,7 +49,7 @@ export function prepareAuthImportProjection(projection) {
 export async function verifyImportedAuthProjection({ database, projection, targetIncarnation } = {}) {
   const { expected, maps } = prepareAuthImportProjection(projection);
   const production = isProductionRemoteD1(database);
-  if (production && (database.access !== 'read-only' || database.targetIdentity.databaseName !== 'fanmark-production-auth')) fail('target_invalid');
+  if (production && (database.access !== 'read-only' || database.targetIdentity.store !== 'auth')) fail('target_invalid');
   async function identity() {
     if (production) {
       try { await assertProductionRemoteD1Target(database, targetIncarnation); } catch { fail('target_invalid'); }

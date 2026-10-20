@@ -1,16 +1,17 @@
 {
   "format": "fanmark-production-backup-pins-v1",
   "phase": "baseline-before-import",
-  "scopeDigest": "6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d",
+  "scopeDigest": "d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3",
   "keyId": "production-backup-b7453682-6750-41f1-be11-4ce71ca3fa55",
   "schemaHashes": {
-    "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
-    "business": "598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2",
-    "master": "3ca374efa733a5c6db5e71918bae25e259bdc1b4a7b1b2d3d96dda1e6fba2240"
+    "auth": "eebbeef152107a683f293b996139cb4789c500982ccd1f8966dd935b105a7565",
+    "business": "80fd26ba363a2babf649ddbc18490ecd423c4ebfd6be4f90611887f8ffd1b828",
+    "master": "41eb20e30329eb6a806c11b76f2dcad3144fbbb6c28ba9a8e9d979827a8d7e88"
   },
-  "observedAt": "2026-10-19T05:07:29.479Z",
-  "schemaReadbackSha256": "bb1edd53551f9497d1dc0180374f79c28ffde1c8ad8fadce0fd71f2540a63a41",
-  "keyCustodyEvidence": "evidence/production-key-custody-2026-10-19.json",
+  "observedAt": "2026-10-20T01:05:21.077Z",
+  "schemaReadbackSha256": "9367562fe321f47ffd800e6ca99aa1e240dfb43a0583e94d143de6b9bf7d6b66",
+  "keyCustodyEvidence": "evidence/production-cohort-v2-key-reuse-2026-10-20.json",
   "captureAdmission": "pending",
-  "finalImportSchema": false
+  "finalImportSchema": false,
+  "evidence": "evidence/production-cohort-v2-schema-2026-10-20.json"
 }

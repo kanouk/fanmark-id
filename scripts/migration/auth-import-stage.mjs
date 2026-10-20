@@ -44,7 +44,7 @@ export async function importAuthProjectionStage({ database, readDatabase, projec
       (mode === 'production-stage' && (!production || !isProductionRemoteD1(readDatabase)))) fail('transport_invalid');
   if (production) {
     if (database.access !== 'import' || readDatabase.access !== 'read-only' ||
-        database.targetIdentity.databaseName !== 'fanmark-production-auth' ||
+        database.targetIdentity.store !== 'auth' ||
         JSON.stringify(database.targetIdentity) !== JSON.stringify(readDatabase.targetIdentity)) fail('transport_invalid');
     try {
       await assertProductionRemoteD1Target(database, targetIncarnation);
