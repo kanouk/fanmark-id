@@ -592,7 +592,7 @@
   "implementationFingerprints": [
     {
       "path": "docs/migration/production-backup-pins.json",
-      "sha256": "48f97333ee34d29cca2e8b2ee3896f5cb4895dde3254d4ad74fab7c002ccae36"
+      "sha256": "f9b40dea1f5e23370c520bd12c6d907a0612fa5a7a435761f4d69d9c1bc27a31"
     },
     {
       "path": "docs/migration/production-resources.json",
@@ -888,7 +888,7 @@
     },
     {
       "path": "scripts/migration/test-production-runtime-config.mjs",
-      "sha256": "5fa492468b029373c847773ad1b6a0602f201dc86324dc7e9e44db91b32b30f6"
+      "sha256": "1f302ed5bc7a09b864a749f9bac384baad8a2c32e3bac7b8297229f160d11c25"
     },
     {
       "path": "scripts/migration/test-supabase-auth-projection.mjs",
@@ -1044,11 +1044,11 @@
     },
     {
       "path": "workers/api/wrangler.app-production-closed.jsonc",
-      "sha256": "da3600e1d67ee67483c4755acdd2746ff11982d7b46099daa0656fee321faf08"
+      "sha256": "33c0ded09b4627bfb0ee6b59fdd500836f31ab0785d0355e59fb180ea90a0d78"
     },
     {
       "path": "workers/api/wrangler.backup-monitor-production-closed.jsonc",
-      "sha256": "8b3dedf6bfcd044cfc0ba0fc001e691d7551ce0822651e75c9d505abfe919723"
+      "sha256": "5428e6dd6c72e365d836a22f73ecf105cd534f587d268e9c758726a7fd97cbad"
     },
     {
       "path": "workers/api/wrangler.backup-monitor-staging.jsonc",

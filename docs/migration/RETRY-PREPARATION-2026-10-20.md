@@ -14,6 +14,8 @@
 
 D1 batchの取引とrollbackの仕様は[Cloudflareの公式文書](https://developers.cloudflare.com/d1/worker-api/d1-database/)を確認した。native D1/DOの失敗注入に加え、別の実Cloudflare合成DBで100件/50件のDMLを202/102 statementへ包み、確定記録の別読取り・trigger変更・全取引rollbackを検証した。[実Cloudflare試験の証拠](evidence/production-atomic-receipt-cloudflare-2026-10-20.json)。合成DBは所有identityを照合して削除した。実利用者データと新本番5ストアへの試験行投入は0件。
 
+[Master全件の再準備試験](evidence/production-retry-master-native-2026-10-20.json)では、過去snapshotのMaster 3,944件をlocal native D1/DOへ投入し、以前止まったstaging ordinal2,151〜2,200で応答を一度失わせた。仮想時計は105分20秒進み、lease更新1回・SQL再送0回で全件照合、26表/12,048行の既存運用鍵backupと空targetへの復元が一致した。実sourceの最新snapshotや実Cloudflareの一式移送証拠には使わない。
+
 ## 新しい移行先
 
 [現行資源表](production-resources.json)のcohortGeneration 2を使う。
@@ -27,6 +29,8 @@ D1 batchの取引とrollbackの仕様は[Cloudflareの公式文書](https://deve
 | covers | `fanmark-covers-production-20261020` |
 
 scopeは `d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3`。
+backup pinはAuthだけ `AUTH_RECOVERY_SCHEMA_SQL` でmigration管理表を除外し、Master/Businessは `D1_RECOVERY_SCHEMA_SQL` を使う。全schemaのhashとbackup profileのhashを混同しない。
+
 Auth 4、Master共有9 + 本番確定記録2、Business 27 migrationを適用し、全canonical schemaとseed baselineを照合済み。画像bucketの公開URLは無効、custom domainなし。本番専用の追加schema設定は `wrangler.production-master-import-schema.jsonc`。共有9件の設定と追加2件を分け、stagingのschemaは変更しない。適用済み操作の再実行指示ではない。
 
 DOは `RecoveryWriterCoordinatorProductionV2` と `NotificationWakeCoordinatorProductionV2` の新namespaceを使用する。旧classとmigration履歴は保持し、旧classのfetchは410を返す。旧通知alarmも新ストアへ書き込まない。旧run・ACK・pending・quarantine・物理ストアを初期化しない。

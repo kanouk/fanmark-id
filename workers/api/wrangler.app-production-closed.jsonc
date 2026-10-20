@@ -148,7 +148,7 @@
     "STAGING_BACKUP_BACKEND": "recovery-set-v1",
     "STAGING_BACKUP_ADMISSION": "pending",
     "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"d25388d6-fa19-46ba-a128-4fa537210e4b\",\"business\":\"a418f597-ff73-40a9-8847-91e3a6dddcf4\",\"master\":\"ef4cee01-bd28-4fd5-8eb8-6744b4331d07\",\"avatars\":\"fanmark-avatars-production-20261020\",\"covers\":\"fanmark-covers-production-20261020\"}",
-    "STAGING_BACKUP_SCHEMA_HASHES": "{\"auth\":\"eebbeef152107a683f293b996139cb4789c500982ccd1f8966dd935b105a7565\",\"business\":\"80fd26ba363a2babf649ddbc18490ecd423c4ebfd6be4f90611887f8ffd1b828\",\"master\":\"41eb20e30329eb6a806c11b76f2dcad3144fbbb6c28ba9a8e9d979827a8d7e88\"}",
+    "STAGING_BACKUP_SCHEMA_HASHES": "{\"auth\":\"3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b\",\"business\":\"80fd26ba363a2babf649ddbc18490ecd423c4ebfd6be4f90611887f8ffd1b828\",\"master\":\"41eb20e30329eb6a806c11b76f2dcad3144fbbb6c28ba9a8e9d979827a8d7e88\"}",
     "STAGING_BACKUP_KEY_ID": "production-backup-b7453682-6750-41f1-be11-4ce71ca3fa55",
     "STAGING_BACKUP_ALERT_BACKEND": "disabled",
     "STAGING_BACKUP_ALERT_TO": ""
