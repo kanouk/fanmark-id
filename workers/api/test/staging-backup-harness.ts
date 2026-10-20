@@ -21,7 +21,7 @@ export default {
     try {
       switch (path) {
         case "wrong-identity": return Response.json(await runStagingBackup({ ...env,
-          STAGING_BACKUP_SOURCE_IDS: env.STAGING_BACKUP_SOURCE_IDS!.replace("dc43ffd7-0ca8-45d6-805c-ae1e6f2b58a6", "different-auth") }, slot, operationId));
+          STAGING_BACKUP_SOURCE_IDS: JSON.stringify({ ...JSON.parse(env.STAGING_BACKUP_SOURCE_IDS!), auth: "different-auth" }) }, slot, operationId));
         case "manual-run": return Response.json(await env.BACKUP_SERVICE.runManual(operationId!));
         case "manual-status": return Response.json(await env.BACKUP_SERVICE.statusManual(operationId!));
         case "wrong-manual-schema": return Response.json(await runProductionManualBackup({ ...env,
