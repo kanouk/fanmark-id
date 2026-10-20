@@ -9,6 +9,24 @@ import { loadEmojiCatalogFromWorker } from "@/lib/emoji-catalog-worker";
 
 const rootElement = document.getElementById("root");
 
+function showCatalogLoading(): void {
+  if (!rootElement) return;
+  const main = document.createElement("main");
+  main.className = "min-h-screen grid place-items-center px-6 text-center";
+  const status = document.createElement("div");
+  status.className = "flex flex-col items-center gap-4";
+  status.setAttribute("role", "status");
+  const spinner = document.createElement("span");
+  spinner.className = "h-8 w-8 rounded-full border-2 border-primary/25 border-t-primary motion-safe:animate-spin";
+  spinner.setAttribute("aria-hidden", "true");
+  const message = document.createElement("p");
+  message.className = "text-sm text-muted-foreground";
+  message.textContent = "絵文字カタログを読み込んでいます…";
+  status.append(spinner, message);
+  main.append(status);
+  rootElement.replaceChildren(main);
+}
+
 function showCatalogStartupError(): void {
   if (!rootElement) return;
   const main = document.createElement("main");
@@ -58,7 +76,7 @@ async function startApplication(): Promise<void> {
   }
 
   if (import.meta.env.VITE_EMOJI_CATALOG_BACKEND?.trim()) {
-    rootElement.textContent = "絵文字カタログを読み込んでいます…";
+    showCatalogLoading();
   }
 
   try {

@@ -58,6 +58,10 @@ test("a stalled catalog cannot prevent the PWA update check; application stays g
   const pending = new Promise((resolve) => { resolveCatalog = resolve; });
   const state = runStartup({ catalog: pending });
   assert.deepEqual(state.calls, ["registerSW", "fetchCatalog"]);
+  const status = state.root.children[0].children[0];
+  assert.equal(status.attributes.role, "status");
+  assert.equal(status.children[0].attributes["aria-hidden"], "true");
+  assert.equal(status.children[1].textContent, "絵文字カタログを読み込んでいます…");
   await setImmediate();
   assert.ok(!state.calls.includes("render"));
   resolveCatalog({ items: [] });
