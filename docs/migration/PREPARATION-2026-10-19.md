@@ -1,4 +1,8 @@
-**2026-10-20 再準備中:** [新cohort V2・期限管理と確定照合](RETRY-PREPARATION-2026-10-20.md)を優先する。旧Supabaseは稼働中。新5ストアのschema照合済み、閉鎖runtime/backup/CIの準備を進めている。実データ移送・旧側停止・Route/DNS切替・main mergeは次の所有者確認まで行わない。旧quarantineは解除しない。
+## 2026-10-20: 再移行準備完了・新cohort V2は閉鎖、開始確認待ち
+
+[再準備票](RETRY-PREPARATION-2026-10-20.md) と [完了証拠](evidence/production-cohort-v2-prepared-2026-10-20.json) を優先する。認証期限管理・Master確定記録/応答消失復旧を修正し、実Cloudflare合成試験、3,944件/仮想105分のnative試験、初回115表backup/実隔離復元を確認した。コード14815ae/CI39353698738両job成功の新runtimeを閉鎖配備済み。実利用者データの再移送・旧側停止・Route/DNS切替は未実施。旧Supabaseが稼働し、mainを維持している。
+
+新しい開始確認後にG0から進める。旧quarantineを解除せず、旧run/helperを再実行しない。新資源/namespace/鍵の適合・backup/復旧は今回の証拠を使い、旧世代の空target証拠を流用しない。登録済み4 callback・承認済み通知試験1通・元鍵/backup・解約済み契約・supabase/.temp/cli-latestを保持する。保存MFA票は最新sourceと一致し、10月21日00:24:45 JSTまで有効。新たなMFA本人操作は依頼していない。
 
 # 2026-10-19再開・10月20日更新の本番移行準備
 

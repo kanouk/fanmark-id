@@ -596,7 +596,7 @@
     },
     {
       "path": "docs/migration/production-resources.json",
-      "sha256": "2bd4497d37fd6ef9b756782733ae2a77f1cad437a14d565dfdc3e6946d6b44a1"
+      "sha256": "4e67fd9bf5d3feb0afcca63430ea03a215d8280799e6b88d08c81ecb5b108049"
     },
     {
       "path": "docs/migration/source-edge-bodies-review.md",

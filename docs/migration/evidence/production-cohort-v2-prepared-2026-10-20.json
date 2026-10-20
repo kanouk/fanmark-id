@@ -1,0 +1,138 @@
+{
+  "format": "fanmark-production-cohort-v2-preparation-v1",
+  "status": "prepared-awaiting-owner-start-confirmation",
+  "observedAt": "2026-10-20T01:55:09.614Z",
+  "codeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9",
+  "codeCiRun": 39353698738,
+  "codeCiBothJobsPassed": true,
+  "scopeDigest": "d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3",
+  "closedRuntime": {
+    "versions": {
+      "app": "d48e0628-77e9-4d3d-92ab-8c420d3c2c11",
+      "scheduler": "dc34fda1-2c13-430d-823b-525a83beae9d",
+      "monitor": "b43c7421-350a-42b2-af0d-55c4a219b368"
+    },
+    "newNamespaces": {
+      "RECOVERY_DRAIN": {
+        "id": "d93f6c3a042944ada645bd10b083d738",
+        "class": "RecoveryWriterCoordinatorProductionV2"
+      },
+      "NOTIFICATION_WAKE": {
+        "id": "fa9bf77393a349f8aaaf1fdada69b9d0",
+        "class": "NotificationWakeCoordinatorProductionV2"
+      }
+    },
+    "workerInventory": 8,
+    "unrelatedFiveWorkerSettingsPreserved": true,
+    "secretBindings": 15,
+    "backupAdmission": "pending",
+    "businessFreeze": "receipt_only",
+    "ownerAcceptance": "disabled",
+    "alerts": "disabled",
+    "alertRecipientEmpty": true,
+    "cron": 0,
+    "workersDev": false,
+    "previews": false
+  },
+  "baselineBackup": {
+    "operationId": "e0f0b50d-8207-4435-b40d-f0eda35322f0",
+    "captureRuntimeVersion": "1a322fb3-7345-4e3a-b992-c9042356391a",
+    "bytes": 426931,
+    "archiveSha256": "1933c7577b0d502ffaa52f02e384c7d224670060a4cfeb2510b8284f20fd40ff",
+    "existingKeysMatched": true,
+    "offhostArchiveReDownloadedAndHashedAfterCleanup": true,
+    "restoredTableCounts": {
+      "auth": 9,
+      "business": 80,
+      "master": 26
+    },
+    "all115TableContentsMatched": true,
+    "newCohortSourceAllRowsUnchanged": true,
+    "restoredImageObjects": {
+      "avatars": 0,
+      "covers": 0
+    },
+    "baselineOnly": true,
+    "dailySlotWasUnclaimed": true,
+    "dailyClaimCreated": false,
+    "ownedRestoreD1Removed": 3,
+    "ownedRestoreR2Removed": 3,
+    "ownedRestoreWorkerRemoved": true,
+    "baselineInventoryRestored": true
+  },
+  "deployedHttpProbe": {
+    "runtimeVersion": "1a322fb3-7345-4e3a-b992-c9042356391a",
+    "codeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9",
+    "checks": [
+      {
+        "method": "GET",
+        "path": "/",
+        "status": 503,
+        "noStore": true
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/sign-in/email",
+        "status": 503,
+        "noStore": true
+      }
+    ],
+    "probeOnly": true,
+    "finalRuntimeSameCodeAndHttpFreeze": true
+  },
+  "legacySource": {
+    "observedAt": "2026-10-20T01:54:09.157Z",
+    "sourceOperational": true,
+    "sourceFunctionCount": 35,
+    "functionVersionsAndCodeMatchRestoredBaseline": true,
+    "cronJobs": 2,
+    "cronActive": 1,
+    "sourceFreezeTriggers": 0,
+    "maintenance": false,
+    "sourceReceiptCount": 0,
+    "activeExpiredDue": 0,
+    "graceExpiredDue": 0,
+    "savedMfaCapsuleUnchanged": true,
+    "savedMfaSourceBindingMatchesCurrent": true,
+    "mfaValidUntil": "2026-10-20T15:24:45.147Z",
+    "newMfaEnrollmentRequested": false,
+    "protectedCliLatestPreserved": true
+  },
+  "canceledSelfTestContractExactPrimaryKeyRetained": true,
+  "network": {
+    "observedAt": "2026-10-20T01:55:09.614Z",
+    "dnsAll17Exact": true,
+    "activeApexCertificatePacks": 1,
+    "currentLegacyHttpsVerified": true,
+    "postCutoverWorkerHttpsAcceptancePending": true,
+    "workerRoutes": 0,
+    "apexCustomDomainCollision": false,
+    "sslModeNotReRead": true
+  },
+  "preserved": {
+    "oldNamespacesAndStores": true,
+    "oldFiveJournalsQuarantineProofAndPendingLockByteExact": true,
+    "originalProductionKeysAndArchives": true,
+    "registeredFourProviderCallbacks": true,
+    "singleApprovedMonitoringDeliveryRecord": true
+  },
+  "sourceStopPerformed": false,
+  "realUserDataTransferred": 0,
+  "routeOrDnsSwitched": false,
+  "providerRegistrationRepeated": false,
+  "monitoringTestMailRepeated": false,
+  "mainMerged": false,
+  "productionMigrationCompleted": false,
+  "readyForOwnerStartConfirmation": true,
+  "newCutoverWindowAdmitted": false,
+  "remainingExecutionGates": [
+    "new owner confirmation and stop window",
+    "fresh G0 source originals/current versions, effects, DNS/TLS, credential and MFA lifetime",
+    "G1 source stop/drain and fresh frozen exports",
+    "G2 real data import and complete independent readback",
+    "G3 real-data backup and isolated restore",
+    "G4 Worker Route and provider handoff with HTTPS checks",
+    "G5 owner acceptance and single business-writer start",
+    "merge and old-deploy cleanup after production validation"
+  ]
+}

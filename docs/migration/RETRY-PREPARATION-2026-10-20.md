@@ -1,6 +1,6 @@
 # 再移行に向けた準備（2026-10-20）
 
-旧Supabaseは復旧済みで稼働中。本票は準備の進捗を記録する。新しい移行先への実利用者データ移送・旧側の停止・Worker Route/DNS切替・mainへのmergeは、準備後の所有者確認まで実施しない。
+**再移行開始の確認を依頼できる準備が完了した。** [完了証拠](evidence/production-cohort-v2-prepared-2026-10-20.json)。旧Supabaseは復旧済みで稼働中。本票は閉鎖された新移行先の準備結果を記録する。新しい移行先への実利用者データ移送・旧側の停止・Worker Route/DNS切替・mainへのmergeは、準備後の所有者確認まで実施しない。
 
 ## 認証期限と未確定応答の修正
 
@@ -37,10 +37,24 @@ DOは `RecoveryWriterCoordinatorProductionV2` と `NotificationWakeCoordinatorPr
 
 旧資源表とbackup pinは `production-resources-quarantined-2026-10-20.json` / `production-backup-pins-quarantined-2026-10-20.json` に保存した。元のbackup bucket、archive、鍵、MFA票、private journal、解約済み自己テスト契約、登録済みOAuth callbackと通知試験記録を保持する。旧鍵の原Vault note hash・escrow復号・Keychainを照合し、新scopeへの再利用票をprivateに保存した。鍵は作り直さない。
 
-## 残る準備と開始条件
+## 閉鎖配備・初回保存・隔離復元の完了
 
-現時点では準備中。新cohortの閉鎖runtime配備・binding/namespace/秘密の読戻し、実運用鍵での初回backupと隔離復元、CI最終結果、次回G0/停止時間の見積もりをそろえる。これらの完了前に再移行開始を求めない。
+実装commit `14815ae` の [CI39353698738](https://github.com/kanouk/fanmark-id/actions/runs/39353698738) はapplication/Workerの両job成功。appは `d48e0628-77e9-4d3d-92ab-8c420d3c2c11`、schedulerは `dc34fda1-2c13-430d-823b-525a83beae9d`、monitorは `b43c7421-350a-42b2-af0d-55c4a219b368`。新DO namespaceはRecovery `d93f6c3a042944ada645bd10b083d738`、Notification `fa9bf77393a349f8aaaf1fdada69b9d0`。旧namespaceと全旧資源を保持している。
 
-次回の開始確認後には、旧35関数の復元後versionと原本・稼働中データ・provider効果・受信stream・DNS/TLS/Route競合・最新MFA票を新たに確認する。稼働再開前のsnapshotを最新値として使用しない。保存MFA候補の期限は2026-10-21 00:24:45 JST。必要な本人操作は独立した準備を終えてから依頼する。
+一般HTTPとAuthの503/no-store、両画像bucket0件を内部bindingから確認した。公開Route0、workers.dev/previews無効、全Cron0、`receipt_only`、owner disabled、backup admission pending、通知disabled/宛先空へ戻した。既存15 secret bindingを保持し、app以外の運用2 Workerも新scope/pinへ合わせた。他5 Workerの設定は独立比較で不変だった。
+
+既存の運用鍵で新しいmanual operation `e0f0b50d-8207-4435-b40d-f0eda35322f0` の初回backupを一度だけ保存した。426,931 bytesの暗号化archiveをR2から読戻し、既存Auth secretもescrow復号で一致した。旧の日次claimとarchiveは保持し、当日UTC slotが未使用であることも読取り確認した。新しい3 D1/3 R2の隔離先へ復元し、Auth9/Business80/Master26の全115表・全seed行・schema・FKと画像0件を別checkerで照合した。新本番側の全内容も変わっていない。試験用Worker/3 D1/3 R2を所有identity確認後に削除し、inventoryを元へ戻した。片付け後にR2の同じarchiveをもう一度ダウンロードし、元のbytes/hashを照合した。これは初期schema/seed状態の復旧証拠であり、移送後の実利用者データbackup/G3は当日の別条件である。
+
+最終の独立読取りで、旧Supabase35関数の復元後version/コード、Cron2件/active1、凍結0、通常公開、受信差分0、期限処理対象0を確認した。解約済み自己テスト契約は元snapshotの正確なPKで現在もcanceledとして存在する。保存MFA票も現在のsourceへ一致した。旧5 journal・quarantine proof・未確定lockはbyte単位で不変。DNS17件全属性、apexのactive証明書、現在の旧配信HTTPS、Route競合なし、main維持を確認した。切替後WorkerのHTTPSと本人ログインはG4/G5で受け入れる。
+
+## 所有者確認後の開始条件
+
+準備のみ完了。本番データの再移送、旧側停止、Route/DNS切替はまだ開始しない。新しい開始確認・停止枠を得てからG0を取り直す。元run/helperを再開しない。再移送の接続部は新しいprivate `g2-lease-connections.mjs` に用意し、新run・今回の5 incarnation・runtime・開始確認票・新しい凍結証拠の一致を要求する。確認票はまだ作成していない。旧runの呼出しはネットワーク要求前に拒否する。
+
+停止枠は既存計画の暫定2時間、90分時点の継続判断、15〜30分の復旧枠を維持する。前回実測は停止〜G2開始23.34分、G2開始〜停止3.54分、調停RPC p95 157ms。これは次回所要時間の保証ではない。日次処理の09:00 JST、backupの09:05 JST、請求・期限の重なりを開始時に再確認する。
+
+日次監視はmanual receiptを代用しない。当日のG3で実データbackup/復旧を通し、最終schema pinを更新した後、UTC日次slotの既存claimを読み取る。未使用なら本番日次経路を一度だけ実行してretentionも確認し、監視を有効にする。既存claimがあれば再送・削除せず、当日の開始票で扱いを固定する。準備中は日次claimを作らず、追加の通知試験を送らない。
+
+次回の開始確認後には、旧35関数の復元後versionと原本・稼働中データ・provider効果・受信stream・DNS/TLS/Route競合・最新MFA票を新たに確認する。稼働再開前のsnapshotを最新値として使用しない。保存MFA候補の期限は2026-10-21 00:24:45 JST。G0では停止・復旧を含め少なくとも3時間の残存を要求し、新しい凍結証拠の `administratorMfaValidUntil` へ固定する。G2接続部もこの残存条件を検査し、欠落/不足は移送前に拒否する。必要な本人操作は独立した準備を終えてから依頼する。
 
 元 `production-cutover-2026-10-20/` の実行/停止/復旧helperは再実行禁止。新しいprivate準備記録は `retry-preparation-2026-10-20/`。intentがある操作はACK・実状態を照合してから扱い、作成・schema適用・backupを盲目的に再実行しない。

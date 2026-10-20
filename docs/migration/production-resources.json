@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "state": "fresh-schema-verified-runtime-pending",
+  "state": "closed_runtime_deployed",
   "productionReady": false,
   "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
   "zoneId": "6a2c39c92ba1c4106b7c19f87ada0a7e",
@@ -67,16 +67,57 @@
     }
   ],
   "schemaApplied": true,
-  "applicationBindingsChanged": false,
-  "workerDeployed": false,
+  "applicationBindingsChanged": true,
+  "workerDeployed": true,
   "sourceFrozen": false,
   "usersImported": false,
   "domainChanged": false,
-  "backupRestoreVerified": false,
+  "backupRestoreVerified": true,
   "schemaVerifiedAt": "2026-10-20T01:05:21.077Z",
   "schemaEvidence": "evidence/production-cohort-v2-schema-2026-10-20.json",
-  "runtime": null,
-  "applicationBindingChangeScope": "dedicated closed production target; existing service settings preserved",
+  "runtime": {
+    "observedAt": "2026-10-20T01:54:08.931Z",
+    "ciValidatedRuntimeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9",
+    "ciRun": 39353698738,
+    "workers": [
+      {
+        "name": "fanmark-app-production",
+        "version": "d48e0628-77e9-4d3d-92ab-8c420d3c2c11",
+        "ciValidatedRuntimeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9"
+      },
+      {
+        "name": "fanmark-backup-production",
+        "version": "dc34fda1-2c13-430d-823b-525a83beae9d",
+        "ciValidatedRuntimeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9"
+      },
+      {
+        "name": "fanmark-backup-monitor-production",
+        "version": "b43c7421-350a-42b2-af0d-55c4a219b368",
+        "ciValidatedRuntimeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9"
+      }
+    ],
+    "publicRoutes": 0,
+    "cronTriggers": 0,
+    "secretsConfigured": true,
+    "sourceStopped": false,
+    "dataImported": false,
+    "domainSwitched": false,
+    "ownerAcceptance": "disabled",
+    "backupAdmission": "pending",
+    "newNamespaces": {
+      "RECOVERY_DRAIN": {
+        "id": "d93f6c3a042944ada645bd10b083d738",
+        "class": "RecoveryWriterCoordinatorProductionV2"
+      },
+      "NOTIFICATION_WAKE": {
+        "id": "fa9bf77393a349f8aaaf1fdada69b9d0",
+        "class": "NotificationWakeCoordinatorProductionV2"
+      }
+    },
+    "evidence": "evidence/production-cohort-v2-prepared-2026-10-20.json"
+  },
+  "applicationBindingChangeScope": "closed cohort V2: new dedicated stores and DO namespaces; unrelated five Worker settings preserved",
   "cohortGeneration": 2,
-  "quarantinedPredecessor": "production-resources-quarantined-2026-10-20.json"
+  "quarantinedPredecessor": "production-resources-quarantined-2026-10-20.json",
+  "backupRestoreScope": "initial-schema-and-seed-baseline-only"
 }
