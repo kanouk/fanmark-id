@@ -182,6 +182,24 @@ async function readJson(request: Request): Promise<unknown> {
   }
 }
 
+async function assertEmptyBody(request: Request): Promise<void> {
+  // Incoming HTTP requests can expose a stream even for a zero-byte POST.
+  const reader = request.body?.getReader();
+  if (!reader) return;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      if (value.byteLength > 0) {
+        await reader.cancel();
+        throw new NotificationsApiError("invalid_request", 400);
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 function assertD1Rows<T>(result: D1Result<T>): T[] {
   if (!result || result.success !== true || !Array.isArray(result.results)) {
     throw new NotificationsApiError("notifications_unavailable");
@@ -285,7 +303,7 @@ export async function handleNotificationsRequest(
       return json({ schemaVersion: 1, updated: changedRows(result) === 1 }, 200, headers);
     }
 
-    if (request.body !== null) throw new NotificationsApiError("invalid_request", 400);
+    await assertEmptyBody(request);
     const now = toUtcMicrosecondTimestamp(clock());
     const result = await db.prepare(`
       UPDATE notifications SET read_at = ?, read_via = 'app', updated_at = ?

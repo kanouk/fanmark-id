@@ -44,7 +44,7 @@ wake世代の正当な+4とack一致を残し、世代は巻き戻さず、合�
 - `GET /api/me/notifications?limit=1..50`: 本人の通知を `triggered_at DESC, id ASC` で返す。応答は画面用の `id, payload, read_at, triggered_at, priority, channel` に限定する。
 - `GET /api/me/notifications/unread-count`: 本人の未読かつ配信済みで、未期限切れの件数を返す。
 - `PATCH /api/me/notifications/{uuid}/read`: `{ "readVia": "app" | "menu" }` を受け取り、本人の未読行を既読にする。既存RPC同様、status/expiryでは絞らない。
-- `POST /api/me/notifications/read-all`: bodyなし。本人の未読・配信済み・未期限切れ行のみ既読にする。
+- `POST /api/me/notifications/read-all`: 本文は0 bytes。HTTP受信時の長さ0のstreamも受け付け、内容が1 byteでもあれば読込みを打ち切って400で拒否する。本人の未読・配信済み・未期限切れ行のみ既読にする。
 
 各操作のowner IDはBetter Auth sessionから取得し、クライアント指定のuser IDは受け付けない。許可Originに限定したcredentials CORS、`no-store`、最大50件、payload 16 KiB、応答全体256 KiBを適用する。エラー時はSupabaseへフォールバックしない。
 
