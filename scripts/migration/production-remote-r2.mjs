@@ -135,7 +135,10 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
       const digest = await importObjectDigest(object);let operationId=null,phase='begin',dataRequestAttempted=false;
       try {
       operationId=await journal.beforeWrite(digest);phase='http-put';dataRequestAttempted=true;
-      const response = await request(resource(key), { method: 'PUT', headers: { ...headers, 'content-length': String(size),
+      // Node fetch computes framing for this verified Buffer. An explicit length
+      // becomes numeric in Node 22.6 and is rejected by an Undici 7 dispatcher
+      // installed by native schema tooling. Worker size/digest checks still apply.
+      const response = await request(resource(key), { method: 'PUT', headers: { ...headers,
         'x-fanmark-import-owner': journal.runId, 'x-fanmark-import-operation': operationId, 'x-fanmark-import-digest': digest,
         'x-fanmark-import-object': Buffer.from(JSON.stringify(object)).toString('base64') }, body: bytes });
       // Even a known collision is a stopped attempt. Neither journal is cleared.

@@ -1,3 +1,8 @@
+`test-production-r2-http-framing.mjs` はNode 22.6のfetchへschema検査で使うUndici 7の
+通信dispatcherを設定し、実localhost HTTPへ画像Bufferを送る。明示Content-Lengthが
+送信前に拒否される組合せを検出し、自動計算した長さ・全byte一致・単一送信/ACKを検査する。
+移送側はサイズ/hashを検証したBufferを渡し、Worker側のサイズ/hash/条件付き保存も維持する。
+
 `test-production-r2-cancellation.mjs` は終了した子processのlock、native DO/R2、独立clientで、
 画像のdispatch前取消し、遅着PUT拒否、新UUIDの保存、取消し応答消失とlocal記録補修、
 証拠改変拒否を検査する。`vitest.production-import.config.mjs` はdispatchとの原子的な競合と、

@@ -5,7 +5,7 @@ import {dirname,isAbsolute} from 'node:path';
 
 export const R2_IMPORT_FAILURE_STAGES=Object.freeze(['runtime','route','input-object','body','content-digest','operation-digest','dispatch','r2-put','r2-response']);
 const transportCodes=new Set(['ECONNRESET','ECONNREFUSED','ETIMEDOUT','ENOTFOUND','EAI_AGAIN','ABORT_ERR',
-  'UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT','UND_ERR_SOCKET',
+  'UND_ERR_INVALID_ARG','UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT','UND_ERR_SOCKET',
   'UND_ERR_REQ_CONTENT_LENGTH_MISMATCH','UND_ERR_RES_CONTENT_LENGTH_MISMATCH']);
 export function r2FailureDiagnostics(error){
   const out={};

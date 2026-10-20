@@ -16,6 +16,7 @@ test('wrapped transport diagnostics survive sanitization and bounded AggregateEr
   }
   assert.deepEqual(r2FailureDiagnostics(new ProductionRemoteR2Error({name:'TimeoutError'})),{transportCode:'TimeoutError'});
   assert.deepEqual(r2FailureDiagnostics({transportCode:'PRIVATE_TOKEN',errors:[{code:'PRIVATE_URL'}]}),{});
+  assert.deepEqual(r2FailureDiagnostics(new ProductionRemoteR2Error({cause:{code:'UND_ERR_INVALID_ARG',message:'PRIVATE_HEADER'}})),{transportCode:'UND_ERR_INVALID_ARG'});
   const cyclic={};cyclic.cause=cyclic;cyclic.errors=[cyclic];assert.deepEqual(r2FailureDiagnostics(cyclic),{});
 });
 
