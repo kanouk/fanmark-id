@@ -506,3 +506,8 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 `production-import-coordinator.ts` の同じwriter DOへ証拠/state hashを渡す。
 永久tombstoneで遅着を拒否し、`production-import-inspection.mjs` が元journalへの取消し追記と
 遠隔記録の照合を行う。操作lockの消去を未実行判定に使わない。
+
+本番画像の部分移送の続行は `production-r2-partial-resume.mjs` が全5 journalと既存R2の全byte・
+metadata・dispatch/ACKを独立対応付けて行う。`initial-import-set-readback.mjs` の
+明示 `storageResume: 'acknowledged-subset-v1'` だけから使い、既存画像へのPUTと余分な画像を拒否する。
+従来の空target専用importは維持する。実行権回収・全store最終照合・停止fenceは既存経路を使う。

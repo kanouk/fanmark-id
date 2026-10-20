@@ -1,6 +1,7 @@
 /** Append no data to the import journal and never authorize a retry. */
 import {open,lstat,readFile} from 'node:fs/promises';
 import {constants} from 'node:fs';
+import {randomUUID} from 'node:crypto';
 import {dirname,isAbsolute} from 'node:path';
 
 export const R2_IMPORT_FAILURE_STAGES=Object.freeze(['runtime','route','input-object','body','content-digest','operation-digest','dispatch','r2-put','r2-response']);
@@ -48,4 +49,17 @@ export async function saveProductionR2Failure({journalPath,runId,operationId,bat
   }
   try{await file.writeFile(JSON.stringify(record)+'\n');await file.sync();}finally{await file.close();}
   const directory=await open(dirname(journalPath),constants.O_RDONLY);try{await directory.sync();}finally{await directory.close();}
+}
+
+/** A separate diagnostic for failures before this invocation calls begin(). */
+export async function saveProductionR2PreflightFailure({journalPath,runId,store,phase,contentSha256,error}){
+ if(!isAbsolute(journalPath??'')||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(runId??'')||
+  !['avatars','covers'].includes(store)||!['source-body','input-object','target-identity'].includes(phase)||
+  (contentSha256!==null&&!/^[a-f0-9]{64}$/.test(contentSha256??'')))throw Error('production_r2_preflight_record_invalid');
+ const parent=await lstat(dirname(journalPath));if(!parent.isDirectory()||parent.isSymbolicLink()||(parent.mode&511)!==448)throw Error('production_r2_preflight_record_invalid');
+ const record={format:'fanmark-production-r2-preflight-failure-v1',at:new Date().toISOString(),runId,store,phase,contentSha256,
+  diagnostics:r2FailureDiagnostics(error),coordinatorBeginAttempted:false,dataRequestAttempted:false,replayAllowed:false};
+ const path=journalPath+'.preflight-'+randomUUID()+'.json',file=await open(path,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);
+ try{await file.writeFile(JSON.stringify(record)+'\n');await file.sync();}finally{await file.close();}
+ const directory=await open(dirname(journalPath),constants.O_RDONLY);try{await directory.sync();}finally{await directory.close();}
 }

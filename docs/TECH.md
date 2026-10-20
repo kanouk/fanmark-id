@@ -1,3 +1,8 @@
+`test-production-r2-partial-resume.mjs` はnative DO/R2と実coordinator/journalを使い、
+完了記録のある画像を保持して未保存分だけPUTする。余分/欠落/改変/metadata相違/ACK欠落/
+pendingを拒否し、既存画像への追加PUTが0であることを検査する。R2送信前診断とGET限定の
+一時的失敗の再確認は `test-production-remote-r2.mjs` に含める。
+
 `test-production-r2-http-framing.mjs` はNode 22.6のfetchへschema検査で使うUndici 7の
 通信dispatcherを設定し、実localhost HTTPへ画像Bufferを送る。明示Content-Lengthが
 送信前に拒否される組合せを検出し、自動計算した長さ・全byte一致・単一送信/ACKを検査する。

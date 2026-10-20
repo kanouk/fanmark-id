@@ -22,6 +22,7 @@ import { isProductionRemoteR2 } from './production-remote-r2.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 import { inspectProductionImportSet, inspectProductionImportAttempt, recoverAcknowledgedProductionImport, importJournalHostHash } from './production-import-inspection.mjs';
 import { prepareStripeReceiptTransfer, importStripeReceiptTransfer, verifyStripeReceiptTransfer } from './stripe-receipt-transfer.mjs';
+import {resumeAcknowledgedProductionSplitR2Export} from './production-r2-partial-resume.mjs';
 import {createImportExecutionLock,recoverExitedImportExecution} from './production-import-execution-lock.mjs';
 
 const plans = new WeakMap(), UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
@@ -180,9 +181,9 @@ export async function rehearseInitialImportSet(options = {}) {
   catch (error) { safeError(error, 'rehearsal_unconfirmed'); }
 }
 async function rehearseSet({ prepared, databases, readDatabases, buckets, readBuckets,
-  businessReportPath, storageReportPath, resumeAfter = null, stopAfter = 'storage', ...extra } = {}, execution = null) {
+  businessReportPath, storageReportPath, resumeAfter = null, stopAfter = 'storage', storageResume = null, ...extra } = {}, execution = null) {
   const plan = plans.get(prepared), stages = ['auth', 'master', 'business', ...(plan?.receipts?['receipts']:[]), 'storage'];
-  if (!plan || Object.keys(extra).length || (resumeAfter !== null && !stages.includes(resumeAfter)) ||
+  if ((storageResume!==null&&(storageResume!=='acknowledged-subset-v1'||!execution||resumeAfter!=='receipts'||stopAfter!=='storage'))|| !plan || Object.keys(extra).length || (resumeAfter !== null && !stages.includes(resumeAfter)) ||
       !stages.includes(stopAfter) || stages.indexOf(resumeAfter) > stages.indexOf(stopAfter)) fail('rehearsal_options_invalid');
   const write = { ...databases }, read = { ...readDatabases }, images = { ...buckets }, imageRead = { ...readBuckets };
   if ([write, read].some(group => Object.keys(group).sort().join(',') !== 'auth,business,master' ||
@@ -224,7 +225,7 @@ async function rehearseSet({ prepared, databases, readDatabases, buckets, readBu
     business: () => importInitialBusinessSnapshot({ ...business, mode, database: write.business, readDatabase: read.business,
       reportPath: businessReportPath, allowUnresolvedGates: true }),
     receipts: () => importStripeReceiptTransfer({...receiptOptions,mode,database:write.business,readDatabase:read.business}),
-    storage: () => (execution ? importProductionSplitR2Export : importInitialSplitR2Export)({ exportDir: plan.storageExportDir, buckets: images, readBuckets: imageRead, reportPath: storageReportPath }),
+    storage: () => storageResume==='acknowledged-subset-v1' ? resumeAcknowledgedProductionSplitR2Export({exportDir:plan.storageExportDir,buckets:images,readBuckets:imageRead,reportPath:storageReportPath,coordinator:execution.coordinator,journalPaths:execution.journalPaths}) : (execution ? importProductionSplitR2Export : importInitialSplitR2Export)({ exportDir: plan.storageExportDir, buckets: images, readBuckets: imageRead, reportPath: storageReportPath }),
   };
   const completed = [], resumed = [], reports = {};
   await sourceUnchanged();

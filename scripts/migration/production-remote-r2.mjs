@@ -9,7 +9,7 @@ import { MAX_IMPORT_OBJECT_BYTES, validateImportKey, validateImportObject, impor
 import { openProductionImportJournal, isProductionImportJournal } from './production-import-journal.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 import {isCloudflareCredentialLease,createLeaseBoundCloudflareFetch} from './cloudflare-credential-lease.mjs';
-import {r2FailureDiagnostics,saveProductionR2Failure,R2_IMPORT_FAILURE_STAGES} from './production-r2-failure.mjs';
+import {r2FailureDiagnostics,saveProductionR2Failure,saveProductionR2PreflightFailure,R2_IMPORT_FAILURE_STAGES} from './production-r2-failure.mjs';
 
 const branded = new WeakSet(), UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
 export class ProductionRemoteR2Error extends Error {
@@ -43,11 +43,19 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
   const controlFetch = credentialLease ? createLeaseBoundCloudflareFetch({lease:credentialLease,fetchImpl}) : fetchImpl;
   const gatewayName = new URL(gatewayOrigin).hostname.split('.')[0];
   async function request(url, options) {
-    try { return await (new URL(url).hostname==='api.cloudflare.com'?controlFetch:fetchImpl)(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(timeoutMs) }); }
-    catch (error) { fail(error); }
+    const readOnly=(options.method??'GET')==='GET';
+    for(let attempt=0;;attempt++){
+      try {
+        const response=await (new URL(url).hostname==='api.cloudflare.com'?controlFetch:fetchImpl)(url,{...options,redirect:'error',signal:AbortSignal.timeout(timeoutMs)});
+        if(!readOnly||![429,502,503,504].includes(response.status)||attempt>=2)return response;
+        await response.body?.cancel();
+      }catch(error){if(!readOnly||attempt>=2)fail(error);}
+      // Only side-effect-free GETs repeat; never PUT, begin, ACK or provider writes.
+      await new Promise(resolve=>setTimeout(resolve,500*2**attempt));
+    }
   }
   async function json(response) {
-    if (!response.ok) { await response.body?.cancel().catch(() => {}); fail(); }
+    if (!response.ok) { await response.body?.cancel().catch(() => {}); fail({httpStatus:response.status}); }
     try { return JSON.parse((await bytesOf(response.body, 8 * 1024 * 1024)).toString('utf8')); } catch { fail(); }
   }
   async function api(path) {
@@ -126,13 +134,17 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
           Object.keys(options).sort().join(',') !== 'customMetadata,httpMetadata,onlyIf,sha256') fail();
       validateImportKey(key);
       if (!Number.isSafeInteger(size) || size < 0 || size > MAX_IMPORT_OBJECT_BYTES) fail();
-      const bytes = await bytesOf(stream, size); if (bytes.length !== size) fail();
-      const object = validateImportObject({ store: identity.store, key, size, sha256: await importDigest(bytes),
-        httpMetadata: options.httpMetadata ?? {}, customMetadata: options.customMetadata });
-      if (options.sha256 !== object.sha256) fail();
-      await verify();
-      if(credentialLease)await credentialLease.acquire();
-      const digest = await importObjectDigest(object);let operationId=null,phase='begin',dataRequestAttempted=false;
+      let bytes,object,digest,preflightPhase='source-body';
+      try{
+        bytes=await bytesOf(stream,size);if(bytes.length!==size)fail();
+        preflightPhase='input-object';object=validateImportObject({store:identity.store,key,size,sha256:await importDigest(bytes),
+          httpMetadata:options.httpMetadata??{},customMetadata:options.customMetadata});
+        if(options.sha256!==object.sha256)fail();
+        preflightPhase='target-identity';await verify();if(credentialLease)await credentialLease.acquire();
+        digest=await importObjectDigest(object);
+      }catch(error){await saveProductionR2PreflightFailure({journalPath:journal.path,runId:journal.runId,store:identity.store,
+        phase:preflightPhase,contentSha256:/^[a-f0-9]{64}$/.test(options.sha256??'')?options.sha256:null,error});throw error;}
+      let operationId=null,phase='begin',dataRequestAttempted=false;
       try {
       operationId=await journal.beforeWrite(digest);phase='http-put';dataRequestAttempted=true;
       // Node fetch computes framing for this verified Buffer. An explicit length

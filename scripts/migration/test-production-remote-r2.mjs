@@ -2,7 +2,7 @@ const credentialLease=syntheticProductionCredential('synthetic_control_plane_tok
 import {syntheticProductionCredential} from './fixtures/synthetic-production-credential.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, chmod, mkdir, writeFile, readFile, rm, unlink } from 'node:fs/promises';
+import { mkdtemp, chmod, mkdir, writeFile, readFile, readdir, rm, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,12 +56,13 @@ test('production R2 client joins fixed control-plane identities, native service,
       ...Object.entries({ D1_TOPOLOGY: 'split', EMOJI_PUBLICATION_BACKEND: 'production-service', RECOVERY_DRAIN_SCOPE_DIGEST: PRODUCTION_RUNTIME.scope,
         RECOVERY_DRAIN_BACKEND: 'durable-object', CUTOVER_WRITE_FREEZE: 'receipt_only', STORAGE_BACKEND: 'r2' }).map(([name, text]) => ({ name, type: 'plain_text', text })),
     ];
-    let drift = null, loseAck = false, puts = 0, lastPut;
+    let drift = null, loseAck = false, puts = 0, lastPut, transientReads = 0;
     const fetchImpl = async (url, options) => {
       assert.equal(options.redirect, 'error');
       if (url.startsWith(base)) {
         assert.equal(new Headers(options.headers).get('authorization'), 'Bearer synthetic_control_plane_token');
         let result;
+        if (url.includes('/r2/buckets/') && (transientReads>0||drift==='read503')) {if(transientReads>0)transientReads--;return Response.json({success:false},{status:503});}
         if (url.includes('/r2/buckets/')) { const target = PRODUCTION_R2_TARGETS.find(t => url.endsWith('/' + t.bucketName));
           assert.ok(target); result = { name: target.bucketName, creation_date: drift === 'bucket' ? 'changed' : target.createdAt, storage_class: 'Standard' };
         } else {
@@ -114,6 +115,15 @@ test('production R2 client joins fixed control-plane identities, native service,
       assert.equal(verified.objectWrites, 0); assert.equal(puts, before);
       await assert.rejects(importProductionSplitR2Export({ exportDir: dir, reportPath, buckets, readBuckets }), /preflight_failed/);
       assert.equal(puts, before);
+    });
+    await t.test('only transient GETs retry; terminal preflight failure records status without begin or PUT',async()=>{
+      transientReads=2;await readBuckets.avatars.list();assert.equal(transientReads,0);
+      const before=puts,bytes=Buffer.from('preflight'),key='owner/preflight.png';drift='read503';
+      await assert.rejects(buckets.covers.putWithSize(key,new Response(bytes).body,{onlyIf:{etagDoesNotMatch:'*'},sha256:sha(bytes),httpMetadata:undefined,
+        customMetadata:{'fanmark-source-bucket':'cover-images','fanmark-source-key':key,'fanmark-source-sha256':sha(bytes),'fanmark-source-size':String(bytes.length)}},bytes.length));drift=null;
+      assert.equal(puts,before);assert.equal((await coordinator.inspect()).state.pending,null);
+      const names=(await readdir(dir)).filter(n=>n.startsWith('covers.jsonl.preflight-'));assert.equal(names.length,1);
+      const record=JSON.parse(await readFile(join(dir,names[0]),'utf8'));assert.equal(record.phase,'target-identity');assert.equal(record.dataRequestAttempted,false);assert.equal(record.coordinatorBeginAttempted,false);assert.equal(record.diagnostics.httpStatus,503);
     });
     await t.test('lost native put ACK leaves both journals pending; separate reader proves bytes without resending', async () => {
       const bytes = Buffer.from('lost response'), key = 'owner/lost.png', hash = sha(bytes);

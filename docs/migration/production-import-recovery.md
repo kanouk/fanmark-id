@@ -156,3 +156,22 @@ begin/dispatch/acknowledgeを永久に拒否し、遅着した元PUTもR2へ進�
 その後の実行権回収・prefix全件照合と新executorによるstage境界からの再開は別工程で行う。
 これは画像の保存成功を意味しない。閉鎖・source停止を保ったまま、新しいUUIDによる画像
 送信を可能にする限定操作である。実Cloudflareの証拠は当日の操作記録で別途確認する。
+
+## 完了記録のある画像を保持して残りだけ移送する
+
+`storageResume: 'acknowledged-subset-v1'` は本番の `resumeAfter: 'receipts'` からの
+画像stage専用。既定の空target専用経路は変えない。未確定のpending/dispatchを成功と扱う
+経路ではない。旧executorの終了確認と実行権回収は従来の全prefix検査を別途要求する。
+
+画像の全inventoryと全5 journalを独立照合し、存在する画像の全byte/metadata、元manifest、
+各画像のoperation digest・永続dispatch・ACKを対応付ける。画像の欠落・余分な画像・未確定
+操作・記録不足・別owner・内容相違・照合中の変化は新しいPUT前に拒否する。取消し記録も
+遠隔tombstoneへ照合する。証拠をACK件数の一致だけで代用しない。
+
+保存済み画像のPUTを禁止し、確認済みのetag/versionを保持する。未保存予定の画像が外部で
+出現した場合、保存済み画像が消えた場合も拒否する。新しいreportを使い、原本・失敗report・
+全journalを保持する。未保存分の新UUIDによる条件付き作成だけを許し、全画像と全DBを
+再照合してから既存の一括executorが完了を確定する。保存済み画像の削除・上書きはしない。
+
+R2送信前の失敗は個別preflight診断へ、固定工程・HTTP状態・許可済み通信codeのみを保存する。
+一時的な429/502/503/504または通信失敗ではGETだけ最大3回確認し、PUTやbegin/ACKを再送しない。

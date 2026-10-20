@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "8e5fa87af56801ff20a6d11139a8375fcdf5bbe681f70629f23a713d77cecad8"
+    "sha256": "7f191d4d75e947f3ef080cd19b61cb30451181b6199163ab76913fe44e041bf2"
   },
   "variables": [
     {
@@ -660,7 +660,7 @@
     },
     {
       "path": "scripts/migration/initial-import-set-readback.mjs",
-      "sha256": "246c10603086329dbdac4cc25d18f6f22a78963bdea2871bcee7272ca15f3568"
+      "sha256": "0fa174f5b7dcd2092acec64130d202905020b310d51167bd180a3fedfd509fd3"
     },
     {
       "path": "scripts/migration/isolated-remote-d1.mjs",
@@ -760,11 +760,15 @@
     },
     {
       "path": "scripts/migration/production-r2-failure.mjs",
-      "sha256": "80945ca10cee98a4ff5ec7dd3c3b440bc98732d95a765bb15af5856edfc32b1b"
+      "sha256": "a6d668ad37c35662408b3f633759c4cd33d2ea003f99bf839dff678d8aefdf76"
     },
     {
       "path": "scripts/migration/production-r2-import-stage.mjs",
       "sha256": "5554b36b462facb9a9535b6f7c54fb07a28ce866fd8296498f78d4a0d7e521f7"
+    },
+    {
+      "path": "scripts/migration/production-r2-partial-resume.mjs",
+      "sha256": "9b62a0bc654ce6b60946ce2fd2554e827ac6a792004b02f680ec5ffebc02c82e"
     },
     {
       "path": "scripts/migration/production-r2-targets.mjs",
@@ -776,7 +780,7 @@
     },
     {
       "path": "scripts/migration/production-remote-r2.mjs",
-      "sha256": "9a3bfaf48c962082e1fce2aa2ead0284589561fe45d16d96dc66b7dbecd9ed86"
+      "sha256": "de30584d34c61eb6ee5805076923ceb5be03bb6d6fa07e54d19d18e4107f4a77"
     },
     {
       "path": "scripts/migration/production-runtime-config.mjs",
