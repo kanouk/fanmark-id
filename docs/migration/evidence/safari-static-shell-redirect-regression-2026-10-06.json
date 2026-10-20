@@ -1,0 +1,46 @@
+{
+  "observedAt": "2026-10-06T10:49:50.930476+00:00",
+  "scope": "Safari sandbox checkout return regression; source and local proof, deployment pending",
+  "previousWorkerVersion": "d4375d19-5024-4bf6-9cd7-1e5d399ce7b5",
+  "observations": {
+    "nativeSafariReturnError": "Response served by service worker has redirections",
+    "rootHttpStatus": 200,
+    "indexHttpStatus": 307,
+    "indexLocation": "/",
+    "syntheticPlan": "creator",
+    "syntheticSubscription": "active",
+    "testMode": true
+  },
+  "beforeFixRegression": {
+    "outerWranglerHttpSmoke": "failed",
+    "precacheIndexStatus": 307,
+    "expected": 200
+  },
+  "changeFiles": {
+    "vite.config.ts": "a60306c0f3833dc4fbeec4043a444bfe58f8cc14d68e9a474158fb7e214eabee",
+    "workers/api/src/index.ts": "bfe6b4d1b1f5811c62999d981ef24ad6193304bf3e5a80c7f0b492f89a6e4e5c",
+    "workers/api/wrangler.app-staging.jsonc": "bb226e99188b0d4accef07cb698f3983c0c913e061f35e05c868181cd5d9d764",
+    "workers/api/wrangler.static-assets.jsonc": "bbe68682b1a0392da58c0938a1898c7428c296fce3b6f8d45df3b25c33dfacee",
+    "workers/api/test/static-assets.test.ts": "44da2a9e09fc7d4102d91c0a3b88be41d17bd6545918f7b259490f5c233b50d4",
+    "workers/api/test/static-assets-router-smoke.mjs": "1d9d17636ed236e254830a5bda33bdd72eda8557ad533ffdb5d30ec0e18f960c"
+  },
+  "afterFixLocal": {
+    "actualStaticAssetsBindingTests": 19,
+    "passed": 19,
+    "outerWranglerHttpSmoke": "passed",
+    "applicationTypecheck": "passed",
+    "workerTypecheck": "passed",
+    "focusedLint": "passed",
+    "stagingBuild": "passed",
+    "stagingBuildEnvironment": "same empty directory and synthetic values as application CI",
+    "deployedJsUnchanged": "/assets/index-UQpaFrj8.js",
+    "pwaCacheBoundary": "passed"
+  },
+  "assetHtmlHandling": "none",
+  "stagingCacheNamespace": "fanmark-staging-static-v2",
+  "ciAccepted": false,
+  "deployed": false,
+  "sameSafariRecoveryAccepted": false,
+  "paidDeletionAccepted": false,
+  "fullMigrationAccepted": false
+}

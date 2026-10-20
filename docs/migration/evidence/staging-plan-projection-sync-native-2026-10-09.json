@@ -1,0 +1,176 @@
+{
+  "scope": "Known plan display-delay fix and one disposable JA desktop paid-plan journey on fresh five-store V2 staging; not full migration",
+  "version": "49e191a8-d85e-4ccd-a343-5387439edaac",
+  "backendSource": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "sourceFilesSha256": {
+    "src/pages/PlanSelection.tsx": "7533238bf12a753bc12519ac46e941cab677f0970e8bacd194e048cd80d33539",
+    "src/hooks/usePlanProjectionPolling.ts": "b2555e63aa38d3e15a13de905ee8216f73d92f6cb990287b2d23e9ff54423128",
+    "src/lib/plan-projection-polling.ts": "34b854ed1d2099b8bc822c0b3d0fb96e8b65e1f607b38646bd2713b582dc64ff",
+    "src/translations/ja.json": "1e4e97759ec824568aa8575a1b809a59f107b37d595556afd05d570829b9f0ac",
+    "src/translations/en.json": "4a89535dd5e13acc89053791f646ca73f0a0e177dbc7c280a5f6d089e09169b5",
+    "src/translations/ko.json": "5a8bdacc393a5e2b27507bec8a045125a194348d0552203ed272226d57de5335",
+    "src/translations/id.json": "bb1ba3bca978b5e7ddedc8141565ee2ff5127f7195e7208e406c7f9d7e4258ef"
+  },
+  "finishedAt": "2026-10-09T08:31:16.505Z",
+  "ui": {
+    "version": "49e191a8-d85e-4ccd-a343-5387439edaac",
+    "device": "Chrome desktop",
+    "locale": "ja",
+    "loginAccepted": true,
+    "creatorSandboxCheckoutAccepted": true,
+    "prePaymentPlanStayedFree": true,
+    "manualReloadsDuringJourney": 0,
+    "readRetryClicks": 0,
+    "fanmarkAcquisitions": 0,
+    "userDataOrDomainMigration": false,
+    "creatorObservedAt": "2026-10-09T08:26:07.731Z",
+    "businessPortalPaymentAccepted": true,
+    "businessObservedAt": "2026-10-09T08:27:42.933Z",
+    "freeCancellationRequestedAt": "2026-10-09T08:27:57.233Z",
+    "freeWaitObservedMs": 51291,
+    "freeObservedAt": "2026-10-09T08:29:34.235Z",
+    "freeObservedMs": 97002,
+    "freeCancellationAccepted": true,
+    "planProjectionAccepted": true,
+    "nativePaidPlanJourneyAccepted": true,
+    "logoutAccepted": true,
+    "finishedAt": "2026-10-09T08:30:10.590Z"
+  },
+  "billing": {
+    "mode": "sandbox",
+    "initialPlan": "free",
+    "checkoutCommands": 1,
+    "changeCommands": 2,
+    "finalPlan": "free",
+    "finalSubscriptionStatuses": [
+      "canceled"
+    ],
+    "signedReceipts": [
+      {
+        "type": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "customer.subscription.created",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "checkout.session.completed",
+        "status": "ignored",
+        "deliveryCount": 1
+      },
+      {
+        "type": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "customer.subscription.updated",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1
+      },
+      {
+        "type": "customer.subscription.deleted",
+        "status": "applied",
+        "deliveryCount": 1
+      }
+    ],
+    "dispatches": [
+      {
+        "status": "completed",
+        "attempts": 2
+      },
+      {
+        "status": "completed",
+        "attempts": 1
+      },
+      {
+        "status": "completed",
+        "attempts": 1
+      },
+      {
+        "status": "completed",
+        "attempts": 1
+      },
+      {
+        "status": "completed",
+        "attempts": 1
+      },
+      {
+        "status": "completed",
+        "attempts": 1
+      },
+      {
+        "status": "completed",
+        "attempts": 1
+      }
+    ],
+    "manualWebhookReplays": 0,
+    "manualCronInvocations": 0,
+    "livePaymentCalls": 0,
+    "testProviderCustomerCardInvoiceHistoryRetained": true
+  },
+  "verification": {
+    "observedAt": "2026-10-09T08:23:16.573Z",
+    "version": "49e191a8-d85e-4ccd-a343-5387439edaac",
+    "scope": "Known plan display delay; UI read polling only",
+    "timeoutMs": 90000,
+    "localActualModuleTests": {
+      "cases": 4,
+      "passed": 4,
+      "delayedProjectionAtMs": 61000,
+      "timeoutAndManualReadRetry": true,
+      "noOverlappingBatches": true,
+      "callbackRendersDoNotRestartDeadline": true,
+      "commandSubmittedOnce": true
+    },
+    "migrationTests": {
+      "cases": 308,
+      "passed": 308
+    },
+    "typecheckPassed": true,
+    "changedSourceLintPassed": true,
+    "buildPassed": true,
+    "callsiteAndAssetRetentionTests": {
+      "cases": 5,
+      "passed": 5
+    },
+    "deployment": {
+      "backendSourceUnchanged": true,
+      "beforeAfterAllCurrentAndOldTableHashesMatched": true,
+      "bindingsHeld": true,
+      "backupMonitorVersionsSchedulesHeld": true,
+      "newPublicAssetsMatched": true,
+      "retainedBundles": {
+        "/assets/index-BAb0qenK.js": "717c00d851d7fd3c0302a012e35f824cc681f88d6f68727af40a953757ece888",
+        "/assets/index-DgYC5YD0.js": "81735f15d322ae1dc75439200ba902ea75d9ad8071f73dee9aa2eb92dd316d7d",
+        "/assets/index-B55f34l0.js": "3515ffebb1f07b8014b53e8f20b151f49f9152aea14ef71e85493cef2261203b",
+        "/assets/index-bqc9x4KI.js": "588683be5b54dc7806181bdfb5f66c289fa36049682767bd7428ce49d6fc2dc3"
+      }
+    },
+    "nativePaidFlow": "accepted",
+    "fullMigrationAccepted": false,
+    "userDataOrDomainMigrated": false,
+    "nativeProof": "staging-plan-projection-sync-native-2026-10-09.json"
+  },
+  "cleanup": {
+    "ownedUserRemoved": 1,
+    "ownedFanmarksCreatedOrRemoved": 0,
+    "operatorRemoved": true,
+    "sessionCountAfterLogout": 0,
+    "allCurrentAndRetainedStoreHashDifferences": [],
+    "foreignKeyViolations": 0,
+    "mainBindingsAssetsNamespacesHeld": true
+  },
+  "timingLimit": "51.291 seconds was still waiting; Free was first observed at 97.002 seconds. These are observation timestamps, not a measured exact projection-completion duration. The 90-second deadline and read-only retry were verified separately with controlled module tests.",
+  "fullMigrationAccepted": false,
+  "actualPhoneInstalledPwaAccepted": false,
+  "userDataOrDomainMigrated": false
+}

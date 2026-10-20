@@ -1,0 +1,92 @@
+{
+  "observedAt": "2026-10-08T13:08:05.685Z",
+  "scope": "One authorized fixed-recipient staging mail, actual signed Resend callbacks, receive-only provider replay and exact-owned cleanup",
+  "runtimeSourceHead": "7c2be90d15055f3cc6334ec812ee77f3f695e3c1",
+  "sourceCi": {
+    "runId": 37763965518,
+    "application": "success",
+    "worker": "success"
+  },
+  "initialWorkerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+  "testWorkerVersion": "1d6b044a-b856-41e5-ad9d-ce3ff6d29b52",
+  "finalWorkerVersion": "cbb800a3-9f71-4a90-b21c-6fe87d2d7b12",
+  "finalTrafficPercentage": 100,
+  "eventsSubscribed": [
+    "email.sent",
+    "email.delivered",
+    "email.bounced",
+    "email.complained",
+    "email.failed",
+    "email.suppressed"
+  ],
+  "webhookCreated": true,
+  "actionTimeHumanApproval": true,
+  "workspaceWideMetadataScopeDisclosed": true,
+  "secretSavedToStagingAndMacKeychain": true,
+  "plaintextTemporarySecretRemoved": true,
+  "providerCalls": {
+    "newEmails": 1,
+    "sentAndDeliveredSignedEvents": 2
+  },
+  "eventIdsMatchProvider": true,
+  "providerDelivery": {
+    "httpStatus": 200,
+    "responseReceived": true,
+    "deliveredAttempts": 2
+  },
+  "replay": {
+    "providerReplayObserved": true,
+    "deliveredReplayWithSendDisabled": true,
+    "exactSameEventRows": true,
+    "eventCountBefore": 2,
+    "eventCountAfter": 2,
+    "newEmails": 0
+  },
+  "minimizedEventColumns": [
+    "id",
+    "provider_email_id",
+    "event_type",
+    "bounce_type",
+    "created_at",
+    "provider_created_at"
+  ],
+  "recipientAndSubjectStoredInEventTable": false,
+  "finalSelectors": {
+    "BROADCAST_EMAIL_BACKEND": "d1",
+    "BROADCAST_WEBHOOK_BACKEND": "d1",
+    "BROADCAST_SEND_BACKEND": null,
+    "BROADCAST_TEST_SEND_BACKEND": null,
+    "BROADCAST_TEST_RECIPIENT": null
+  },
+  "trackingAndNamespacesPreserved": true,
+  "publicAssetHashesPreserved": 6,
+  "ownedFixtureCleanup": true,
+  "independentReadOnlyVerification": true,
+  "allOtherTableHashesPreserved": true,
+  "retainedAuthCounts": {
+    "users": 3,
+    "accounts": 7,
+    "sessions": 2
+  },
+  "mfaGeneration": {
+    "before": 256,
+    "after": 258,
+    "reset": false
+  },
+  "foreignKeyViolations": 0,
+  "externalWriterInventory": {
+    "humanReportedNoOtherStagingD1OrR2Writers": true,
+    "includesKnownWorkerAndThisChat": true,
+    "productionAndFutureWritersNotCovered": true
+  },
+  "acceptanceLimits": {
+    "gmailHumanReceipt": false,
+    "bulkAudienceOrDispatch": false,
+    "actualBounceComplaintFailureSuppression": false,
+    "providerRetryAndRetentionPolicy": false,
+    "regularOperationalBackup": false,
+    "fullMigration": false,
+    "sourceUserMigration": false,
+    "productionDomainCutover": false
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "observedAt": "2026-10-08T09:58:00.354Z",
+  "candidateHead": "5eb0ced27cbf1316c1b048c8f76d51a062357688",
+  "candidateCi": "37758494467",
+  "candidateCiBothJobsSuccess": true,
+  "totalRawBytes": 20971520,
+  "objectBytes": [
+    8388608,
+    8388608,
+    4194304
+  ],
+  "snapshotHash": "c75ccc01ce0f17f551af3c54178756dcee4894088e6c29ec556f0f1098f104c8",
+  "isolatedWorkerVersion": "613b4340-5917-448e-86af-0e70254010e8",
+  "failure": {
+    "stage": "open-maximum",
+    "nativeOutcome": "exceededMemory",
+    "exactScriptVersionMatched": true,
+    "failedInvocationsObserved": 1,
+    "nativeInvocationStartedAt": "2026-10-08T09:55:13Z",
+    "internalProofStartedAt": "2026-10-08T09:55:14.328Z",
+    "terminalObservedBeforeCleanup": true,
+    "postRunResent": false
+  },
+  "maximumEncryptedRoundtripAccepted": false,
+  "maximumRestoreAccepted": false,
+  "maximumResumeAccepted": false,
+  "cleanup": {
+    "bucketsDeleted": 7,
+    "workerDeleted": true,
+    "originalResourceInventoryEqual": true,
+    "historicalNonterminalCleanupRefusalRetained": true
+  },
+  "independentReadback": {
+    "at": "2026-10-08T09:58:00.354Z",
+    "separateProcess": true,
+    "readCredentialOnly": true,
+    "workerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+    "allBaselineHashesEqual": true,
+    "authCounts": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "foreignKeyViolations": 0,
+    "settingsAndNamespacesEqual": true,
+    "isolatedResourceInventoryEqual": true,
+    "temporaryBucketsDeleted": 7,
+    "temporaryWorkerDeleted": true,
+    "proofState": "failed",
+    "proofFailure": "proof_exceeded_memory"
+  },
+  "nextCandidate": {
+    "r2SourceSha256": "06f18ea12f1ae89cac34fc973327241c4ae2de1f725f4342aff5ce98718b13ec",
+    "privateEncodedCiphertextReferenceReleased": true,
+    "decryptedByteBuffersReleasedBeforeParse": true,
+    "decodedTextReleasedBeforeValidate": true,
+    "callerArchiveMutationAllowed": false,
+    "formatAndLimitsChanged": false,
+    "localMaximumCapacityAccepted": true,
+    "ciAccepted": false,
+    "actualRemoteMaximumCapacityAccepted": false,
+    "r2Contracts": 9,
+    "recoverySetContracts": 16,
+    "typecheck": true,
+    "lint": true,
+    "bundleDryRun": true
+  },
+  "mainRedeployed": false,
+  "fullMigrationAccepted": false
+}

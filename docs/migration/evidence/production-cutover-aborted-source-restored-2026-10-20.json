@@ -1,0 +1,111 @@
+{
+  "format": "fanmark-production-cutover-abort-v1",
+  "observedAt": "2026-10-20T00:17:58.442Z",
+  "executionHead": "8e616e23462104a7a10882f160f5a0171164f2fa",
+  "executionCi": {
+    "runId": 39278517048,
+    "bothJobs": "success"
+  },
+  "runId": "bf22744d-e772-4e9e-99c7-e07020b9594c",
+  "routingMode": "worker-route",
+  "cutoverStartedAt": "2026-10-19T23:26:52.137Z",
+  "sourcePublicReopenedAt": "2026-10-20T00:16:16.723Z",
+  "sourceOperationallyRestoredAt": "2026-10-20T00:16:39.992Z",
+  "publicStopMinutes": 49.41,
+  "completedStages": [
+    "G0",
+    "G1",
+    "G2-final-source-capture"
+  ],
+  "stoppedStage": "G2-master-emoji-release-staging",
+  "acknowledgedBatches": {
+    "auth": 1,
+    "master": 123,
+    "business": 0,
+    "avatars": 0,
+    "covers": 0
+  },
+  "pending": {
+    "store": "master",
+    "operationId": "aa52ba01-5b54-42e6-9499-654578cc3657",
+    "batchSha256": "876406c8a0dd8f87745962d2f8c28a12ca65cf1d01c03738cd386eb656ba25f9",
+    "stageBatchNumber": 44,
+    "statementCount": 50,
+    "requestBytes": 24847,
+    "automaticReplay": false,
+    "resolved": false
+  },
+  "authenticationDiagnostic": {
+    "independentGetStatusAfterFailure": 401,
+    "providerCode": 10000,
+    "sameProfileReadSucceededAfterRoutineRefresh": true,
+    "originalFailedWriteStatusRecorded": false,
+    "probableCause": "long-lived captured OAuth access token expired",
+    "causeConfirmed": false
+  },
+  "quarantine": {
+    "permanent": true,
+    "proofSha256": "9b24bb02d3bfde3cb53c827741a9ef84261d4e05508e28de08b8ae429e4f4665",
+    "stateSha256": "105245d3ea2ebf4de64003b18eb7bc49b8ac67c9277f46c01221c40678ba4450",
+    "acknowledgementsRetained": 124,
+    "pendingRetained": 1,
+    "executorRetained": true,
+    "fenceRetained": true,
+    "partialDataRetained": true,
+    "allFiveOriginalJournalsRetained": true,
+    "temporaryGatewaysRemoved": true,
+    "targetGenerationReusable": false
+  },
+  "sourceReconciliationBeforeResume": {
+    "publicTables": 40,
+    "allRowStreamsAndPrimaryKeysMatched": true,
+    "catalogAndSequenceMatched": true,
+    "allAuthUsersIdentitiesFactorsRolesMatched": true,
+    "images": 109,
+    "allImageBytesKeysMetadataMatched": true,
+    "sealedReceiptCount": 0,
+    "sealedDeliveryCount": 0,
+    "newReceiverEverOpened": false,
+    "receiptReturnOrReplayPerformed": false
+  },
+  "sourceRestored": {
+    "functionCount": 35,
+    "originalEntryAndReferencedDependenciesReadbackMatched": true,
+    "originalJwtModes": true,
+    "relationCount": 75,
+    "freezeTriggersRemoved": 71,
+    "cronJobs": 2,
+    "activeCronJobs": 1,
+    "notificationCronActive": false,
+    "maintenance": false,
+    "dailyExpiryDue": 0,
+    "canceledSelfTestContractCount": 1,
+    "publicUiObserved": true,
+    "loginUiObserved": true,
+    "authApiHealthy": true,
+    "publicImagesMatchOriginal": true,
+    "humanPasswordOrMfaLoginRetested": false,
+    "mfaFactorChanged": false,
+    "onlyBusinessWriter": true
+  },
+  "target": {
+    "appVersion": "fbf9f7cd-9927-41ad-8258-dd442c25f358",
+    "settingsPreserved": true,
+    "workerInventoryCount": 8,
+    "ownerModeEverEnabled": false,
+    "newBusinessWritesStarted": false,
+    "publicRoutes": 0,
+    "productionCron": 0
+  },
+  "dnsAll17RecordsExact": true,
+  "routeOrDnsChanged": false,
+  "newProductionWebhooksRegistered": false,
+  "additionalEmailTestsSent": 0,
+  "keysRegenerated": false,
+  "protectedCliLatestPreserved": true,
+  "main": "e5a553c0bcc938a308def6f3770f1a84db88d389",
+  "mainMerged": false,
+  "productionMigrationCompleted": false,
+  "productionReady": false,
+  "nextG0RequiresNewTargetGenerationAndCredentialLifetimeChecks": true
+}

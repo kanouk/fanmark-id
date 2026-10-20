@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
@@ -50,7 +51,7 @@ export const PasswordSetup = () => {
   useEffect(() => {
     if (loading) return;
 
-    if (!user) {
+    if (!user?.id) {
       navigate('/auth', { replace: true });
       return;
     }
@@ -82,15 +83,19 @@ export const PasswordSetup = () => {
 
     setSubmitting(true);
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
-      if (updateError) throw updateError;
+      if (isBetterAuthEnabled()) {
+        await betterAuthClient.setupPassword(password);
+      } else {
+        const { error: updateError } = await supabase.auth.updateUser({ password });
+        if (updateError) throw updateError;
 
-      const { error: flagError } = await supabase
-        .from('user_settings')
-        .update({ requires_password_setup: false })
-        .eq('user_id', user.id);
+        const { error: flagError } = await supabase
+          .from('user_settings')
+          .update({ requires_password_setup: false })
+          .eq('user_id', user.id);
 
-      if (flagError) throw flagError;
+        if (flagError) throw flagError;
+      }
 
       setRequiresPasswordSetup(false);
       toast({

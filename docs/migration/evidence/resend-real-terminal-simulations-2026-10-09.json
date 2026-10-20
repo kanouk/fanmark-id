@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "status": "real_resend_simulation_webhooks_and_native_effective_outcomes_accepted",
+  "observedAt": "2026-10-09T02:00:38.740Z",
+  "mainVersion": "98160d0f-1326-4285-ab2b-1de5d35cfbd7",
+  "sourceCommit": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "reference": "https://resend.com/docs/dashboard/emails/send-test-emails",
+  "providerRequests": 2,
+  "providerTestAddresses": true,
+  "realUserRecipients": 0,
+  "settingsUnchanged": true,
+  "mainDeployments": 0,
+  "foreignKeyViolations": 0,
+  "cases": [
+    {
+      "kind": "bounced",
+      "providerId": "01a11e62-d318-7dba-b664-1b378506e2dc",
+      "signedReceipts": [
+        {
+          "id": "msg_3KRCnFJcaja6eahaAJse05u4MzX",
+          "provider_email_id": "01a11e62-d318-7dba-b664-1b378506e2dc",
+          "event_type": "email.sent",
+          "bounce_type": null,
+          "created_at": "2026-10-09T01:59:18.609000Z",
+          "provider_created_at": "2026-10-09T01:59:16.216000Z"
+        },
+        {
+          "id": "msg_3KRCnJCobzoMfDpFxSd4SXwNVyp",
+          "provider_email_id": "01a11e62-d318-7dba-b664-1b378506e2dc",
+          "event_type": "email.bounced",
+          "bounce_type": "Permanent",
+          "created_at": "2026-10-09T01:59:19.030000Z",
+          "provider_created_at": "2026-10-09T01:59:17.259000Z"
+        }
+      ],
+      "effectiveOutcome": {
+        "id": "msg_3KRCnJCobzoMfDpFxSd4SXwNVyp",
+        "provider_email_id": "01a11e62-d318-7dba-b664-1b378506e2dc",
+        "status": "bounced",
+        "error_code": "provider_bounced",
+        "suppression_reason": "permanent_bounce"
+      },
+      "accepted": true
+    },
+    {
+      "kind": "complained",
+      "providerId": "01a11e62-d419-7352-8b9a-be1aaf5b9949",
+      "signedReceipts": [
+        {
+          "id": "msg_3KRCn8GHgLXABMHjaw61vx1aX4p",
+          "provider_email_id": "01a11e62-d419-7352-8b9a-be1aaf5b9949",
+          "event_type": "email.sent",
+          "bounce_type": null,
+          "created_at": "2026-10-09T01:59:17.846000Z",
+          "provider_created_at": "2026-10-09T01:59:16.382000Z"
+        },
+        {
+          "id": "msg_3KRCnaSu86PxXQ6z4UiqB8wVeWt",
+          "provider_email_id": "01a11e62-d419-7352-8b9a-be1aaf5b9949",
+          "event_type": "email.complained",
+          "bounce_type": null,
+          "created_at": "2026-10-09T01:59:21.231000Z",
+          "provider_created_at": "2026-10-09T01:59:19.844000Z"
+        },
+        {
+          "id": "msg_3KRCncxVA0AQ4nIzLaYYvhipZxX",
+          "provider_email_id": "01a11e62-d419-7352-8b9a-be1aaf5b9949",
+          "event_type": "email.delivered",
+          "bounce_type": null,
+          "created_at": "2026-10-09T01:59:21.406000Z",
+          "provider_created_at": "2026-10-09T01:59:20.455000Z"
+        }
+      ],
+      "effectiveOutcome": {
+        "id": "msg_3KRCnaSu86PxXQ6z4UiqB8wVeWt",
+        "provider_email_id": "01a11e62-d419-7352-8b9a-be1aaf5b9949",
+        "status": "suppressed",
+        "error_code": "provider_complaint",
+        "suppression_reason": "complaint"
+      },
+      "accepted": true
+    }
+  ],
+  "limits": [
+    "Uses official Resend simulator addresses rather than real mailbox failures.",
+    "Existing staging handler verifies real signatures; no response or body replacement.",
+    "Effective-event D1 view is accepted; no broadcast-recipient/run was attached to these messages.",
+    "Actual queued-recipient reconciliation, multi-recipient sending, UI and operator retry/retention remain separate.",
+    "Auth/profile state may legitimately change through the ongoing human Discord password setup; no whole-source data preservation is inferred."
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-15",
+  "scope": "local implementation review and synthetic verification only",
+  "baselineCommit": "714fee4d27836eca57b53453655da0ae6e0f1d54",
+  "baselineCI": {
+    "runId": 38748657327,
+    "application": "success",
+    "worker": "success",
+    "supabasePreview": "skipped"
+  },
+  "productionChanges": false,
+  "deployed": false,
+  "realUserDataRead": false,
+  "node": "22.6.0",
+  "tests": {
+    "offlinePreparationAndAuthPreflight": 13,
+    "cutoverEntrypoints": 11,
+    "nativeNotificationAndSignedReceipt": 24,
+    "nativeAuth": 51,
+    "nativeOAuthSignup": 66,
+    "nativeWriterDrain": 15,
+    "combinedRecoveryAndRemoteD1Transport": 10
+  },
+  "totalPassed": 190,
+  "typecheck": "passed",
+  "reproducedBeforeFix": {
+    "test": "does not acknowledge or schedule the outbox during cutover, then resumes it once",
+    "expectedAcknowledgedGeneration": 0,
+    "actualAcknowledgedGeneration": 1
+  },
+  "rejectedHypothesis": "Current provider/subject uniqueness was initially suspected from migration 0003 alone. All four current migrations reject duplicates through the index added by 0009. Tests drop the index only in isolated fixtures to validate drift detection. No schema migration change was made.",
+  "limits": [
+    "No staging or production deployment",
+    "No actual Supabase Auth or Stripe ledger export",
+    "No production runner or full independent source-target checker",
+    "No operator-only asset/API verification entrance",
+    "No actual-data cutover/restore timing or zero-loss recovery proof",
+    "Focused review, not all product flows or an independent reviewer"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "status": "native_schedules_registered_delivery_and_owner_receipt_accepted",
+  "observedAt": "2026-10-09T01:47:19.784Z",
+  "sourceCommit": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "ciId": "37869826082",
+  "ciStatus": "both_jobs_success",
+  "mainVersion": "98160d0f-1326-4285-ab2b-1de5d35cfbd7",
+  "scope": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
+  "registration": {
+    "fanmark-backup-monitor-staging": {
+      "cron": [
+        "35 * * * *"
+      ],
+      "versions": [
+        {
+          "version_id": "8298289e-d9b6-4dd4-8ce4-4a51457c5afe",
+          "percentage": 100
+        }
+      ],
+      "publicHttp": false
+    },
+    "fanmark-backup-staging": {
+      "cron": [
+        "5 0 * * *"
+      ],
+      "versions": [
+        {
+          "version_id": "c0c5de89-5c4c-45dc-bd47-e919fa074004",
+          "percentage": 100
+        }
+      ],
+      "publicHttp": false
+    }
+  },
+  "retention": {
+    "deleted": 0,
+    "retentionDays": 30
+  },
+  "monitorEvaluation": {
+    "slot": "2026-10-09",
+    "code": null
+  },
+  "alert": {
+    "providerId": "01a11e51-be86-71b6-a64b-18003b643fd7",
+    "providerAccepted": true,
+    "signedSentAndDelivered": true,
+    "ownerInboxAccepted": true,
+    "ownerReceiptAt": "2026-10-09T01:43:52.261388+00:00",
+    "requests": 1
+  },
+  "preservation": {
+    "allExistingBindingsAndSecrets": true,
+    "sourceDataExceptExactSignedAlertEvents": true,
+    "oldStoresAndNamespacesRetained": true,
+    "temporaryOperatorDeleted": true,
+    "captureRepeated": false
+  },
+  "nextDailyUtc": "2026-10-10T00:05:00.000Z",
+  "naturalDailyAccepted": false,
+  "naturalMonitorAccepted": false,
+  "limits": [
+    "Native capture and restore use empty Auth/image source; populated synthetic recovery is separate evidence.",
+    "Schedule registration does not prove natural execution.",
+    "One delivery-test proves the notification route; no actual backup failure was induced.",
+    "Shared Cloudflare/R2/service/Resend outage is not guaranteed to notify.",
+    "Real user migration and production DNS cutover remain deferred."
+  ]
+}

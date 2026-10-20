@@ -1,0 +1,67 @@
+{
+  "format": "fanmark-staging-natural-monitor-acceptance-v1",
+  "scope": "One actual natural hourly monitoring invocation of the retained private backup; not daily capture, decryption/row parity, Vault remote Sync or whole migration acceptance",
+  "worker": "fanmark-backup-monitor-staging",
+  "version": "8298289e-d9b6-4dd4-8ce4-4a51457c5afe",
+  "cron": "35 * * * *",
+  "runtimeSourceHead": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "observation": {
+    "startedAt": "2026-10-09T03:23:07.193Z",
+    "finishedAt": "2026-10-09T03:35:12.802Z",
+    "deadline": "2026-10-09T03:40:00.000Z",
+    "execTerminalExitCode": 0,
+    "nativeScheduledEventsObserved": 1,
+    "manualInvocation": false,
+    "runtimeRedeployed": false,
+    "preAndPostVersionAndCronMatched": true
+  },
+  "invocation": {
+    "scheduledTime": "2026-10-09T03:35:05.000Z",
+    "outcome": "ok",
+    "exceptionCount": 0,
+    "healthy": true,
+    "slot": "2026-10-09",
+    "accepted": true
+  },
+  "registeredHandlers": [
+    "fetch",
+    "scheduled"
+  ],
+  "persistedInvocationLogs": {
+    "enabled": true,
+    "samplingRate": 1
+  },
+  "backupChecks": {
+    "receiptFormatIdentityStateAndSlot": true,
+    "sourceIdsSchemaHashesAndKeyIdMatched": true,
+    "archiveHeadAndByteCountMatched": true,
+    "writerFenceReleased": true,
+    "retention30DaysCompletionReceiptMatched": true,
+    "archiveBytesDecrypted": false,
+    "sourceD1OrImageRowsRead": false
+  },
+  "healthyHandlerRequestsAlert": false,
+  "naturalMonitorAccepted": true,
+  "naturalDailyCaptureAccepted": false,
+  "nextNaturalDailyScheduledTime": "2026-10-10T00:05:00Z",
+  "alreadyClaimedOctober9SlotReplayed": false,
+  "archiveOrKeysChanged": false,
+  "sourceSchemaRuntimeOrSettingsChanged": false,
+  "sourceUserMigration": false,
+  "productionDnsCutover": false,
+  "priorObservation": {
+    "path": "staging-natural-backup-monitor-observation-2026-10-09.json",
+    "matchingEventCount": 0,
+    "notExecutionFailureProof": true,
+    "historicalRecordPreserved": true
+  },
+  "privateProofDigests": {
+    "journalSha256": "e298bbec8267a24250ed80ccf34088fd320da1b60b0a3d60f554678c828b9044",
+    "nativeHandlerInspectionSha256": "610f7872ecd836d34cf30d27008714d42591924f28814bb5c122fb26ae031b05"
+  },
+  "remaining": [
+    "First natural daily capture and retention",
+    "Vault remote Sync",
+    "Final provider/native UI/mobile/PWA integration and source/converter reconciliation"
+  ]
+}

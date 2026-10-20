@@ -1,0 +1,129 @@
+{
+  "format": "fanmark-r2-recovery-shared-remote-proof-v1",
+  "state": "accepted-isolated-remote",
+  "sourceHead": "fcd481245e76b23cf0d6cf7ef134197b3a21bcee",
+  "ci": {
+    "run": "37643375901",
+    "application": "success",
+    "worker": "success",
+    "url": "https://github.com/kanouk/fanmark-id/actions/runs/37643375901",
+    "nativeR2Tests": 8
+  },
+  "sourceSHA256": {
+    "workers/api/src/r2-recovery.ts": "32f3b2ffca6aa8f3f4696845f111182ad1b20088160435a7c12469ccb9b976e5",
+    "scripts/migration/isolated-shared-r2-recovery-worker.mjs": "534e45ab00afbe9ba1a6c274fb542c4e6d3f1db16547065523e565b003e1c6d1",
+    "scripts/migration/run-isolated-shared-r2-recovery.mjs": "37e1f553a73682658a0796333009e5d2a734d9f10547b387629e1d48e2a73c7c",
+    "scripts/migration/test-isolated-shared-r2-recovery-worker.mjs": "3f5178712b314fa318485fcd8ca6aaf4ee64b357ef650ca65a736fb8f7980e71"
+  },
+  "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "startedAt": "2026-10-07T15:35:19.444Z",
+  "finishedAt": "2026-10-07T15:36:57.384Z",
+  "scope": "synthetic Standard objects on 7 new owned R2 buckets and temporary Worker; no retained staging bucket writes",
+  "worker": {
+    "name": "fanmark-recovery-6c6ffa5c7b7499f7-shared-r2",
+    "version": "ae69e6bd-27fe-424d-87a9-1023a6098ed2",
+    "creationTime": "2026-10-07T15:35:42.065563Z",
+    "deleted": true
+  },
+  "report": {
+    "state": "verified",
+    "step": "complete",
+    "assertions": {
+      "rawStandardClass": true,
+      "unicodeEmptyMetadata": true,
+      "encryptedRoundtripAndKind": true,
+      "bothKindsBytesMetadataExact": true,
+      "nativeImageGetHead": true,
+      "lostAckPreservedVersion": true,
+      "foreignMetadataPreserved": true,
+      "sourceUnchanged": true
+    },
+    "storageClasses": [
+      "Standard"
+    ],
+    "startedAt": "2026-10-07T15:36:10.779Z",
+    "metadataFieldTypes": {
+      "contentType": "string",
+      "contentLanguage": "string",
+      "contentDisposition": "string",
+      "contentEncoding": "undefined",
+      "cacheControl": "string",
+      "cacheExpiry": "Date"
+    },
+    "paginationPages": 4,
+    "resumedWrites": 2,
+    "avatarObjects": 3,
+    "coverObjects": 1,
+    "avatarHash": "35d76446f094ffcb8ffdb00706b9239599d4505ea1291998d81080bd5fad64a1",
+    "coverHash": "ca3fbc1b4d60965dad5b994d61441cd59e1d4666348742a14640d00bcb29f378",
+    "finishedAt": "2026-10-07T15:36:29.220Z"
+  },
+  "storageClassAdapter": false,
+  "lostAckInjection": "one real R2 PUT commits, wrapper discards acknowledgement; exact resume writes only the two missing objects",
+  "cleanup": {
+    "ownedBuckets": 7,
+    "allBucketsDeleted": true,
+    "allObjectsClearedBeforeBucketDeletion": true,
+    "workerDeleted": true,
+    "requestTokenFileRemoved": true,
+    "inventoryBefore": {
+      "d1": 3,
+      "r2": 3,
+      "workers": 2
+    },
+    "inventoryAfter": {
+      "d1": 3,
+      "r2": 3,
+      "workers": 2
+    },
+    "inventoryExact": true,
+    "inventorySHA256": "2dd69b5e4b0e57a1da3bc421b29b417f82aad2e6c70ea24eebf06884133c97cb",
+    "independentWranglerBucketReadback": "only original 3 buckets observed after cleanup"
+  },
+  "mainStage": {
+    "independentCredential": "existing read-only Keychain monitor",
+    "beforeObservedAt": "2026-10-07T15:29:11.784Z",
+    "afterObservedAt": "2026-10-07T15:37:22.670Z",
+    "version": "17fdbf39-99a5-4927-bf12-bc11e19b7c3d",
+    "businessMigrations": 27,
+    "aggregateCountsUnchanged": true,
+    "counts": {
+      "foreign_key_violations": 0,
+      "wake_singletons": 1,
+      "wake_requested": 34,
+      "wake_acknowledged": 34,
+      "notification_pending": 0,
+      "notification_overdue": 0,
+      "notification_stale_processing": 0,
+      "notification_failed": 0,
+      "notification_archive_candidates": 0,
+      "expiry_open_runs": 0,
+      "finalization_open_runs": 0,
+      "finite_licenses_past_end": 0,
+      "grace_licenses_past_end": 0,
+      "stripe_dead_letters": 0,
+      "stripe_overdue": 0,
+      "stripe_expired_leases": 0
+    },
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": [],
+    "fullRetainedTableHashReverified": false
+  },
+  "boundaries": {
+    "InfrequentAccessAccepted": false,
+    "maximumCapacityMemoryCpuAccepted": false,
+    "crossStoreAtomicSnapshotAccepted": false,
+    "wholeStoreCollectorEnabled": false,
+    "keyOffHostRetentionPolicyAdopted": false,
+    "stagingRuntimeRedeployed": false,
+    "retainedStagingDataWrites": 0,
+    "sourceWrites": 0,
+    "userDataMigration": false,
+    "dnsCutover": false,
+    "newMail": 0,
+    "liveBilling": false
+  }
+}

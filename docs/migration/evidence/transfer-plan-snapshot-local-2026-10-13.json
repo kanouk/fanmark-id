@@ -1,0 +1,53 @@
+{
+  "state": "local_real_d1_transfer_plan_snapshot_regression_accepted",
+  "observedAt": "2026-10-13T08:16:35.307Z",
+  "problem": "A limit change after preflight but before the transfer batch allowed stale apply/approve to return200.",
+  "reproduction": {
+    "cases": 2,
+    "beforeFixStatuses": [
+      200,
+      200
+    ],
+    "expectedStatuses": [
+      409,
+      409
+    ]
+  },
+  "fix": "The reservation/approval batch verifies preflight plan, limit row count and exact limit value alongside capacity before effects.",
+  "validation": {
+    "nativeLocalD1Tests": 43,
+    "newRaces": 6,
+    "raceKinds": [
+      "new limit setting",
+      "changed existing limit",
+      "recipient plan downgrade"
+    ],
+    "actions": [
+      "apply",
+      "approve"
+    ],
+    "allRejectedWith409": true,
+    "transferStatePreserved": true,
+    "concurrentLimitEditPreserved": true,
+    "retryWithSufficientCurrentLimitAccepted": true,
+    "oneRelevantAuditAfterRetry": true,
+    "foreignKeyChecks": true,
+    "workerTypecheckPassed": true,
+    "focusedEslintPassed": true
+  },
+  "code": [
+    {
+      "path": "workers/api/src/fanmark-transfer-d1-api.ts",
+      "sha256": "000fe094245ffce1045ac08374fa41bf9aaf437f262097feb24db906e6694bf9"
+    },
+    {
+      "path": "workers/api/test/fanmark-transfer-d1.test.ts",
+      "sha256": "c654e828da10c3b257df534e07d2d3f0e7fb1c3421dd79c7061397ff4b5137bd"
+    }
+  ],
+  "proofScope": "Actual local Worker router, Better Auth synthetic sessions, all checked-in Business/Auth migrations and focused Master fixture; not remote Cloudflare or whole migration acceptance.",
+  "remoteAccepted": false,
+  "normalWorkerRedeployed": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false
+}

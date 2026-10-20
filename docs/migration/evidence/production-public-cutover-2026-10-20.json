@@ -1,0 +1,140 @@
+{
+  "format": "fanmark-production-cutover-verification-v1",
+  "observedAt": "2026-10-20T15:19:21.989744+00:00",
+  "status": "production-acceptance-complete-before-final-ci-and-main-merge",
+  "runId": "81447379-0345-49ca-96c0-9d03e7037929",
+  "runtimeVersion": "b83b29b9-1d8c-4f15-bd23-d1f37bda7f3d",
+  "runtimeValidationHead": "a9b7d85b8edf20073669d3bd1189a4d7b0d85db7",
+  "runtimeCi": {
+    "runId": 39427950004,
+    "bothJobsSucceeded": true
+  },
+  "existingUsers": 15,
+  "sourceIdentities": 18,
+  "acknowledgedOperations": 536,
+  "allFiveStoresIndependentlyMatched": true,
+  "publicImageBytes": {
+    "avatars": 69,
+    "covers": 40,
+    "total": 109,
+    "bytes": 13285729,
+    "allSourceHashesMatched": true
+  },
+  "realBackupRestore": {
+    "tables": 118,
+    "images": 109,
+    "independentlyMatched": true,
+    "ownedResourcesRemoved": true,
+    "initialDailySlotVerified": true,
+    "naturalDailyObserved": false,
+    "nextNaturalDailyAt": "2026-10-21T00:05:00Z"
+  },
+  "owner": {
+    "existingLoginAndSavedMfaVerified": true,
+    "freshNormalSessionAfterPublicReloadVerified": true,
+    "ownedActiveCount": 7,
+    "administratorUnlimitedCapacityDisplayed": true,
+    "indefiniteLicenseCountDisplayed": 2
+  },
+  "notification": {
+    "approvedNewMessagesSent": 1,
+    "providerDelivered": true,
+    "signedLedgerMatched": true,
+    "durableReceiptMatched": true,
+    "ownerConfirmedGmailInbox": true,
+    "resendPermissionSpent": true
+  },
+  "publicBoundaries": {
+    "httpsProbes": 11,
+    "anonymousPrivateEndpoints401": 4,
+    "passwordProtectedTargetsVerified": 1,
+    "protectedRedactionAndMissingOrForgedProofRefusalVerified": true,
+    "actualPrivateProfileTargets": 0,
+    "fourLanguages": [
+      "ja",
+      "en",
+      "ko",
+      "id"
+    ],
+    "oldIabPwaUpdatedByHardReload": true,
+    "mobileViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "mobileHorizontalOverflowPx": 18
+  },
+  "dns": {
+    "mode": "Worker Route",
+    "changedARecords": [
+      "fanmark.id",
+      "www.fanmark.id",
+      "admin.fanmark.id"
+    ],
+    "originlessDestination": "192.0.2.1",
+    "otherRecordsExact": 14,
+    "nsMxTxtLegacyAuthPreserved": true,
+    "twoResolversDistinctIpsTlsValidated": true,
+    "apexHttpGetHeadHttpsUpgradeVerified": true
+  },
+  "cron": {
+    "app": [
+      "* * * * *",
+      "0 0 * * *"
+    ],
+    "backup": [
+      "5 0 * * *"
+    ],
+    "monitor": [
+      "35 * * * *"
+    ],
+    "naturalEveryMinuteInvocationSucceeded": true
+  },
+  "source": {
+    "frozen": true,
+    "functionsStillStopped": 35,
+    "cronStopped": true,
+    "forwardRecoveryOnly": true,
+    "oldResourcesAndCanceledSelfTestRetained": true
+  },
+  "historicalStripeSubscriptionObjectVerified": false,
+  "historicalStripeLookupUnresolved": true,
+  "monitor30Minutes": {
+    "startedAt": "2026-10-20T14:41:58.661Z",
+    "observedAt": "2026-10-20T15:12:00.418Z",
+    "durationMs": 1801757,
+    "samples": 30,
+    "failedRequests": 0,
+    "continuous30MinutesObserved": true,
+    "allProbesPassed": true
+  },
+  "oldDeployIntegrationDisabled": true,
+  "mainMergePolicy": "after-production-verification-legacy-retirement-and-final-ci",
+  "privateProofHashes": {
+    "g2-completed.json": "19fba14d934df58d6029d3660c993dc1067612b7ea8ab890ab3f353d7af66e55",
+    "g3-data-reconciled.json": "25d6cbbc26740c34771b138baeff40612fda0f44c19c9927ec48d22a667c518b",
+    "production-operational-restore-independent.json": "d02e65163b9ec1ade8780e87a052f181a2a4f48ec338bff5a8d4e8eda8b47378",
+    "production-operational-cleanup-result.json": "34a0edeab4da40bb3f7b7ac76b33deaada14cd33faf480b38a77b450247d3d38",
+    "g3-daily-verified.json": "200b64e5dab0e6a858bfc6083d74b0feaa957f690e37e907418d90f1727fb065",
+    "g5-owner-acceptance-verified.json": "95dc4278f0be8cb098372941fde7e5689bcd124b2abdcde135daaecc7bc0194b",
+    "g5-public-active.json": "74371716b515e5879d13a69fa2f346622134a677b02aed74e0b9fd0686e70949",
+    "g5-public-readonly-initial.json": "9d547553196e803292a7780bf19dba011bb8b125630bcb886b57ecba22d8e439",
+    "g5-public-all-images-verified.json": "021c7d407770162266090f0b06877710588fa9324352293d16acf549325a1f85",
+    "g5-real-protected-public-verified.json": "e8b41b2e9240c1f385d960951242db84d0df64631c478cb805ecbf2159541815",
+    "g5-normal-cron-enabled.json": "b7a32764919c7fd08fe08870feae46deb6b05276793bb96d6375474d433ff0a4",
+    "g5-natural-app-cron-observation.json": "6421187ed544e06940df41445fded97a0a5a9197e39fc20101f1cf555281bec5",
+    "g5-final-dns-readonly-verified.json": "14f32300df6a893e88f0df74274eb977e2d9c94ce0d19b972a1db260b8d3b7f1",
+    "g5-secondary-public-dns-tls.verified.json": "782a314fd3d7ee3c1351c2a81b807359a6641d74b3a5dc7832e89678145c1f6c",
+    "g5-public-http-upgrade-verified.json": "bf1fcb7f7352a95d41d7da8879fb66c450f6028d07a06105e1227d934d189a5c",
+    "g5-public-browser-verification.json": "ad45866ec20fb2a5c6ca9f8905dbf845ea9fcddd9e12df5e1ef5999d6235f70a",
+    "g5-source-boundary-after-public.json": "301d7e2e459ab7bb85d296ad9e95ce4700377cf2a9d766f173945449b98c7c93",
+    "g5-final-worker-inventory-readonly.json": "b3161bfc4f007c66c92b0e1be9777b239e9ec935f6f75779db2f9246b1f0d30b",
+    "g5-public-30min-monitor-result.json": "912c2c6506bb1fb7a08da6381a1d81cbb709f9e34c019149d61a861bf4844512",
+    "g5-public-readonly-after-monitoring.json": "c502c56b1a89370b1c5f57bf5d795ead8505d51c2ae7c0972ae2e012b48fe9b4",
+    "current-stripe-post-public.verified.json": "a5e621765679442bef997293f07a44da349a9a6c2ad36aaa8b1c4fb067e32988",
+    "g5-source-github-project-connection-retired.json": "7ae15aa1c09fed175a79cc188b872ba35cbe6c3782ade638f47c56e8e424e4d3",
+    "g5-public-indexing-verified.json": "9a3dee860c77d83940eadbb79c6c68d83ee78e43603586a148913c4ea6f44bb6"
+  },
+  "sourceProjectAndDefaultBranchRetained": true,
+  "stripePostPublicBusinessStateUnchanged": true,
+  "newUnclassifiedStripeEvents": 0
+}

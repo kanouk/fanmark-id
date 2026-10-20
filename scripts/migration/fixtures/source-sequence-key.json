@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "sourceDefinitionSha256": "fbe91b15cd36716684ec05918433dc0c0606962b5c5396bfbba4c994415dba09",
+  "observedAt": "2026-10-02T23:43:00.787582+00:00",
+  "oracleSqlSha256": "b71a4dd0baba6ee9e15a047ac9b55f831b7403ddeba3ca60ef60cbe43e62de67",
+  "cases": [
+    {
+      "guardWouldRaiseIfBodyRan": false,
+      "ids": [
+        null
+      ],
+      "label": "all_null",
+      "sourceKey": "d41d8cd9-8f00-b204-e980-0998ecf8427e",
+      "sourceLength": 1,
+      "sourceString": "",
+      "strictNullSkipsBody": false
+    },
+    {
+      "guardWouldRaiseIfBodyRan": false,
+      "ids": [],
+      "label": "empty",
+      "sourceKey": "d41d8cd9-8f00-b204-e980-0998ecf8427e",
+      "sourceLength": null,
+      "sourceString": "",
+      "strictNullSkipsBody": false
+    },
+    {
+      "guardWouldRaiseIfBodyRan": false,
+      "ids": [
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        null,
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+      ],
+      "label": "null_element",
+      "sourceKey": "8d302952-62ae-6490-b35c-2051c9ab5d0f",
+      "sourceLength": 3,
+      "sourceString": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "strictNullSkipsBody": false
+    },
+    {
+      "guardWouldRaiseIfBodyRan": false,
+      "ids": [
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+      ],
+      "label": "ordered",
+      "sourceKey": "8d302952-62ae-6490-b35c-2051c9ab5d0f",
+      "sourceLength": 2,
+      "sourceString": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "strictNullSkipsBody": false
+    },
+    {
+      "guardWouldRaiseIfBodyRan": false,
+      "ids": [
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+      ],
+      "label": "reversed",
+      "sourceKey": "d9ed9898-f6fc-6e72-090a-3ca2c73edacb",
+      "sourceLength": 2,
+      "sourceString": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb,aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "strictNullSkipsBody": false
+    },
+    {
+      "guardWouldRaiseIfBodyRan": true,
+      "ids": null,
+      "label": "sql_null",
+      "sourceKey": null,
+      "sourceLength": null,
+      "sourceString": null,
+      "strictNullSkipsBody": true
+    },
+    {
+      "guardWouldRaiseIfBodyRan": false,
+      "ids": [
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+      ],
+      "label": "uppercase",
+      "sourceKey": "8d302952-62ae-6490-b35c-2051c9ab5d0f",
+      "sourceLength": 2,
+      "sourceString": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "strictNullSkipsBody": false
+    }
+  ]
+}

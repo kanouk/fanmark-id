@@ -1,0 +1,18 @@
+{
+  "name": "fanmark-cloudflare-verified-access-local-proof",
+  "main": "src/verified-access-proof.mjs",
+  "compatibility_date": "2026-09-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "VERIFIED_ACCESS_ORIGIN": "http://example.test",
+    "VERIFIED_ACCESS_SECRET": "synthetic-verified-access-secret-32-characters",
+    "VERIFIED_ACCESS_TEST": "1"
+  },
+  "d1_databases": [
+    {
+      "binding": "ACCESS_DB",
+      "database_name": "fanmark-verified-access-local-proof",
+      "database_id": "00000000-0000-0000-0000-000000000002"
+    }
+  ]
+}

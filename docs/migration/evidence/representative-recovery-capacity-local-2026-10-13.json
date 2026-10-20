@@ -1,0 +1,40 @@
+{
+  "state": "representative_capacity_local_verified",
+  "startedAt": "2026-10-13T00:59:13.308Z",
+  "finishedAt": "2026-10-13T00:59:36.112Z",
+  "privateResultSha256": "903c649753ee9adfe81283451c971f9f281fd50099bb985b086477f97918fff7",
+  "masterRows": 20152,
+  "capacityFixture": {
+    "users": 15,
+    "accounts": 18,
+    "avatars": 69,
+    "covers": 40,
+    "imageBytes": 13285729,
+    "maxObjectBytes": 1196603
+  },
+  "archiveBytes": 34575261,
+  "localFixtureRawStorageClass": "",
+  "localOnlyStandardAdapter": true,
+  "remoteAdapter": false,
+  "restoredImageReads": {
+    "avatars": {
+      "status": 200,
+      "bytes": 1196603,
+      "sha256": "2c36b36cc36ab6ddd4f439871ab403ab8c0b00f4b1c00ec7e4e8ae5977dc2724"
+    },
+    "cover-images": {
+      "status": 200,
+      "bytes": 111936,
+      "sha256": "9eb2d69322d001e04432fc7dd0364c81aa03b59ab32ab318b179d86e225dc096"
+    }
+  },
+  "canonicalEmojiCount": 3944,
+  "normalSdkSourceLogin": true,
+  "normalSdkTargetLogin": true,
+  "oldSessionRejected": true,
+  "foreignKeyViolations": 0,
+  "ownedBucketsEmpty": true,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "remoteAccepted": false
+}

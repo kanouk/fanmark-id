@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-08T10:13:17.617Z",
+  "candidateHead": "7a8c6ee2fddcbf4eab87b989abd5dcc3ae357ad9",
+  "candidateCi": "37760585412",
+  "candidateCiBothJobsSuccess": true,
+  "totalRawBytes": 20971520,
+  "objectsBytes": [
+    8388608,
+    8388608,
+    4194304
+  ],
+  "storageClasses": [
+    "Standard"
+  ],
+  "snapshotHash": "c75ccc01ce0f17f551af3c54178756dcee4894088e6c29ec556f0f1098f104c8",
+  "isolatedWorkerVersion": "82bf8a77-c8ec-4c3d-8333-a460736813b9",
+  "maximumCaptureAccepted": true,
+  "maximumEncryptedRoundtripAccepted": true,
+  "maximumRestoreAccepted": true,
+  "maximumResumeAccepted": false,
+  "failure": {
+    "stage": "resume-maximum",
+    "nativeOutcome": "exceededMemory",
+    "exactScriptVersionMatched": true,
+    "failedInvocationsObserved": 1,
+    "nativeInvocationTerminationObservedBeforeCleanup": true,
+    "postRunResent": false
+  },
+  "cleanup": {
+    "bucketsDeleted": 7,
+    "workerDeleted": true,
+    "originalResourceInventoryEqual": true,
+    "historicalNonterminalCleanupRefusalRetained": true
+  },
+  "independentReadback": {
+    "at": "2026-10-08T10:13:17.617Z",
+    "separateProcess": true,
+    "readCredentialOnly": true,
+    "workerVersion": "1071896f-7e6c-4218-818d-6b1eceeea9f3",
+    "allBaselineHashesEqual": true,
+    "authCounts": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "foreignKeyViolations": 0,
+    "settingsAndNamespacesEqual": true,
+    "isolatedResourceInventoryEqual": true,
+    "temporaryBucketsDeleted": 7,
+    "temporaryWorkerDeleted": true,
+    "proofState": "failed",
+    "proofFailure": "proof_exceeded_memory"
+  },
+  "nextCandidate": {
+    "r2SourceSha256": "fb6d8ab5edb72ad5410eb477ec98d6b390e694c6e894f828c03d988ad7b71075",
+    "largePayloadJsonComparisonRemoved": true,
+    "initialTargetPayloadReleasedAfterExactSubsetCheck": true,
+    "completeFinalNativeReadbackPreserved": true,
+    "returnPrivateNormalizedContainersSharingOnlyImmutablePayload": true,
+    "archiveFormatAndLimitsChanged": false,
+    "ciAccepted": false,
+    "actualRemoteMaximumCapacityAccepted": false,
+    "localMaximumBytesProbe": true,
+    "localStorageClassAdapter": true,
+    "r2Contracts": 9,
+    "recoverySetContracts": 16,
+    "typecheck": true,
+    "lint": true,
+    "bundleDryRun": true
+  },
+  "mainRedeployed": false,
+  "fullMigrationAccepted": false
+}

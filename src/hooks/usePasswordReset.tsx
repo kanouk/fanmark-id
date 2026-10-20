@@ -3,20 +3,34 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
 
 export const usePasswordReset = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const betterAuthEnabled = isBetterAuthEnabled();
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
+      if (betterAuthEnabled) {
+        const token = searchParams.get('token');
+        if (token) {
+          setResetToken(token);
+          setIsValidSession(true);
+          return;
+        }
+        navigate('/forgot-password');
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
@@ -47,7 +61,7 @@ export const usePasswordReset = () => {
     };
 
     checkSession();
-  }, [navigate, searchParams]);
+  }, [betterAuthEnabled, navigate, searchParams]);
 
   const resetPassword = async () => {
     if (password !== confirmPassword) {
@@ -62,11 +76,13 @@ export const usePasswordReset = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
-
-      if (error) throw error;
+      if (betterAuthEnabled) {
+        if (!resetToken) throw new Error('パスワード再設定リンクが無効です');
+        await betterAuthClient.resetPassword(resetToken, password);
+      } else {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+      }
 
       toast({
         title: t('common.passwordUpdated'),

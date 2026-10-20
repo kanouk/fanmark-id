@@ -1,0 +1,35 @@
+{
+  "scope": "disposable main staging admin; actual native UI new MFA enrollment; no email or provider invocation",
+  "state": "verified_and_cleaned",
+  "at": "2026-10-06T10:18:26.840Z",
+  "workerVersion": "d4375d19-5024-4bf6-9cd7-1e5d399ce7b5",
+  "humanNativeEnrollment": true,
+  "verifiedFactor": true,
+  "sameSessionAssurance": true,
+  "actualAdminDashboardObserved": true,
+  "uiLogoutSessionRevoked": true,
+  "ownedRowsRemaining": 0,
+  "existingAllTableHashesPreserved": true,
+  "foreignKeyViolations": 0,
+  "mfaGeneration": {
+    "baseline": 242,
+    "afterEnrollment": 243,
+    "afterCleanup": 244,
+    "rewound": false
+  },
+  "mailSent": 0,
+  "realUserMigration": 0,
+  "domainChanges": 0,
+  "runtimeChanges": 0,
+  "limitations": [
+    "This accepts synthetic native new-factor enrollment only.",
+    "Provider first-time signup, paid deletion UI, operations adoption and final integration remain open."
+  ],
+  "candidateCommit": "cc87e8f53b62c5d3950a4e1d7c0b620b5b7a135e",
+  "candidateCi": {
+    "runId": 37424652271,
+    "application": "success",
+    "worker": "success"
+  },
+  "fullMigrationAccepted": false
+}

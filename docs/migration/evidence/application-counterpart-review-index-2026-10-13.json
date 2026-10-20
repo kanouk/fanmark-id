@@ -1,0 +1,497 @@
+{
+  "state": "current_application_review_index_refreshed",
+  "reviewedHead": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1",
+  "runtimeSource": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1",
+  "sourceTraceHash": "7a14b2aa2ef2f9128c05042d33937876d27c62129560f9f445d80a0ee608cde2",
+  "sourceFunctionCount": 58,
+  "groups": [
+    {
+      "feature": "notification delivery and wake",
+      "functions": [
+        "activate_notification_worker",
+        "activate_notification_worker_on_pending_event",
+        "create_notification_event",
+        "deactivate_notification_worker_if_idle",
+        "render_notification_template"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/notification-wake.ts",
+          "sha256": "6098a7a89108da6071412dc394651066b0688d072618cbac00c0b5d77cd443c8"
+        },
+        {
+          "path": "workers/api/src/notifications-scheduled.ts",
+          "sha256": "d7ad061e808ad3593ee5bad6af62be2d77616b6af826faf342aea0491ea798f7"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/notification-worker-wake.md",
+          "sha256": "8ef2f9582f0cf34ed036740dcbb3c8222356ce43ada92b03b214d0d5a7ca2754"
+        }
+      ]
+    },
+    {
+      "feature": "notification inbox/archive",
+      "functions": [
+        "archive_old_notifications",
+        "get_unread_notification_count",
+        "mark_all_notifications_read",
+        "mark_notification_read"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/notifications-d1-api.ts",
+          "sha256": "338d1225c605bb55aabb080b8721c793ba510195e23873ea6ce68b403dd85306"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/notifications-api.md",
+          "sha256": "f23b98992b593c48f3d6c14954404567f083817396ca6da52496587f64ce1ba3"
+        },
+        {
+          "path": "docs/migration/evidence/staging-v4-natural-app-daily-2026-10-13.json",
+          "sha256": "3dd6ddad766621fe1ef8d0c6a0d963f5ced9a6b028e480fb76ed2eeb871f6ed0"
+        }
+      ]
+    },
+    {
+      "feature": "favorites",
+      "functions": [
+        "add_fanmark_favorite",
+        "get_favorite_fanmarks",
+        "remove_fanmark_favorite"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/favorites-d1-api.ts",
+          "sha256": "21997f48f6d9161b4d18c07f11100ffcdacef9899c7068b11474a0228154ac31"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/favorites-api.md",
+          "sha256": "48198240e85b3505ed68b55a82640d7600de82ae9731b346dff48ec88482eb16"
+        }
+      ]
+    },
+    {
+      "feature": "availability and classification",
+      "functions": [
+        "check_fanmark_availability",
+        "check_fanmark_availability_secure",
+        "classify_fanmark_tier"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/availability-d1-repository.ts",
+          "sha256": "da5712bf6fe70d6d4cdd666a484de73dd04be822e6fe1d0542c4fbefe7e232f8"
+        },
+        {
+          "path": "workers/api/src/fanmark-registration-d1-api.ts",
+          "sha256": "8b94f35447bbaa8b3cbed5d5baf638f3b1782f66a7ae04969c774edcaca34f17"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/availability-contract.md",
+          "sha256": "5d665d3cb9ada048a9d6bd4553d03c5468a611932bdc448d51acbca369eb9dc3"
+        },
+        {
+          "path": "docs/migration/fanmark-registration-api.md",
+          "sha256": "94e0bf42ead819cdbb90993a09ca0933349384e11f6633573874d6cf5fff435c"
+        }
+      ]
+    },
+    {
+      "feature": "profile security",
+      "functions": [
+        "check_username_availability_secure",
+        "prevent_user_settings_insert_escalation",
+        "prevent_user_settings_privilege_escalation"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/profile-d1-repository.ts",
+          "sha256": "9e6d4f229550cb1f4ccde5beee84599bbfe6b9f57bb72b006758280fc65a5801"
+        },
+        {
+          "path": "workers/api/src/profile-supabase-repository.ts",
+          "sha256": "4f8977a5c34b554666386c91bdb0d7194c9c5e44f842d791e1b814fe496ba3aa"
+        },
+        {
+          "path": "workers/api/src/legacy-supabase-auth.ts",
+          "sha256": "366795e5bb1b080ba64dc47281f1c724606b02064e4e30b383cd9781a3eb403b"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/source-user-settings-guards.md",
+          "sha256": "7dad71e5c4e54c7fe62a40de4b1346ebc3bd0d946dfba53012640c7693dca913"
+        },
+        {
+          "path": "docs/migration/evidence/staging-profile-auth-regression-2026-10-13.json",
+          "sha256": "c7e72b43525372b2ffc65022022b257011ef47620dcd405a1fbee3ad50f0201f"
+        }
+      ]
+    },
+    {
+      "feature": "transfer",
+      "functions": [
+        "generate_transfer_code_string",
+        "has_active_transfer"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/fanmark-transfer-d1-api.ts",
+          "sha256": "5a2b2c91b419de8dfd409eaa4eb4eccef457317f2dea48a72730191f28b267d3"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/fanmark-transfer-api.md",
+          "sha256": "2f5f9f6fa9400be007c7a85b848c637bd82f106d9b3a276078ee8bbfe21bb874"
+        },
+        {
+          "path": "docs/migration/evidence/staging-transfer-ui-2026-10-06.json",
+          "sha256": "362ed6c6d00ccadc2f9fff7d9da5dde98834a5cf66aadcd868f9c1b399382381"
+        }
+      ]
+    },
+    {
+      "feature": "public read and recent",
+      "functions": [
+        "get_fanmark_by_emoji",
+        "get_fanmark_by_short_id",
+        "get_public_emoji_profile",
+        "list_recent_fanmarks"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/public-access-d1-repository.ts",
+          "sha256": "5df808efa6a5241905c2dc7b14dcabc427e15c88365ff32f2fd2168a25545544"
+        },
+        {
+          "path": "workers/api/src/d1-repository.ts",
+          "sha256": "a7b34b82d8a31007fa0a41148ecf3c9e30c0df3e7561996f2af033b81f065e52"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/public-access-contract.md",
+          "sha256": "ae45acc958da6a2c17ac375cdfa86f05089fca0edecbe05ec86a0a4f86bd9957"
+        },
+        {
+          "path": "docs/migration/recent-api-contract.md",
+          "sha256": "ec30896eae65148e588ee6aa84c172a8ea006679f46b041c6bc22921f2ac4af4"
+        }
+      ]
+    },
+    {
+      "feature": "search and owner details",
+      "functions": [
+        "get_fanmark_complete_data",
+        "get_fanmark_details_by_short_id",
+        "record_fanmark_search",
+        "upsert_fanmark_discovery"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/fanmark-search-d1-api.ts",
+          "sha256": "bc7152578471a6d1ac6333fe11f0da6e7d1ec4bcaa93cb4a3f1168724987b651"
+        },
+        {
+          "path": "workers/api/src/fanmark-details-d1-api.ts",
+          "sha256": "ca91f17c85dbf404a3e45401622bb035c7becaa487e57bf7fc61686e8e7095a0"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/fanmark-search-api.md",
+          "sha256": "f1248660882aa2eefc2e61ac34085c3694a4093c3f6a1649a1aa1a532db35d7c"
+        },
+        {
+          "path": "docs/migration/fanmark-details-api.md",
+          "sha256": "702555f312a4b3576109ccc0dc6aeca64f5c7656fed72ab19871d83147559828"
+        }
+      ]
+    },
+    {
+      "feature": "waitlist and security audits",
+      "functions": [
+        "get_waitlist_email_by_id",
+        "get_waitlist_secure",
+        "notify_security_breach"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/waitlist-admin-d1-api.ts",
+          "sha256": "7479d2901b11c602aa1571d33c3cb4788d6c32ccfbc95f622e8456bc1a3928e8"
+        },
+        {
+          "path": "workers/api/src/index.ts",
+          "sha256": "bf914e7a4933fcb2d59dfdffab8f096a51ca4a0c23294de039f98ad6b24636e1"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/waitlist-admin-api.md",
+          "sha256": "65f867d47fc01b892eb2e969c0478719ada06e939c4fa229f498c1bfc9633c6e"
+        }
+      ]
+    },
+    {
+      "feature": "signup/invitation",
+      "functions": [
+        "handle_new_user",
+        "use_invitation_code",
+        "validate_invitation_code"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/oauth-signup-provisioning.mjs",
+          "sha256": "e736050eaf0c4d08409722e827a55dd5481ebc354e987101f7ee33bdc16c280c"
+        },
+        {
+          "path": "workers/api/src/invitation-signup-d1-api.ts",
+          "sha256": "57091ce70f5e443879daa7cadab8d805e6c937e572fa4e0e6d95ed47c7ac1620"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/source-signup-provisioning.md",
+          "sha256": "c5b8ebd574b6f88f896ce065c079f34b66cc9580f3b1b161ae482fd03b86fa50"
+        },
+        {
+          "path": "docs/migration/evidence/staging-invitation-signup-native-2026-10-08.json",
+          "sha256": "00ec6e561fedf7f3181c4f81f3b8d875e266be1a0aca600dab9d0840504174d8"
+        }
+      ]
+    },
+    {
+      "feature": "administration role/MFA",
+      "functions": [
+        "has_role",
+        "is_admin",
+        "is_super_admin"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/index.ts",
+          "sha256": "bf914e7a4933fcb2d59dfdffab8f096a51ca4a0c23294de039f98ad6b24636e1"
+        },
+        {
+          "path": "workers/api/src/better-auth.mjs",
+          "sha256": "336c7ca4d6aa1fbf3a706901f2bad9559044d91b9edbd49148d36ab04330b7fd"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/source-authorization-review.md",
+          "sha256": "2f13e0e3cb8fe9d318da61bae20b9bde396b8bc9f914ffb2f4a8ea9a535cb028"
+        },
+        {
+          "path": "docs/migration/source-policy-counterparts.md",
+          "sha256": "7d6c62b92308cddceda3d20b54eea3fbe6947b7a3696826c544a4bf6bd6406e9"
+        }
+      ]
+    },
+    {
+      "feature": "normalized identity/discovery linking",
+      "functions": [
+        "link_fanmark_discovery",
+        "link_fanmark_discovery_trigger",
+        "normalize_emoji_ids",
+        "seq_key"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/fanmark-registration-d1-api.ts",
+          "sha256": "8b94f35447bbaa8b3cbed5d5baf638f3b1782f66a7ae04969c774edcaca34f17"
+        },
+        {
+          "path": "workers/api/src/favorites-d1-api.ts",
+          "sha256": "21997f48f6d9161b4d18c07f11100ffcdacef9899c7068b11474a0228154ac31"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/source-sequence-key-review.md",
+          "sha256": "3f5f2a29993137f25b98dfbad247fbbbf8a3a9e17dd050d0273144878dad5997"
+        },
+        {
+          "path": "docs/migration/source-emoji-helpers-review.md",
+          "sha256": "816a59bd233f9ab9e52e7e08e98248bc0a39cab292144e5581901b0aca8f9e07"
+        }
+      ]
+    },
+    {
+      "feature": "master audit/publication",
+      "functions": [
+        "log_emoji_master_changes"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/emoji-master-admin-d1-repository.ts",
+          "sha256": "0c0352d1ae55e5fbf9baae02a84c3e894c6df2b3a8bcb8cf97028a59b329fe92"
+        },
+        {
+          "path": "workers/api/src/emoji-publication-service.ts",
+          "sha256": "cfd979f4b705247bb7629ddd81756aa4c330b11e6794a705ab450a09f81d6668"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/emoji-master-change-audit.md",
+          "sha256": "70c6508a783884edff44ca2dca8625988bf0df729bf6a0fef26d9b7f21eb960c"
+        },
+        {
+          "path": "docs/migration/emoji-releases.md",
+          "sha256": "7bcaf3e150d2bdf5f00925fc956f7f2513d9caeafef3ed607a1f2c6a11de0f2b"
+        }
+      ]
+    },
+    {
+      "feature": "lottery audit",
+      "functions": [
+        "log_lottery_entry_changes"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/fanmark-lottery-d1-api.ts",
+          "sha256": "30b1839ae8be43106f7c7fa089ea92bda37e63357f4f04744d7799a8028eedfe"
+        },
+        {
+          "path": "workers/api/src/lottery-cancellation-audit.ts",
+          "sha256": "4666c0f108be1b9976108568a520a8eed8ac91d225566dac38a3282bae94e557"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/fanmark-lottery-api.md",
+          "sha256": "2e6744a10223a9ec24725781068ee788695984f1cca030648d72cf714d6a6b37"
+        }
+      ]
+    },
+    {
+      "feature": "protected access/password",
+      "functions": [
+        "is_fanmark_password_protected",
+        "upsert_fanmark_password_config",
+        "verify_fanmark_password"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/verified-access.mjs",
+          "sha256": "a05751de22c75a595afe0ab67dc9e5f39886e2ad7372dfdd58457ade610b8aa7"
+        },
+        {
+          "path": "workers/api/src/fanmark-settings-d1-api.ts",
+          "sha256": "32f83da20af6c0b3573574c134cde6f4b03109e8e264b99bb1bc48bd6b181455"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/verified-access-design.md",
+          "sha256": "f0d8a82956b63fbae73ae852631332bfe7363b8b0f278a9e252b38bced37aa3e"
+        },
+        {
+          "path": "docs/migration/fanmark-settings-api.md",
+          "sha256": "c1159229c384b906ee126476ad546f57b5805866df259035aab4606a3bcdcde5"
+        }
+      ]
+    },
+    {
+      "feature": "trusted timestamps",
+      "functions": [
+        "update_updated_at_column"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/profile-d1-repository.ts",
+          "sha256": "9e6d4f229550cb1f4ccde5beee84599bbfe6b9f57bb72b006758280fc65a5801"
+        },
+        {
+          "path": "scripts/migration/row-conversion.mjs",
+          "sha256": "74b49b51c58c2f5c48b212a24dbb048c4cc7a76347426534896c3d514976d15e"
+        }
+      ],
+      "reviewSources": [
+        {
+          "path": "docs/migration/source-trigger-counterparts.md",
+          "sha256": "bd73e249fc15c4f5d8e028c140e710a6c77716683b194ac39072a0d114467f3d"
+        }
+      ]
+    },
+    {
+      "feature": "unbound trigger definitions",
+      "functions": [
+        "log_profile_cache_access",
+        "log_waitlist_access",
+        "sync_public_profile_cache",
+        "validate_display_name"
+      ],
+      "code": [],
+      "reviewSources": [
+        {
+          "path": "docs/migration/source-runtime-review.md",
+          "sha256": "04c91b76c5484a0689ef386215b3b31325e863a8a301409ba1feddcfe45acdef"
+        }
+      ]
+    },
+    {
+      "feature": "ordinary helper/raw RPC without current executable consumer",
+      "functions": [
+        "count_fanmark_emoji_units",
+        "generate_safe_display_name",
+        "get_fanmark_ownership_status",
+        "get_public_fanmark_profile",
+        "is_fanmark_licensed",
+        "search_fanmarks_with_lottery",
+        "toggle_fanmark_favorite"
+      ],
+      "code": [],
+      "reviewSources": [
+        {
+          "path": "docs/migration/source-runtime-review.md",
+          "sha256": "04c91b76c5484a0689ef386215b3b31325e863a8a301409ba1feddcfe45acdef"
+        },
+        {
+          "path": "docs/migration/source-emoji-helpers-review.md",
+          "sha256": "816a59bd233f9ab9e52e7e08e98248bc0a39cab292144e5581901b0aca8f9e07"
+        },
+        {
+          "path": "docs/migration/public-profile-runtime-review.md",
+          "sha256": "1ff74e75ee4ec995386e8c44e62aefdb632dc1e3db2365b5c02461c9057b17f7"
+        }
+      ]
+    }
+  ],
+  "reviewNotes": [
+    "Admin derives role from Auth D1 adminRole and current same-session factor assurance, never plan or client metadata",
+    "Owner derives Better Auth server session; installed session cache executes only if explicit enabled=true and runtime does not enable it",
+    "Legacy profile requires both source selectors and obtains ID from real upstream Auth verification before elevated owner-filtered GET/PATCH/RPC",
+    "Target no-store/canonical identity/atomic audit behavior intentionally differs from unsafe raw source projections",
+    "Ordinary helpers without located runtime callers remain unknown to external consumers, not classified inactive; four separately proven unbound trigger definitions are not installed",
+    "Classifier pending54 means automatic classifier has not consumed manual review, not missing54 implementations",
+    "Registration/lottery quota, transfer plan snapshot/Admin unlimited, and favorite active-owner corrections have scoped real D1/Worker acceptance; do not infer generic PostgreSQL or all legacy bridge equivalence."
+  ],
+  "fullSourceEquivalenceApproved": false,
+  "automaticClassifierChanged": false,
+  "genericConverterDeployable": false,
+  "remaining": [
+    "Human Apple private relay consent and actual inbox receipt",
+    "Final target feature/PR acceptance under owner-selected direct migration scope"
+  ],
+  "sourceUserRowsRead": false,
+  "remoteMutation": false,
+  "ci": {
+    "run": 38382342905,
+    "head": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1",
+    "bothJobsSuccess": true
+  },
+  "fullPrReviewComplete": false,
+  "normalVersion": "f7a601f0-b456-4cc5-bfc1-0ec3c2ceba64",
+  "ownerScopeDecision": "docs/migration/evidence/owner-migration-scope-decision-2026-10-13.json"
+}

@@ -1,0 +1,148 @@
+{
+  "format": "fanmark-final-independent-closed-preparation-v1",
+  "observedAt": "2026-10-19T14:07:39.644Z",
+  "workers": [
+    {
+      "name": "fanmark-app-production",
+      "version": "fbf9f7cd-9927-41ad-8258-dd442c25f358",
+      "cron": 0,
+      "workersDev": false,
+      "previews": false
+    },
+    {
+      "name": "fanmark-alias-production",
+      "version": "efbdedac-a0fa-4361-86f6-d1e965f20107",
+      "cron": 0,
+      "workersDev": false,
+      "previews": false
+    },
+    {
+      "name": "fanmark-backup-production",
+      "version": "e0f3d5c9-1cc8-4d7c-b577-b02ea24ab38c",
+      "cron": 0,
+      "workersDev": false,
+      "previews": false
+    },
+    {
+      "name": "fanmark-backup-monitor-production",
+      "version": "2c057173-9acc-4640-9f60-4777e8d09ce0",
+      "cron": 0,
+      "workersDev": false,
+      "previews": false
+    }
+  ],
+  "workerInventory": [
+    "fanmark-alias-production",
+    "fanmark-app-production",
+    "fanmark-app-staging",
+    "fanmark-backup-monitor-production",
+    "fanmark-backup-monitor-staging",
+    "fanmark-backup-production",
+    "fanmark-backup-staging",
+    "fanmark-emoji-master-staging-api"
+  ],
+  "workerCount": 8,
+  "allOther7WorkerSettingsPreserved": true,
+  "appBindingsPreserved": true,
+  "secretBindings": 15,
+  "dnsRecords": 17,
+  "allOriginalDnsRecordsByteEquivalent": true,
+  "customDomainsPreserved": true,
+  "publicRoutes": 0,
+  "productionCron": 0,
+  "ownerAcceptanceBackend": "disabled",
+  "alertBackend": "disabled",
+  "alertRecipient": "",
+  "writeFreeze": "receipt_only",
+  "backupAdmission": "pending",
+  "remoteRefs": [
+    "9a2a7400669bec97c52f39491e3743d79c5d8d19\trefs/heads/codex/cloudflare-api-preparation",
+    "e5a553c0bcc938a308def6f3770f1a84db88d389\trefs/heads/main"
+  ],
+  "providerWrites": 0,
+  "productionReady": false,
+  "runtimeStatus": {
+    "format": "fanmark-runtime-status-only-verified-v1",
+    "phase": "after-owner-runtime",
+    "observedAt": "2026-10-19T14:07:18.607Z",
+    "appVersion": "fbf9f7cd-9927-41ad-8258-dd442c25f358",
+    "writerActive": 0,
+    "writerOwner": null,
+    "backupAdmission": false,
+    "sourcesMatched": true,
+    "schemaHashesMatched": true,
+    "keyIdMatched": true,
+    "unauthorized401": true,
+    "operatorRemoved": true,
+    "original8WorkersRetained": true,
+    "appSettingsPreserved": true,
+    "backupCapture": false,
+    "escrowCalled": false,
+    "sourceDataWrite": false,
+    "liveImagesEnumerated": true,
+    "imageObjects": {
+      "avatars": 0,
+      "covers": 0
+    },
+    "ownerSelectorDisabled": true,
+    "defaultHttpBoundaryVerified": true,
+    "ownerIssuerRefused": true,
+    "productionReady": false
+  },
+  "closedHttpAndIssuer": {
+    "observedAt": "2026-10-19T14:07:16.511Z",
+    "runtimeVersion": "fbf9f7cd-9927-41ad-8258-dd442c25f358",
+    "issuerDisabled": true,
+    "boundary": [
+      {
+        "path": "/",
+        "status": 503,
+        "cacheControl": "no-store"
+      },
+      {
+        "path": "/api/auth/get-session",
+        "status": 503,
+        "cacheControl": "no-store"
+      },
+      {
+        "path": "/api/migration/owner-session",
+        "status": 503,
+        "cacheControl": "no-store"
+      },
+      {
+        "path": "/api/webhooks/resend/broadcast-delivery",
+        "status": 503,
+        "cacheControl": "no-store"
+      }
+    ]
+  },
+  "runtimeSourceCommit": "9a2a7400669bec97c52f39491e3743d79c5d8d19",
+  "runtimeInputCi": {
+    "id": 39258437749,
+    "application": "success",
+    "worker": "success"
+  },
+  "retainedBaselineReadback": {
+    "observedAt": "2026-10-19T14:07:21.478Z",
+    "runtimeAtReadback": "fbf9f7cd-9927-41ad-8258-dd442c25f358",
+    "tables": 114,
+    "fullRowsAndSchemaMatchedRetainedDailyAndManualArchives": true,
+    "foreignKeyViolations": 0,
+    "newCapture": false,
+    "remoteArchiveDownloaded": false,
+    "initialTargetOnly": true
+  },
+  "dispatchVerification": {
+    "deployDispatches": 1,
+    "originalUploadAcknowledged": true,
+    "initialVerifierStopped": "JSON object field order differed for the newly added disabled flag",
+    "independentReadOnlyContinuation": true,
+    "valuesAndTypesRecursivelyCompared": true,
+    "deploymentRepeated": false
+  },
+  "sourceStopped": false,
+  "realUserDataImported": false,
+  "dnsSwitched": false,
+  "mainMerged": false,
+  "administratorMfaRequested": false
+}

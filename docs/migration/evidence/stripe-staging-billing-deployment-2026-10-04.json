@@ -1,0 +1,103 @@
+{
+  "observedAt": "2026-10-04T11:55:25.562Z",
+  "deployment": {
+    "observedAt": "2026-10-04T11:53:52.533Z",
+    "candidateHead": "ebfbcf6548a62de9ea0d82636248aefde14a6f2f",
+    "ciRun": 37199647817,
+    "configurationHead": "ebfbcf6548a62de9ea0d82636248aefde14a6f2f",
+    "runtimeCodeHead": "7e6cf76d86aa231a09af674b09212893857faf58",
+    "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "worker": "fanmark-app-staging",
+    "previousVersion": "088becec-1dca-44d0-9a2a-c1a6bc0567a7",
+    "version": "b79307ca-d955-4475-9ff6-fda4d2e9c8f9",
+    "secretNames": [
+      "APPLE_OAUTH_CLIENT_ID",
+      "APPLE_OAUTH_CLIENT_SECRET",
+      "BETTER_AUTH_SECRET",
+      "DISCORD_OAUTH_CLIENT_ID",
+      "DISCORD_OAUTH_CLIENT_SECRET",
+      "GITHUB_OAUTH_CLIENT_ID",
+      "GITHUB_OAUTH_CLIENT_SECRET",
+      "GOOGLE_OAUTH_CLIENT_ID",
+      "GOOGLE_OAUTH_CLIENT_SECRET",
+      "REFERENCE_MASTER_SERVICE_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_SECRET_KEY_TEST",
+      "STRIPE_WEBHOOK_SECRET",
+      "VERIFIED_ACCESS_SECRET"
+    ],
+    "credentialValuesExported": false,
+    "credentialConfigurationChanged": false,
+    "humanAccountPreserved": true,
+    "masterHistoryPreserved": true,
+    "mfaAndWakePreserved": true,
+    "otherBindingsPreserved": true,
+    "billingSelectors": [
+      "STRIPE_WEBHOOK_BACKEND",
+      "STRIPE_DISPATCH_BACKEND",
+      "STRIPE_PLAN_CHECKOUT_BACKEND",
+      "STRIPE_PLAN_CHANGE_BACKEND",
+      "STRIPE_CUSTOMER_PORTAL_BACKEND",
+      "STRIPE_EXTENSION_CHECKOUT_BACKEND"
+    ],
+    "crons": [
+      "* * * * *",
+      "0 0 * * *"
+    ],
+    "authCounts": {
+      "users": 2,
+      "accounts": 6,
+      "sessions": 1
+    },
+    "socialProviders": [
+      "apple",
+      "discord",
+      "github",
+      "google"
+    ],
+    "anonymousCheckoutRejected": true,
+    "foreignOriginRejected": true,
+    "unsignedWebhookRejected": true,
+    "actualStripeProviderRehearsalAccepted": false,
+    "userDataMigrated": false,
+    "productionDomainChanged": false,
+    "schemasChanged": false
+  },
+  "webhook": {
+    "observedAt": "2026-10-04T11:55:25.562Z",
+    "workerVersion": "b79307ca-d955-4475-9ff6-fda4d2e9c8f9",
+    "webhookUrl": "https://fanmark-app-staging.fanmark-id.workers.dev/api/stripe/webhook",
+    "eventCount": 10,
+    "apiVersion": "2025-08-27.basil",
+    "mode": "test_only",
+    "status": "enabled",
+    "independentReadbackAccepted": true,
+    "actualSignedProviderEventAccepted": false,
+    "productionStripeChanged": false,
+    "secretValuesExported": false
+  },
+  "billingRuntimeDeploymentAccepted": true,
+  "actualStripeProviderRehearsalAccepted": false,
+  "fullMigrationAccepted": false,
+  "privateTestPriceConfiguration": {
+    "observedAt": "2026-10-04T12:01:56.015Z",
+    "workerVersion": "b79307ca-d955-4475-9ff6-fda4d2e9c8f9",
+    "testPlanSettingCount": 3,
+    "privateFlagsBefore": [
+      1,
+      1,
+      1
+    ],
+    "privateFlagsAfter": [
+      0,
+      0,
+      0
+    ],
+    "exactPriceIdsPreserved": true,
+    "liveSettingsChanged": false,
+    "masterChanged": false,
+    "priceAmountsChanged": false,
+    "independentMonitorReadbackAccepted": true,
+    "complete": true
+  }
+}

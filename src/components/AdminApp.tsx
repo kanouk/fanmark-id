@@ -8,6 +8,7 @@ import { TranslationProvider } from "@/hooks/useTranslation";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { supabase } from "@/integrations/supabase/client";
+import { betterAuthClient, isBetterAuthEnabled } from "@/lib/auth-backend";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminAuth from "@/pages/AdminAuth";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +17,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
-const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+const SupabaseAdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -68,7 +69,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     return () => {
       isMounted = false;
     };
-  }, [user?.id]);
+  }, [user]);
 
   // Check MFA/AAL status
   useEffect(() => {
@@ -128,7 +129,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     return () => {
       isMounted = false;
     };
-  }, [user?.id, isAdmin, checking]);
+  }, [user, isAdmin, checking]);
 
   // Callback when MFA is complete
   const handleMFAComplete = useCallback(() => {
@@ -180,6 +181,94 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   
   return <>{children}</>;
 };
+
+const CloudflareAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  const [checking, setChecking] = useState(true);
+  const [authorization, setAuthorization] = useState<
+    "pending" | "login" | "not-admin" | "mfa" | "authorized" | "unavailable"
+  >("pending");
+
+  const verifyAdmin = useCallback(async () => {
+    if (!user) {
+      setAuthorization("login");
+      setChecking(false);
+      return;
+    }
+
+    setChecking(true);
+    try {
+      const result = await betterAuthClient.getAdminSession();
+      if (result.authorized) {
+        setAuthorization("authorized");
+      } else if ("reason" in result && (result.reason === "mfa_required" || result.reason === "mfa_enrollment_required")) {
+        setAuthorization("mfa");
+      } else if ("reason" in result && result.reason === "admin_required") {
+        setAuthorization("not-admin");
+      } else {
+        setAuthorization("login");
+      }
+    } catch (error) {
+      console.error("Failed to verify Cloudflare admin session:", error);
+      setAuthorization("unavailable");
+    } finally {
+      setChecking(false);
+    }
+  }, [user]);
+
+  const handleMfaComplete = useCallback(() => {
+    void verifyAdmin();
+  }, [verifyAdmin]);
+
+  useEffect(() => {
+    if (!loading) void verifyAdmin();
+  }, [loading, verifyAdmin]);
+
+  if (loading || checking || authorization === "pending") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <p>管理者権限を確認しています…</p>
+      </div>
+    );
+  }
+
+  if (authorization === "login" || authorization === "mfa") {
+    return <AdminAuth onMFAComplete={handleMfaComplete} />;
+  }
+
+  if (authorization === "not-admin") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <div className="max-w-md rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center">
+          <ShieldAlert className="mx-auto mb-4 h-7 w-7 text-destructive" />
+          <h2 className="text-xl font-semibold text-destructive">Admin access required</h2>
+          <p className="mt-3 text-sm text-destructive/80">このアカウントには管理者権限がありません。</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authorization === "unavailable") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <div className="max-w-md rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center">
+          <ShieldAlert className="mx-auto mb-4 h-7 w-7 text-destructive" />
+          <h2 className="text-xl font-semibold text-destructive">管理者認証を確認できません</h2>
+          <p className="mt-3 text-sm text-destructive/80">時間をおいて再読み込みしてください。</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
+const AdminRoute = ({ children }: { children: React.ReactNode }) => (
+  isBetterAuthEnabled()
+    ? <CloudflareAdminRoute>{children}</CloudflareAdminRoute>
+    : <SupabaseAdminRoute>{children}</SupabaseAdminRoute>
+);
 
 const AdminApp = () => {
   // デバッグ用ログ

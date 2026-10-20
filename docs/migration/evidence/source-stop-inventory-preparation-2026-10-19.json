@@ -1,0 +1,39 @@
+{
+  "format": "fanmark-unified-source-stop-candidate-v1",
+  "runId": "6f43aea6-78a6-48a3-b85b-5bfa83c3c442",
+  "projectRef": "ppqgtbjykitqtiaisyji",
+  "createdAt": "2026-10-19T04:10:36.455Z",
+  "relationCount": 75,
+  "protectedRelationCount": 71,
+  "functionCount": 35,
+  "maintenanceFunctionCount": 34,
+  "cronCount": 2,
+  "originallyActiveCronCount": 1,
+  "originalFunctionVersion": 172,
+  "sourceChanged": false,
+  "liveInventoryRefreshed": false,
+  "sourceDrained": false,
+  "productionReady": false,
+  "candidateFileCount": 14,
+  "allCandidateFilesIndependentlyHashVerified": true,
+  "stripeDashboardReadback": {
+    "accountId": "acct_1SFjhvJk0VCfiKUp",
+    "method": "logged-in visible Stripe Dashboard",
+    "paymentListTotal": 1,
+    "paymentStatus": "succeeded",
+    "paymentDisplayedDate": "2026/01/04 12:38",
+    "eventDestinationsMessage": "イベントの送信先がまだ作成されていません",
+    "scope": "visible Dashboard only; no provider inventory refresh or source effects proof",
+    "observedOn": "2026-10-19"
+  },
+  "tests": {
+    "providerInventorySyntheticPassed": 7,
+    "productionPreparationPassed": 9
+  },
+  "limitations": [
+    "SQL/Edge candidates not executed or deployed",
+    "provider collector not run against live credentials",
+    "source effects and reverse receipt custody not complete",
+    "source inventories reused from prior readbacks and need cutover revalidation"
+  ]
+}

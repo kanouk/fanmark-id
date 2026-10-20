@@ -1,0 +1,22 @@
+{
+  "state": "human_smartphone_and_home_screen_check_reported",
+  "recordedAt": "2026-10-13",
+  "reportedResult": "スマホとホーム画面、確認できました。",
+  "requestedFlow": [
+    "open staging",
+    "login",
+    "dashboard",
+    "user settings",
+    "home-screen launch"
+  ],
+  "acceptanceBasis": "human response to requested flow; no direct device observation",
+  "stagingOrigin": "https://fanmark-app-staging.fanmark-id.workers.dev",
+  "mainVersionAtReport": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "device": null,
+  "operatingSystem": null,
+  "browser": null,
+  "allMobileFlowsAccepted": false,
+  "oldInstalledClientUpdateAccepted": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false
+}

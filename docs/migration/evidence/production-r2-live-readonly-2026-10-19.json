@@ -1,0 +1,62 @@
+{
+  "format": "fanmark-production-r2-live-readonly-v1",
+  "observedAt": "2026-10-19T01:37:31.677Z",
+  "runtimeCommit": "f2053aafe27fc802876196709d9592e8cbb70c12",
+  "gatewayControllerSha256": "96315769e49828060f06af4418b8708698a3a732ba8e7cf44d3af8ec0aba8857",
+  "productionReady": false,
+  "sourceStopped": false,
+  "dataImported": false,
+  "domainChanged": false,
+  "coordinatorClaimed": false,
+  "applicationDataWrites": 0,
+  "checks": [
+    "unauthenticated request denied with 401",
+    "authenticated R2 PUT and coordinator claim rejected by read-only gateway",
+    "coordinator is unclaimed, active zero, no fence",
+    "independent final coordinator inspect unchanged"
+  ],
+  "runtimeVersion": "9b7e6820-fcbc-4491-b27d-f631e64f0b9e",
+  "gatewayVersion": "66bb74c2-d610-4bc2-b529-22b44b1867b2",
+  "buckets": [
+    {
+      "store": "avatars",
+      "bucket": "fanmark-avatars-production",
+      "creationDate": "2026-10-15T23:44:14.589Z",
+      "enumeratedObjects": 0,
+      "truncated": false,
+      "missingGetVerified": true
+    },
+    {
+      "store": "covers",
+      "bucket": "fanmark-covers-production",
+      "creationDate": "2026-10-15T23:44:23.195Z",
+      "enumeratedObjects": 0,
+      "truncated": false,
+      "missingGetVerified": true
+    }
+  ],
+  "ok": true,
+  "gatewayRemoved": true,
+  "finishedAt": "2026-10-19T01:37:41.211Z",
+  "initialAttempt": {
+    "failedAt": "gateway activation",
+    "providerErrorCodeRecorded": false,
+    "independentlyObservedEnabled": false,
+    "independentlyObservedPreviewsEnabled": false,
+    "ownedGatewayRemoved": true,
+    "replayedActivationRequest": false
+  },
+  "verificationLimitations": [
+    "read-only target probe only",
+    "no production data import",
+    "no all-store recovery or source freeze admission"
+  ],
+  "postDeploymentD1Readback": {
+    "verifiedAt": "2026-10-19T01:38:56.950Z",
+    "databases": 3,
+    "exactSchemasAndLedgers": true,
+    "onlyMigrationSeedRows": true,
+    "foreignKeyViolations": 0,
+    "beforeAfterMatched": true
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-verified-access-source-shaped-test",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "CORS_ALLOWED_ORIGINS": "https://app.example.test",
+    "VERIFIED_ACCESS_TEST": "1"
+  },
+  "d1_databases": [
+    {
+      "binding": "FANMARK_DB",
+      "database_name": "fanmark-verified-access-source-business-test",
+      "database_id": "00000000-0000-0000-0000-000000000101"
+    },
+    {
+      "binding": "MASTER_DB",
+      "database_name": "fanmark-verified-access-source-master-test",
+      "database_id": "00000000-0000-0000-0000-000000000102"
+    }
+  ]
+}

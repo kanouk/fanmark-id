@@ -1,0 +1,143 @@
+# R2の保存・再開可能な復旧処理
+
+## R2合計20 MiBの復旧・exact resumeを実Cloudflareで受け入れ（2026-10-08 JST）
+
+- `87920b1` / [CI37762268107](https://github.com/kanouk/fanmark-id/actions/runs/37762268107) はアプリ・Worker両job成功。
+- 新規専用7 bucket/Workerで、前の不合格と同じ8 MiB・8 MiB・4 MiBの合成3 object、合計20 MiB、補完なしStandard、同じsnapshot hash・v1・暗号文長を使用した。fixture側で以前のinput/resultを破棄したり、検証を小さく分割したりせず、一つの実行でcapture・暗号化往復・初回復元・exact resume/version保持・object上限+1 byte拒否・total上限+1 byte拒否の6項目すべてが通過した。
+- 既存上書き拒否、全bytes/metadataと復元後の全native読取/hash検証は維持する。ローカル9 R2/16一式復旧、型/lint/bundleの検査も通過。容量上限のメモリ超過という今回の残件は、この合成materialで解消した。
+- 全owned objectと7 bucket/Workerを削除し、元のD1/R2/Worker inventoryに戻した。別Read processでmain `1071896f-7e6c-4218-818d-6b1eceeea9f3`・既存全表hash/Auth3・7・2/FK0・binding/namespaceを保持照合した。通常stagingへの再配備は0。
+- 記録: [`evidence/r2-recovery-maximum-capacity-accepted-2026-10-08.json`](evidence/r2-recovery-maximum-capacity-accepted-2026-10-08.json)。1000 object・InfrequentAccess・五つのstoreを同時に最大量にした試験や運用RTO/定期backupの受け入れへは拡張しない。
+- Resend実署名通知、外部writer/運用方針、残る実provider/実端末/最終統合と六項目全体は未完了。実ユーザー移送と本番domain変更は最後の別工程。
+
+## R2容量上限で復号・初回復元は通過、exact resumeを修正中（2026-10-08 JST）
+
+- `7a8c6ee` / [CI37760585412](https://github.com/kanouk/fanmark-id/actions/runs/37760585412) は両job成功。新規専用環境の同じ3 object・20 MiB・Standard・v1で、capture・暗号化往復・初回復元と全hashの照合まで実Cloudflareで通過した。
+- 結果を保持した同じ呼び出しの `resume-maximum` で native `exceededMemory` が発生した。exact resume/容量上限全体の受け入れはまだ未完了。テストの容量・元データ・保存形式・全件照合は減らさない。
+- 同script/versionのnative終了を照合してから、専用7 bucket/Workerを削除した。別Read processで元inventory・通常staging全表hash/Auth3・7・2/FK0/設定・namespaceを保持照合した。
+- 次候補は、検証済みbytesを直接比較して巨大なobject JSONの二重生成を避け、exact subset確認後のprivate読取payloadを解放する。復元後の全native capture/hash検証は維持し、返却値はその検証と一致したprivate normalized containerとimmutable payloadを使い、次のresumeまで同じ全bucket payloadを重複保持しない。
+- 次候補の実Cloudflare再検証は未完了。通常stagingへの再配備は0。実ユーザー移送と本番domainは最後の別工程。
+- 記録: [`evidence/r2-recovery-capacity-resume-memory-2026-10-08.json`](evidence/r2-recovery-capacity-resume-memory-2026-10-08.json)。
+
+## R2容量上限の修正候補を実環境で再検証（2026-10-08 JST）
+
+- `5eb0ced` の [CI37758494467](https://github.com/kanouk/fanmark-id/actions/runs/37758494467) は両job成功。
+- 同じ合成3 object・合計20 MiB・Standard・保存形式v1で新規専用環境を作り、単一の実行要求を送った。復号 `open-maximum` で再び native `exceededMemory` を確認した。最初の中間コピー削減だけでは容量上限の条件を満たさない。
+- 実行終了を同script/versionの監視結果で確認してから、所有7 bucketとWorkerを削除した。別のRead processで既存全表hash/Auth3・7・2/FK0/設定・namespace・元資源inventoryを保持照合した。journalの最初の非終端cleanup拒否は履歴として残す。
+- 次の修正候補は、private archive containerのciphertext参照と復号byte bufferをparse前に解放し、decoded textをvalidate前に解放する。呼び出し元のarchiveは変更せず、保存形式と8 MiB/object・20 MiB/rawの上限を維持する。
+- ローカル20 MiBの復号・復元・exact resume・plus-one拒否を確認した。次候補のCIと実Cloudflare容量上限の受け入れはまだ未完了。通常stagingの再配備は0。
+- 記録: [`evidence/r2-recovery-capacity-candidate-recheck-2026-10-08.json`](evidence/r2-recovery-capacity-candidate-recheck-2026-10-08.json)。実ユーザー移送と本番ドメイン変更は最後の別工程。
+
+`workers/api/src/r2-recovery.ts`は、既にCloudflareにあるavatars/cover-images bucket全体の
+capture・AES-256-GCM保存/読込・空targetまたはexact subsetへの復旧を行う管理処理。
+source Supabase Storageのexport/importとは別で、公開routerには接続していない。
+管理用の共通一式collector (`workers/api/src/recovery-set.ts`) はこの処理を使う。
+
+## 契約
+
+- prefixで対象を狭めず、200件ずつ全bucketを列挙する。cursorの重複とobject重複を拒否。
+  kindを明示し、avatars archiveをcover-imagesとして読込/復旧しない。
+- 各画像のkey・全bytes・size・SHA-256・HTTP/custom metadata・storage classを保存。
+  Unicode key、改行/literal、空objectも保持する。cacheExpiryはISO日時へ変換する。
+  新targetでR2が発行するversion/uploaded/etagは元へ設定できず、保存内容の同一性とは分ける。
+- listed etagによる条件付きGETとversion/uploaded/metadata照合、列挙前後の全identity一致を
+  要求する。観測した変更は拒否するが、同時writeの停止や複数storeのatomic snapshotを
+  保証する処理ではない。multipart未完了のupload、SSE-C objectはこの形式で保存しない。
+- 最大1,000 object、各8 MiB、合計raw bytes20 MiB。超過は失敗し、一部だけを完成扱いに
+  しない。metadataのJSON上限は各16 KiB。暗号文はGCM tagを含む32 MiB上限で、format/
+  kind/object hashを認証。復号後も全bytes hashとmetadataを照合する。
+- 復旧は明示modeが必須。`new-empty`は非空targetを拒否。`resume-exact`は既存全objectが
+  保存内容のexact subsetであることを、最初のwrite前に照合して不足分だけを作る。
+- PUTは`etagDoesNotMatch: '*'`とSHA-256を使う。既存objectを上書き/削除しない。
+  writeの応答が失われても保存済みの内容を消去せず、再開時にhash・全metadataを読む。
+  exactならそのversionを保持してskipし、異なるobject/未知keyはwrite前に拒否する。
+- 最後に全bucketを再取得し、全object hashを確認。R2の複数writeは一つのtransactionでは
+  ないため、途中失敗時は部分targetを保持しoperatorが状態を確認する。
+
+条件付きGET/PUT、listとmetadataの契約は[Cloudflare Workers API reference](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/)。
+R2個別操作の[整合性](https://developers.cloudflare.com/r2/reference/consistency/)を、D1/Auth/
+Masterを含む一式の同時点保証へ拡張しない。
+
+## 検証と残る境界
+
+```sh
+npm --prefix workers/api run test:r2-recovery
+```
+
+実local workerd R2でavatar3 object（PNG2件と空object）/cover1 object、Unicode key/metadata、2ページを
+前後2回、暗号化往復、改変/鍵/別kind拒否、実アプリ画像GET/HEADを確認した。
+同一内容の再開、異なるbytes/metadataや未知keyの無書込拒否、commit後ACK喪失から
+不足2件だけの再開と保存済みversion不変、source変更/不正cursor拒否も確認する。
+
+固定Miniflare5.20260918.0-alphaは明示Standard PUT後もstorageClassを空で返す。
+local testはこの欠落fieldだけをStandardとして補うfixture adapterを使う。bytes・全HTTP/
+custom metadata・条件付きwrite・paginationはnativeのまま。通常実装は未知classを拒否し、
+productionでこの補完をしない。**この試験はremote storage classの受け入れではない。**
+
+新しいremote R2復旧、保存先/鍵/off-host/retention、全ストアcollectorと整合した復旧点、
+同一最終candidateの統合は残る。実ユーザーのStorage移送や公開domain/DNSは後工程。
+
+## 実Worker内のmetadataと隔離remote runner（2026-10-08）
+
+bundleしたnative workerd内では、HTTP metadataの未設定`contentEncoding`もenumerableな
+`undefined`で返る。captureは既知の未設定fieldだけを省略し、未知keyや不正な定義済み値は
+拒否する。従来のNode側binding proxyではこの違いを観測できなかった。
+
+同じ通常CIコマンドは8件へ拡張。実bundleの無補完試験ではclass欠落を拒否し、再実行claim/
+statusを保持する。全bucketの未知keyを見つけるとcleanupの最初の削除前に拒否する。
+別のtest専用entrypointではclass fieldだけを補い、実Worker内のcapture/暗号化/両kind復旧/
+画像GET・HEAD/ACK後再開/異なるmetadata拒否を確認した。
+[限定証拠](evidence/r2-recovery-bundled-local-2026-10-08.json)。
+
+`run-isolated-shared-r2-recovery.mjs`は固定account/正確なHEAD/両CI成功/clean checkoutを
+前提に、専用7 R2 bucketと専用Workerを作る明示CLI。`isolated-shared-r2-recovery-worker.mjs`
+にはclass補完を入れない。APIのbinding/version/resource creation identityとprivate journalを
+照合し、Bearer tokenとnonceで実行を限定する。既存stagingへrouteやbindingを追加しない。
+
+```sh
+node scripts/migration/run-isolated-shared-r2-recovery.mjs <full-HEAD> <successful-CI-run>
+# 不明な応答や観測timeoutは、同じjournalを読み取り再開する。POST /runは再送しない。
+node scripts/migration/run-isolated-shared-r2-recovery.mjs <full-HEAD> <successful-CI-run> --resume <private-run-directory>
+```
+
+claimは条件付きcreateで1回に限定。同期requestの応答が不明ならstatusを取得し、未完了時は
+resourcesを保持する。terminal receipt取得後のみ全bucketのowned keyを検証・削除し、
+APIのbucket/Worker identityと消失、前後D1/R2/Worker inventory一致を確認する。
+これは合成Standard objectの限定試験で、InfrequentAccess・容量上限のCPU/memory・
+全ストアの整合した復旧点や定期運用を受け入れるものではない。remote実行結果は別途記録する。
+
+## 実Cloudflareの限定受け入れ（2026-10-08）
+
+候補fcd4812/CI37643375901の両job成功後、新規の7 bucket/専用Workerで、補完なしの
+Standard classを確認した。実R2も未設定contentEncodingはundefinedで返り、今回の
+既知optional fieldのみ省略する処理でcaptureと復旧が成功した。
+
+avatar3/cover1の暗号化往復、全bytes/metadata、Unicode/空object、native画像GET・HEAD、
+本物のPUT commit後に応答を捨てる注入→不足2件だけの再開とversion保持、異なるmetadata
+を持つ既存objectへの無書込拒否、source不変の8項目を確認。
+[限定証拠](evidence/r2-recovery-shared-remote-2026-10-08.json)。
+
+全owned objectと7 bucket/Workerを削除し、元のD1/R2/Worker inventory（3/3/2）に戻った。
+別CLIのbucket一覧と独立Read tokenのmain Worker17fdbf39/Business27/wake34/34/FK0/
+queue滞留0/API200も一致。retained staging bucketへのwriteやapp runtime配備は0。
+
+proof自体は約18秒、作成/配備/cleanupを含むone-off全体は約98秒だった。合成4 objectの
+所要時間であり、実データ量や新規鍵/off-host/retentionによる運用RTOを保証しない。
+InfrequentAccess/最大容量のCPU・memory/全ストア整合点/運用collectorの受け入れは別。
+
+## R2の容量上限でメモリ超過を確認・修正候補（2026-10-08 JST）
+
+通常stagingを保持し、新規7 bucket/専用Workerで8 MiB・8 MiB・4 MiBの合成objectを
+扱った。補完なしStandardの合計20 MiB captureは通ったが、`open-maximum`で応答が
+不明になり、同じscript/version・開始時刻のCloudflare監視データにexceededMemory1件を
+確認した。未完了receiptを成功扱いにせず、呼出終了の確認後だけoperator failureを
+記録し、同じjournalの読取再開で全owned資源を削除した。POSTの再送は0。
+別Read processで元inventory・main全表hash/Auth3・7・2/FK0・設定/namespaceを保持照合。
+[不合格の限定証拠と候補](evidence/r2-recovery-maximum-capacity-failure-2026-10-08.json)。
+
+容量8/20 MiBとarchive v1を維持し、base64の巨大なbinary/canonical文字列コピーを
+chunk処理に変更。immutableなpayload文字列を共有し、snapshot/metadata等のmutable
+containerはコピーする。chunk境界・不正padding/pad bits/空白と呼出後input変更の拒否/
+分離を加え、R2 9件・一式復旧16件・型/bundleとlocal実workerd20 MiB検証が通った。
+修正候補の両CIと、新しい隔離remoteで同じ容量の受け入れはまだ必要。main再配備は0。
+1000 object上限、InfrequentAccess、全ストア同時の最大容量/運用RTOへは拡張しない。
+実ユーザー移送とdomainは最後の別工程、六項目と既存の回答待ちは維持する。

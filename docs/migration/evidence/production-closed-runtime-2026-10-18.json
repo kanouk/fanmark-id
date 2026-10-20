@@ -1,0 +1,462 @@
+{
+  "format": "fanmark-closed-production-readback-v1",
+  "observedAt": "2026-10-18T14:55:26.404Z",
+  "productionReady": false,
+  "validatedLocalConfiguration": true,
+  "ciRuntimeCommit": "62e139b64f584031176d04643e308c8f021d20f7",
+  "ciRun": "39136846799",
+  "workers": [
+    {
+      "name": "fanmark-app-production",
+      "version": "dcdf1c5e-ab45-4851-8113-3b7e3a955d1f",
+      "settingsSha256": "8f108d54e399636ab467d52950dc8210cf14245ba57ee5e7a4d9dc071b9ef80c",
+      "bindings": [
+        {
+          "name": "ACCOUNT_DELETION_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "ADMIN_DATA_RESET_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "ADMIN_USER_MANAGEMENT_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "ASSETS",
+          "type": "assets"
+        },
+        {
+          "name": "AUTH_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "AUTH_DB",
+          "type": "d1"
+        },
+        {
+          "name": "AUTH_EMAIL_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "AUTH_EMAIL_TEMPLATE_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "AUTH_SOCIAL_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "AUTH_SOCIAL_PROVISIONING_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "AUTH_USER_STATUS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "AVAILABILITY_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "AVAILABILITY_RULES_ADMIN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "AVATARS_BUCKET",
+          "type": "r2_bucket"
+        },
+        {
+          "name": "BETTER_AUTH_URL",
+          "type": "plain_text"
+        },
+        {
+          "name": "BROADCAST_EMAIL_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "BROADCAST_WEBHOOK_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "CF_VERSION_METADATA",
+          "type": "version_metadata"
+        },
+        {
+          "name": "CORS_ALLOWED_ORIGINS",
+          "type": "plain_text"
+        },
+        {
+          "name": "COVER_IMAGES_BUCKET",
+          "type": "r2_bucket"
+        },
+        {
+          "name": "CUTOVER_WRITE_FREEZE",
+          "type": "plain_text"
+        },
+        {
+          "name": "D1_TOPOLOGY",
+          "type": "plain_text"
+        },
+        {
+          "name": "EMAIL_TEMPLATE_ADMIN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "EMOJI_CATALOG_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "EMOJI_MASTER_ADMIN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "EMOJI_PUBLICATION_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "EXTENSION_COUPON_ADMIN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "EXTENSION_COUPON_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_ACCESS_ANALYTICS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_ACCESS_ANALYTICS_LIMITER",
+          "type": "ratelimit",
+          "namespaceId": "41092713"
+        },
+        {
+          "name": "FANMARK_ANALYTICS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_DB",
+          "type": "d1"
+        },
+        {
+          "name": "FANMARK_DETAILS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_LOTTERY_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_PROFILE_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_REGISTRATION_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_RETURN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_SEARCH_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_SEARCH_LIMITER",
+          "type": "ratelimit",
+          "namespaceId": "41092712"
+        },
+        {
+          "name": "FANMARK_SETTINGS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FANMARK_TRANSFER_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "FAVORITES_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "INVITATION_ADMIN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "INVITATION_SIGNUP_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "LICENSE_EXPIRY_CRON",
+          "type": "plain_text"
+        },
+        {
+          "name": "LICENSE_EXPIRY_MAX_PAGES",
+          "type": "plain_text"
+        },
+        {
+          "name": "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST",
+          "type": "plain_text"
+        },
+        {
+          "name": "LICENSE_EXPIRY_TARGET_INCARNATION",
+          "type": "plain_text"
+        },
+        {
+          "name": "LIFECYCLE_RUN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "LIFECYCLE_SETTINGS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "MAINTENANCE_SETTINGS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "MASTER_DB",
+          "type": "d1"
+        },
+        {
+          "name": "NOTIFICATION_ARCHIVE_CRON",
+          "type": "plain_text"
+        },
+        {
+          "name": "NOTIFICATION_MASTER_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "NOTIFICATION_PROCESSOR_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "NOTIFICATIONS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "NOTIFICATION_WAKE",
+          "type": "durable_object_namespace",
+          "namespaceId": "3f49a0a8d2ec4a97b8ec93f50bac4308"
+        },
+        {
+          "name": "NOTIFICATION_WAKE_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "OWNED_FANMARKS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "PROFILE_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "PUBLIC_ACCESS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "RECENT_FANMARKS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "RECOVERY_DRAIN",
+          "type": "durable_object_namespace",
+          "namespaceId": "48e4852a52534cfea555e2c24b84db1e"
+        },
+        {
+          "name": "RECOVERY_DRAIN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "RECOVERY_DRAIN_SCOPE_DIGEST",
+          "type": "plain_text"
+        },
+        {
+          "name": "REFERENCE_MASTER_ADMIN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "REFERENCE_MASTER_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "RESEND_FROM_EMAIL",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_ADMISSION",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_ALERT_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_ALERT_TO",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_BUCKET",
+          "type": "r2_bucket"
+        },
+        {
+          "name": "STAGING_BACKUP_KEY_ID",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_SCHEMA_HASHES",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_SOURCE_IDS",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_NO_INDEX",
+          "type": "plain_text"
+        },
+        {
+          "name": "STORAGE_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "STORAGE_LEGACY_ORIGIN",
+          "type": "plain_text"
+        },
+        {
+          "name": "STORAGE_PUBLIC_BASE_URL",
+          "type": "plain_text"
+        },
+        {
+          "name": "STRIPE_CUSTOMER_PORTAL_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "STRIPE_EXTENSION_CHECKOUT_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "STRIPE_MODE_POLICY",
+          "type": "plain_text"
+        },
+        {
+          "name": "STRIPE_PLAN_CHANGE_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "STRIPE_PLAN_CHECKOUT_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "STRIPE_WEBHOOK_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "SUBSCRIPTION_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "SYSTEM_SETTINGS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "VERIFIED_ACCESS_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "WAITLIST_ADMIN_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "WAITLIST_SIGNUP_BACKEND",
+          "type": "plain_text"
+        },
+        {
+          "name": "WAITLIST_SIGNUP_LIMITER",
+          "type": "ratelimit",
+          "namespaceId": "41092711"
+        }
+      ],
+      "workersDev": false,
+      "previews": false,
+      "schedules": 0
+    },
+    {
+      "name": "fanmark-backup-production",
+      "version": "e0f3d5c9-1cc8-4d7c-b577-b02ea24ab38c",
+      "settingsSha256": "178a279c601f1ad4188d31d2d6fbc20a678b7e0960a9f9784255d94d0b5eeda3",
+      "bindings": [
+        {
+          "name": "BACKUP_SERVICE",
+          "type": "service"
+        },
+        {
+          "name": "RECOVERY_DRAIN_SCOPE_DIGEST",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_SCHEDULE",
+          "type": "plain_text"
+        }
+      ],
+      "workersDev": false,
+      "previews": false,
+      "schedules": 0
+    },
+    {
+      "name": "fanmark-backup-monitor-production",
+      "version": "a6684ff9-a2e8-4b3e-86e6-1dad547e9768",
+      "settingsSha256": "8090d6e59528bd6182f6e84b011ca9f24c7dbccd78b32d77aa91d65685b62530",
+      "bindings": [
+        {
+          "name": "BACKUP_ALERT_SERVICE",
+          "type": "service"
+        },
+        {
+          "name": "RECOVERY_DRAIN_SCOPE_DIGEST",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_BUCKET",
+          "type": "r2_bucket"
+        },
+        {
+          "name": "STAGING_BACKUP_KEY_ID",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_MONITOR",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_SCHEMA_HASHES",
+          "type": "plain_text"
+        },
+        {
+          "name": "STAGING_BACKUP_SOURCE_IDS",
+          "type": "plain_text"
+        }
+      ],
+      "workersDev": false,
+      "previews": false,
+      "schedules": 0
+    }
+  ],
+  "existingWorkerCount": 4,
+  "existingWorkerSettingsPreserved": true,
+  "zoneRoutesPreserved": true,
+  "publicRoutes": 0,
+  "sourceStopped": false,
+  "dataImported": false,
+  "domainSwitched": false,
+  "secretsConfigured": false,
+  "backupAdmission": "pending"
+}

@@ -1,0 +1,40 @@
+{
+  "format": "fanmark-isolated-route-rehearsal-evidence-v1",
+  "observedAt": "2026-10-19T11:58:44.816Z",
+  "scope": "owned synthetic hostname and data-free Worker only",
+  "operationId": "9369bd92-b7b5-449e-a874-b8f55362489a",
+  "routeAddedAndRemoved": true,
+  "retainedARecordIdAndAttributes": true,
+  "trustedHttps": true,
+  "httpToHttps307": true,
+  "apiWriteClosed503": true,
+  "tls": {
+    "protocol": "TLSv1.3",
+    "fingerprint256": "7A:7F:F6:07:6D:74:E8:81:D7:BD:F4:B7:76:33:17:7E:5C:06:43:8A:DE:BE:D5:7B:19:50:74:38:52:19:2F:0A",
+    "validTo": "Dec 28 20:15:54 2026 GMT"
+  },
+  "originalApexTlsFingerprintUnchanged": false,
+  "cleanup": {
+    "originalDnsRecords": 17,
+    "allOriginalDnsExact": true,
+    "originalWorkers": 7,
+    "allWorkerSettingsExact": true,
+    "routesRestored": true,
+    "customDomainsUnchanged": true,
+    "ownedWorkerDeleted": true,
+    "ownedDnsDeleted": true
+  },
+  "firstAttempt": {
+    "stoppedAfter": "acknowledged DNS create; list count check failed",
+    "rawInconsistentListRetained": false,
+    "causeKnown": false,
+    "creationRepeated": false,
+    "sameAttemptContinuedAfterIndependentRead": true
+  },
+  "productionHostChanged": false,
+  "sourceStopped": false,
+  "productionDataImported": false,
+  "customDomainReversalProven": false,
+  "apexNsRecreationProven": false,
+  "productionReady": false
+}

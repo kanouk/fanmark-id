@@ -1,0 +1,180 @@
+{
+  "date": "2026-10-13",
+  "scope": "non-user normal split-Master staging publication; no production cutover",
+  "sourceHead": "c4cd0bf265ecb10755bee52e875c57dfd3c724dc",
+  "ciRun": 38278795933,
+  "ciConclusion": "success",
+  "runtimeVersion": "73d2bcae-4dd6-4347-9f83-d3d4f03b976c",
+  "previousRuntimeVersion": "c0ddb6e3-ced1-4616-9100-e702a40927fd",
+  "originalVersion": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+  "testVersion": "b3954a1f0cda9c05475083d2d4aa3efff9d051eaec646a0eca25a2f3554c7b9a",
+  "records": 3944,
+  "producerRuntime": "22.6.0",
+  "adminImport": {
+    "syntheticAdmin": true,
+    "sameSessionMfaAuthorized": true,
+    "draftImported": {
+      "idHeld": true,
+      "codepointsHeld": true,
+      "importedCount": 1
+    },
+    "draftRestored": {
+      "idHeld": true,
+      "codepointsHeld": true,
+      "importedCount": 1
+    },
+    "auditsRetained": 2
+  },
+  "publication": {
+    "stage": {
+      "readbackVerified": true,
+      "gatewayRemoved": true,
+      "active": {
+        "release_version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+        "generation": 3,
+        "activation_id": "d2278f0b-943a-43f3-8db7-e56177383daa",
+        "action": "rollback",
+        "previous_release_version": "d78d7983582d92709c7d841c8182980fe746ff14e207479f7e8e4fdfc94db842"
+      },
+      "event": null,
+      "writersAfter": {
+        "active": 1,
+        "kinds": {
+          "unknown": 1
+        }
+      }
+    },
+    "promotion": {
+      "readbackVerified": true,
+      "gatewayRemoved": true,
+      "active": {
+        "release_version": "b3954a1f0cda9c05475083d2d4aa3efff9d051eaec646a0eca25a2f3554c7b9a",
+        "generation": 4,
+        "activation_id": "8fbaba02-1abc-4f2b-acaf-acfdb9bc7a9a",
+        "action": "promotion",
+        "previous_release_version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed"
+      },
+      "event": {
+        "activation_id": "8fbaba02-1abc-4f2b-acaf-acfdb9bc7a9a",
+        "generation": 4,
+        "action": "promotion",
+        "from_version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+        "to_version": "b3954a1f0cda9c05475083d2d4aa3efff9d051eaec646a0eca25a2f3554c7b9a"
+      },
+      "writersAfter": {
+        "active": 1,
+        "kinds": {
+          "unknown": 1
+        }
+      }
+    },
+    "rollback": {
+      "readbackVerified": true,
+      "gatewayRemoved": true,
+      "active": {
+        "release_version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+        "generation": 5,
+        "activation_id": "59f3c709-e8ee-400b-9560-e6cecfba12f3",
+        "action": "rollback",
+        "previous_release_version": "b3954a1f0cda9c05475083d2d4aa3efff9d051eaec646a0eca25a2f3554c7b9a"
+      },
+      "event": {
+        "activation_id": "59f3c709-e8ee-400b-9560-e6cecfba12f3",
+        "generation": 5,
+        "action": "rollback",
+        "from_version": "b3954a1f0cda9c05475083d2d4aa3efff9d051eaec646a0eca25a2f3554c7b9a",
+        "to_version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed"
+      },
+      "writersAfter": {
+        "active": 1,
+        "kinds": {
+          "unknown": 1
+        }
+      }
+    }
+  },
+  "stageActiveAndHistoryUnchanged": true,
+  "publicCatalog": {
+    "baseline": {
+      "label": "baseline",
+      "observedAt": "2026-10-12T16:41:34.932Z",
+      "version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+      "records": 3944,
+      "pages": 8,
+      "allPublicFieldsEqual": true,
+      "idsAndCodepointsEqual": true,
+      "publicRowsSha256": "d2142c8d941337a7185b0f847b2a433f17c29c7952884023dac33e384cb6f3a8",
+      "sourceUsersMigrated": false,
+      "domainChanged": false
+    },
+    "promoted": {
+      "label": "promoted",
+      "observedAt": "2026-10-12T16:56:09.809Z",
+      "version": "b3954a1f0cda9c05475083d2d4aa3efff9d051eaec646a0eca25a2f3554c7b9a",
+      "records": 3944,
+      "pages": 8,
+      "allPublicFieldsEqual": true,
+      "idsAndCodepointsEqual": true,
+      "publicRowsSha256": "b4dd3de050460f30187cc3868b56cb32f3efda5b14f28861342d6230ed89dad6",
+      "sourceUsersMigrated": false,
+      "domainChanged": false
+    },
+    "rolled-back": {
+      "label": "rolled-back",
+      "observedAt": "2026-10-12T16:59:04.139Z",
+      "version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+      "records": 3944,
+      "pages": 8,
+      "allPublicFieldsEqual": true,
+      "idsAndCodepointsEqual": true,
+      "publicRowsSha256": "d2142c8d941337a7185b0f847b2a433f17c29c7952884023dac33e384cb6f3a8",
+      "sourceUsersMigrated": false,
+      "domainChanged": false
+    }
+  },
+  "frontend": {
+    "nativeInAppReloadAfterPromotion": true,
+    "foxSelectionAndAvailabilityDisplayed": true,
+    "uuidVerifiedBySingleAnonymousSearchEvent": true,
+    "nativeReloadAfterRollbackAndDashboardReached": true,
+    "customMasterKeywordSearchAccepted": false,
+    "pickerSearchData": "existing independent Frimousse dataset; palette implementation remains outside #36 per #26"
+  },
+  "cleanup": {
+    "syntheticAdminRemoved": true,
+    "anonymousTestSearchAndEventRemoved": true,
+    "fixtureWorkerRemoved": true,
+    "statusGatewayRemoved": true,
+    "authMfaGenerationAdvancedByTwoAndNotReset": true,
+    "releaseAndActivationAndChangeAuditHistoryRetained": true
+  },
+  "independentReadback": {
+    "observedAt": "2026-10-12T17:01:57.524Z",
+    "version": "73d2bcae-4dd6-4347-9f83-d3d4f03b976c",
+    "bindings": 114,
+    "allThreeSchemasHeld": true,
+    "foreignKeysClean": true,
+    "allTableCountsVerified": true,
+    "masterPublicRowsRestored": true,
+    "idsAndCodepointsHeld": true,
+    "ownedAdminAuditsRetained": 2,
+    "activation": {
+      "release_version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+      "generation": 5,
+      "action": "rollback"
+    },
+    "assetsHeld": 8,
+    "backupAndMonitorHeld": true,
+    "disposableFixtureRemoved": true,
+    "oldUnresolvedTicketRetained": true,
+    "sourceUsersMigrated": false,
+    "domainChanged": false
+  },
+  "normalRemotePublicationAccepted": true,
+  "newUnicodeReleaseAdopted": false,
+  "naturalDailyBackupAccepted": false,
+  "oldUnresolvedTicketRetained": true,
+  "sourceUserMigrationPerformed": false,
+  "productionDnsChanged": false,
+  "fullMigrationAccepted": false
+}

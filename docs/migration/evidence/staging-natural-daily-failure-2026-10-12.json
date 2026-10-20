@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-10-12T13:39:19.448Z",
+  "mainVersion": "6f1dad73-74f7-4ae4-b998-e9e83c63b69c",
+  "slot": "2026-10-12",
+  "state": "failed",
+  "startedAt": "2026-10-12T00:05:24.733Z",
+  "finishedAt": "2026-10-12T00:05:49.734Z",
+  "fenceReleased": true,
+  "error": "capture_failed",
+  "manualInvocation": false,
+  "sourceRowsRead": false,
+  "sourceDataWritten": false,
+  "failure": {
+    "stage": "drain",
+    "reason": "drain_pending",
+    "activeWriters": 1
+  },
+  "scope": "current staging natural daily backup receipt only",
+  "failedSlotsManuallyReplayed": false,
+  "writerRecordsRemoved": false,
+  "sourceUserMigrationPerformed": false,
+  "productionDnsChanged": false
+}

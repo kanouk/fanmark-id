@@ -1,0 +1,69 @@
+# Fanmark return API on Cloudflare staging
+
+`POST /api/me/fanmarks/return` implements the single-fanmark `return-fanmark`
+flow against business D1. Better Auth supplies the caller identity; the Worker
+selects exactly one active, unexpired license owned by that identity. A transfer
+code in `active` or `applied` state blocks return, matching the latest live
+`has_active_transfer` function.
+
+The transition writes `status = grace`, `license_end = now`,
+`grace_expires_at = roundUpToNextUtcMidnight(now + grace_period_days)`,
+`is_returned = true`, and clears `excluded_at`. A missing or invalid grace
+setting keeps the source helper's one-day fallback. Audit and notification
+events are best effort, as in the checked-in Supabase return helper; favorite
+notifications are enqueued for other users who saved the fanmark. The staging
+Worker writes owner/favorite notification events to Business D1;
+the notification Durable Object processes configured immediate in-app rules.
+The native return UI follow-up below confirms one delivered owner notification.
+External-channel delivery remains separately gated. Default Supabase builds
+retain their source notification processor.
+
+The frontend keeps the existing Supabase default and selects these APIs only
+with `VITE_FANMARK_RETURN_BACKEND=worker`. The Cloudflare staging build sets
+that selector, and the staging Worker config uses `FANMARK_RETURN_BACKEND=d1`.
+Production builds do not set either selector.
+
+`POST /api/me/fanmarks/bulk-return` handles plan-downgrade returns. It accepts
+1–50 distinct `license_ids`, checks Better Auth ownership, active/unexpired
+state, and active/applied transfer-code status for each item, and transitions
+each successful license to grace. Each item is independent: HTTP 207 reports
+partial success with `results` and `failed`; full success returns HTTP 200.
+Audit and owner/favorite notification-event inserts remain best effort.
+
+Local verification covers owner resolution, expiry, transfer blocking,
+grace-period calculation, best-effort effects, request/CORS validation,
+Better Auth routing, and frontend session-cookie behavior. The existing
+single-return live synthetic canary verified its guard and successful return.
+The bulk-return local D1 suite passes 17/17 with the existing settings tests;
+the client suite passes 7/7. Live staging verified HTTP 207 for one successful
+and one transfer-blocked license, then HTTP 200 when the second license was
+returned after its synthetic transfer code was removed. Cleanup read back zero
+rows in the 40 source business tables and user-owned Auth tables; lifecycle
+access-version state and the singleton MFA generation were unchanged. License
+incarnation tombstones are deliberately retained to prevent identifier reuse.
+Production and real user data were not used.
+
+
+## Native staging UI follow-up (2026-10-06 JST)
+
+Actual Safari return was accepted with disposable synthetic identities
+and read-only D1 comparison. Exact owned cleanup and a separate least-privilege
+process preserved human Auth3/7/2, all24 Master table hashes, existing coupon
+definitions, profiles/MFA/templates, anonymous search history5/8 and FK0.
+[UI and cleanup evidence](evidence/staging-coupon-return-lottery-ui-2026-10-06.json).
+This does not prove imported-user parity, winner selection or actual-phone use.
+Earlier zero-Auth/global-empty cleanup descriptions are historical canaries.
+
+## Populated downgrade UI follow-up (2026-10-06 JST)
+
+Native Safari completed the actual test Creator→Free flow with five owned
+fanmarks: exact three selection, fourth-selection denial, confirmation, two
+returns, canceled subscription, signed Free projection and dashboard3/3.
+The natural Free webhook saw three remaining active licenses and made zero
+additional returns. Independent reads matched three active/two grace licenses
+to the native selection. UI logout, drained owned cleanup and independent
+Auth3/7/2/Master24/unowned scoped rows/FK0 readback passed. Wake23/23 was retained.
+Stripe's canceled test customer and invoice/payment history remain.
+[Bounded populated UI proof](evidence/staging-populated-plan-limit-native-ui-2026-10-06.json).
+Paid-account deletion, imported-user parity and actual-phone acceptance remain
+separate. Earlier pending whole-UI statements above are historical checkpoints.

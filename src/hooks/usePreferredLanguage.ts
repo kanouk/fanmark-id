@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ActiveLanguageCode, normalizeLanguage } from '@/lib/language';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getOwnProfileBackend, updateOwnProfile } from '@/lib/profile-api';
 
 export const usePreferredLanguage = () => {
   const { user } = useAuth();
@@ -20,6 +21,10 @@ export const usePreferredLanguage = () => {
 
       setIsSaving(true);
       try {
+        if (getOwnProfileBackend() === 'worker') {
+          await updateOwnProfile({ preferred_language: normalized });
+          return normalized;
+        }
         const { error } = await supabase
           .from('user_settings')
           .update({

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "observedDate": "2026-10-13",
+  "scope": "local synthetic current-schema import and fresh-target recovery only",
+  "baseHead": "9efb9f6cb8c8834831f69d1f659e865b8f8136fc",
+  "testedFileSHA256": {
+    "scripts/migration/full-table-synthetic-rows.mjs": "b2be9203ecb5b3e5d2d46ba6668a25e9ae0a50f6b7b7295ca0d317ae1aa6243b",
+    "scripts/migration/test-d1-import-current-schema.mjs": "2f7ea916e1817a61d48b1290148a9e1395bfe42c8168bafee51b3bdddefdb2a1",
+    "scripts/migration/test-business-runtime-import.mjs": "b7500c30ae0c9b583d081538ce32ac8afab41fead63d8fc41bce7f633aa0ca2f",
+    "scripts/migration/test-combined-recovery.mjs": "b6c79358d0acafc061e6971a8ee2c849659eb7930d3432981df9f063a3bc12c2"
+  },
+  "nodeVersion": "22.6.0",
+  "sourceCatalog": {
+    "tableCount": 40,
+    "columnCount": 406,
+    "applicationRowsRead": 0
+  },
+  "syntheticFixture": {
+    "populatedSourceTableCount": 40,
+    "sourceRowCount": 46,
+    "sourceCredentials": "synthetic only"
+  },
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "businessMigrationCount": 27,
+    "authMigrationCount": 4,
+    "committedCredentialAcknowledgementLossResumed": true,
+    "allCheckpointsComplete": 40,
+    "allNonemptyCheckpointsComplete": 40,
+    "checkpointSourceRowTotal": 46,
+    "targetPopulatedTableCount": 40,
+    "targetSourceTableRowTotal": 45,
+    "transformedCredentialCount": 2,
+    "deferredInactiveCredentialCount": 1,
+    "coverageTamperRejected": true,
+    "runtimeSchemaMissingAndUnexpectedRejected": true,
+    "runtimeFingerprintTamperRejected": true,
+    "freshTargetRestoreVerified": true,
+    "foreignKeyViolationCount": 0,
+    "notificationWakeAfterReplay": {
+      "requestedGeneration": 1,
+      "acknowledgedGeneration": 0
+    },
+    "enabledCredentialGenerationsAfterReplay": {
+      "password": 1,
+      "access": 5
+    }
+  },
+  "independentReadback": {
+    "performedBeforeAndAfterFreshRestore": true,
+    "allSourceTableCounts": true,
+    "expectedValuesDerivedFromConverterOrReport": false,
+    "bigintBeyondJavaScriptSafeInteger": true,
+    "arbitraryPrecisionLotteryWeight": true,
+    "moneyCents": true,
+    "JSONNestedValues": true,
+    "arrays": true,
+    "UTCWithSixFractionalDigits": true,
+    "unicodeNewlinesAndLiteralCharacters": true
+  },
+  "combinedRecovery": {
+    "freshTargetRestoreDurationMs": 13222,
+    "masterMigrationCount": 8,
+    "retainedHistoricalMasterAuthCore": true,
+    "masterEmojiCount": 3,
+    "masterTierCount": 4,
+    "splitR2ObjectCount": 2,
+    "linkedAssetsVerified": true,
+    "physicalBucketKeysVerified": true,
+    "applicationStorageReadVerified": true
+  },
+  "testHarnessCorrection": {
+    "compoundSelectLimitObserved": true,
+    "usedOrdinarySelectBatchInstead": true,
+    "importerChanged": false
+  },
+  "boundaries": {
+    "everyPossibleValueShapeCovered": false,
+    "remoteAllNonemptyTableRecoveryAccepted": false,
+    "fullMigrationReconciled": false,
+    "converterDeployable": false,
+    "realSourceUserRowsRead": 0,
+    "realUserDataMigrated": 0,
+    "remoteD1R2Mutations": 0,
+    "applicationDeployed": false,
+    "emailsSent": 0,
+    "productionDomainChanged": false,
+    "humanAppleAcceptance": false,
+    "physicalDeviceAcceptance": false
+  }
+}

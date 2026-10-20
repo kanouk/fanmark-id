@@ -1,0 +1,22 @@
+{
+  "format": "fanmark-owned-production-r2-client-cloudflare-proof-v1",
+  "observedAt": "2026-10-20T05:44:31.908Z",
+  "physicalIsolation": "owned app, separate import/read-only gateways, own DO namespace and two R2 buckets",
+  "sourceSnapshotIsDefinitiveForFutureMigration": false,
+  "sourceImageCopies": 109,
+  "sourceBytes": 13285729,
+  "actualProductionHttpClientUsed": true,
+  "httpClientModuleSha256": "b5c3c3b8d357f2025ca1d62f5f020d14bde3ab72f38f79bc57c7aeef779306b3",
+  "httpPutRequests": 109,
+  "coordinatorAcknowledged": 109,
+  "allBytesKeysHttpAndCustomMetadataIndependentlyVerified": true,
+  "controlPlaneIdentityProjectionOnlyForOwnedFixture": true,
+  "productionTargetIdentityAcceptance": false,
+  "productionStoreWrites": 0,
+  "sourceWrites": 0,
+  "originalPendingReplayed": false,
+  "originalFailedRequestCauseResolved": false,
+  "allOwnedCopiesWorkersNamespacesBucketsRemoved": true,
+  "cleanupIndependentInventoryRestored": true,
+  "cleanupObservedAt": "2026-10-20T05:47:00.101Z"
+}

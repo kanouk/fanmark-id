@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "state": "fresh_schema_verified_unbound",
+  "productionReady": false,
+  "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "zoneId": "6a2c39c92ba1c4106b7c19f87ada0a7e",
+  "sourceProject": "ppqgtbjykitqtiaisyji",
+  "creationDateJst": "2026-10-20",
+  "d1": [
+    {
+      "binding": "AUTH_DB",
+      "name": "fanmark-production-auth-20261020-v3",
+      "id": "bbb878d3-40eb-4755-b57b-f723f0dd901b",
+      "createdAt": "2026-10-20T05:47:48.377Z",
+      "initialObservedTables": 0,
+      "verifiedApplicationTables": 9,
+      "verifiedMigrationCount": 4
+    },
+    {
+      "binding": "MASTER_DB",
+      "name": "fanmark-production-master-20261020-v3",
+      "id": "f7aadd85-701e-4625-92ce-879d5939dab8",
+      "createdAt": "2026-10-20T05:47:49.602Z",
+      "initialObservedTables": 0,
+      "verifiedApplicationTables": 25,
+      "verifiedMigrationCount": 11
+    },
+    {
+      "binding": "FANMARK_DB",
+      "name": "fanmark-production-business-20261020-v3",
+      "id": "5af38beb-efe6-4f2b-8f59-af0070f37551",
+      "createdAt": "2026-10-20T05:47:50.715Z",
+      "initialObservedTables": 0,
+      "verifiedApplicationTables": 78,
+      "verifiedMigrationCount": 27
+    }
+  ],
+  "r2": [
+    {
+      "purpose": "avatars",
+      "name": "fanmark-avatars-production-20261020-v3",
+      "createdAt": "2026-10-20T05:47:52.415Z",
+      "location": "APAC",
+      "publicDevUrlEnabled": false,
+      "customDomains": []
+    },
+    {
+      "purpose": "covers",
+      "name": "fanmark-covers-production-20261020-v3",
+      "createdAt": "2026-10-20T05:47:55.986Z",
+      "location": "APAC",
+      "publicDevUrlEnabled": false,
+      "customDomains": []
+    },
+    {
+      "purpose": "backups",
+      "name": "fanmark-backups-production",
+      "createdAt": "2026-10-15T23:44:26.999Z",
+      "location": "APAC",
+      "publicDevUrlEnabled": false,
+      "customDomains": [],
+      "initialReportedObjects": 0,
+      "preliminaryEncryptedObjectsVerified": 6,
+      "preliminaryEncryptedBytesVerified": 18738059,
+      "preliminaryReadbackAt": "2026-10-16T11:36:54.639Z",
+      "preliminaryEvidence": "evidence/real-precopy-offhost-2026-10-16.json"
+    }
+  ],
+  "schemaApplied": true,
+  "applicationBindingsChanged": true,
+  "workerDeployed": true,
+  "sourceFrozen": false,
+  "usersImported": false,
+  "domainChanged": false,
+  "backupRestoreVerified": false,
+  "schemaEvidence": "evidence/production-cohort-v3-schema-2026-10-20.json",
+  "applicationBindingChangeScope": "closed cohort V3 candidate: fresh physical five stores and fresh coordinator classes; V1/V2 retained",
+  "cohortGeneration": 3,
+  "quarantinedPredecessor": "production-resources-quarantined-v2-2026-10-20.json",
+  "backupRestoreScope": "not-yet-verified",
+  "retainedQuarantinedPredecessors": [
+    "production-resources-quarantined-2026-10-20.json",
+    "production-resources-quarantined-v2-2026-10-20.json"
+  ],
+  "schemaVerifiedAt": "2026-10-20T05:51:29.653Z"
+}

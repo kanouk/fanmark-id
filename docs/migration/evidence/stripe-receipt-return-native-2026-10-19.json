@@ -1,0 +1,47 @@
+{
+  "format": "fanmark-stripe-receipt-return-native-v1",
+  "observedAt": "2026-10-19T04:24:26.531111+00:00",
+  "productionReady": false,
+  "sourceSqlExecuted": false,
+  "actualTargetDrainVerified": false,
+  "nativeSequence": [
+    "PostgreSQL sealed export",
+    "authenticated encryption and decryption",
+    "native D1 initial import",
+    "actual D1 ingress duplicate and new synthetic event",
+    "generated single-transaction return SQL on isolated PostgreSQL",
+    "full exported source content comparison",
+    "reopen retains receipts"
+  ],
+  "sourceBefore": {
+    "receipts": 4,
+    "deliveries": 5
+  },
+  "returnedSource": {
+    "receipts": 5,
+    "deliveries": 7
+  },
+  "verifiedFailures": [
+    "original content alteration",
+    "delivery count decrease",
+    "dispatch attempt or claim generation",
+    "unexpected trigger",
+    "failure during dispatch insert rolls back receipt changes and control counts",
+    "reapplying old return plan"
+  ],
+  "tests": {
+    "receiptTransferAndIngressPassed": 16,
+    "productionPreparationPassed": 9
+  },
+  "implementationSha256": {
+    "scripts/migration/stripe-receipt-transfer.mjs": "ca9723f99dea18b2e74d2b57d1e25dc041575f4743b8f4a897aeb0fb6e0e33c5",
+    "scripts/migration/source-stripe-receipt-only.mjs": "99b6068e0e64019f515cd4edc5d4d70dd7f403cf6a44d238ec9e7178869dea97",
+    "scripts/migration/test-source-stripe-receipt-only.mjs": "e5652022ccfbd1a98006ed9c8393fb36c2ce4f23470c67e773a6d43f9d65c592"
+  },
+  "remaining": [
+    "fixed target closed ingress and in-flight drain evidence",
+    "actual target capture adapter and encrypted return archive custody",
+    "source execution journal and independent remote readback",
+    "legacy business effects reconciliation before resuming dispatch"
+  ]
+}

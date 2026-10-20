@@ -1,0 +1,214 @@
+{
+  "observedAt": "2026-10-18T13:37:44.727Z",
+  "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "verification": "remote-read-only-vs-native-local",
+  "databases": [
+    {
+      "binding": "AUTH_DB",
+      "databaseId": "dc43ffd7-0ca8-45d6-805c-ae1e6f2b58a6",
+      "migrationCount": 4,
+      "tableCount": 9,
+      "objectCount": 30,
+      "schemaSha256": "f185fcd7c42ae64ba2824bd379ea47d903d5e3bc481126119cd7368cb2ed8300",
+      "migrationFiles": [
+        {
+          "name": "0003_better_auth_core.sql",
+          "sha256": "ad51865fe63cb14623b43216c11773a198be91d25b999907184bf4d73f88fb1f"
+        },
+        {
+          "name": "0007_auth_signup_command.sql",
+          "sha256": "c82b96294d9a5d3fdff9ed4dc8f42bbdc2255ac95c23cce76e4284340e66a42a"
+        },
+        {
+          "name": "0008_auth_user_suspension.sql",
+          "sha256": "a7e37902d160569ba2df19035007cf664a865c6b588ea34e04734a4245d74a09"
+        },
+        {
+          "name": "0009_auth_oauth_signup.sql",
+          "sha256": "0d404cd3fc7cc715ddda7f47f7c27686fe43e6cd86bf47fc983417a9dacde2db"
+        }
+      ],
+      "exactSchemaMatch": true,
+      "exactMigrationLedger": true,
+      "onlyMigrationSeedRows": true,
+      "foreignKeyViolations": 0
+    },
+    {
+      "binding": "MASTER_DB",
+      "databaseId": "5973e9f4-cae3-4a2b-b99d-16c2f0ae76da",
+      "migrationCount": 9,
+      "tableCount": 24,
+      "objectCount": 97,
+      "schemaSha256": "d2bd688118fbcb355982616239ca35d1c7f32390f4897084ea07e1396358293d",
+      "migrationFiles": [
+        {
+          "name": "0000_emoji_master.sql",
+          "sha256": "788b5297b0af14c93a6f14ebd4dcf430b62ba8770cff1cf90a67e50032219912"
+        },
+        {
+          "name": "0001_emoji_master_release_staging.sql",
+          "sha256": "f20c8bfaba2b81ad2bd354dff1a6ac47b1ff2df2cc519dbda3e7a1746c2b7b52"
+        },
+        {
+          "name": "0002_emoji_master_release_activation.sql",
+          "sha256": "7be19c1e0951542d370113c2953eb8b3b48b1064673308e3618d77ec7c48afb9"
+        },
+        {
+          "name": "0003_better_auth_core.sql",
+          "sha256": "ad51865fe63cb14623b43216c11773a198be91d25b999907184bf4d73f88fb1f"
+        },
+        {
+          "name": "0004_reference_master_releases.sql",
+          "sha256": "78cf0ba96943f057723d46da5229bd96e9fc89c00e707140c12247bbd540e744"
+        },
+        {
+          "name": "0005_emoji_master_admin_guards.sql",
+          "sha256": "17c286d713e50efdd6710dbd24870ebedc84be5cc8a5eae28b72eae078dbc5fa"
+        },
+        {
+          "name": "0006_reference_master_extension_prices.sql",
+          "sha256": "c8b2fe178f773fb162dd0784f5b6ddf37c08bb3cc3ba2854a513cd9cd91226c3"
+        },
+        {
+          "name": "0007_release_audit_timestamps.sql",
+          "sha256": "a96b733a048626a05ce16af1710258db549bdde5781d8e89b13bb141a5e2c31d"
+        },
+        {
+          "name": "0008_emoji_master_change_audits.sql",
+          "sha256": "d92703efea010867f9629c3ea8e2932fcc7022d9a248321b53fad0b8162afc77"
+        }
+      ],
+      "exactSchemaMatch": true,
+      "exactMigrationLedger": true,
+      "onlyMigrationSeedRows": true,
+      "foreignKeyViolations": 0
+    },
+    {
+      "binding": "FANMARK_DB",
+      "databaseId": "84599147-e2c7-41d8-80ae-33c61b158314",
+      "migrationCount": 27,
+      "tableCount": 78,
+      "objectCount": 225,
+      "schemaSha256": "ad74c40621fb27939b6c09671443b418ca65983821239fcefd73eabbf1ca90da",
+      "migrationFiles": [
+        {
+          "name": "0000_business_schema_v4_staging.sql",
+          "sha256": "9e10f7863f9d24811fcae6af7e4130a0859e6882565a6827523d7efaf1dc806a"
+        },
+        {
+          "name": "0001_lifecycle_target_staging.sql",
+          "sha256": "3e5b2c33e38fc6facfd9a91fa932a33d94478d78a72b05ff32d3ee04da193026"
+        },
+        {
+          "name": "0002_lifecycle_generation_staging.sql",
+          "sha256": "09db2dd8c12b09300354fd64aeb89a735ab6b0b925b42cb1f7f4a08c6361b7c4"
+        },
+        {
+          "name": "0003_credential_transform_staging.sql",
+          "sha256": "51a9243ebe40c684c61fe80d07155cf4e29483ba1cf0433bdadc68fca42675db"
+        },
+        {
+          "name": "0004_verified_access_staging.sql",
+          "sha256": "ab2cd37b6d55f8c1ca5ec560fdc8f006064447cb8f1e2fe877855b8c915d1443"
+        },
+        {
+          "name": "0005_lottery_plan_journal_staging.sql",
+          "sha256": "27f317474b07ee25ed55048a1fe92d314c6cd1693e1f75f65d00ba6da42d483e"
+        },
+        {
+          "name": "0006_stripe_webhook_ingress_staging.sql",
+          "sha256": "d39b45ca4068df5ce1ebd425053569ffc393a47522854d046b6020ad3f67da84"
+        },
+        {
+          "name": "0007_stripe_extension_application_staging.sql",
+          "sha256": "1642fccf74a48739c97688cb6365805cc8ec038df536bff0fa9021b8a157d075"
+        },
+        {
+          "name": "0008_stripe_invoice_projection_staging.sql",
+          "sha256": "abb0f91347cfa3a64279691b55fd6becf06ef3abc364bfb7a2ce23187ef2895e"
+        },
+        {
+          "name": "0009_stripe_subscription_identity.sql",
+          "sha256": "e4289675a95ac720dbac432803fa7e8637695aa850167623298ae798bd10e44f"
+        },
+        {
+          "name": "0010_stripe_subscription_reconciliation_staging.sql",
+          "sha256": "c67374fcde12f5738d81cdc71a9e569046db08b4ac26c4ee5b9368c4a712981d"
+        },
+        {
+          "name": "0011_stripe_subscription_free_return.sql",
+          "sha256": "10fae92f861e87fd9eef300c861bdfb22f6ed6544040a98bd29c2f8864ddba5b"
+        },
+        {
+          "name": "0012_stripe_plan_checkout_commands.sql",
+          "sha256": "2a92958c8c5ca59bfe4e757b23f3bf935eb8a3fd7555a8a63a8e091e7d0814a2"
+        },
+        {
+          "name": "0013_stripe_plan_change_commands.sql",
+          "sha256": "6aad3c117b9e7fb81153c8dd2c45f8fe15881322eabce7addc292cf99f80761a"
+        },
+        {
+          "name": "0014_invitation_signup_attempts.sql",
+          "sha256": "c4de8bc4f036df91f98db3ee9ecc3ff5bb8f08e70577ed28a99a7bfb917adff1"
+        },
+        {
+          "name": "0015_extension_coupon_application.sql",
+          "sha256": "d564bc90e86a7b3720b725edb3cb3b24083f42c424af211a3083169e28ca29b0"
+        },
+        {
+          "name": "0016_broadcast_email_delivery.sql",
+          "sha256": "a5f8bbf63efe5901574cac2139ba1048626e02b8c5052cc86c2094f2a5756cf4"
+        },
+        {
+          "name": "0017_lifecycle_generation_timestamp_precision.sql",
+          "sha256": "587f31945c1ceb5f62db651e30b1aec5f1491989d201823293968f0deb2791c4"
+        },
+        {
+          "name": "0018_invitation_capacity_timestamp_precision.sql",
+          "sha256": "fd57790e89a594490d17c8b93e203025a3c453a0a2f7107050307a4ac414b157"
+        },
+        {
+          "name": "0019_extension_coupon_timestamp_precision.sql",
+          "sha256": "32468e15077322087f48fe4afa815f73fb9ccbe49b4e999dd7120e091afac79e"
+        },
+        {
+          "name": "0020_notification_archive_index.sql",
+          "sha256": "a0124d69089f84874a9b57265c90eef34fc8fd92b4e8ef614d30c76869180cdc"
+        },
+        {
+          "name": "0021_coupon_lottery_status_audit.sql",
+          "sha256": "e9b67148b635e34ef750fd838b5d971aae1495004dc80995b473725cad0e1936"
+        },
+        {
+          "name": "0022_fanmark_discovery_link.sql",
+          "sha256": "a40ac4edfed9ba91035fbb07db5eeb154d2d949325f94b1a301c76d8b462d241"
+        },
+        {
+          "name": "0023_admin_data_reset.sql",
+          "sha256": "e0fac9bffb029ae2c185ef7248e375d21549b7c9d28e2b382deaf8d3de50d14e"
+        },
+        {
+          "name": "0024_notification_worker_wake.sql",
+          "sha256": "594b8686f5bceb0601b43b91684af1d109b77909263b12949f4261205a65ddb4"
+        },
+        {
+          "name": "0025_broadcast_delivery_terminal_outcomes.sql",
+          "sha256": "f9f55e8299c85cd428d1e43f8096176a09e4859bec00fc6af8ae85676c200219"
+        },
+        {
+          "name": "0026_broadcast_delivery_provider_time.sql",
+          "sha256": "f31b217f13fc18afb2216c12dbe5ee99cee69cd3683c5287284f0064528a7ab5"
+        }
+      ],
+      "exactSchemaMatch": true,
+      "exactMigrationLedger": true,
+      "onlyMigrationSeedRows": true,
+      "foreignKeyViolations": 0
+    }
+  ],
+  "productionReady": false,
+  "usersImported": false,
+  "sourceFrozen": false,
+  "domainChanged": false,
+  "transport": "production-remote-d1, read-only, metadata checked before every SQL batch"
+}

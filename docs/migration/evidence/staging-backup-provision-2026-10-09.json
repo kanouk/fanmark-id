@@ -1,0 +1,67 @@
+{
+  "format": "fanmark-staging-backup-provision-v1",
+  "dateJst": "2026-10-09",
+  "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "workerBefore": "cc6d75c4-53c3-4ccd-939e-5a2c4a706c1c",
+  "allRetainedD1TableHashesBefore": "matched previous accepted baseline",
+  "authRetained": {
+    "users": 3,
+    "accounts": 7,
+    "sessions": 2
+  },
+  "companionWorkerVersion": "a7c8f421-128e-4c29-ab9d-44e2d60bdc2b",
+  "backupBucket": "fanmark-backups-staging",
+  "managedPublicDomainEnabled": false,
+  "customDomains": 0,
+  "archiveKeyId": "staging-backup-89ca6819-a159-4db8-aa7d-733315a9a0ef",
+  "archiveKeyCustody": {
+    "macKeychain": "saved and read back",
+    "vault10Sensitive": "saved and read back",
+    "fileMode": "0600",
+    "matching": true
+  },
+  "sdkKeyEscrow": {
+    "encrypted": true,
+    "macKeychainVerified": true,
+    "vaultVerified": true,
+    "plaintextSdkKeyStored": false,
+    "authKeyId": "c370333d9e2510b262bbcead60ba30a58fe66b0b0dad6b9c26b5033ff2259772"
+  },
+  "captureAdmission": false,
+  "dailyCronEnabled": false,
+  "retainedSourceCapturePerformed": false,
+  "physicalPhone": "unconfirmed",
+  "productionUserMigration": false,
+  "productionDomainCutover": false,
+  "mainWorkerVersion": "79e75f89-8121-4d4a-8ec0-1df4f9f94383",
+  "runtimeSourceCommit": "b32fb9cfec0cebcdcf4547f318fdf579e1db7ed2",
+  "implementationCI": {
+    "runId": "37810140113",
+    "application": "success",
+    "worker": "success"
+  },
+  "namedRpcStatusReadback": {
+    "identityAndSchemaPinsMatched": true,
+    "writerScopeMatched": true,
+    "owner": null,
+    "activeObserved": 27,
+    "drained": false
+  },
+  "scheduler": {
+    "worker": "fanmark-backup-staging",
+    "dailySelector": "disabled",
+    "crons": []
+  },
+  "afterDeployment": {
+    "allRetainedTableHashesUnchanged": true,
+    "authUsers": 3,
+    "authAccounts": 7,
+    "authSessions": 2,
+    "publicAssetsUnchanged": 6,
+    "durableObjectNamespacesUnchanged": true,
+    "ownedTemporaryProbeAbsent": true
+  },
+  "macBrowserInventory": "blocked by locked Mac; manual unlock requested",
+  "archiveCaptureAccepted": false,
+  "remoteOperationalRestoreAccepted": false
+}

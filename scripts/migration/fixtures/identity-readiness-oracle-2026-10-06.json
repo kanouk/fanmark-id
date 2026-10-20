@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "scope": "literal-only PostgreSQL execution of deferred identity preflight; actual source user rows not read",
+  "sourceSqlSha256": "c58e144812553b4607a2356483b38cdbf5d72b6e5567176cb4e6011ad2dd82c5",
+  "oracleGeneratorSha256": "ecd9274af35853f657e24556dd89872012ac25a3e9b6c56aa514820103a27d92",
+  "sourceProjectVerified": true,
+  "storedApplicationFunctionsInvoked": false,
+  "actualSourceRowsRead": false,
+  "sourceOrCloudflareStateChanged": false,
+  "scenarios": {
+    "valid": {
+      "observedAt": "2026-10-06T01:07:40.670393+00:00",
+      "readyForIdentityImport": true,
+      "schemaVersion": 1,
+      "scope": "deferred source identity import preflight, aggregate counts only",
+      "tables": [
+        {
+          "admitted_rows": 2,
+          "canonical_duplicate_groups": 0,
+          "canonical_duplicate_rows": 0,
+          "display_duplicate_groups": 0,
+          "display_duplicate_rows": 0,
+          "empty_arrays": 0,
+          "null_arrays": 0,
+          "null_element_arrays": 0,
+          "relation": "fanmark_discoveries",
+          "total_rows": 2,
+          "unsupported_dimensions": 0,
+          "unsupported_lower_bounds": 0
+        },
+        {
+          "admitted_rows": 2,
+          "canonical_duplicate_groups": 0,
+          "canonical_duplicate_rows": 0,
+          "display_duplicate_groups": 0,
+          "display_duplicate_rows": 0,
+          "empty_arrays": 0,
+          "null_arrays": 0,
+          "null_element_arrays": 0,
+          "relation": "fanmark_events",
+          "total_rows": 2,
+          "unsupported_dimensions": 0,
+          "unsupported_lower_bounds": 0
+        },
+        {
+          "admitted_rows": 2,
+          "canonical_duplicate_groups": 0,
+          "canonical_duplicate_rows": 0,
+          "display_duplicate_groups": 0,
+          "display_duplicate_rows": 0,
+          "empty_arrays": 0,
+          "null_arrays": 0,
+          "null_element_arrays": 0,
+          "relation": "fanmark_favorites",
+          "total_rows": 2,
+          "unsupported_dimensions": 0,
+          "unsupported_lower_bounds": 0
+        },
+        {
+          "admitted_rows": 2,
+          "canonical_duplicate_groups": 0,
+          "canonical_duplicate_rows": 0,
+          "display_duplicate_groups": 0,
+          "display_duplicate_rows": 0,
+          "empty_arrays": 0,
+          "null_arrays": 0,
+          "null_element_arrays": 0,
+          "relation": "fanmarks",
+          "total_rows": 2,
+          "unsupported_dimensions": 0,
+          "unsupported_lower_bounds": 0
+        }
+      ],
+      "oracleSqlSha256": "c89ac9bcabfd2a3157d552bb408a8f28e778dafec7417c53e5f004b9861921a5"
+    },
+    "blocked": {
+      "observedAt": "2026-10-06T01:07:44.638963+00:00",
+      "readyForIdentityImport": false,
+      "schemaVersion": 1,
+      "scope": "deferred source identity import preflight, aggregate counts only",
+      "tables": [
+        {
+          "admitted_rows": 2,
+          "canonical_duplicate_groups": 0,
+          "canonical_duplicate_rows": 0,
+          "display_duplicate_groups": 0,
+          "display_duplicate_rows": 0,
+          "empty_arrays": 1,
+          "null_arrays": 0,
+          "null_element_arrays": 1,
+          "relation": "fanmark_discoveries",
+          "total_rows": 6,
+          "unsupported_dimensions": 1,
+          "unsupported_lower_bounds": 1
+        },
+        {
+          "admitted_rows": 2,
+          "canonical_duplicate_groups": 0,
+          "canonical_duplicate_rows": 0,
+          "display_duplicate_groups": 0,
+          "display_duplicate_rows": 0,
+          "empty_arrays": 1,
+          "null_arrays": 0,
+          "null_element_arrays": 1,
+          "relation": "fanmark_events",
+          "total_rows": 4,
+          "unsupported_dimensions": 0,
+          "unsupported_lower_bounds": 0
+        },
+        {
+          "admitted_rows": 3,
+          "canonical_duplicate_groups": 1,
+          "canonical_duplicate_rows": 2,
+          "display_duplicate_groups": 0,
+          "display_duplicate_rows": 0,
+          "empty_arrays": 0,
+          "null_arrays": 0,
+          "null_element_arrays": 0,
+          "relation": "fanmark_favorites",
+          "total_rows": 3,
+          "unsupported_dimensions": 0,
+          "unsupported_lower_bounds": 0
+        },
+        {
+          "admitted_rows": 2,
+          "canonical_duplicate_groups": 0,
+          "canonical_duplicate_rows": 0,
+          "display_duplicate_groups": 1,
+          "display_duplicate_rows": 2,
+          "empty_arrays": 0,
+          "null_arrays": 1,
+          "null_element_arrays": 0,
+          "relation": "fanmarks",
+          "total_rows": 3,
+          "unsupported_dimensions": 0,
+          "unsupported_lower_bounds": 0
+        }
+      ],
+      "oracleSqlSha256": "70780821745fff45afe8079e5bce746f85805c79367a194fc7b447fd10595a39"
+    }
+  }
+}

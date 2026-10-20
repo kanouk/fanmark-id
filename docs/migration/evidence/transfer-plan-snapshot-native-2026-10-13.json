@@ -1,0 +1,106 @@
+{
+  "state": "transfer_plan_snapshot_native_accepted_and_normal_staging_deployed",
+  "observedAt": "2026-10-13T08:34:27.192Z",
+  "runtimeSource": "8fd1aaa91b59a9899cfedcb0fe07f7d8a303fc11",
+  "ciRun": 38368179928,
+  "bothJobsSuccess": true,
+  "localTests": 43,
+  "nativeCases": [
+    {
+      "action": "apply",
+      "change": "insert",
+      "rejectedStatus": 409,
+      "transferRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleAudit": true,
+      "fkZero": true
+    },
+    {
+      "action": "apply",
+      "change": "update",
+      "rejectedStatus": 409,
+      "transferRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleAudit": true,
+      "fkZero": true
+    },
+    {
+      "action": "apply",
+      "change": "plan",
+      "rejectedStatus": 409,
+      "transferRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleAudit": true,
+      "fkZero": true
+    },
+    {
+      "action": "approve",
+      "change": "insert",
+      "rejectedStatus": 409,
+      "transferRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleAudit": true,
+      "fkZero": true
+    },
+    {
+      "action": "approve",
+      "change": "update",
+      "rejectedStatus": 409,
+      "transferRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleAudit": true,
+      "fkZero": true
+    },
+    {
+      "action": "approve",
+      "change": "plan",
+      "rejectedStatus": 409,
+      "transferRowsHeld": true,
+      "concurrentEditHeld": true,
+      "retryStatus": 200,
+      "singleAudit": true,
+      "fkZero": true
+    }
+  ],
+  "proofScope": "Actual Cloudflare Worker entrypoint, synthetic Better Auth cookies and owned full Business/Auth D1 schemas. A gated test-only wrapper changes only the owned recipient plan/limit immediately before the actual D1 batch. Master uses the focused tier fixture. No claim of full App UI or real user migration.",
+  "ownedResources": {
+    "workerCount": 1,
+    "d1Count": 3,
+    "removed": true,
+    "independentInventoryRestored": true
+  },
+  "normalStaging": {
+    "previous": "958b5ea2-525d-4a7e-adc6-f6b15bfdcf91",
+    "version": "8b2ddbf3-cc77-4937-a036-c750e00b3f39",
+    "bindingsPreserved": 114,
+    "allThreeD1SchemaAndCountsHeld": true,
+    "allThreeD1ForeignKeysZero": true,
+    "oldHashedAssetsHeld": true,
+    "assetCount": 10,
+    "backupAndMonitorHeld": true,
+    "catalogHeld": true,
+    "independentReadonlyConfirmed": true,
+    "frontendChanged": false,
+    "normalDatabaseWrites": false,
+    "normalSecretsChanged": false
+  },
+  "code": [
+    {
+      "path": "workers/api/src/fanmark-transfer-d1-api.ts",
+      "sha256": "000fe094245ffce1045ac08374fa41bf9aaf437f262097feb24db906e6694bf9"
+    },
+    {
+      "path": "workers/api/test/fanmark-transfer-d1.test.ts",
+      "sha256": "c654e828da10c3b257df534e07d2d3f0e7fb1c3421dd79c7061397ff4b5137bd"
+    }
+  ],
+  "syntheticCookiesOrPasswordsPublished": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "wholeMigrationComplete": false
+}

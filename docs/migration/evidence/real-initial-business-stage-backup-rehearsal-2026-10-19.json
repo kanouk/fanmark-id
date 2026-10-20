@@ -1,0 +1,38 @@
+{
+  "format": "fanmark-real-initial-business-stage-backup-rehearsal-v1",
+  "initialStageAndIndependentReadbackUsed": true,
+  "observedAt": "2026-10-19T00:56:59.041Z",
+  "productionReady": false,
+  "scope": "local-native-D1-only",
+  "sourceSnapshotDate": "2026-10-16",
+  "sourceFrozen": false,
+  "sourceNetworkReads": 0,
+  "remoteWrites": 0,
+  "authReenrollmentUsed": false,
+  "sourceIdentityResolution": "encrypted-prior-source-user-ids-only",
+  "sourceTables": 40,
+  "sourceRows": 5770,
+  "recoveryTables": 83,
+  "schemaObjects": 229,
+  "schemaHash": "d5139f4ec4ffea556af9c20544178898114e4bdb7a582175021c05c69ba58d16",
+  "archiveFormat": "fanmark-business-import-recovery-v1",
+  "archiveBytes": 3517141,
+  "importLedgerPreserved": true,
+  "foreignKeyViolations": 0,
+  "standaloneSourceAndRestoredReadbackPassed": true,
+  "originalSnapshotGateCount": 4,
+  "timings": {
+    "importMs": 101617,
+    "readbackMs": 7266,
+    "captureMs": 758,
+    "sealOpenMs": 941,
+    "restoreMs": 2427,
+    "restoredReadbackMs": 6813
+  },
+  "elapsedMs": 121507,
+  "limitations": [
+    "business store only; Auth/Master/R2 operational recovery not tested here",
+    "prior unfrozen snapshot; no current production consistency claim",
+    "local memory and latency are not Cloudflare runtime capacity proof"
+  ]
+}

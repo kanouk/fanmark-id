@@ -1,0 +1,23 @@
+{
+  "state": "all_four_failed_owned_cases_cleaned_and_existing_staging_preserved",
+  "observedAt": "2026-10-13T02:16:22.628Z",
+  "mainVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "mainBindingCount": 114,
+  "mainBindingDigest": "646b184dadb08cce0b5a528d9753b10059127eb87f09da4841b0a895d9f630d5",
+  "inventoryCounts": {
+    "d1": 12,
+    "r2": 12,
+    "workers": 4,
+    "namespaces": 8
+  },
+  "baselineIdentityConfigurationSchemaCountsMatched": true,
+  "humanAppleCredentialAndSessionPreserved": true,
+  "freeProfileAndPasswordSetupStatePreserved": true,
+  "realAuthCredentialValuesRead": false,
+  "foreignKeyViolations": 0,
+  "independentReadbackSha256": "3721c48961eec929e55e6a766832233babaa10d2707f56b5866d0ce1da9ba8a3",
+  "failedProofsAccepted": false,
+  "proofPostsResent": false,
+  "userDataMigrated": false,
+  "domainChanged": false
+}

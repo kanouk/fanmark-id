@@ -1,0 +1,494 @@
+{
+  "state": "owner_selected_target_pre_cutover_scope_accepted",
+  "observedAt": "2026-10-13T15:01:49.003097+00:00",
+  "reviewedHead": "ff408cabb91bf2961e3b3df77f92751e666ef60d",
+  "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a",
+  "normalStagingVersion": "19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd",
+  "basis": "Prior domain contract/security reviews, current source identities, scoped native correction receipts, current complete CI, human OAuth/mobile/relay acceptance and independent cleanup; no new full end-to-end run asserted",
+  "reviewedFeatureGroups": [
+    {
+      "feature": "notification delivery and wake",
+      "functions": [
+        "activate_notification_worker",
+        "activate_notification_worker_on_pending_event",
+        "create_notification_event",
+        "deactivate_notification_worker_if_idle",
+        "render_notification_template"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/notification-wake.ts",
+          "sha256": "6098a7a89108da6071412dc394651066b0688d072618cbac00c0b5d77cd443c8",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/notifications-scheduled.ts",
+          "sha256": "d7ad061e808ad3593ee5bad6af62be2d77616b6af826faf342aea0491ea798f7",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "notification inbox/archive",
+      "functions": [
+        "archive_old_notifications",
+        "get_unread_notification_count",
+        "mark_all_notifications_read",
+        "mark_notification_read"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/notifications-d1-api.ts",
+          "sha256": "338d1225c605bb55aabb080b8721c793ba510195e23873ea6ce68b403dd85306",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "favorites",
+      "functions": [
+        "add_fanmark_favorite",
+        "get_favorite_fanmarks",
+        "remove_fanmark_favorite"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/favorites-d1-api.ts",
+          "sha256": "21997f48f6d9161b4d18c07f11100ffcdacef9899c7068b11474a0228154ac31",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "availability and classification",
+      "functions": [
+        "check_fanmark_availability",
+        "check_fanmark_availability_secure",
+        "classify_fanmark_tier"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/availability-d1-repository.ts",
+          "sha256": "da5712bf6fe70d6d4cdd666a484de73dd04be822e6fe1d0542c4fbefe7e232f8",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/fanmark-registration-d1-api.ts",
+          "sha256": "8b94f35447bbaa8b3cbed5d5baf638f3b1782f66a7ae04969c774edcaca34f17",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "profile security",
+      "functions": [
+        "check_username_availability_secure",
+        "prevent_user_settings_insert_escalation",
+        "prevent_user_settings_privilege_escalation"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/profile-d1-repository.ts",
+          "sha256": "9e6d4f229550cb1f4ccde5beee84599bbfe6b9f57bb72b006758280fc65a5801",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/profile-supabase-repository.ts",
+          "sha256": "4f8977a5c34b554666386c91bdb0d7194c9c5e44f842d791e1b814fe496ba3aa",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/legacy-supabase-auth.ts",
+          "sha256": "366795e5bb1b080ba64dc47281f1c724606b02064e4e30b383cd9781a3eb403b",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "transfer",
+      "functions": [
+        "generate_transfer_code_string",
+        "has_active_transfer"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/fanmark-transfer-d1-api.ts",
+          "sha256": "5a2b2c91b419de8dfd409eaa4eb4eccef457317f2dea48a72730191f28b267d3",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "public read and recent",
+      "functions": [
+        "get_fanmark_by_emoji",
+        "get_fanmark_by_short_id",
+        "get_public_emoji_profile",
+        "list_recent_fanmarks"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/public-access-d1-repository.ts",
+          "sha256": "5df808efa6a5241905c2dc7b14dcabc427e15c88365ff32f2fd2168a25545544",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/d1-repository.ts",
+          "sha256": "a7b34b82d8a31007fa0a41148ecf3c9e30c0df3e7561996f2af033b81f065e52",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "search and owner details",
+      "functions": [
+        "get_fanmark_complete_data",
+        "get_fanmark_details_by_short_id",
+        "record_fanmark_search",
+        "upsert_fanmark_discovery"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/fanmark-search-d1-api.ts",
+          "sha256": "847942a6986df4dbdd6376895a338f169bbf7a3ee77320ce2cbb5493677c6fe2",
+          "priorReviewIdentity": "superseded_by_accepted_search_lifecycle_fix"
+        },
+        {
+          "path": "workers/api/src/fanmark-details-d1-api.ts",
+          "sha256": "ca91f17c85dbf404a3e45401622bb035c7becaa487e57bf7fc61686e8e7095a0",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "waitlist and security audits",
+      "functions": [
+        "get_waitlist_email_by_id",
+        "get_waitlist_secure",
+        "notify_security_breach"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/waitlist-admin-d1-api.ts",
+          "sha256": "7479d2901b11c602aa1571d33c3cb4788d6c32ccfbc95f622e8456bc1a3928e8",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/index.ts",
+          "sha256": "bf914e7a4933fcb2d59dfdffab8f096a51ca4a0c23294de039f98ad6b24636e1",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "signup/invitation",
+      "functions": [
+        "handle_new_user",
+        "use_invitation_code",
+        "validate_invitation_code"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/oauth-signup-provisioning.mjs",
+          "sha256": "e736050eaf0c4d08409722e827a55dd5481ebc354e987101f7ee33bdc16c280c",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/invitation-signup-d1-api.ts",
+          "sha256": "57091ce70f5e443879daa7cadab8d805e6c937e572fa4e0e6d95ed47c7ac1620",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "administration role/MFA",
+      "functions": [
+        "has_role",
+        "is_admin",
+        "is_super_admin"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/index.ts",
+          "sha256": "bf914e7a4933fcb2d59dfdffab8f096a51ca4a0c23294de039f98ad6b24636e1",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/better-auth.mjs",
+          "sha256": "336c7ca4d6aa1fbf3a706901f2bad9559044d91b9edbd49148d36ab04330b7fd",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "normalized identity/discovery linking",
+      "functions": [
+        "link_fanmark_discovery",
+        "link_fanmark_discovery_trigger",
+        "normalize_emoji_ids",
+        "seq_key"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/fanmark-registration-d1-api.ts",
+          "sha256": "8b94f35447bbaa8b3cbed5d5baf638f3b1782f66a7ae04969c774edcaca34f17",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/favorites-d1-api.ts",
+          "sha256": "21997f48f6d9161b4d18c07f11100ffcdacef9899c7068b11474a0228154ac31",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "master audit/publication",
+      "functions": [
+        "log_emoji_master_changes"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/emoji-master-admin-d1-repository.ts",
+          "sha256": "0c0352d1ae55e5fbf9baae02a84c3e894c6df2b3a8bcb8cf97028a59b329fe92",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/emoji-publication-service.ts",
+          "sha256": "cfd979f4b705247bb7629ddd81756aa4c330b11e6794a705ab450a09f81d6668",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "lottery audit",
+      "functions": [
+        "log_lottery_entry_changes"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/fanmark-lottery-d1-api.ts",
+          "sha256": "30b1839ae8be43106f7c7fa089ea92bda37e63357f4f04744d7799a8028eedfe",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/lottery-cancellation-audit.ts",
+          "sha256": "4666c0f108be1b9976108568a520a8eed8ac91d225566dac38a3282bae94e557",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "protected access/password",
+      "functions": [
+        "is_fanmark_password_protected",
+        "upsert_fanmark_password_config",
+        "verify_fanmark_password"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/verified-access.mjs",
+          "sha256": "a05751de22c75a595afe0ab67dc9e5f39886e2ad7372dfdd58457ade610b8aa7",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "workers/api/src/fanmark-settings-d1-api.ts",
+          "sha256": "32f83da20af6c0b3573574c134cde6f4b03109e8e264b99bb1bc48bd6b181455",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "trusted timestamps",
+      "functions": [
+        "update_updated_at_column"
+      ],
+      "code": [
+        {
+          "path": "workers/api/src/profile-d1-repository.ts",
+          "sha256": "9e6d4f229550cb1f4ccde5beee84599bbfe6b9f57bb72b006758280fc65a5801",
+          "priorReviewIdentity": "matches_reviewed_source"
+        },
+        {
+          "path": "scripts/migration/row-conversion.mjs",
+          "sha256": "74b49b51c58c2f5c48b212a24dbb048c4cc7a76347426534896c3d514976d15e",
+          "priorReviewIdentity": "matches_reviewed_source"
+        }
+      ],
+      "decision": "accepted_current_target_scope"
+    },
+    {
+      "feature": "unbound trigger definitions",
+      "functions": [
+        "log_profile_cache_access",
+        "log_waitlist_access",
+        "sync_public_profile_cache",
+        "validate_display_name"
+      ],
+      "code": [],
+      "decision": "no_current_executable_app_consumer; source-only adoption remains final data audit"
+    },
+    {
+      "feature": "ordinary helper/raw RPC without current executable consumer",
+      "functions": [
+        "count_fanmark_emoji_units",
+        "generate_safe_display_name",
+        "get_fanmark_ownership_status",
+        "get_public_fanmark_profile",
+        "is_fanmark_licensed",
+        "search_fanmarks_with_lottery",
+        "toggle_fanmark_favorite"
+      ],
+      "code": [],
+      "decision": "no_current_executable_app_consumer; source-only adoption remains final data audit"
+    }
+  ],
+  "sourceFunctionCount": 58,
+  "currentRuntimeCI": {
+    "runId": 38393726318,
+    "bothJobsSuccess": true
+  },
+  "proofs": [
+    {
+      "path": "docs/migration/evidence/staging-v4-core-journey-ja-2026-10-13.json",
+      "sha256": "45aff01da22021d0f822b046c28432094d9394f5f054a516cf7337bf48e01e3f",
+      "state": "same_v4_runtime_japanese_core_journey_accepted",
+      "runtimeSource": "e511762850631275664597afec8ca4155419358f"
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-core-journey-en-2026-10-13.json",
+      "sha256": "10dbc9f1689cb18f45d9da2861a39480a4ef44bba42f174a3b0d3c8482d31c42",
+      "state": "same_v4_runtime_english_core_journey_accepted",
+      "runtimeSource": "e511762850631275664597afec8ca4155419358f"
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-core-journey-ko-2026-10-13.json",
+      "sha256": "5ad031870307ae7c7fe8e97bc2e6064528001654bb5c74317d8f8c8d63ffb842",
+      "state": "same_v4_runtime_korean_core_journey_with_read_recovery_accepted",
+      "runtimeSource": "e511762850631275664597afec8ca4155419358f"
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-core-journey-id-2026-10-13.json",
+      "sha256": "ace85b48db091620185e18541d39cd1e0300965a04f8ab484e8ca6adb62901d4",
+      "state": "same_v4_runtime_indonesian_core_journey_accepted",
+      "runtimeSource": "e511762850631275664597afec8ca4155419358f"
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-paid-journey-2026-10-13.json",
+      "sha256": "526b1cb39329d5b8a66492f5c600cad349f727f028c2c1c04ff2a9554ff60f11",
+      "state": "same_v4_sandbox_paid_journey_and_cleanup_accepted",
+      "runtimeSource": "e511762850631275664597afec8ca4155419358f"
+    },
+    {
+      "path": "docs/migration/evidence/staging-profile-auth-regression-2026-10-13.json",
+      "sha256": "c7e72b43525372b2ffc65022022b257011ef47620dcd405a1fbee3ad50f0201f",
+      "state": "normal_staging_profile_auth_browser_and_cleanup_verified",
+      "runtimeSource": null
+    },
+    {
+      "path": "docs/migration/evidence/transfer-plan-snapshot-native-2026-10-13.json",
+      "sha256": "d9ec2b9a685d143b2868b1f1fd12eb199ee53cf5a9ab5845f77ed6f73af4523a",
+      "state": "transfer_plan_snapshot_native_accepted_and_normal_staging_deployed",
+      "runtimeSource": "8fd1aaa91b59a9899cfedcb0fe07f7d8a303fc11"
+    },
+    {
+      "path": "docs/migration/evidence/transfer-admin-unlimited-native-2026-10-13.json",
+      "sha256": "e165449828ad8f4cb6ffaeaf70e97389ea3d0893fe7dfd3045de2a7a25a31e1a",
+      "state": "admin_transfer_native_acceptance_and_staging_rollout_verified",
+      "runtimeSource": "5ac5be951eba5f0d55ee7881edb98ecec1ce9386"
+    },
+    {
+      "path": "docs/migration/evidence/acquisition-lottery-capacity-native-2026-10-13.json",
+      "sha256": "8ca58e9a70d6ec17d9d571f71f51d22374a1de38231481c8221a7fb15f6f16b7",
+      "state": "native_capacity_acceptance_and_normal_staging_rollout_verified",
+      "runtimeSource": "ef2128f79fc66c00f8f8c4b3d12fdf27904f888d"
+    },
+    {
+      "path": "docs/migration/evidence/favorites-current-license-native-2026-10-13.json",
+      "sha256": "f7be5734bf52878c4094089feb6c7af560b5d80a5ce736e275b102387f0ac9c4",
+      "state": "favorite_current_owner_native_and_normal_staging_verified",
+      "runtimeSource": "cb3c1f38841a88fcd72c38ebf45e371328e47ba1"
+    },
+    {
+      "path": "docs/migration/evidence/search-current-license-native-2026-10-13.json",
+      "sha256": "cb3fcf3100a3de0508441b93a9457dee8170d71a2e3d0bd40fd32fc8e1588ecf",
+      "state": "search_current_license_native_and_normal_staging_verified",
+      "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a"
+    },
+    {
+      "path": "docs/migration/evidence/representative-recovery-capacity-native-accepted-2026-10-13.json",
+      "sha256": "2c3882d8b4287f993f1fd07ab969f8d28a76be89d403121936163faedfd19bc5",
+      "state": "representative_capacity_native_saved_file_restore_accepted",
+      "runtimeSource": "9794a49a4d4bd4d3e29a81c93a6c2e2619d5a5c9"
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-natural-backup-2026-10-13.json",
+      "sha256": "2acb647bc6f5e943d8460dc9aa96c6376426d6920fa5cb466a0a8bb612ef7fc0",
+      "state": "natural_v4_daily_backup_and_retention_accepted",
+      "runtimeSource": "e511762850631275664597afec8ca4155419358f"
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-natural-app-daily-2026-10-13.json",
+      "sha256": "3dd6ddad766621fe1ef8d0c6a0d963f5ced9a6b028e480fb76ed2eeb871f6ed0",
+      "state": "natural_app_daily_accepted",
+      "runtimeSource": null
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-smartphone-home-screen-human-2026-10-13.json",
+      "sha256": "05e5b328fcb434c1f85ebcdfb6c66fd4abd769604f8abd047ca6f5137fb91996",
+      "state": "human_smartphone_and_home_screen_check_reported",
+      "runtimeSource": null
+    },
+    {
+      "path": "docs/migration/evidence/apple-staging-first-password-relogin-2026-10-13.json",
+      "sha256": "f577aa16fcdca8c2581ed45e0294910960faa4a9a7aa534d1b5a5c5056643ede",
+      "state": "verified_apple_first_registration_and_human_credential_login",
+      "runtimeSource": null
+    },
+    {
+      "path": "docs/migration/evidence/apple-private-relay-delivery-2026-10-13.json",
+      "sha256": "66336f770740d4518318b06398be16e5508e4acd2a92dcc4e42a3f9f19031597",
+      "state": "private_relay_delivery_inbox_acceptance_and_all_test_cleanup_complete",
+      "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a"
+    }
+  ],
+  "targetFeatureReviewCompleted": true,
+  "knownBlockingTargetFindings": [],
+  "notClaimed": [
+    "new independent Astra review",
+    "every arbitrary legacy RPC consumer or source Postgres policy equivalence",
+    "new end-to-end four-locale/paid run on latest runtime",
+    "production user/Auth/Storage or Stripe identity adoption",
+    "production RTO/RPO guarantee",
+    "inbox placement guarantee",
+    "production merge or domain cutover review"
+  ],
+  "pendingCleanup": [],
+  "deferredToIssue38": [
+    "real user/Auth/Storage migration and per-user/provider/credential/billing reconciliation",
+    "source freeze/drain and final copy difference-zero check",
+    "production provider endpoints, domain/DNS cutover and old Supabase retirement",
+    "production release/merge decision after final data rehearsal"
+  ],
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "fullProductionReleaseReviewComplete": false,
+  "wholeMigrationComplete": false,
+  "probeIdentifiersDisposition": "Retained as audit-only configuration; probe Worker/databases deleted; no live callback endpoint.",
+  "testCleanupComplete": true,
+  "stagingPreparationScopeComplete": true
+}

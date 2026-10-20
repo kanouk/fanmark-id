@@ -1,0 +1,98 @@
+{
+  "format": "fanmark-final-independent-closed-preparation-v1",
+  "observedAt": "2026-10-19T12:30:50.118Z",
+  "workers": [
+    {
+      "name": "fanmark-app-production",
+      "version": "06ce6cf3-b648-40ca-a0fb-7368f7f8bcff",
+      "cron": 0,
+      "workersDev": false,
+      "previews": false
+    },
+    {
+      "name": "fanmark-alias-production",
+      "version": "efbdedac-a0fa-4361-86f6-d1e965f20107",
+      "cron": 0,
+      "workersDev": false,
+      "previews": false
+    },
+    {
+      "name": "fanmark-backup-production",
+      "version": "e0f3d5c9-1cc8-4d7c-b577-b02ea24ab38c",
+      "cron": 0,
+      "workersDev": false,
+      "previews": false
+    },
+    {
+      "name": "fanmark-backup-monitor-production",
+      "version": "2c057173-9acc-4640-9f60-4777e8d09ce0",
+      "cron": 0,
+      "workersDev": false,
+      "previews": false
+    }
+  ],
+  "workerInventory": [
+    "fanmark-alias-production",
+    "fanmark-app-production",
+    "fanmark-app-staging",
+    "fanmark-backup-monitor-production",
+    "fanmark-backup-monitor-staging",
+    "fanmark-backup-production",
+    "fanmark-backup-staging",
+    "fanmark-emoji-master-staging-api"
+  ],
+  "workerCount": 8,
+  "allOther7WorkerSettingsPreserved": true,
+  "appBindingsPreserved": true,
+  "secretBindings": 15,
+  "dnsRecords": 17,
+  "allOriginalDnsRecordsByteEquivalent": true,
+  "customDomainsPreserved": true,
+  "publicRoutes": 0,
+  "productionCron": 0,
+  "alertBackend": "disabled",
+  "alertRecipient": "",
+  "writeFreeze": "receipt_only",
+  "backupAdmission": "pending",
+  "remoteRefs": [
+    "221f6c8f1cda44101b678037edd8a7e685f782ef\trefs/heads/codex/cloudflare-api-preparation",
+    "e5a553c0bcc938a308def6f3770f1a84db88d389\trefs/heads/main"
+  ],
+  "providerWrites": 0,
+  "productionReady": false,
+  "runtimeStatus": {
+    "format": "fanmark-runtime-status-only-verified-v1",
+    "phase": "after-alert-final",
+    "observedAt": "2026-10-19T12:28:58.687Z",
+    "appVersion": "06ce6cf3-b648-40ca-a0fb-7368f7f8bcff",
+    "writerActive": 0,
+    "writerOwner": null,
+    "backupAdmission": false,
+    "sourcesMatched": true,
+    "schemaHashesMatched": true,
+    "keyIdMatched": true,
+    "unauthorized401": true,
+    "operatorRemoved": true,
+    "original8WorkersRetained": true,
+    "appSettingsPreserved": true,
+    "backupCapture": false,
+    "escrowCalled": false,
+    "sourceDataWrite": false,
+    "liveImagesEnumerated": true,
+    "imageObjects": {
+      "avatars": 0,
+      "covers": 0
+    },
+    "productionReady": false
+  },
+  "runtimeSourceCommit": "758641c29e5cec183ae3c6ef112873958040796a",
+  "runtimeInputCi": 39248993491,
+  "operatorCi": 39250792126,
+  "retainedBaselineReadback": {
+    "observedAt": "2026-10-19T12:18:33.468Z",
+    "runtimeAtReadback": "4fde726a-f680-452b-9764-f699e0dee5a9",
+    "tables": 114,
+    "fullRowsAndSchemaMatchedRetainedDailyAndManualArchives": true,
+    "newCapture": false
+  }
+}

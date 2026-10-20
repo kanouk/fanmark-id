@@ -1,0 +1,313 @@
+{
+  "format": "fanmark-staging-broadcast-multi-recipient-native-v1",
+  "startedAt": "2026-10-09T02:33:37.996Z",
+  "deliveryVerifiedAt": "2026-10-09T02:46:47.266Z",
+  "cleanupVerifiedAt": "2026-10-09T02:49:21.634Z",
+  "schemaVerifiedAt": "2026-10-09T02:49:30.790Z",
+  "source": {
+    "checkedOutHead": "c195d45c4bbcfb0cd8c80697c05fd4f5d81029ee",
+    "runtimeSourceHead": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+    "passingCiRun": 37873718998,
+    "origin": "https://fanmark-app-staging.fanmark-id.workers.dev",
+    "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "businessDatabase": "c99c9f7e-b234-400e-aa89-8d15a168abcc",
+    "authDatabase": "2d1a775e-e584-4ce6-baf2-946efc62ff99",
+    "beforeVersion": "98160d0f-1326-4285-ab2b-1de5d35cfbd7",
+    "deliveryVersion": "3d84b3ed-767b-4c16-b907-90c42b49fbc3",
+    "restoredVersion": "6af713aa-d5b8-4e21-a0b2-7780d269178b",
+    "runtimeSourceChanged": false,
+    "frontendAssetsChanged": false,
+    "schemaHashes": {
+      "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+      "business": "598cc8655b7272c60103aa4e8826c76047a927b51dec9d8ea0a3ca8bce19d5e2",
+      "master": "32a98726c6e3e75d3b561657e20685b82cdfa38530ee7b3221505d44693a5f56"
+    }
+  },
+  "cohort": {
+    "actualSourceUsersBefore": 1,
+    "syntheticAdmin": 1,
+    "syntheticRecipients": 51,
+    "filter": {
+      "plan_types": [
+        "free"
+      ],
+      "languages": [
+        "ja",
+        "en",
+        "ko",
+        "id"
+      ],
+      "registered_after": "2000-01-01",
+      "registered_before": "2000-01-03"
+    },
+    "languages": {
+      "ja": 13,
+      "en": 13,
+      "ko": 13,
+      "id": 12
+    },
+    "simulators": {
+      "delivered": 49,
+      "bounced": 1,
+      "complained": 1
+    },
+    "onlyOfficialResendSimulatorAddresses": true,
+    "realAudienceExcluded": true,
+    "maximumDistinctProviderMessages": 51
+  },
+  "actualExecution": {
+    "sameSessionAdminMfa": true,
+    "requestDeduplicated": true,
+    "naturalMinuteCron": true,
+    "manualCronInvocations": 0,
+    "apiResponseReplacement": false,
+    "runId": "c7079bc2-cce5-4bdc-bf50-7d3328c82244",
+    "runStatus": "completed",
+    "recipientCount": 51,
+    "recipientStates": {
+      "delivered": 49,
+      "bounced": 1,
+      "suppressed": 1
+    },
+    "recipientAttemptCounts": {
+      "1": 51
+    },
+    "uniqueProviderIds": 51,
+    "allRecipientLeasesReleased": true,
+    "snapshotLeasesReleased": true,
+    "campaign": {
+      "status": "completed",
+      "total_recipients": 51,
+      "sent_count": 49,
+      "failed_count": 2
+    },
+    "recipientReadbackHash": "621b612f195d8f5be8f012a6a2062ee91a67d5246880f373d7aa44a30867ea87",
+    "snapshotAndDispatchObservations": [
+      {
+        "at": "2026-10-09T02:39:13.129Z",
+        "runStatus": "snapshotting",
+        "count": 0,
+        "statuses": {},
+        "attemptCounts": {},
+        "eventCount": 0
+      },
+      {
+        "at": "2026-10-09T02:39:51.444Z",
+        "runStatus": "snapshotting",
+        "count": 48,
+        "statuses": {
+          "pending": 48
+        },
+        "attemptCounts": {
+          "0": 48
+        },
+        "eventCount": 0
+      },
+      {
+        "at": "2026-10-09T02:40:39.532Z",
+        "runStatus": "snapshotting",
+        "count": 51,
+        "statuses": {
+          "pending": 51
+        },
+        "attemptCounts": {
+          "0": 51
+        },
+        "eventCount": 0
+      },
+      {
+        "at": "2026-10-09T02:41:19.511Z",
+        "runStatus": "snapshotting",
+        "count": 51,
+        "statuses": {
+          "pending": 51
+        },
+        "attemptCounts": {
+          "0": 51
+        },
+        "eventCount": 0
+      },
+      {
+        "at": "2026-10-09T02:42:31.274Z",
+        "runStatus": "sending",
+        "count": 51,
+        "statuses": {
+          "delivered": 15,
+          "bounced": 1,
+          "suppressed": 1,
+          "sent": 1,
+          "pending": 33
+        },
+        "attemptCounts": {
+          "0": 33,
+          "1": 18
+        },
+        "eventCount": 35
+      },
+      {
+        "at": "2026-10-09T02:43:37.076Z",
+        "runStatus": "sending",
+        "count": 51,
+        "statuses": {
+          "delivered": 27,
+          "bounced": 1,
+          "suppressed": 1,
+          "sent": 1,
+          "pending": 21
+        },
+        "attemptCounts": {
+          "0": 21,
+          "1": 30
+        },
+        "eventCount": 60
+      },
+      {
+        "at": "2026-10-09T02:44:27.297Z",
+        "runStatus": "sending",
+        "count": 51,
+        "statuses": {
+          "delivered": 32,
+          "bounced": 1,
+          "suppressed": 1,
+          "sent": 2,
+          "pending": 15
+        },
+        "attemptCounts": {
+          "0": 15,
+          "1": 36
+        },
+        "eventCount": 70
+      },
+      {
+        "at": "2026-10-09T02:45:26.295Z",
+        "runStatus": "sending",
+        "count": 51,
+        "statuses": {
+          "delivered": 42,
+          "bounced": 1,
+          "suppressed": 1,
+          "sent": 1,
+          "sending": 1,
+          "pending": 5
+        },
+        "attemptCounts": {
+          "0": 5,
+          "1": 46
+        },
+        "eventCount": 89
+      },
+      {
+        "at": "2026-10-09T02:46:47.266Z",
+        "runStatus": "completed",
+        "count": 51,
+        "statuses": {
+          "delivered": 49,
+          "bounced": 1,
+          "suppressed": 1
+        },
+        "attemptCounts": {
+          "1": 51
+        },
+        "eventCount": 103
+      }
+    ]
+  },
+  "signedProviderReceipts": {
+    "count": 103,
+    "eventTypes": {
+      "email.sent": 51,
+      "email.delivered": 50,
+      "email.bounced": 1,
+      "email.complained": 1
+    },
+    "readbackHash": "6d40e1f6dfdbf7791a491ac0eebfb66136b60274440f5d4c47df300a45c1a050",
+    "realSignatureVerifiedByExistingMainReceiver": true,
+    "bounceType": "Permanent",
+    "complaintRecipientRemainsSuppressedDespiteDeliveredReceipt": true,
+    "suppressionReasons": {
+      "permanent_bounce": 1,
+      "complaint": 1
+    },
+    "firstCompletionAuditCount": 1,
+    "firstCompletionAudit": {
+      "total_recipients": 51,
+      "sent_count": 49,
+      "failed_count": 2,
+      "email_type": "broadcast_announcement",
+      "recipient_filter_present": true
+    }
+  },
+  "cleanup": {
+    "bulkAndTestSendingDisabledAgain": true,
+    "existing113BindingsPreserved": true,
+    "fourDurableObjectNamespacesPreserved": true,
+    "sixPublicAssetHashesPreserved": true,
+    "existingDailyAndMinuteCronsPreserved": true,
+    "backupDailyAndMonitorSettingsPreserved": true,
+    "exactOwnedUsersAndProfilesRemoved": 52,
+    "ownedAdminRoleFactorSessionsAndAssuranceRemoved": true,
+    "ownedDraftRunRecipientSuppressionAuditRowsRemoved": true,
+    "minimalSignedProviderReceiptsRetained": 103,
+    "sourceSchemaPreserved": true,
+    "otherSourceTableHashesPreserved": true,
+    "sourceDifferences": [
+      "auth.mfaGeneration",
+      "business.broadcast_delivery_webhook_events"
+    ],
+    "oldRetainedStoresAllTableHashesPreserved": true,
+    "mfaGenerationBefore": 0,
+    "mfaGenerationAfter": 2,
+    "mfaGenerationReset": false,
+    "foreignKeyViolations": 0,
+    "privateOperatorDeleted": true,
+    "trackedBootstrapAndCleanupUsedMainV2WriterNamespace": true,
+    "finalWriterInspection": {
+      "owner": null,
+      "scope": "8b4daf214a4e30a837e43387e18d00885dd0a0a563b213c5b736cd87edb84773",
+      "active": 0,
+      "drained": false,
+      "initialized": true,
+      "tickets": {
+        "scanned": 0,
+        "complete": true,
+        "legacy": 0,
+        "attributed": 0,
+        "oldestEnteredAt": null,
+        "runtimeRevisions": {}
+      }
+    },
+    "operatorCliRecovery": {
+      "uploadedVersion": "495316ec-ea1d-427f-9778-8ea2c8f57444",
+      "repeatedDeployment": false,
+      "originalCliCode": 10007,
+      "nativeRouteOnlyEnabled": true,
+      "routePropagation404ResolvedByReadOnlyInspection": true
+    }
+  },
+  "boundedStagingOperations": {
+    "owner": "service owner",
+    "retention": "Keep owned fixture and proof until known terminal signed reconciliation; unknown outcomes are retained for investigation.",
+    "retry": "Existing same-payload stable-key maximum-five within 24-hour provider idempotency window; no manual release of unknown/review outcome.",
+    "realAudience": false,
+    "officialProviderSimulatorsOnly": true
+  },
+  "stillUnaccepted": {
+    "nativeSendUi": true,
+    "realProviderRetry": true,
+    "productionQueueRetentionPolicy": true,
+    "discordInitialPasswordLogoutAndRelogin": true,
+    "appleNewIdentityAndRelay": true,
+    "physicalPhoneAndStandalonePwa": true,
+    "sameFinalCandidateWholeMigrationAcceptance": true,
+    "sourceUserMigrationAndProductionDnsCutover": true,
+    "naturalBackupDaily": true,
+    "naturalBackupMonitor": true
+  },
+  "notes": [
+    "The 51-recipient source Auth scan committed 48, then 3 recipients because the current real Discord user and synthetic administrator were also scanned but excluded by the closed date/free filter. Exact 50+1 recipient snapshot boundaries have a separate isolated native proof.",
+    "These are real provider simulator messages and signed receipts, not human inbox delivery or production campaigns.",
+    "No provider retry occurred: all 51 recipients were attempted once. Existing bounded retry code and local proof are not promoted to actual provider-retry acceptance.",
+    "Final source hashes differ only for retained signed delivery metadata and monotonic MFA generation; the human Discord password remains pending.",
+    "The connected monitor tail observed no matching natural scheduled event by its 02:45 UTC deadline. This does not prove the monitor failed or did not execute. The dry observability query was denied by current credential scope; no broader credential was created."
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "observedAt": "2026-10-06T11:06:20.415256+00:00",
+  "scope": "guarded Safari static-shell fix deployment and paid sandbox readback; native recovery pending",
+  "candidateCommit": "ac0ac670405a766f0eebcc9d122d97b1ce1407c8",
+  "ci": {
+    "runId": 37452793228,
+    "bothJobsPassed": true
+  },
+  "previousWorkerVersion": "d4375d19-5024-4bf6-9cd7-1e5d399ce7b5",
+  "workerVersion": "d71e54b5-dc6f-4b0b-b92e-bf75b698d8e4",
+  "trafficPercent": 100,
+  "deployed": true,
+  "directHtmlPaths": [
+    "/",
+    "/index.html",
+    "/plans?checkout=success"
+  ],
+  "directHtmlStatus": 200,
+  "redirects": 0,
+  "rootHeadAccepted": true,
+  "missingAssetRemains404": true,
+  "publicAssetHashesMatched": 6,
+  "stagingCacheNamespace": "fanmark-staging-static-v2",
+  "existingSecretsAndBindingsRetained": true,
+  "existingAllTableHashesRetainedAcrossDeployment": true,
+  "existingAllTableHashesPreservedAcrossPaidFixture": true,
+  "foreignKeyViolations": 0,
+  "paidSandbox": {
+    "creator": true,
+    "activeSubscription": 1,
+    "stripeDashboardActiveObserved": true,
+    "livemode": false,
+    "receipts": [
+      {
+        "type": "customer.subscription.created",
+        "status": "applied",
+        "deliveryCount": 1,
+        "errorCode": null
+      },
+      {
+        "type": "checkout.session.completed",
+        "status": "ignored",
+        "deliveryCount": 1,
+        "errorCode": null
+      },
+      {
+        "type": "invoice.payment_succeeded",
+        "status": "applied",
+        "deliveryCount": 1,
+        "errorCode": null
+      }
+    ],
+    "applicationLedger": "applied",
+    "subscriptionProjection": "applied",
+    "ownedDispatches": 3
+  },
+  "sameSafariRecoveryAccepted": false,
+  "paidDeletionAccepted": false,
+  "blocker": "Mac locked; same private Safari window retained for native readback",
+  "realUserMigration": 0,
+  "domainChanges": 0,
+  "additionalMail": 0,
+  "fullMigrationAccepted": false
+}

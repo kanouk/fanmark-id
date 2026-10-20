@@ -1,0 +1,30 @@
+{
+  "tagBoundaryPlaintextBytes": 33554417,
+  "tagBoundaryCiphertextWouldExceedByBytes": 1,
+  "encryptionCallsForRejectedArchives": 0,
+  "scope": "Node WebCrypto common implementation boundary with synthetic data; no D1/router/remote I/O",
+  "checkedAt": "2026-10-06T15:25:55.074Z",
+  "oversizePlaintextBytes": 33555943,
+  "ciphertextLimitBytes": 33554432,
+  "gcmTagBytes": 16,
+  "oversizedSealRefused": true,
+  "smallUnicodeRoundTripPassed": true,
+  "remoteWrites": 0,
+  "schemaVersion": 1,
+  "sourceBeforeHead": "d986a729b0445821187bf19158f9a5ac2b6cdb9f",
+  "implementationSha256": "5e7a88bbd28c1d0850e4d3cd16ff92901a188cd2e92e91dc04af1f5341bc708f",
+  "nativeAuthRegression": {
+    "testCases": 1,
+    "passed": true,
+    "scope": "actual local D1/SDK recovery, no new oversized native archive case"
+  },
+  "workerTypecheckPassed": true,
+  "focusedEslintPassed": true,
+  "diffCheckPassed": true,
+  "configurationChanged": false,
+  "emailsSent": 0,
+  "userMigrationPerformed": false,
+  "domainCutoverPerformed": false,
+  "operationalPolicyAdopted": false,
+  "fullMigrationAccepted": false
+}

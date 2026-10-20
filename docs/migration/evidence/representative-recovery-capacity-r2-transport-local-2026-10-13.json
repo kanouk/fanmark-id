@@ -1,0 +1,44 @@
+{
+  "state": "representative_capacity_r2_file_transport_local_verified",
+  "finishedAt": "2026-10-13T02:18:54.107Z",
+  "privateResultSha256": "be7b625f244674a922228a5b6c30e41d863504ad4722f5fff64448871cafb43e",
+  "masterRows": 20152,
+  "capacityFixture": {
+    "users": 15,
+    "accounts": 18,
+    "avatars": 69,
+    "covers": 40,
+    "imageBytes": 13285729,
+    "maxObjectBytes": 1196603
+  },
+  "archiveBytes": 34575160,
+  "restoreState": "verified",
+  "restoredImageReads": {
+    "avatars": {
+      "status": 200,
+      "bytes": 1196603,
+      "sha256": "a5a094ff973b20b577478a7935bc809c91d8ca82244185aa878b8e097fb37d73"
+    },
+    "cover-images": {
+      "status": 200,
+      "bytes": 111936,
+      "sha256": "f932c756741ea58033227cf2368296c89a5e7c3220ae13a2654963810b72a829"
+    }
+  },
+  "normalSdkTargetLogin": true,
+  "oldSessionRejected": true,
+  "foreignKeyViolations": 0,
+  "ownedBucketsEmpty": true,
+  "nativeWrapperTests": {
+    "passed": 2,
+    "failed": 0,
+    "changedCipherBeforeClaimRefused": true,
+    "staleEtagRefused": true,
+    "arbitraryKeyRefused": true,
+    "unownedCipherRefusesAllCleanup": true
+  },
+  "localStandardAdapter": true,
+  "actualCliFileRoundtripPending": true,
+  "remoteAccepted": false,
+  "mainRedeployed": false
+}

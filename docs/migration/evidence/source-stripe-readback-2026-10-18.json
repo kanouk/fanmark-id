@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "sourceProject": "ppqgtbjykitqtiaisyji",
+  "observedAt": "2026-10-18T13:51:35.300Z",
+  "scope": "readonly-stripe-live-api-from-existing-source-secret",
+  "productionReady": false,
+  "readback": {
+    "configured": true,
+    "mode": "live",
+    "verified": true,
+    "accountId": "acct_1SFjhvJk0VCfiKUp",
+    "inventory": {
+      "subscriptions": {
+        "count": 0,
+        "byStatus": {},
+        "byPaymentStatus": {},
+        "pendingWebhookDeliveries": 0,
+        "complete": true
+      },
+      "checkoutSessions": {
+        "count": 3,
+        "byStatus": {
+          "expired": 2,
+          "complete": 1
+        },
+        "byPaymentStatus": {
+          "unpaid": 2,
+          "paid": 1
+        },
+        "pendingWebhookDeliveries": 0,
+        "complete": true
+      },
+      "invoices": {
+        "count": 0,
+        "byStatus": {},
+        "byPaymentStatus": {},
+        "pendingWebhookDeliveries": 0,
+        "complete": true
+      },
+      "webhookEndpoints": {
+        "count": 0,
+        "byStatus": {},
+        "byPaymentStatus": {},
+        "pendingWebhookDeliveries": 0,
+        "complete": true
+      },
+      "recentEvents": {
+        "count": 0,
+        "byStatus": {},
+        "byPaymentStatus": {},
+        "pendingWebhookDeliveries": 0,
+        "complete": true
+      }
+    }
+  },
+  "temporaryFunctionDeleted": true,
+  "sourceFunctionInventoryUnchanged": true,
+  "sourceFunctionInventorySha256": "141811146bfb2a6ef17d076ec09d5e331a81f4cf3c15090bd764baaf94ba24a3",
+  "diagnosticImplementationSha256": "65ba907e486e31a547dc3c5c82f5ccf0bacc0fca1041bece63b83db0e1bf137f",
+  "financialWrites": 0,
+  "messagesSent": 0,
+  "limitations": [
+    "source-still-live",
+    "historical-payment-source-correlation-pending",
+    "v1-webhook-list-does-not-inventory-all-v2-event-destinations",
+    "recapture-required-after-source-freeze"
+  ]
+}

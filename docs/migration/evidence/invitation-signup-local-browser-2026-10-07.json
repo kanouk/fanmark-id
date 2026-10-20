@@ -1,0 +1,300 @@
+{
+  "state": "verified",
+  "head": "d53bfb093c51e93a72db14b10ebac6bae59972a7",
+  "actualApplicationWorker": true,
+  "actualBrowser": true,
+  "businessMigrations": 27,
+  "authMigrations": 4,
+  "masterMigrations": 8,
+  "remoteResources": false,
+  "remoteWrites": 0,
+  "realProviderCalls": 0,
+  "realEmailsSent": 0,
+  "sourceRowsRead": false,
+  "invitationModeRequired": true,
+  "googleBeforeInvitationMode": true,
+  "googleSuppressedWhenRequired": true,
+  "invalidCodeLeavesSignupHidden": true,
+  "validatedCodeRevealsSignup": true,
+  "signupCompletesOneCommand": true,
+  "invitationUses": 1,
+  "exactProfileAttribution": true,
+  "unverifiedLoginRefused": true,
+  "noSessionBeforeOrAfterVerification": true,
+  "verificationLinkFromSyntheticProvider": true,
+  "realBrowserPasswordLogin": true,
+  "logoutRevokesSession": true,
+  "usedCodeRefusedInBrowser": true,
+  "syntheticMailRequests": 1,
+  "foreignKeyViolations": 0,
+  "workerOutboundDenied": 0,
+  "browserExternalHostsDenied": [
+    "fonts.googleapis.com"
+  ],
+  "browserInterceptionErrors": 0,
+  "verifiedCanceledBrowserRequests": 12,
+  "requiredOwnerApisAvailable": true,
+  "workerUsesNativeAsyncLocalStorage": true,
+  "apiResponses": [
+    {
+      "method": "GET",
+      "path": "/api/emoji/catalog",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/reference-masters/languages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/get-session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/maintenance",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/settings",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/capabilities",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/invitations/validate",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/invitations/validate",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-up/email",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/verify-email",
+      "status": 302
+    },
+    {
+      "method": "GET",
+      "path": "/api/emoji/catalog",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/emoji/catalog",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/reference-masters/languages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/maintenance",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/get-session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/settings",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/capabilities",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-in/email",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/get-session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/notifications/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/notifications",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/lifecycle",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/settings",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/subscription",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/favorites",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/transfers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/fanmarks",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/analytics/summary",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/analytics/summary",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/transfers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/analytics/summary",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/fanmarks",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/subscription",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/analytics/summary",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/emoji/catalog",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/reference-masters/languages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/get-session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/maintenance",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/settings",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/capabilities",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/invitations/validate",
+      "status": 200
+    }
+  ],
+  "wholeStagingAcceptance": false,
+  "ownedBrowserStopped": true,
+  "localServerStopped": true,
+  "localRuntimeDisposed": true,
+  "syntheticCredentialsIsolated": true,
+  "scope": "One Japanese desktop browser invitation-required signup using actual built UI, Worker and local split D1; only upstream Resend is synthetic.",
+  "visualInspection": {
+    "viewport": "1280x960",
+    "dashboardRenderedWithoutErrorToast": true,
+    "emptyOwnedFanmarksDisplayed": true,
+    "imageSha256": "caf1e01a957e1cd9b4d51b6be291db47b74a84af84bbdba2809428a19591c6e1",
+    "physicalMobileAccepted": false,
+    "humanAcceptance": false
+  },
+  "liveMailDeliveryAccepted": false,
+  "stagingModeChanged": false,
+  "workerDeployed": false,
+  "fullMigrationAccepted": false,
+  "scriptSha256": "56f1b85185fdb742db333f1f82af1bea80c1ce518c6c014ecca06e331d923c02",
+  "observedAt": "2026-10-07T14:31:12.456676+00:00"
+}

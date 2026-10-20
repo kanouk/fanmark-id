@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-04T01:25:23.706332+00:00",
+  "account": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "worker": "fanmark-app-staging",
+  "plan": "Workers Paid",
+  "evidence": "Authenticated account Workers plans page: Paid (支払い済み) followed by disabled 現在のプラン; Free offers ダウングレード",
+  "userReportedEnabled": true,
+  "agentPurchasedOrChangedPlan": false,
+  "dashboardUrl": "https://dash.cloudflare.com/bfc2890741f0b3fb236e2d755b6c9adc/workers/plans",
+  "jobsDeploymentAccepted": false
+}

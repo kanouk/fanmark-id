@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-backup-production",
+  "main": "src/production-backup-scheduler.ts",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "workers_dev": false,
+  "preview_urls": false,
+  "limits": {
+    "cpu_ms": 30000
+  },
+  "services": [
+    {
+      "binding": "BACKUP_SERVICE",
+      "service": "fanmark-app-production",
+      "entrypoint": "ProductionBackupService"
+    }
+  ],
+  "vars": {
+    "STAGING_BACKUP_SCHEDULE": "disabled",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4",
+    "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"bbb878d3-40eb-4755-b57b-f723f0dd901b\",\"business\":\"5af38beb-efe6-4f2b-8f59-af0070f37551\",\"master\":\"f7aadd85-701e-4625-92ce-879d5939dab8\",\"avatars\":\"fanmark-avatars-production-20261020-v3\",\"covers\":\"fanmark-covers-production-20261020-v3\"}",
+    "STAGING_BACKUP_SCHEMA_HASHES": "{\"auth\":\"3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b\",\"business\":\"80fd26ba363a2babf649ddbc18490ecd423c4ebfd6be4f90611887f8ffd1b828\",\"master\":\"41eb20e30329eb6a806c11b76f2dcad3144fbbb6c28ba9a8e9d979827a8d7e88\"}",
+    "STAGING_BACKUP_KEY_ID": "production-backup-b7453682-6750-41f1-be11-4ce71ca3fa55"
+  },
+  "triggers": {
+    "crons": []
+  },
+  "observability": {
+    "enabled": true
+  }
+}

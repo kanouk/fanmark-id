@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "scope": "Actual normal staging processor and authenticated inbox: explicit event language overrides and empty/null fallbacks",
+  "runtimeHead": "ad8f7540d3df5bd83d63348de89973d47dc1ca21",
+  "workerVersion": "e688fdf6-a5d7-4868-89b7-8171768ed865",
+  "startedAt": "2026-10-07T20:49:19.611Z",
+  "finishedAt": "2026-10-07T20:52:43.718Z",
+  "preferredLanguage": "ja",
+  "cases": [
+    {
+      "payloadLanguage": "en",
+      "expectedLanguage": "en",
+      "exactStoredTitleAndBody": true,
+      "actualAuthenticatedInbox": true,
+      "markReadVerified": true
+    },
+    {
+      "payloadLanguage": "ko",
+      "expectedLanguage": "ko",
+      "exactStoredTitleAndBody": true,
+      "actualAuthenticatedInbox": true,
+      "markReadVerified": true
+    },
+    {
+      "payloadLanguage": "id",
+      "expectedLanguage": "id",
+      "exactStoredTitleAndBody": true,
+      "actualAuthenticatedInbox": true,
+      "markReadVerified": true
+    },
+    {
+      "payloadLanguage": "",
+      "expectedLanguage": "ja",
+      "exactStoredTitleAndBody": true,
+      "actualAuthenticatedInbox": true,
+      "markReadVerified": true
+    },
+    {
+      "payloadLanguage": null,
+      "expectedLanguage": "ja",
+      "exactStoredTitleAndBody": true,
+      "actualAuthenticatedInbox": true,
+      "markReadVerified": true
+    }
+  ],
+  "functionalCaseAssertions": "5/5",
+  "proof": {
+    "normalSdkLogin": true,
+    "payloadOverrides": 3,
+    "emptyAndNullFallbacks": 2,
+    "profileLanguageRemainedJa": true,
+    "actualProcessor": true,
+    "actualInbox": true,
+    "markRead": true,
+    "wakeIncrement": 5,
+    "allExistingRowsRetained": true,
+    "additionalEmail": false
+  },
+  "ownedCleanupAccepted": true,
+  "independentReadback": {
+    "state": "independently_verified",
+    "observedAt": "2026-10-07T20:53:16.648Z",
+    "version": "e688fdf6-a5d7-4868-89b7-8171768ed865",
+    "allExistingTableHashesRetainedExceptMonotonicWake": true,
+    "retainedAuth": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "ownedRowsAbsent": true,
+    "foreignKeyViolations": 0,
+    "wakeRequested": 39,
+    "wakeAcknowledged": 39,
+    "ownedPasswordRemoved": true,
+    "readOnlyProcess": true
+  },
+  "attemptHistory": [
+    {
+      "attempt": 1,
+      "exitCode": 1,
+      "failure": "GET after a trusted CLI event INSERT does not flush the mutation-only wake bridge; the 30-second fixture deadline expired before the Korean event was delivered",
+      "existingEventIdsRecreated": false
+    },
+    {
+      "attempt": 2,
+      "exitCode": 1,
+      "functionalCasesVerified": 5,
+      "failure": "Interrupted first-attempt fixture session remained at initial logout cleanup assertion",
+      "resolution": "Only the exact old fixture session was deleted; cleanup retry in the same running driver succeeded. Independent read-only process then verified all owned rows absent and baseline retained."
+    }
+  ],
+  "additionalEmails": 0,
+  "runtimeRedeployed": false,
+  "liveSupabaseWrites": 0,
+  "userDataMigration": 0,
+  "dnsChanges": 0,
+  "limits": [
+    "API/processor proof; no new native UI or physical-phone acceptance",
+    "Five synthetic in-app events only; no email/webpush dispatch acceptance",
+    "Source ambiguous multi-channel template selection and imported precision remain separate",
+    "Whole migration, operational backup adoption and final integration remain incomplete"
+  ]
+}

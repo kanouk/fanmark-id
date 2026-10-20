@@ -1,0 +1,192 @@
+{
+  "format": "fanmark-staging-v3-operational-evidence-v1",
+  "observedAt": "2026-10-12T18:33:56.327Z",
+  "sourceCommit": "a6f600b45852c0e3996c407fa4e244c93d79c5d5",
+  "sourceCi": {
+    "run": 38288565279,
+    "bothJobsPassed": true
+  },
+  "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+  "incarnation": "6a5d9114-5aab-4564-8395-1121a6c43552",
+  "scopeDigest": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+  "sourceIds": {
+    "business": "397d389a-9d6d-453f-bf09-317dc9591056",
+    "auth": "9ffc70bd-1f4e-490a-92b9-4e95a3a9b6c4",
+    "master": "8a52824c-4e9f-411c-95f9-5778b880604b",
+    "avatars": "fanmark-avatars-staging-v3-6a5d9114",
+    "covers": "fanmark-covers-staging-v3-6a5d9114"
+  },
+  "archiveBucket": "fanmark-backups-staging-v3-6a5d9114",
+  "admission": "writers-verified-v1",
+  "writerReadback": {
+    "owner": null,
+    "scope": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+    "active": 0,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 0,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 0,
+      "oldestEnteredAt": null,
+      "runtimeRevisions": {},
+      "kinds": {}
+    }
+  },
+  "retainedOldScope": {
+    "unknownWriterTickets": 1,
+    "terminationProven": false,
+    "resourcesKept": true,
+    "oldHumanCredentialRowsRead": false,
+    "oldSchemaAndCountsUnchanged": true
+  },
+  "backup": {
+    "execution": "explicit-manual-capture",
+    "slot": "2026-10-12",
+    "state": "verified",
+    "bytes": 8829257,
+    "archiveHash": "b2e67f39876ba65a068202ac2159ea00c3051c66ef4868cc40149042f0f780c3",
+    "fenceReleased": true,
+    "retention": {
+      "days": 30,
+      "deleted": 0,
+      "finishedAt": "2026-10-12T18:24:46.857Z"
+    }
+  },
+  "isolatedRestore": {
+    "verified": true,
+    "durationMs": 10369,
+    "sourceRows": {
+      "auth": 1,
+      "business": 136,
+      "master": 16203
+    },
+    "tableCounts": {
+      "auth": 9,
+      "business": 80,
+      "master": 25
+    },
+    "allTableHashesMatched": true,
+    "foreignKeyViolations": 0,
+    "sessionPolicy": "revoke-local-sessions-and-challenges",
+    "oldDataUnchanged": true,
+    "operatorDeleted": true,
+    "activated": false
+  },
+  "ownedCleanup": {
+    "state": "verified_owned_cleanup",
+    "deletedD1Count": 3,
+    "deletedR2Count": 3,
+    "probeDeleted": true,
+    "sourceArchiveKept": true,
+    "oldResourcesKept": true
+  },
+  "liveConfigAlignment": {
+    "state": "verified_live_config_alignment",
+    "observedAt": "2026-10-12T18:33:56.327Z",
+    "workers": [
+      {
+        "name": "fanmark-app-staging",
+        "version": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+        "bindingsMatched": true,
+        "crons": [
+          "* * * * *",
+          "0 0 * * *"
+        ],
+        "namespaces": [
+          {
+            "binding": "NOTIFICATION_WAKE",
+            "className": "NotificationWakeCoordinatorV3",
+            "id": "20d77a0894694ef3970cc3888cfaf342"
+          },
+          {
+            "binding": "RECOVERY_DRAIN",
+            "className": "RecoveryWriterCoordinatorV3",
+            "id": "cd52ede434b54f78961062e5ed4a7813"
+          }
+        ]
+      },
+      {
+        "name": "fanmark-backup-staging",
+        "version": "03001339-ece5-4abe-bb5b-d65f1a050814",
+        "bindingsMatched": true,
+        "crons": [
+          "5 0 * * *"
+        ],
+        "namespaces": []
+      },
+      {
+        "name": "fanmark-backup-monitor-staging",
+        "version": "37057f9b-318d-49c0-b8bb-9df95df343ab",
+        "bindingsMatched": true,
+        "crons": [
+          "35 * * * *"
+        ],
+        "namespaces": []
+      }
+    ]
+  },
+  "catalog": {
+    "recordCount": 3944,
+    "activeVersion": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+    "draftMatchesActive": true,
+    "exportRowsWritten": 0,
+    "publicationStatusProfile": "staging-v3",
+    "statusGatewayRemoved": true
+  },
+  "pending": [
+    "natural_daily_success",
+    "fresh_apple_signup_password_setup_and_email_relogin",
+    "physical_mobile_acceptance",
+    "final_integration_and_source_runtime_semantic_reconciliation"
+  ],
+  "excluded": [
+    "actual_supabase_users_auth_storage_migration",
+    "production_domain_dns_cutover"
+  ],
+  "naturalMonitor": {
+    "execution": "natural-scheduled-event",
+    "eventTimestamp": 1791830130388,
+    "scheduledTime": 1791830130000,
+    "cron": "35 * * * *",
+    "version": "37057f9b-318d-49c0-b8bb-9df95df343ab",
+    "outcome": "ok",
+    "exceptions": 0,
+    "healthySlot": "2026-10-12",
+    "manualInvocations": 0
+  },
+  "readOnlyOperationalMonitor": {
+    "observedAt": "2026-10-12T18:40:44.764Z",
+    "version": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+    "ledgerEntries": 27,
+    "credentialSource": "monitor_api_token",
+    "publicHealth": {
+      "/": 200,
+      "/api/auth/ok": 200
+    },
+    "attention": [],
+    "arbitraryTargetsAllowed": false,
+    "genericTokenFallback": false
+  },
+  "localValidation": {
+    "migrationDataTests": {
+      "passed": 326,
+      "failed": 0
+    },
+    "nativeBackupMonitorTests": {
+      "passed": 11,
+      "failed": 0
+    },
+    "scheduledJobCoverage": "covered",
+    "normalAppSchedulerMonitorDryRun": "passed",
+    "changedScriptsLint": "passed"
+  },
+  "implementationCi": {
+    "headSha": "bb37df88fb429ce4e2e5af7379dae80063323c73",
+    "run": 38292623175,
+    "application": "success",
+    "worker": "success",
+    "scope": "V3 config alignment and fixed operational monitoring guard code; subsequent correspondence documentation is validated separately"
+  }
+}

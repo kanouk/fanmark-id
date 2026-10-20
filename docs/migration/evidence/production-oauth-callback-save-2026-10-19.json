@@ -1,0 +1,81 @@
+{
+  "observedAt": "2026-10-19T07:32:40.492Z",
+  "userConfirmed": true,
+  "google": {
+    "clientId": "748542090451-7euj2jndqn8ou7odjiokksshr9sdk6l6.apps.googleusercontent.com",
+    "added": "https://fanmark.id/api/auth/callback/google",
+    "saved": true,
+    "reopened": true,
+    "legacyAndStagingRetained": true,
+    "redirectCount": 3
+  },
+  "discord": {
+    "clientId": "1441793903404781668",
+    "added": "https://fanmark.id/api/auth/callback/discord",
+    "saved": true,
+    "reloaded": true,
+    "legacyAndStagingRetained": true,
+    "redirectCount": 3,
+    "publicClient": false
+  },
+  "apple": {
+    "serviceId": "id.fanmark.login",
+    "teamId": "U3R8VWKXD6",
+    "primaryApp": "U3R8VWKXD6.id.fanmark.app",
+    "added": "https://fanmark.id/api/auth/callback/apple",
+    "firstSaveSessionExpired": true,
+    "expiredAttemptNotPersistedOnReadback": true,
+    "sessionRefreshed": true,
+    "saved": true,
+    "reopened": true,
+    "legacyAndStagingRetained": true,
+    "domainCount": 3,
+    "returnUrlCount": 3
+  },
+  "secretsRotated": false,
+  "permissionsExpandedBeyondApprovedCallback": false,
+  "realLoginVerified": false,
+  "githubPending": false,
+  "sourceFrozen": false,
+  "domainSwitched": false,
+  "mfaRequested": false,
+  "format": "fanmark-production-oauth-callback-save-v1",
+  "productionReady": false,
+  "evidenceScope": "Provider console save and independent UI reopen only; no production OAuth login or user migration.",
+  "screenshotSha256": {
+    "google": "2a54cf9dcd3292970da7f1e6f6485c65002f5b3e38634c58ffccfbf9806ff8fd",
+    "discord": "3566c67b8feac014beeaca684dd29f67ccff094face4936f90b9871400bc2e54",
+    "apple": "dc2711c2e4ce1b4c80c70ec2a0167fd7eaa74fbe6a523230d0999c1c14c457f2",
+    "github": "a491a674af31d6e122bc9fc44acd9d5336c5ecdd5d8ea88a1b25fb2b831ec94b"
+  },
+  "github": {
+    "format": "fanmark-github-production-callback-readback-v1",
+    "observedAt": "2026-10-19T12:31:50.347Z",
+    "owner": "fanmark-id",
+    "applicationId": 3230369,
+    "clientId": "Ov23li9jUsbsWpDC3dNU",
+    "userApprovalReceived": true,
+    "saved": true,
+    "reloaded": true,
+    "callbacks": [
+      {
+        "url": "https://auth.fanmark.id/auth/v1/callback",
+        "wildcardMatching": true,
+        "existing": true
+      },
+      {
+        "url": "https://fanmark.id/api/auth/callback/github",
+        "wildcardMatching": false,
+        "existing": false
+      }
+    ],
+    "oldCallbackPreserved": true,
+    "ownerUnchanged": true,
+    "clientIdUnchanged": true,
+    "secretRegenerated": false,
+    "stagingAppChanged": false,
+    "loginTestPerformed": false,
+    "productionReady": false
+  },
+  "latestReadbackAt": "2026-10-19T12:31:50.347Z"
+}

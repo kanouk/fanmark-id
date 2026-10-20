@@ -1,0 +1,40 @@
+{
+  "format": "fanmark-source-stripe-correlation-v1",
+  "productionReady": false,
+  "accountId": "acct_1SFjhvJk0VCfiKUp",
+  "observedAt": "2026-10-18T14:19:07.154Z",
+  "method": "source-secret GET-only diagnostic, source application unchanged",
+  "subscriptions": [
+    {
+      "sourceStatus": "canceled",
+      "priceMatchesTest": true,
+      "priceMatchesLive": false,
+      "liveProviderStatus": 404,
+      "customerMatchesUser": true
+    }
+  ],
+  "paidCheckouts": [
+    {
+      "metadataType": "license_extension",
+      "licenseIdPresent": true,
+      "sourceLicenseFound": true,
+      "sourceLicenseOwnerAndFanmarkMatch": true,
+      "sourceLicenseStatus": "expired",
+      "sourceLicenseStillCurrent": false,
+      "relatedAuditCount": 2,
+      "extensionAuditCount": 0,
+      "matchingSessionAuditCount": 0,
+      "matchingMonthsAuditCount": 0,
+      "paymentCreatedBefore30Days": true
+    }
+  ],
+  "sourceReadComplete": true,
+  "diagnosticsDeleted": true,
+  "financialMutations": 0,
+  "limitations": [
+    "source subscription matches configured test price; test provider object not independently verified",
+    "historical paid license extension has no matching extension audit; do not replay or refund from this evidence",
+    "source remains live; repeat reconciliation at frozen boundary",
+    "v1 webhook endpoint list alone does not enumerate all event destinations"
+  ]
+}

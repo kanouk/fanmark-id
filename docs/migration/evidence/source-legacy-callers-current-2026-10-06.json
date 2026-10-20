@@ -1,0 +1,236 @@
+{
+  "observedAt": "2026-10-06T14:43:14.753Z",
+  "sourceCatalogObservedAt": "2026-10-06T04:15:10.854785+00:00",
+  "sourceHead": "39ba260abc38acaaff6965b1616d029321774351",
+  "frontendCalls": 211,
+  "checkedInEdgeFiles": 50,
+  "checkedInEdgeCalls": 264,
+  "rows": [
+    {
+      "name": "count_fanmark_emoji_units",
+      "definitionSha256": "931a36364bce6ec8c8bdd8870fe104360e8513b42024d57548a1e5d9eccde55c",
+      "result": "integer",
+      "identityArguments": "input text",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "frontendLiteralRpcCalls": [],
+      "checkedInEdgeLiteralRpcCalls": [],
+      "otherCapturedSqlFunctionsWithLiteralName": [],
+      "externalConsumerDisposition": "unknown",
+      "ordinaryFunctionInactive": false
+    },
+    {
+      "name": "generate_safe_display_name",
+      "definitionSha256": "1f7d9d417a3b37d4b8260e093d3ec8b37ac2b8d615fbe202c9d22374ca970852",
+      "result": "text",
+      "identityArguments": "user_email text, user_id uuid",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "frontendLiteralRpcCalls": [],
+      "checkedInEdgeLiteralRpcCalls": [],
+      "otherCapturedSqlFunctionsWithLiteralName": [
+        "validate_display_name"
+      ],
+      "externalConsumerDisposition": "unknown",
+      "ordinaryFunctionInactive": false
+    },
+    {
+      "name": "get_fanmark_ownership_status",
+      "definitionSha256": "bacbc1b1f79f07a34c6594886fc3ce179536d759836d80f5417acd917929c788",
+      "result": "TABLE(is_taken boolean, has_active_license boolean)",
+      "identityArguments": "fanmark_license_id uuid",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "frontendLiteralRpcCalls": [],
+      "checkedInEdgeLiteralRpcCalls": [],
+      "otherCapturedSqlFunctionsWithLiteralName": [],
+      "externalConsumerDisposition": "unknown",
+      "ordinaryFunctionInactive": false
+    },
+    {
+      "name": "get_public_fanmark_profile",
+      "definitionSha256": "3145b8ad0faae73233fdd1d9179a4adb5ad2349a983954674c615e9047604972",
+      "result": "TABLE(id uuid, fanmark_id uuid, display_name text, bio text, social_links jsonb, theme_settings jsonb, created_at timestamp with time zone, updated_at timestamp with time zone)",
+      "identityArguments": "profile_fanmark_id uuid",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "frontendLiteralRpcCalls": [],
+      "checkedInEdgeLiteralRpcCalls": [],
+      "otherCapturedSqlFunctionsWithLiteralName": [],
+      "externalConsumerDisposition": "unknown",
+      "ordinaryFunctionInactive": false
+    },
+    {
+      "name": "has_role",
+      "definitionSha256": "5506e560b7779ac4ef2d9a656aafe3e24b4e036121464e60dec1008af8f05acb",
+      "result": "boolean",
+      "identityArguments": "_user_id uuid, _role app_role",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "frontendLiteralRpcCalls": [],
+      "checkedInEdgeLiteralRpcCalls": [],
+      "otherCapturedSqlFunctionsWithLiteralName": [],
+      "externalConsumerDisposition": "unknown",
+      "ordinaryFunctionInactive": false
+    },
+    {
+      "name": "is_fanmark_licensed",
+      "definitionSha256": "2d7ff6ab60fbd419afd265359c3883d6b8a5b3e7c1a45efd00e55e8e39001097",
+      "result": "boolean",
+      "identityArguments": "fanmark_license_id uuid",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "frontendLiteralRpcCalls": [],
+      "checkedInEdgeLiteralRpcCalls": [],
+      "otherCapturedSqlFunctionsWithLiteralName": [],
+      "externalConsumerDisposition": "unknown",
+      "ordinaryFunctionInactive": false
+    },
+    {
+      "name": "search_fanmarks_with_lottery",
+      "definitionSha256": "5f7ca109288d480b48905257b99a21d1e8c77083f7f270454250adc8e8dc9f89",
+      "result": "json",
+      "identityArguments": "input_emoji_ids uuid[]",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "frontendLiteralRpcCalls": [],
+      "checkedInEdgeLiteralRpcCalls": [],
+      "otherCapturedSqlFunctionsWithLiteralName": [],
+      "externalConsumerDisposition": "unknown",
+      "ordinaryFunctionInactive": false
+    },
+    {
+      "name": "toggle_fanmark_favorite",
+      "definitionSha256": "cc0841079ff9240e299c40c2bc8b459a1ca7799c5b298f907696a108fc66b28f",
+      "result": "boolean",
+      "identityArguments": "fanmark_uuid uuid",
+      "effectiveExecute": [
+        {
+          "role": "anon",
+          "execute": true
+        },
+        {
+          "role": "authenticated",
+          "execute": true
+        },
+        {
+          "role": "service_role",
+          "execute": true
+        }
+      ],
+      "frontendLiteralRpcCalls": [],
+      "checkedInEdgeLiteralRpcCalls": [],
+      "otherCapturedSqlFunctionsWithLiteralName": [],
+      "externalConsumerDisposition": "unknown",
+      "ordinaryFunctionInactive": false
+    }
+  ],
+  "checkedInEdgeUnsupportedAliasCount": 0,
+  "checkedInEdgeLiteralNotificationRpcCount": 13,
+  "frontendLiteralInvitationValidationRpcCount": 2,
+  "checkedInEdgeIsNotDeployedBodyProof": true,
+  "allExternalConsumersReconciled": false,
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "scope": "Eight ordinary source RPCs without bounded direct current-checkout application callers; external/dynamic callers unknown. No retirement or generic route acceptance.",
+  "sourceBodiesIncluded": false,
+  "sourceOrAuthRowsRead": false,
+  "sourceFunctionsInvoked": false,
+  "deployedSourceBodiesReadThisStep": false,
+  "sourceConfigurationChanged": false,
+  "allEightOrdinaryFunctionsRetainSourceExecuteGrants": true,
+  "referencedUnboundTrigger": {
+    "name": "validate_display_name",
+    "calleeMention": "generate_safe_display_name",
+    "registeredBindingCount": 0,
+    "definitionSha256": "e2a4293a7111d2e8ebc90b5db51acd8b555096efee742707c6f820e9645a22a5"
+  },
+  "sourceAuthorizationObservedAt": "2026-10-03T04:12:13.485862+00:00",
+  "executeGrantsAreCapturedMetadataNotNewLiveObservation": true,
+  "updatedCounterpartTraceSha256": "0b92d153a4e43c48c30214f3512fd1d4bcbf42114acebcc1d29ffba95af0e38f",
+  "runtimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579"
+}

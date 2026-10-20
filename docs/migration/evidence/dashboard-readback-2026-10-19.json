@@ -1,0 +1,66 @@
+{
+  "format": "fanmark-dashboard-readback-v1",
+  "observedAt": "2026-10-18T22:57:09.074314+00:00",
+  "scope": "readonly-dashboard-and-source-metadata",
+  "productionReady": false,
+  "productionChanged": false,
+  "mfaReenrollmentRequested": false,
+  "cloudflare": {
+    "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+    "zoneName": "fanmark.id",
+    "workerRoutes": 0,
+    "pageRules": 0,
+    "singleRedirectRules": 0,
+    "tlsMode": "full",
+    "universalCertificate": {
+      "status": "active",
+      "hosts": [
+        "*.fanmark.id",
+        "fanmark.id"
+      ],
+      "expiresOn": "2026-12-28"
+    },
+    "dnsBindBackupSha256": "4702c25e3633258fabecc2a4d02cfcce7a312855b0328e2480d1a13e73fd8f8f",
+    "dnsRecordApiIdsCaptured": false,
+    "dnsApiAccessConfirmed": false
+  },
+  "supabase": {
+    "projectRef": "ppqgtbjykitqtiaisyji",
+    "siteUrl": "https://fanmark.id/",
+    "oauthProvidersEnabled": [
+      "apple",
+      "discord",
+      "github",
+      "google"
+    ],
+    "allClientIdsAndSecretsPresent": true,
+    "signupDisabled": false,
+    "emailConfirmationRequired": true,
+    "sourceConfigUnchanged": true
+  },
+  "stripe": {
+    "accountId": "acct_1SFjhvJk0VCfiKUp",
+    "liveDestinationsUi": "empty-getting-started-view",
+    "testDestinationCountVisible": 1,
+    "testDestination": {
+      "id": "we_1UMnO9Jk0VCfiKUppuPokw1a",
+      "url": "https://fanmark-app-staging.fanmark-id.workers.dev/api/stripe/webhook",
+      "status": "active",
+      "apiVersion": "2025-08-27.basil",
+      "listeningEventCount": 10
+    },
+    "sourceSubscriptionRows": 1,
+    "sourceSubscriptionStatus": "canceled",
+    "sourceSubscriptionFoundInCurrentTestDashboardSearch": false,
+    "sourceSubscriptionFoundInCurrentLiveApi": false,
+    "sourceSubscriptionAccountOrSandboxUnresolved": true,
+    "noSecretRevealed": true
+  },
+  "limitations": [
+    "dashboard observations are not a cutover transaction or continuous invariant",
+    "DNS BIND download lacks provider record IDs and rules/TLS inverse API proof",
+    "test Dashboard search is not a complete API inventory",
+    "source canceled subscription remains unchanged and unclassified",
+    "OAuth callback registrations and production secret custody are not verified"
+  ]
+}

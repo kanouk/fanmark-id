@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-12T19:55:46.245557+00:00",
+  "scope": "Programmatic real V3 MFA canonical import, UUID-preserving export/generation, named publication stage/promotion/rollback, two R2 upload/public-read/owner-delete roundtrips and exact-owned cleanup",
+  "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+  "sourceApiCommit": "a6f600b45852c0e3996c407fa4e244c93d79c5d5",
+  "sourceValidationCi": {
+    "headSha": "75da9c5142dbf1c52b1de0478ec1aaf1e5f78ff2",
+    "run": 38296556032,
+    "application": "success",
+    "worker": "success"
+  },
+  "mfaAuthorized": true,
+  "canonicalImportAndRestore": {
+    "countEach": 1,
+    "uuidAndCodepointsHeld": true,
+    "draftImport": true,
+    "draftRestore": true
+  },
+  "recordCount": 3944,
+  "newVersion": "a0b189427be84b8397483d4701a23a871be4576b95df4a068f9f272f790ad71e",
+  "restoredVersion": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+  "stage": {
+    "targetProfile": "staging-v3",
+    "ready": "ready",
+    "gatewayRemoved": true
+  },
+  "promotedPublicApi": {
+    "label": "promoted",
+    "observedAt": "2026-10-12T19:51:27.841Z",
+    "version": "a0b189427be84b8397483d4701a23a871be4576b95df4a068f9f272f790ad71e",
+    "records": 3944,
+    "pages": 8,
+    "defaultApiActiveVersionMatched": true,
+    "allPublicFieldsEqual": true,
+    "idsAndCodepointsEqual": true,
+    "publicRowsSha256": "51dfcbc4864143a5b87902810dcf1ca8d8fba21379b68d200529ee0a650ff230",
+    "sourceUsersMigrated": false,
+    "domainChanged": false
+  },
+  "restoredPublicApi": {
+    "label": "rolled-back",
+    "observedAt": "2026-10-12T19:52:24.513Z",
+    "version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+    "records": 3944,
+    "pages": 8,
+    "defaultApiActiveVersionMatched": true,
+    "allPublicFieldsEqual": true,
+    "idsAndCodepointsEqual": true,
+    "publicRowsSha256": "d2142c8d941337a7185b0f847b2a433f17c29c7952884023dac33e384cb6f3a8",
+    "sourceUsersMigrated": false,
+    "domainChanged": false
+  },
+  "r2": [
+    {
+      "bucket": "avatars",
+      "uploadStatus": 201,
+      "publicReadStatus": 200,
+      "byteHashMatched": true,
+      "ownerDeleteStatus": 204,
+      "afterDeleteStatus": 404
+    },
+    {
+      "bucket": "cover-images",
+      "uploadStatus": 201,
+      "publicReadStatus": 200,
+      "byteHashMatched": true,
+      "ownerDeleteStatus": 204,
+      "afterDeleteStatus": 404
+    }
+  ],
+  "imageFixture": {
+    "format": "valid-1x1-rgba-png",
+    "sha256": "6f46a94eae379e023b432933ec3deff3143416a67650b8a0ebeb1febeff139eb",
+    "existingUserImagesRead": false
+  },
+  "independentReadback": {
+    "state": "verified_independent_readback",
+    "observedAt": "2026-10-12T19:54:03.481Z",
+    "mainVersion": "cc7710d2-6d70-4fe7-bec9-1a03fa4b5349",
+    "allThreeSchemasMatched": true,
+    "foreignKeyViolations": 0,
+    "canonicalEightColumnsRestored": true,
+    "commonSixTablesUnchanged": true,
+    "active": {
+      "release_version": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+      "generation": 7
+    },
+    "retainedNewRelease": {
+      "status": "ready",
+      "row_count": 3944
+    },
+    "ownedAuthAndProfileRowsAbsent": true,
+    "retainedMfaGenerationDelta": 2,
+    "allFourTemporaryWorkersAbsent": true,
+    "bothKnownImagesAbsent": true,
+    "humanCredentialRowsRead": false
+  },
+  "retainedAuditReadback": {
+    "observedAt": "2026-10-12T19:54:46.732Z",
+    "exactActorMasterAuditsRetained": 2,
+    "exactActivationEventsRetained": 2,
+    "mutationContextRows": 0,
+    "humanActorRowsRead": false
+  },
+  "writerBefore": {
+    "owner": null,
+    "scope": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+    "active": 0,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 0,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 0,
+      "oldestEnteredAt": null,
+      "runtimeRevisions": {},
+      "kinds": {}
+    }
+  },
+  "writerAfter": {
+    "owner": null,
+    "scope": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+    "active": 0,
+    "drained": false,
+    "initialized": true,
+    "tickets": {
+      "scanned": 0,
+      "complete": true,
+      "legacy": 0,
+      "attributed": 0,
+      "oldestEnteredAt": null,
+      "runtimeRevisions": {},
+      "kinds": {}
+    }
+  },
+  "fixturePreparationAndCleanupTracked": true,
+  "temporaryWorkersDeleted": 4,
+  "realEmailsOrProviderCallbacks": 0,
+  "humanCredentialRowsRead": false,
+  "sourceSupabaseRowsRead": false,
+  "mainWorkerDeployments": 0,
+  "userDataMigration": false,
+  "domainChanged": false,
+  "driverCorrections": [
+    "Owner credential CLI timed out before the R2 phase; normal app actions and control-plane SELECTs then used dedicated read-only control credentials.",
+    "An initial read failed before image creation; no upload was replayed.",
+    "The successful avatar DELETE returned 204, while the driver expected 200. Exact known object absence was independently read back; DELETE was not replayed. Covers used the documented 204 contract."
+  ],
+  "accepted": {
+    "programmaticCurrentV3MasterPublicationAndStorage": true,
+    "renderedProfileImageOrMasterAdminUi": false,
+    "freshAppleSignupOrPhysicalMobile": false,
+    "naturalDailyBackup": false,
+    "wholeMigration": false
+  }
+}

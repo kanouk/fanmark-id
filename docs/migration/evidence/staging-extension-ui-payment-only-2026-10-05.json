@@ -1,0 +1,53 @@
+{
+  "observedAt": "2026-10-05T14:56:00.593Z",
+  "workerVersion": "b3a770b3-8735-4b31-abdd-f4fca99e05cd",
+  "scope": "synthetic extension Checkout signed application and preservation only; return UI pending",
+  "independentExtensionApplicationAccepted": true,
+  "previousLicenseEnd": "2026-10-13T00:00:00.000000Z",
+  "newLicenseEnd": "2026-11-13T00:00:00.000000Z",
+  "ownedLicenseCount": 1,
+  "applicationCount": 1,
+  "effectCount": 1,
+  "auditCount": 1,
+  "receipts": [
+    {
+      "eventType": "checkout.session.completed",
+      "status": "applied",
+      "deliveryCount": 1,
+      "lastErrorCode": null
+    }
+  ],
+  "naturalDispatchCompleted": true,
+  "testOnly": true,
+  "retainedAuthCounts": {
+    "users": 3,
+    "accounts": 7,
+    "sessions": 2
+  },
+  "retainedHumanIdentitiesAndSessionsUnchanged": true,
+  "originalProfilesMasterAndReferenceUnchanged": true,
+  "mfaUnchanged": true,
+  "originalAnonymousHistoryPreserved": true,
+  "anonymousHistoryCounts": {
+    "discoveries": 4,
+    "events": 7
+  },
+  "foreignKeyViolations": 0,
+  "postPaymentReturnUiAccepted": false,
+  "fixtureCleanupAccepted": false,
+  "fullMigrationAccepted": false,
+  "readOnly": true,
+  "runtimeHead": "0ed4213ac55620ec45b4d59fcc173005cb1e1de3",
+  "actualUiSigninAndAcquisitionAccepted": true,
+  "actualExtensionDialogAccepted": true,
+  "displayedInitialDate": "2026/10/13",
+  "displayedExpectedDate": "2026/11/13",
+  "displayedMonths": 1,
+  "displayedAmountJpy": 2000,
+  "actualSandboxCheckoutSubmitted": true,
+  "hostedStripePaymentVerified": true,
+  "syntheticFixtureRetainedForReturnUi": true,
+  "macUnlockRequired": true,
+  "userDataMigrated": false,
+  "productionDomainChanged": false
+}

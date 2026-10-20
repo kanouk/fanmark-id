@@ -1,0 +1,77 @@
+{
+  "observedAt": "2026-10-08T22:50:44.441Z",
+  "runtimeRevision": "79e75f89-8121-4d4a-8ec0-1df4f9f94383",
+  "browserInventory": {
+    "safari": "one start-page window and one current tab",
+    "connectedChromeAndIabSourceAppTabs": 0
+  },
+  "samples": [
+    {
+      "label": "idle_before",
+      "at": "2026-10-08T22:50:41.582Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 30,
+        "drained": false,
+        "initialized": true
+      }
+    },
+    {
+      "label": "completed:/api/auth/ok",
+      "at": "2026-10-08T22:50:42.400Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 30,
+        "drained": false,
+        "initialized": true
+      }
+    },
+    {
+      "label": "completed:/api/auth/capabilities",
+      "at": "2026-10-08T22:50:43.444Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 30,
+        "drained": false,
+        "initialized": true
+      }
+    },
+    {
+      "label": "completed:/api/auth/get-session",
+      "at": "2026-10-08T22:50:43.949Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 31,
+        "drained": false,
+        "initialized": true
+      }
+    },
+    {
+      "label": "completed:/",
+      "at": "2026-10-08T22:50:44.440Z",
+      "writers": {
+        "owner": null,
+        "scope": "c9fb8ff67b47331b21001b96394f221e31a04eb398b5b568ea324329be990948",
+        "active": 30,
+        "drained": false,
+        "initialized": true
+      }
+    }
+  ],
+  "probeCleanupVerified": true,
+  "causeDetermined": false,
+  "legacyRecordsRemoved": false,
+  "actualSourceCapture": false,
+  "cronEnabled": false,
+  "localVerification": {
+    "writerDrain": 8,
+    "notificationWake": 21,
+    "stagingBackup": 11,
+    "freezeAndScheduledDispatch": 16
+  },
+  "newImplementationRemoteAccepted": false
+}

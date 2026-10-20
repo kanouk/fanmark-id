@@ -1,0 +1,184 @@
+{
+  "format": "fanmark-recovery-set-isolated-remote-proof-v1",
+  "observedAt": "2026-10-07T16:26:14.476621+00:00",
+  "state": "accepted-isolated-remote",
+  "sourceHead": "99762af2513327d0ff1aea1342db302b58fe6bf4",
+  "ciRun": "37649724810",
+  "sourceSHA256": {
+    "workers/api/src/recovery-set.ts": "be2c5c2abdb28eba96b3775bb277ea686c6e855762605e971d6513db658d69ff",
+    "scripts/migration/recovery-set-files.mjs": "2570dcc26e364a4b9c29bd0a7f8655ab59627816caa3333a3765a15302b05052",
+    "scripts/migration/isolated-recovery-set-worker.mjs": "cd05a85430db765e1b39ab727fcd51c071ffc6ac5460f741c4fe51da2d6c0bb7",
+    "scripts/migration/run-isolated-recovery-set.mjs": "1e3c0c114bc23bd19c4c2bf1d4907024a8fc1545fd19e7d40af24c621780dfa7",
+    "scripts/migration/recovery-set-fixture.mjs": "f66a8cbfa383f51a3d08151e9a1fa6b72d1095b15e3efc8b4cc6c0e007cf5289"
+  },
+  "startedAt": "2026-10-07T16:22:20.836Z",
+  "finishedAt": "2026-10-07T16:23:51.782Z",
+  "workerVersion": "74b7fa6e-d473-4e96-9000-869d64350e77",
+  "captureId": "baafa5c3-e9b9-44f1-8d1e-dc0785f051a4",
+  "schemaHashes": {
+    "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+    "business": "c4f18bdcddce219bdcad3543f9fe9c55d8bda28b149e9101df0a0eebdbf29a3d",
+    "master": "12e0267b8b5070a7332f12d6c54ac3e8a34873411832d1fe219eb877847d846a"
+  },
+  "stores": {
+    "businessMigrations": 27,
+    "businessTables": 79,
+    "businessInternalSequence": true,
+    "authMigrations": 4,
+    "authTables": 9,
+    "masterActiveMigrations": 8,
+    "masterHistoricalAuthSchema": true,
+    "masterTables": 25,
+    "r2Kinds": [
+      "avatars",
+      "cover-images"
+    ]
+  },
+  "d1Queries": {
+    "collect": {
+      "auth": 24,
+      "business": 166,
+      "master": 56
+    },
+    "restore": {
+      "auth": 63,
+      "business": 401,
+      "master": 159
+    }
+  },
+  "collectParts": {
+    "auth": {
+      "archiveHash": "96623bc58be58e72a0bf85e0dd70ea8944cde5f64a2135c60ea659979907cd6f",
+      "snapshotHash": "364fea6b6f94894987cf9125222a5ed11315fb6bfea6f1d1b27ac0c88abd3b04"
+    },
+    "business": {
+      "archiveHash": "1697574be2811fff8c6825e661cfcf4fc772d2a88f3904345f061e68375dcfa7",
+      "snapshotHash": "84942a6348f2fc6ac7b111c68b2503be64b9919fd0d4809ac9632c5826df49f7"
+    },
+    "master": {
+      "archiveHash": "1791c59e8e6b7289311be1ea29bb115c0ae9acfc6ba0119970cfa28a43e9b0ec",
+      "snapshotHash": "a661c07c5409dbcc6356700ef863a92de12dab3842bd7968ce1647548a3bc8cb"
+    },
+    "avatars": {
+      "archiveHash": "c539733e1067bb75fbc3cb4f1b1106596dd4bbf78bad958c2597b099f0654f10",
+      "snapshotHash": "2a71bbff79a2a6425c6efb50cecb6a0bc41b58cb82ecf7a62c9f3df536eed68d"
+    },
+    "covers": {
+      "archiveHash": "99c36d497011b4a3fbdd6fd1523d9828eef5cecbc3034582a854e0fd4d988b2a",
+      "snapshotHash": "516dd5566c08933233c10a251e9f5809400d3ccff47bc8b475536c13156b5f29"
+    }
+  },
+  "restore": {
+    "captureId": "baafa5c3-e9b9-44f1-8d1e-dc0785f051a4",
+    "sessionPolicy": "revoke-local-sessions-and-challenges",
+    "restoredHashes": {
+      "auth": "d97a939f7378637b7207c3d1438ad244bb4c8781d40942038b5a5dec7d71a9a9",
+      "business": "84942a6348f2fc6ac7b111c68b2503be64b9919fd0d4809ac9632c5826df49f7",
+      "master": "a661c07c5409dbcc6356700ef863a92de12dab3842bd7968ce1647548a3bc8cb",
+      "avatars": "2a71bbff79a2a6425c6efb50cecb6a0bc41b58cb82ecf7a62c9f3df536eed68d",
+      "covers": "516dd5566c08933233c10a251e9f5809400d3ccff47bc8b475536c13156b5f29"
+    },
+    "verified": true
+  },
+  "assertions": {
+    "allFiveStoresCollectedBySharedModule": true,
+    "independentCheckedInSchemaPins": true,
+    "rawStandardStorageClass": true,
+    "privateFileCommittedAndReopened": true,
+    "sameFileRestored": true,
+    "allDesiredHashesVerified": true,
+    "explicitSessionChallengesRevoked": true,
+    "credentialBytesRetained": true,
+    "nativeBatchPreserved": true,
+    "fixedBindingVersionAndNoCron": true
+  },
+  "cleanup": {
+    "databases": 6,
+    "buckets": 5,
+    "worker": 1,
+    "allOwnedDeleted": true,
+    "beforeAfterInventoryExact": true,
+    "inventoryBeforeCounts": {
+      "d1": 3,
+      "r2": 3,
+      "workers": 2
+    },
+    "oneOffKeyFilesRemoved": true
+  },
+  "mainReadbacks": [
+    {
+      "observedAt": "2026-10-07T16:09:18.386Z",
+      "version": "17fdbf39-99a5-4927-bf12-bc11e19b7c3d",
+      "businessLedger": 27,
+      "counts": {
+        "foreign_key_violations": 0,
+        "wake_singletons": 1,
+        "wake_requested": 34,
+        "wake_acknowledged": 34,
+        "notification_pending": 0,
+        "notification_overdue": 0,
+        "notification_stale_processing": 0,
+        "notification_failed": 0,
+        "notification_archive_candidates": 0,
+        "expiry_open_runs": 0,
+        "finalization_open_runs": 0,
+        "finite_licenses_past_end": 0,
+        "grace_licenses_past_end": 0,
+        "stripe_dead_letters": 0,
+        "stripe_overdue": 0,
+        "stripe_expired_leases": 0
+      },
+      "publicHealth": {
+        "/": 200,
+        "/api/auth/ok": 200
+      },
+      "attention": []
+    },
+    {
+      "observedAt": "2026-10-07T16:24:40.720Z",
+      "version": "17fdbf39-99a5-4927-bf12-bc11e19b7c3d",
+      "businessLedger": 27,
+      "counts": {
+        "foreign_key_violations": 0,
+        "wake_singletons": 1,
+        "wake_requested": 34,
+        "wake_acknowledged": 34,
+        "notification_pending": 0,
+        "notification_overdue": 0,
+        "notification_stale_processing": 0,
+        "notification_failed": 0,
+        "notification_archive_candidates": 0,
+        "expiry_open_runs": 0,
+        "finalization_open_runs": 0,
+        "finite_licenses_past_end": 0,
+        "grace_licenses_past_end": 0,
+        "stripe_dead_letters": 0,
+        "stripe_overdue": 0,
+        "stripe_expired_leases": 0
+      },
+      "publicHealth": {
+        "/": 200,
+        "/api/auth/ok": 200
+      },
+      "attention": []
+    }
+  ],
+  "boundaries": {
+    "tinySyntheticFixture": true,
+    "fullMasterRowsCaptured": false,
+    "credentialIsSyntheticBytes": true,
+    "newSdkLoginAccepted": false,
+    "operationalMainQuiescenceAdopted": false,
+    "writerGuardScope": "owned isolated source/target only; no app/SQL/Cron/DO routes",
+    "operationalOffHostKeysRetentionAdopted": false,
+    "schedulerEnabled": false,
+    "capacityCpuMemoryOrRtoAccepted": false,
+    "allRetainedRowsHashFreshlyReverified": false,
+    "existingStagingStoreWrites": 0,
+    "mainRuntimeRedeployed": false,
+    "newMail": 0,
+    "sourceSupabaseWrites": 0,
+    "userDataMigration": false,
+    "dnsCutover": false
+  }
+}

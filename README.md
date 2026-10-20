@@ -1,5 +1,9 @@
 # fanmark.id readme
 
+現行本番はCloudflare Workers・Better Auth・D1・R2。旧Supabaseは停止した原本として保持する。
+本番buildと更新手順は[本番運用](docs/migration/production-operations.md)、最新仕様は[PRODUCT](docs/PRODUCT.md)を参照。
+以下には旧実装の仕様・RPC名も含む。
+
 ## 1. ドキュメント情報
 - 作成日: 2025-09-24
 - 作成者: @kanouk
@@ -150,4 +154,4 @@
 - `/pwa` ルートはモバイル利用を想定した PWA 専用 UI。`src/components/PWAInstallPrompt.tsx` が `beforeinstallprompt` イベントをフックし、`localStorage` (`pwa_install_prompt_shown`) で再表示制御を行う。
 - Service Worker は `src/main.tsx` で `virtual:pwa-register` の `registerSW({ immediate: true })` を呼び出し登録する。ブラウザ環境チェック後に実行されるため SSR 影響はない。
 - `vite.config.ts` では `vite-plugin-pwa` を利用し `mode: "development"` で Service Worker をバンドルする。Node.js 22 環境では `@rollup/plugin-terser` が SW 生成時にクラッシュするため、本設定でミニファイを回避している。
-- 実装確認フロー: `npm run build` → `dist/sw.js` が生成されることを確認 → `npm run dev` で起動し `http://localhost:8080/pwa` を開く → Chrome DevTools > Application > Service Workers で登録状態と `beforeinstallprompt` イベント発火を確認。イベントが発火しない場合は HTTPS・マニフェスト・Service Worker の 3 条件を見直す。
+- 実装確認フロー: `npm run build` → `dist-cloudflare-production/sw.js` が生成されることを確認 → `npm run dev` で起動し `http://localhost:8080/pwa` を開く → Chrome DevTools > Application > Service Workers で登録状態と `beforeinstallprompt` イベント発火を確認。イベントが発火しない場合は HTTPS・マニフェスト・Service Worker の 3 条件を見直す。

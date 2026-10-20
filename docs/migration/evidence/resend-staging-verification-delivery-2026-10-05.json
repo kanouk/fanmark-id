@@ -1,0 +1,33 @@
+{
+  "observedAt": "2026-10-05T10:35:33.590502+00:00",
+  "scope": "staging verification signup and reset-email delivery only",
+  "runtimeHead": "00fc6e7c2d01cdd5ec3174e2216f401b560db383",
+  "workerVersion": "92413959-b8ea-4b62-a841-011acaa0304c",
+  "signupCompleted": true,
+  "profileConfirmed": true,
+  "credentialAccountCount": 1,
+  "emailVerified": true,
+  "confirmationReceiptReportedByUser": true,
+  "verificationCallbackPath": "/",
+  "providerSendingKeyFilter": "fanmark-app-staging",
+  "confirmationProviderStatus": "Delivered",
+  "passwordResetRequestAccepted": true,
+  "passwordResetResponseStatus": 200,
+  "passwordResetProviderStatus": "Delivered",
+  "passwordResetReceiptConfirmed": false,
+  "passwordResetCompleted": false,
+  "reloginAccepted": false,
+  "cleanupAccepted": false,
+  "mailFlowAccepted": false,
+  "fullMigrationAccepted": false,
+  "originalAccountsMasterMfaWakeAndAnonymousSearchPreserved": true,
+  "preservationObservedAt": "2026-10-05T10:33:19.576Z",
+  "originalAuthCountsExcludingExactJournalOwnedSignupUser": {
+    "users": 2,
+    "accounts": 6,
+    "sessions": 1
+  },
+  "credentialValuesRead": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false
+}

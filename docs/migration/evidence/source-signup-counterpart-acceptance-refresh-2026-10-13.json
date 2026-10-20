@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-12T18:45:31.226471+00:00",
+  "scope": "Reconcile stale signup correspondence with already accepted historical native evidence; no new provider execution or semantic approval",
+  "sourceCatalogObservedAt": "2026-10-12T18:14:19.671464+00:00",
+  "sourceRuntimeFingerprint": "8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579",
+  "historicalEvidence": [
+    "staging-invitation-signup-native-2026-10-08.json",
+    "discord-staging-first-password-relogin-2026-10-09.json"
+  ],
+  "updatedFunctionCounterparts": [
+    "handle_new_user",
+    "validate_invitation_code"
+  ],
+  "refreshedObjectMapRows": [
+    "handle_new_user",
+    "use_invitation_code",
+    "validate_invitation_code"
+  ],
+  "priorManualTraceSha256": "249232da69f7f46a8b7664fd1178467a20e6ca873fc6d65986a9999047b2f349",
+  "currentManualTraceSha256": "83ba71fb48dc6932931bd8b28502b233c68bdd5f8554048fd9b38526a1c0daee",
+  "counterpartTrace": {
+    "functionCount": 58,
+    "missingFunctionCount": 0,
+    "traceSha256": "2f844d6974555c47efaf11608dd4613066aa570d7a60cc54f669159343204c4f",
+    "semanticApprovalInferred": false,
+    "boundary": "Exact source identity, definition, attributes and binding count matched to manual correspondence; feature/provider/operational acceptance and converter gates remain separate."
+  },
+  "all58DefinitionHashesUnchanged": true,
+  "pendingClassifierCount": 54,
+  "nativeAcceptanceScopes": {
+    "invitation": "one Japanese required-invitation signup, one-time consumption, verification/login/logout and independent fixture cleanup",
+    "discord": "one separate new identity, first password setup, explicit logout and same-identity email/password relogin; other pending identity retained"
+  },
+  "firstRunAdapterCorrection": "The captured Management API top-level result array was normalized to the existing CLI rows envelope; no source requery or state mutation",
+  "sourceOrAuthRowsRead": false,
+  "sourceOrTargetWrites": 0,
+  "newEmailsOrProviderCallbacks": 0,
+  "newV3ProviderAcceptanceClaimed": false,
+  "fullRuntimeReconciled": false,
+  "converterDeployable": false,
+  "remaining": [
+    "Apple first-user setup and relay",
+    "external or direct callers",
+    "role custody and actual identity mapping at data/cutover phase",
+    "physical mobile and final integrated candidate"
+  ]
+}

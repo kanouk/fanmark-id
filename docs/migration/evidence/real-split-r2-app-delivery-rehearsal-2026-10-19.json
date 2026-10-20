@@ -1,0 +1,56 @@
+{
+  "format": "fanmark-real-split-r2-stage-backup-rehearsal-v1",
+  "observedAt": "2026-10-18T23:45:34.608Z",
+  "scope": "local-native-split-R2-only",
+  "sourceSnapshotDate": "2026-10-16",
+  "sourceFrozen": false,
+  "productionReady": false,
+  "sourceNetworkReads": 0,
+  "remoteWrites": 0,
+  "authReenrollmentUsed": false,
+  "sourceCiphertextSHA256": "ce8b8e3e296923ed352cbbf069f1134adbcdca05f720a72c265aa69c4ade4bdd",
+  "sourceManifestSHA256": "7057324f926e38b5bbfe8cb221664ca7295e64412510558acf04ce72220e8a07",
+  "repositoryStageAndIndependentCheckerUsed": true,
+  "objectCount": 109,
+  "totalBytes": 13285729,
+  "sourceAndRestoredReadbackPassed": true,
+  "actualApplicationHandlerGetAndHeadPassed": true,
+  "applicationRequests": 218,
+  "localStorageClassFixtureAdapter": true,
+  "remoteStorageClassVerified": false,
+  "stores": [
+    {
+      "store": "avatars",
+      "objectCount": 69,
+      "totalBytes": 1445658,
+      "archiveBytes": 2619112,
+      "fullRecoveryHashMatched": true,
+      "backupMs": 13148,
+      "restoreAndReadbackMs": 26905
+    },
+    {
+      "store": "covers",
+      "objectCount": 40,
+      "totalBytes": 11840071,
+      "archiveBytes": 21078717,
+      "fullRecoveryHashMatched": true,
+      "backupMs": 8332,
+      "restoreAndReadbackMs": 15906
+    }
+  ],
+  "timings": {
+    "importAndReadbackMs": 12314,
+    "restoredReadbackMs": 7661,
+    "applicationDeliveryMs": 2253
+  },
+  "elapsedMs": 87314,
+  "limitations": [
+    "prior unfrozen source snapshot",
+    "isolated local bindings; production R2 transport/coordinator not exercised",
+    "pinned local Miniflare reports empty storageClass; local fixture maps it to Standard, not remote proof",
+    "local latency is not remote Cloudflare RTO",
+    "memory-only recovery key; offhost key custody not proven",
+    "R2 only; all-five-store coordinated recovery remains separate",
+    "application handler with native local bindings; not deployed Worker or visual browser acceptance"
+  ]
+}

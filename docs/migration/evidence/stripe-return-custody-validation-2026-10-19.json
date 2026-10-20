@@ -1,0 +1,46 @@
+{
+  "format": "fanmark-stripe-return-custody-validation-v1",
+  "observedAt": "2026-10-19T04:41:17.454570+00:00",
+  "productionReady": false,
+  "productionSourceWrites": 0,
+  "productionTargetWrites": 0,
+  "nativeStores": [
+    "D1",
+    "RecoveryWriterCoordinatorProduction",
+    "PostgreSQL"
+  ],
+  "managementApi": "synthetic native-store-backed responses",
+  "tests": {
+    "receiptIngressTransferAndReturnPassed": 23,
+    "productionPreparationPassed": 9
+  },
+  "verified": [
+    "encrypted exclusive private archive and independent full reread",
+    "run manifest incarnation source and coordinator identity binding",
+    "incomplete import and active or absent writer fence rejection",
+    "target change after durable archive refuses acceptance and retains archive",
+    "durable intent before one generated source transaction",
+    "separate source export readback and target revalidation",
+    "source commit followed by response loss resolved read-only without replay"
+  ],
+  "livePreflight": {
+    "observedAt": "2026-10-19T04:40:49.312Z",
+    "role": "postgres",
+    "transactionReadOnly": "on",
+    "receiptSchemaPresent": false,
+    "sourceWrites": 0,
+    "syntheticRunIdentityUsedOnlyForFixedPreflight": true
+  },
+  "implementationSha256": {
+    "scripts/migration/stripe-receipt-transfer.mjs": "d28bf3d828f39475f58b46f99e02f00c2c9fcf705b6fd5041f66425322d91b5e",
+    "scripts/migration/source-stripe-return-transport.mjs": "cee6d2743323825bc62b5ea677ab602972d98b26140e55c3f99685ab9a7d2ead",
+    "scripts/migration/stripe-receipt-return-execution.mjs": "333970479ab638a4e0177d9f81480f208520966a03fa4f9c5146f60f086773b4",
+    "scripts/migration/test-stripe-receipt-return-custody.mjs": "0a9eb338d04d1b132393164de8cf7f361c9307fd1d6482a34617319e635dee2a"
+  },
+  "remaining": [
+    "actual target ingress closure and legacy in-flight completion evidence",
+    "evidence that general business writes have never been enabled",
+    "real source return and independent full readback only if prepublication abort is needed",
+    "legacy billing effects reconciliation before any dispatch or reopen"
+  ]
+}

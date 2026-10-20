@@ -1,0 +1,65 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-production-publication-local-proof",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "vars": {
+    "D1_TOPOLOGY": "split",
+    "RECOVERY_DRAIN_BACKEND": "durable-object",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4",
+    "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+    "NOTIFICATION_WAKE_BACKEND": "durable-object",
+    "EMOJI_PUBLICATION_BACKEND": "production-service",
+    "CF_VERSION_METADATA": {
+      "id": "00000000-0000-4000-8000-000000000012"
+    },
+    "STAGING_BACKUP_SOURCE_IDS": "{\"auth\":\"bbb878d3-40eb-4755-b57b-f723f0dd901b\",\"business\":\"5af38beb-efe6-4f2b-8f59-af0070f37551\",\"master\":\"f7aadd85-701e-4625-92ce-879d5939dab8\",\"avatars\":\"fanmark-avatars-production-20261020-v3\",\"covers\":\"fanmark-covers-production-20261020-v3\"}"
+  },
+  "d1_databases": [
+    {
+      "binding": "FANMARK_DB",
+      "database_name": "recovery-writer-local-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000099"
+    },
+    {
+      "binding": "MASTER_DB",
+      "database_name": "emoji-publication-local-master",
+      "database_id": "00000000-0000-0000-0000-000000000098"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RECOVERY_DRAIN",
+        "class_name": "RecoveryWriterCoordinator"
+      },
+      {
+        "name": "NOTIFICATION_WAKE",
+        "class_name": "NotificationWakeCoordinator"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "recovery-writer-local-v1",
+      "new_sqlite_classes": [
+        "RecoveryWriterCoordinator",
+        "NotificationWakeCoordinator"
+      ]
+    },
+    {
+      "tag": "production-coordinators-v2",
+      "new_sqlite_classes": [
+        "NotificationWakeCoordinatorProductionV2",
+        "RecoveryWriterCoordinatorProductionV2"
+      ]
+    },
+    {
+      "tag": "production-coordinators-v3",
+      "new_sqlite_classes": [
+        "NotificationWakeCoordinatorProductionV3",
+        "RecoveryWriterCoordinatorProductionV3"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "state": "natural_app_daily_accepted",
+  "startedAt": "2026-10-12T23:42:04.448Z",
+  "worker": "fanmark-app-staging",
+  "version": "cc82c298-ff27-4322-8c42-175e7be17f16",
+  "deadline": "2026-10-13T00:04:00.000Z",
+  "manualInvocation": false,
+  "runtimeRedeployed": false,
+  "accepted": true,
+  "events": [
+    {
+      "scheduledTime": "2026-10-13T00:00:25.000Z",
+      "outcome": "ok",
+      "exceptionCount": 0,
+      "jobs": [
+        {
+          "job": "notification-archive",
+          "status": "completed",
+          "archived": 0,
+          "remaining": 0,
+          "conflicts": 0,
+          "batches": 1
+        },
+        {
+          "job": "license-expiry-lifecycle",
+          "status": "completed",
+          "candidateCount": 0,
+          "processed": 0,
+          "conflicts": 0,
+          "pagesProcessed": 0,
+          "graceFinalizationStatus": "completed",
+          "graceFinalizationCandidates": 0,
+          "graceFinalizationProcessed": 0,
+          "graceFinalizationConflicts": 0,
+          "graceFinalizationPagesProcessed": 0
+        }
+      ],
+      "naturalDailyAccepted": true,
+      "accepted": true
+    }
+  ],
+  "exitCode": 0,
+  "signal": null,
+  "finishedAt": "2026-10-13T00:01:26.256Z",
+  "scope": "current V4 natural archive and license/grace lifecycle; controlled fixture cleanup completed before execution",
+  "authCredentialValuesRead": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false
+}

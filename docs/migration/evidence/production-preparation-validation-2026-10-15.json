@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-15",
+  "scope": "local synthetic preparation; public DNS read only",
+  "node": "22.6.0",
+  "productionChanges": false,
+  "productionReady": false,
+  "newOfflineTests": {
+    "passed": 9,
+    "failed": 0,
+    "file": "scripts/migration/test-production-preparation.mjs"
+  },
+  "relatedSyntheticSuite": {
+    "passed": 54,
+    "failed": 0,
+    "files": [
+      "scripts/migration/test-production-preparation.mjs",
+      "scripts/migration/test-d1-import.mjs",
+      "scripts/migration/test-storage-r2-import.mjs",
+      "scripts/migration/test-credential-import-projection.mjs",
+      "scripts/migration/test-wrangler-migration-selectors.mjs"
+    ]
+  },
+  "followup": "Wildcard selector coverage added; test fixture first incorrectly injected a nonexistent Business migration. Restricted the mutation to the Master migration directory; all 9 preparation tests passed again. The related 45 tests were not changed.",
+  "workflowIsolation": {
+    "staticCheck": "passed",
+    "testsPassed": 6
+  },
+  "inventory": "production-preparation-offline.json",
+  "publicDns": "production-public-dns-2026-10-15.json",
+  "limits": [
+    "No live configuration or resource attestation",
+    "No actual user/Auth/Storage export",
+    "No production runner or Stripe projection adapter",
+    "No production cutover/restore timing measurement",
+    "Projection equality does not establish capture completeness or safe production restart"
+  ]
+}

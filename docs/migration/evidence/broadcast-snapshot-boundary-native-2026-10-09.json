@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "status": "native_51_user_snapshot_boundary_accepted",
+  "startedAt": "2026-10-09T02:07:37.071Z",
+  "finishedAt": "2026-10-09T02:08:04.195Z",
+  "sourceCommit": "0cd462b1a651eee68509ee5b96ba373c220d6fea",
+  "runtimeCodeCi": "37869826082",
+  "businessMigrations": 27,
+  "businessSchemaFingerprint": "08eee8691ef7b8491da5d6b36e23a54361e0114522006c373d236bc095d6dc76",
+  "authSchemaExact": true,
+  "authSchemaHash": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
+  "isolatedAuthUsers": 51,
+  "languages": [
+    "ja",
+    "en",
+    "ko",
+    "id"
+  ],
+  "pages": [
+    {
+      "phase": 1,
+      "result": {
+        "status": "page_committed",
+        "runId": "8ce557f1-e023-485a-bad8-29d71b6f581e",
+        "pageSize": 50,
+        "recipientCount": 50
+      },
+      "recipientCount": 50,
+      "runStatus": "snapshotting",
+      "cursorHash": "cafefaea83efb0ce7476417758540f25587b82f4b8989a8da6f393dcdafa686b",
+      "uniqueRecipients": 50
+    },
+    {
+      "phase": 2,
+      "result": {
+        "status": "page_committed",
+        "runId": "8ce557f1-e023-485a-bad8-29d71b6f581e",
+        "pageSize": 1,
+        "recipientCount": 51
+      },
+      "recipientCount": 51,
+      "runStatus": "snapshotting",
+      "cursorHash": "d5a7c021e09f0d7072002486c808b0a6c28d932f350c2b7b398ef07e19f4af35",
+      "uniqueRecipients": 51
+    },
+    {
+      "phase": 3,
+      "result": {
+        "status": "sending",
+        "runId": "8ce557f1-e023-485a-bad8-29d71b6f581e",
+        "pageSize": 0,
+        "recipientCount": 51
+      },
+      "recipientCount": 51,
+      "runStatus": "sending",
+      "cursorHash": "d5a7c021e09f0d7072002486c808b0a6c28d932f350c2b7b398ef07e19f4af35",
+      "uniqueRecipients": 51
+    },
+    {
+      "phase": 4,
+      "result": {
+        "status": "idle"
+      },
+      "recipientCount": 51,
+      "runStatus": "sending",
+      "cursorHash": "d5a7c021e09f0d7072002486c808b0a6c28d932f350c2b7b398ef07e19f4af35",
+      "uniqueRecipients": 51
+    }
+  ],
+  "addressFreeRecipientQueue": true,
+  "foreignKeyViolations": 0,
+  "actualEmails": 0,
+  "sourceRowsRead": 0,
+  "sourceWrites": 0,
+  "ownedD1Deleted": 2,
+  "ownedWorkerDeleted": true,
+  "originalInventoryRestored": true,
+  "independentCleanupAt": "2026-10-09T02:10:55.194Z",
+  "mainVersionAndBindingsPreserved": true,
+  "limits": [
+    "Only the snapshot stage ran: 50 + 1 + empty completion + idle, not dispatch.",
+    "Actual current snapshot implementation used isolated native Cloudflare D1/Worker with full schema.",
+    "No actual Resend credentials, webhook secret, mail sender, dispatch route or Cron were bound.",
+    "Run status sending denotes snapshot completion and does not prove any provider send.",
+    "MFA-gated main send command and send UI remain their own acceptance gates."
+  ],
+  "businessSchemaExactBeforeProbeControl": true,
+  "probeControlTable": "probe_invocations; isolated call settlement only, added after exact application-schema comparison"
+}

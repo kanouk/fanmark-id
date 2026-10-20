@@ -1,0 +1,46 @@
+{
+  "leaseMetrics": {
+    "refreshes": 1,
+    "requests": 632,
+    "lostResponses": 1
+  },
+  "virtualTimeAdvancedSeconds": 6320,
+  "sourceControlPlaneSynthetic": true,
+  "masterCommitReceipts": 165,
+  "existingOperationalArchiveKeyReused": true,
+  "format": "fanmark-retry-master-lease-response-backup-native-v1",
+  "repositoryProjectionUsed": true,
+  "repositoryStageAndIndependentCheckerUsed": true,
+  "observedAt": "2026-10-20T01:27:37.302Z",
+  "scope": "local-native-D1-only",
+  "sourceSnapshotDate": "2026-10-16",
+  "sourceFrozen": false,
+  "productionReady": false,
+  "sourceNetworkReads": 0,
+  "remoteWrites": 0,
+  "authReenrollmentUsed": false,
+  "sourceSnapshotSha256": "8237575c0849ed8737adcfcb2bd70b8e8323be2d77dd33f6ccc5481dd72bc427",
+  "emojiRows": 3944,
+  "approvedEmojiIdentityMatched": true,
+  "referenceRows": 29,
+  "recoveryTables": 26,
+  "recoveryRows": 12048,
+  "schemaHash": "41eb20e30329eb6a806c11b76f2dcad3144fbbb6c28ba9a8e9d979827a8d7e88",
+  "archiveBytes": 5948407,
+  "standaloneSourceAndRestoredReadbackPassed": true,
+  "fullRecoveryRowsHashMatched": true,
+  "timings": {
+    "importMs": 111621,
+    "readbackMs": 1527,
+    "backupMs": 1019,
+    "restoreMs": 2031,
+    "restoredReadbackMs": 1900
+  },
+  "elapsedMs": 121103,
+  "limitations": [
+    "prior unfrozen snapshot; no current production consistency claim",
+    "local memory and latency are not Cloudflare runtime capacity proof",
+    "existing local operational key reused; offhost new-cohort backup remains separate",
+    "Master only; complete Auth/Business/R2 cohort remains separate"
+  ]
+}

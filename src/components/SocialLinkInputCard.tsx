@@ -72,7 +72,7 @@ export const SocialLinkInputCard = ({
   const Icon = platform.icon;
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm transition hover:border-primary/30 hover:shadow-lg">
+    <div className="min-w-0 rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm transition hover:border-primary/30 hover:shadow-lg">
       {(showTitle || platform.baseUrl) && (
         <div className={`flex flex-wrap items-center gap-3 ${showTitle ? 'justify-between' : 'justify-end'}`}>
           {showTitle && (
@@ -136,7 +136,7 @@ export const SocialLinkInputCard = ({
                 onBlur?.();
               }}
               placeholder={platform.handlePlaceholder || 'username'}
-              className="flex-1 h-full bg-transparent px-3 text-sm sm:text-base outline-none placeholder:text-muted-foreground/40"
+              className="min-w-0 flex-1 h-full bg-transparent px-3 text-sm sm:text-base outline-none placeholder:text-muted-foreground/40"
               autoComplete="off"
             />
           </div>

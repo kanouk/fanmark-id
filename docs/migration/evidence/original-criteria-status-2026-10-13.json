@@ -1,0 +1,127 @@
+{
+  "state": "original_conditions_review_incomplete",
+  "currentRuntimeSource": "5c1504e95a133647ec6101127dffecf6388659af",
+  "currentStagingVersion": "958b5ea2-525d-4a7e-adc6-f6b15bfdcf91",
+  "reviewer": "current task model; no new Astra review claimed",
+  "originalIssues": [
+    28,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38
+  ],
+  "evidenceInspected": [
+    {
+      "path": "docs/migration/evidence/source-final-correspondence-review-2026-10-13.json",
+      "sha256": "2813ad874dfeb01fb7bbdd197f8bdf2ef27a61ac725510f84143acbf51b5d9cf",
+      "recordedState": "existing_source_catalog_and_current_correspondence_reviewed",
+      "recordedVersion": null,
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/source-function-counterparts-2026-10-03.json",
+      "sha256": "dd6232c5d1aa495e5a81d6404b26c2028f84d512f488c0f49b4811ddd8f693a1",
+      "recordedState": null,
+      "recordedVersion": null,
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-four-locale-core-integration-2026-10-13.json",
+      "sha256": "38361650dcc91ce99b905b3ace4791e27311ce2caa07780c59e15d85d7530407",
+      "recordedState": "four_locales_same_v4_core_journeys_accepted",
+      "recordedVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-paid-journey-2026-10-13.json",
+      "sha256": "526b1cb39329d5b8a66492f5c600cad349f727f028c2c1c04ff2a9554ff60f11",
+      "recordedState": "same_v4_sandbox_paid_journey_and_cleanup_accepted",
+      "recordedVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-smartphone-home-screen-human-2026-10-13.json",
+      "sha256": "05e5b328fcb434c1f85ebcdfb6c66fd4abd769604f8abd047ca6f5137fb91996",
+      "recordedState": "human_smartphone_and_home_screen_check_reported",
+      "recordedVersion": null,
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-v4-natural-backup-2026-10-13.json",
+      "sha256": "2acb647bc6f5e943d8460dc9aa96c6376426d6920fa5cb466a0a8bb612ef7fc0",
+      "recordedState": "natural_v4_daily_backup_and_retention_accepted",
+      "recordedVersion": "cc82c298-ff27-4322-8c42-175e7be17f16",
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/representative-recovery-capacity-native-accepted-2026-10-13.json",
+      "sha256": "2c3882d8b4287f993f1fd07ab969f8d28a76be89d403121936163faedfd19bc5",
+      "recordedState": "representative_capacity_native_saved_file_restore_accepted",
+      "recordedVersion": null,
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/pwa-legacy-update-local-2026-10-06.json",
+      "sha256": "b21ed5590a3cd95f39b2773ae226738f4438e3ce949b56b2d3c709f191feedfd",
+      "recordedState": null,
+      "recordedVersion": null,
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/legacy-profile-rendered-normal-deploy-2026-10-13.json",
+      "sha256": "8ac9a367d3c75368a765fe38bfc9d7625a65d4b99277335beaced62a8db8438a",
+      "recordedState": "legacy_profile_rendered_and_normal_staging_deployed",
+      "recordedVersion": null,
+      "scopeInspected": true
+    },
+    {
+      "path": "docs/migration/evidence/staging-profile-auth-regression-2026-10-13.json",
+      "sha256": "c7e72b43525372b2ffc65022022b257011ef47620dcd405a1fbee3ad50f0201f",
+      "recordedState": "normal_staging_profile_auth_browser_and_cleanup_verified",
+      "recordedVersion": "958b5ea2-525d-4a7e-adc6-f6b15bfdcf91",
+      "scopeInspected": true
+    }
+  ],
+  "verifiedThisTurn": [
+    "actual deployed full App login/profile PATCH/reload/logout/relogin",
+    "390px no horizontal overflow",
+    "owned account/operator removal and independent all-table count preservation",
+    "human Apple/credential/password-presence/setup/session metadata preserved"
+  ],
+  "existingEvidenceReused": [
+    "four-language core and sandbox paid integration on cc82c298; not relabeled as current-version full rerun",
+    "representative combined encrypted restore and file hash reconciliation",
+    "natural backup/retention and physical phone/home-screen report",
+    "legacy-to-current PWA update in local controlled browser"
+  ],
+  "remaining": [
+    {
+      "requirement": "Apple relay actual receive",
+      "status": "unverified",
+      "reason": "No owned relay address; sender/SPF configuration alone does not prove delivery"
+    },
+    {
+      "requirement": "All legacy authenticated bridge families / per-feature original #33 acceptance",
+      "status": "partial",
+      "reason": "Profile and username are accepted; no full old-RPC/authenticated API proxy claim. Reconcile current target contracts and remaining transitional source families individually."
+    },
+    {
+      "requirement": "Final source functional and PR review",
+      "status": "incomplete",
+      "reason": "58 counterpart metadata matches and 215 current AST callsites do not by themselves prove all semantic requirements."
+    }
+  ],
+  "deferredByUser": [
+    "real Supabase user/Auth/Storage snapshot/export/import",
+    "existing provider/UUID/live billing identity acceptance",
+    "production domain/DNS cutover and legacy shutdown"
+  ],
+  "wholeGoalComplete": false,
+  "sourceProductionWrites": false,
+  "productionDomainChanged": false
+}

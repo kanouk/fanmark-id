@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "scope": "Normal staging rollout following exact CI and owned native recovery acceptance",
+  "head": "ad8f7540d3df5bd83d63348de89973d47dc1ca21",
+  "ci": {
+    "runId": "37678533990",
+    "bothJobs": "success"
+  },
+  "startedAt": "2026-10-07T20:35:29.372Z",
+  "completedAt": "2026-10-07T20:35:57.815Z",
+  "previousVersion": "17fdbf39-99a5-4927-bf12-bc11e19b7c3d",
+  "version": "e688fdf6-a5d7-4868-89b7-8171768ed865",
+  "trafficPercent": 100,
+  "existingSettingsAndNamespacesRetained": true,
+  "allTableHashesRetained": true,
+  "publicAssets": {
+    "/": {
+      "sha256": "52a82cbcbfcd65e0bcce30713409a35290228b229c0247079085f282a5ec3ba5",
+      "bytes": 2896
+    },
+    "/index.html": {
+      "sha256": "52a82cbcbfcd65e0bcce30713409a35290228b229c0247079085f282a5ec3ba5",
+      "bytes": 2896
+    },
+    "/plans?checkout=success": {
+      "sha256": "52a82cbcbfcd65e0bcce30713409a35290228b229c0247079085f282a5ec3ba5",
+      "bytes": 2896
+    },
+    "/sw.js": {
+      "sha256": "dd0ad41a88cc5d4816a8b4b1dc3ffb6890ff8a3fd397345e6985a0f86f4bf415",
+      "bytes": 4082
+    },
+    "/clear-legacy-api-cache.js": {
+      "sha256": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6",
+      "bytes": 264
+    },
+    "/assets/index-DF2lpHyM.js": {
+      "sha256": "5c1ce1e6ab713acd7bb27977890c32a663967258ce7244d919d9f8f95e288c33",
+      "bytes": 2448352
+    }
+  },
+  "assetsBeforeAfterAndLocalEqual": true,
+  "health": {
+    "/api/auth/ok": 200,
+    "/api/auth/capabilities": 200
+  },
+  "missingAssetRemains404": true,
+  "independentReadback": {
+    "observedAt": "2026-10-07T20:37:51.670Z",
+    "version": "e688fdf6-a5d7-4868-89b7-8171768ed865",
+    "allTableHashesRetained": true,
+    "foreignKeyViolations": 0,
+    "tables": {
+      "business": 79,
+      "auth": 10,
+      "master": 25
+    },
+    "retainedAuth": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "readOnlyProcess": true,
+    "mainMutations": 0
+  },
+  "recoveryFreezeAndCensusEnabled": false,
+  "newRecoveryNamespaceOnMain": false,
+  "broadcastBulkTestSendAndSignatureSelectorsEnabled": false,
+  "limits": [
+    "Backend deployed; first activation of recovery controls and external writer drain not accepted",
+    "No final whole-application/physical-phone/PWA acceptance",
+    "No user-data migration, DNS cutover, new email or live billing changes"
+  ]
+}

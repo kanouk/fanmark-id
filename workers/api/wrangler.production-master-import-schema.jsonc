@@ -1,0 +1,16 @@
+{
+  "name": "fanmark-production-master-import-schema-only",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "compatibility_date": "2026-09-18",
+  "workers_dev": false,
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "MASTER_DB",
+      "database_name": "fanmark-production-master-20261020-v3",
+      "database_id": "f7aadd85-701e-4625-92ce-879d5939dab8",
+      "migrations_dir": "migrations-master-production",
+      "remote": true
+    }
+  ]
+}

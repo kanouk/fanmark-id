@@ -1,6 +1,19 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  createManualNotificationEvent,
+  getNotificationMasterBackend,
+  loadNotificationDeliveries,
+  loadNotificationEvents,
+  loadNotificationRules,
+  loadNotificationTemplates,
+  updateNotificationRule,
+  updateNotificationTemplate,
+  type NotificationDeliveryLog,
+  type NotificationEventLog,
+  type NotificationTemplate,
+} from "@/lib/notification-master-api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,23 +29,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { toast } from "sonner";
 import { Loader2, Send, RefreshCw, Pencil } from "lucide-react";
 
-interface NotificationTemplate {
-  id: string;
-  template_id: string;
-  language: string;
-  channel: string;
-  version: number;
-  title: string | null;
-  body: string;
-  summary: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
 const AdminNotificationManager = () => {
   const queryClient = useQueryClient();
-  const [userId, setUserId] = useState("");
   const [eventType, setEventType] = useState("");
   const [payload, setPayload] = useState("{}");
   
@@ -55,6 +53,14 @@ const AdminNotificationManager = () => {
         throw new Error("無効なJSON形式です");
       }
 
+      if (getNotificationMasterBackend() === "worker") {
+        await createManualNotificationEvent(
+          eventType as "license_grace_started" | "license_expired" | "favorite_fanmark_available",
+          parsedPayload as Record<string, unknown>,
+        );
+        return;
+      }
+
       const { data, error } = await supabase.rpc('create_notification_event', {
         event_type_param: eventType,
         payload_param: parsedPayload,
@@ -67,7 +73,6 @@ const AdminNotificationManager = () => {
     onSuccess: () => {
       toast.success("通知イベントを作成しました");
       queryClient.invalidateQueries({ queryKey: ['notification-events'] });
-      setUserId("");
       setEventType("");
       setPayload("{}");
     },
@@ -80,14 +85,15 @@ const AdminNotificationManager = () => {
   const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useQuery({
     queryKey: ['notification-events'],
     queryFn: async () => {
+      if (getNotificationMasterBackend() === "worker") return loadNotificationEvents();
       const { data, error } = await supabase
         .from('notification_events')
-        .select('*')
+        .select('id,event_type,status,source,created_at,processed_at,error_reason')
         .order('created_at', { ascending: false })
         .limit(100);
       
       if (error) throw error;
-      return data;
+      return data as NotificationEventLog[];
     },
   });
 
@@ -95,14 +101,18 @@ const AdminNotificationManager = () => {
   const { data: notifications, isLoading: notificationsLoading, refetch: refetchNotifications } = useQuery({
     queryKey: ['notifications-log'],
     queryFn: async () => {
+      if (getNotificationMasterBackend() === "worker") return loadNotificationDeliveries();
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id,user_id,channel,status,delivered_at,read_at,priority')
         .order('created_at', { ascending: false })
         .limit(100);
       
       if (error) throw error;
-      return data;
+      return data.map((notification) => ({
+        ...notification,
+        user_id: `${notification.user_id.slice(0, 8)}...`,
+      })) as NotificationDeliveryLog[];
     },
   });
 
@@ -110,6 +120,7 @@ const AdminNotificationManager = () => {
   const { data: rules, isLoading: rulesLoading, refetch: refetchRules } = useQuery({
     queryKey: ['notification-rules'],
     queryFn: async () => {
+      if (getNotificationMasterBackend() === "worker") return loadNotificationRules();
       const { data, error } = await supabase
         .from('notification_rules')
         .select('*')
@@ -124,6 +135,7 @@ const AdminNotificationManager = () => {
   const { data: templates, isLoading: templatesLoading, refetch: refetchTemplates } = useQuery({
     queryKey: ['notification-templates'],
     queryFn: async () => {
+      if (getNotificationMasterBackend() === "worker") return loadNotificationTemplates();
       const { data, error } = await supabase
         .from('notification_templates')
         .select('*')
@@ -137,7 +149,11 @@ const AdminNotificationManager = () => {
 
   // ルール有効/無効切り替え
   const toggleRuleMutation = useMutation({
-    mutationFn: async ({ ruleId, enabled }: { ruleId: string; enabled: boolean }) => {
+    mutationFn: async ({ ruleId, enabled, updatedAt }: { ruleId: string; enabled: boolean; updatedAt: string }) => {
+      if (getNotificationMasterBackend() === "worker") {
+        await updateNotificationRule(ruleId, !enabled, updatedAt);
+        return;
+      }
       const { error } = await supabase
         .from('notification_rules')
         .update({ enabled: !enabled })
@@ -158,6 +174,17 @@ const AdminNotificationManager = () => {
   const updateTemplateMutation = useMutation({
     mutationFn: async () => {
       if (!editingTemplate) throw new Error("テンプレートが選択されていません");
+
+      if (getNotificationMasterBackend() === "worker") {
+        await updateNotificationTemplate(editingTemplate.id, {
+          title: editTitle || null,
+          body: editBody,
+          summary: editSummary || null,
+          isActive: editIsActive,
+          expectedUpdatedAt: editingTemplate.updated_at,
+        });
+        return;
+      }
       
       const { error } = await supabase
         .from('notification_templates')
@@ -420,7 +447,7 @@ const AdminNotificationManager = () => {
                       {notifications?.map((notif) => (
                         <TableRow key={notif.id} className="text-sm">
                           <TableCell className="font-mono text-xs">
-                            {notif.user_id.substring(0, 8)}...
+                            {notif.user_id}
                           </TableCell>
                           <TableCell>{notif.channel}</TableCell>
                           <TableCell>{getStatusBadge(notif.status)}</TableCell>
@@ -492,7 +519,11 @@ const AdminNotificationManager = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => toggleRuleMutation.mutate({ ruleId: rule.id, enabled: rule.enabled })}
+                              onClick={() => toggleRuleMutation.mutate({
+                                ruleId: rule.id,
+                                enabled: rule.enabled,
+                                updatedAt: rule.updated_at,
+                              })}
                               disabled={toggleRuleMutation.isPending}
                             >
                               {rule.enabled ? '無効化' : '有効化'}

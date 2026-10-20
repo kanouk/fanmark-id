@@ -1,0 +1,87 @@
+{
+  "source": {
+    "observedAt": "2026-10-02T22:35:53.411044+00:00",
+    "readOnly": true,
+    "applicationRowsRead": false,
+    "applicationFunctionsInvoked": false,
+    "querySha256": "95f4a6066fb07b0348449c78cc1fbd0acb6d5dc2e60c801b11d875553c2910be"
+  },
+  "cases": [
+    {
+      "label": "date_placeholders",
+      "inputPayloadJson": "{\"grace_expires_at\":\"2026-10-03\",\"license_end\":\"2026-10-03\",\"expires_at\":\"2026-10-03\",\"created_at\":\"2026-10-03\",\"updated_at\":\"2026-10-03\",\"name\":\"合成\"}",
+      "template": "{{grace_expires_at}}|{{license_end}}|{{expires_at}}|{{created_at}}|{{updated_at}}|{{name}}",
+      "expected": "{{grace_expires_at}}|{{license_end}}|{{expires_at}}|{{created_at}}|{{updated_at}}|合成",
+      "keyOrder": [
+        "name",
+        "created_at",
+        "expires_at",
+        "updated_at",
+        "license_end",
+        "grace_expires_at"
+      ]
+    },
+    {
+      "label": "key_order_cascade",
+      "inputPayloadJson": "{\"zz\":\"VALUE\",\"a\":\"{{zz}}\"}",
+      "template": "{{a}}",
+      "expected": "VALUE",
+      "keyOrder": [
+        "a",
+        "zz"
+      ]
+    },
+    {
+      "label": "literal_dollars",
+      "inputPayloadJson": "{\"fanmark_name\":\"$& $$ $` $'\"}",
+      "template": "前 {{fanmark_name}} 後",
+      "expected": "前 $& $$ $` $' 後",
+      "keyOrder": [
+        "fanmark_name"
+      ]
+    },
+    {
+      "label": "nested_jsonb",
+      "inputPayloadJson": "{\"details\":{\"long\":\"value\",\"a\":true,\"bb\":[null,2,{\"z\":\"🌸\",\"a\":\"quote\\\"\"}]}}",
+      "template": "{{details}}",
+      "expected": "{\"a\": true, \"bb\": [null, 2, {\"a\": \"quote\\\"\", \"z\": \"🌸\"}], \"long\": \"value\"}",
+      "keyOrder": [
+        "details"
+      ]
+    },
+    {
+      "label": "null_boolean_array",
+      "inputPayloadJson": "{\"nullable\":null,\"boolean\":false,\"array\":[null,true,1e-7]}",
+      "template": "{{nullable}}|{{boolean}}|{{array}}",
+      "expected": "{{nullable}}|false|[null, true, 0.0000001]",
+      "keyOrder": [
+        "array",
+        "boolean",
+        "nullable"
+      ]
+    },
+    {
+      "label": "numeric_notation",
+      "inputPayloadJson": "{\"number\":1e-7,\"huge\":1e+21,\"neg\":-1e-7,\"negative_zero\":0}",
+      "template": "{{number}}|{{huge}}|{{neg}}|{{negative_zero}}",
+      "expected": "0.0000001|1000000000000000000000|-0.0000001|0",
+      "keyOrder": [
+        "neg",
+        "huge",
+        "number",
+        "negative_zero"
+      ]
+    },
+    {
+      "label": "unicode_key_order",
+      "inputPayloadJson": "{\"é\":\"{{z}}\",\"z\":\"短\",\"aa\":\"{{é}}\"}",
+      "template": "{{aa}}",
+      "expected": "{{z}}",
+      "keyOrder": [
+        "z",
+        "aa",
+        "é"
+      ]
+    }
+  ]
+}

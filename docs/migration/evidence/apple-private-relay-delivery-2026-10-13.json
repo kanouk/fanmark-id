@@ -1,0 +1,59 @@
+{
+  "state": "private_relay_delivery_inbox_acceptance_and_all_test_cleanup_complete",
+  "observedAt": "2026-10-13T14:39:14.813457+00:00",
+  "normalStagingVersion": "19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd",
+  "runtimeSource": "fdd16ef132f7396b56626ddc846364477432874a",
+  "appleAuthentication": {
+    "dedicatedProbe": true,
+    "provider": "apple",
+    "emailVerified": true,
+    "privateRelayDomain": "privaterelay.appleid.com",
+    "matchingNormalUserCountBeforeSend": 0
+  },
+  "email": {
+    "sender": "no-reply@fanmark.id",
+    "route": "/api/auth/sign-up/email",
+    "syntheticSignupCount": 1,
+    "signupHttpStatus": 200,
+    "signupAttemptState": "completed",
+    "verificationSentRecorded": true,
+    "providerEvents": [
+      "Sent",
+      "Delivered"
+    ],
+    "humanInboxConfirmed": true,
+    "newResendKeysCreated": 0,
+    "automaticReplayCount": 0,
+    "inboxFolder": "spam",
+    "humanReportedReceipt": "迷惑メールに入っていましたが、届きました。"
+  },
+  "cleanupPending": false,
+  "credentialValuesRead": false,
+  "sourceUsersMoved": false,
+  "domainChanged": false,
+  "wholeMigrationAccepted": false,
+  "cleanup": {
+    "state": "independent_readonly_cleanup_and_preservation_verified",
+    "normalVersion": "19aa1e2f-b1a0-45cb-a56f-f5de74bbe9cd",
+    "ownedNormalAccountRemoved": true,
+    "probeWorkerRemoved": true,
+    "probeD1Removed": 2,
+    "allUnrelatedTableCountsHeld": true,
+    "allThreeSchemasHeld": true,
+    "humanAuthMetadataHeld": true,
+    "normalBindingsHeld": true,
+    "foreignKeyViolations": 0,
+    "credentialValuesRead": false,
+    "sourceUserDataMoved": false,
+    "domainChanged": false
+  },
+  "appleDeveloperKeyRetirementPending": false,
+  "deliveryCaveat": "One controlled email arrived in spam; this does not establish inbox placement for other mailboxes.",
+  "appleDeveloperKeyRetirement": {
+    "keyId": "TFUJASYTW8",
+    "humanRetired": true,
+    "absentFromRefreshedList": true,
+    "existingKeysHeld": true,
+    "localDedicatedKeyCopiesRemoved": 2
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "candidateHead": "00fc6e7c2d01cdd5ec3174e2216f401b560db383",
+  "runtimeCodeHead": "00fc6e7c2d01cdd5ec3174e2216f401b560db383",
+  "ciRun": 37285576515,
+  "previousVersion": "cc6d9da7-b81b-45fe-b0be-6c0978570232",
+  "version": "92413959-b8ea-4b62-a841-011acaa0304c",
+  "completedAt": "2026-10-05T09:04:22.189Z",
+  "status": "deployed_configuration_verified",
+  "capabilities": {
+    "emailVerification": true,
+    "passwordReset": true,
+    "signUp": true,
+    "invitationRequired": false,
+    "socialProviders": [
+      "apple",
+      "discord",
+      "github",
+      "google"
+    ]
+  },
+  "authCounts": {
+    "users": 2,
+    "accounts": 6,
+    "sessions": 1
+  },
+  "authTemplateCount": 16,
+  "authTemplateContentDigest": "7eaab683337cbdfc36130f075c00287468e3adfaf64adf3b0225e82b139ad8fc",
+  "humanAccountsMasterMfaWakeAndAnonymousSearchPreserved": true,
+  "otherBindingsPreserved": true,
+  "authTemplateGatewayCodeChanged": true,
+  "crons": [
+    "* * * * *",
+    "0 0 * * *"
+  ],
+  "mailSent": false,
+  "actualEmailAcceptance": false,
+  "fullMigrationAccepted": false,
+  "userDataMigrated": false,
+  "productionDomainChanged": false,
+  "scope": "staging configuration and preservation only",
+  "sendingKeyScope": "Sending access / fanmark.id",
+  "credentialCustody": "Mac Keychain and Worker secret binding verified",
+  "authD1RegressionTests": 50,
+  "migrationBoundaryTests": 289,
+  "bulkBroadcastDeliveryEnabled": false,
+  "receiptAndPasswordFlowAccepted": false,
+  "passwordEntryRequiresUser": true
+}

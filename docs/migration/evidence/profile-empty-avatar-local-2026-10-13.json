@@ -1,0 +1,15 @@
+{
+  "state": "local_regression_verified_not_deployed",
+  "observedRuntime": "51b060cb-fc8b-457f-a229-37550f38038b",
+  "observedUi": {"path": "/profile", "action": "change display name with no avatar", "status": 400, "persisted": false},
+  "nativeBefore": {"failed": 1, "passed": 11, "failureStatus": 400},
+  "nativeAfter": {"passed": 12, "realFrontendClient": true, "realBetterAuthSession": true, "nativeD1": true, "rawBlankUrlStillRejected": true, "otherOwnerHeld": true},
+  "clientTests": 7,
+  "appAndWorkerTypecheck": "passed",
+  "changedFileEslint": "passed",
+  "newBuild": "passed",
+  "oldHashedAssetsRetained": true,
+  "realUserDataMoved": false,
+  "productionDomainChanged": false,
+  "liveSaveAccepted": false
+}

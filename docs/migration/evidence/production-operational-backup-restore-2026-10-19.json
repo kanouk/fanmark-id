@@ -1,0 +1,106 @@
+{
+  "format": "fanmark-production-operational-backup-restore-evidence-v1",
+  "observedAt": "2026-10-19T05:33:02.867Z",
+  "scope": "actual-production-pre-import-baseline-only",
+  "sourceUsersImported": false,
+  "sourceFrozen": false,
+  "capture": {
+    "slot": "2026-10-19",
+    "captureId": "b74a3b24-eb42-4fdc-835b-a20a391f288d",
+    "runtimeVersion": "546326af-8da3-47fe-bb1d-05d207a75963",
+    "bytes": 424468,
+    "archiveHash": "0b66fabb26d60574a6a3d170cf026c6a91ea1171cdd2ee10e03710e2f9121ae5",
+    "state": "verified",
+    "fenceReleased": true,
+    "separateCliDownloadHashMatched": true,
+    "durationSeconds": 4.806
+  },
+  "restore": {
+    "state": "verified",
+    "durationSeconds": 5.382,
+    "progressCount": 10,
+    "sourceRows": {
+      "auth": 1,
+      "business": 30,
+      "master": 10
+    },
+    "sourceObjects": {
+      "avatars": 0,
+      "covers": 0
+    },
+    "sessionCounts": {
+      "session": 0,
+      "mfaAssurance": 0,
+      "verification": 0
+    },
+    "foreignKeyViolations": {
+      "auth": 0,
+      "business": 0,
+      "master": 0
+    },
+    "independentAllTableContentsMatched": true,
+    "tableCounts": {
+      "auth": 9,
+      "business": 80,
+      "master": 25
+    },
+    "sourceD1AllRowsUnchanged": true,
+    "independentTargetImageReadback": {
+      "avatars": 0,
+      "covers": 0
+    }
+  },
+  "cleanup": {
+    "format": "fanmark-production-operational-cleanup-result-v1",
+    "observedAt": "2026-10-19T05:33:02.867Z",
+    "incarnation": "47cd25b1-07de-4f9a-abb3-74fdccaf3011",
+    "ownedWorkerRemoved": true,
+    "ownedD1Removed": 3,
+    "ownedR2Removed": 3,
+    "baselineInventoryMatched": true,
+    "sourceAppVersionPreserved": true,
+    "sourceBackupRetained": true
+  },
+  "currentClosedWorkers": [
+    {
+      "name": "fanmark-app-production",
+      "version": "11a3db8c-b798-43af-887b-2c1bdb5cefba",
+      "settingsSha256": "3fef7bee8c479d1297dc589eeb8966361af56f3d76ecf2bf6d54aaaed6be79ee"
+    },
+    {
+      "name": "fanmark-backup-production",
+      "version": "e0f3d5c9-1cc8-4d7c-b577-b02ea24ab38c",
+      "settingsSha256": "178a279c601f1ad4188d31d2d6fbc20a678b7e0960a9f9784255d94d0b5eeda3"
+    },
+    {
+      "name": "fanmark-backup-monitor-production",
+      "version": "2c057173-9acc-4640-9f60-4777e8d09ce0",
+      "settingsSha256": "915a5f10d1607e3903cb5e9b22db071fd15fce0ba84b8d5b8d1ffbb5f3388515"
+    }
+  ],
+  "currentBackupAdmission": "pending",
+  "publicRoutes": 0,
+  "cronTriggers": 0,
+  "sourceWrites": 0,
+  "domainSwitched": false,
+  "mainMerged": false,
+  "productionReady": false,
+  "tests": {
+    "captureAndInspectionNative": 2,
+    "closedConfigAndPreparation": 12
+  },
+  "remaining": [
+    "UTC2026-10-19 daily slot is consumed; retain its receipt/archive and implement separate operation-ID manual capture for same-day final backup",
+    "This is baseline-only; post-import schema pins and actual-data capture remain",
+    "monitor/alert acceptance, OAuth/DNS/source-drain and unknown-commit recovery remain"
+  ],
+  "privateReceiptHashes": {
+    "production-manual-backup-admit-readback.json": "fd6c7512000bda9946ef7fa4e159af3426d93710033b320c3b0dca2be0fb983b",
+    "production-manual-backup-capture.json": "2c90c7ddc3a6a88ce7a9f9e1a913229e8aa896a4b0c64f008d5e0eb9f15835ab",
+    "production-manual-backup-restore-pending-readback.json": "55b1a0902507b1963b33bc6e215786fb9bc3ca07f9c2c1e4d42d5b9d2ebca47a",
+    "production-operational-archive-readback.json": "e8f31d4407877f052883ed6f86d3777d064dca0800181c2d4487beb55b69940d",
+    "production-operational-restore-independent.json": "9396fd2ba45495d11f5844d548cef2a60cb94bb5ebac48df9c32dc944377aed6",
+    "production-operational-cleanup-result.json": "d340202edaac31e7842ee02ab84cc519be2085cdfb005c0f32766d69e2718892",
+    "closed-runtime-after-operational-restore.json": "d11e91b2745f313724621165a58ed14e2485609836e0d1262dafa66c7335fa2c"
+  }
+}

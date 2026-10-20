@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "scope": "Native staging admin notification rule toggles and Japanese in-app template editing; disposable synthetic admin and exact-owned masters only",
+  "worker": "fanmark-app-staging",
+  "workerVersion": "471faabe-3aff-4312-ba22-cd326dc821e1",
+  "runtimeHead": "bdc23da03136d9ae7ad3e509f23ebceb71b0d522",
+  "startedAt": "2026-10-06T13:28:56.755Z",
+  "finishedAt": "2026-10-06T13:42:33.894Z",
+  "fixtures": {
+    "syntheticAdmins": 1,
+    "credentialAccounts": 1,
+    "existingTestTotpFactors": 1,
+    "notificationRules": 1,
+    "notificationTemplates": 1
+  },
+  "authentication": {
+    "entry": "/admin",
+    "nativeExistingFactorChallengeAccepted": true,
+    "sameSessionFactorAssuranceVerifiedInD1": true,
+    "nativeCredentialCreationOrChange": false,
+    "passwordSaveDeclined": true,
+    "nativeLogoutAccepted": true,
+    "sessionsAfterLogout": 0,
+    "assurancesAfterLogout": 0
+  },
+  "nativeUi": {
+    "browser": "Safari private window",
+    "component": "AdminNotificationManager",
+    "ruleEnabledThenDisabled": true,
+    "canonicalUpdatedAtAdvancedForEachToggle": true,
+    "templateTitleBodySummaryAndActiveSaved": true,
+    "exactFieldsVerifiedInD1": true,
+    "nativeRefreshAndEditorReopenRetainedAllFields": true,
+    "literalDollarAmpersandAndPlaceholderPreserved": true,
+    "templateLanguage": "ja",
+    "templateChannel": "in_app",
+    "reopenedEditorScreenshotSha256": "a16abca82ee539bfd8eb37a4b59a8dccfe2c4af512a98fbfcd8e02ad7103d04a",
+    "ruleEnabledUpdatedAt": "2026-10-06T13:31:40.477000Z",
+    "ruleDisabledUpdatedAt": "2026-10-06T13:38:42.504000Z",
+    "templateSavedUpdatedAt": "2026-10-06T13:39:57.852000Z"
+  },
+  "verificationFixtureCorrection": {
+    "initialPreservationCheckFailed": true,
+    "reason": "An initial ordinary sign-in left one two-factor challenge and its paired attempts verification row; the fixture had not classified those owned rows.",
+    "exactOwnershipEstablished": true,
+    "ownershipContract": "Challenge value equals synthetic user ID; paired identifier, value 0, same expiry, creation after fixture start; exact two row IDs pinned and all other verification rows retained.",
+    "allPreexistingRowsRecheckedAfterCorrection": true,
+    "abandonedOwnedVerificationRowsRemoved": 2
+  },
+  "cleanup": {
+    "exactOwnedMasterRowsRemoved": {
+      "notification_rules": 1,
+      "notification_templates": 1,
+      "user_settings": 1
+    },
+    "authUserRemovedWithOwnedCascadeRowsAbsent": true,
+    "ownedRowsRemaining": 0,
+    "allPreexistingTableRowHashesPreserved": true,
+    "foreignKeyViolations": 0,
+    "authBaseline": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "masterTableCount": 25,
+    "mfaGenerationIncrement": 2,
+    "mfaGenerationNotRewound": true,
+    "wakeGenerationUnchanged": true,
+    "workerVersionUnchanged": true,
+    "syntheticPasswordAndTotpSecretRemoved": true,
+    "uiCredentialsAndChallengeFilesRemoved": true,
+    "independentReadOnlyProcessAt": "2026-10-06T13:42:33.894Z"
+  },
+  "notificationEventsCreated": 0,
+  "additionalEmails": 0,
+  "runtimeRedeployed": false,
+  "secretsChanged": false,
+  "sourceWrites": false,
+  "realUserMigrationPerformed": false,
+  "productionDomainChanged": false,
+  "fullMigrationAccepted": false,
+  "remainingBoundary": "This accepts current rule toggle and template edit UI only. Notification creation UI/delivery channels, other admin screens, provider signup, operations adoption, physical phone/installed PWA and final all-flow integration remain separate."
+}

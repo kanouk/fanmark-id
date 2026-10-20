@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "staging-backup-vault-sync-custody",
+  "observedAt": "2026-10-09T05:05:59.494Z",
+  "sourceHeadBeforeChange": "8739b79b3dec60057d78568f9e39b56963f3ba12",
+  "runtimeSourceHead": "c1cc1e26eec4d18e58955f69d1503ac8e12962aa",
+  "mainVersion": "6afcaee0-a5bd-4bba-8c95-756c69731bdb",
+  "keyId": "staging-backup-89ca6819-a159-4db8-aa7d-733315a9a0ef",
+  "finding": {
+    "originalJsonRemoteHistoryCount": 0,
+    "originalJsonServerEntryPresent": false,
+    "originalJsonSyncedAt": 0,
+    "syncStatusWasSynced": true,
+    "unsupportedAttachmentTypeNotEnabled": true
+  },
+  "correction": {
+    "completedCustodyNoteAdded": true,
+    "sourceJsonPreserved": true,
+    "keychainArchiveAndEncryptedSdkEscrowMatched": true,
+    "sourceAndNotePermissions": "0600",
+    "exclusiveExistingNoteRefusalAccepted": true,
+    "globalSyncSettingsChanged": false,
+    "keysGeneratedOrRotated": false,
+    "remoteRestorePerformed": false
+  },
+  "acceptance": {
+    "selectedMarkdownRemoteHistoryCount": 1,
+    "exactRemoteVersionDownloaded": true,
+    "localRemoteBytesEqual": true,
+    "bytes": 1651,
+    "archiveKeyAndEncryptedSdkEscrowRemoteCustodyAccepted": true,
+    "secretValuesEmitted": false,
+    "otherVaultFilesAccepted": false,
+    "naturalDailyBackupAccepted": false,
+    "independentDeviceRecoveryAccepted": false,
+    "fullMigrationAccepted": false
+  },
+  "privateReceiptHashes": {
+    "history-shape.json": "83fa18be18d1eb610ef467b7af1ab3a66099ea4ac7193139a7a4c53ec8856594",
+    "note-local.json": "220d5bd85dc77249ba505be0bad740ebeb65c1bcaa5b0a87c1a6dfd3e819e443",
+    "note-history.json": "1064e9ed50cf6a1c16944854b3d875c0f2c78561c343fe1683e56010942c8653",
+    "remote-readback.json": "771b57d1e3c99e35c92e9cb87fed42337ee6f8ed8ad19b71f98f9460941ecf8a",
+    "exclusive-refusal.json": "fda90b9653eb9be5cb14a915cc6f0a45059f761260939118d3d44b1d3ed585f5"
+  },
+  "verification": {
+    "nodeSyntaxCheck": "passed",
+    "eslint": "passed",
+    "existingNoteRefusal": "passed",
+    "sourceAndNoteBytePreservation": "passed",
+    "remoteExactVersionByteComparison": "passed"
+  },
+  "scope": {
+    "runtimeCodeChanged": false,
+    "operatorCustodyHelperChanged": true,
+    "cloudflareSettingsWritten": false,
+    "businessAuthMasterR2DataWritten": false,
+    "userDataMigrationPerformed": false,
+    "domainCutoverPerformed": false
+  }
+}

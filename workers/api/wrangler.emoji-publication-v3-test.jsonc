@@ -1,0 +1,62 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-emoji-publication-local-proof",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "vars": {
+    "D1_TOPOLOGY": "split",
+    "RECOVERY_DRAIN_BACKEND": "durable-object",
+    "RECOVERY_DRAIN_SCOPE_DIGEST": "aee5fcdc74c564c7358234aa0b8346e9b1a874d9bf5b215493ccb708e8a86392",
+    "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+    "NOTIFICATION_WAKE_BACKEND": "durable-object",
+    "EMOJI_PUBLICATION_BACKEND": "staging-service",
+    "CF_VERSION_METADATA": {
+      "id": "00000000-0000-4000-8000-000000000012"
+    },
+    "STAGING_BACKUP_SOURCE_IDS": "{\"master\":\"8a52824c-4e9f-411c-95f9-5778b880604b\"}"
+  },
+  "d1_databases": [
+    {
+      "binding": "FANMARK_DB",
+      "database_name": "recovery-writer-local-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000099"
+    },
+    {
+      "binding": "MASTER_DB",
+      "database_name": "emoji-publication-local-master",
+      "database_id": "00000000-0000-0000-0000-000000000098"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RECOVERY_DRAIN",
+        "class_name": "RecoveryWriterCoordinatorV3"
+      },
+      {
+        "name": "NOTIFICATION_WAKE",
+        "class_name": "NotificationWakeCoordinator"
+      },
+      {
+        "name": "LEGACY_RECOVERY_DRAIN",
+        "class_name": "RecoveryWriterCoordinatorV2"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "recovery-writer-local-v1",
+      "new_sqlite_classes": [
+        "RecoveryWriterCoordinator",
+        "NotificationWakeCoordinator"
+      ]
+    },
+    {
+      "tag": "publication-v3-native-fixture",
+      "new_sqlite_classes": [
+        "RecoveryWriterCoordinatorV2",
+        "RecoveryWriterCoordinatorV3"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "observedAt": "2026-10-06T01:39:35.081Z",
+  "scope": "application startup registration independent of selected catalog dependency",
+  "codeCommit": "b26055ec481b4aae8cf476c2e872aee1f8ecbf89",
+  "priorEntrySha256": "cbc1d7c983f85ccb40c3b3efed5ff5bb260339d3765fc781db5bd85ada4f1a7e",
+  "currentEntrySha256": "2f3d17ac4090281f7d4e04acdb2fa5a74b497d3df02e5d0b9e6f932d5c19e0e3",
+  "testHarnessSha256": "8a3d5d3edeadb7328c963f3570be3fec96465fa798ea5ca445998ebaedce300c",
+  "regression": {
+    "before": {
+      "pass": 2,
+      "fail": 3
+    },
+    "after": {
+      "pass": 5,
+      "fail": 0
+    },
+    "actualEntryExecuted": true,
+    "unresolvedCatalogAllowsUpdateRegistration": true,
+    "failedCatalogRendersRetryWithoutFallback": true,
+    "applicationRemainsGatedUntilCatalogInstalled": true,
+    "unsupportedServiceWorkerAndMissingRootHandled": true,
+    "defaultBundledCatalogStillRenders": true
+  },
+  "checks": {
+    "typecheck": true,
+    "targetedLint": true,
+    "stagingBuild": true,
+    "generatedPwaCacheBoundary": true,
+    "workflowIsolation": true,
+    "currentFrontendCallerMapping": {
+      "pass": 2,
+      "fail": 0
+    }
+  },
+  "deployment": {
+    "priorVersion": "0d9803af-84c8-4e2f-bd9b-dbb418b2555d",
+    "currentVersion": "8cbe1e5f-5e55-4a82-a853-65ec96051db2",
+    "percentage": 100,
+    "canonicalVarsMatched": true,
+    "broadcastStillDisabled": true,
+    "exactLocalRemoteArtifacts": {
+      "/": {
+        "sha256": "04d6deed2c41f02880d5a6c6d22af19c7a27b7cdab83764feb08c7fb44160569",
+        "bytes": 2896,
+        "status": 200
+      },
+      "/sw.js": {
+        "sha256": "926b53f03a3712cf167762087ece9b60f885ce641b87669c98984cdea2a77658",
+        "bytes": 4004,
+        "status": 200
+      },
+      "/clear-legacy-api-cache.js": {
+        "sha256": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6",
+        "bytes": 264,
+        "status": 200
+      },
+      "/assets/index-BA9IR3kA.js": {
+        "sha256": "cfc634920e1d5d2908020fe1b373c29526133ee33f93ef011bea3d8acffadf56",
+        "bytes": 2516462,
+        "status": 200
+      }
+    },
+    "indexHtmlCanonicalRedirect": {
+      "status": 307,
+      "location": "/"
+    },
+    "readbackRecoveryWithoutRepeatedDeployment": true
+  },
+  "preservation": {
+    "allAuthBusinessMasterTableHashesUnchanged": true,
+    "retainedAuthCounts": {
+      "users": 3,
+      "accounts": 7,
+      "sessions": 2
+    },
+    "foreignKeyViolations": 0
+  },
+  "nativeUiAccepted": false,
+  "nativeUiReason": "Mac locked; manual unlock requested",
+  "existingClientPwaUpdateAccepted": false,
+  "fullMigrationAccepted": false
+}

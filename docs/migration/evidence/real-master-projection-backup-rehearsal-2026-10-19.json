@@ -1,0 +1,36 @@
+{
+  "format": "fanmark-real-master-projection-backup-rehearsal-v1",
+  "repositoryProjectionUsed": true,
+  "observedAt": "2026-10-18T16:30:02.552Z",
+  "scope": "local-native-D1-only",
+  "sourceSnapshotDate": "2026-10-16",
+  "sourceFrozen": false,
+  "productionReady": false,
+  "sourceNetworkReads": 0,
+  "remoteWrites": 0,
+  "authReenrollmentUsed": false,
+  "sourceSnapshotSha256": "8237575c0849ed8737adcfcb2bd70b8e8323be2d77dd33f6ccc5481dd72bc427",
+  "emojiRows": 3944,
+  "approvedEmojiIdentityMatched": true,
+  "referenceRows": 29,
+  "recoveryTables": 25,
+  "recoveryRows": 11881,
+  "schemaHash": "f2377a2b0ef44a8b56485d84a7fa095ec59da632e44d5948cc198e67b86cb4c0",
+  "archiveBytes": 5846192,
+  "standaloneSourceAndRestoredReadbackPassed": true,
+  "fullRecoveryRowsHashMatched": true,
+  "timings": {
+    "importMs": 53475,
+    "readbackMs": 340,
+    "backupMs": 980,
+    "restoreMs": 1718,
+    "restoredReadbackMs": 623
+  },
+  "elapsedMs": 58646,
+  "limitations": [
+    "prior unfrozen snapshot; no current production consistency claim",
+    "local memory and latency are not Cloudflare runtime capacity proof",
+    "memory-only encryption key; operational offhost key custody not verified",
+    "Master only; complete Auth/Business/R2 cohort remains separate"
+  ]
+}

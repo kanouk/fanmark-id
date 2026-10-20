@@ -1,0 +1,58 @@
+{
+  "format": "fanmark-production-certificate-readback-v1",
+  "observedAt": "2026-10-19T12:29:40.339Z",
+  "zone": "fanmark.id",
+  "complete": true,
+  "packs": [
+    {
+      "id": "aaf9deab-8d75-40a5-87fc-5c6cee421e8f",
+      "type": "universal",
+      "status": "active",
+      "hosts": [
+        "fanmark.id",
+        "*.fanmark.id"
+      ],
+      "certificates": [
+        {
+          "id": "3ecb593e-f111-45db-826e-4e9134ce10a9",
+          "hosts": [
+            "fanmark.id",
+            "*.fanmark.id"
+          ],
+          "issuer": "GoogleTrustServices",
+          "signature": "ECDSAWithSHA256",
+          "status": "active",
+          "expires_on": "2026-12-28T20:15:54.000000Z"
+        }
+      ]
+    },
+    {
+      "id": "4f34fbcb-1c3e-4217-aacd-5864a32175c3",
+      "type": "universal",
+      "status": "backup_issued",
+      "hosts": [
+        "fanmark.id",
+        "*.fanmark.id"
+      ],
+      "certificates": [
+        {
+          "id": "162398d7-01ce-49c5-a8e5-b0f26edbe390",
+          "hosts": [
+            "fanmark.id",
+            "*.fanmark.id"
+          ],
+          "issuer": "LetsEncrypt",
+          "signature": "ECDSAWithSHA384",
+          "status": "backup_issued",
+          "expires_on": "2027-01-06T12:08:51.000000Z"
+        }
+      ]
+    }
+  ],
+  "tokenScope": "Existing fanmark.id DNS edit token plus owner-approved SSL/Certificates Read only",
+  "tokenExpiryUnchanged": "2026-10-26",
+  "providerWrites": 0,
+  "certificatesChanged": false,
+  "dnsChanged": false,
+  "productionReady": false
+}

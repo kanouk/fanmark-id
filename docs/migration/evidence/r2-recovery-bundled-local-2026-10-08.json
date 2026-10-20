@@ -1,0 +1,45 @@
+{
+  "format": "fanmark-r2-recovery-bundled-local-proof-v1",
+  "observedAt": "2026-10-07T15:21:58.020494+00:00",
+  "state": "verified-local-with-explicit-storage-class-adapter",
+  "sourceSHA256": {
+    "workers/api/src/r2-recovery.ts": "32f3b2ffca6aa8f3f4696845f111182ad1b20088160435a7c12469ccb9b976e5",
+    "scripts/migration/isolated-shared-r2-recovery-worker.mjs": "534e45ab00afbe9ba1a6c274fb542c4e6d3f1db16547065523e565b003e1c6d1",
+    "scripts/migration/run-isolated-shared-r2-recovery.mjs": "37e1f553a73682658a0796333009e5d2a734d9f10547b387629e1d48e2a73c7c",
+    "scripts/migration/test-isolated-shared-r2-recovery-worker.mjs": "3f5178712b314fa318485fcd8ca6aaf4ee64b357ef650ca65a736fb8f7980e71"
+  },
+  "tests": {
+    "command": "npm --prefix workers/api run test:r2-recovery",
+    "passed": 8,
+    "failed": 0,
+    "workerTypecheck": true,
+    "driverSyntaxCheck": true
+  },
+  "nativeBundledWorker": {
+    "optionalUndefinedHttpMetadataObserved": true,
+    "optionalKnownUndefinedFieldsOmitted": true,
+    "unknownClassRefusedWithoutAdapter": true,
+    "sourceClassReported": "",
+    "proofClaimsPreventBlindReplay": true,
+    "foreignCleanupKeyRefusedBeforeDeletion": true,
+    "allOwnedFixtureObjectsCleaned": true
+  },
+  "positiveLocalProof": {
+    "classAdapterOnlyInTestEntrypoint": true,
+    "assertionsPassed": 8,
+    "avatarObjects": 3,
+    "coverObjects": 1,
+    "nativeImageGetHead": true,
+    "paginationPages": 4,
+    "lostAckResumedWrites": 2,
+    "committedVersionUnchanged": true,
+    "foreignMetadataPreserved": true
+  },
+  "remote": {
+    "executed": false,
+    "standardClassAccepted": false,
+    "writes": 0
+  },
+  "runtimeDeployment": false,
+  "wholeStoreOperationalBackupAccepted": false
+}

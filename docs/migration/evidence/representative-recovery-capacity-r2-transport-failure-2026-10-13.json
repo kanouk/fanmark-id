@@ -1,0 +1,62 @@
+{
+  "state": "actual_saved_file_r2_transport_verified_but_restore_still_exceeded_memory",
+  "head": "393c4c1e1712f8648366e904c97af9c816cd93f9",
+  "ciRun": "38336458978",
+  "workerVersion": "8ab37364-6fde-4f7b-aff9-b170c9d4f1cb",
+  "macFileCommitted": true,
+  "cliUploadDownloadExactBytesVerified": true,
+  "restoreInputEtag": "4825e1c1ce1242c2b86d7ca44e486fd9",
+  "restore": {
+    "state": "failed",
+    "error": "proof_exceeded_memory",
+    "progress": [
+      {
+        "store": "master",
+        "state": "started"
+      },
+      {
+        "store": "master",
+        "state": "verified"
+      },
+      {
+        "store": "business",
+        "state": "started"
+      },
+      {
+        "store": "business",
+        "state": "verified"
+      },
+      {
+        "store": "auth",
+        "state": "started"
+      },
+      {
+        "store": "auth",
+        "state": "verified"
+      },
+      {
+        "store": "avatars",
+        "state": "started"
+      }
+    ],
+    "terminalEvidence": {
+      "source": "Cloudflare workersInvocationsAdaptive",
+      "operatorRecorded": true,
+      "invocationTerminated": true,
+      "scriptVersion": "8ab37364-6fde-4f7b-aff9-b170c9d4f1cb",
+      "status": "exceededMemory",
+      "requests": 1,
+      "errors": 1,
+      "invocationStartedAt": "2026-10-13T02:37:29Z"
+    }
+  },
+  "operatorTerminalRecordVerified": true,
+  "cleanupVerified": true,
+  "originalInventoryEqual": true,
+  "proofPostsResent": false,
+  "normalMainRedeployed": false,
+  "sourceUserDataMoved": false,
+  "domainChanged": false,
+  "nextRepair": "Pin mutable archive containers while sharing immutable strings; fully authenticate and compute policy-adjusted hashes before target writes; reopen only one store for each restore, keeping full final recapture and guards",
+  "nextRemoteAccepted": false
+}
