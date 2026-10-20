@@ -2,7 +2,8 @@
 
 `receipt_only`は一般画面とAuthを閉じるため、G4はTLS/maintenance/no-storeとStripeの保存を
 確認する。実アプリ・既存accountのOAuth/管理者MFA、Resend署名付き配信の検査は、以下の
-本人確認モードをG5で有効にして行う。本番ではまだ有効にしていない。
+本人確認モードをG5で有効にして行う。2026-10-20のV3では本人の明示返答後に有効化済み。
+現在地と未確認項目は[再開票](RESUME-2026-10-20-V3.md)とprivate実行journalを確認する。
 
 ## 先に固定する境界
 
@@ -34,6 +35,14 @@ owner backendがdisabled以外なら新規操作を拒否する。読取専用in
    旧PWA更新を確認する。確認中はOAuthの新user作成と招待signupを無効にし、未知subjectを新userへ
    追加しない。必要な業務確認の対象と外部副作用は実施票で先に指定する。
 6. 別のcookieなしcontextで一般画面/Auth APIの503/no-storeが続くことを確認する。
+
+公開GETクライアントも`credentials: same-origin`を使う。`omit`では本人確認cookieが送られず、
+起動前のcatalog取得が503になってログイン画面へ進めない。別originへのcookie送信は許可しない。
+PWAのnavigation fallbackから`/__migration`を除外する。更新前のPWAが入口を横取りする場合は、
+本人確認用contextの登録だけを解除して再読み込みし、本番データを変更しない。
+local入口に確認フォームを置く場合、ページのreferrer policyは`same-origin`とし、
+form-actionはlocal自身と固定の`https://fanmark.id`だけを許可する。`no-referrer`によるOriginのnull化や
+`form-action self`による303先の拒否を実ブラウザで検査する。転送応答は`no-referrer`を付ける。
 
 `production-owner-acceptance.ts`は既存の公開ページ用秘密鍵を、独立した固定purposeと
 厳格なrun/nonce/version/期限だけのHMACへ使用する。鍵の生成・export・任意文字列の署名はしない。

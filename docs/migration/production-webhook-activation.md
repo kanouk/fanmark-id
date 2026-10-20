@@ -152,7 +152,9 @@ Sync完了と`obsidian sync:history`の版番号を読取り、
 設定変更やrestoreは呼ばない。
 
 macOSではSync CLIが通常のpipe接続で空応答を返したため、固定`/usr/bin/script -q /dev/null`
-経由でPTYを与える。読取りcommand/path/versionとCLIの見出しを厳格照合し、端末CRLFと
+経由でPTYを与える。実G4では非同期execFileのsocket stdinでPTY作成が失敗したため、
+既定adapterもstdinをnullにしたexecFileSyncへ変更した。標準出力は捕捉し、失敗は上位で固定エラーへ変換する。
+読取りcommand/path/versionとCLIの見出しを厳格照合し、端末CRLFと
 既知のEOF表示だけを除く。note本文の末尾をtrimせず、全byteのhash一致を要求する。
 暗号化3fileを別の0700一時directoryへ再構成して独立復号し、local鍵とのconstant-time一致後だけ
 install用のremoteDownloaded/independentlyDecryptedを返す。空応答・改変・別operation・別鍵は拒否する。
@@ -160,7 +162,7 @@ install用のremoteDownloaded/independentlyDecryptedを返す。空応答・改�
 既存の暗号化公開ページ鍵noteでは実Sync CLIから792 bytesを取得し、元noteとhashを全一致確認した。
 [輸送層の実検証](evidence/production-webhook-remote-custody-transport-2026-10-19.json)。
 新規Webhook noteの作成・遠隔版取得・実鍵設定はendpointが存在するG4で行う。
-5件の合成検査は両providerの独立復号・固定CLI引数・PTY framing・空応答/改変/誤鍵の拒否を確認する。
+6件の検査はmacOSの実PTYコマンド、両providerの独立復号・固定CLI引数・PTY framing・空応答/改変/誤鍵の拒否を確認する。実PTY検査だけはmacOS以外でskipする。
 このMacでのSync読戻しを、別端末での復旧実証とは扱わない。
 
 Stripe登録前の一覧ではv1全ページに加え、既存調査と同じ固定API版でv2が完全な空集合で

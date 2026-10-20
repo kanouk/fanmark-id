@@ -184,7 +184,7 @@ async function fetchPage(
     const response = await fetcher(url, {
       method: "GET",
       headers: { Accept: "application/json" },
-      credentials: "omit",
+      credentials: "same-origin",
       cache: "no-store",
       redirect: "error",
       signal: controller.signal,

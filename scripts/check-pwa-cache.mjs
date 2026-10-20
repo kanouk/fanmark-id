@@ -30,12 +30,12 @@ for (const [size, dimension] of [["192x192", 192], ["512x512", 512]]) {
 }
 
 const denylistSource = worker.match(/denylist: (\[[^\n]+\])/);
-assert.ok(denylistSource, "generated worker must deny API navigation fallback");
+assert.ok(denylistSource, "generated worker must deny API and migration bootstrap navigation fallback");
 const denylist = runInNewContext(denylistSource[1]);
-for (const pathname of ["/api", "/api?limit=2", "/api/fanmarks/recent?limit=2"]) {
+for (const pathname of ["/api", "/api?limit=2", "/api/fanmarks/recent?limit=2", "/__migration", "/__migration/owner", "/__migration/owner?invalid=1"]) {
   assert.ok(denylist.some((rule) => rule.test(pathname)), `${pathname} must not receive cached SPA HTML`);
 }
-for (const pathname of ["/pwa", "/dashboard", "/apiary"]) {
+for (const pathname of ["/pwa", "/dashboard", "/apiary", "/__migrationary"]) {
   assert.ok(!denylist.some((rule) => rule.test(pathname)), `${pathname} keeps SPA routing`);
 }
 

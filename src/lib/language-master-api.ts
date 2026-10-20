@@ -172,7 +172,7 @@ export async function fetchLanguageMaster(options: FetchOptions = {}): Promise<L
     response = await (options.fetcher ?? fetch)(endpoint, {
       method: 'GET',
       headers: { accept: 'application/json' },
-      credentials: 'omit',
+      credentials: 'same-origin',
       cache: 'no-store',
       redirect: 'error',
       signal,

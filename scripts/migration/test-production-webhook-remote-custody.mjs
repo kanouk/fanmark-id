@@ -5,8 +5,13 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {beginProductionWebhookRegistration,captureProductionWebhookResponse,verifyProductionWebhookRegistration} from './production-webhook-custody.mjs';
-import {prepareProductionWebhookRemoteCustody,createObsidianSyncWebhookCustodyVerifier,decodeObsidianSyncReadOutput} from './production-webhook-remote-custody.mjs';
+import {prepareProductionWebhookRemoteCustody,createObsidianSyncWebhookCustodyVerifier,decodeObsidianSyncReadOutput,executeCustodyReadCommand} from './production-webhook-remote-custody.mjs';
 const cli=(bytes,note)=>'^D\u0008\u0008'+note.relativePath+' (version 123, 2026-10-19 21:00:00)\r\n---\r\n'+bytes.toString().replace(/\n/g,'\r\n');
+test('default custody command detaches stdin and captures PTY output on macOS', {skip:process.platform!=='darwin'},async()=>{
+ const {stdout}=await executeCustodyReadCommand('/usr/bin/script',['-q','/dev/null','/usr/bin/printf','custody-pty-ready\n'],{encoding:'utf8',timeout:5000,maxBuffer:4096});
+ assert.equal(stdout.replace(/\r\n/g,'\n').replace(/^\^D\u0008\u0008/,''),'custody-pty-ready\n');
+ await assert.rejects(executeCustodyReadCommand('/usr/bin/script',['-q','/dev/null','/usr/bin/false'],{encoding:'utf8',timeout:5000,maxBuffer:4096}));
+});
 async function fixture(t,provider){
  const directory=await mkdtemp(join(await realpath(tmpdir()),'fm-webhook-remote-test-'));
  t.after(()=>rm(directory,{recursive:true,force:true}));

@@ -244,7 +244,7 @@ export async function fetchFanmarkTierMaster(options: FetchOptions = {}): Promis
     response = await (options.fetcher ?? fetch)(endpoint, {
       method: 'GET',
       headers: { accept: 'application/json' },
-      credentials: 'omit',
+      credentials: 'same-origin',
       cache: 'no-store',
       redirect: 'error',
       signal,
@@ -286,7 +286,7 @@ export async function fetchExtensionPriceMaster(options: FetchOptions = {}): Pro
     response = await (options.fetcher ?? fetch)(endpoint, {
       method: 'GET',
       headers: { accept: 'application/json' },
-      credentials: 'omit',
+      credentials: 'same-origin',
       cache: 'no-store',
       redirect: 'error',
       signal,

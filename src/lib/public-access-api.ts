@@ -275,7 +275,7 @@ async function readWorkerPayload(
         ? { Accept: "application/json" }
         : { Accept: "application/json", "Content-Type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      credentials: "omit",
+      credentials: "same-origin",
       cache: "no-store",
       signal: controller.signal,
     });

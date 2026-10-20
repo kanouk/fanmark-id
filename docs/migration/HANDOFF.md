@@ -1,3 +1,11 @@
+## 2026-10-20: V3実データ移送・復旧・G4完了、G5本人確認待ち
+
+**最初に [現在のV3実行票](RESUME-2026-10-20-V3.md) を読む。** 旧Supabaseは停止を維持し、
+全件移送・独立照合・実データの隔離復旧・日次保存・apexの503/TLS・両Webhook鍵照合を完了した。
+apex Aは旧SaaSとの経路競合を解消するため予約IPへ1件変更し、他16 DNSを保持した。
+G5候補はアップロード済み・未有効化。本人操作と新しい試験メール1通の確認待ち。mainは維持する。
+完了済みhelper/import/provider登録/鍵設定を再実行しない。以下の「旧Supabase稼働中」は過去の履歴。
+
 ## 2026-10-20: V3候補のschema・元鍵と実Cloudflare画像109件の検証完了、閉鎖配備を準備中
 
 [最新のV3準備票](RETRY-PREPARATION-V3-2026-10-20.md)を優先する。本人は最大1日の停止枠で移行完了まで進めるよう指示済み。
@@ -9508,3 +9516,5 @@ exact hash/bytesを照合し、所有したtarget3D1/3R2と全operator/probeを�
 失敗時は専用processの終了とprofile除去を確認後に再起動する。画面遷移/登録/招待消費の
 assertionやアプリ操作は再試行しない。起動stderrとexit/signalはprivate journalに保存する。
 外部通信proxyとowned cleanupを保持し、実built UI/Workerのlocal登録検証を実行する。
+
+2026-10-20 G5本人確認は有効化済みだが、入口のブラウザ保護設定とPWA横取り、公開catalogのCookie除外でログイン前に停止した。前進復旧を維持し、[最新V3再開票](RESUME-2026-10-20-V3.md)の修正・未確認項目を優先する。本人ログイン/MFA・試験メール・一般公開は未完了。

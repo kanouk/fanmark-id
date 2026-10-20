@@ -124,7 +124,7 @@ test("records search through the selected backend and never falls back after a W
   assert.deepEqual(captured, {
     url: "https://app.example.test/api/fanmarks/search/record",
     method: "POST",
-    credentials: "omit",
+    credentials: "same-origin",
     cache: "no-store",
     body: JSON.stringify({ input_emoji_ids: ["043a78d4-1e42-4502-9f57-b1d1f93482db"] }),
   });

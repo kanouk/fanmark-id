@@ -4,14 +4,18 @@ import {open,lstat,realpath,mkdtemp,rm} from 'node:fs/promises';
 import {constants} from 'node:fs';
 import {resolve,dirname,join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {execFile} from 'node:child_process';
-import {promisify} from 'node:util';
+import {execFileSync} from 'node:child_process';
 import {timingSafeEqual} from 'node:crypto';
 import {sha256Hex} from './snapshot-format.mjs';
 import {openProductionWebhookSecret} from './production-webhook-custody.mjs';
 const PREFIX='10_sensitive/secret-keys/fanmark-cloudflare-production-backup/';
 const VAULT='/Users/kanouk/Documents/Private',HASH=/^[a-f0-9]{64}$/u;
 const fail=()=>{throw Error('production_webhook_remote_custody_unconfirmed');};
+/** macOS script cannot initialize its PTY with the socket stdin created by
+ * execFile. No input is needed: detach stdin and capture only its output. */
+export async function executeCustodyReadCommand(file,args,options){
+ return {stdout:execFileSync(file,args,{...options,stdio:['ignore','pipe','pipe']}),stderr:''};
+}
 async function read(path,hash){
  if(!HASH.test(hash??''))fail();const f=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);
  try{const s=await f.stat();if(!s.isFile()||s.nlink!==1||(s.mode&0o777)!==0o600||s.size>1048576)fail();
@@ -51,7 +55,7 @@ export async function prepareProductionWebhookRemoteCustody(options={}){
 }
 /** A fixed read-only CLI operation. Empty/error output cannot count as Sync.
  * A separate machine restoration remains outside this local CLI proof. */
-export function createObsidianSyncWebhookCustodyVerifier({options,note,remoteVersion,execute=promisify(execFile)}={}){
+export function createObsidianSyncWebhookCustodyVerifier({options,note,remoteVersion,execute=executeCustodyReadCommand}={}){
  return async function verifyRemoteCustody(challenge){
   let temp;
   try{

@@ -47,12 +47,12 @@ test("builds an API URL only from a clean secure Worker origin", () => {
   assert.throws(() => buildEmojiCatalogApiUrl(`${BASE_URL}?token=secret`), { name: "EmojiCatalogApiError" });
 });
 
-test("loads every page pinned to the first release version without credentials or cache", async () => {
+test("loads every page pinned to the first release version with same-origin cookies and without cache", async () => {
   const calls: Array<{ url: URL; init?: RequestInit }> = [];
   const fetcher: typeof fetch = async (input, init) => {
     const url = new URL(String(input));
     calls.push({ url, init });
-    assert.equal(init?.credentials, "omit");
+    assert.equal(init?.credentials, "same-origin");
     assert.equal(init?.cache, "no-store");
     if (calls.length === 1) {
       return response({

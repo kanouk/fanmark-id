@@ -227,7 +227,7 @@ export async function recordFanmarkSearchInWorker(
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/json" },
         body: JSON.stringify({ input_emoji_ids: inputEmojiIds.map((id) => id.toLowerCase()) }),
-        credentials: "omit",
+        credentials: "same-origin",
         cache: "no-store",
         redirect: "error",
         signal: controller.signal,

@@ -54,7 +54,7 @@ export default defineConfig(({ mode }) => ({
         // API responses may contain account state. Only static build assets
         // are cached; requests outside precache go directly to the network.
         importScripts: ["clear-legacy-api-cache.js"],
-        navigateFallbackDenylist: [/^\/api(?:[/?]|$)/],
+        navigateFallbackDenylist: [/^\/api(?:[/?]|$)/, /^\/__migration(?:[/?]|$)/],
         runtimeCaching: [],
       }
     })

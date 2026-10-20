@@ -1,6 +1,9 @@
 # fanmark.id ARCHITECTURE.md
 
 G5で一般503を保持する本人確認経路は `workers/api/src/production-owner-acceptance.ts`。
+公開GETのクライアント（catalog・language・reference master・recent・public access・search record）は
+`credentials: same-origin`で同originの本人確認cookieを送る。別originにはcookieを送らない。
+`vite.config.ts`は`/api`と`/__migration`をPWAのSPA fallbackから除外し、本人確認入口をnetworkへ通す。
 固定purposeの署名cookieをHTTP入口で検証し、通常Auth/権限とwriter/fenceを通す。
 短命なbinding issuer proxyは `scripts/migration/production-owner-acceptance.mjs`。
 固定Resendの署名受信もG5で確認する。[実施と復旧境界](migration/production-owner-acceptance.md)。

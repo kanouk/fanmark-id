@@ -62,7 +62,7 @@ test('Worker request is public, bounded, uncached, and validates the release pro
   });
   assert.equal(requestUrl, `${API_BASE}/api/reference-masters/languages`);
   assert.equal(requestInit?.method, 'GET');
-  assert.equal(requestInit?.credentials, 'omit');
+  assert.equal(requestInit?.credentials, 'same-origin');
   assert.equal(requestInit?.cache, 'no-store');
   assert.equal(requestInit?.redirect, 'error');
   assert.equal(new Headers(requestInit?.headers).get('authorization'), null);

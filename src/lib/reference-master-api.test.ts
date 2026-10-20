@@ -57,7 +57,7 @@ test('parses the exact tier projection and returns stable level order', () => {
   assert.equal(items[0].initialLicenseDays, null);
 });
 
-test('fetches versioned tiers without cookies, caching, or redirects', async () => {
+test('fetches versioned tiers with same-origin cookies and without caching or redirects', async () => {
   let requestUrl = '';
   let requestInit: RequestInit | undefined;
   const result = await fetchFanmarkTierMaster({
@@ -70,7 +70,7 @@ test('fetches versioned tiers without cookies, caching, or redirects', async () 
   });
   assert.equal(requestUrl, 'https://fanmark.example/api/reference-masters/fanmark_tiers');
   assert.equal(requestInit?.method, 'GET');
-  assert.equal(requestInit?.credentials, 'omit');
+  assert.equal(requestInit?.credentials, 'same-origin');
   assert.equal(requestInit?.cache, 'no-store');
   assert.equal(requestInit?.redirect, 'error');
   assert.equal(result.length, 4);
@@ -98,7 +98,7 @@ test('parses and fetches only the public extension-price projection', async () =
     },
   });
   assert.equal(requestUrl, 'https://fanmark.example/api/reference-masters/fanmark_tier_extension_prices');
-  assert.equal(requestInit?.credentials, 'omit');
+  assert.equal(requestInit?.credentials, 'same-origin');
   assert.equal(requestInit?.cache, 'no-store');
   assert.deepEqual(result.map((item) => item.months), [1, 3]);
 });

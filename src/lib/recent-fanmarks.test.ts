@@ -127,7 +127,7 @@ test("sends only public request metadata and validates HTTP failures", async () 
   assert.equal(new Headers(requestInit?.headers).get("accept"), "application/json");
   assert.equal(new Headers(requestInit?.headers).get("authorization"), null);
   assert.equal(new Headers(requestInit?.headers).get("cookie"), null);
-  assert.equal(requestInit?.credentials, "omit");
+  assert.equal(requestInit?.credentials, "same-origin");
   assert.equal(requestInit?.cache, "no-store");
   assert.equal(requestInit?.redirect, "error");
   assert.deepEqual(response, [{ id: "fanmark-1", emoji: "🧪", created_at: null, short_id: "SHORT01", fanmark_id: "fanmark-1" }]);

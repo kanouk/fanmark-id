@@ -84,14 +84,14 @@ test("Worker URL accepts HTTPS and loopback, but rejects unsafe origins and path
   assert.throws(() => buildPublicAccessApiUrl(API_BASE, "/other/path"));
 });
 
-test("short-id reads map the Worker contract and omit browser credentials", async () => {
+test("short-id reads map the Worker contract and send cookies only to the same origin", async () => {
   let calledUrl = "";
   const record = await fetchPublicFanmarkByShortId("rose-1", {
     baseUrl: API_BASE,
     fetchImpl: async (input, init) => {
       calledUrl = String(input);
       assert.equal(init?.method, "GET");
-      assert.equal(init?.credentials, "omit");
+      assert.equal(init?.credentials, "same-origin");
       assert.equal(init?.cache, "no-store");
       assert.deepEqual(Object.fromEntries(new Headers(init?.headers)), { accept: "application/json" });
       assert.equal(new Headers(init?.headers).has("authorization"), false);
@@ -131,7 +131,7 @@ test("emoji reads POST only normalized IDs and protected records are redacted", 
     fetchImpl: async (input, init) => {
       assert.equal(String(input), `${API_BASE}/api/fanmarks/access/emoji`);
       assert.equal(init?.method, "POST");
-      assert.equal(init?.credentials, "omit");
+      assert.equal(init?.credentials, "same-origin");
       assert.equal(new Headers(init?.headers).get("content-type"), "application/json");
       assert.deepEqual(JSON.parse(String(init?.body)), { emojiIds: [EMOJI_ID] });
       return new Response(JSON.stringify(accessPayload({
@@ -154,7 +154,7 @@ test("public profile reads preserve the explicit public projection", async () =>
     fetchImpl: async (input, init) => {
       assert.equal(String(input), `${API_BASE}/api/fanmarks/public-profile/${LICENSE_ID}`);
       assert.equal(init?.method, "GET");
-      assert.equal(init?.credentials, "omit");
+      assert.equal(init?.credentials, "same-origin");
       return new Response(JSON.stringify(profilePayload()), { status: 200 });
     },
   });

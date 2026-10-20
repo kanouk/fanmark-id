@@ -87,6 +87,9 @@ jobs:
       - name: Test startup update checks during catalog failure
         run: npm run test:app-startup
 
+      - name: Test same-origin public API transport for owner preview
+        run: node --experimental-strip-types --test scripts/test-emoji-catalog-worker.ts src/lib/language-master-api.test.ts src/lib/reference-master-api.test.ts src/lib/recent-fanmarks.test.ts src/lib/public-access-api.test.ts src/lib/fanmark-search-api.test.ts
+
       - name: Test old-client hashed asset preservation
         run: npm run test:staging-asset-retention
 
