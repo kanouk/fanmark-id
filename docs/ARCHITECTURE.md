@@ -1,7 +1,11 @@
 # fanmark.id ARCHITECTURE.md
 
+現行本番はCloudflare Workers・Better Auth・split D1・R2を使用する。
+`wrangler.*-production.jsonc` は受入れ後の通常設定、`*-production-closed.jsonc` は移行開始前の閉鎖設定。
+両者を混同しない。[本番運用](migration/production-operations.md) を参照。
+
 G5で一般503を保持する本人確認経路は `workers/api/src/production-owner-acceptance.ts`。
-公開GETのクライアント（catalog・language・reference master・recent・public access・search record）は
+公開APIのクライアント（catalog・language・reference master・recent・public access・search record）は
 `credentials: same-origin`で同originの本人確認cookieを送る。別originにはcookieを送らない。
 `vite.config.ts`は`/api`と`/__migration`をPWAのSPA fallbackから除外し、本人確認入口をnetworkへ通す。
 固定purposeの署名cookieをHTTP入口で検証し、通常Auth/権限とwriter/fenceを通す。

@@ -11,9 +11,9 @@ const run=promisify(execFile),script=fileURLToPath(new URL('./check-supabase-wor
 const production=await readFile(new URL('../.github/workflows/supabase-deploy.yml',import.meta.url),'utf8');
 const cloudflare=await readFile(new URL('../.github/workflows/cloudflare-migration-validation.yml',import.meta.url),'utf8');
 const command='node --experimental-strip-types scripts/migration/test-legacy-profile-supabase-local.mjs "$RUNNER_TEMP/legacy-profile-supabase-local.json"';
-async function verify(text){const directory=await mkdtemp(path.join(os.tmpdir(),'fanmark-ci-isolation-'));
+async function verify(text,legacy=production){const directory=await mkdtemp(path.join(os.tmpdir(),'fanmark-ci-isolation-'));
   try{const workflows=path.join(directory,'.github/workflows');await mkdir(workflows,{recursive:true});
-    await writeFile(path.join(workflows,'supabase-deploy.yml'),production);
+    await writeFile(path.join(workflows,'supabase-deploy.yml'),legacy);
     await writeFile(path.join(workflows,'cloudflare-migration-validation.yml'),text);
     return await run(process.execPath,[script],{cwd:directory});
   }finally{await rm(directory,{recursive:true,force:true});}}
@@ -34,4 +34,13 @@ for(const [name,mutate] of [
   ['duplicate image pull',text=>text+imageLine],
 ])test('local Storage image allowance rejects '+name,async()=>{
   await assert.rejects(verify(mutate(cloudflare)),error=>{assert.notEqual(error.code,0);assert.match(error.stderr,/exactly one pinned local Storage/);return true;});
+});
+
+for(const [name,job] of [
+  ['restored deploy job','  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - run: supabase db push\n'],
+  ['renamed remote job','  production-release:\n    steps:\n      - run: supabase db push\n'],
+  ['restored secret access','  remote:\n    env:\n      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n'],
+  ['restored write permission','  remote:\n    permissions:\n      contents: write\n'],
+])test('retired legacy workflow rejects '+name,async()=>{
+  await assert.rejects(verify(cloudflare,production+'\n'+job),error=>error.code!==0);
 });

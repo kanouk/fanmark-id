@@ -125,10 +125,13 @@ jobs:
         run: npm run build:cloudflare-staging
 
       - name: Verify production auth boundary and build without local environment files
-        run: npm run test:cloudflare-production-build && npm run build:cloudflare-production
+        run: npm run test:cloudflare-production-build && npm run build
 
       - name: Validate closed production bundles without deployment
         run: npm run build:cloudflare-production-worker:dry-run
+
+      - name: Validate accepted production configuration without deployment
+        run: node --test scripts/migration/test-production-live-config.mjs && npm run build:cloudflare-production-live:dry-run
 
       - name: Test rendered owner profile editor
         run: npm run test:staging-profile-editor-ui

@@ -15,7 +15,8 @@ Description: 絵文字をIDとして利用するWebサービスおよびプラ�
 
 ## Tech Stack
 - Frontend: Vite + React, Tailwind CSS (shadcn/ui)
-- Backend: Supabase (Auth, DB, Edge Functions)
+- Backend: Cloudflare Workers, Better Auth, split D1, R2（旧Supabaseは停止・原本保持）
+- Production operations: `docs/migration/production-operations.md`
 
 ## Agent Behavior Guidelines
 - **Search First**: ファイルを探す際は、推測で開かず `ls` や `grep` (可能なら `rg`) を活用して正確なパスを特定してください。

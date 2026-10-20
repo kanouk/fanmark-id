@@ -1,4 +1,13 @@
+## 2026-10-20: V3本番検証・旧自動配備廃止完了
+
+現在は[2026-10-20 V3再開票](RESUME-2026-10-20-V3.md)と[通常運用](production-operations.md)を優先する。
+一般公開・既存ログイン/MFA・通知の受信トレイ到達・公開109画像・通常Cron・www/admin転送を確認した。
+旧側は停止、前進復旧のみ。30分監視はエラー0件、終了後のHTTPS/Stripe照合も成功。旧Supabaseのプロジェクト単位GitHub接続を解除し、自動本番・preview配備を停止した。最終CI成功後にPR41をマージする。実施状況は[PR41](https://github.com/kanouk/fanmark-id/pull/41)で確認する。
+元鍵/backup/journal、旧Supabase/Lovable project、解約済み自己テスト契約、既存cli-latest変更を保持する。
+以下の本人確認待ち・旧Supabase唯一稼働・未切替という記述は当時の履歴。
+
 ## 2026-10-20: V3実データ移送・復旧・G4完了、G5本人確認待ち
+
 
 **最初に [現在のV3実行票](RESUME-2026-10-20-V3.md) を読む。** 旧Supabaseは停止を維持し、
 全件移送・独立照合・実データの隔離復旧・日次保存・apexの503/TLS・両Webhook鍵照合を完了した。

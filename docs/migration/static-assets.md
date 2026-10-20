@@ -25,13 +25,14 @@ The preparation config is deliberately separate from the API-only
 }
 ```
 
+This legacy fixture uses `build:legacy`; the default `build` now targets Cloudflare production.
 The `dist` directory must be built from the repository root before the local
 asset tests or dry run. The package scripts check for `dist/index.html` to reject an absent build.
 They cannot detect a stale build: rebuild first when running locally. The
 application CI job runs these checks immediately after its fresh Vite build:
 
 ```sh
-npm run build
+npm run build:legacy
 cd workers/api
 npm ci
 npm run typecheck

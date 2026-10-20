@@ -82,6 +82,7 @@
     "test:recovery-writer-drain": "vitest run --config vitest.recovery-writer-drain.config.mjs && vitest run --config vitest.production-import.config.mjs",
     "test:staging-backup": "node --experimental-strip-types --test test/staging-backup.integration.mjs test/staging-backup-monitor.integration.mjs",
     "test:emoji-publication": "vitest run --config vitest.emoji-publication.config.mjs && vitest run --config vitest.emoji-publication-v3.config.mjs && vitest run --config vitest.emoji-publication-v4.config.mjs && vitest run --config vitest.emoji-publication-production.config.mjs",
+    "build:production-live:dry-run": "wrangler deploy --dry-run --config wrangler.app-production.jsonc && wrangler deploy --dry-run --config wrangler.backup-production.jsonc && wrangler deploy --dry-run --config wrangler.backup-monitor-production.jsonc && wrangler deploy --dry-run --config wrangler.alias-production.jsonc",
     "build:production-closed:dry-run": "wrangler deploy --dry-run --config wrangler.app-production-closed.jsonc && wrangler deploy --dry-run --config wrangler.backup-production-closed.jsonc && wrangler deploy --dry-run --config wrangler.backup-monitor-production-closed.jsonc && wrangler deploy --dry-run --config wrangler.alias-production-closed.jsonc",
     "test:production-closed": "node --experimental-strip-types --test test/production-closed.integration.mjs"
   },

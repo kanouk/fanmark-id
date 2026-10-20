@@ -92,30 +92,30 @@ source/userdata/domainは変更しない。localと実Cloudflareの受け入れ�
 1. 依存インストール: `npm install`（または `bun install`）。  
 2. 開発サーバー: `npm run dev`（ポートは Vite デフォルト）。  
 3. 型/静的チェック: `npm run lint`。  
-4. ビルド: `npm run build` / プレビュー `npm run preview`。  
+4. 本番ビルド: `npm run build` / プレビュー `npm run preview -- --outDir dist-cloudflare-production`。
    Cloudflare stagingの更新前は、直前に配備したbuildを保存し、新しいbuild後に `node scripts/migration/retain-staging-hashed-assets.mjs <previous-build> dist-staging` を実行する。旧clientが更新を始めるまで必要なhash付き公開assetを保持する。HTML・SW・manifestは現行buildを使い、同名異内容のassetは上書きせず拒否する。
-5. Supabase ローカル: `npm run db:start` / `db:reset` / `db:stop`（`supabase` CLI 依存）。`supabase link --project-ref <ref>` で本番/ステージングへ接続。  
+5. 旧Supabaseのローカル検証は `npm run db:start` / `db:reset` / `db:stop`。旧本番へのlink/DB pushを通常更新に使わない。
 6. 翻訳追加時は `src/translations/*.json` を編集し、UI で言語切替を確認。
 
-## GitHub Actions: PR 検証と Supabase 本番デプロイ
+## GitHub Actionsと本番更新
 
-`.github/workflows/supabase-deploy.yml` は、有効化された場合にPR の検証と本番デプロイを別ジョブで実行する。2026-09-21の確認ではGitHub上のworkflow stateは `disabled_manually`。この変更では有効化せず、以下は有効化後の動作を説明する。
+本番はCloudflare Workers・Better Auth・D1・R2を使用する。`npm run build` はNode 22.6.0で
+`dist-cloudflare-production` を生成し、旧Supabaseへの通信を無効にする。`npm run build:legacy` は
+旧実装のローカル検証専用で、`dist` を生成する。`npm run preview` は従来のVite previewのため、
+本番buildを確認する場合は `npm run preview -- --outDir dist-cloudflare-production` を使う。
 
-- `pull_request`（対象ブランチ `main`）と `push`（`main`）では `validate` ジョブを実行する。`.node-version` の Node.js を使い、`npm ci --legacy-peer-deps`、`npm run check:ci`、`npm run typecheck`、`npm run build` を実行する。このジョブは Supabase の秘密情報、Supabase CLI、リモートプロジェクト、DB push にアクセスしない。
-- `validate` は生成したPWAのキャッシュ境界を検査し、その直後のViteビルドを使って `workers/api` のStatic Assetsルーティング（local HTTPを含む）と配備用dry-runも検証する。再現手順は `docs/migration/static-assets.md`。
-- `migration-validation` は `workers/api`、`experiments/cloudflare-auth`、`experiments/cloudflare-d1-concurrency`、`experiments/stripe-receipts` を別々に `npm ci` / `npm test` で検証する。APIの型検査・D1 recent/Auth契約試験・配備用dry-run、Stripe受信adapterと実SDKの型互換性検査も含む。Node 22.6.0のclean installを通すため、Vitestを使う3 packageはVite 6.4.3へoverrideしている。合成データとlocal Workers/D1・in-memory PostgreSQLのみを使い、秘密情報やremote配備権限を渡さない。
-- `deploy` ジョブは `validate` と `migration-validation` の成功後の `push`（`refs/heads/main`）に限って実行する。GitHub Environment の `Supabase` を明示的に使用し、そのジョブだけが `SUPABASE_ACCESS_TOKEN`、`SUPABASE_DB_PASSWORD`、`SUPABASE_PROJECT_ID` を参照する。プロジェクトを link して `supabase db push` を実行し、生成型を更新する。本番デプロイは `supabase-production` concurrency group で直列化し、実行中のデプロイをキャンセルしない。
-- 生成型の差分がある場合、`deploy` ジョブは `src/integrations/supabase/types.ts` をコミットして main へ push する。デプロイジョブには `contents: write` が必要である。
+`.github/workflows/cloudflare-migration-validation.yml` はmain向けPR・pushと手動実行で、アプリ、
+Worker、移送・復旧の契約を検証する。閉鎖候補と受入れ後の本番4 bundleをともにdry-runする。
+秘密値や本番への配備権限を渡さず、成功しても本番を自動更新しない。
 
-有効化する前に、リポジトリの Settings > Environments で `Supabase` Environment を作成または確認し、次の Environment secrets を登録する。
+`.github/workflows/supabase-deploy.yml` は旧実装の検証だけを残す。`deploy` job、remote projectへの
+link/DB push、秘密値参照、生成型のmainへのpushを削除した。`check:ci` は別名のjobを追加しても
+これらの操作と書込み権限を拒否する。GitHub上のworkflowは引き続き無効のまま保持する。
+旧検証で必要な `dist` は明示的な `build:legacy` で作る。
 
-- `SUPABASE_ACCESS_TOKEN`: Supabase CLI の認証トークン
-- `SUPABASE_DB_PASSWORD`: 対象プロジェクトのデータベースパスワード
-- `SUPABASE_PROJECT_ID`: 対象 Supabase プロジェクトの ref
-
-Environment の名前だけでは承認やブランチ制限は有効にならない。Required reviewers、Deployment branches、待機時間などを運用上必要とする場合は、Settings > Environments で個別に設定し、設定済みであることを確認する。GitHub Actions の `GITHUB_TOKEN` が main への push を許可されていることも確認する。PR 検証にはこれらの秘密情報や設定は不要である。
-
-`validate` の `--legacy-peer-deps` は、現在の lockfile が date-fns 4 と react-day-picker 8 の組み合わせを保持しており、npm の通常の peer dependency 解決では `npm ci` が停止するために指定している。依存関係を更新して peer range を解消できた場合は、このフラグを外せるか再確認する。
+現行本番の設定・更新時の資産保持・検証順は [本番運用](migration/production-operations.md) を参照。
+旧SupabaseのDB・関数・Cronは停止したまま保持し、通常の更新手順に `supabase db push` を含めない。
+`--legacy-peer-deps` は既存lockfileのdate-fns/react-day-pickerのpeer dependency条件のため必要。
 
 ## メンテナンスモード（system_settings）
 - `maintenance_mode`: `true` でアプリ全体をメンテナンスページへ切替。
@@ -755,9 +755,9 @@ CI application jobにはclient transportと、隔離Docker実GoTrue/PostgRESTの
 
 ### Cloudflare本番画面のビルド
 
-`npm run build:cloudflare-production` は固定Node 22.6.0、空envDir、継承VITE変数なしで `dist-cloudflare-production` を生成する。API/Authは `https://fanmark.id`、backend selectorはstagingと同じWorker/D1/R2一式を使い、告知送信もWorkerを選択する。本番専用modeではBetter Authを使用し、旧Supabase clientのsession保存・自動更新・URL内session検出・fetchを無効にする。PWA cache IDも分ける。このコマンドは配備せず、通常の旧本番buildやstaging buildを変更しない。
+`npm run build:cloudflare-production` は固定Node 22.6.0、空envDir、継承VITE変数なしで `dist-cloudflare-production` を生成する。API/Authは `https://fanmark.id`、backend selectorはstagingと同じWorker/D1/R2一式を使い、告知送信もWorkerを選択する。本番専用modeではBetter Authを使用し、旧Supabase clientのsession保存・自動更新・URL内session検出・fetchを無効にする。PWA cache IDも分ける。このコマンドは配備しない。切替後は通常の `npm run build` も同じ本番buildを使い、旧buildは `build:legacy` で明示する。staging buildは維持する。
 
-本番Worker候補のbundle検査は、上記画面build後の `npm run build:cloudflare-production-worker:dry-run`。app・backup scheduler・別monitorの3 bundleを作るだけでCloudflareへ送らない。閉鎖候補の変更は `scripts/migration/production-runtime-config.mjs` の検査を通す。保存先の固定値は作成済み資源表と照合され、閉鎖候補の検査成功は本番開始条件の充足を意味しない。
+本番Worker候補のbundle検査は、上記画面build後の `npm run build:cloudflare-production-worker:dry-run`。app・backup scheduler・別monitor・aliasの4 bundleを作るだけでCloudflareへ送らない。閉鎖候補の変更は `scripts/migration/production-runtime-config.mjs` の検査を通す。保存先の固定値は作成済み資源表と照合され、閉鎖候補の検査成功は本番開始条件の充足を意味しない。
 
 業務DBの取り込み台帳3表は削除せずバックアップへ含める。台帳なしの既存archive形式と、台帳を含む `fanmark-business-import-recovery-v1` を固定profileで検証し、途中欠落・未知の表を受け入れない。復元時も元の取り込み先/incarnationを保持し、新しいDBで古いrunを誤再開させない。
 
