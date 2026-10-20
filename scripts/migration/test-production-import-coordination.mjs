@@ -22,16 +22,16 @@ import {promisify} from 'node:util';
 test('native production coordinator and separate filesystem journals jointly guard real D1 writes', {timeout:60000}, async t=>{
  const dir=await mkdtemp(join(tmpdir(),'fanmark-global-import-'));await chmod(dir,0o700);
  const source=fileURLToPath(new URL('../../workers/api/src',import.meta.url));
- const built=await build({stdin:{contents:`export { RecoveryWriterCoordinatorProductionV2 } from './recovery-writer-drain';
+ const built=await build({stdin:{contents:`export { RecoveryWriterCoordinatorProductionV3 } from './recovery-writer-drain';
  export { ProductionImportCoordinatorService } from './production-import-coordinator';
  export default { async fetch(r,e){try{const {action,input}=await r.json();return Response.json(await e.COORDINATOR.command(action,input));}
  catch{return Response.json({error:'fixture_refused'},{status:409});}}};`,resolveDir:source,loader:'ts'},
  bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',external:['cloudflare:*']});
  const mf=new Miniflare({workers:[{config:{name:'import-coordination-fixture',type:'worker',compatibilityDate:'2026-09-18',
-  exports:{RecoveryWriterCoordinatorProductionV2:{type:'durable-object',storage:'sqlite'}},
-  env:{RECOVERY_DRAIN:{type:'durable-object',worker:'import-coordination-fixture',exportName:'RecoveryWriterCoordinatorProductionV2'},
+  exports:{RecoveryWriterCoordinatorProductionV3:{type:'durable-object',storage:'sqlite'}},
+  env:{RECOVERY_DRAIN:{type:'durable-object',worker:'import-coordination-fixture',exportName:'RecoveryWriterCoordinatorProductionV3'},
    COORDINATOR:{type:'worker',worker:'import-coordination-fixture',exportName:'ProductionImportCoordinatorService'},
-   RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3'},
+   RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4'},
    RECOVERY_DRAIN_BACKEND:{type:'text',value:'durable-object'},CUTOVER_WRITE_FREEZE:{type:'text',value:'receipt_only'},DB:{type:'d1',name:'coordinated-fixture'},AUTH_DB:{type:'d1',name:'auth-stage-fixture'}},
   manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:built.outputFiles[0].text}}}},
   dev:{outboundService:{type:'fetcher',handler(){throw Error('external_network_forbidden');}}}}]});

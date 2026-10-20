@@ -94,7 +94,7 @@ async function fixture(run, { loseUpload = false, rejectActivation = false, drif
     }
     return Response.json({ success: true, result: {} });
   };
-  const options = { journalPath, runtimeVersion, token: 'synthetic_control_plane_token', fetchImpl };
+  const options = { journalPath, runtimeVersion, token: 'synthetic_control_plane_token', fetchImpl, gatewayFetchImpl:fetchImpl };
   try { await run(options, { setDrift(value) { drift = value; }, counts: () => ({ uploads, deletes }), activations: () => activations }); }
   finally { await rm(root, { recursive: true, force: true }); }
 }

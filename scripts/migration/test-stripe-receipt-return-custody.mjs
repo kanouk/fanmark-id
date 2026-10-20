@@ -22,15 +22,15 @@ import {executeStripeReceiptReturn,inspectStripeReceiptReturnExecution} from './
 
 test('closed native coordinator and production readonly transport capture authenticated return custody',{timeout:60000},async t=>{
  const directory=await mkdtemp(join(tmpdir(),'fanmark-return-custody-'));await chmod(directory,0o700);
- const scope='d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3';
- const built=await build({stdin:{contents:`export {RecoveryWriterCoordinatorProductionV2} from './recovery-writer-drain';
+ const scope='01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4';
+ const built=await build({stdin:{contents:`export {RecoveryWriterCoordinatorProductionV3} from './recovery-writer-drain';
  export default {async fetch(r,e){const u=new URL(r.url),stub=e.RECOVERY_DRAIN.get(e.RECOVERY_DRAIN.idFromName('recovery-writers-v1'));
  return stub.fetch('https://recovery-writer.internal'+u.pathname,{method:'POST',body:await r.text(),headers:{'content-type':'application/json'}})}};`,
  resolveDir:fileURLToPath(new URL('../../workers/api/src',import.meta.url)),loader:'ts'},bundle:true,write:false,
  format:'esm',platform:'browser',target:'es2022',external:['cloudflare:*']});
  const mf=new Miniflare({workers:[{config:{name:'return-custody',type:'worker',compatibilityDate:'2026-09-18',
- exports:{RecoveryWriterCoordinatorProductionV2:{type:'durable-object',storage:'sqlite'}},
- env:{RECOVERY_DRAIN:{type:'durable-object',worker:'return-custody',exportName:'RecoveryWriterCoordinatorProductionV2'},
+ exports:{RecoveryWriterCoordinatorProductionV3:{type:'durable-object',storage:'sqlite'}},
+ env:{RECOVERY_DRAIN:{type:'durable-object',worker:'return-custody',exportName:'RecoveryWriterCoordinatorProductionV3'},
  RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:scope},RECOVERY_DRAIN_BACKEND:{type:'text',value:'durable-object'},
  CUTOVER_WRITE_FREEZE:{type:'text',value:'receipt_only'},DB:{type:'d1',name:'return-custody'}},
  manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:built.outputFiles[0].text}}}},

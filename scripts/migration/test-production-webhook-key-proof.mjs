@@ -11,7 +11,7 @@ test('native binding-only proof uses actual Stripe/Svix bytes with no store, sec
  const runtime=randomUUID(),stripe='whsec_'+randomBytes(32).toString('hex'),resend='whsec_'+randomBytes(32).toString('base64');
  const service=(name,changes={})=>({config:{name,type:'worker',compatibilityDate:'2026-09-18',env:Object.fromEntries(Object.entries({CF_VERSION_METADATA:JSON.stringify({id:runtime}),
   STRIPE_WEBHOOK_SECRET:stripe,BROADCAST_WEBHOOK_SIGNING_SECRET:resend,CUTOVER_WRITE_FREEZE:'receipt_only',BETTER_AUTH_URL:'https://fanmark.id',
-  RECOVERY_DRAIN_SCOPE_DIGEST:'d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3',...changes}).map(([k,v])=>[k,k==='CF_VERSION_METADATA'?{type:'json',value:JSON.parse(v)}:{type:'text',value:v}])),
+  RECOVERY_DRAIN_SCOPE_DIGEST:'01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4',...changes}).map(([k,v])=>[k,k==='CF_VERSION_METADATA'?{type:'json',value:JSON.parse(v)}:{type:'text',value:v}])),
   manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:built.outputFiles[0].text}}}}});
  const token='a'.repeat(64);
  const proxy=(name,worker,expiry=String(Date.now()+60000))=>({config:{name,type:'worker',compatibilityDate:'2026-09-18',

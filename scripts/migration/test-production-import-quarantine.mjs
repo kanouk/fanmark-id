@@ -19,15 +19,15 @@ for(const store of ['master','business','avatars','covers'])test('partial '+stor
  const directory=await mkdtemp(join(await realpath(tmpdir()),'fanmark-import-quarantine-'));await chmod(directory,0o700);
  t.after(()=>rm(directory,{recursive:true,force:true}));
  const source=fileURLToPath(new URL('../../workers/api/src',import.meta.url));
- const built=await build({stdin:{contents:`export { RecoveryWriterCoordinatorProductionV2 } from './recovery-writer-drain';
+ const built=await build({stdin:{contents:`export { RecoveryWriterCoordinatorProductionV3 } from './recovery-writer-drain';
  export { ProductionImportCoordinatorService } from './production-import-coordinator';
  export default {async fetch(r,e){try{const {action,input}=await r.json();return Response.json(await e.COORDINATOR.command(action,input));}catch{return new Response(null,{status:409});}}};`,
  resolveDir:source,loader:'ts'},bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',external:['cloudflare:*']});
  const mf=new Miniflare({workers:[{config:{name:'quarantine-fixture',type:'worker',compatibilityDate:'2026-09-18',
-  exports:{RecoveryWriterCoordinatorProductionV2:{type:'durable-object',storage:'sqlite'}},env:{
-   RECOVERY_DRAIN:{type:'durable-object',worker:'quarantine-fixture',exportName:'RecoveryWriterCoordinatorProductionV2'},
+  exports:{RecoveryWriterCoordinatorProductionV3:{type:'durable-object',storage:'sqlite'}},env:{
+   RECOVERY_DRAIN:{type:'durable-object',worker:'quarantine-fixture',exportName:'RecoveryWriterCoordinatorProductionV3'},
    COORDINATOR:{type:'worker',worker:'quarantine-fixture',exportName:'ProductionImportCoordinatorService'},
-   RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3'},
+   RECOVERY_DRAIN_SCOPE_DIGEST:{type:'text',value:'01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4'},
    RECOVERY_DRAIN_BACKEND:{type:'text',value:'durable-object'},CUTOVER_WRITE_FREEZE:{type:'text',value:'receipt_only'},
    DB:{type:'d1',name:'partial-store'},IMAGES:{type:'r2',name:'partial-images'}},
   manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:built.outputFiles[0].text}}}},
@@ -87,9 +87,10 @@ for(const store of ['master','business','avatars','covers'])test('partial '+stor
  assert.ok((await readdir(directory)).includes('import-quarantine-'+child.executorId+'.json.lock'));
 });
 
-test('legacy production classes retain quarantine and alarms without touching v2 stores',async()=>{
- const bundled=await build({stdin:{contents:`import {RecoveryWriterCoordinatorProduction} from './recovery-writer-drain';
- import {NotificationWakeCoordinatorProduction} from './notification-wake';
+for(const generation of [1,2])test('legacy production v'+generation+' retains quarantine and alarms without touching v3 stores',async()=>{
+ const suffix=generation===1?'':'V2';
+ const bundled=await build({stdin:{contents:`import {RecoveryWriterCoordinatorProduction${suffix} as RecoveryWriterCoordinatorProduction} from './recovery-writer-drain';
+ import {NotificationWakeCoordinatorProduction${suffix} as NotificationWakeCoordinatorProduction} from './notification-wake';
  export class OldDrainProbe extends RecoveryWriterCoordinatorProduction {
   async seed(){await this.ctx.storage.put('retained',{pending:'old-operation',quarantine:true});}
   async readProof(){return this.ctx.storage.get('retained');}

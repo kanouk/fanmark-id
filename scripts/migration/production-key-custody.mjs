@@ -7,7 +7,7 @@ import {isAbsolute,resolve,join,basename,dirname} from 'node:path';
 import {PRODUCTION_RUNTIME} from '../../workers/api/src/production-runtime-identity.ts';
 const SCOPE=PRODUCTION_RUNTIME.scope;
 // Existing escrow AAD binds key IDs, not stores. Retain and verify the original
-// custody record; cohort v2 uses an explicit reuse report, never a rotated key.
+// custody record; successor cohorts use an explicit reuse report, never a rotated key.
 const ORIGINAL_SCOPE='6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d';
 const ID=/^production-backup-[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/u;
 const HEX=/^[a-f0-9]{64}$/u;

@@ -236,8 +236,14 @@ export class RecoveryWriterCoordinatorProduction extends RecoveryWriterCoordinat
     return Promise.resolve(new Response("production_cohort_v1_quarantined", {status: 410}));
   }
 }
-/** Fresh v2 namespace; no v1 import state or tickets can reach these bindings. */
+/** Retained v2 namespace and its terminal R2 pending/quarantine. */
 export class RecoveryWriterCoordinatorProductionV2 extends RecoveryWriterCoordinator {
+  override fetch(_request: Request): Promise<Response> {
+    return Promise.resolve(new Response("production_cohort_v2_quarantined", {status: 410}));
+  }
+}
+/** Fresh v3 namespace; neither quarantined import can reach these bindings. */
+export class RecoveryWriterCoordinatorProductionV3 extends RecoveryWriterCoordinator {
   override fetch(request: Request): Promise<Response> {
     if (new URL(request.url).pathname.startsWith("/migration/")) return productionImportCommand(this.ctx, this.env, request);
     return super.fetch(request);

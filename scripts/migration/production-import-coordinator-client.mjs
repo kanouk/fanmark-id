@@ -3,7 +3,7 @@ import {PRODUCTION_R2_TARGETS} from './production-r2-targets.mjs';
 import {PRODUCTION_D1_TARGETS} from './production-d1-targets.mjs';
 
 const HASH=/^[0-9a-f]{64}$/u, UUID=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
-const SCOPE='d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3';
+const SCOPE='01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4';
 const clients=new WeakSet();
 const fail=()=>{throw Error('production_import_coordination_unconfirmed');};
 export const isProductionImportCoordinator=client=>clients.has(client);

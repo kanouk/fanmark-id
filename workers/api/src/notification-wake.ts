@@ -180,4 +180,10 @@ export class NotificationWakeCoordinatorProduction extends NotificationWakeCoord
   }
   override async alarm(): Promise<void> { /* Retain v1 state; never wake a v2 writer. */ }
 }
-export class NotificationWakeCoordinatorProductionV2 extends NotificationWakeCoordinator {}
+export class NotificationWakeCoordinatorProductionV2 extends NotificationWakeCoordinator {
+  override fetch(_request: Request): Promise<Response> {
+    return Promise.resolve(new Response("production_cohort_v2_quarantined", {status: 410}));
+  }
+  override async alarm(): Promise<void> { /* Retain v2 state; never wake a v3 writer. */ }
+}
+export class NotificationWakeCoordinatorProductionV3 extends NotificationWakeCoordinator {}

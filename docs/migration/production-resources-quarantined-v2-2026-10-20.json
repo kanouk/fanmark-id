@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "state": "quarantined_after_first_r2_unknown_outcome",
+  "productionReady": false,
+  "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "zoneId": "6a2c39c92ba1c4106b7c19f87ada0a7e",
+  "sourceProject": "ppqgtbjykitqtiaisyji",
+  "creationDateJst": "2026-10-20",
+  "d1": [
+    {
+      "binding": "AUTH_DB",
+      "name": "fanmark-production-auth-20261020",
+      "id": "d25388d6-fa19-46ba-a128-4fa537210e4b",
+      "createdAt": "2026-10-20T00:50:37.006Z",
+      "initialObservedTables": 0,
+      "verifiedApplicationTables": 9,
+      "verifiedMigrationCount": 4
+    },
+    {
+      "binding": "MASTER_DB",
+      "name": "fanmark-production-master-20261020",
+      "id": "ef4cee01-bd28-4fd5-8eb8-6744b4331d07",
+      "createdAt": "2026-10-20T00:50:37.977Z",
+      "initialObservedTables": 0,
+      "verifiedApplicationTables": 25,
+      "verifiedMigrationCount": 11
+    },
+    {
+      "binding": "FANMARK_DB",
+      "name": "fanmark-production-business-20261020",
+      "id": "a418f597-ff73-40a9-8847-91e3a6dddcf4",
+      "createdAt": "2026-10-20T00:50:39.087Z",
+      "initialObservedTables": 0,
+      "verifiedApplicationTables": 78,
+      "verifiedMigrationCount": 27
+    }
+  ],
+  "r2": [
+    {
+      "purpose": "avatars",
+      "name": "fanmark-avatars-production-20261020",
+      "createdAt": "2026-10-20T00:50:40.901Z",
+      "location": "APAC",
+      "publicDevUrlEnabled": false,
+      "customDomains": []
+    },
+    {
+      "purpose": "covers",
+      "name": "fanmark-covers-production-20261020",
+      "createdAt": "2026-10-20T00:50:44.914Z",
+      "location": "APAC",
+      "publicDevUrlEnabled": false,
+      "customDomains": []
+    },
+    {
+      "purpose": "backups",
+      "name": "fanmark-backups-production",
+      "createdAt": "2026-10-15T23:44:26.999Z",
+      "location": "APAC",
+      "publicDevUrlEnabled": false,
+      "customDomains": [],
+      "initialReportedObjects": 0,
+      "preliminaryEncryptedObjectsVerified": 6,
+      "preliminaryEncryptedBytesVerified": 18738059,
+      "preliminaryReadbackAt": "2026-10-16T11:36:54.639Z",
+      "preliminaryEvidence": "evidence/real-precopy-offhost-2026-10-16.json"
+    }
+  ],
+  "schemaApplied": true,
+  "applicationBindingsChanged": true,
+  "workerDeployed": true,
+  "sourceFrozen": false,
+  "usersImported": false,
+  "domainChanged": false,
+  "backupRestoreVerified": true,
+  "schemaVerifiedAt": "2026-10-20T01:05:21.077Z",
+  "schemaEvidence": "evidence/production-cohort-v2-schema-2026-10-20.json",
+  "runtime": {
+    "observedAt": "2026-10-20T01:54:08.931Z",
+    "ciValidatedRuntimeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9",
+    "ciRun": 39353698738,
+    "workers": [
+      {
+        "name": "fanmark-app-production",
+        "version": "d48e0628-77e9-4d3d-92ab-8c420d3c2c11",
+        "ciValidatedRuntimeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9"
+      },
+      {
+        "name": "fanmark-backup-production",
+        "version": "dc34fda1-2c13-430d-823b-525a83beae9d",
+        "ciValidatedRuntimeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9"
+      },
+      {
+        "name": "fanmark-backup-monitor-production",
+        "version": "b43c7421-350a-42b2-af0d-55c4a219b368",
+        "ciValidatedRuntimeCommit": "14815ae87346da1bdffa60d26f0f1c0d77b575d9"
+      }
+    ],
+    "publicRoutes": 0,
+    "cronTriggers": 0,
+    "secretsConfigured": true,
+    "sourceStopped": false,
+    "dataImported": false,
+    "domainSwitched": false,
+    "ownerAcceptance": "disabled",
+    "backupAdmission": "pending",
+    "newNamespaces": {
+      "RECOVERY_DRAIN": {
+        "id": "d93f6c3a042944ada645bd10b083d738",
+        "class": "RecoveryWriterCoordinatorProductionV2"
+      },
+      "NOTIFICATION_WAKE": {
+        "id": "fa9bf77393a349f8aaaf1fdada69b9d0",
+        "class": "NotificationWakeCoordinatorProductionV2"
+      }
+    },
+    "evidence": "evidence/production-cohort-v2-prepared-2026-10-20.json"
+  },
+  "applicationBindingChangeScope": "closed cohort V2: new dedicated stores and DO namespaces; unrelated five Worker settings preserved",
+  "cohortGeneration": 2,
+  "quarantinedPredecessor": "production-resources-quarantined-2026-10-20.json",
+  "backupRestoreScope": "initial-schema-and-seed-baseline-only",
+  "quarantine": {
+    "runId": "a660921a-bfd6-4a90-8ea5-552606ac44cf",
+    "proofSha256": "e66b008743cef45ed8693a28677b6e691c16f766812eaa1521a5b29170180fb4",
+    "pendingOperationId": "69e479e6-5485-4ecb-8d8b-8725926c6061",
+    "allDataAndJournalsRetained": true,
+    "reuseForbidden": true,
+    "evidence": "evidence/production-retry-cutover-aborted-2026-10-20.json"
+  }
+}

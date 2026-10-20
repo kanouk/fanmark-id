@@ -1,0 +1,17 @@
+{
+  "format": "fanmark-production-key-reuse-v1",
+  "keyId": "production-backup-b7453682-6750-41f1-be11-4ce71ca3fa55",
+  "originalScope": "6c6685377bca7b2e24d637b4a43888b77a16e280fdc587ce42623156cd615e9d",
+  "admittedScope": "01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4",
+  "originalRecordSha256": "b0fb138bad36af4d0747650f7230673cf42dea476b3be52eebb9fa723d26a51b",
+  "archiveKeySha256": "bb3168427ed46ba2d13243ee8b80471ca83ac3fcbd1accc3866f3cb89f462176",
+  "authKeyId": "ac7c57eff0fcd5721af6dc521be1166eb60c7b23c1d1e454f474e001a4bf2411",
+  "existingEscrowVerified": true,
+  "keysRotated": false,
+  "observedAt": "2026-10-20T05:51:26.534Z",
+  "originalNoteSha256": "da0a4e22fc2681f2d8e2a58702f4bafdfab9ddb6e39367d0209fbd24a966ddef",
+  "osKeychainReadbackMatched": true,
+  "originalVaultRecordPreserved": true,
+  "newKeysCreated": false,
+  "remoteEscrowNewRuntimeReadbackPending": true
+}

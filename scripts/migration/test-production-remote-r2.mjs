@@ -24,7 +24,7 @@ test('production R2 client joins fixed control-plane identities, native service,
   const owner = randomUUID(), version = randomUUID(), gatewayVersion = randomUUID();
   const origins = Object.fromEntries(['read-only', 'import'].map(mode => [mode, 'https://fanmark-prod-import-' + randomUUID() + '.fanmark-id.workers.dev']));
   const incarnations = Object.fromEntries(['auth', 'master', 'business', 'avatars', 'covers'].map(store => [store, randomUUID()]));
-  const built = await build({ stdin: { contents: `export { RecoveryWriterCoordinatorProductionV2 } from './recovery-writer-drain';
+  const built = await build({ stdin: { contents: `export { RecoveryWriterCoordinatorProductionV3 } from './recovery-writer-drain';
     export { ProductionR2ImportService } from './production-r2-import-service';
     export default {async fetch(r,e){const u=new URL(r.url);if(u.pathname.startsWith('/command/'))
       return e.RECOVERY_DRAIN.get(e.RECOVERY_DRAIN.idFromName('recovery-writers-v1')).fetch('https://recovery-writer.internal/migration/'+u.pathname.slice(9),{method:'POST',body:await r.text()});
@@ -33,8 +33,8 @@ test('production R2 client joins fixed control-plane identities, native service,
     format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] });
   const text = value => ({ type: 'text', value });
   const mf = new Miniflare({ workers: [{ config: { name: 'production-r2-client', type: 'worker', compatibilityDate: '2026-09-18',
-    exports: { RecoveryWriterCoordinatorProductionV2: { type: 'durable-object', storage: 'sqlite' } }, env: {
-      RECOVERY_DRAIN: { type: 'durable-object', worker: 'production-r2-client', exportName: 'RecoveryWriterCoordinatorProductionV2' },
+    exports: { RecoveryWriterCoordinatorProductionV3: { type: 'durable-object', storage: 'sqlite' } }, env: {
+      RECOVERY_DRAIN: { type: 'durable-object', worker: 'production-r2-client', exportName: 'RecoveryWriterCoordinatorProductionV3' },
       IMPORT: { type: 'worker', worker: 'production-r2-client', exportName: 'ProductionR2ImportService' },
       RECOVERY_DRAIN_SCOPE_DIGEST: text(PRODUCTION_RUNTIME.scope), RECOVERY_DRAIN_BACKEND: text('durable-object'),
       D1_TOPOLOGY: text('split'), STORAGE_BACKEND: text('r2'), CUTOVER_WRITE_FREEZE: text('receipt_only'),

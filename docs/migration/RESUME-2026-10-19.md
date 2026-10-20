@@ -1,3 +1,11 @@
+## 2026-10-20: V3候補のschema・元鍵と実Cloudflare画像109件の検証完了、閉鎖配備を準備中
+
+[最新のV3準備票](RETRY-PREPARATION-V3-2026-10-20.md)を優先する。本人は最大1日の停止枠で移行完了まで進めるよう指示済み。
+旧Supabaseは稼働中。新しい物理5 storeのcanonical schema/seed・元鍵の再利用を照合し、
+別の所有Cloudflareへ実クライアントで画像109件をコピー・独立全件照合・cleanupした。
+V3のCI、閉鎖配備、新namespace/初回backup/実隔離復元、最新G0はこれからであり、まだ再移送・Route切替しない。
+旧2世代のquarantine/全記録を保持し、本番検証が終わるまでmainを維持する。
+
 ## 2026-10-20: 再移送は最初の画像処理で中止・旧Supabase復旧済み
 
 [最新の再移送中止・復旧票](CUTOVER-RETRY-ABORT-2026-10-20.md)を最初に読む。

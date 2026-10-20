@@ -1,19 +1,19 @@
 {
   "format": "fanmark-production-backup-pins-v1",
   "phase": "baseline-before-import",
-  "scopeDigest": "d70311e65d8f8205443e9230e4443d485a66c1e99831fe5c189d90fe81c121d3",
+  "scopeDigest": "01c9f04b4679081b56a66754f041faa2df8533e8f911299f6eb67315d524f4b4",
   "keyId": "production-backup-b7453682-6750-41f1-be11-4ce71ca3fa55",
   "schemaHashes": {
     "auth": "3d2d1ccf407c1496b58a8e6861ce4eabb00c4e03ffe16c5ab28d521ac2411b1b",
     "business": "80fd26ba363a2babf649ddbc18490ecd423c4ebfd6be4f90611887f8ffd1b828",
     "master": "41eb20e30329eb6a806c11b76f2dcad3144fbbb6c28ba9a8e9d979827a8d7e88"
   },
-  "observedAt": "2026-10-20T01:27:40.016Z",
-  "schemaReadbackSha256": "e4f8a1bec3086a63f81e9966810e4f664ae485cdf7743587b013ffaa8358be8b",
-  "keyCustodyEvidence": "evidence/production-cohort-v2-key-reuse-2026-10-20.json",
+  "observedAt": "2026-10-20T05:51:29.635Z",
+  "schemaReadbackSha256": "30e86965d006a419688cf8154c32cfc74b282ff7bceb641dd7d364572378965b",
+  "keyCustodyEvidence": "evidence/production-cohort-v3-key-reuse-2026-10-20.json",
   "captureAdmission": "pending",
   "finalImportSchema": false,
-  "evidence": "evidence/production-cohort-v2-schema-2026-10-20.json",
+  "evidence": "evidence/production-cohort-v3-schema-2026-10-20.json",
   "schemaProfiles": {
     "auth": "AUTH_RECOVERY_SCHEMA_SQL (excludes d1_migrations)",
     "master": "D1_RECOVERY_SCHEMA_SQL",

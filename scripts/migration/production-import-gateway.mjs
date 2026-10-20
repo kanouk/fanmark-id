@@ -85,9 +85,9 @@ export async function closeProductionImportGateway({ journalPath, token, fetchIm
   } catch { fail(); } finally { await file.close(); }
 }
 
-export async function openProductionImportGateway({ journalPath, runtimeVersion, access = 'read-only', token, fetchImpl = fetch, now = () => Date.now() } = {}) {
+export async function openProductionImportGateway({ journalPath, runtimeVersion, access = 'read-only', token, fetchImpl = fetch, gatewayFetchImpl = fetch, now = () => Date.now() } = {}) {
   if (!path.isAbsolute(journalPath ?? '') || !UUID.test(runtimeVersion ?? '') || !['read-only', 'import'].includes(access) ||
-      typeof token !== 'string' || token.length < 16 || /\s/u.test(token) || typeof fetchImpl !== 'function') fail();
+      typeof token !== 'string' || token.length < 16 || /\s/u.test(token) || typeof fetchImpl !== 'function' || typeof gatewayFetchImpl !== 'function') fail();
   const parent = await lstat(path.dirname(journalPath));
   if (!parent.isDirectory() || parent.isSymbolicLink() || (parent.mode & 0o777) !== 0o700) fail();
   const id = randomUUID(), name = 'fanmark-prod-import-' + id, bearer = randomBytes(32).toString('hex');
@@ -159,7 +159,7 @@ export async function openProductionImportGateway({ journalPath, runtimeVersion,
     const gatewayOrigin = `https://${name}.fanmark-id.workers.dev`;
     let ready = false;
     for (let attempt = 0; attempt < 9; attempt++) {
-      const response = await fetchImpl(gatewayOrigin + '/r2/identity', {method:'GET', redirect:'error',
+      const response = await gatewayFetchImpl(gatewayOrigin + '/r2/identity', {method:'GET', redirect:'error',
         headers:{authorization:`Bearer ${bearer}`}, signal:AbortSignal.timeout(30000)});
       state.edgeReadiness = {attempts:attempt+1,lastStatus:response.status};
       if (response.status === 200) {

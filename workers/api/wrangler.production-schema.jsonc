@@ -7,24 +7,24 @@
   "d1_databases": [
     {
       "binding": "AUTH_DB",
-      "database_name": "fanmark-production-auth-20261020",
-      "database_id": "d25388d6-fa19-46ba-a128-4fa537210e4b",
+      "database_name": "fanmark-production-auth-20261020-v3",
+      "database_id": "bbb878d3-40eb-4755-b57b-f723f0dd901b",
       "migrations_dir": "migrations",
       "migrations_pattern": "migrations/{0003_better_auth_core.sql,0007_auth_signup_command.sql,0008_auth_user_suspension.sql,0009_auth_oauth_signup.sql}",
       "remote": true
     },
     {
       "binding": "MASTER_DB",
-      "database_name": "fanmark-production-master-20261020",
-      "database_id": "ef4cee01-bd28-4fd5-8eb8-6744b4331d07",
+      "database_name": "fanmark-production-master-20261020-v3",
+      "database_id": "f7aadd85-701e-4625-92ce-879d5939dab8",
       "migrations_dir": "migrations",
       "migrations_pattern": "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}",
       "remote": true
     },
     {
       "binding": "FANMARK_DB",
-      "database_name": "fanmark-production-business-20261020",
-      "database_id": "a418f597-ff73-40a9-8847-91e3a6dddcf4",
+      "database_name": "fanmark-production-business-20261020-v3",
+      "database_id": "5af38beb-efe6-4f2b-8f59-af0070f37551",
       "migrations_dir": "migrations-business",
       "remote": true
     }

@@ -9,7 +9,7 @@ import { importObjectDigest, importDigest, MAX_IMPORT_OBJECT_BYTES } from '../..
 
 test('production R2 binding-only service uses native R2 and durable once-only dispatch', { timeout: 60000 }, async t => {
   const version = randomUUID(), owner = randomUUID();
-  const built = await build({ stdin: { contents: `export { RecoveryWriterCoordinatorProductionV2 } from './recovery-writer-drain';
+  const built = await build({ stdin: { contents: `export { RecoveryWriterCoordinatorProductionV3 } from './recovery-writer-drain';
     export { ProductionR2ImportService } from './production-r2-import-service';
     export default { async fetch(r,e){const u=new URL(r.url);
       if(u.pathname.startsWith('/command/'))return e.RECOVERY_DRAIN.get(e.RECOVERY_DRAIN.idFromName('recovery-writers-v1')).fetch('https://recovery-writer.internal/migration/'+u.pathname.slice(9),{method:'POST',body:await r.text()});
@@ -18,8 +18,8 @@ test('production R2 binding-only service uses native R2 and durable once-only di
     bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] });
   const text = value => ({ type: 'text', value });
   const mf = new Miniflare({ workers: [{ config: { name: 'r2-import-fixture', type: 'worker', compatibilityDate: '2026-09-18',
-    exports: { RecoveryWriterCoordinatorProductionV2: { type: 'durable-object', storage: 'sqlite' } },
-    env: { RECOVERY_DRAIN: { type: 'durable-object', worker: 'r2-import-fixture', exportName: 'RecoveryWriterCoordinatorProductionV2' },
+    exports: { RecoveryWriterCoordinatorProductionV3: { type: 'durable-object', storage: 'sqlite' } },
+    env: { RECOVERY_DRAIN: { type: 'durable-object', worker: 'r2-import-fixture', exportName: 'RecoveryWriterCoordinatorProductionV3' },
       IMPORT: { type: 'worker', worker: 'r2-import-fixture', exportName: 'ProductionR2ImportService' },
       RECOVERY_DRAIN_SCOPE_DIGEST: text(PRODUCTION_RUNTIME.scope), RECOVERY_DRAIN_BACKEND: text('durable-object'),
       CUTOVER_WRITE_FREEZE: text('receipt_only'), D1_TOPOLOGY: text('split'), STORAGE_BACKEND: text('r2'),
