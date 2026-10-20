@@ -1,3 +1,12 @@
+## 2026-10-20: 再移送は最初の画像処理で中止・旧Supabase復旧済み
+
+[最新の再移送中止・復旧票](CUTOVER-RETRY-ABORT-2026-10-20.md)を最初に読む。
+cohort V2はAuth/Master/Business移送後に恒久quarantineした。旧Supabaseは14:15 JSTに公開再開し、
+35関数/DB権限/元Cronを独立照合済み。Route/DNS切替・main mergeは行っていない。
+本人は復旧後に最大1日の停止を認め、移行完了まで進めるよう指示した。
+実際の移送clientを含む画像経路検査・診断保持の修正と、新しい物理5 store/調停scopeを準備してG0から進める。
+V1/V2のrun・helper・pending・保存済み操作を再実行しない。以下のV2準備完了記述は開始前の履歴。
+
 ## 2026-10-20: 再移行準備完了・新cohort V2は閉鎖、開始確認待ち
 
 [再準備票](RETRY-PREPARATION-2026-10-20.md) と [完了証拠](evidence/production-cohort-v2-prepared-2026-10-20.json) を優先する。認証期限管理・Master確定記録/応答消失復旧を修正し、実Cloudflare合成試験、3,944件/仮想105分のnative試験、初回115表backup/実隔離復元を確認した。コード14815ae/CI39353698738両job成功の新runtimeを閉鎖配備済み。実利用者データの再移送・旧側停止・Route/DNS切替は未実施。旧Supabaseが稼働し、mainを維持している。

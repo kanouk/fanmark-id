@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "state": "closed_runtime_deployed",
+  "state": "quarantined_after_first_r2_unknown_outcome",
   "productionReady": false,
   "accountId": "bfc2890741f0b3fb236e2d755b6c9adc",
   "zoneId": "6a2c39c92ba1c4106b7c19f87ada0a7e",
@@ -119,5 +119,13 @@
   "applicationBindingChangeScope": "closed cohort V2: new dedicated stores and DO namespaces; unrelated five Worker settings preserved",
   "cohortGeneration": 2,
   "quarantinedPredecessor": "production-resources-quarantined-2026-10-20.json",
-  "backupRestoreScope": "initial-schema-and-seed-baseline-only"
+  "backupRestoreScope": "initial-schema-and-seed-baseline-only",
+  "quarantine": {
+    "runId": "a660921a-bfd6-4a90-8ea5-552606ac44cf",
+    "proofSha256": "e66b008743cef45ed8693a28677b6e691c16f766812eaa1521a5b29170180fb4",
+    "pendingOperationId": "69e479e6-5485-4ecb-8d8b-8725926c6061",
+    "allDataAndJournalsRetained": true,
+    "reuseForbidden": true,
+    "evidence": "evidence/production-retry-cutover-aborted-2026-10-20.json"
+  }
 }

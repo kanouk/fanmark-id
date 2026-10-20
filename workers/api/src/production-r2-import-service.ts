@@ -51,6 +51,7 @@ async function boundedBody(request: Request, expected: number) {
 export async function productionR2ImportFetch(request: Request, env: ImportEnv): Promise<Response> {
   const url = new URL(request.url);
   if (url.origin !== "https://production-import-r2.internal") return json(null, 404);
+  let stage = "runtime", dispatchStatus: number | undefined;
   try {
     runtime(env, request);
     if (request.method !== "GET" && env.PRODUCTION_OWNER_ACCEPTANCE_BACKEND && env.PRODUCTION_OWNER_ACCEPTANCE_BACKEND !== "disabled") fail();
@@ -76,26 +77,31 @@ export async function productionR2ImportFetch(request: Request, env: ImportEnv):
       return new Response(object.body, { headers: { "cache-control": "no-store", "content-length": String(object.size),
         "x-fanmark-import-object": encode(metadata(object)) } });
     }
+    stage = "input-object";
     const owner = request.headers.get("x-fanmark-import-owner"), operationId = request.headers.get("x-fanmark-import-operation");
     if (!UUID.test(owner ?? "") || !UUID.test(operationId ?? "")) fail();
     const object = validateImportObject(decode(request.headers.get("x-fanmark-import-object")));
     if (object.store !== store || object.key !== key) fail();
-    const bytes = await boundedBody(request, object.size);
+    stage = "body";const bytes = await boundedBody(request, object.size);
+    stage = "content-digest";
     if (await importDigest(bytes) !== object.sha256) fail();
-    const batchSha256 = await importObjectDigest(object);
+    stage = "operation-digest";const batchSha256 = await importObjectDigest(object);
     if (request.headers.get("x-fanmark-import-digest") !== batchSha256) fail();
     const stub = env.RECOVERY_DRAIN!.get(env.RECOVERY_DRAIN!.idFromName("recovery-writers-v1"));
     // This durable dispatch marker precedes R2. Losing the response cannot
     // authorize the same request again, even from another gateway/process.
+    stage = "dispatch";
     const dispatched = await stub.fetch("https://recovery-writer.internal/migration/dispatch", { method: "POST",
       headers: { "content-type": "application/json" }, body: JSON.stringify({ owner, operationId, batchSha256, store }) });
+    dispatchStatus = dispatched.status;
     if (dispatched.status !== 200) fail();
     await dispatched.body?.cancel();
+    stage = "r2-put";
     const saved = await bucket.put(key, bytes, { onlyIf: { etagDoesNotMatch: "*" },
       httpMetadata: object.httpMetadata, customMetadata: object.customMetadata });
     if (!saved) return json(null, 412);
-    return json(metadata(saved));
-  } catch { return json({ error: "production_r2_import_refused" }, 409); }
+    stage = "r2-response";return json(metadata(saved));
+  } catch { return json({ error: "production_r2_import_refused", stage, ...(dispatchStatus === undefined ? {} : {dispatchStatus}) }, 409); }
 }
 export class ProductionR2ImportService extends WorkerEntrypoint<ImportEnv> {
   fetch(request: Request) { return productionR2ImportFetch(request, this.env); }

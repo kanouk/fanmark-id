@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Miniflare } from '../../workers/api/node_modules/miniflare/dist/src/index.js';
 import { productionImportGatewaySource, openProductionImportGateway, closeProductionImportGateway } from './production-import-gateway.mjs';
-import { PRODUCTION_RUNTIME } from '../../workers/api/src/production-runtime-identity.ts';
+import { PRODUCTION_RUNTIME, PRODUCTION_STORE_IDS } from '../../workers/api/src/production-runtime-identity.ts';
 import { PRODUCTION_D1_TARGETS } from './production-d1-targets.mjs';
 import { PRODUCTION_R2_TARGETS } from './production-r2-targets.mjs';
 
@@ -46,7 +46,7 @@ test('native operator gateway requires bearer, expiration and explicit read/writ
   } finally { await mf.dispose(); }
 });
 
-async function fixture(run, { loseUpload = false, rejectActivation = false, driftActivationReadback = false } = {}) {
+async function fixture(run, { loseUpload = false, rejectActivation = false, driftActivationReadback = false, edge404s = 0 } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'fanmark-import-gateway-')); await chmod(root, 0o700);
   const runtimeVersion = randomUUID(), gatewayVersion = randomUUID(), journalPath = join(root, 'gateway.jsonl');
   const bindings = [
@@ -57,6 +57,13 @@ async function fixture(run, { loseUpload = false, rejectActivation = false, drif
   ];
   let gateway = null, deletes = 0, uploads = 0, activations = 0, drift = false;
   const fetchImpl = async (url, options) => {
+    if(new URL(url).hostname!=='api.cloudflare.com'){
+      assert.equal(options.method,'GET');assert.ok(new URL(url).pathname==='/r2/identity');
+      const state=JSON.parse((await readFile(journalPath,'utf8')).trim().split('\n').at(-1));
+      assert.equal(options.headers.authorization,'Bearer '+state.bearer);
+      if(edge404s-->0)return new Response('nothing here yet',{status:404});
+      return Response.json({runtimeVersion,scope:PRODUCTION_RUNTIME.scope,stores:PRODUCTION_STORE_IDS});
+    }
     assert.equal(options.redirect, 'error'); assert.equal(options.headers.authorization, 'Bearer synthetic_control_plane_token');
     const resource = new URL(url).pathname.split('/workers/scripts/')[1]; assert.ok(resource);
     if (resource.startsWith(PRODUCTION_RUNTIME.worker + '/')) {
@@ -128,3 +135,10 @@ test('successful activation ACK cannot override a mismatched independent preview
   assert.equal((await closeProductionImportGateway(options)).removed, true);
   assert.equal(control.activations(), 1);
 }, { driftActivationReadback: true }));
+
+test('workers.dev propagation is reconciled with identity GETs before returning a write capability',async()=>fixture(async(options,control)=>{
+ const result=await openProductionImportGateway({...options,access:'import'});
+ assert.deepEqual(result.edgeReadiness,{attempts:2,lastStatus:200});
+ assert.deepEqual(control.counts(),{uploads:1,deletes:0});
+ await closeProductionImportGateway(options);
+},{edge404s:1}));

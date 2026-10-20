@@ -121,6 +121,9 @@ test('production R2 client joins fixed control-plane identities, native service,
         'fanmark-source-bucket': 'avatars', 'fanmark-source-key': key, 'fanmark-source-sha256': hash, 'fanmark-source-size': String(bytes.length) } };
       loseAck = true;
       await assert.rejects(buckets.avatars.putWithSize(key, new Response(bytes).body, options, bytes.length), /transport_unconfirmed/);
+      const failed=JSON.parse(await readFile(join(dir,'avatars.jsonl.failure.json'),'utf8'));
+      assert.equal(failed.phase,'http-put');assert.equal(failed.dataRequestAttempted,true);
+      assert.equal(failed.replayAllowed,false);assert.equal(failed.outcomeResolved,false);
       assert.equal((await coordinator.inspect()).state.pending.store, 'avatars');
       assert.equal(JSON.parse((await readFile(join(dir, 'avatars.jsonl'), 'utf8')).trim().split('\n').at(-1)).type, 'intent');
       const read = await readBuckets.avatars.get(key); assert.equal(Buffer.from(await read.arrayBuffer()).toString(), bytes.toString());

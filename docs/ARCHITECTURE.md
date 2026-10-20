@@ -50,6 +50,15 @@ Cloudflareの通常画面は`AuthReadinessGate.tsx`で認証プロフィール�
 本番Authの移送部品は `scripts/migration/auth-import-stage.mjs`（容量を限定したatomic投入）、`auth-import-readback.mjs`（同一暗号化projectionとの独立比較）、`auth-runtime-schema.mjs`（native schema前後照合）。固定本番transport・全store調停・private journalを使う。全store runner/source freeze/実ログイン/本番公開の代替ではない。
 
 ## リポジトリ構造
+
+画像移送の失敗記録は `scripts/migration/production-r2-failure.mjs`。
+R2 transportはbegin/HTTP要求/応答/metadata/ACKの停止段階、数値HTTP状態、
+固定service stage・通信コードだけをprivateなjournal隣接fileへ排他的にfsyncする。
+元journal・pendingを変更せず、拒否応答でも再送を許可しない。画像serviceの拒否応答は
+同じ固定stageを返し、画像key・本文・資格情報を診断へ含めない。
+新規gatewayはcontrol-plane有効化後に固定版/scope/storeのidentity GET成功を確認する。
+一時的なworkers.dev 404はこの読取りだけを限定再確認し、claimやデータ要求は再送しない。
+
 - `src/`
   - `pages/`: 画面エントリ (`Index`, `Auth`, `Dashboard`, `PlanSelection`, `Profile`, `Favorites`, 各プレビュー/設定/詳細ページ、Admin系)。
   - `components/`: 画面構成要素。`components/ui` は shadcn/ui ベースの共通パーツ。

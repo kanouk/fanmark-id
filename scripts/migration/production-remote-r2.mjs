@@ -9,9 +9,13 @@ import { MAX_IMPORT_OBJECT_BYTES, validateImportKey, validateImportObject, impor
 import { openProductionImportJournal, isProductionImportJournal } from './production-import-journal.mjs';
 import { isProductionImportCoordinator } from './production-import-coordinator-client.mjs';
 import {isCloudflareCredentialLease,createLeaseBoundCloudflareFetch} from './cloudflare-credential-lease.mjs';
+import {r2FailureDiagnostics,saveProductionR2Failure,R2_IMPORT_FAILURE_STAGES} from './production-r2-failure.mjs';
 
 const branded = new WeakSet(), UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
-const fail = () => { throw Error('production_r2_transport_unconfirmed'); };
+export class ProductionRemoteR2Error extends Error {
+  constructor(diagnostics={}) {super('production_r2_transport_unconfirmed');this.name='ProductionRemoteR2Error';Object.assign(this,r2FailureDiagnostics(diagnostics));}
+}
+const fail = diagnostics => { throw new ProductionRemoteR2Error(diagnostics); };
 export const isProductionRemoteR2 = bucket => branded.has(bucket);
 async function bytesOf(stream, max) {
   if (!stream?.getReader) fail();
@@ -40,7 +44,7 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
   const gatewayName = new URL(gatewayOrigin).hostname.split('.')[0];
   async function request(url, options) {
     try { return await (new URL(url).hostname==='api.cloudflare.com'?controlFetch:fetchImpl)(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(timeoutMs) }); }
-    catch { fail(); }
+    catch (error) { fail(error); }
   }
   async function json(response) {
     if (!response.ok) { await response.body?.cancel().catch(() => {}); fail(); }
@@ -80,7 +84,7 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
       if (remote.runtimeVersion !== runtimeVersion || remote.scope !== PRODUCTION_RUNTIME.scope ||
           canonicalImportValue(remote.stores) !== canonicalImportValue(PRODUCTION_STORE_IDS)) fail();
       return identity;
-    } catch { fail(); }
+    } catch (error) { fail(error); }
   }
   function metadata(object, key) {
     if (!object || object.key !== key || !Number.isSafeInteger(object.size) || object.size < 0 || object.size > MAX_IMPORT_OBJECT_BYTES ||
@@ -128,16 +132,34 @@ export function createProductionRemoteR2({ target, runtimeVersion, gatewayOrigin
       if (options.sha256 !== object.sha256) fail();
       await verify();
       if(credentialLease)await credentialLease.acquire();
-      const digest = await importObjectDigest(object), operationId = await journal.beforeWrite(digest);
+      const digest = await importObjectDigest(object);let operationId=null,phase='begin',dataRequestAttempted=false;
+      try {
+      operationId=await journal.beforeWrite(digest);phase='http-put';dataRequestAttempted=true;
       const response = await request(resource(key), { method: 'PUT', headers: { ...headers, 'content-length': String(size),
         'x-fanmark-import-owner': journal.runId, 'x-fanmark-import-operation': operationId, 'x-fanmark-import-digest': digest,
         'x-fanmark-import-object': Buffer.from(JSON.stringify(object)).toString('base64') }, body: bytes });
       // Even a known collision is a stopped attempt. Neither journal is cleared.
-      if (response.status !== 200) { await response.body?.cancel(); fail(); }
+      phase='http-response';
+      if (response.status !== 200) {
+        const diagnostics={httpStatus:response.status};
+        // Keep only fixed service stages and numeric status, never provider text.
+        try {const value=JSON.parse((await bytesOf(response.body,32768)).toString('utf8'));
+          if(value?.error==='production_r2_import_refused'&&R2_IMPORT_FAILURE_STAGES.includes(value.stage))diagnostics.serviceStage=value.stage;
+          if(Number.isSafeInteger(value?.dispatchStatus))diagnostics.dispatchStatus=value.dispatchStatus;
+        } catch {await response.body?.cancel().catch(()=>{});}
+        fail(diagnostics);
+      }
+      phase='response-metadata';
       const saved = metadata(await json(response), key);
       if (saved.size !== size || canonicalImportValue(saved.httpMetadata) !== canonicalImportValue(object.httpMetadata) ||
           canonicalImportValue(saved.customMetadata) !== canonicalImportValue(object.customMetadata)) fail();
-      await journal.afterWrite(operationId); return saved;
+      phase='acknowledge';await journal.afterWrite(operationId); return saved;
+      } catch(error) {
+        try {await saveProductionR2Failure({journalPath:journal.path,runId:journal.runId,operationId,
+          batchSha256:digest,phase,dataRequestAttempted,error});}
+        catch(recordError){if(recordError.code!=='EEXIST')throw Error('production_r2_failure_record_unconfirmed');}
+        throw error;
+      }
     },
   });
   branded.add(bucket); return bucket;

@@ -1,0 +1,100 @@
+{
+  "format": "fanmark-production-retry-abort-v1",
+  "observedAt": "2026-10-20T05:17:03.789Z",
+  "runId": "a660921a-bfd6-4a90-8ea5-552606ac44cf",
+  "ownerConfirmedWindow": {
+    "startedAt": "2026-10-20T03:57:28Z",
+    "endsAt": "2026-10-20T05:57:28Z",
+    "noExternalJobsConfirmed": true,
+    "userOperationsStopped": true
+  },
+  "sourceProject": "ppqgtbjykitqtiaisyji",
+  "headAtStart": "c06c313cab5846131ffc251db1c74c84b9273d0a",
+  "ciAtStart": {
+    "runId": 39356778051,
+    "application": "success",
+    "worker": "success"
+  },
+  "g0Admitted": true,
+  "g1SourceFrozenAndDrained": true,
+  "classification": {
+    "maintenanceTerminationRequested": 1,
+    "businessAbnormalExecutions": 0
+  },
+  "finalFrozenSource": {
+    "publicTables": 40,
+    "authUsers": 15,
+    "imageObjects": 109,
+    "imageBytes": 13285729,
+    "receiptCount": 0
+  },
+  "g2": {
+    "authAcknowledged": 1,
+    "masterAcknowledged": 165,
+    "businessAcknowledged": 261,
+    "totalAcknowledged": 427,
+    "businessPublicTablesReconciled": 40,
+    "firstR2PendingOperation": "69e479e6-5485-4ecb-8d8b-8725926c6061",
+    "r2DispatchMarkerFound": false,
+    "r2Acknowledged": false,
+    "independentImageObjects": {
+      "avatars": 0,
+      "covers": 0
+    },
+    "originalFailedRequestHttpStatus": null,
+    "rootCause": "unconfirmed",
+    "dataWriteReplayed": false,
+    "completed": false
+  },
+  "quarantine": {
+    "proofSha256": "e66b008743cef45ed8693a28677b6e691c16f766812eaa1521a5b29170180fb4",
+    "stateSha256": "62f8b0fe663074e6a26550be3dacab76fa99509ace8181528e270f3559fcaf28",
+    "permanent": true,
+    "pendingAndAllDataRetained": true,
+    "executorAndFenceRetained": true,
+    "allFiveJournalsRetained": true,
+    "temporaryGatewaysRemoved": true
+  },
+  "sourceRecovery": {
+    "all40PublicTablesRowsPrimaryKeysSequencesCatalogMatched": true,
+    "allAuthContentsMatched": true,
+    "all109ImageBytesAndMetadataMatched": true,
+    "sealedReceipts": 0,
+    "all35FunctionsCodeAndDependenciesDownloadedMatched": true,
+    "originalJwtModesPreserved": true,
+    "all75RelationsAndPrivilegesMatched": true,
+    "freezeTriggers": 0,
+    "cronJobs": 2,
+    "activeCronJobs": 1,
+    "notificationCronActive": false,
+    "maintenance": false,
+    "authApiHealthVerified": true,
+    "publicUiVerified": true,
+    "signInUiVerified": true,
+    "actualHumanLoginRetested": false,
+    "canceledSelfTestContractRetained": true,
+    "dailyExpiryDue": 0,
+    "publicReopenedAt": "2026-10-20T05:15:18.911Z",
+    "operationallyRestoredAt": "2026-10-20T05:15:51.593Z",
+    "publicStopMinutes": 69.36475,
+    "withinOwnerTwoHourWindow": true
+  },
+  "closedBoundary": {
+    "appVersion": "d48e0628-77e9-4d3d-92ab-8c420d3c2c11",
+    "workerInventory": 8,
+    "workerRoutes": 0,
+    "workerCron": 0,
+    "workersDevAndPreviews": false,
+    "ownerAcceptance": "disabled",
+    "backupAdmission": "pending",
+    "dnsRecordsAll17Exact": true,
+    "newWebhookEndpointsCreated": 0,
+    "newEmailsSent": 0,
+    "oauthCallbacksAdded": 0
+  },
+  "predecessorCustodyPreserved": true,
+  "productionMigrationCompleted": false,
+  "productionReady": false,
+  "mainMerged": false,
+  "mainMustRemain": "e5a553c0bcc938a308def6f3770f1a84db88d389"
+}

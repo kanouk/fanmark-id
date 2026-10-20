@@ -5,7 +5,8 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { lstat, open } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
-import { PRODUCTION_RUNTIME } from '../../workers/api/src/production-runtime-identity.ts';
+import { PRODUCTION_RUNTIME, PRODUCTION_STORE_IDS } from '../../workers/api/src/production-runtime-identity.ts';
+import { setTimeout as delay } from 'node:timers/promises';
 import { resolveProductionEmojiTarget } from './production-emoji-target.mjs';
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u;
@@ -153,8 +154,28 @@ export async function openProductionImportGateway({ journalPath, runtimeVersion,
     if (enabled?.enabled !== true || enabled.previews_enabled !== false) fail();
     const readback = await api(resource + '/subdomain');
     if (readback?.enabled !== true || readback.previews_enabled !== false) fail();
+    // Control-plane activation can precede workers.dev propagation. Warm only
+    // this side-effect-free identity GET; never retry a claim or data request.
+    const gatewayOrigin = `https://${name}.fanmark-id.workers.dev`;
+    let ready = false;
+    for (let attempt = 0; attempt < 9; attempt++) {
+      const response = await fetchImpl(gatewayOrigin + '/r2/identity', {method:'GET', redirect:'error',
+        headers:{authorization:`Bearer ${bearer}`}, signal:AbortSignal.timeout(30000)});
+      state.edgeReadiness = {attempts:attempt+1,lastStatus:response.status};
+      if (response.status === 200) {
+        const identity = await response.json();
+        if (identity.runtimeVersion !== runtimeVersion || identity.scope !== PRODUCTION_RUNTIME.scope ||
+            Object.keys(identity.stores ?? {}).sort().join(',') !== Object.keys(PRODUCTION_STORE_IDS).sort().join(',') ||
+            Object.entries(PRODUCTION_STORE_IDS).some(([key,value])=>identity.stores[key]!==value)) fail();
+        ready = true; break;
+      }
+      await response.body?.cancel();
+      if (response.status !== 404 || attempt === 8) fail();
+      await delay(Math.min(250 * 2 ** attempt, 8000));
+    }
+    if (!ready) fail();
     state.state = 'open'; await save();
-    return { ...state, gatewayOrigin: `https://${name}.fanmark-id.workers.dev` };
+    return { ...state, gatewayOrigin };
   } catch {
     state.failure = 'requires_independent_control_plane_inspection'; await save().catch(() => {}); fail();
   } finally { await file.close(); }

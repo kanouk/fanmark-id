@@ -53,7 +53,8 @@ test('production R2 binding-only service uses native R2 and durable once-only di
     });
     await t.test('no write without matching pending operation or with invalid key/size/body/provenance', async () => {
       const bytes = new Uint8Array([1, 2, 3]), object = await objectFor('avatars', 'owner/日本語.png', bytes), op = await operation(object);
-      assert.equal((await put(object, op, bytes)).status, 409);
+      const denied=await put(object,op,bytes);assert.equal(denied.status,409);
+      assert.deepEqual(await denied.json(),{error:'production_r2_import_refused',stage:'dispatch',dispatchStatus:409});
       assert.equal(await avatars.get(object.key), null);
       assert.equal((await command('claim', { owner, manifestSha256: 'a'.repeat(64), incarnationsSha256: 'b'.repeat(64) })).status, 200);
       assert.equal((await command('begin', op)).status, 200);
