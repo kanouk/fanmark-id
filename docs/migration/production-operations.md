@@ -64,3 +64,23 @@ www/adminはAPI・callback・認証情報付きqueryを転送しない。
 日次slotの明示保存は自然Cronの発火確認と区別する。次の自然dailyは2026-10-21 09:05 JST。
 すでに使用したslot・manual UUID・復旧POST・通知試験を再実行しない。
 自然Cronや通知が失敗した場合はreceipt/claim/archive/署名ledgerを先に読み、結果不明の要求を再送しない。
+
+## 旧Supabaseの保持終了を判断する条件
+
+現時点では削除・pause・プラン変更を実施しない。移送後の書込みはCloudflareだけにあるため、
+旧Supabaseは切戻し先にはできず、欠落調査と保存原本のために保持する。
+運用上の提案として2026-10-28ごろに保持継続を見直し、次を満たしてから本人が退役を判断する。
+
+- 自然日次backupが連続成功し、監視・保持期限・復号鍵と外部保管先を確認できる。
+- 隔離復旧の証拠を保持し、移送後のデータも復旧できる経路を確認する。
+- 本番認証・決済・メール・画像・日次処理に旧Supabaseへの実通信がないことを確認する。
+  `STORAGE_LEGACY_ORIGIN` は旧保存URLをR2 URLへ変換する照合値であり、それ自体は旧側へfetchしない。
+- DBだけでなくStorage実体・設定・履歴の保存と暗号化backupの復号手順を確認する。
+- 外部依存や未解決の移行不具合がなく、保持終了への本人の承認がある。
+
+原本の外部保存は少なくとも移行後30日を目安にする提案で、Supabaseの保存保証ではない。
+project削除ではSupabase側のbackupも失われ、DB backupだけではStorage実体を保存できない。
+pauseはFree planだけで利用可能。課金停止と原本保全を別々に確認する。
+判断時は[pausing](https://supabase.com/docs/guides/platform/free-project-pausing)、
+[project削除](https://supabase.com/docs/guides/platform/delete-project)、
+[backup](https://supabase.com/docs/guides/platform/backups)の現行仕様を再確認する。

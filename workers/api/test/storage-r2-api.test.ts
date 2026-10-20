@@ -131,7 +131,7 @@ beforeEach(async () => {
 });
 
 describe("Better Auth protected R2 image API", () => {
-  it("stores a synthetic avatar, serves it publicly, and only lets its owner delete it", async () => {
+  it.each([undefined, "", new Uint8Array(0)])("deletes an image only for its owner with an empty body (%s)", async (body) => {
     const ownerCookie = await signIn(firstEmail);
     const otherCookie = await signIn(secondEmail);
     const uploaded = await uploadAvatar(ownerCookie);
@@ -152,6 +152,7 @@ describe("Better Auth protected R2 image API", () => {
     const deniedDelete = await workerRequest(`/api/storage/object/avatars/${result.path}`, {
       method: "DELETE",
       headers: { Cookie: otherCookie },
+      body,
     });
     expect(deniedDelete.status).toBe(403);
     expect(await avatarBucket?.head(result.path)).not.toBeNull();
@@ -159,6 +160,7 @@ describe("Better Auth protected R2 image API", () => {
     const deleted = await workerRequest(`/api/storage/object/avatars/${result.path}`, {
       method: "DELETE",
       headers: { Cookie: ownerCookie },
+      body,
     });
     expect(deleted.status).toBe(204);
     expect(await workerRequest(new URL(result.publicUrl).pathname).then((response) => response.status)).toBe(404);
