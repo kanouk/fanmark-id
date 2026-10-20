@@ -1,6 +1,9 @@
 # 2026-10-19再開・10月20日更新の本番移行準備
 
-停止時のRESUMEとHANDOFFの過去記録を上書きせず、再開後の現状をここへ固定する。
+**10月20日朝の実移送は中止し、移行先の当該世代を恒久quarantineした。**
+[最新の中止・旧環境復旧票](CUTOVER-ABORT-2026-10-20.md)を優先する。以下は実行開始前の準備記録。
+
+停止時のRESUMEとHANDOFFの過去記録を上書きせず、準備時の状態をここへ固定する。
 PR #41・`codex/cloudflare-api-preparation`・既存migration worktreeを継続する。
 本番source停止・実利用者の移送・本番hostの接続変更・main mergeは未実施。
 

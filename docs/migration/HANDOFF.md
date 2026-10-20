@@ -1,3 +1,30 @@
+## 2026-10-20: G2 Master途中で中止・target恒久封鎖、旧Supabaseを復旧
+
+**次は [中止・復旧票](CUTOVER-ABORT-2026-10-20.md) を読む。元runを再開しない。**
+所有者の当日指示でG0を再確認し、08:26 JSTから旧側を停止・drain、40表/Auth/109画像の
+確定保存後に専用targetへ投入した。Auth 1 batch、Master 123 batchのACK後、
+Masterの絵文字staging50行でlocal/remote pendingが残り停止。Business/画像は未投入。
+失敗後の管理APIで401を観測し、既存OAuth更新後はGET成功。長時間保持したtokenの失効が
+考えられるが、失敗要求そのもののHTTP statusは未保存のため断定しない。
+
+同じ終了済みexecutor・元5 journal・source evidence・全遠隔ACKを照合して、一度だけ
+quarantineした。pending/ACK/部分データ/executor/fenceを保持し、両一時gatewayを削除。
+新公開route/本番Webhook/G5/業務writer/Cronを一度も開いていないことを確認した。
+旧側の全40表/sequence/catalog/Auth/画像109件とseal済み通知0件を別要求で全内容照合し、
+保存済み逆SQLと原本でDB・35関数/JWT・元Cron状態を復元した。公開/ログイン画面、認証API、
+公開画像を確認、期限処理の対象0・解約済み自己テスト契約1件を保持。本人の再ログインは未実施。
+
+旧側が唯一の稼働先。本番移行は未完了、Route/DNS変更・main mergeなし。
+新targetを空targetとして使わない。新しい物理5 store/調停scopeの準備、資格情報の寿命管理と
+期限境界試験を終え、次回G0で新原本/最終snapshotを取得する。現在のMFA票は期限/最新sourceを
+再照合し、必要な本人操作は独立準備後。旧Supabaseのfactorは変更していない。
+
+privateは`fanmark-cutover-2026-10-19/production-cutover-2026-10-20/`。
+元run `bf22744d-e772-4e9e-99c7-e07020b9594c` の全intent/journal/quarantine proof/暗号化保存と、
+`abort-*`の復旧記録を保持。ACK済み35関数を再配備せず、freeze/受信reopen/公開解除/Cron復元も
+再送しない。新しい鍵・メール試験・callback登録を繰り返さない。既存cli-latest変更を保持。
+以下の未停止/未移送/空targetという記述は開始前の履歴。
+
 ## 2026-10-20: 管理者MFA再登録の保存・最新source・全Auth投影を独立検証
 
 本人は00:24:45 JSTに新しいMFA登録を完了。暗号化capsuleを別processで復号し、最新の旧source binding、
