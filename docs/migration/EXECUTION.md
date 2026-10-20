@@ -1,3 +1,5 @@
+> 履歴・当時の実証記録。現行の入口は[運用](../operations/README.md)と[最終確認状態](../operations/current-state.md)。本文中の「現在」「次の工程」や未マージ/未切替は当時の状態。完了済みhelperを再実行しない。
+
 ## 2026-10-18: 本番runtimeを非公開で配備
 
 `62e139b` のCI39136846799は両job成功。本番app/backup/monitorを非公開・Cron停止・秘密未設定で配備し、別の管理API読戻しでbinding/閉鎖状態/既存4 Worker保持を確認。app version `dcdf1c5e-ab45-4851-8113-3b7e3a955d1f`。本番import/source停止/DNS変更/main mergeは未実施。実Storageと同じ1.80.2の隔離APIで7種の更新拒否、開始済み通常/TUS uploadの完了拒否、元画像保持と逆操作を確認した。file backendの限定証拠で、S3/Edge等の残条件は維持。絵文字CLIの07de140をpush、CI39137905597確認中。[検証記録](production-preparation-2026-10-18.md)。再認証は最後。

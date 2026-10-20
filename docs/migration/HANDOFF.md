@@ -1,3 +1,5 @@
+> 履歴・当時の実証記録。現行の入口は[運用](../operations/README.md)と[最終確認状態](../operations/current-state.md)。本文中の「現在」「次の工程」や未マージ/未切替は当時の状態。完了済みhelperを再実行しない。
+
 ## 2026-10-20: V3本番検証・旧自動配備廃止完了
 
 現在は[2026-10-20 V3再開票](RESUME-2026-10-20-V3.md)と[通常運用](production-operations.md)を優先する。

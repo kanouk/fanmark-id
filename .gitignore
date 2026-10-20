@@ -31,3 +31,11 @@ supabase/.temp/
 # npm local cache
 .npm-cache/
 /.npmrc
+
+# Local credentials stay outside version control (examples may be tracked).
+.env
+.env.*
+!.env.example
+!.env.*.example
+.dev.vars
+.dev.vars.*
