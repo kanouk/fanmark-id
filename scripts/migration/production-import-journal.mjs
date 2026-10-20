@@ -49,6 +49,9 @@ export async function openProductionImportJournal({ path, runId, targetId, targe
         if (row.type === 'intent' && !pending && UUID.test(row.operationId ?? '') && HASH.test(row.batchSha256 ?? '') && !seen.has(row.operationId)) {
           pending = row.operationId; seen.add(pending);
         } else if (row.type === 'acknowledged' && pending && row.operationId === pending) pending = null;
+        else if (row.type === 'cancelled-before-dispatch' && pending && row.operationId === pending &&
+            PRODUCTION_R2_TARGETS.some(row => row.bucketName === targetId) && HASH.test(row.recoveryProofSha256 ?? '') &&
+            Object.keys(row).sort().join(',') === 'operationId,recoveryProofSha256,type') pending = null;
         else fail('production_journal_invalid');
       }
       return { pending, dev: stat.dev, ino: stat.ino };

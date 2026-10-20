@@ -19,7 +19,7 @@
   },
   "policyFingerprint": {
     "path": "docs/migration/production-preparation-policy.json",
-    "sha256": "c04f9eba978c10f53c295d889dbe7a11c6ef9e4d90eef721aee15127679ddfc6"
+    "sha256": "8e5fa87af56801ff20a6d11139a8375fcdf5bbe681f70629f23a713d77cecad8"
   },
   "variables": [
     {
@@ -720,7 +720,7 @@
     },
     {
       "path": "scripts/migration/production-import-coordinator-client.mjs",
-      "sha256": "87977e8729717b41283c9e3d5c8f815a79fcdcb2aa3591d6542888ea2673180a"
+      "sha256": "9d749b671628eac2d6de29c51025419a7aff89bd7c28708c431b5c0681790976"
     },
     {
       "path": "scripts/migration/production-import-execution-lock.mjs",
@@ -728,15 +728,15 @@
     },
     {
       "path": "scripts/migration/production-import-gateway.mjs",
-      "sha256": "f970aeaa575d78663801f5599be7cf77ef00d316a472122a1b72b6488ba01b04"
+      "sha256": "1b34443b8f247efa175d10ca863c84c01c2eb6fe82da62cea29b431dd328d2c5"
     },
     {
       "path": "scripts/migration/production-import-inspection.mjs",
-      "sha256": "40c0ded8e3dea279a54426526e2bc69a066991e2763cd25a9d4d0d6dcebe138b"
+      "sha256": "4fe5754505e3727a98eb050462d063b0e9937604712ba15152f23ca0395520ed"
     },
     {
       "path": "scripts/migration/production-import-journal.mjs",
-      "sha256": "0730aaaa319b78b4d60602bf262eee698c80ba0edf88eac5418b11ac2d5e6e3e"
+      "sha256": "1fb0751385f63f56028e96c77c9a84a0627ef70799f435e91b2d370489f3bc51"
     },
     {
       "path": "scripts/migration/production-import-quarantine.mjs",
@@ -755,8 +755,12 @@
       "sha256": "5d2a3738aaf3753f594f75f13dafbe87dc99de8c587272f727f1a2d4bcae050d"
     },
     {
+      "path": "scripts/migration/production-r2-cancellation.mjs",
+      "sha256": "d1f528f8825552b5d37339e79f7159f4f443abf372df1b226f6e74ffe320aa32"
+    },
+    {
       "path": "scripts/migration/production-r2-failure.mjs",
-      "sha256": "f9c82971c37ea4f40dbd33bad8f579a5ea03e03bfff5eaad18aebe9a3e97e296"
+      "sha256": "2b2cd52df2ca08689321eccc6d49d0711a3a18ead9f05c5ea2a1542e5f66f6b6"
     },
     {
       "path": "scripts/migration/production-r2-import-stage.mjs",
@@ -992,7 +996,7 @@
     },
     {
       "path": "workers/api/src/production-import-coordinator.ts",
-      "sha256": "a3d89ea10c8de175864b628b7bb06c741cac677bc7c8eb3ef27c50b4776e55e5"
+      "sha256": "d85bcc25ed2729cf38baba9aae1fa65f16d0bde8593622c1dccd63cc3d8d398d"
     },
     {
       "path": "workers/api/src/production-owner-acceptance.ts",

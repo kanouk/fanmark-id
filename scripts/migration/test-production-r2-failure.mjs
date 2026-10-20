@@ -5,6 +5,19 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {r2FailureDiagnostics,saveProductionR2Failure} from './production-r2-failure.mjs';
+import {ProductionRemoteR2Error} from './production-remote-r2.mjs';
+
+test('wrapped transport diagnostics survive sanitization and bounded AggregateError traversal',()=>{
+  for(const error of [Object.assign(Error('PRIVATE_URL'),{cause:Object.assign(Error('PRIVATE_TOKEN'),{code:'ECONNRESET'})}),
+    new AggregateError([Object.assign(Error('PRIVATE_URL'),{code:'ECONNRESET'})],'PRIVATE_MESSAGE')]){
+    const wrapped=new ProductionRemoteR2Error(error);
+    assert.deepEqual(r2FailureDiagnostics(wrapped),{transportCode:'ECONNRESET'});
+    assert.deepEqual(r2FailureDiagnostics(r2FailureDiagnostics(wrapped)),{transportCode:'ECONNRESET'});
+  }
+  assert.deepEqual(r2FailureDiagnostics(new ProductionRemoteR2Error({name:'TimeoutError'})),{transportCode:'TimeoutError'});
+  assert.deepEqual(r2FailureDiagnostics({transportCode:'PRIVATE_TOKEN',errors:[{code:'PRIVATE_URL'}]}),{});
+  const cyclic={};cyclic.cause=cyclic;cyclic.errors=[cyclic];assert.deepEqual(r2FailureDiagnostics(cyclic),{});
+});
 
 test('R2 failure records contain bounded diagnostics and cannot replace the first uncertain result',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fanmark-r2-failure-'));

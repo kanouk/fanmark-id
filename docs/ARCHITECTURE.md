@@ -501,3 +501,8 @@ Supabase username adapterも`profile-supabase-repository.ts`の固定RPCを使�
 `initial-import-set-readback.mjs` の `rehearseInitialImportSet` はlocal限定。`executeInitialImportSet` は固定本番transport・全5 journal・DO executorの所有権で同じ順次実行/境界再開を行い、全件照合をfsyncしてからcompleteする。source停止の実証/部分stage修復/公開は別工程。[入力・再開契約](migration/initial-import-set.md)。
 
 本番再移行のcohort V2は [RETRY-PREPARATION-2026-10-20.md](migration/RETRY-PREPARATION-2026-10-20.md) と現行 `production-resources.json` に固定する。移送資格情報は `cloudflare-credential-lease.mjs` / `wrangler-credential-lease.mjs` が期限管理する。本番Masterは共有9 migrationに `migrations-master-production/0000_import_operation_commits.sql` と `0001_import_commit_no_replace.sql` を加え、`master-atomic-commit.mjs` が応答消失時の同一executor内の確定照合を行う。Master recoveryは旧25表と確定記録を含む26表の固定profileを別々に検査する。新しいProductionV2 DO namespaceを使用し、旧Production classのfetch/alarmは封鎖して旧記録を保持する。
+
+本番画像移送のdispatch前取消しは `scripts/migration/production-r2-cancellation.mjs` から、
+`production-import-coordinator.ts` の同じwriter DOへ証拠/state hashを渡す。
+永久tombstoneで遅着を拒否し、`production-import-inspection.mjs` が元journalへの取消し追記と
+遠隔記録の照合を行う。操作lockの消去を未実行判定に使わない。

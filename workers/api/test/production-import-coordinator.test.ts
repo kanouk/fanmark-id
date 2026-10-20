@@ -21,6 +21,51 @@ async function digest(value: unknown) {
   const bytes = await crypto.subtle.digest("SHA-256",new TextEncoder().encode(JSON.stringify(value)));
   return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
+it.each(["avatars","covers"])("seals an undispatched %s operation permanently and retains the executor and ACK prefix",async store=>{
+  await call("claim",identity);const executorId=crypto.randomUUID();await call("acquire",{owner,executorId});
+  await call("begin",{...operation,executorId});await call("acknowledge",{...operation,executorId});
+  const image={...operation,operationId:crypto.randomUUID(),store};await call("begin",{...image,executorId});
+  const state=(await (await call("inspect",{owner})).json() as {state:unknown}).state;
+  const request={...image,executorId,stateSha256:await digest(state),proofSha256:"f".repeat(64)};
+  const before=await stored();
+  for(const bad of [{...request,stateSha256:"0".repeat(64)},{...request,executorId:other},{...request,store:"business"}])
+    expect((await call("cancel-undispatched-r2",bad)).status).toBe(409);
+  expect(await stored()).toEqual(before);
+  expect((await call("cancel-undispatched-r2",request)).status).toBe(200); // response can be lost
+  const sealed=await stored();
+  expect(await (await call("operation",{owner,operationId:image.operationId})).json()).toMatchObject({
+    state:{pending:null,acknowledged:1},executorId,fenceOwner:owner,pending:null,acknowledged:null,dispatched:null,
+    cancelled:{operationId:image.operationId,proofSha256:request.proofSha256,stateSha256:request.stateSha256,executorId}});
+  for(const [action,input] of [["cancel-undispatched-r2",request],["dispatch",image],["begin",{...image,executorId}],
+    ["acknowledge",{...image,executorId}]] as const)expect((await call(action,input)).status).toBe(409);
+  await expect(releaseRecoveryWriterFence(runtime,owner)).rejects.toThrow();
+  expect(await stored()).toEqual(sealed);
+  const next={...image,operationId:crypto.randomUUID()};
+  expect((await call("begin",{...next,executorId})).status).toBe(200);
+  expect((await call("dispatch",image)).status).toBe(409); // late arrival after a new pending intent
+  expect((await call("dispatch",next)).status).toBe(200);
+  expect((await call("acknowledge",{...next,executorId})).status).toBe(200);
+});
+it("dispatch and cancellation arbitrate atomically, with exactly one winner",async()=>{
+  await call("claim",identity);const executorId=crypto.randomUUID();await call("acquire",{owner,executorId});
+  const image={...operation,store:"avatars"};await call("begin",{...image,executorId});
+  const state=(await (await call("inspect",{owner})).json() as {state:unknown}).state;
+  const request={...image,executorId,stateSha256:await digest(state),proofSha256:"f".repeat(64)};
+  const results=await Promise.all([call("dispatch",image),call("cancel-undispatched-r2",request)]);
+  expect(results.map(r=>r.status).sort()).toEqual([200,409]);
+  const proof=await (await call("operation",{owner,operationId:image.operationId})).json() as {dispatched:unknown;cancelled?:unknown};
+  expect(Boolean(proof.dispatched)).toBe(!Boolean(proof.cancelled));
+  const before=await stored();
+  expect((await call("cancel-undispatched-r2",request)).status).toBe(409);
+  expect(await stored()).toEqual(before);
+});
+it("a dispatched R2 intent cannot be cancelled even before its acknowledgement",async()=>{
+  await call("claim",identity);const executorId=crypto.randomUUID();await call("acquire",{owner,executorId});
+  const image={...operation,store:"covers"};await call("begin",{...image,executorId});await call("dispatch",image);
+  const state=(await (await call("inspect",{owner})).json() as {state:unknown}).state,before=await stored();
+  expect((await call("cancel-undispatched-r2",{...image,executorId,stateSha256:await digest(state),proofSha256:"f".repeat(64)})).status).toBe(409);
+  expect(await stored()).toEqual(before);
+});
 it.each(["master","business","avatars","covers"])("quarantine retains partial %s state and refuses all future import writes and fence release",async store=>{
   await call("claim",identity);const executorId=crypto.randomUUID();await call("acquire",{owner,executorId});
   const pending={...operation,executorId,store};await call("begin",pending);

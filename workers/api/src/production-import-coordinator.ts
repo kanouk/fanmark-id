@@ -10,6 +10,7 @@ export const IMPORT_STATE_KEY = "production-import-v1";
 export const IMPORT_EXECUTOR_KEY = "production-import-executor-v1";
 export const IMPORT_QUARANTINE_KEY = "production-import-quarantine-v1";
 type Quarantine = { owner: string; proofSha256: string; stateSha256: string; executorId: string | null };
+type Cancelled = Pending & { executorId: string; proofSha256: string; stateSha256: string };
 type Pending = { operationId: string; batchSha256: string; store: string };
 export type ProductionImportState = {
   owner: string; manifestSha256: string; incarnationsSha256: string;
@@ -26,6 +27,7 @@ const shapes: Record<string, string> = {
   begin: "batchSha256,operationId,owner,store", acknowledge: "batchSha256,operationId,owner,store",
   complete: "owner,readbackSha256", dispatch: "batchSha256,operationId,owner,store",
   quarantine: "executorId,owner,proofSha256,stateSha256",
+  "cancel-undispatched-r2": "batchSha256,executorId,operationId,owner,proofSha256,stateSha256,store",
 };
 function json(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { "cache-control": "no-store" } });
@@ -69,10 +71,10 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     if (keys !== shapes[action] && !optionalExecutor) return json(null, 400);
     if ((Object.hasOwn(input, "executorId") || ["acquire", "yield"].includes(action)) &&
         !(action === "quarantine" && input.executorId === null) && !UUID.test(input.executorId ?? "")) return json(null, 400);
-    if (action === "quarantine" && (!HASH.test(input.stateSha256 ?? "") || !HASH.test(input.proofSha256 ?? ""))) return json(null, 400);
+    if (["quarantine", "cancel-undispatched-r2"].includes(action) && (!HASH.test(input.stateSha256 ?? "") || !HASH.test(input.proofSha256 ?? ""))) return json(null, 400);
     if (action === "claim" && (!HASH.test(input.manifestSha256 ?? "") || !HASH.test(input.incarnationsSha256 ?? ""))) return json(null, 400);
     if (action === "operation" && !UUID.test(input.operationId ?? "")) return json(null, 400);
-    if (["begin", "acknowledge", "dispatch", "recover-auth"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
+    if (["begin", "acknowledge", "dispatch", "recover-auth", "cancel-undispatched-r2"].includes(action) && (!UUID.test(input.operationId ?? "") || !HASH.test(input.batchSha256 ?? "") ||
         !["auth", "master", "business", "avatars", "covers"].includes(input.store ?? ""))) return json(null, 400);
     if (["complete", "yield", "recover", "recover-auth"].includes(action) && !HASH.test(input.readbackSha256 ?? "")) return json(null, 400);
     if (action === "recover" && (!Number.isSafeInteger(input.acknowledged) || input.acknowledged! < 0)) return json(null, 400);
@@ -98,15 +100,19 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
     if (action === "operation") {
       const acknowledged = await storage.get<Pending>("import-operation:" + input.operationId);
       const dispatched = await storage.get<Pending>("import-dispatch:" + input.operationId);
+      const cancelled = await storage.get<Cancelled>("import-cancelled:" + input.operationId);
       const pending = state?.pending && state.pending.operationId === input.operationId ? state.pending : null;
       const valid = (row: Pending) => UUID.test(row.operationId) && row.operationId === input.operationId &&
         HASH.test(row.batchSha256) && ["auth", "master", "business", "avatars", "covers"].includes(row.store);
+      if (cancelled && (!state || !valid(cancelled) || !["avatars", "covers"].includes(cancelled.store) ||
+          !UUID.test(cancelled.executorId) || !HASH.test(cancelled.proofSha256) || !HASH.test(cancelled.stateSha256) ||
+          pending || acknowledged || dispatched)) return json(null, 409);
       if ((acknowledged && (!state || state.acknowledged < 1 || !valid(acknowledged) || pending)) ||
           (dispatched && (!state || !valid(dispatched) || !["avatars", "covers"].includes(dispatched.store) ||
             !(acknowledged ?? pending) || !sameOperation(dispatched, (acknowledged ?? pending)!)))) return json(null, 409);
       return json({ state: state ?? null, scope: PRODUCTION_RUNTIME.scope, active: active ?? 0,
         executorId: executorId ?? null, fenceOwner: fence?.owner ?? null, operationId: input.operationId,
-        pending, acknowledged: acknowledged ?? null, dispatched: dispatched ?? null, ...(quarantine ? {quarantine} : {}) });
+        pending, acknowledged: acknowledged ?? null, dispatched: dispatched ?? null, ...(cancelled ? {cancelled} : {}), ...(quarantine ? {quarantine} : {}) });
     }
     // Terminal: preserve every pending/ACK/dispatch record, executor and fence.
     // No clear/retry/release operation is provided for quarantined resources.
@@ -144,8 +150,28 @@ export async function productionImportCommand(ctx: DurableObjectState, env: Env,
       return json({ ...state, executorId: input.executorId });
     }
     if (executionRequired && executorId === undefined && ["begin", "acknowledge", "complete"].includes(action)) return json(null, 409);
-    if (["begin", "acknowledge", "complete", "yield", "recover", "recover-auth"].includes(action) &&
+    if (["begin", "acknowledge", "complete", "yield", "recover", "recover-auth", "cancel-undispatched-r2"].includes(action) &&
         (executorId ?? null) !== (input.executorId ?? null)) return json(null, 409);
+    // Atomic dispatch/cancel arbitration. A permanent tombstone is written
+    // before pending is cleared; a delayed original request can never dispatch.
+    // Dispatched outcomes, D1 writes and quarantined cohorts cannot use this path.
+    if (action === "cancel-undispatched-r2") {
+      if (!executorId || !["avatars", "covers"].includes(input.store ?? "") ||
+          !state.pending || !sameOperation(state.pending, input) ||
+          await storage.get("import-operation:" + input.operationId) ||
+          await storage.get("import-dispatch:" + input.operationId) ||
+          await storage.get("import-cancelled:" + input.operationId)) return json(null, 409);
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(state)));
+      const stateSha256 = [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2,"0")).join("");
+      if (stateSha256 !== input.stateSha256) return json(null, 409);
+      const cancelled: Cancelled = {...state.pending, executorId, stateSha256, proofSha256: input.proofSha256!};
+      await storage.put("import-cancelled:" + input.operationId, cancelled);
+      state.pending = null;
+      await storage.put(IMPORT_STATE_KEY, state);
+      return json({state, cancelled, scope: PRODUCTION_RUNTIME.scope, active: 0, fenceOwner: fence.owner, executorId});
+    }
+    if (["begin", "dispatch", "acknowledge"].includes(action) &&
+        await storage.get("import-cancelled:" + input.operationId)) return json(null, 409);
     if (action === "recover-auth") {
       // Only the first, single-transaction Auth stage. The private recovery
       // operator checks the dead executor, exact batch and full Auth readback.

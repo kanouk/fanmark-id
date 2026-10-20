@@ -80,6 +80,16 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
         result.quarantine.stateSha256!==stateSha256||result.quarantine.executorId!==previous)fail();
       admitted=false;return result;
     },
+    async cancelUndispatchedR2({executorId:previous,operationId,batchSha256,store,stateSha256,proofSha256}){
+      if(executorId!==null||!UUID.test(previous??'')||!UUID.test(operationId??'')||
+        ![batchSha256,stateSha256,proofSha256].every(value=>HASH.test(value??''))||!['avatars','covers'].includes(store))fail();
+      const result=await invoke('cancel-undispatched-r2',{owner,executorId:previous,operationId,batchSha256,store,stateSha256,proofSha256});
+      validate(result.state);
+      if(result.scope!==SCOPE||result.active!==0||result.fenceOwner!==owner||result.executorId!==previous||
+        result.state.pending!==null||result.state.readbackSha256!==null||
+        JSON.stringify(result.cancelled)!==JSON.stringify({operationId,batchSha256,store,executorId:previous,stateSha256,proofSha256}))fail();
+      return result;
+    },
     async inspectOperation(operationId){
       if(!UUID.test(operationId??''))fail();
       const result=await invoke('operation',{owner,operationId});
@@ -92,6 +102,11 @@ export function createProductionImportCoordinator({owner,manifestSha256,incarnat
         if(row!==null&&(!row||row.operationId!==operationId||!HASH.test(row.batchSha256??'')||
           !Object.hasOwn(frozenIncarnations,row.store)))fail();
       }
+      const cancelled=result.cancelled;
+      if(cancelled&&(!result.state||cancelled.operationId!==operationId||!HASH.test(cancelled.batchSha256??'')||
+        !['avatars','covers'].includes(cancelled.store)||!UUID.test(cancelled.executorId??'')||
+        !HASH.test(cancelled.proofSha256??'')||!HASH.test(cancelled.stateSha256??'')||
+        result.pending||result.acknowledged||result.dispatched))fail();
       if((result.acknowledged&&!(result.state?.acknowledged>=1))||(result.pending&&result.acknowledged)||(result.dispatched&&
         (!['avatars','covers'].includes(result.dispatched.store)||
          ['operationId','batchSha256','store'].some(key=>result.dispatched[key]!==(result.acknowledged??result.pending)?.[key]))))fail();

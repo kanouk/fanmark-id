@@ -1,3 +1,8 @@
+`test-production-r2-cancellation.mjs` は終了した子processのlock、native DO/R2、独立clientで、
+画像のdispatch前取消し、遅着PUT拒否、新UUIDの保存、取消し応答消失とlocal記録補修、
+証拠改変拒否を検査する。`vitest.production-import.config.mjs` はdispatchとの原子的な競合と、
+dispatch済み取消し拒否も検査する。失敗診断は再sanitize時も固定network codeを保持する。
+
 # fanmark.id TECH.md
 
 再開後の本番準備の現状は[2026-10-19更新](migration/PREPARATION-2026-10-19.md)。

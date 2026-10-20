@@ -133,3 +133,26 @@ lock保持と再送拒否を検証した。本番適用・旧source復帰の実�
 詳細は [再準備票](RETRY-PREPARATION-2026-10-20.md) を参照する。Masterの元DMLと同じtransactionに保存したimmutable確定記録が、run/operation/hash/target/incarnation/statement件数・各変更件数まで一致した場合だけ元のjournalへACKする。local/remote pending・停止owner・active0・生存executorを前後に照合する。元SQLは再送しない。記録がないことを未実行の証明にしない。2026-10-20にquarantineした旧cohort/runにはこの記録がなく、対象外である。
 
 遠隔ACKだけの応答消失は同じjournalが独立GETで完全一致を確認してlocal ACKを追記する。local fsync失敗はlockを残して停止する。別processからの補修条件は従来どおり。
+
+## R2 dispatch前の要求を永久に無効化する限定復旧
+
+`cancelUndispatchedProductionR2` は、終了済みの同一端末executor、全5 journal、元の
+run/manifest/source証拠、incarnation、停止owner、active0を照合する。対象はavatars/covers
+の単一pendingだけとし、同じoperation UUIDのACKとdispatchがどちらも存在しない場合に限る。
+画像が見つからないことだけを未実行の証明にはしない。
+
+排他的に保存した証拠hashと元state hashを `cancel-undispatched-r2` に一度だけ渡す。
+DOはdispatchと同じtransactionで、executor/state/pendingを照合し、永久tombstoneを保存して
+からpendingを解除する。dispatchが先なら取消しを拒否する。取消しが先なら元のUUIDの
+begin/dispatch/acknowledgeを永久に拒否し、遅着した元PUTもR2へ進めない。ACK件数、executor、
+停止fence、元intentと失敗sidecarを保持する。D1の未確定保存やquarantine済みrunは対象外。
+
+別inspectでtombstoneと証拠hashを確認した後だけ、local journalへ
+`cancelled-before-dispatch` を追記し、終了済みprocessの操作lockを解除する。
+取消し応答が消えた場合は再送せず、保存済みproofとtombstoneを独立照合して
+`recoverCancelledProductionR2Import` でlocal記録を補修する。全journal検査は取消し行も
+遠隔tombstoneと照合し、ACKへ数えない。元UUIDは再利用しない。
+
+その後の実行権回収・prefix全件照合と新executorによるstage境界からの再開は別工程で行う。
+これは画像の保存成功を意味しない。閉鎖・source停止を保ったまま、新しいUUIDによる画像
+送信を可能にする限定操作である。実Cloudflareの証拠は当日の操作記録で別途確認する。

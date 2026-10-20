@@ -281,6 +281,7 @@
     "workers/api/migrations-master-production/0000_import_operation_commits.sql",
     "workers/api/wrangler.production-master-import-schema.jsonc",
     "workers/api/migrations-master-production/0001_import_commit_no_replace.sql",
-    "scripts/migration/production-r2-failure.mjs"
+    "scripts/migration/production-r2-failure.mjs",
+    "scripts/migration/production-r2-cancellation.mjs"
   ]
 }

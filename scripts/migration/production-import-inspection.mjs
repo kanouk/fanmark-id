@@ -47,7 +47,7 @@ export async function inspectProductionImportJournal(path) {
         !UUID.test(identity.runId) || !UUID.test(identity.targetIncarnation) ||
         !(UUID.test(identity.targetId) || PRODUCTION_R2_TARGETS.some(row => row.bucketName === identity.targetId))) fail();
     let pending = null;
-    const operations = [], seen = new Set();
+    const operations = [], cancelled = [], seen = new Set();
     for (const row of rows) {
       if (row?.type === 'intent' && Object.keys(row).sort().join(',') === 'batchSha256,operationId,type' &&
           !pending && UUID.test(row.operationId ?? '') && HASH.test(row.batchSha256 ?? '') && !seen.has(row.operationId)) {
@@ -57,6 +57,10 @@ export async function inspectProductionImportJournal(path) {
           (Object.keys(row).sort().join(',') === 'operationId,type' ||
            (Object.keys(row).sort().join(',') === 'operationId,recoveryProofSha256,type' && HASH.test(row.recoveryProofSha256 ?? '')))) {
         operations.push({ ...pending, acknowledged: true }); pending = null;
+      } else if (row?.type === 'cancelled-before-dispatch' && pending && row.operationId === pending.operationId &&
+          Object.keys(row).sort().join(',') === 'operationId,recoveryProofSha256,type' && HASH.test(row.recoveryProofSha256 ?? '') &&
+          PRODUCTION_R2_TARGETS.some(row => row.bucketName === identity.targetId)) {
+        cancelled.push({...pending,recoveryProofSha256:row.recoveryProofSha256});pending=null;
       } else fail();
     }
     let lock = null;
@@ -73,7 +77,7 @@ export async function inspectProductionImportJournal(path) {
       }
       lock = { dev: raw.dev, ino: raw.ino, owner };
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
-    return { identity, pending, operations, lock, dev: file.dev, ino: file.ino, journalSha256: hash(file.text) };
+    return { identity, pending, operations, cancelled, lock, dev: file.dev, ino: file.ino, journalSha256: hash(file.text) };
   } catch { fail(); }
 }
 
@@ -85,8 +89,8 @@ export async function inspectProductionImportAttempt({ journalPath, coordinator 
   const remote = await coordinator.inspectOperation(local.pending.operationId);
   const matches = row => row && row.operationId === local.pending.operationId && row.batchSha256 === local.pending.batchSha256 && row.store === store;
   if ((remote.pending && !matches(remote.pending)) || (remote.acknowledged && !matches(remote.acknowledged)) ||
-      (remote.dispatched && !matches(remote.dispatched))) fail();
-  const classification = remote.acknowledged ? 'remote-acknowledged-local-pending' : remote.dispatched ? 'remote-dispatched-unresolved' :
+      (remote.dispatched && !matches(remote.dispatched)) || (remote.cancelled && !matches(remote.cancelled))) fail();
+  const classification = remote.cancelled ? 'remote-cancelled-local-pending' : remote.acknowledged ? 'remote-acknowledged-local-pending' : remote.dispatched ? 'remote-dispatched-unresolved' :
     remote.pending ? 'remote-pending-unresolved' : 'remote-not-observed-unresolved';
   return { classification, local, remote, store, replayAllowed: false, productionReady: false };
 }
@@ -95,12 +99,15 @@ export async function inspectProductionImportAttempt({ journalPath, coordinator 
  * a local log repair. Pending/missing provider outcomes require other recovery.
  * A crash during this repair retains the recovery lock for independent review.
  */
-export async function recoverAcknowledgedProductionImport({ journalPath, coordinator }) {
+export const recoverAcknowledgedProductionImport = options => recoverTerminalProductionImport(options,false);
+export const recoverCancelledProductionR2Import = options => recoverTerminalProductionImport(options,true);
+async function recoverTerminalProductionImport({ journalPath, coordinator }, cancelled) {
   const attempt = await inspectProductionImportAttempt({ journalPath, coordinator });
   const { local, remote } = attempt, owner = local.lock?.owner;
-  if (attempt.classification !== 'remote-acknowledged-local-pending' || !owner ||
+  if (attempt.classification !== (cancelled?'remote-cancelled-local-pending':'remote-acknowledged-local-pending') || !owner ||
       owner.operationId !== local.pending.operationId || owner.hostHash !== importJournalHostHash() ||
-      remote.active !== 0 || remote.fenceOwner !== local.identity.runId || remote.state?.pending !== null) fail();
+      remote.quarantine || remote.active !== 0 || remote.fenceOwner !== local.identity.runId || remote.state?.pending !== null ||
+      (cancelled && (!remote.executorId || remote.executorId !== remote.cancelled.executorId || remote.dispatched || remote.acknowledged))) fail();
   try { process.kill(owner.processId, 0); fail(); } catch (error) { if (error.code !== 'ESRCH') fail(); }
   const lockPath = journalPath + '.recovery.lock';
   const recovery = await open(lockPath, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
@@ -113,19 +120,19 @@ export async function recoverAcknowledgedProductionImport({ journalPath, coordin
     if (again.classification !== attempt.classification || again.local.journalSha256 !== local.journalSha256 ||
         again.local.dev !== local.dev || again.local.ino !== local.ino ||
         again.local.lock?.dev !== local.lock.dev || again.local.lock?.ino !== local.lock.ino ||
-        again.remote.active !== 0 || again.remote.fenceOwner !== local.identity.runId || again.remote.state?.pending !== null) fail();
-    const recoveryProofSha256 = hash(JSON.stringify({ identity: local.identity, operation: again.remote.acknowledged,
+        JSON.stringify(again.remote)!==JSON.stringify(remote) || again.remote.active !== 0 || again.remote.fenceOwner !== local.identity.runId || again.remote.state?.pending !== null) fail();
+    const recoveryProofSha256 = cancelled ? remote.cancelled.proofSha256 : hash(JSON.stringify({ identity: local.identity, operation: again.remote.acknowledged,
       manifestSha256: again.remote.state.manifestSha256, incarnationsSha256: again.remote.state.incarnationsSha256 }));
     const file = await open(journalPath, constants.O_WRONLY | constants.O_APPEND | constants.O_NOFOLLOW);
     try {
       const stat = await file.stat();
       if (stat.dev !== local.dev || stat.ino !== local.ino || stat.nlink !== 1 || (stat.mode & 0o777) !== 0o600) fail();
-      await file.writeFile(JSON.stringify({ type: 'acknowledged', operationId: local.pending.operationId, recoveryProofSha256 }) + '\n');
+      await file.writeFile(JSON.stringify({ type: cancelled?'cancelled-before-dispatch':'acknowledged', operationId: local.pending.operationId, recoveryProofSha256 }) + '\n');
       await file.sync();
     } finally { await file.close(); }
     await unlink(journalPath + '.lock'); await syncDirectory();
     complete = true;
-    return { localAcknowledgementRecovered: true, operationId: local.pending.operationId, recoveryProofSha256,
+    return { ...(cancelled?{localCancellationRecovered:true}:{localAcknowledgementRecovered:true}), operationId: local.pending.operationId, recoveryProofSha256,
       providerWrites: 0, remoteJournalWrites: 0, replayAllowed: false, productionReady: false };
   } finally { await recovery.close(); if (complete) { await unlink(lockPath); await syncDirectory(); } }
 }
@@ -146,19 +153,22 @@ export async function inspectProductionImportSet({ journalPaths, coordinator }) 
     const local = await inspectProductionImportJournal(paths[store]);
     if (targetStore(local.identity, coordinator) !== store) fail();
     snapshots[store] = local;
-    for (const operation of [...local.operations, ...(local.pending ? [local.pending] : [])]) {
+    for (const operation of [...local.operations, ...local.cancelled, ...(local.pending ? [local.pending] : [])]) {
       if (seen.has(operation.operationId)) fail();
       seen.add(operation.operationId);
       const remote = await coordinator.inspectOperation(operation.operationId);
       const matches = row => row && row.operationId === operation.operationId &&
         row.batchSha256 === operation.batchSha256 && row.store === store;
-      if ([remote.pending, remote.acknowledged, remote.dispatched].some(row => row && !matches(row)) ||
-          (operation.acknowledged && !matches(remote.acknowledged))) fail();
+      if ([remote.pending, remote.acknowledged, remote.dispatched, remote.cancelled].some(row => row && !matches(row)) ||
+          (operation.acknowledged && !matches(remote.acknowledged)) ||
+          (operation.recoveryProofSha256 && (!matches(remote.cancelled) || remote.cancelled.proofSha256 !== operation.recoveryProofSha256 ||
+            remote.pending || remote.acknowledged || remote.dispatched)) ||
+          (!operation.recoveryProofSha256 && remote.cancelled)) fail();
       if (remote.acknowledged) acknowledged++;
       if (matches(remote.pending)) globalPendingObserved = true;
     }
     pendingCount += Number(local.pending !== null); lockCount += Number(local.lock !== null);
-    reports[store] = { localAcknowledged: local.operations.length, localPending: local.pending !== null,
+    reports[store] = { localAcknowledged: local.operations.length, localCancelled: local.cancelled.length, localPending: local.pending !== null,
       lockRetained: local.lock !== null, journalSha256: local.journalSha256 };
   }
   const after = await coordinator.inspect();

@@ -12,8 +12,17 @@ export function r2FailureDiagnostics(error){
   if(Number.isSafeInteger(error?.httpStatus)&&error.httpStatus>=100&&error.httpStatus<=599)out.httpStatus=error.httpStatus;
   if(R2_IMPORT_FAILURE_STAGES.includes(error?.serviceStage))out.serviceStage=error.serviceStage;
   if(Number.isSafeInteger(error?.dispatchStatus)&&error.dispatchStatus>=100&&error.dispatchStatus<=599)out.dispatchStatus=error.dispatchStatus;
-  let cause=error;for(let i=0;cause&&i<4;i++,cause=cause.cause){if(transportCodes.has(cause.code)){out.transportCode=cause.code;break;}
-    if(['AbortError','TimeoutError'].includes(cause.name))out.transportCode=cause.name;}
+  // Keep already-sanitized diagnostics through the transport error wrapper.
+  // Bound nested AggregateError/cause traversal and never copy messages or URLs.
+  const allowed=code=>transportCodes.has(code)||['AbortError','TimeoutError'].includes(code);
+  const queue=[error],seen=new Set();
+  for(let i=0;queue.length&&i<12;i++){
+    const cause=queue.shift();if(!cause||typeof cause!=='object'||seen.has(cause))continue;seen.add(cause);
+    const code=[cause.transportCode,cause.code,cause.name].find(allowed);
+    if(code){out.transportCode=code;break;}
+    if(cause.cause)queue.push(cause.cause);
+    if(Array.isArray(cause.errors))queue.push(...cause.errors.slice(0,4));
+  }
   return out;
 }
 export async function saveProductionR2Failure({journalPath,runId,operationId,batchSha256,phase,dataRequestAttempted,error}){
