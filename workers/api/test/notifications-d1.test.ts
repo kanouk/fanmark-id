@@ -275,9 +275,11 @@ describe("Better Auth notifications API", () => {
     expect(await response.json()).toEqual({ error: "notifications_unavailable" });
   });
 
-  it("marks all eligible owned notifications and leaves pending, expired, read, and other-owner rows unchanged", async () => {
+  it.each([undefined, ""])("marks all eligible owned notifications with an empty body (%s) and preserves excluded rows", async (body) => {
     const cookie = await signIn(ownerEmail);
-    const response = await request("/api/me/notifications/read-all", { method: "POST", headers: { Cookie: cookie } });
+    const response = await request("/api/me/notifications/read-all", {
+      method: "POST", headers: { Cookie: cookie }, ...(body === undefined ? {} : { body }),
+    });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ schemaVersion: 1, updatedCount: 1 });
     const rows = await businessDatabase?.prepare(`SELECT id, user_id, status, expires_at, read_at, read_via, created_at, updated_at
@@ -291,6 +293,19 @@ describe("Better Auth notifications API", () => {
     expect(values.get(expiredId)).toMatchObject({ read_at: null, read_via: null, created_at: now, updated_at: now });
     expect(values.get(alreadyReadId)?.read_at).toBe(now);
     expect(values.get(otherNotificationId)).toMatchObject({ user_id: otherId, read_at: null, read_via: null, created_at: now, updated_at: now });
+  });
+
+  it("rejects every nonempty read-all body without changing notifications", async () => {
+    const cookie = await signIn(ownerEmail);
+    const before = (await businessDatabase!.prepare("SELECT * FROM notifications ORDER BY id").all()).results;
+    for (const body of ["{}", " ", "x"]) {
+      const response = await request("/api/me/notifications/read-all", {
+        method: "POST", headers: { Cookie: cookie }, body,
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "invalid_request" });
+    }
+    expect((await businessDatabase!.prepare("SELECT * FROM notifications ORDER BY id").all()).results).toEqual(before);
   });
 
   it("requires Better Auth, rejects caller-supplied identities and malformed operations, and enforces CORS", async () => {
