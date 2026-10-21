@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useTranslation } from './useTranslation';
 import { toast } from '@/hooks/use-toast';
-import { useLotteryActionOverlay } from '@/providers/LotteryActionOverlayProvider';
+import { useLotteryActionOverlay } from '@/hooks/useLotteryActionOverlay';
 import { invokeFanmarkLotteryAction } from '@/lib/fanmark-lottery-api';
 
 interface LotteryActionOptions {

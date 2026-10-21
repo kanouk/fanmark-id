@@ -7,7 +7,7 @@ import ts from 'typescript';
 import {createBetterAuthClient, BetterAuthClientError} from '../src/lib/better-auth-client.ts';
 
 const formSource = await readFile(new URL('../src/hooks/useAuthForm.tsx', import.meta.url), 'utf8');
-const providerSource = await readFile(new URL('../src/hooks/useAuth.tsx', import.meta.url), 'utf8');
+const providerSource = await readFile(new URL('../src/providers/AuthProvider.tsx', import.meta.url), 'utf8');
 const compile = source => ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022}}).outputText;
 function hooks() {
   const slots = []; let cursor = 0;
@@ -19,7 +19,7 @@ function hooks() {
   }};
 }
 function run(source, imports) {
-  imports = { '@/lib/owner-query': { ownerQueryKey }, '@tanstack/react-query': { useQueryClient: () => ({ clear() {}, setQueryData() {}, fetchQuery: ({queryFn}) => queryFn() }) }, ...imports };
+  imports = { '@/hooks/auth-context': { AuthContext: { Provider: 'AuthProvider' } }, '@/lib/owner-query': { ownerQueryKey }, '@tanstack/react-query': { useQueryClient: () => ({ clear() {}, setQueryData() {}, fetchQuery: ({queryFn}) => queryFn() }) }, ...imports };
   const exports = {};
   runInNewContext(compile(source), {exports, require(name) { assert.ok(name in imports, `Unexpected dependency ${name}`); return imports[name]; }, navigator: {language: 'ja'}, window: {}, console: {error() {}, warn() {}}});
   return exports;

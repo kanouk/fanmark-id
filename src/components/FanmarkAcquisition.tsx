@@ -255,8 +255,8 @@ export const FanmarkAcquisition = ({
       <div className="flex flex-col gap-4 items-center w-full">
         <TooltipProvider>
           <div className="flex w-full items-center justify-center">
-            {/* 取得ボタンを relative で囲み、右側のボタンを絶対配置 */}
-            <div className="relative">
+            {/* 狭い画面では全操作を通常フロー内に収める */}
+            <div className="relative flex max-w-full flex-wrap items-center justify-center gap-3 sm:block">
               <Button
                 size="default"
                 className="rounded-full gap-2 px-6 text-sm font-semibold shadow-md hover:shadow-lg transition-colors duration-200"
@@ -270,8 +270,8 @@ export const FanmarkAcquisition = ({
                     : t('dashboard.acquireButton')
                   : t('dashboard.acquireLoginButton')}
               </Button>
-              {/* 右側のボタングループ - 取得ボタンの右隣に絶対配置 */}
-              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 flex items-center gap-2">
+              {/* 補助操作はsm以上で取得ボタンの右隣へ配置 */}
+              <div className="flex items-center gap-2 sm:absolute sm:left-full sm:top-1/2 sm:-translate-y-1/2 sm:ml-3">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

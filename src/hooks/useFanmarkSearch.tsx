@@ -103,6 +103,8 @@ type UseFanmarkSearchOptions = {
   onSearchCompleted?: (query: string) => void;
 };
 
+const normalizeEmoji = (emoji: string): string => stripSkinToneModifiers(emoji);
+
 export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkSearchOptions) {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
@@ -148,18 +150,6 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
     return () => controller.abort();
   }, [fetchRecentFanmarks]);
 
-  // Search when query changes
-  useEffect(() => {
-    if (normalizedQuery) {
-      searchFanmarks(normalizedQuery, searchQuery);
-    } else {
-      setResult(null);
-    }
-  }, [normalizedQuery, searchQuery]);
-
-  // Normalize emoji by removing skin tone modifiers
-  const normalizeEmoji = (emoji: string): string => stripSkinToneModifiers(emoji);
-
   // Check if emoji has skin tone modifiers
   const hasSkinToneModifiers = (emoji: string): boolean => {
     return SKIN_TONE_MODIFIER_REGEX.test(emoji);
@@ -177,7 +167,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
   };
 
   // Validate emoji input - strict emoji-only validation
-  const validateEmojiInput = (
+  const validateEmojiInput = useCallback((
     input: string,
   ): { valid: boolean; error?: string; emojiCount: number; pair?: { emojiIds: string[]; normalizedEmojiIds: string[] } } => {
     if (!input || input.trim().length === 0) {
@@ -206,130 +196,215 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         error instanceof Error && error.message ? error.message : t('search.validationError');
       return { valid: false, error: message, emojiCount: 0 };
     }
-  };
+  }, [t]);
 
-  const searchFanmarks = async (query: string, rawQuery: string) => {
-    setLoading(true);
-    try {
-      let currentUserId = user?.id ?? null;
-      if (authLoading) {
-        try {
-          currentUserId = (await betterAuthClient.getSession())?.user.id ?? null;
-        } catch {
-          // The detail API independently fails closed if Better Auth is unavailable.
-        }
-      }
-
-      const validation = validateEmojiInput(rawQuery);
-      if (!validation.valid) {
-        setResult({
-          id: 'invalid',
-          user_input_fanmark: rawQuery,
-          display_fanmark: rawQuery,
-          fanmark: rawQuery,
-          normalized_emoji: '',
-          short_id: '',
-          tier_level: 1, // Default value
-          status: 'invalid',
-          error: validation.error,
-          emoji_count: validation.emojiCount,
-        });
-        return;
-      }
-
-      const compactQuery = canonicalizeEmojiString(rawQuery);
-      const normalizedQuery = normalizeEmoji(compactQuery);
-      const pair = validation.pair;
-      if (!pair) {
-        throw new Error('emoji conversion pair missing');
-      }
-
-      const emojiIds = pair.emojiIds;
-      const normalizedEmojiIds = pair.normalizedEmojiIds;
-
-      const availability = await loadFanmarkAvailability(normalizedEmojiIds, {});
-
-      const availabilityTierLevel = availability.tier_level ?? null;
-      const availabilityTierDisplayName = availability.tier_display_name ?? undefined;
-
-      onSearchCompleted?.(compactQuery);
-
+  const userId = user?.id ?? null;
+  useEffect(() => {
+    let cancelled = false;
+    const searchFanmarks = async (rawQuery: string) => {
+      setLoading(true);
       try {
-        await recordFanmarkSearch(emojiIds, {});
-      } catch (searchRecordError) {
-        console.warn('Failed to record fanmark search:', searchRecordError);
-      }
-
-      // Unknown IDs and unavailable tiers must not be displayed as acquirable.
-      if (!availability.fanmark_id) {
-        const derivedTierLevel = availabilityTierLevel ?? 1;
-        setResult({
-          id: '',
-          user_input_fanmark: rawQuery,
-          display_fanmark: rawQuery,
-          fanmark: rawQuery,
-          emoji_ids: emojiIds,
-          normalized_emoji_ids: normalizedEmojiIds,
-          normalized_emoji: normalizedQuery,
-          short_id: '',
-          tier_level: derivedTierLevel,
-          tier_display_name: availabilityTierDisplayName,
-          status: availability.available ? 'available' : 'invalid',
-          error: availability.available ? undefined : t('search.validationError'),
-          emoji_count: validation.emojiCount,
-          license_days: availability.license_days ?? undefined,
-        });
-        return;
-      }
-
-      const fanmarkDetails = await loadFanmarkSearchDetails(availability.fanmark_id, {});
-      const fanmarkData = Array.isArray(fanmarkDetails)
-        ? (fanmarkDetails[0] as FanmarkCompleteDataRow | undefined) ?? null
-        : fanmarkDetails && typeof fanmarkDetails === 'object'
-          ? fanmarkDetails as FanmarkCompleteDataRow
-          : null;
-
-      if (!fanmarkData) {
-        throw new Error('Failed to load fanmark details');
-      }
-
-      const isOwnedByCurrentUser = !!(currentUserId && fanmarkData.current_owner_id === currentUserId);
-      const ownerInfo = fanmarkData.current_owner_id
-        ? {
-            user_id: fanmarkData.current_owner_id,
-            username: '',
-            display_name: '',
+        let currentUserId = userId;
+        if (authLoading) {
+          try {
+            currentUserId = (await betterAuthClient.getSession())?.user.id ?? null;
+          } catch {
+            // The detail API independently fails closed if Better Auth is unavailable.
           }
-        : undefined;
-      const blockingStatus = fanmarkData.current_license_status ?? availability.blocking_status ?? null;
-      const nextAvailableAt = fanmarkData.next_available_at ?? availability.available_at ?? null;
-      const isBlockedForRegistration = fanmarkData.is_blocked_for_registration === true;
+        }
 
-      // ステータスが active でないものは利用不可として扱う
-      if (fanmarkData.status !== 'active') {
-        const displayFanmark = fanmarkData.display_fanmark ?? '';
-        setResult({
-          id: fanmarkData.id,
-          user_input_fanmark: fanmarkData.user_input_fanmark,
-          display_fanmark: displayFanmark,
-          fanmark: displayFanmark,
-          emoji_ids: fanmarkData.emoji_ids,
-          normalized_emoji_ids: normalizedEmojiIds,
-          normalized_emoji: fanmarkData.normalized_emoji,
-          short_id: fanmarkData.short_id,
-          tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
-          tier_display_name: availabilityTierDisplayName,
-          status: 'invalid',
-          error: 'This emoji pattern is not allowed or not active.',
-          emoji_count: validation.emojiCount,
-          available_at: nextAvailableAt,
-          blocking_status: blockingStatus,
-          is_blocked_for_registration: isBlockedForRegistration,
-        });
-        return;
-      }
+        if (cancelled) return;
+        const validation = validateEmojiInput(rawQuery);
+        if (!validation.valid) {
+          setResult({
+            id: 'invalid',
+            user_input_fanmark: rawQuery,
+            display_fanmark: rawQuery,
+            fanmark: rawQuery,
+            normalized_emoji: '',
+            short_id: '',
+            tier_level: 1, // Default value
+            status: 'invalid',
+            error: validation.error,
+            emoji_count: validation.emojiCount,
+          });
+          return;
+        }
 
-      if (isBlockedForRegistration) {
+        const compactQuery = canonicalizeEmojiString(rawQuery);
+        const normalizedQuery = normalizeEmoji(compactQuery);
+        const pair = validation.pair;
+        if (!pair) {
+          throw new Error('emoji conversion pair missing');
+        }
+
+        const emojiIds = pair.emojiIds;
+        const normalizedEmojiIds = pair.normalizedEmojiIds;
+
+        const availability = await loadFanmarkAvailability(normalizedEmojiIds, {});
+
+        const availabilityTierLevel = availability.tier_level ?? null;
+        const availabilityTierDisplayName = availability.tier_display_name ?? undefined;
+
+        if (cancelled) return;
+        onSearchCompleted?.(compactQuery);
+
+        try {
+          await recordFanmarkSearch(emojiIds, {});
+        } catch (searchRecordError) {
+          console.warn('Failed to record fanmark search:', searchRecordError);
+        }
+
+        if (cancelled) return;
+
+        // Unknown IDs and unavailable tiers must not be displayed as acquirable.
+        if (!availability.fanmark_id) {
+          const derivedTierLevel = availabilityTierLevel ?? 1;
+          setResult({
+            id: '',
+            user_input_fanmark: rawQuery,
+            display_fanmark: rawQuery,
+            fanmark: rawQuery,
+            emoji_ids: emojiIds,
+            normalized_emoji_ids: normalizedEmojiIds,
+            normalized_emoji: normalizedQuery,
+            short_id: '',
+            tier_level: derivedTierLevel,
+            tier_display_name: availabilityTierDisplayName,
+            status: availability.available ? 'available' : 'invalid',
+            error: availability.available ? undefined : t('search.validationError'),
+            emoji_count: validation.emojiCount,
+            license_days: availability.license_days ?? undefined,
+          });
+          return;
+        }
+
+        const fanmarkDetails = await loadFanmarkSearchDetails(availability.fanmark_id, {});
+        if (cancelled) return;
+        const fanmarkData = Array.isArray(fanmarkDetails)
+          ? (fanmarkDetails[0] as FanmarkCompleteDataRow | undefined) ?? null
+          : fanmarkDetails && typeof fanmarkDetails === 'object'
+            ? fanmarkDetails as FanmarkCompleteDataRow
+            : null;
+
+        if (!fanmarkData) {
+          throw new Error('Failed to load fanmark details');
+        }
+
+        const isOwnedByCurrentUser = !!(currentUserId && fanmarkData.current_owner_id === currentUserId);
+        const ownerInfo = fanmarkData.current_owner_id
+          ? {
+              user_id: fanmarkData.current_owner_id,
+              username: '',
+              display_name: '',
+            }
+          : undefined;
+        const blockingStatus = fanmarkData.current_license_status ?? availability.blocking_status ?? null;
+        const nextAvailableAt = fanmarkData.next_available_at ?? availability.available_at ?? null;
+        const isBlockedForRegistration = fanmarkData.is_blocked_for_registration === true;
+
+        // ステータスが active でないものは利用不可として扱う
+        if (fanmarkData.status !== 'active') {
+          const displayFanmark = fanmarkData.display_fanmark ?? '';
+          setResult({
+            id: fanmarkData.id,
+            user_input_fanmark: fanmarkData.user_input_fanmark,
+            display_fanmark: displayFanmark,
+            fanmark: displayFanmark,
+            emoji_ids: fanmarkData.emoji_ids,
+            normalized_emoji_ids: normalizedEmojiIds,
+            normalized_emoji: fanmarkData.normalized_emoji,
+            short_id: fanmarkData.short_id,
+            tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+            tier_display_name: availabilityTierDisplayName,
+            status: 'invalid',
+            error: 'This emoji pattern is not allowed or not active.',
+            emoji_count: validation.emojiCount,
+            available_at: nextAvailableAt,
+            blocking_status: blockingStatus,
+            is_blocked_for_registration: isBlockedForRegistration,
+          });
+          return;
+        }
+
+        if (isBlockedForRegistration) {
+          const displayFanmark = fanmarkData.display_fanmark ?? '';
+          setResult({
+            id: fanmarkData.id,
+            user_input_fanmark: fanmarkData.user_input_fanmark,
+            display_fanmark: displayFanmark,
+            fanmark: displayFanmark,
+            emoji_ids: fanmarkData.emoji_ids,
+            normalized_emoji_ids: normalizedEmojiIds,
+            normalized_emoji: fanmarkData.normalized_emoji,
+            short_id: fanmarkData.short_id,
+            tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+            tier_display_name: availabilityTierDisplayName,
+            status: 'not_available',
+            emoji_count: validation.emojiCount,
+            owner: ownerInfo,
+            available_at: nextAvailableAt,
+            blocking_status: blockingStatus,
+            is_blocked_for_registration: true,
+            lottery_entry_count: fanmarkData.lottery_entry_count ?? 0,
+            has_user_lottery_entry: fanmarkData.has_user_lottery_entry ?? false,
+            user_lottery_entry_id: fanmarkData.user_lottery_entry_id,
+          });
+          return;
+        }
+
+        if (!fanmarkData.has_active_license) {
+          const displayFanmark = fanmarkData.display_fanmark ?? '';
+          setResult({
+            id: fanmarkData.id,
+            user_input_fanmark: fanmarkData.user_input_fanmark,
+            display_fanmark: displayFanmark,
+            fanmark: displayFanmark,
+            emoji_ids: fanmarkData.emoji_ids,
+            normalized_emoji_ids: normalizedEmojiIds,
+            normalized_emoji: fanmarkData.normalized_emoji,
+            short_id: fanmarkData.short_id,
+            tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+            tier_display_name: availabilityTierDisplayName,
+            status: 'available',
+            emoji_count: validation.emojiCount,
+            available_at: nextAvailableAt,
+            blocking_status: blockingStatus,
+            is_blocked_for_registration: false,
+            lottery_entry_count: fanmarkData.lottery_entry_count ?? 0,
+            has_user_lottery_entry: fanmarkData.has_user_lottery_entry ?? false,
+            user_lottery_entry_id: fanmarkData.user_lottery_entry_id,
+          });
+          return;
+        }
+
+        if (isOwnedByCurrentUser) {
+          const displayFanmark = fanmarkData.display_fanmark ?? '';
+          setResult({
+            id: fanmarkData.id,
+            user_input_fanmark: fanmarkData.user_input_fanmark,
+            display_fanmark: displayFanmark,
+            fanmark: displayFanmark,
+            emoji_ids: fanmarkData.emoji_ids,
+            normalized_emoji_ids: normalizedEmojiIds,
+            normalized_emoji: fanmarkData.normalized_emoji,
+            short_id: fanmarkData.short_id,
+            tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+            tier_display_name: availabilityTierDisplayName,
+            status: 'taken',
+            emoji_count: validation.emojiCount,
+            owner: {
+              user_id: currentUserId,
+              username: '',
+              display_name: '',
+            },
+            available_at: nextAvailableAt,
+            blocking_status: blockingStatus,
+            is_blocked_for_registration: false,
+          });
+          return;
+        }
+
         const displayFanmark = fanmarkData.display_fanmark ?? '';
         setResult({
           id: fanmarkData.id,
@@ -347,92 +422,25 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           owner: ownerInfo,
           available_at: nextAvailableAt,
           blocking_status: blockingStatus,
-          is_blocked_for_registration: true,
-          lottery_entry_count: fanmarkData.lottery_entry_count ?? 0,
-          has_user_lottery_entry: fanmarkData.has_user_lottery_entry ?? false,
-          user_lottery_entry_id: fanmarkData.user_lottery_entry_id,
-        });
-        return;
-      }
-
-      if (!fanmarkData.has_active_license) {
-        const displayFanmark = fanmarkData.display_fanmark ?? '';
-        setResult({
-          id: fanmarkData.id,
-          user_input_fanmark: fanmarkData.user_input_fanmark,
-          display_fanmark: displayFanmark,
-          fanmark: displayFanmark,
-          emoji_ids: fanmarkData.emoji_ids,
-          normalized_emoji_ids: normalizedEmojiIds,
-          normalized_emoji: fanmarkData.normalized_emoji,
-          short_id: fanmarkData.short_id,
-          tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
-          tier_display_name: availabilityTierDisplayName,
-          status: 'available',
-          emoji_count: validation.emojiCount,
-          available_at: nextAvailableAt,
-          blocking_status: blockingStatus,
-          is_blocked_for_registration: false,
-          lottery_entry_count: fanmarkData.lottery_entry_count ?? 0,
-          has_user_lottery_entry: fanmarkData.has_user_lottery_entry ?? false,
-          user_lottery_entry_id: fanmarkData.user_lottery_entry_id,
-        });
-        return;
-      }
-
-      if (isOwnedByCurrentUser) {
-        const displayFanmark = fanmarkData.display_fanmark ?? '';
-        setResult({
-          id: fanmarkData.id,
-          user_input_fanmark: fanmarkData.user_input_fanmark,
-          display_fanmark: displayFanmark,
-          fanmark: displayFanmark,
-          emoji_ids: fanmarkData.emoji_ids,
-          normalized_emoji_ids: normalizedEmojiIds,
-          normalized_emoji: fanmarkData.normalized_emoji,
-          short_id: fanmarkData.short_id,
-          tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
-          tier_display_name: availabilityTierDisplayName,
-          status: 'taken',
-          emoji_count: validation.emojiCount,
-          owner: {
-            user_id: currentUserId,
-            username: '',
-            display_name: '',
-          },
-          available_at: nextAvailableAt,
-          blocking_status: blockingStatus,
           is_blocked_for_registration: false,
         });
-        return;
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error searching fanmarks:', error);
+        setResult(null);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
+    };
 
-      const displayFanmark = fanmarkData.display_fanmark ?? '';
-      setResult({
-        id: fanmarkData.id,
-        user_input_fanmark: fanmarkData.user_input_fanmark,
-        display_fanmark: displayFanmark,
-        fanmark: displayFanmark,
-        emoji_ids: fanmarkData.emoji_ids,
-        normalized_emoji_ids: normalizedEmojiIds,
-        normalized_emoji: fanmarkData.normalized_emoji,
-        short_id: fanmarkData.short_id,
-        tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
-        tier_display_name: availabilityTierDisplayName,
-        status: 'not_available',
-        emoji_count: validation.emojiCount,
-        owner: ownerInfo,
-        available_at: nextAvailableAt,
-        blocking_status: blockingStatus,
-        is_blocked_for_registration: false,
-      });
-    } catch (error) {
-      console.error('Error searching fanmarks:', error);
+    if (normalizedQuery) {
+      void searchFanmarks(searchQuery);
+    } else {
       setResult(null);
-    } finally {
       setLoading(false);
     }
-  };
+    return () => { cancelled = true; };
+  }, [normalizedQuery, searchQuery, userId, authLoading, t, validateEmojiInput, onSearchCompleted]);
 
   const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: FanmarkRow }> => {
     try {

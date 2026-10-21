@@ -51,8 +51,10 @@ export const useAuthForm = () => {
   const signupCommandIdRef = useRef<string | null>(null);
   const signupTermsRef = useRef<string | null>(null);
 
+  const cooldownActive = resendCooldown > 0;
+
   useEffect(() => {
-    if (resendCooldown > 0) {
+    if (cooldownActive) {
       cooldownTimerRef.current = window.setInterval(() => {
         setResendCooldown(prev => {
           if (prev <= 1) {
@@ -71,7 +73,7 @@ export const useAuthForm = () => {
         clearInterval(cooldownTimerRef.current);
       }
     };
-  }, [resendCooldown > 0]);
+  }, [cooldownActive]);
 
   const updateFormData = (field: keyof AuthFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

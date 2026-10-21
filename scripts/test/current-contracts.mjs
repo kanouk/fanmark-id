@@ -6,6 +6,7 @@ const files = [
   'scripts/test/owner-cache.mjs',
   'scripts/migration/test-staging-selector-coverage.mjs',
   'scripts/test-auth-login-mfa.mjs',
+  'scripts/test-hook-effects.mjs',
   'scripts/test-account-readiness.mjs',
   'scripts/test-plan-projection-polling.mjs',
   'scripts/test-app-startup.mjs',

@@ -81,6 +81,48 @@ export async function verifyLocalBrowser(stack) {
       await value('Array.from(' + within + '.querySelectorAll("button")).find(button => button.textContent.trim()===' +
         JSON.stringify(text) + '&&!button.disabled).click()');
     }
+    const mobileLayouts = [];
+    async function assertViewport(width, label) {
+      const dimensions = await value('({width:innerWidth,client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth})');
+      assert.equal(dimensions.width, width, label + ': layout viewport must not expand');
+      assert.equal(dimensions.client, width, label + ': CSS viewport must match configured width');
+      assert.ok(dimensions.scroll <= width, label + ': page must not scroll sideways: ' + JSON.stringify(dimensions));
+      mobileLayouts.push({ label, ...dimensions });
+    }
+    // Anonymous root was wider than the configured viewport even with no input.
+    await navigate('/');
+    await wait('!!document.querySelector("button[aria-label=直接入力]")');
+    for (const language of ['ja', 'en', 'ko', 'id']) {
+      for (const width of [320, 375, 390, 430]) {
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 1, mobile: true });
+        await value('localStorage.setItem("fanmark-language",' + JSON.stringify(language) + ')');
+        await navigate('/');
+        await wait('document.documentElement.lang===' + JSON.stringify(language) + ' && !!document.querySelector("#search button")');
+        await assertViewport(width, 'anonymous root ' + language);
+        const hiddenActions = await value('Array.from(document.querySelectorAll("#search button")).filter(button=>{const r=button.getBoundingClientRect();return r.width>0&&(r.left<0||r.right>'+width+');}).map(button=>button.getAttribute("aria-label")||button.textContent.trim())');
+        assert.deepEqual(hiddenActions, [], 'Search controls must remain inside the viewport: ' + language + '/' + width);
+      }
+    }
+    await value('localStorage.setItem("fanmark-language","ja")');
+    await navigate('/');
+    await wait('!!document.querySelector("button[aria-label=直接入力]")');
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 844, deviceScaleFactor: 1, mobile: true });
+    await value('document.querySelector("button[aria-label=直接入力]").click()');
+    await wait('!!document.querySelector("[role=dialog] input")');
+    await assertViewport(320, 'direct input dialog');
+    await fill('[role=dialog] input', '😀🧪🚀🌙🍀');
+    await clickText('確定', 'document.querySelector("[role=dialog]")');
+    await wait('!document.querySelector("[role=dialog]")');
+    await assertViewport(320, 'five emoji input');
+    await value('document.querySelector("#search").scrollIntoView({block:"start"})');
+    await writeFile(path.join(artifactDirectory, 'search-mobile-320.png'),
+      Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'), { mode: 0o600 });
+    await value('document.querySelector("#search button[aria-haspopup=dialog]").click()');
+    await wait('!!document.querySelector("[data-radix-popper-content-wrapper]")');
+    await assertViewport(320, 'emoji picker');
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    console.log('[local browser] mobile root, five emoji and dialogs fit 320–430px in four languages');
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
     await navigate('/auth');
     await wait('!!document.querySelector("#auth-email")');
@@ -93,6 +135,7 @@ export async function verifyLocalBrowser(stack) {
     await wait('document.body.innerText.includes(' + JSON.stringify(owner.displayFanmark) + ')');
     await writeFile(path.join(artifactDirectory, 'dashboard-desktop.png'),
       Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'), { mode: 0o600 });
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await navigate('/');
     await wait('!!document.querySelector("button[aria-label=直接入力]")');
     await value('document.querySelector("button[aria-label=直接入力]").click()');
@@ -100,6 +143,7 @@ export async function verifyLocalBrowser(stack) {
     await fill('[role=dialog] input', '😀🧪🚀🌙');
     await clickText('確定', 'document.querySelector("[role=dialog]")');
     await wait('Array.from(document.querySelectorAll("button")).some(button=>button.textContent.trim()==="取得する"&&!button.disabled)');
+    await assertViewport(390, 'signed-in search result');
     await clickText('取得する');
     await wait('!!document.querySelector("[role=alertdialog]")');
     await clickText('取得する', 'document.querySelector("[role=alertdialog]")');
@@ -155,7 +199,7 @@ export async function verifyLocalBrowser(stack) {
     assert.ok(hmrConnections > 0, 'Vite hot reload must connect over local HTTPS');
     assert.deepEqual(stack.deniedOutbound, []);
     assert.ok(requests.some(request => request.path === '/api/fanmarks/register' && request.method === 'POST'));
-    const report = { state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
+    const report = { mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
       searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true, accountSavePersisted: true, ownerSwitchIsolated: true,
       externalApplicationRequests: stack.deniedOutbound.length, browserProxyRefusals: blocked.length, requests };
     await writeFile(path.join(artifactDirectory, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });

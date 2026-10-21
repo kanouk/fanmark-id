@@ -50,6 +50,7 @@ npm run check:production-live-config
 
 `test:local`は実Worker/合成D1に対して、ログイン・保存結果・他人への拒否・管理者MFAを検証し、
 実ブラウザで検索→取得→設定、プロフィール保存→公開参照と390pxの編集画面を確認する。
+未ログインのトップは4言語・320/375/390/430px、5絵文字・直接入力dialog・pickerの横幅も確認する。
 Chromeを自動検出できない場合は `FANMARK_STAGING_CHROME=/absolute/path/to/chrome` を設定する。
 画像とreportの保存先は出力へ表示する。`FANMARK_TEST_ARTIFACT_DIR`で指定もできる。
 合成環境のテスト成功は、本番配備と本人による実アカウント確認の代わりにはならない。
