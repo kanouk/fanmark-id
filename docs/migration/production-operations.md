@@ -64,7 +64,7 @@ www/adminはAPI・callback・認証情報付きqueryを転送しない。
 
 手動の実データbackup、118表・109画像の隔離復旧、UTC20の日次slot保存は独立照合済み。
 日次slotの明示保存は自然Cronの発火確認と区別する。自然dailyの受け入れ状況は
-[最終確認状態](../operations/current-state.md#続けて確認すること)へ日時付きで記録する。
+[最終確認状態](../operations/current-state.md#自然日次backupの初回確認)へ日時付きで記録する。
 すでに使用したslot・manual UUID・復旧POST・通知試験を再実行しない。
 自然Cronや通知が失敗した場合はreceipt/claim/archive/署名ledgerを先に読み、結果不明の要求を再送しない。
 

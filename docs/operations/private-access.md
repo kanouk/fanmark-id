@@ -48,6 +48,7 @@ refreshの応答不明やlock残存時は再POSTせずjournalを調べる。toke
 - `~/.codex/private/fanmark-cutover-2026-10-19/production-cutover-v3-2026-10-20/`: 実移行、既存鍵、backup・隔離復旧、provider登録・公開受け入れの原本。
 - `~/.codex/private/fanmark-notifications-read-all-2026-10-21/`: PR42、全件既読の本番操作と独立照合。
 - `~/.codex/private/fanmark-empty-body-audit-2026-10-21/`: PR43、通常更新のsnapshot/intent/配備/CI/資産保持と`complete.json`。
+- `~/.codex/private/fanmark-natural-backup-2026-10-21/`: 初回自然dailyと09:35 monitorのreceipt、暗号化実保存物の全量照合、現在writer状態、scheduledログと`complete.json`。診断用の一時Workerは削除・元inventoryへの復帰を確認済み。
 
 READMEからintent/receipt/manifest/暗号化原本を辿る。Git外の`common.mjs`や`deploy-once.mjs`は
 当時の一回限り操作へ固定されており、通常更新の実行入口にしない。
