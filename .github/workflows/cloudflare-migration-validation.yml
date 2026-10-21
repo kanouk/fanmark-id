@@ -112,6 +112,17 @@ jobs:
       - name: Type check application
         run: npm run typecheck
 
+      - name: Test all current frontend API clients
+        run: npm test
+
+      - name: Test local configuration isolation
+        run: npm run test:local-config
+
+      - name: Test actual local app, MFA and desktop mobile browser flows
+        env:
+          FANMARK_TEST_ARTIFACT_DIR: ${{ runner.temp }}/fanmark-local-browser
+        run: npm run test:local
+
       - name: Prepare empty staging build environment
         run: mkdir -p "$RUNNER_TEMP/fanmark-ui-fixture-env"
 

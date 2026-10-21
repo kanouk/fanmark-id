@@ -47,9 +47,14 @@ npm run test:staging-profile-editor-local
 
 ## 開発サーバー・build・preview
 
+Cloudflare向けの通常開発には `npm run dev:local` を使う。
+合成一般ユーザー・管理者、公開カタログ、local分割D1/R2を毎回生成する。
+セットアップ、MFA、終了時のデータ破棄、検証コマンドは[ローカル開発](development/LOCAL.md)を参照する。
+
 | コマンド | 用途・接続先 |
 | --- | --- |
-| `npm run dev` | Viteの8080番。これだけでは全機能をCloudflareへ切り替える設定にならず、旧既定値を使う箇所がある。通常本番の再現には使わない。 |
+| `npm run dev:local` | loopback HTTPS + Vite + 実Worker + 合成D1/R2。遠隔binding・外部送信なし。 |
+| `npm run dev` | `dev:local`と同じ合成local環境。 |
 | `npm run build` | Node 22.6.0で`dist-cloudflare-production`を生成。本番originとCloudflare selectorを固定し、継承VITE値・local env・旧Supabase通信を無効にする。遠隔配備はしない。 |
 | `npm run preview -- --outDir dist-cloudflare-production` | 本番buildの静的preview。API接続先は本番のままで、local DBにはならない。認証操作・保存試験は合成local環境で行う。 |
 | `npm run build:cloudflare-staging` | staging selectorのbuild。接続先envと権限を確認した検証用。通常本番への配備には使わない。 |

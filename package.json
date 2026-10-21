@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node --experimental-strip-types scripts/dev/local-stack.mjs",
     "build": "node scripts/build-cloudflare-production.mjs",
     "build:legacy": "vite build",
     "build:dev": "vite build --mode development",
@@ -128,7 +128,11 @@
     "test:split-r2-import-stage": "node --test scripts/migration/test-split-r2-import-stage.mjs",
     "test:business-import-stage": "node --experimental-strip-types --test scripts/migration/test-business-import-stage.mjs",
     "test:production-r2-import": "node --experimental-strip-types --test scripts/migration/test-production-r2-import-service.mjs scripts/migration/test-production-remote-r2.mjs scripts/migration/test-production-import-gateway.mjs",
-    "test:source-stripe-receipt-only": "node --experimental-strip-types --test scripts/migration/test-source-stripe-receipt-only.mjs scripts/migration/test-stripe-receipt-transfer.mjs scripts/migration/test-stripe-receipt-return-custody.mjs"
+    "test:source-stripe-receipt-only": "node --experimental-strip-types --test scripts/migration/test-source-stripe-receipt-only.mjs scripts/migration/test-stripe-receipt-transfer.mjs scripts/migration/test-stripe-receipt-return-custody.mjs",
+    "dev:local": "node --experimental-strip-types scripts/dev/local-stack.mjs",
+    "test": "node --experimental-strip-types --test src/lib/*.test.ts",
+    "test:local": "node --experimental-strip-types scripts/test/local-development.mjs",
+    "test:local-config": "node --test scripts/dev/local-config.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

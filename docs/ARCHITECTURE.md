@@ -5,6 +5,10 @@
 
 ## 本番の構造
 
+通常の開発環境は[ローカル開発](development/LOCAL.md)を使う。
+`scripts/dev/local-stack.mjs`が実Worker/Better Auth/local D1・R2とViteを同一HTTPS originへ接続する。
+本番の業務実装を共有し、データ・外部接続・秘密設定を分離する。
+
 - `src/`: Vite/Reactの画面・client・hook。`src/main.tsx`で共通CSSと絵文字catalogを準備する。
 - `workers/api/src/index.ts`: 同originのStatic Assets、API、Auth、公開アクセス、Webhookへの入口。
 - `workers/api/src/better-auth.mjs` / `auth-social.mjs`: Better Auth、session/MFA、OAuthと新規ユーザー処理。
