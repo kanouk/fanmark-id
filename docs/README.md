@@ -6,6 +6,7 @@
 | 作業 | 最初に読む文書 | 次に読む文書 |
 | --- | --- | --- |
 | 通常の機能開発・不具合修正 | [PRODUCT](PRODUCT.md)、[ARCHITECTURE](ARCHITECTURE.md) | [TECH](TECH.md)、変更するAPIの契約 |
+| ローカル起動と回帰検証 | [ローカル開発](development/LOCAL.md) | [開発基盤計画](REFACTORING_PLAN.md)、[基準計測](development/BASELINE.md) |
 | 本番更新 | [運用入口](operations/README.md)、[最終確認状態](operations/current-state.md) | [更新手順](operations/deployment.md) |
 | 障害の調査・修復 | [障害対応](operations/incident-response.md) | [本番通常設定](migration/production-operations.md)、対象APIの契約 |
 | 秘密設定・backup原本が必要 | [保管先とアクセス](operations/private-access.md) | ownerによる権限付与、保存済み暗号化原本の照合 |
