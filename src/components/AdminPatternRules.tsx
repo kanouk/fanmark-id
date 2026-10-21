@@ -1,19 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/useToast';
-import type { Json } from '@/integrations/supabase/types';
-import {
-  getAvailabilityRulesAdminBackend,
-  listAvailabilityRules,
-  updateAvailabilityRule,
-  type AvailabilityRuleAdmin,
-  type AvailabilityRuleConfig,
-  type AvailabilityRuleType,
-} from '@/lib/availability-rules-admin-api';
+
+import { listAvailabilityRules, updateAvailabilityRule, type AvailabilityRuleAdmin } from '@/lib/availability-rules-admin-api';
 
 export function AdminPatternRules() {
   const [rules, setRules] = useState<AvailabilityRuleAdmin[]>([]);
@@ -24,32 +17,11 @@ export function AdminPatternRules() {
 
   const fetchRules = useCallback(async () => {
     try {
-      if (getAvailabilityRulesAdminBackend() === 'worker') {
+      {
         setRules(await listAvailabilityRules());
         return;
       }
-      const { data, error } = await supabase
-        .from('fanmark_availability_rules')
-        .select('id, rule_type, priority, rule_config, is_available, price_usd, description, updated_at')
-        .order('priority', { ascending: true });
 
-      if (error) throw error;
-      type SupabaseRuleRow = {
-        id: string;
-        rule_type: string;
-        priority: number;
-        rule_config: AvailabilityRuleConfig | null;
-        is_available: boolean;
-        price_usd: number | null;
-        description: string | null;
-        updated_at: string;
-      };
-      setRules(((data ?? []) as unknown as SupabaseRuleRow[]).map((rule) => ({
-        ...rule,
-        rule_type: rule.rule_type as AvailabilityRuleType,
-        rule_config: rule.rule_config ?? {},
-        price_usd: rule.price_usd === null ? null : rule.price_usd.toFixed(2),
-      })));
     } catch (error) {
       console.error('Error fetching rules:', error);
       toast({
@@ -69,7 +41,7 @@ export function AdminPatternRules() {
     try {
       const rule = rules.find((candidate) => candidate.id === ruleId);
       if (!rule) return;
-      if (getAvailabilityRulesAdminBackend() === 'worker') {
+      {
         const updated = await updateAvailabilityRule(ruleId, {
           isAvailable,
           expectedUpdatedAt: rule.updated_at,
@@ -78,21 +50,7 @@ export function AdminPatternRules() {
         toast({ title: "更新完了", description: `ルールが${isAvailable ? '有効' : '無効'}になりました` });
         return;
       }
-      const { error } = await supabase
-        .from('fanmark_availability_rules')
-        .update({ is_available: isAvailable })
-        .eq('id', ruleId);
 
-      if (error) throw error;
-
-      setRules((current) => current.map((item) =>
-        item.id === ruleId ? { ...item, is_available: isAvailable } : item
-      ));
-
-      toast({
-        title: "更新完了",
-        description: `ルールが${isAvailable ? '有効' : '無効'}になりました`,
-      });
     } catch (error) {
       console.error('Error updating rule:', error);
       toast({
@@ -117,23 +75,12 @@ export function AdminPatternRules() {
       const rule = rules.find((candidate) => candidate.id === ruleId);
       if (!rule) return;
       setSavingPrices((current) => ({ ...current, [draftKey]: true }));
-      if (getAvailabilityRulesAdminBackend() === 'worker') {
+      {
         const updated = await updateAvailabilityRule(ruleId, {
           prefixPrice: { emoji, priceUsd: price },
           expectedUpdatedAt: rule.updated_at,
         });
         setRules((current) => current.map((item) => item.id === ruleId ? updated : item));
-      } else {
-        const config: AvailabilityRuleConfig = { ...rule.rule_config };
-        config.prefixes = { ...(config.prefixes ?? {}), [emoji]: Number(price) };
-        const { error } = await supabase
-          .from('fanmark_availability_rules')
-          .update({ rule_config: config as unknown as Json })
-          .eq('id', ruleId);
-        if (error) throw error;
-        setRules((current) => current.map((item) =>
-          item.id === ruleId ? { ...item, rule_config: config } : item
-        ));
       }
       setPriceDrafts((current) => { const next = { ...current }; delete next[draftKey]; return next; });
 
@@ -169,7 +116,7 @@ export function AdminPatternRules() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">パターンルール管理</h2>
-      
+
       {rules.map((rule) => (
         <Card key={rule.id}>
           <CardHeader>
@@ -186,7 +133,7 @@ export function AdminPatternRules() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">{rule.description}</p>
-            
+
             {rule.rule_type === 'prefix_pattern' && (
               <div className="space-y-3">
                 <h4 className="font-medium">プレフィックス価格設定:</h4>

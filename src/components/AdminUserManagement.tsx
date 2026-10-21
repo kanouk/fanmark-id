@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,14 +46,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, RefreshCcw, ShieldOff, ShieldCheck, KeyRound, Search, Users2, Crown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import {
-  AdminUserManagementApiError,
-  createAdminUserManagementApi,
-  getAdminUserManagementBackend,
-  type AdminListedUser,
-  type AdminListedUsersResponse,
-  type AdminUserDetailResponse,
-} from "@/lib/admin-user-management-api";
+import { AdminUserManagementApiError, createAdminUserManagementApi, type AdminListedUser, type AdminListedUsersResponse, type AdminUserDetailResponse } from "@/lib/admin-user-management-api";
 
 type PlanType = "free" | "creator" | "max" | "business" | "enterprise" | "admin";
 type ListedUser = AdminListedUser;
@@ -98,7 +91,7 @@ function formatDate(value: string | null): string {
 export const AdminUserManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const userManagementBackend = getAdminUserManagementBackend();
+  const userManagementBackend = "worker";
   const workerBackend = userManagementBackend === "worker";
   const workerUserApi = useMemo(() => createAdminUserManagementApi(), []);
 
@@ -173,7 +166,7 @@ export const AdminUserManagement: React.FC = () => {
       if (params.plan) payload.plans = [params.plan];
       if (params.status) payload.status = params.status;
 
-      if (userManagementBackend === "worker") {
+      {
         return workerUserApi.list({
           page: params.page,
           pageSize: params.pageSize,
@@ -183,14 +176,6 @@ export const AdminUserManagement: React.FC = () => {
         });
       }
 
-      const { data, error } = await supabase.functions.invoke("admin-list-users", { body: payload });
-
-      if (error) {
-        console.error("admin-list-users error", error);
-        throw new Error(error.message || "Failed to load users");
-      }
-
-      return data as ListUsersResponse;
     },
   });
 
@@ -199,14 +184,8 @@ export const AdminUserManagement: React.FC = () => {
     enabled: isDetailOpen && !!selectedUserId,
     queryFn: async ({ queryKey }) => {
       const userId = queryKey[1] as string;
-      if (userManagementBackend === "worker") return workerUserApi.detail(userId);
+      return workerUserApi.detail(userId);
 
-      const { data, error } = await supabase.functions.invoke("admin-get-user-detail", { body: { userId } });
-      if (error) {
-        console.error("admin-get-user-detail error", error);
-        throw new Error(error.message || "Failed to load user detail");
-      }
-      return data as DetailResponse;
     },
   });
 
@@ -223,7 +202,7 @@ export const AdminUserManagement: React.FC = () => {
             }
           : undefined;
 
-      if (userManagementBackend === "worker") {
+      {
         return workerUserApi.updatePlan({
           userId: selectedUserId,
           newPlanType: targetPlan,
@@ -232,17 +211,6 @@ export const AdminUserManagement: React.FC = () => {
         });
       }
 
-      const { data, error } = await supabase.functions.invoke("admin-update-user-plan", {
-        body: {
-          userId: selectedUserId,
-          newPlanType: targetPlan,
-          enterpriseOverrides: overrides,
-          reason: planChangeReason || null,
-        },
-      });
-
-      if (error) throw new Error(error.message || "Failed to update plan");
-      return data;
     },
     onSuccess: () => {
       toast({
@@ -265,22 +233,14 @@ export const AdminUserManagement: React.FC = () => {
   const statusMutation = useMutation({
     mutationFn: async () => {
       if (!selectedUserId) throw new Error("No user selected");
-      if (userManagementBackend === "worker") {
+      {
         return workerUserApi.updateStatus({
           userId: selectedUserId,
           suspend: statusAction === "suspend",
           reason: statusReason || null,
         });
       }
-      const { data, error } = await supabase.functions.invoke("admin-toggle-user-status", {
-        body: {
-          userId: selectedUserId,
-          suspend: statusAction === "suspend",
-          reason: statusReason || null,
-        },
-      });
-      if (error) throw new Error(error.message || "ステータスの更新に失敗しました");
-      return data;
+
     },
     onSuccess: (_data, _variables, _context) => {
       toast({
@@ -305,33 +265,18 @@ export const AdminUserManagement: React.FC = () => {
   const passwordMutation = useMutation({
     mutationFn: async () => {
       if (!selectedUserId) throw new Error("No user selected");
-      if (workerBackend) {
+      {
         const result = await workerUserApi.requestPasswordReset({
           userId: selectedUserId,
           reason: passwordResetReason || null,
         });
         return { kind: "worker" as const, requestedAt: result.requestedAt };
       }
-      const { data, error } = await supabase.functions.invoke("admin-trigger-password-reset", {
-        body: {
-          userId: selectedUserId,
-          reason: passwordResetReason || null,
-        },
-      });
-      if (error) throw new Error(error.message || "パスワードリセットに失敗しました");
-      return { kind: "supabase" as const, actionLink: (data as { actionLink: string }).actionLink };
+
     },
     onSuccess: (data) => {
-      if (data.kind === "worker") {
-        setLastResetLink(null);
-        toast({ title: "再設定メールを送信しました", description: "登録メールアドレス宛にパスワード再設定メールを送りました" });
-      } else {
-        setLastResetLink(data.actionLink);
-        toast({
-          title: "リセットリンクを生成しました",
-          description: "ユーザーへ共有するか、リンクを利用してリセットを完了してください",
-        });
-      }
+      setLastResetLink(null);
+      toast({ title: "再設定メールを送信しました", description: "登録メールアドレス宛にパスワード再設定メールを送りました" });
       setIsPasswordDialogOpen(false);
     },
     onError: (err: unknown) => {
@@ -348,7 +293,7 @@ export const AdminUserManagement: React.FC = () => {
   const expireMutation = useMutation({
     mutationFn: async () => {
       if (!expireTarget?.licenseId) throw new Error("No license selected");
-      if (userManagementBackend === "worker") {
+      {
         if (!selectedUserId) throw new Error("No user selected");
         return workerUserApi.expireLicense({
           userId: selectedUserId,
@@ -356,14 +301,7 @@ export const AdminUserManagement: React.FC = () => {
           reason: expireReason || null,
         });
       }
-      const { data, error } = await supabase.functions.invoke("admin-expire-license", {
-        body: {
-          licenseId: expireTarget.licenseId,
-          reason: expireReason || null,
-        },
-      });
-      if (error) throw new Error(error.message || "即時失効に失敗しました");
-      return data as { success: boolean; alreadyExpired?: boolean };
+
     },
     onSuccess: (data) => {
       toast({
@@ -628,9 +566,7 @@ export const AdminUserManagement: React.FC = () => {
           <SheetHeader>
             <SheetTitle>ユーザー詳細</SheetTitle>
             <SheetDescription>
-              {workerBackend
-                ? "Cloudflare stagingではプラン変更、アカウント停止・復旧、ライセンスの即時失効ができます。パスワード再設定メールにはResendのstaging設定が必要です。"
-                : "プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。"}
+              {"Cloudflare stagingではプラン変更、アカウント停止・復旧、ライセンスの即時失効ができます。パスワード再設定メールにはResendのstaging設定が必要です。"}
             </SheetDescription>
           </SheetHeader>
 
@@ -828,7 +764,7 @@ export const AdminUserManagement: React.FC = () => {
                 className="justify-start"
               >
                 <KeyRound className="mr-2 h-4 w-4" />
-                {workerBackend ? "パスワード再設定メールを送信" : "パスワードリセットリンクを生成"}
+                {"パスワード再設定メールを送信"}
               </Button>
             </div>
           </SheetFooter>
@@ -947,13 +883,11 @@ export const AdminUserManagement: React.FC = () => {
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <DialogContent className="z-[60] sm:max-w-lg" style={{ pointerEvents: "auto" }}>
           <DialogHeader>
-            <DialogTitle>{workerBackend ? "パスワード再設定メールを送信" : "パスワードリセットリンクを生成"}</DialogTitle>
+            <DialogTitle>{"パスワード再設定メールを送信"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {workerBackend
-                ? "登録メールアドレス宛に再設定メールを送信します。メール送信にはCloudflare stagingのResend設定が必要です。リンクは画面に表示されません。"
-                : "リンクは即時に生成され、メール送信は行われません。リンクをコピーしてユーザーに共有してください。"}
+              {"登録メールアドレス宛に再設定メールを送信します。メール送信にはCloudflare stagingのResend設定が必要です。リンクは画面に表示されません。"}
             </p>
             <Textarea
               value={passwordResetReason}
@@ -967,7 +901,7 @@ export const AdminUserManagement: React.FC = () => {
             </Button>
             <Button onClick={() => passwordMutation.mutate()} disabled={passwordMutation.isPending}>
               {passwordMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {workerBackend ? "メールを送信" : "リンクを生成"}
+              {"メールを送信"}
             </Button>
           </DialogFooter>
         </DialogContent>

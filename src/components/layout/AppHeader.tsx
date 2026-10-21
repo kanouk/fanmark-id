@@ -6,8 +6,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { formatDistanceToNow, format } from 'date-fns';
+
+import { format } from 'date-fns';
 import { useNotificationFormatter } from '@/hooks/useNotificationFormatter';
 import { ja } from 'date-fns/locale';
 import { BrandWordmark } from '@/components/BrandWordmark';
@@ -25,12 +25,7 @@ import {
 import { Heart, LogOut, User, Bell, BarChart3, Crown } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { cn } from '@/lib/utils';
-import {
-  getNotificationsBackend,
-  loadOwnNotifications,
-  markOwnNotificationRead,
-  type UserNotification,
-} from '@/lib/notifications-api';
+import { loadOwnNotifications, markOwnNotificationRead, type UserNotification } from '@/lib/notifications-api';
 
 type NotificationPreview = Pick<UserNotification, 'id' | 'payload' | 'triggered_at' | 'read_at'>;
 
@@ -78,8 +73,8 @@ export const AppHeader = ({
   const isOnUserSettings = pathname.startsWith('/profile');
   const isOnAnalytics = pathname.startsWith('/analytics');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const notificationsBackend = getNotificationsBackend();
-  
+  const notificationsBackend = "worker";
+
   const canAccessAnalytics = useMemo(() => {
     const planType = profile?.plan_type;
     return planType === 'business' || planType === 'enterprise' || planType === 'admin';
@@ -89,52 +84,15 @@ export const AppHeader = ({
     queryKey: ['notifications-preview', user?.id],
     enabled: !!user && showNotifications,
     staleTime: 30_000,
-    refetchInterval: notificationsBackend === 'worker' ? 30_000 : false,
+    refetchInterval: 30_000,
     refetchIntervalInBackground: false,
     queryFn: async () => {
-      if (notificationsBackend === 'worker') {
+      {
         return loadOwnNotifications(5);
       }
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('id, payload, triggered_at, read_at')
-        .eq('user_id', user!.id)
-        .order('triggered_at', { ascending: false })
-        .limit(5);
 
-      if (error) {
-        console.error('Error fetching notifications preview:', error);
-        return [];
-      }
-
-      return (data ?? []) as unknown as NotificationPreview[];
     },
   });
-
-  useEffect(() => {
-    if (!user || !showNotifications || notificationsBackend === 'worker') return;
-
-    const channel = supabase
-      .channel(`notifications-preview-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['notifications-preview', user.id] });
-          queryClient.invalidateQueries({ queryKey: ['unread-notification-count', user.id] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient, showNotifications, notificationsBackend]);
 
   const handleLogout = async () => {
     try {
@@ -158,14 +116,8 @@ export const AppHeader = ({
     if (!user) return;
 
     try {
-      if (notificationsBackend === 'worker') {
+      {
         await markOwnNotificationRead(notificationId, 'menu');
-      } else {
-        const { error } = await supabase.rpc('mark_notification_read', {
-          notification_id_param: notificationId,
-          read_via_param: 'menu',
-        });
-        if (error) throw error;
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);

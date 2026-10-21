@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAuth } from './useAuth';
-import { callFanmarkTransferWorker, getFanmarkTransferBackend } from '@/lib/fanmark-transfer-api';
+import { callFanmarkTransferWorker } from '@/lib/fanmark-transfer-api';
 
 export interface TransferCode {
   id: string;
@@ -46,7 +46,7 @@ export const useTransferCode = () => {
     if (!user) return;
 
     try {
-      if (getFanmarkTransferBackend() === 'worker') {
+      {
         const payload = await callFanmarkTransferWorker<{
           issuedCodes: TransferCode[];
           pendingRequests: TransferRequest[];
@@ -58,111 +58,11 @@ export const useTransferCode = () => {
         return;
       }
       // Fetch issued codes (where I am the issuer)
-      const { data: codes } = await supabase
-        .from('fanmark_transfer_codes')
-        .select(`
-          id,
-          license_id,
-          fanmark_id,
-          transfer_code,
-          status,
-          expires_at,
-          created_at,
-          fanmark_licenses (
-            display_fanmark
-          ),
-          fanmarks (
-            user_input_fanmark,
-            short_id
-          )
-        `)
-        .eq('issuer_user_id', user.id)
-        .in('status', ['active', 'applied'])
-        .order('created_at', { ascending: false });
-
-      if (codes) {
-        setIssuedCodes(codes.map(c => ({
-          ...c,
-          fanmark: {
-            ...(c.fanmarks as TransferCode['fanmark']),
-            display_fanmark: (c.fanmark_licenses as { display_fanmark?: string | null } | null)?.display_fanmark ?? null,
-          }
-        })));
-      }
 
       // Fetch pending requests for my codes (where someone applied to my code)
-      const { data: requests } = await supabase
-        .from('fanmark_transfer_requests')
-        .select(`
-          id,
-          transfer_code_id,
-          fanmark_id,
-          license_id,
-          requester_user_id,
-          requester_username,
-          requester_display_name,
-          status,
-          applied_at,
-          fanmark_licenses (
-            display_fanmark
-          ),
-          fanmarks (
-            user_input_fanmark,
-            short_id
-          )
-        `)
-        .eq('status', 'pending');
-
-      if (requests) {
-        // Filter requests where I am the issuer of the code
-        const myCodeIds = new Set((codes || []).map(c => c.id));
-        const pendingForMe: TransferRequest[] = requests
-          .filter(r => myCodeIds.has(r.transfer_code_id))
-          .map(r => ({
-            ...r,
-            fanmark: {
-              ...(r.fanmarks as TransferRequest['fanmark']),
-              display_fanmark: (r.fanmark_licenses as { display_fanmark?: string | null } | null)?.display_fanmark ?? null,
-            }
-          }));
-
-        setPendingRequests(pendingForMe);
-      }
 
       // Fetch my outgoing requests (where I am the requester)
-      const { data: myReqs } = await supabase
-        .from('fanmark_transfer_requests')
-        .select(`
-          id,
-          transfer_code_id,
-          fanmark_id,
-          license_id,
-          requester_user_id,
-          requester_username,
-          requester_display_name,
-          status,
-          applied_at,
-          fanmark_licenses (
-            display_fanmark
-          ),
-          fanmarks (
-            user_input_fanmark,
-            short_id
-          )
-        `)
-        .eq('requester_user_id', user.id)
-        .eq('status', 'pending')
-        .order('applied_at', { ascending: false });
 
-      if (myReqs) {
-        setMyRequests(myReqs.map(r => ({
-          ...r,
-          fanmark: {
-            ...(r.fanmarks as TransferRequest['fanmark']),
-            display_fanmark: (r.fanmark_licenses as { display_fanmark?: string | null } | null)?.display_fanmark ?? null,
-          }
-        })));
-      }
     } catch (error) {
       console.error('Failed to fetch transfer data:', error);
     } finally {
@@ -177,7 +77,7 @@ export const useTransferCode = () => {
   const issueTransferCode = async (fanmarkId: string, licenseId: string) => {
     let data: Record<string, unknown> | null;
     let error: unknown;
-    if (getFanmarkTransferBackend() === 'worker') {
+    {
       try {
         data = await callFanmarkTransferWorker<Record<string, unknown>>('issue', {
           fanmark_id: fanmarkId,
@@ -189,12 +89,6 @@ export const useTransferCode = () => {
         data = null;
         error = caught;
       }
-    } else {
-      const result = await supabase.functions.invoke('generate-transfer-code', {
-        body: { fanmark_id: fanmarkId, license_id: licenseId, disclaimer_agreed: true }
-      });
-      data = result.data as Record<string, unknown> | null;
-      error = result.error;
     }
 
     if (error) {
@@ -262,7 +156,7 @@ export const useTransferCode = () => {
   const applyTransferCode = async (transferCode: string) => {
     let data: Record<string, unknown> | null;
     let error: unknown;
-    if (getFanmarkTransferBackend() === 'worker') {
+    {
       try {
         data = await callFanmarkTransferWorker<Record<string, unknown>>('apply', {
           transfer_code: transferCode,
@@ -273,12 +167,6 @@ export const useTransferCode = () => {
         data = null;
         error = caught;
       }
-    } else {
-      const result = await supabase.functions.invoke('apply-transfer-code', {
-        body: { transfer_code: transferCode, disclaimer_agreed: true }
-      });
-      data = result.data as Record<string, unknown> | null;
-      error = result.error;
     }
 
     // Handle errors - check both error object and data.error
@@ -365,7 +253,7 @@ export const useTransferCode = () => {
   const approveRequest = async (requestId: string, transferredFanmarkName?: string) => {
     let data: Record<string, unknown> | null;
     let error: unknown;
-    if (getFanmarkTransferBackend() === 'worker') {
+    {
       try {
         data = await callFanmarkTransferWorker<Record<string, unknown>>('approve', {
           request_id: requestId, transferredFanmarkName,
@@ -375,12 +263,6 @@ export const useTransferCode = () => {
         data = null;
         error = caught;
       }
-    } else {
-      const result = await supabase.functions.invoke('approve-transfer-request', {
-        body: { request_id: requestId, transferredFanmarkName }
-      });
-      data = result.data as Record<string, unknown> | null;
-      error = result.error;
     }
 
     if (error) throw error;
@@ -393,7 +275,7 @@ export const useTransferCode = () => {
   const rejectRequest = async (requestId: string) => {
     let data: Record<string, unknown> | null;
     let error: unknown;
-    if (getFanmarkTransferBackend() === 'worker') {
+    {
       try {
         data = await callFanmarkTransferWorker<Record<string, unknown>>('reject', { request_id: requestId });
         error = null;
@@ -401,12 +283,6 @@ export const useTransferCode = () => {
         data = null;
         error = caught;
       }
-    } else {
-      const result = await supabase.functions.invoke('reject-transfer-request', {
-        body: { request_id: requestId }
-      });
-      data = result.data as Record<string, unknown> | null;
-      error = result.error;
     }
 
     if (error) throw error;
@@ -419,7 +295,7 @@ export const useTransferCode = () => {
   const cancelCode = async (transferCodeId: string) => {
     let data: Record<string, unknown> | null;
     let error: unknown;
-    if (getFanmarkTransferBackend() === 'worker') {
+    {
       try {
         data = await callFanmarkTransferWorker<Record<string, unknown>>('cancel', { transfer_code_id: transferCodeId });
         error = null;
@@ -427,12 +303,6 @@ export const useTransferCode = () => {
         data = null;
         error = caught;
       }
-    } else {
-      const result = await supabase.functions.invoke('cancel-transfer-code', {
-        body: { transfer_code_id: transferCodeId }
-      });
-      data = result.data as Record<string, unknown> | null;
-      error = result.error;
     }
 
     if (error) throw error;

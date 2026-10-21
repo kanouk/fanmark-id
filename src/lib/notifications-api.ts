@@ -27,15 +27,6 @@ export class NotificationsApiError extends Error {
   }
 }
 
-export function getNotificationsBackend(
-  value: string | undefined = import.meta.env?.VITE_NOTIFICATIONS_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new NotificationsApiError("configuration");
-}
-
 function apiUrl(baseUrl: string, suffix = ""): URL {
   let url: URL;
   try {

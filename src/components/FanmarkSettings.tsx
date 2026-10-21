@@ -3,8 +3,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { getFanmarkSettingsBackend, saveOwnerFanmarkSettings } from '@/lib/fanmark-settings-api';
+
+import { saveOwnerFanmarkSettings } from '@/lib/fanmark-settings-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,12 +19,12 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { cn } from '@/lib/utils';
 import { SocialLinkInputCard, SocialLinkInputMode } from '@/components/SocialLinkInputCard';
 import { normalizeSocialUrlForSave, socialPlatforms } from '@/lib/social-platforms';
-import { 
-  FiType, 
-  FiSettings, 
-  FiExternalLink, 
-  FiEdit3, 
-  FiRepeat, 
+import {
+  FiType,
+  FiSettings,
+  FiExternalLink,
+  FiEdit3,
+  FiRepeat,
   FiSave,
   FiAlertCircle,
   FiUser,
@@ -404,7 +404,7 @@ export const FanmarkSettings = ({
 
   const onSubmit = async (data: SettingsFormData) => {
     if (!fanmark) return;
-    
+
     setIsSubmitting(true);
 
     try {
@@ -423,7 +423,7 @@ export const FanmarkSettings = ({
         return;
       }
 
-      if (getFanmarkSettingsBackend() === 'worker') {
+      {
         await saveOwnerFanmarkSettings(fanmark.id, {
           fanmarkName: data.fanmarkName,
           accessType: data.accessType,
@@ -433,107 +433,6 @@ export const FanmarkSettings = ({
           ...(shouldProtect && data.accessPassword ? { accessPassword: data.accessPassword } : {}),
           isPublic: data.is_public,
         });
-      } else {
-
-      // Update fanmark basic config (fanmark name and access type)
-      const { error: basicConfigError } = await supabase
-        .from('fanmark_basic_configs')
-        .upsert({
-          license_id: fanmark.license_id,
-          fanmark_name: data.fanmarkName,
-          access_type: data.accessType
-        }, {
-          onConflict: 'license_id'
-        });
-
-      if (basicConfigError) throw basicConfigError;
-
-      // Update specific config tables based on access type
-      if (data.accessType === 'redirect' && normalizedTargetUrl) {
-        const { error: redirectError } = await supabase
-          .from('fanmark_redirect_configs')
-          .upsert({
-            license_id: fanmark.license_id,
-            target_url: normalizedTargetUrl
-          }, {
-            onConflict: 'license_id'
-          });
-        if (redirectError) throw redirectError;
-      }
-
-      if (data.accessType === 'text') {
-        const { error: textError } = await supabase
-          .from('fanmark_messageboard_configs')
-          .upsert({
-            license_id: fanmark.license_id,
-            content: data.textContent || ''
-          }, {
-            onConflict: 'license_id'
-          });
-        if (textError) throw textError;
-      }
-
-      // Handle password protection for all access types except inactive
-      if (shouldProtect) {
-        if (data.accessPassword) {
-          // Enable password protection using secure function
-          const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
-            license_uuid: fanmark.license_id,
-            new_password: data.accessPassword,
-            enable_password: true
-          });
-          
-          if (passwordError) throw passwordError;
-        }
-      } else {
-        // Use a fixed inactive placeholder and never persist a value from the password input.
-        const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
-          license_uuid: fanmark.license_id,
-          new_password: '0000',
-          enable_password: false
-        });
-
-        if (passwordError && data.accessType !== 'inactive') throw passwordError;
-        if (passwordError) {
-          // If function fails, it might be because no password config exists yet, which is fine
-          console.info('No existing password config to disable');
-        }
-      }
-
-      // Handle profile for profile access type
-      if (data.accessType === 'profile') {
-        // Check if profile already exists
-        const { data: existingProfile } = await supabase
-          .from('fanmark_profiles')
-          .select('id')
-          .eq('license_id', fanmark.license_id)
-          .maybeSingle();
-
-        if (existingProfile) {
-          // Profile exists - only update is_public setting (don't overwrite bio, social_links, etc.)
-          const { error: profileUpdateError } = await supabase
-            .from('fanmark_profiles')
-            .update({ is_public: data.is_public })
-            .eq('license_id', fanmark.license_id);
-
-          if (profileUpdateError) {
-            console.error('Profile update error:', profileUpdateError);
-          }
-        } else {
-          // Profile doesn't exist - create new one with empty bio
-          const { error: profileError } = await supabase
-            .from('fanmark_profiles')
-            .insert({
-              license_id: fanmark.license_id,
-              bio: '',
-              is_public: data.is_public,
-            });
-
-          if (profileError) {
-            console.error('Profile creation error:', profileError);
-          }
-        }
-      }
       }
 
       if (draftStorageKey) {
@@ -552,17 +451,17 @@ export const FanmarkSettings = ({
       }
     } catch (error) {
       console.error('Settings update error:', error);
-      
+
       // Check for specific RLS policy violation errors
       let errorMessage = t('fanmarkSettings.toast.errorDescription');
-      
+
       if (error && typeof error === 'object' && 'code' in error) {
         // PostgreSQL error code 42501 = insufficient privilege (RLS violation)
         if (error.code === '42501') {
           errorMessage = t('fanmarkSettings.errors.licenseExpired');
         }
       }
-      
+
       toast({
         title: t('fanmarkSettings.toast.errorTitle'),
         description: error instanceof Error ? error.message : errorMessage,
@@ -621,7 +520,6 @@ export const FanmarkSettings = ({
   const watchedTextContent = watch('textContent');
   const watchedAccessType = watch('accessType');
   const displayLabel = watchedFanmarkName || fanmark?.fanmark_name || t('fanmarkSettings.summary.defaultName');
-
 
   // Don't render if fanmark is null
   if (!fanmark) {
@@ -1014,13 +912,13 @@ export const FanmarkSettings = ({
                     {t('fanmarkSettings.fields.passwordProtection.lockCheckbox')}
                   </Label>
                 </div>
-                
+
                 {isPasswordProtected && (
                   <div className="space-y-2">
                     <Label htmlFor="accessPassword" className="text-xs text-muted-foreground">
                       {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
                     </Label>
-                    
+
                     {/* Password input states */}
                     {(!fanmark?.is_password_protected || isEditingPassword) ? (
                       // State 1: Not set OR State 3: Editing
@@ -1054,7 +952,7 @@ export const FanmarkSettings = ({
                         </Button>
                       </div>
                     )}
-                    
+
                     {/* Cancel button when editing existing password */}
                     {fanmark?.is_password_protected && isEditingPassword && (
                       <Button
@@ -1070,7 +968,7 @@ export const FanmarkSettings = ({
                         {t('common.cancel')}
                       </Button>
                     )}
-                    
+
                     {errors.accessPassword && (
                       <p className="text-xs text-destructive">
                         {t(`fanmarkSettings.${errors.accessPassword.message}`)}
@@ -1083,7 +981,6 @@ export const FanmarkSettings = ({
           )}
         </CardContent>
       </Card>
-
 
       {/* Action Buttons - Dialog mode only */}
       {mode === 'dialog' && (

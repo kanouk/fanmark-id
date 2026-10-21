@@ -1,13 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getNotificationsBackend,
-  loadOwnNotifications,
-  loadOwnUnreadNotificationCount,
-  markAllOwnNotificationsRead,
-  markOwnNotificationRead,
-  NotificationsApiError,
-} from "./notifications-api.ts";
+import { loadOwnNotifications, loadOwnUnreadNotificationCount, markAllOwnNotificationsRead, markOwnNotificationRead, NotificationsApiError } from "./notifications-api.ts";
 
 const id = "55555555-1111-4111-8111-111111111111";
 const notification = {
@@ -22,12 +15,6 @@ const notification = {
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
-
-test("notification backend defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getNotificationsBackend(undefined), "supabase");
-  assert.equal(getNotificationsBackend("worker"), "worker");
-  assert.throws(() => getNotificationsBackend("fallback"), NotificationsApiError);
-});
 
 test("list uses same-origin credentials, no-store, a strict DTO and the requested bound", async () => {
   let call: { url: URL; init: RequestInit } | undefined;

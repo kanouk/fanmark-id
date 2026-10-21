@@ -3,8 +3,8 @@ import { useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useMaintenanceSettings } from "@/hooks/useMaintenanceSettings";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { betterAuthClient, isBetterAuthEnabled } from "@/lib/auth-backend";
+
+import { betterAuthClient } from "@/lib/auth-backend";
 import Maintenance from "@/pages/Maintenance";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -43,19 +43,10 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
     const verifyAdmin = async () => {
       setCheckingAdmin(true);
       try {
-        if (isBetterAuthEnabled()) {
+        {
           const result = await betterAuthClient.getAdminSession();
           if (!isMounted) return;
           setIsAdmin(result.authorized);
-        } else {
-          const { data, error: authError } = await supabase.rpc("is_admin");
-          if (!isMounted) return;
-          if (authError) {
-            console.error("Failed to verify admin role for maintenance gate:", authError);
-            setIsAdmin(false);
-          } else {
-            setIsAdmin(Boolean(data));
-          }
         }
       } catch (err) {
         if (!isMounted) return;

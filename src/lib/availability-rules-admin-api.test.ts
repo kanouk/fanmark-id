@@ -1,12 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  AvailabilityRulesAdminApiError,
-  getAvailabilityRulesAdminBackend,
-  listAvailabilityRules,
-  updateAvailabilityRule,
-  type AvailabilityRuleAdmin,
-} from "./availability-rules-admin-api.ts";
+import { AvailabilityRulesAdminApiError, listAvailabilityRules, updateAvailabilityRule, type AvailabilityRuleAdmin } from "./availability-rules-admin-api.ts";
 
 const id = "a5333333-3333-4333-8333-333333333333";
 const updatedAt = "2026-09-25T12:00:00.000000Z";
@@ -27,12 +21,6 @@ function response(payload: unknown, status = 200): Response {
     headers: { "content-type": "application/json" },
   });
 }
-
-test("backend selector defaults to Supabase and rejects unrecognized values", () => {
-  assert.equal(getAvailabilityRulesAdminBackend(undefined), "supabase");
-  assert.equal(getAvailabilityRulesAdminBackend(" worker "), "worker");
-  assert.throws(() => getAvailabilityRulesAdminBackend("unknown"), AvailabilityRulesAdminApiError);
-});
 
 test("lists bounded D1 admin DTOs using same-origin credentials and no-store", async () => {
   let called = 0;

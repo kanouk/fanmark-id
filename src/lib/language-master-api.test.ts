@@ -1,11 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  fetchLanguageMaster,
-  getLanguageReadBackend,
-  LanguageMasterApiError,
-  parseLanguageMasterPayload,
-} from './language-master-api.ts';
+import { fetchLanguageMaster, LanguageMasterApiError, parseLanguageMasterPayload } from './language-master-api.ts';
 
 const API_BASE = 'https://app.example.test';
 const RELEASE_VERSION = 'a'.repeat(64);
@@ -16,16 +11,6 @@ function payload(items: unknown[] = [
 ]) {
   return { schemaVersion: 1, releaseVersion: RELEASE_VERSION, master: 'languages', items };
 }
-
-test('language backend selector defaults to Supabase and only accepts supported values', () => {
-  assert.equal(getLanguageReadBackend(''), 'supabase');
-  assert.equal(getLanguageReadBackend('supabase'), 'supabase');
-  assert.equal(getLanguageReadBackend('worker'), 'worker');
-  assert.throws(
-    () => getLanguageReadBackend('d1'),
-    (error) => error instanceof LanguageMasterApiError && error.kind === 'configuration',
-  );
-});
 
 test('parser accepts the minimal versioned language projection and rejects extra or duplicate fields', () => {
   assert.deepEqual(parseLanguageMasterPayload(payload()), [

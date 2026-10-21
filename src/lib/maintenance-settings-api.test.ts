@@ -1,25 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  fetchMaintenanceSettingsFromWorker,
-  getMaintenanceSettingsBackend,
-  MaintenanceSettingsApiError,
-  parseMaintenanceSettingsPayload,
-  updateMaintenanceSettingsInWorker,
-} from "./maintenance-settings-api.ts";
+import { fetchMaintenanceSettingsFromWorker, MaintenanceSettingsApiError, parseMaintenanceSettingsPayload, updateMaintenanceSettingsInWorker } from "./maintenance-settings-api.ts";
 
 const settings = {
   maintenance_mode: true,
   maintenance_message: "Scheduled maintenance",
   maintenance_end_time: "2026-09-26T00:00:00.000Z",
 };
-
-test("selects only the configured maintenance backend", () => {
-  assert.equal(getMaintenanceSettingsBackend(undefined), "supabase");
-  assert.equal(getMaintenanceSettingsBackend(" "), "supabase");
-  assert.equal(getMaintenanceSettingsBackend("worker"), "worker");
-  assert.throws(() => getMaintenanceSettingsBackend("unknown"), MaintenanceSettingsApiError);
-});
 
 test("accepts the versioned settings response and rejects malformed or over-broad payloads", () => {
   assert.deepEqual(parseMaintenanceSettingsPayload({ schemaVersion: 1, settings }), settings);

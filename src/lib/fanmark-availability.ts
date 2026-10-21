@@ -65,16 +65,15 @@ export function parseFanmarkAvailability(value: unknown): FanmarkAvailability {
 }
 interface LoadOptions {
     apiBaseUrl?: string;
-    fallback: () => Promise<unknown>;
     fetcher?: typeof fetch;
     timeoutMs?: number;
 }
-export async function loadFanmarkAvailability(emojiIds: string[], options: LoadOptions): Promise<FanmarkAvailability> {
+export async function loadFanmarkAvailability(emojiIds: string[], options: LoadOptions = {}): Promise<FanmarkAvailability> {
     if (emojiIds.length < 1 || emojiIds.length > 5 || !emojiIds.every(uuid))
         throw fail();
     const base = options.apiBaseUrl === undefined ? getRecentFanmarksApiBaseUrl() : getRecentFanmarksApiBaseUrl(options.apiBaseUrl);
     if (!base)
-        return parseFanmarkAvailability(await options.fallback());
+        throw fail();
     let endpoint: URL;
     try {
         endpoint = buildRecentFanmarksApiUrl(base);

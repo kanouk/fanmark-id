@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getLifecycleRunBackend,
-  LifecycleRunApiError,
-  runLicenseExpiryInWorker,
-} from "./lifecycle-run-api.ts";
+import { LifecycleRunApiError, runLicenseExpiryInWorker } from "./lifecycle-run-api.ts";
 
 const phase = (status: "completed" | "running" | "deferred_active_to_grace_running" | "deferred_page_budget", values: Record<string, unknown> = {}) => ({
   status,
@@ -23,12 +19,6 @@ const payload = {
   pagesLimit: 4,
   elapsedMs: 125,
 };
-
-test("lifecycle batch backend defaults to Supabase and accepts only explicit Worker mode", () => {
-  assert.equal(getLifecycleRunBackend(undefined), "supabase");
-  assert.equal(getLifecycleRunBackend("worker"), "worker");
-  assert.throws(() => getLifecycleRunBackend("fallback"), LifecycleRunApiError);
-});
 
 test("posts an empty credentialed same-origin request and validates only aggregate results", async () => {
   let seenRequest: Request | undefined;

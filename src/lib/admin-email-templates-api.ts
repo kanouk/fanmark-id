@@ -30,15 +30,6 @@ export class AdminEmailTemplatesClientError extends Error {
   }
 }
 
-export function getAdminEmailTemplatesBackend(
-  value: string | undefined = import.meta.env?.VITE_EMAIL_TEMPLATES_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new AdminEmailTemplatesClientError("configuration");
-}
-
 interface RequestOptions {
   baseUrl?: string;
   authBaseUrl?: string;

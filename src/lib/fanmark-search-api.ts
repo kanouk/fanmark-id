@@ -47,15 +47,6 @@ export class FanmarkSearchApiError extends Error {
   }
 }
 
-export function getFanmarkSearchBackend(
-  value: string | undefined = import.meta.env?.VITE_FANMARK_SEARCH_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkSearchApiError("configuration");
-}
-
 export function buildFanmarkSearchDetailsUrl(baseUrl: string): URL {
   let url: URL;
   try {
@@ -268,10 +259,9 @@ export async function recordFanmarkSearch(
   inputEmojiIds: string[],
   options: Parameters<typeof recordFanmarkSearchInWorker>[1] & {
     backend?: string;
-    fallback: () => Promise<unknown>;
-  },
+  } = {},
 ): Promise<unknown> {
-  if (getFanmarkSearchBackend(options.backend) === "supabase") return options.fallback();
+
   await recordFanmarkSearchInWorker(inputEmojiIds, options);
   return undefined;
 }
@@ -280,9 +270,8 @@ export async function loadFanmarkSearchDetails(
   fanmarkId: string,
   options: Parameters<typeof fetchFanmarkSearchDetailsFromWorker>[1] & {
     backend?: string;
-    fallback: () => Promise<unknown>;
-  },
+  } = {},
 ): Promise<unknown> {
-  if (getFanmarkSearchBackend(options.backend) === "supabase") return options.fallback();
+
   return fetchFanmarkSearchDetailsFromWorker(fanmarkId, options);
 }

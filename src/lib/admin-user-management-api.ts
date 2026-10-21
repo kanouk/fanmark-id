@@ -121,15 +121,6 @@ export class AdminUserManagementApiError extends Error {
   }
 }
 
-export function getAdminUserManagementBackend(
-  value: string | undefined = import.meta.env?.VITE_ADMIN_USER_MANAGEMENT_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new AdminUserManagementApiError("configuration");
-}
-
 interface RequestOptions {
   baseUrl?: string;
   authBaseUrl?: string;

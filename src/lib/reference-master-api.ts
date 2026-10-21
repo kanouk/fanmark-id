@@ -19,8 +19,8 @@ export interface ExtensionPriceMasterItem {
   isActive: boolean;
 }
 
-export type ReferenceMasterReadBackend = 'supabase' | 'worker';
-export type ExtensionPricingBackend = 'supabase' | 'worker';
+export type ReferenceMasterReadBackend = 'worker';
+export type ExtensionPricingBackend = 'worker';
 export type ReferenceMasterApiErrorKind = 'configuration' | 'http' | 'invalid_response' | 'network' | 'timeout';
 
 export class ReferenceMasterApiError extends Error {
@@ -55,24 +55,6 @@ const ITEM_KEYS = [
   'initialLicenseDays', 'isActive', 'monthlyPriceCents', 'tierLevel',
 ];
 const EXTENSION_PRICE_ITEM_KEYS = ['isActive', 'months', 'priceYen', 'tierLevel'];
-
-export function getReferenceMasterReadBackend(
-  value: string | undefined = import.meta.env?.VITE_REFERENCE_MASTER_READ_BACKEND,
-): ReferenceMasterReadBackend {
-  const backend = value?.trim();
-  if (!backend || backend === 'supabase') return 'supabase';
-  if (backend === 'worker') return 'worker';
-  throw new ReferenceMasterApiError('configuration');
-}
-
-export function getExtensionPricingBackend(
-  value: string | undefined = import.meta.env?.VITE_EXTENSION_PRICING_BACKEND,
-): ExtensionPricingBackend {
-  const backend = value?.trim();
-  if (!backend || backend === 'supabase') return 'supabase';
-  if (backend === 'worker') return 'worker';
-  throw new ReferenceMasterApiError('configuration');
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

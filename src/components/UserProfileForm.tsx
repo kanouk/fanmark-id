@@ -16,8 +16,8 @@ import {
   type ActiveFanmark,
   type PlanLimits,
 } from '@/lib/plan-utils';
-import { supabase } from '@/integrations/supabase/client';
-import { bulkReturnFanmarksThroughWorker, getFanmarkReturnBackend } from '@/lib/fanmark-return-api';
+
+import { bulkReturnFanmarksThroughWorker } from '@/lib/fanmark-return-api';
 
 interface UserSettings {
   display_name: string | null;
@@ -100,7 +100,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     try {
       // Check if this is a plan downgrade that requires fanmark selection
       const requiresSelection = await checkForPlanDowngrade(formData.plan_type);
-      
+
       if (requiresSelection) {
         setLoading(false);
         return; // Modal will handle the rest
@@ -137,15 +137,8 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
 
       if (unselectedLicenseIds.length > 0) {
         let bulkReturnData: { success: boolean; failed?: Array<{ licenseId: string; error: string }> } | null;
-        if (getFanmarkReturnBackend() === 'worker') {
+        {
           bulkReturnData = await bulkReturnFanmarksThroughWorker(unselectedLicenseIds);
-        } else {
-          const { error: bulkReturnError, data } = await supabase.functions.invoke<{
-            success: boolean;
-            failed?: Array<{ licenseId: string; error: string }>;
-          }>('bulk-return-fanmarks', { body: { license_ids: unselectedLicenseIds } });
-          if (bulkReturnError) throw bulkReturnError;
-          bulkReturnData = data;
         }
 
         if (bulkReturnData?.failed && bulkReturnData.failed.length > 0) {

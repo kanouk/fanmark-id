@@ -7,7 +7,7 @@
  * 絵文字をURL安全な形式にエンコード
  * ブラウザの自動エンコーディングに対応
  */
-const EMOJI_ONLY_REGEX = /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}\u200D\uFE0F]+$/u;
+const EMOJI_ONLY_REGEX = /^(?:\p{Emoji}|\p{Emoji_Modifier}|\p{Emoji_Component}|\p{Emoji_Modifier_Base}|\p{Emoji_Presentation}|\u200D|\uFE0F)+$/u;
 const COMPLEX_EMOJI_REGEX = /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}))*|\p{Regional_Indicator}{2}|[^\s\uFE0F\u200D]/gu;
 
 export const isEmojiOnly = (candidate: string | null | undefined): boolean => {
@@ -21,9 +21,9 @@ export const isEmojiOnly = (candidate: string | null | undefined): boolean => {
 export const splitEmojiGraphemes = (input: string): string[] => {
   if (!input) return [];
 
-  if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
-    const segmenter = new (Intl as any).Segmenter('en', { granularity: 'grapheme' });
-    return Array.from(segmenter.segment(input), (segment: any) => segment.segment);
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+    return Array.from(segmenter.segment(input), (segment) => segment.segment);
   }
 
   return input.match(COMPLEX_EMOJI_REGEX) || [];
@@ -55,7 +55,7 @@ export const decodeEmojiFromUrl = (encodedEmoji: string): string => {
 
   try {
     // URLデコード
-    let decoded = decodeURIComponent(encodedEmoji);
+    const decoded = decodeURIComponent(encodedEmoji);
 
     // Unicode正規化 (NFC)
     const normalized = decoded.normalize('NFC');

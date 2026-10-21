@@ -19,15 +19,6 @@ export class FanmarkReturnApiError extends Error {
   }
 }
 
-export function getFanmarkReturnBackend(
-  value: string | undefined = import.meta.env?.VITE_FANMARK_RETURN_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkReturnApiError("configuration");
-}
-
 export function buildFanmarkReturnApiUrl(baseUrl: string): URL {
   let url: URL;
   try {

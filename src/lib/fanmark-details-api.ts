@@ -33,13 +33,6 @@ export class FanmarkDetailsApiError extends Error {
   }
 }
 
-export function getFanmarkDetailsBackend(value: string | undefined = import.meta.env?.VITE_FANMARK_DETAILS_BACKEND): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkDetailsApiError("configuration");
-}
-
 function detailsUrl(baseUrl: string): URL {
   let url: URL;
   try { url = buildRecentFanmarksApiUrl(baseUrl); } catch { throw new FanmarkDetailsApiError("configuration"); }

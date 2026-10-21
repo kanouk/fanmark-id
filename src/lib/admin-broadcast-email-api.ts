@@ -59,15 +59,6 @@ export class AdminBroadcastEmailApiError extends Error {
   }
 }
 
-export function getAdminBroadcastEmailBackend(
-  value: string | undefined = import.meta.env?.VITE_BROADCAST_EMAIL_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new AdminBroadcastEmailApiError("configuration");
-}
-
 export function getAdminBroadcastTestSendBackend(
   value: string | undefined = import.meta.env?.VITE_BROADCAST_TEST_SEND_BACKEND,
 ): "disabled" | "worker" {

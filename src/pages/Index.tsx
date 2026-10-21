@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
-import { supabase } from '@/integrations/supabase/client';
-import { getOwnedFanmarksBackend, loadOwnedFanmarks } from '@/lib/owned-fanmarks-api';
+
+import { loadOwnedFanmarks } from '@/lib/owned-fanmarks-api';
 import { countActiveOwnedFanmarks } from '@/lib/owned-fanmarks-plan-projection';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { RecentFanmarksScroll } from '@/components/RecentFanmarksScroll';
@@ -84,29 +84,12 @@ const Index = () => {
       }
 
       try {
-        if (getOwnedFanmarksBackend() === 'worker') {
+        {
           const items = await loadOwnedFanmarks();
           if (isMounted) setFanmarkCount(countActiveOwnedFanmarks(items));
           return;
         }
 
-        const nowIso = new Date().toISOString();
-        const { count, error } = await supabase
-          .from('fanmark_licenses')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .or(`license_end.is.null,license_end.gt.${nowIso}`);
-
-        if (!isMounted) return;
-
-        if (error) {
-          console.error('Failed to fetch fanmark count:', error);
-          setFanmarkCount(0);
-          return;
-        }
-
-        setFanmarkCount(count ?? 0);
       } catch (error) {
         if (!isMounted) return;
         console.error('Unexpected error fetching fanmark count:', error);
@@ -203,7 +186,7 @@ const Index = () => {
         <div className="hero-decorative-blob top-10 left-10 w-96 h-96 bg-pink-400/30" style={{animationDelay: '0s'}} />
         <div className="hero-decorative-blob top-32 right-20 w-80 h-80 bg-purple-400/30" style={{animationDelay: '3s'}} />
         <div className="hero-decorative-blob bottom-20 left-32 w-72 h-72 bg-blue-400/30" style={{animationDelay: '6s'}} />
-        
+
         <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
         <div className="container relative mx-auto px-4 py-16 sm:py-20 pb-32 sm:pb-36">
           <div className="mx-auto max-w-3xl text-center">
@@ -228,7 +211,7 @@ const Index = () => {
             </div>
           </div>
         </div>
-        
+
         {/* 最近取得されたファンマーク */}
         <RecentFanmarksScroll />
       </section>
@@ -331,7 +314,6 @@ const Index = () => {
         </div>
       </section>
 
-
       {/* CTA */}
       <section className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 py-16">
         {/* Decorative background elements */}
@@ -339,7 +321,7 @@ const Index = () => {
           <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
         </div>
-        
+
         <div className="container relative mx-auto px-4">
           <div className="mx-auto max-w-xl">
             <div className="rounded-3xl border border-primary/20 bg-white/80 px-8 py-10 shadow-[0_25px_60px_rgba(101,195,200,0.2)] backdrop-blur-sm sm:px-10">
@@ -351,8 +333,8 @@ const Index = () => {
                   {t('sections.ctaDescription')}
                 </p>
                 <div className="mt-6">
-                  <Button 
-                    className="gap-2 rounded-full px-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5" 
+                  <Button
+                    className="gap-2 rounded-full px-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
                     onClick={handleSignupPrompt}
                   >
                     <Sparkles className="h-4 w-4" />

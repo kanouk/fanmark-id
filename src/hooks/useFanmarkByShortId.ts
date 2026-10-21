@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { fetchPublicFanmarkByShortId, getPublicAccessReadBackend } from '@/lib/public-access-api';
+
+import { fetchPublicFanmarkByShortId } from '@/lib/public-access-api';
 export interface FanmarkByShortId {
   id: string;
   user_input_fanmark: string;
@@ -48,71 +48,12 @@ export const useFanmarkByShortId = (shortId: string | undefined): UseFanmarkBySh
       setError(null);
 
       try {
-        if (getPublicAccessReadBackend() === 'worker') {
+        {
           const record = await fetchPublicFanmarkByShortId(shortId, { signal: controller.signal });
           if (isMounted) setData(record);
           return;
         }
 
-        const { data, error } = await supabase.rpc('get_fanmark_by_short_id', {
-          shortid_param: shortId,
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        const record = Array.isArray(data) ? data[0] : null;
-
-        if (isMounted) {
-          if (record && typeof record === 'object') {
-            const row = record as Record<string, unknown>;
-            const safeString = (value: unknown, fallback = ''): string =>
-              typeof value === 'string' && value.length > 0 ? value : fallback;
-            const safeNullableString = (value: unknown): string | null =>
-              typeof value === 'string' && value.length > 0 ? value : null;
-            const safeBoolean = (value: unknown): boolean =>
-              typeof value === 'boolean' ? value : false;
-            const safeNullableBoolean = (value: unknown): boolean | null =>
-              typeof value === 'boolean' ? value : null;
-
-            const idValue = safeNullableString(row.id);
-            const emojiValue = safeNullableString(row.user_input_fanmark);
-            const displayFanmark = safeNullableString(row.display_fanmark);
-            const emojiIds = Array.isArray(row.emoji_ids)
-              ? (row.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
-              : [];
-
-            if (!idValue || (!emojiValue && emojiIds.length === 0 && !displayFanmark)) {
-              setData(null);
-              return;
-            }
-
-            const safeRecord: FanmarkByShortId = {
-              id: idValue,
-              user_input_fanmark: emojiValue ?? '',
-              display_fanmark: displayFanmark ?? '',
-              emoji_ids: emojiIds,
-              fanmark: displayFanmark ?? '',
-              short_id: safeString(row.short_id, shortId),
-              fanmark_name: (safeNullableString(row.fanmark_name) ?? displayFanmark ?? emojiValue) || '',
-              access_type: safeString(row.access_type, 'inactive'),
-              target_url: safeNullableString(row.target_url),
-              text_content: safeNullableString(row.text_content),
-              is_password_protected: safeBoolean(row.is_password_protected),
-              status: safeString(row.status, 'unknown'),
-              license_id: safeNullableString(row.license_id),
-              license_status: safeNullableString(row.license_status),
-              license_end: safeNullableString(row.license_end),
-              grace_expires_at: safeNullableString(row.grace_expires_at),
-              is_returned: safeNullableBoolean(row.is_returned),
-            };
-
-            setData(safeRecord);
-          } else {
-            setData(null);
-          }
-        }
       } catch (fetchError) {
         console.error('Failed to fetch fanmark by short id:', fetchError);
         if (isMounted) {

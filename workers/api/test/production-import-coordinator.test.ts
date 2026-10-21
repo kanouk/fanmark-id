@@ -54,7 +54,7 @@ it("dispatch and cancellation arbitrate atomically, with exactly one winner",asy
   const results=await Promise.all([call("dispatch",image),call("cancel-undispatched-r2",request)]);
   expect(results.map(r=>r.status).sort()).toEqual([200,409]);
   const proof=await (await call("operation",{owner,operationId:image.operationId})).json() as {dispatched:unknown;cancelled?:unknown};
-  expect(Boolean(proof.dispatched)).toBe(!Boolean(proof.cancelled));
+  expect(Boolean(proof.dispatched)).toBe(!proof.cancelled);
   const before=await stored();
   expect((await call("cancel-undispatched-r2",request)).status).toBe(409);
   expect(await stored()).toEqual(before);

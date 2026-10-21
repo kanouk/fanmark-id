@@ -2,14 +2,14 @@ import { useParams, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useFanmarkDetails } from '@/hooks/useFanmarkDetails';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { Heart, Calendar, User, Clock, ExternalLink, History, AlertTriangle, Info, Search } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Heart, Calendar, ExternalLink, AlertTriangle, Search } from 'lucide-react';
+
 import { ja, enUS } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
 import { parseDateString } from '@/lib/utils';

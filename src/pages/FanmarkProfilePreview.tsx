@@ -4,9 +4,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ExternalLink, User, ArrowLeft, Edit, Share2, Eye } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { supabase } from '@/integrations/supabase/client';
-import { getOwnerEmojiProfile, type EmojiProfile } from '@/hooks/useEmojiProfile';
-import { getFanmarkProfileBackend, getOwnerFanmarkProfileContext } from '@/lib/fanmark-profile-api';
+
+import { type EmojiProfile } from '@/hooks/useEmojiProfile';
+import { getOwnerFanmarkProfileContext } from '@/lib/fanmark-profile-api';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import {
   FiInstagram,
@@ -95,7 +95,7 @@ export default function FanmarkProfilePreview() {
       setLoading(true);
 
       try {
-        if (getFanmarkProfileBackend() === 'worker') {
+        {
           const context = await getOwnerFanmarkProfileContext(fanmarkId);
           setCachedFanmark(prev => prev || {
             user_input_fanmark: context.fanmark.user_input_fanmark,
@@ -110,34 +110,8 @@ export default function FanmarkProfilePreview() {
           return;
         }
 
-        const { data, error } = await supabase.rpc('get_fanmark_complete_data', {
-          fanmark_id_param: fanmarkId
-        });
-
-        if (error) throw error;
-
-        const record = Array.isArray(data) ? data[0] : data;
-
-        if (!record?.license_id) {
-          console.warn('No active license found for fanmark preview. Profile data will be unavailable.');
-          setLicenseId(null);
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
-
         // Set fanmark data from RPC response if not cached
-        if (record.display_fanmark) {
-          setCachedFanmark(prev => prev || {
-            user_input_fanmark: record.user_input_fanmark || '',
-            fanmark: record.display_fanmark || '',
-            emoji_ids: [],
-            display_name: record.fanmark_name || null,
-            short_id: record.short_id
-          });
-        }
 
-        setLicenseId(record.license_id);
       } catch (error) {
         console.error('Error resolving fanmark license for preview:', error);
         setLicenseId(null);
@@ -152,23 +126,8 @@ export default function FanmarkProfilePreview() {
   // Load owner profile once license is resolved (preview ignores public flag)
   useEffect(() => {
     const loadOwnerProfile = async () => {
-      if (getFanmarkProfileBackend() === 'worker') return;
-      if (!licenseId) {
-        setLoading(false);
-        return;
-      }
+      return;
 
-      setLoading(true);
-
-      try {
-        const ownerProfile = await getOwnerEmojiProfile(licenseId);
-        setProfile(ownerProfile);
-      } catch (error) {
-        console.error('Error loading owner profile for preview:', error);
-        setProfile(null);
-      } finally {
-        setLoading(false);
-      }
     };
 
     // Avoid firing until license resolution completed (licenseId undefined)
@@ -204,7 +163,7 @@ export default function FanmarkProfilePreview() {
         {/* Decorative floating elements */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse-slow" />
-        
+
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <div className="relative">
             <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
@@ -285,10 +244,10 @@ export default function FanmarkProfilePreview() {
                     <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-primary/15 rounded-full blur-xl animate-float" style={{ animationDelay: '2s' }} />
                   </div>
                 )}
-                
+
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-                
+
                 {/* Fanmark Badge */}
                 <div className="absolute top-4 left-4">
                   <span className="inline-flex items-center px-4 py-2 text-xl md:text-2xl font-semibold text-primary tracking-[0.3em] leading-none rounded-2xl bg-background/90 backdrop-blur-md shadow-lg border border-primary/10">
@@ -324,7 +283,7 @@ export default function FanmarkProfilePreview() {
                   <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
                     {displayName || t('profile.defaultTitle', { fanmark: fanmarkValue })}
                   </h1>
-                  
+
                   {/* Bio */}
                   {bio && (
                     <p className="text-base text-muted-foreground max-w-lg mx-auto leading-relaxed pt-2 whitespace-pre-line">

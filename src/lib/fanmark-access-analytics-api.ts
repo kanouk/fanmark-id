@@ -2,7 +2,7 @@ import { buildRecentFanmarksApiUrl, getRecentFanmarksApiBaseUrl } from "./recent
 
 const ACCESS_PATH = "/api/fanmarks/access";
 
-export type FanmarkAccessAnalyticsBackend = "supabase" | "worker";
+export type FanmarkAccessAnalyticsBackend = "worker";
 
 export interface FanmarkAccessAnalyticsInput {
   fanmark_id: string;
@@ -25,15 +25,6 @@ export class FanmarkAccessAnalyticsApiError extends Error {
     this.kind = kind;
     this.status = status;
   }
-}
-
-export function getFanmarkAccessAnalyticsBackend(
-  value: string | undefined = import.meta.env?.VITE_FANMARK_ACCESS_ANALYTICS_BACKEND,
-): FanmarkAccessAnalyticsBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkAccessAnalyticsApiError("configuration");
 }
 
 export function buildFanmarkAccessAnalyticsApiUrl(baseUrl: string): URL {

@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useTranslation } from './useTranslation';
 import { toast } from '@/hooks/use-toast';
 import { useLotteryActionOverlay } from '@/providers/LotteryActionOverlayProvider';
-import type { FunctionsHttpError } from '@supabase/supabase-js';
 import { invokeFanmarkLotteryAction } from '@/lib/fanmark-lottery-api';
 
 interface LotteryActionOptions {
   emoji?: string | null;
   showOverlay?: boolean;
   onSettled?: () => Promise<void> | void;
-  optimisticUpdate?: (status: 'applied' | 'cancelled', payload?: any) => void;
+  optimisticUpdate?: (status: 'applied' | 'cancelled', payload?: { entry_id?: string; total_entries_count?: number }) => void;
 }
 
 export function useLotteryEntry() {
@@ -26,8 +25,8 @@ export function useLotteryEntry() {
     let rawBody: string | undefined;
 
     if (error && typeof error === 'object') {
-      const supabaseError = error as FunctionsHttpError & { context?: any };
-      const context = supabaseError.context;
+      const operationError = error as Error & { context?: unknown };
+      const context = operationError.context;
 
       if (context) {
         if (context instanceof Response) {
@@ -68,15 +67,15 @@ export function useLotteryEntry() {
               return { message: context, rawBody: context };
             }
           }
-        } else if (typeof context === 'object') {
-          if (typeof context.error === 'string' && context.error.trim()) {
+        } else if (typeof context === 'object' && context !== null) {
+          if ('error' in context && typeof context.error === 'string' && context.error.trim()) {
             return { message: context.error, code: context.error, rawBody: JSON.stringify(context) };
           }
-          if (typeof context.message === 'string' && context.message.trim()) {
-            return { message: context.message, code: typeof context.error === 'string' ? context.error : undefined, rawBody: JSON.stringify(context) };
+          if ('message' in context && typeof context.message === 'string' && context.message.trim()) {
+            return { message: context.message, code: 'error' in context && typeof context.error === 'string' ? context.error : undefined, rawBody: JSON.stringify(context) };
           }
 
-          const response: Response | undefined = context.response;
+          const response = 'response' in context && context.response instanceof Response ? context.response : undefined;
           if (response) {
             try {
               const clone = response.clone ? response.clone() : response;
@@ -105,8 +104,8 @@ export function useLotteryEntry() {
         }
       }
 
-      if ('message' in supabaseError && typeof supabaseError.message === 'string' && supabaseError.message.trim()) {
-        return { message: supabaseError.message, rawBody };
+      if ('message' in operationError && typeof operationError.message === 'string' && operationError.message.trim()) {
+        return { message: operationError.message, rawBody };
       }
     }
     return { message: fallback, rawBody };
@@ -121,23 +120,22 @@ export function useLotteryEntry() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await invokeFanmarkLotteryAction('apply', { fanmark_id: fanmarkId }, () =>
-        supabase.functions.invoke('apply-fanmark-lottery', { body: { fanmark_id: fanmarkId } }));
-      
+      const { data, error } = await invokeFanmarkLotteryAction('apply', { fanmark_id: fanmarkId });
+
       if (error) throw error;
-      
+
       toast({
         title: t('lottery.applySuccess'),
       });
       options?.optimisticUpdate?.('applied', data);
-      
+
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const { message: errorMessage, code, rawBody } = await extractErrorInfo(err, t('lottery.applyError'));
       const friendlyMessage = code === 'fanmark_limit_reached'
         ? t('lottery.limitReached')
         : errorMessage;
-      console.error('[useLotteryEntry] Error applying to lottery:', err, err?.context, rawBody ? { rawBody } : undefined);
+      console.error('[useLotteryEntry] Error applying to lottery:', err, (err && typeof err === 'object' && 'context' in err ? err.context : undefined), rawBody ? { rawBody } : undefined);
       setError(friendlyMessage);
       toast({
         title: t('lottery.applyError'),
@@ -168,23 +166,22 @@ export function useLotteryEntry() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await invokeFanmarkLotteryAction('cancel', { entry_id: entryId }, () =>
-        supabase.functions.invoke('cancel-lottery-entry', { body: { entry_id: entryId } }));
-      
+      const { data, error } = await invokeFanmarkLotteryAction('cancel', { entry_id: entryId });
+
       if (error) throw error;
-      
+
       toast({
         title: t('lottery.cancelSuccess'),
       });
       options?.optimisticUpdate?.('cancelled', data);
-      
+
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const { message: errorMessage, code, rawBody } = await extractErrorInfo(err, t('lottery.cancelError'));
       const friendlyMessage = code === 'fanmark_limit_reached'
         ? t('lottery.limitReached')
         : errorMessage;
-      console.error('[useLotteryEntry] Error cancelling lottery entry:', err, err?.context, rawBody ? { rawBody } : undefined);
+      console.error('[useLotteryEntry] Error cancelling lottery entry:', err, (err && typeof err === 'object' && 'context' in err ? err.context : undefined), rawBody ? { rawBody } : undefined);
       setError(friendlyMessage);
       toast({
         title: t('lottery.cancelError'),

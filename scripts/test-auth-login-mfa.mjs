@@ -61,10 +61,6 @@ test('cancel removes code and password and allows a fresh sign-in; incomplete co
 test('ordinary Cloudflare login also requires a valid refreshed session before completion', async () => {
   for (const session of [true, false]) { const x = fixture({factor: false, session}); const f = await x.start(); assert.equal(f.twoFactorRequired, false); assert.equal(x.calls.filter(c => c.refreshSession).length, 1); assert.equal(x.calls.some(c => c.navigation || c.legacySignIn), false); assert.equal(Boolean(f.authState.error), !session); }
 });
-test('legacy Supabase sign-in retains its existing dashboard behavior', async () => {
-  const x = fixture({worker: false}); const f = await x.start(); assert.equal(f.twoFactorRequired, false); assert.equal(x.calls.some(c => c.legacySignIn), true); assert.equal(x.calls.at(-1).navigation, '/dashboard');
-});
-
 test('actual AuthProvider reports valid, missing and failed sessions and keeps guests unauthenticated', async () => {
   for (const outcome of ['valid', 'missing', 'failure']) { const h = hooks(); const e = run(providerSource, {
     react: h.api, 'react/jsx-runtime': {jsx: (type, props) => ({type, props})}, '@/integrations/supabase/client': {supabase: {}},

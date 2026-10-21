@@ -1,13 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  buildPublicAccessApiUrl,
-  fetchPublicEmojiProfile,
-  fetchPublicFanmarkByEmojiIds,
-  fetchPublicFanmarkByShortId,
-  getPublicAccessReadBackend,
-  PublicAccessApiError,
-} from "./public-access-api.ts";
+import { buildPublicAccessApiUrl, fetchPublicEmojiProfile, fetchPublicFanmarkByEmojiIds, fetchPublicFanmarkByShortId, PublicAccessApiError } from "./public-access-api.ts";
 
 const API_BASE = "https://api.example.test";
 const FANMARK_ID = "11111111-1111-4111-8111-111111111111";
@@ -50,16 +43,6 @@ function profilePayload() {
     updatedAt: "2026-09-02T00:00:00.000000Z",
   };
 }
-
-test("public-read selector defaults to Supabase and accepts only explicit backends", () => {
-  assert.equal(getPublicAccessReadBackend(undefined), "supabase");
-  assert.equal(getPublicAccessReadBackend(" supabase "), "supabase");
-  assert.equal(getPublicAccessReadBackend("worker"), "worker");
-  assert.throws(
-    () => getPublicAccessReadBackend("d1"),
-    (error) => error instanceof PublicAccessApiError && error.kind === "configuration",
-  );
-});
 
 test("Worker URL accepts HTTPS and loopback, but rejects unsafe origins and paths", () => {
   assert.equal(
@@ -197,8 +180,7 @@ test("missing rows are null; upstream errors and malformed projection fail close
 });
 
 test("worker client preserves bounded timeout failures", async () => {
-  assert.equal(getPublicAccessReadBackend("worker"), "worker");
-  await assert.rejects(
+await assert.rejects(
     fetchPublicFanmarkByShortId("rose-1", {
       baseUrl: API_BASE,
       timeoutMs: 5,

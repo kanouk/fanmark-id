@@ -2,8 +2,6 @@ import { promises as fs } from "fs";
 import path from "path";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "../src/integrations/supabase/types";
 
 const INPUT_PATH = path.resolve("data/emoji/emoji-master.json");
 const OUTPUT_PATH = path.resolve("src/data/emojiCatalog.ts");
@@ -32,49 +30,10 @@ export function parseArguments(argv: string[]) {
 export const main = async (argv = process.argv.slice(2)) => {
   const { input, output } = parseArguments(argv);
 
-  let records: EmojiMasterRecord[];
-
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!input && supabaseUrl && serviceRoleKey) {
-    const supabase = createClient<Database>(supabaseUrl, serviceRoleKey);
-
-    const pageSize = 1000;
-    let from = 0;
-    let finished = false;
-    const aggregated: EmojiMasterRecord[] = [];
-
-    while (!finished) {
-      const to = from + pageSize - 1;
-      const { data, error } = await supabase
-        .from("emoji_master")
-        .select("id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order")
-        .order("sort_order", { ascending: true, nullsFirst: true })
-        .order("emoji", { ascending: true })
-        .range(from, to);
-
-      if (error) {
-        throw new Error(`Failed to fetch emoji_master from Supabase: ${error.message}`);
-      }
-
-      const batch = (data ?? []) as EmojiMasterRecord[];
-      aggregated.push(...batch);
-
-      if (batch.length < pageSize) {
-        finished = true;
-      } else {
-        from += pageSize;
-      }
-    }
-
-    records = aggregated;
-  } else {
-    const jsonRaw = await fs.readFile(input ?? INPUT_PATH, "utf-8");
-    const parsed: unknown = JSON.parse(jsonRaw);
-    validateRecords(parsed);
-    records = parsed;
-  }
+  const jsonRaw = await fs.readFile(input ?? INPUT_PATH, "utf-8");
+  const parsed: unknown = JSON.parse(jsonRaw);
+  validateRecords(parsed);
+  const records: EmojiMasterRecord[] = parsed;
 
   const catalog = generateCatalog(records);
   const moduleSource = generateModuleSource(catalog);

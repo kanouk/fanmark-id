@@ -1,17 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  AccountDeletionApiError,
-  buildAccountDeletionApiUrl,
-  deleteAccountThroughWorker,
-  getAccountDeletionBackend,
-} from "./account-deletion-api.ts";
-
-test("account deletion defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getAccountDeletionBackend(undefined), "supabase");
-  assert.equal(getAccountDeletionBackend("worker"), "worker");
-  assert.throws(() => getAccountDeletionBackend("unknown"), AccountDeletionApiError);
-});
+import { AccountDeletionApiError, buildAccountDeletionApiUrl, deleteAccountThroughWorker } from "./account-deletion-api.ts";
 
 test("account deletion URL uses only a clean Worker origin", () => {
   assert.equal(

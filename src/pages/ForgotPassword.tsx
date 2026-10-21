@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { betterAuthClient, isBetterAuthEnabled } from "@/lib/auth-backend";
+
+import { betterAuthClient } from "@/lib/auth-backend";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +29,7 @@ const InputStatusIcon = ({ status }: { status: boolean | null }) => {
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const betterAuthEnabled = isBetterAuthEnabled();
+  const betterAuthEnabled = true;
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -37,7 +37,7 @@ const ForgotPassword = () => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (!betterAuthEnabled) return;
+
     let active = true;
     void betterAuthClient.getCapabilities()
       .then((capabilities) => {
@@ -56,16 +56,11 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      if (betterAuthEnabled) {
+      {
         await betterAuthClient.requestPasswordReset(
           email,
           `${window.location.origin}/reset-password`,
         );
-      } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`
-        });
-        if (error) throw error;
       }
       setIsSubmitted(true);
       toast({

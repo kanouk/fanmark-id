@@ -1,14 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  fetchExtensionPriceMaster,
-  fetchFanmarkTierMaster,
-  getExtensionPricingBackend,
-  getReferenceMasterReadBackend,
-  parseExtensionPriceMasterPayload,
-  parseFanmarkTierMasterPayload,
-  ReferenceMasterApiError,
-} from './reference-master-api.ts';
+import { fetchExtensionPriceMaster, fetchFanmarkTierMaster, parseExtensionPriceMasterPayload, parseFanmarkTierMasterPayload, ReferenceMasterApiError } from './reference-master-api.ts';
 
 const releaseVersion = 'a'.repeat(64);
 const tiers = [1, 2, 3, 4].map((tierLevel) => ({
@@ -33,17 +25,6 @@ function response(payload: unknown, headers: Record<string, string> = {}): Respo
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...headers },
   });
 }
-
-test('reference-master selector defaults to Supabase and accepts only known backends', () => {
-  assert.equal(getReferenceMasterReadBackend(undefined), 'supabase');
-  assert.equal(getReferenceMasterReadBackend('worker'), 'worker');
-  assert.equal(getExtensionPricingBackend(undefined), 'supabase');
-  assert.equal(getExtensionPricingBackend('worker'), 'worker');
-  assert.throws(() => getReferenceMasterReadBackend('unknown'), (error: unknown) =>
-    error instanceof ReferenceMasterApiError && error.kind === 'configuration');
-  assert.throws(() => getExtensionPricingBackend('unknown'), (error: unknown) =>
-    error instanceof ReferenceMasterApiError && error.kind === 'configuration');
-});
 
 test('parses the exact tier projection and returns stable level order', () => {
   const items = parseFanmarkTierMasterPayload({

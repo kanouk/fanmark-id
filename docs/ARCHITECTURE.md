@@ -25,7 +25,8 @@
 ## 画面・操作から実装を探す
 
 表中の画面名を入口に`src/lib/`のclientと`workers/api/src/`の対応API、該当testを読む。
-本番で使うのはWorker経路。残存するSupabase分岐は旧実装の互換・検証用で、障害時のfallbackではない。
+frontendはWorker APIとBetter Authだけを呼ぶ。[フロントの入口](development/FRONTEND.md)を参照する。
+Workerに残る移行期の選択子は通常のfrontend切替や障害時fallbackとして使わない。
 
 | 画面・機能 | 主な画面・hook/client | Worker側の入口・契約 |
 | --- | --- | --- |

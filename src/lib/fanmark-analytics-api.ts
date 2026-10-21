@@ -33,7 +33,7 @@ export interface FanmarkAnalyticsResult {
   fanmarkTotals: Array<{ fanmark_id: string; access_count: number }>;
 }
 
-export type FanmarkAnalyticsBackend = "supabase" | "worker";
+export type FanmarkAnalyticsBackend = "worker";
 
 export class FanmarkAnalyticsApiError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network";
@@ -45,15 +45,6 @@ export class FanmarkAnalyticsApiError extends Error {
     this.kind = kind;
     this.status = status;
   }
-}
-
-export function getFanmarkAnalyticsBackend(
-  value: string | undefined = import.meta.env?.VITE_FANMARK_ANALYTICS_BACKEND,
-): FanmarkAnalyticsBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkAnalyticsApiError("configuration");
 }
 
 function apiUrl(path: string, baseUrl: string): URL {

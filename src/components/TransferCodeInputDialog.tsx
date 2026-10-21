@@ -1,3 +1,5 @@
+import type { useTransferCode } from '@/hooks/useTransferCode';
+import { getErrorMessage } from '@/lib/error-message';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,7 +13,7 @@ import { AlertTriangle } from 'lucide-react';
 interface TransferCodeInputDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  applyTransferCode: (code: string) => Promise<any>;
+  applyTransferCode: ReturnType<typeof useTransferCode>['applyTransferCode'];
   onSuccess: () => void;
 }
 
@@ -40,11 +42,11 @@ export const TransferCodeInputDialog = ({
       });
       onSuccess();
       handleClose();
-    } catch (error: any) {
-      const message = error?.message || '';
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
       let errorTitle = 'transfer.error.applyFailed';
       let errorDescription = '';
-      
+
       if (message.includes('invalid') || message.includes('not found')) {
         errorTitle = 'transfer.error.invalidCode';
       } else if (message.includes('expired')) {

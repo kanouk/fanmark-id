@@ -71,15 +71,6 @@ export class NotificationMasterApiError extends Error {
   }
 }
 
-export function getNotificationMasterBackend(
-  value: string | undefined = import.meta.env?.VITE_NOTIFICATION_MASTER_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new NotificationMasterApiError("configuration");
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

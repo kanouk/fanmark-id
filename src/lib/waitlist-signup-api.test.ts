@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getWaitlistSignupBackend,
-  submitWaitlistSignup,
-  WaitlistSignupApiError,
-} from "./waitlist-signup-api.ts";
+import { submitWaitlistSignup, WaitlistSignupApiError } from "./waitlist-signup-api.ts";
 
 const baseUrl = "https://app.example.test";
 
@@ -14,12 +10,6 @@ function acceptedResponse(value: unknown = { schemaVersion: 1, accepted: true },
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
-
-test("waitlist signup backend defaults to Supabase and accepts explicit Worker selection", () => {
-  assert.equal(getWaitlistSignupBackend(undefined), "supabase");
-  assert.equal(getWaitlistSignupBackend(" worker "), "worker");
-  assert.throws(() => getWaitlistSignupBackend("other"), WaitlistSignupApiError);
-});
 
 test("submits the address only to the same-origin Worker with no-store and no credentials", async () => {
   let requestedUrl: URL | null = null;

@@ -22,7 +22,10 @@ export class AdminDataResetApiError extends Error {
 export async function resetDataThroughWorker(requestId: string, confirmation: string,
   options: { backend?: string; baseUrl?: string; authBaseUrl?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {},
 ): Promise<AdminDataResetResult> {
-  if (getAdminDataResetMode(options.backend) !== "worker" || confirmation !== "DELETE" ||
+  let mode: "disabled" | "worker";
+  try { mode = getAdminDataResetMode(options.backend); }
+  catch { throw new AdminDataResetApiError("configuration"); }
+  if (mode !== "worker" || confirmation !== "DELETE" ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(requestId)) {
     throw new AdminDataResetApiError("configuration");
   }

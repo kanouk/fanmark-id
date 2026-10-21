@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { loadFanmarkAvailability } from '@/lib/fanmark-availability';
-import { loadRecentFanmarks, mapRecentFanmarkRpcRows } from '@/lib/recent-fanmarks';
+import { loadRecentFanmarks } from '@/lib/recent-fanmarks';
 import { useTranslation } from './useTranslation';
 import {
   canonicalizeEmojiString,
@@ -9,9 +9,9 @@ import {
   segmentEmojiSequence,
   stripSkinToneModifiers,
 } from '@/lib/emojiConversion';
-import { invokeFanmarkRegistration } from '@/lib/fanmark-registration-api';
+import { invokeFanmarkRegistration, type FanmarkRegistrationResponse } from '@/lib/fanmark-registration-api';
 import { loadFanmarkSearchDetails, recordFanmarkSearch } from '@/lib/fanmark-search-api';
-import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { betterAuthClient } from '@/lib/auth-backend';
 import { useAuth } from './useAuth';
 import { useInvalidateFavoriteFanmarks } from './useFavoriteFanmarks';
 
@@ -45,23 +45,7 @@ export interface FanmarkSearchResult {
   user_lottery_entry_id?: string;
 }
 
-type FanmarkStatusRaw = 'active' | 'inactive' | 'reserved' | 'archived' | 'pending';
-
-interface FanmarkRow {
-  id: string;
-  user_input_fanmark: string;
-  display_fanmark?: string;
-  emoji_ids?: string[];
-  fanmark?: string;
-  normalized_emoji: string;
-  normalized_emoji_ids?: string[];
-  short_id: string;
-  tier_level?: number; // Deprecated - no longer exists in fanmarks table
-  tier_display_name?: string | null;
-  initial_license_days?: number | null;
-  status: FanmarkStatusRaw;
-  user_id: string;
-}
+type FanmarkRow = FanmarkRegistrationResponse['fanmark'] & { fanmark?: string };
 
 type AvailabilityRuleType = 'specific_pattern' | 'duplicate_pattern' | 'prefix_pattern' | 'count_based';
 
@@ -84,14 +68,6 @@ interface ProfileRow {
   username: string | null;
   display_name: string | null;
 }
-
-interface RegisterFanmarkResponse {
-  success: boolean;
-  fanmark?: FanmarkRow;
-  tier_level?: number;
-  error?: string;
-}
-
 
 interface FanmarkCompleteDataRow {
   id: string;
@@ -143,17 +119,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
   const fetchRecentFanmarks = useCallback(async (signal?: AbortSignal) => {
     try {
-      const recent = await loadRecentFanmarks({
-        limit: 6,
-        signal,
-        fallback: async () => {
-          const { data, error } = await supabase
-            .rpc('list_recent_fanmarks', { p_limit: 6 })
-            .abortSignal(signal ?? new AbortController().signal);
-          if (error) throw error;
-          return mapRecentFanmarkRpcRows(data);
-        },
-      });
+      const recent = await loadRecentFanmarks({limit: 6, signal});
 
       if (signal?.aborted) return;
       setRecentFanmarks(recent.map((fanmark) => ({
@@ -246,15 +212,12 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
     setLoading(true);
     try {
       let currentUserId = user?.id ?? null;
-      if (isBetterAuthEnabled() && authLoading) {
+      if (authLoading) {
         try {
           currentUserId = (await betterAuthClient.getSession())?.user.id ?? null;
         } catch {
           // The detail API independently fails closed if Better Auth is unavailable.
         }
-      } else if (!isBetterAuthEnabled()) {
-        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-        currentUserId = supabaseUser?.id ?? null;
       }
 
       const validation = validateEmojiInput(rawQuery);
@@ -273,7 +236,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         });
         return;
       }
- 
+
       const compactQuery = canonicalizeEmojiString(rawQuery);
       const normalizedQuery = normalizeEmoji(compactQuery);
       const pair = validation.pair;
@@ -284,13 +247,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       const emojiIds = pair.emojiIds;
       const normalizedEmojiIds = pair.normalizedEmojiIds;
 
-      const availability = await loadFanmarkAvailability(normalizedEmojiIds, {
-        fallback: async () => {
-          const { data, error } = await supabase.rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds });
-          if (error) throw error;
-          return data;
-        },
-      });
+      const availability = await loadFanmarkAvailability(normalizedEmojiIds, {});
 
       const availabilityTierLevel = availability.tier_level ?? null;
       const availabilityTierDisplayName = availability.tier_display_name ?? undefined;
@@ -298,13 +255,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       onSearchCompleted?.(compactQuery);
 
       try {
-        await recordFanmarkSearch(emojiIds, {
-          fallback: async () => {
-            const { data, error } = await supabase.rpc('record_fanmark_search', { input_emoji_ids: emojiIds });
-            if (error) throw error;
-            return data;
-          },
-        });
+        await recordFanmarkSearch(emojiIds, {});
       } catch (searchRecordError) {
         console.warn('Failed to record fanmark search:', searchRecordError);
       }
@@ -331,16 +282,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         return;
       }
 
-      const fanmarkDetails = await loadFanmarkSearchDetails(availability.fanmark_id, {
-        fallback: async () => {
-          const { data, error } = await supabase.rpc(
-            'get_fanmark_complete_data',
-            { fanmark_id_param: availability.fanmark_id } as { fanmark_id_param: string },
-          );
-          if (error) throw error;
-          return data;
-        },
-      });
+      const fanmarkDetails = await loadFanmarkSearchDetails(availability.fanmark_id, {});
       const fanmarkData = Array.isArray(fanmarkDetails)
         ? (fanmarkDetails[0] as FanmarkCompleteDataRow | undefined) ?? null
         : fanmarkDetails && typeof fanmarkDetails === 'object'
@@ -491,7 +433,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       setLoading(false);
     }
   };
-  
+
   const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: FanmarkRow }> => {
     try {
       const compactEmoji = emoji.replace(/\s/g, '');
@@ -509,15 +451,12 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       }
 
       const registrationBody = {
-          user_input_fanmark: emoji, 
-          emoji_ids: emojiIds, 
+          user_input_fanmark: emoji,
+          emoji_ids: emojiIds,
           normalized_emoji_ids: normalizedEmojiIds,
           defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
       };
-      const response = await invokeFanmarkRegistration(
-        registrationBody,
-        () => supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', { body: registrationBody }),
-      );
+      const response = await invokeFanmarkRegistration(registrationBody);
 
       if (response.error) {
         return { success: false, error: response.error.message };
@@ -557,26 +496,11 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         return false;
       }
 
-      const availability = await loadFanmarkAvailability(normalizedEmojiIds, {
-        fallback: async () => {
-          const { data, error } = await supabase.rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds });
-          if (error) throw error;
-          return data;
-        },
-      });
+      const availability = await loadFanmarkAvailability(normalizedEmojiIds, {});
 
       if (!availability.available && availability.fanmark_id) {
         // 詳細を参照して status を確認し、非アクティブ状態の場合は取得不可とする
-        const fanmarkDetails = await loadFanmarkSearchDetails(availability.fanmark_id, {
-          fallback: async () => {
-            const { data, error } = await supabase.rpc(
-              'get_fanmark_complete_data',
-              { fanmark_id_param: availability.fanmark_id } as { fanmark_id_param: string },
-            );
-            if (error) throw error;
-            return data;
-          },
-        });
+        const fanmarkDetails = await loadFanmarkSearchDetails(availability.fanmark_id, {});
         const fanmarkData = Array.isArray(fanmarkDetails)
           ? (fanmarkDetails[0] as FanmarkCompleteDataRow | undefined) ?? null
           : fanmarkDetails && typeof fanmarkDetails === 'object'

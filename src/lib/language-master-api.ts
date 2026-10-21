@@ -8,7 +8,7 @@ export interface LanguageMasterItem {
   sortOrder: number;
 }
 
-export type LanguageReadBackend = 'supabase' | 'worker';
+export type LanguageReadBackend = 'worker';
 
 export type LanguageMasterApiErrorKind =
   | 'configuration'
@@ -42,15 +42,6 @@ const MAX_TIMEOUT_MS = 30_000;
 const LANGUAGE_CODE_RE = /^[A-Za-z0-9-]{2,16}$/u;
 const RELEASE_VERSION_RE = /^[0-9a-f]{64}$/u;
 const EXPECTED_ITEM_KEYS = ['code', 'isActive', 'label', 'nativeLabel', 'sortOrder'];
-
-export function getLanguageReadBackend(
-  value: string | undefined = import.meta.env?.VITE_LANGUAGE_READ_BACKEND,
-): LanguageReadBackend {
-  const backend = value?.trim();
-  if (!backend || backend === 'supabase') return 'supabase';
-  if (backend === 'worker') return 'worker';
-  throw new LanguageMasterApiError('configuration');
-}
 
 function languageApiUrl(baseUrl: string): URL {
   let endpoint: URL;

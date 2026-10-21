@@ -1,13 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  buildStripePlanChangeUrl,
-  changeStripePlanThroughWorker,
-  clearStripePlanChangeRequestId,
-  getStripePlanChangeBackend,
-  getStripePlanChangeRequestId,
-  StripePlanChangeApiError,
-} from './stripe-plan-change-api.ts';
+import { buildStripePlanChangeUrl, changeStripePlanThroughWorker, clearStripePlanChangeRequestId, getStripePlanChangeRequestId, StripePlanChangeApiError } from './stripe-plan-change-api.ts';
 
 const requestId = '00000000-0000-4000-8000-000000000002';
 
@@ -16,10 +9,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 test('plan-change selector defaults to Supabase and validates explicit Worker mode', () => {
-  assert.equal(getStripePlanChangeBackend(undefined), 'supabase');
-  assert.equal(getStripePlanChangeBackend(' worker '), 'worker');
-  assert.throws(() => getStripePlanChangeBackend('other'), StripePlanChangeApiError);
-  assert.equal(buildStripePlanChangeUrl('https://app.example/').href, 'https://app.example/api/billing/plan-change');
+assert.equal(buildStripePlanChangeUrl('https://app.example/').href, 'https://app.example/api/billing/plan-change');
 });
 
 test('plan-change request IDs are stable per destination and can be cleared after reconciliation', () => {

@@ -1,21 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  bulkReturnFanmarksThroughWorker,
-  buildFanmarkBulkReturnApiUrl,
-  buildFanmarkReturnApiUrl,
-  FanmarkReturnApiError,
-  getFanmarkReturnBackend,
-  returnFanmarkThroughWorker,
-} from "./fanmark-return-api.ts";
+import { bulkReturnFanmarksThroughWorker, buildFanmarkBulkReturnApiUrl, buildFanmarkReturnApiUrl, FanmarkReturnApiError, returnFanmarkThroughWorker } from "./fanmark-return-api.ts";
 
 const ID = "45111111-1111-4111-8111-111111111111";
-
-test("return backend defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getFanmarkReturnBackend(undefined), "supabase");
-  assert.equal(getFanmarkReturnBackend("worker"), "worker");
-  assert.throws(() => getFanmarkReturnBackend("fallback"), FanmarkReturnApiError);
-});
 
 test("return endpoint stays on the configured API origin", () => {
   assert.equal(buildFanmarkReturnApiUrl("https://api.example.test/").href,

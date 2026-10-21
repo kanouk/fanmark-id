@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Sparkles, ExternalLink, Check, Heart, Ticket, TicketX } from 'lucide-react';
-import { FiInfo, FiAlertTriangle } from 'react-icons/fi';
+
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -25,7 +25,7 @@ import { FanmarkSearchResult } from '@/hooks/useFanmarkSearch';
 import { FanmarkStatusBadge } from '@/components/FanmarkStatusBadge';
 import { EmojiInputUtilities } from '@/components/EmojiInput';
 import { FanmarkAcquisitionLoading } from '@/components/FanmarkAcquisitionLoading';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useFavoriteFanmarks, useInvalidateFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
 import { addFavoriteFanmark, removeFavoriteFanmark } from '@/lib/favorites-backend';
 import { useLotteryEntry } from '@/hooks/useLotteryEntry';
@@ -218,15 +218,12 @@ export const FanmarkAcquisition = ({
       }
 
       const registrationBody = {
-          user_input_fanmark: sourceEmoji, 
-          emoji_ids: emojiIds, 
+          user_input_fanmark: sourceEmoji,
+          emoji_ids: emojiIds,
           normalized_emoji_ids: normalizedEmojiIds,
           defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
       };
-      const response = await invokeFanmarkRegistration(
-        registrationBody,
-        () => supabase.functions.invoke<{ success: boolean; fanmark?: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }; error?: string }>('register-fanmark', { body: registrationBody }),
-      );
+      const response = await invokeFanmarkRegistration(registrationBody);
 
       if (response.error || !response.data?.success || !response.data.fanmark) {
         throw new Error(response.error?.message || response.data?.error || 'Failed to register fanmark');
@@ -249,7 +246,7 @@ export const FanmarkAcquisition = ({
       navigate(`/fanmarks/${fanmark.id}/settings`, { state: { isNew: true } });
     } catch (error) {
       console.error('Fanmark registration failed:', error);
-      
+
       toast({
         title: t('dashboard.acquireFailedTitle'),
         description: error instanceof Error ? error.message : t('dashboard.acquireFailedDescription'),

@@ -1,13 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  fetchSystemSettingsFromWorker,
-  getSystemSettingsBackend,
-  SYSTEM_SETTINGS_ADMIN_KEYS,
-  SYSTEM_SETTINGS_PUBLIC_KEYS,
-  SystemSettingsApiError,
-  updateSystemSettingInWorker,
-} from "./system-settings-api.ts";
+import { fetchSystemSettingsFromWorker, SYSTEM_SETTINGS_ADMIN_KEYS, SYSTEM_SETTINGS_PUBLIC_KEYS, SystemSettingsApiError, updateSystemSettingInWorker } from "./system-settings-api.ts";
 
 function settings(keys: readonly string[]): Record<string, string> {
   return Object.fromEntries(keys.map((key) => [key, key.endsWith("_limit") || key.endsWith("_pricing") || key === "max_emoji_characters"
@@ -15,13 +8,6 @@ function settings(keys: readonly string[]): Record<string, string> {
     : key === "invitation_mode" || key === "social_login_enabled" ? "false"
       : key === "stripe_mode" ? "test" : "price_synthetic"]));
 }
-
-test("selects only a known system settings backend", () => {
-  assert.equal(getSystemSettingsBackend(undefined), "supabase");
-  assert.equal(getSystemSettingsBackend(" "), "supabase");
-  assert.equal(getSystemSettingsBackend("worker"), "worker");
-  assert.throws(() => getSystemSettingsBackend("unknown"), SystemSettingsApiError);
-});
 
 test("accepts the exact public and admin setting projections", async () => {
   const publicSettings = settings(SYSTEM_SETTINGS_PUBLIC_KEYS);

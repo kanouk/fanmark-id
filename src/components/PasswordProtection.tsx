@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { toast } from '@/hooks/use-toast';
+
 import { useTranslation } from '@/hooks/useTranslation';
 import { Lock } from 'lucide-react';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  getVerifiedAccessBackend,
-  VerifiedAccessApiError,
-  verifyAndReadProtectedFanmark,
-  type ProtectedFanmarkProjection,
-  type VerifiedAccessSelector,
-} from '@/lib/verified-access-api';
+
+import { VerifiedAccessApiError, verifyAndReadProtectedFanmark, type ProtectedFanmarkProjection, type VerifiedAccessSelector } from '@/lib/verified-access-api';
 
 interface PasswordProtectionProps {
   fanmark: {
@@ -42,7 +36,7 @@ export const PasswordProtection = ({ fanmark, selector, onSuccess }: PasswordPro
         verifyingRef.current = true;
         setIsVerifying(true);
         try {
-          if (getVerifiedAccessBackend() === 'worker') {
+          {
             const projection = await verifyAndReadProtectedFanmark(selector, password);
             if (
               !fanmark.license_id ||
@@ -56,26 +50,6 @@ export const PasswordProtection = ({ fanmark, selector, onSuccess }: PasswordPro
             return;
           }
 
-          const { data: isValid, error } = await supabase.rpc('verify_fanmark_password', {
-            fanmark_uuid: fanmark.id,
-            provided_password: password
-          });
-
-          if (error) {
-            console.error('Password verification error:', error);
-            setIsShaking(true);
-            setPassword('');
-            setTimeout(() => setIsShaking(false), 500);
-            return;
-          }
-
-          if (isValid) {
-            onSuccess();
-          } else {
-            setIsShaking(true);
-            setPassword('');
-            setTimeout(() => setIsShaking(false), 500);
-          }
         } catch (error) {
           console.error('Password verification failed:', error);
           setIsShaking(true);

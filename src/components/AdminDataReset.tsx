@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useToast } from "@/hooks/use-toast";
 import { getAdminDataResetMode } from "@/lib/admin-data-reset-mode";
 import { resetDataThroughWorker, AdminDataResetApiError } from "@/lib/admin-data-reset-api";
@@ -40,14 +40,7 @@ export const AdminDataReset = () => {
     setResetResult(null);
 
     try {
-      let data: ResetResult;
-      if (resetMode === "worker") {
-        data = await resetDataThroughWorker(requestId!, confirmation);
-      } else {
-        const result = await supabase.functions.invoke('reset-fanmark-data', { method: 'POST' });
-        if (result.error) throw result.error;
-        data = result.data as ResetResult;
-      }
+      const data = await resetDataThroughWorker(requestId!, confirmation);
 
       setResetResult(data as ResetResult);
       setRequestId(null);
@@ -89,7 +82,7 @@ export const AdminDataReset = () => {
           </div>
           {resetDisabled && (
             <div className="mt-3 font-medium text-amber-700 dark:text-amber-300">
-              Cloudflare stagingでは、Supabase側のデータを誤って削除しないよう、この操作を停止しています。
+              この環境ではデータリセットを停止しています。
             </div>
           )}
         </AlertDescription>

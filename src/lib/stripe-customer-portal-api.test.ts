@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  buildStripeCustomerPortalUrl,
-  createStripeCustomerPortalThroughWorker,
-  getStripeCustomerPortalBackend,
-  StripeCustomerPortalApiError,
-} from "./stripe-customer-portal-api.ts";
+import { buildStripeCustomerPortalUrl, createStripeCustomerPortalThroughWorker, StripeCustomerPortalApiError } from "./stripe-customer-portal-api.ts";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -13,12 +8,6 @@ function jsonResponse(body: unknown, status = 200): Response {
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
-
-test("customer portal backend defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getStripeCustomerPortalBackend(undefined), "supabase");
-  assert.equal(getStripeCustomerPortalBackend(" worker "), "worker");
-  assert.throws(() => getStripeCustomerPortalBackend("cloudflare"), StripeCustomerPortalApiError);
-});
 
 test("customer portal URL replaces only the path on a validated API origin", () => {
   assert.equal(

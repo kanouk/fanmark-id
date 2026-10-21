@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from '@/hooks/use-toast';
-import {
-  loadRecentFanmarks,
-  mapRecentFanmarkRpcRows,
-  type RecentFanmark,
-} from '@/lib/recent-fanmarks';
+import { loadRecentFanmarks, type RecentFanmark } from '@/lib/recent-fanmarks';
 
 export function RecentFanmarksScroll() {
   const [fanmarks, setFanmarks] = useState<RecentFanmark[]>([]);
@@ -18,18 +14,7 @@ export function RecentFanmarksScroll() {
 
     const fetchFanmarks = async () => {
       try {
-        const formattedFanmarks = await loadRecentFanmarks({
-          signal: controller.signal,
-          fallback: async () => {
-            // Keep the current public RPC until the Worker is explicitly configured.
-            const { data, error } = await supabase
-              .rpc('list_recent_fanmarks', { p_limit: 20 })
-              .abortSignal(controller.signal);
-
-            if (error) throw error;
-            return mapRecentFanmarkRpcRows(data);
-          },
-        });
+        const formattedFanmarks = await loadRecentFanmarks({signal: controller.signal});
 
         if (!isMounted || controller.signal.aborted) return;
         // 2セット用意してシームレスにループさせる

@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Save, Copy, Check, AlertTriangle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { createReferenceMasterAdminApi, ReferenceMasterAdminApiError } from "@/lib/reference-master-admin-api";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,7 +31,7 @@ interface FanmarkTier {
 type EnvironmentTab = 'test' | 'live';
 
 const MONTH_OPTIONS = [1, 2, 3, 6];
-const useCloudflarePricingAdmin = import.meta.env.VITE_REFERENCE_MASTER_ADMIN_BACKEND?.trim() === "d1";
+const useCloudflarePricingAdmin = true;
 const referenceMasterAdminApi = createReferenceMasterAdminApi({
   baseUrl: import.meta.env.VITE_FANMARK_API_BASE_URL?.trim() ||
     (typeof window === "undefined" ? "https://invalid.example" : window.location.origin),
@@ -59,7 +59,7 @@ export const AdminTierExtensionPrices = () => {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      if (useCloudflarePricingAdmin) {
+      {
         const settings = await referenceMasterAdminApi.get();
         const typedPrices = settings.extensionPrices as ExtensionPrice[];
         const typedTiers = settings.tiers as FanmarkTier[];
@@ -72,46 +72,7 @@ export const AdminTierExtensionPrices = () => {
         setTierEdits(Object.fromEntries(typedTiers.map(tier => [tier.id, tier.initial_license_days ?? null])));
         return;
       }
-      setActiveReferenceMasterRelease(null);
-      const [
-        { data: priceData, error: priceError },
-        { data: tierData, error: tierError },
-      ] = await Promise.all([
-        supabase
-          .from("fanmark_tier_extension_prices")
-          .select("*")
-          .order("tier_level", { ascending: true })
-          .order("months", { ascending: true }),
-        supabase
-          .from("fanmark_tiers")
-          .select("id, tier_level, display_name, initial_license_days, is_active, description")
-          .order("tier_level", { ascending: true }),
-      ]);
 
-      if (priceError) throw priceError;
-      if (tierError) throw tierError;
-
-      const typedPrices = (priceData || []) as unknown as ExtensionPrice[];
-      setPrices(typedPrices);
-      const initialPrices: Record<string, number> = {};
-      const initialStripePrices: Record<string, string> = {};
-      const initialStripePricesLive: Record<string, string> = {};
-      typedPrices.forEach(price => {
-        initialPrices[price.id] = price.price_yen;
-        initialStripePrices[price.id] = price.stripe_price_id || '';
-        initialStripePricesLive[price.id] = price.stripe_price_id_live || '';
-      });
-      setEditedPrices(initialPrices);
-      setEditedStripePrices(initialStripePrices);
-      setEditedStripePricesLive(initialStripePricesLive);
-
-      const typedTiers = (tierData || []) as unknown as FanmarkTier[];
-      setTiers(typedTiers);
-      const initialTierDays: Record<string, number | null> = {};
-      typedTiers.forEach(tier => {
-        initialTierDays[tier.id] = tier.initial_license_days ?? null;
-      });
-      setTierEdits(initialTierDays);
     } catch (error) {
       console.error("Error fetching tier settings:", error);
       toast({
@@ -141,16 +102,10 @@ export const AdminTierExtensionPrices = () => {
 
     setUpdating(true);
     try {
-      if (useCloudflarePricingAdmin) {
+      {
         if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
         const saved = await referenceMasterAdminApi.updateExtensionPrice(activeReferenceMasterRelease, id, { price_yen: newPrice });
         setActiveReferenceMasterRelease(saved.releaseVersion);
-      } else {
-        const { error } = await supabase
-          .from("fanmark_tier_extension_prices")
-          .update({ price_yen: newPrice })
-          .eq("id", id);
-        if (error) throw error;
       }
 
       toast({
@@ -178,16 +133,10 @@ export const AdminTierExtensionPrices = () => {
   const handleToggleActive = async (id: string, currentActive: boolean) => {
     setUpdating(true);
     try {
-      if (useCloudflarePricingAdmin) {
+      {
         if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
         const saved = await referenceMasterAdminApi.updateExtensionPrice(activeReferenceMasterRelease, id, { is_active: !currentActive });
         setActiveReferenceMasterRelease(saved.releaseVersion);
-      } else {
-        const { error } = await supabase
-          .from("fanmark_tier_extension_prices")
-          .update({ is_active: !currentActive })
-          .eq("id", id);
-        if (error) throw error;
       }
 
       toast({
@@ -256,16 +205,10 @@ export const AdminTierExtensionPrices = () => {
 
     setUpdating(true);
     try {
-      if (useCloudflarePricingAdmin) {
+      {
         if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
         const saved = await referenceMasterAdminApi.updateExtensionPrice(activeReferenceMasterRelease, id, { stripe_price_id: edited || null });
         setActiveReferenceMasterRelease(saved.releaseVersion);
-      } else {
-        const { error } = await supabase
-          .from("fanmark_tier_extension_prices")
-          .update({ stripe_price_id: edited || null })
-          .eq("id", id);
-        if (error) throw error;
       }
 
       toast({
@@ -298,16 +241,10 @@ export const AdminTierExtensionPrices = () => {
 
     setUpdating(true);
     try {
-      if (useCloudflarePricingAdmin) {
+      {
         if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
         const saved = await referenceMasterAdminApi.updateExtensionPrice(activeReferenceMasterRelease, id, { stripe_price_id_live: edited || null });
         setActiveReferenceMasterRelease(saved.releaseVersion);
-      } else {
-        const { error } = await supabase
-          .from("fanmark_tier_extension_prices")
-          .update({ stripe_price_id_live: edited || null })
-          .eq("id", id);
-        if (error) throw error;
       }
 
       toast({
@@ -365,16 +302,10 @@ export const AdminTierExtensionPrices = () => {
 
     setTierUpdatingId(id);
     try {
-      if (useCloudflarePricingAdmin) {
+      {
         if (!activeReferenceMasterRelease) throw new Error("料金設定の版を確認できません。再読み込みしてください。");
         const saved = await referenceMasterAdminApi.updateTierDays(activeReferenceMasterRelease, id, nextValue);
         setActiveReferenceMasterRelease(saved.releaseVersion);
-      } else {
-        const { error } = await supabase
-          .from("fanmark_tiers")
-          .update({ initial_license_days: nextValue })
-          .eq("id", id);
-        if (error) throw error;
       }
 
       toast({
@@ -421,10 +352,10 @@ export const AdminTierExtensionPrices = () => {
     const isDirty = editedPrice !== originalPrice;
     const isInvalid = editedPrice === undefined || editedPrice < 0;
 
-    const editedStripeId = isLiveMode 
+    const editedStripeId = isLiveMode
       ? (editedStripePricesLive[priceData.id] ?? '')
       : (editedStripePrices[priceData.id] ?? '');
-    const originalStripeId = isLiveMode 
+    const originalStripeId = isLiveMode
       ? (priceData.stripe_price_id_live || '')
       : (priceData.stripe_price_id || '');
     const isStripeDirty = editedStripeId !== originalStripeId;
@@ -437,7 +368,7 @@ export const AdminTierExtensionPrices = () => {
         className={cn(
           "space-y-3 rounded-xl border p-4 transition-colors",
           priceData.is_active
-            ? isLiveMode 
+            ? isLiveMode
               ? "border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/20"
               : "border-border bg-background"
             : "border-border/40 bg-muted/30 opacity-60"
@@ -500,7 +431,7 @@ export const AdminTierExtensionPrices = () => {
             <Input
               type="text"
               value={editedStripeId}
-              onChange={(e) => isLiveMode 
+              onChange={(e) => isLiveMode
                 ? handleStripePriceLiveChange(priceData.id, e.target.value)
                 : handleStripePriceChange(priceData.id, e.target.value)
               }
@@ -528,7 +459,7 @@ export const AdminTierExtensionPrices = () => {
           </div>
 
           <Button
-            onClick={() => isLiveMode 
+            onClick={() => isLiveMode
               ? handleUpdateStripePriceLive(priceData.id)
               : handleUpdateStripePrice(priceData.id)
             }
@@ -642,8 +573,8 @@ export const AdminTierExtensionPrices = () => {
           <TabsTrigger value="test" className="gap-2">
             テスト環境
           </TabsTrigger>
-          <TabsTrigger 
-            value="live" 
+          <TabsTrigger
+            value="live"
             className="gap-2 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700 dark:data-[state=active]:bg-orange-950 dark:data-[state=active]:text-orange-300"
           >
             <AlertTriangle className="h-3.5 w-3.5" />

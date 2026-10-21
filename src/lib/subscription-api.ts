@@ -46,15 +46,6 @@ interface RequestOptions {
   timeoutMs?: number;
 }
 
-export function getSubscriptionBackend(
-  value: string | undefined = import.meta.env?.VITE_SUBSCRIPTION_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new SubscriptionApiError("configuration");
-}
-
 export function buildSubscriptionApiUrl(baseUrl: string): URL {
   let url: URL;
   try {

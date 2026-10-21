@@ -4,7 +4,7 @@ const ACCOUNT_DELETION_PATH = "/api/me/account/delete";
 const MAX_RESPONSE_BYTES = 8 * 1024;
 const DEFAULT_TIMEOUT_MS = 60_000;
 
-export type AccountDeletionBackend = "supabase" | "worker";
+export type AccountDeletionBackend = "worker";
 export type AccountDeletionErrorKind = "configuration" | "http" | "invalid_response" | "network" | "timeout";
 
 export class AccountDeletionApiError extends Error {
@@ -17,15 +17,6 @@ export class AccountDeletionApiError extends Error {
     this.kind = kind;
     this.status = status;
   }
-}
-
-export function getAccountDeletionBackend(
-  value: string | undefined = import.meta.env?.VITE_ACCOUNT_DELETION_BACKEND,
-): AccountDeletionBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new AccountDeletionApiError("configuration");
 }
 
 export function buildAccountDeletionApiUrl(baseUrl: string): URL {
@@ -93,7 +84,7 @@ export async function deleteAccountThroughWorker(
     timeoutMs?: number;
   } = {},
 ): Promise<void> {
-  if (getAccountDeletionBackend(options.backend) !== "worker") throw new AccountDeletionApiError("configuration");
+
   if (typeof password !== "string" || password.length < 1 || password.length > 256) {
     throw new AccountDeletionApiError("configuration");
   }

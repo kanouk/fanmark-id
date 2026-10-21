@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Home, AlertCircle, Sparkles } from 'lucide-react';
@@ -18,11 +18,8 @@ import { normalizeEmojiPath, isEmojiOnly } from '@/utils/emojiUrl';
 import { convertEmojiSequenceToIdPair, segmentEmojiSequence } from '@/lib/emojiConversion';
 import NotFound from '@/pages/NotFound';
 import { useAuth } from '@/hooks/useAuth';
-import { fetchPublicFanmarkByEmojiIds, getPublicAccessReadBackend } from '@/lib/public-access-api';
-import {
-  getVerifiedAccessBackend,
-  type ProtectedFanmarkProjection,
-} from '@/lib/verified-access-api';
+import { fetchPublicFanmarkByEmojiIds } from '@/lib/public-access-api';
+import { type ProtectedFanmarkProjection } from '@/lib/verified-access-api';
 
 interface FanmarkData {
   id: string;
@@ -40,7 +37,6 @@ interface FanmarkData {
   license_id?: string | null;
   protected_profile?: Extract<ProtectedFanmarkProjection, { accessType: 'profile' }>['profile'];
 }
-
 
 export const FanmarkAccess = () => {
   const { emojiPath } = useParams<{ emojiPath: string }>();
@@ -124,18 +120,8 @@ export const FanmarkAccess = () => {
         }
 
         let fanmarkRecord: FanmarkData | null;
-        if (getPublicAccessReadBackend() === 'worker') {
+        {
           fanmarkRecord = await fetchPublicFanmarkByEmojiIds(normalizedEmojiIds, { signal: controller.signal });
-        } else {
-          const { data, error } = await supabase
-            .rpc('get_fanmark_by_emoji', { input_emoji_ids: normalizedEmojiIds });
-
-          if (error) {
-            console.error('Database error:', error);
-            handleFanmarkUnavailable(normalizedEmoji, 'common.failedToLoadFanmark', 'destructive');
-            return;
-          }
-          fanmarkRecord = Array.isArray(data) && data.length > 0 ? data[0] as FanmarkData : null;
         }
 
         if (!isMounted) return;
@@ -160,14 +146,6 @@ export const FanmarkAccess = () => {
           display_fanmark: displayFanmark,
           fanmark: displayFanmark,
         };
-
-        if (
-          resolvedFanmark.is_password_protected &&
-          getPublicAccessReadBackend() !== getVerifiedAccessBackend()
-        ) {
-          handleFanmarkUnavailable(normalizedEmoji, 'common.failedToLoadFanmark', 'destructive');
-          return;
-        }
 
         if (!resolvedFanmark.license_id) {
           console.warn('Loaded fanmark without license_id. Profile access requires active license linkage.');
@@ -334,12 +312,12 @@ export const FanmarkAccess = () => {
   // Handle password protection for all access types
   if (fanmark.is_password_protected && !isPasswordVerified) {
     return (
-      <PasswordProtection 
-        fanmark={fanmark} 
+      <PasswordProtection
+        fanmark={fanmark}
         selector={fanmark.short_id
           ? { kind: 'short', shortId: fanmark.short_id }
           : { kind: 'emoji', emojiIds: fanmark.emoji_ids ?? [] }}
-        onSuccess={handlePasswordSuccess} 
+        onSuccess={handlePasswordSuccess}
       />
     );
   }
@@ -382,7 +360,7 @@ export const FanmarkAccess = () => {
           </Card>
         </div>
       );
-    
+
     case 'inactive': {
       const handleGetFanmark = () => {
         const prefillEmoji =

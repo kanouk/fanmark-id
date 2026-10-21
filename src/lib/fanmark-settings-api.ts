@@ -45,15 +45,6 @@ export class FanmarkSettingsApiError extends Error {
   }
 }
 
-export function getFanmarkSettingsBackend(
-  value: string | undefined = import.meta.env?.VITE_FANMARK_SETTINGS_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkSettingsApiError("configuration");
-}
-
 export function buildFanmarkSettingsApiUrl(baseUrl: string, fanmarkId: string): URL {
   if (!UUID_PATTERN.test(fanmarkId)) throw new FanmarkSettingsApiError("configuration");
   let url: URL;

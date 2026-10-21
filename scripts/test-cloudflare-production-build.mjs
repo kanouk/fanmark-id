@@ -2,40 +2,38 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {build} from '../workers/api/node_modules/esbuild/lib/main.js';
 import {fileURLToPath} from 'node:url';
-
 const root=fileURLToPath(new URL('../',import.meta.url));
-async function clients(mode) {
-  const result=await build({stdin:{contents:`import {supabase} from './src/integrations/supabase/client';
-import {isBetterAuthEnabled,betterAuthClient} from './src/lib/auth-backend';
-export {supabase,isBetterAuthEnabled,betterAuthClient};`,resolveDir:root,loader:'ts'},bundle:true,write:false,format:'esm',platform:'neutral',
-    define:{'import.meta.env.MODE':JSON.stringify(mode),
-      'import.meta.env.VITE_SUPABASE_URL':'"https://old-source.example.test"',
-      'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY':'"old-source-fixture-key"',
-      'import.meta.env.VITE_AUTH_API_BASE_URL':'"https://fanmark.id"',
-      localStorage:'{"fixture":true}'},
-    plugins:[{name:'observe-client-boundary',setup(api){
-      api.onResolve({filter:/^(@supabase\/supabase-js|@\/lib\/better-auth-client)$/},args=>({path:args.path,namespace:'fixture'}));
-      api.onLoad({filter:/.*/,namespace:'fixture'},args=>({contents:args.path==='@supabase/supabase-js'?
-        'export function createClient(url,key,options){return {url,key,options}}':
-        'export function createBetterAuthClient(options){return options}'}));
-    }}]});
-  return import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+for (const mode of ['cloudflare-production','cloudflare-staging','development']) {
+  test(mode+' bundles only Better Auth and sends session requests to the selected app origin', async()=>{
+    const result=await build({stdin:{contents:"export {betterAuthClient} from './src/lib/auth-backend';",resolveDir:root,loader:'ts'},
+      bundle:true,write:false,metafile:true,format:'esm',platform:'neutral',
+      define:{'import.meta.env.MODE':JSON.stringify(mode),'import.meta.env.VITE_AUTH_API_BASE_URL':'"https://fanmark.id"',
+        'import.meta.env.VITE_SUPABASE_URL':'"https://old-source.example.invalid"'},
+      plugins:[{name:'local-alias',setup(api){api.onResolve({filter:/^@\//},args=>({path:fileURLToPath(new URL('./src/'+args.path.slice(2)+'.ts',new URL('../',import.meta.url)))}));}}]});
+    assert.equal(Object.keys(result.metafile.inputs).some(file=>/supabase/iu.test(file)),false);
+    const previous=globalThis.fetch;const calls=[];
+    try {
+      globalThis.fetch=async(url,init)=>{calls.push({url:String(url),credentials:init.credentials,cache:init.cache});return Response.json(null);};
+      const compiled=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text+'\n// '+mode).toString('base64'));
+      assert.equal(await compiled.betterAuthClient.getSession(),null);
+      assert.deepEqual(calls,[{url:'https://fanmark.id/api/auth/get-session',credentials:'include',cache:'no-store'}]);
+    } finally {globalThis.fetch=previous;}
+  });
 }
-test('Cloudflare production chooses Better Auth and refuses legacy Supabase HTTP despite environment credentials',async()=>{
-  const result=await clients('cloudflare-production');
-  assert.equal(result.isBetterAuthEnabled(),true);assert.equal(result.betterAuthClient.baseUrl,'https://fanmark.id');
-  assert.equal(result.supabase.url,'https://supabase-disabled.invalid');
-  assert.equal(result.supabase.options.auth.persistSession,false);
-  assert.equal(result.supabase.options.auth.autoRefreshToken,false);
-  assert.equal(result.supabase.options.auth.detectSessionInUrl,false);
-  assert.equal(result.supabase.options.auth.storage,undefined);
-  await assert.rejects(result.supabase.options.global.fetch('https://old-source.example.test'),/legacy_supabase_disabled/);
-});
-test('legacy production and existing staging retain their auth choices',async()=>{
-  for(const [mode,enabled] of [['production',false],['cloudflare-staging',true]]){
-    const result=await clients(mode);assert.equal(result.isBetterAuthEnabled(),enabled);
-    assert.equal(result.supabase.url,'https://old-source.example.test');
-    assert.equal(result.supabase.options.auth.persistSession,true);
-    assert.equal(result.supabase.options.global,undefined);
-  }
+
+test('production environment discards inherited API origins, retired flags and env directories', async () => {
+  const { isolatedBuildEnvironment, frontendEnvironment } = await import('./frontend-build-config.mjs');
+  const env = isolatedBuildEnvironment({ PATH: '/bin', VITE_AUTH_API_BASE_URL: 'https://old.invalid',
+    VITE_SUPABASE_URL: 'https://old.invalid', VITE_PROFILE_BACKEND: 'supabase', FANMARK_VITE_ENV_DIR: '/old' },
+    'production', 'https://fanmark.id', '/isolated');
+  assert.equal(env.PATH, '/bin');
+  assert.equal(env.VITE_SUPABASE_URL, undefined);
+  assert.equal(env.VITE_PROFILE_BACKEND, undefined);
+  assert.equal(env.VITE_AUTH_API_BASE_URL, 'https://fanmark.id');
+  assert.equal(env.FANMARK_VITE_ENV_DIR, '/isolated');
+  assert.equal(env.VITE_BROADCAST_SEND_BACKEND, 'worker');
+  assert.equal(frontendEnvironment('local', 'https://127.0.0.1:8080').VITE_BROADCAST_SEND_BACKEND, 'disabled');
+  assert.throws(() => frontendEnvironment('production', 'https://other.invalid'));
+  assert.throws(() => frontendEnvironment('local', 'https://fanmark.id'));
+  assert.throws(() => frontendEnvironment('unknown', 'https://fanmark.id'));
 });

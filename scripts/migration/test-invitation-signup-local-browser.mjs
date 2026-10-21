@@ -1,3 +1,4 @@
+import { localFrontendEnvironment } from '../dev/local-config.mjs';
 // Actual built UI + application Worker + isolated split D1. Only the upstream
 // Resend API is synthetic; all other Worker egress and browser egress is denied.
 import assert from 'node:assert/strict';
@@ -89,8 +90,8 @@ try{
     '-out',path.join(temp,'tls.cert'),'-days','1','-subj','/CN=127.0.0.1'],{stdio:'ignore'});
   await chmod(path.join(temp,'tls.key'),0o600);await chmod(path.join(temp,'tls.cert'),0o600);
   const manifest=JSON.parse(await readFile(path.join(root,'package.json'),'utf8'));
-  const selectors=Object.fromEntries([...manifest.scripts['build:cloudflare-staging'].matchAll(/\b(VITE_[A-Z_]+)=([a-z0-9-]+)\s/gu)].map(m=>[m[1],m[2]]));
-  assert.equal(Object.keys(selectors).length,45);const emptyEnv=path.join(temp,'empty-env');await mkdir(emptyEnv);
+  const selectors=localFrontendEnvironment(origin);
+  assert.equal(Object.keys(selectors).length,5);const emptyEnv=path.join(temp,'empty-env');await mkdir(emptyEnv);
   const buildEnv={...process.env};for(const key of Object.keys(buildEnv))if(key.startsWith('VITE_'))delete buildEnv[key];
   Object.assign(buildEnv,selectors,{FANMARK_VITE_ENV_DIR:emptyEnv,VITE_FANMARK_API_BASE_URL:origin,VITE_AUTH_API_BASE_URL:origin,
     VITE_SUPABASE_URL:'https://synthetic-db.example.invalid',VITE_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_fixture_only'});

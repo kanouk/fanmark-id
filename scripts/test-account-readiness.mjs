@@ -3,7 +3,6 @@ import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
-import {resolveOwnProfileAuth} from '../src/lib/profile-api.ts';
 const files = ['hooks/useAuth','components/AuthReadinessGate','components/PasswordSetupGate','components/MaintenanceGate'];
 const source = Object.fromEntries(await Promise.all(files.map(async name => [name, await readFile(new URL('../src/'+name+'.tsx',import.meta.url),'utf8')])));
 const jsx = (type,props) => ({type,props});
@@ -21,20 +20,18 @@ function hooks() {
 }
 const uiImports={'lucide-react':{Loader2:'Spinner'},'@/components/ui/button':{Button:'Button'},'@/hooks/useTranslation':{useTranslation:()=>({t:key=>key})}};
 
-for (const outcome of ['ready','wrong-owner','offline']) test('old Auth Worker profile keeps protection closed until verified: '+outcome,async()=>{
-  const h=hooks(),scheduled=[];let settle,profileReads=0;
+for (const outcome of ['ready','wrong-owner','offline']) test('Better Auth profile keeps protection closed until verified: '+outcome,async()=>{
+  const h=hooks();let settle,profileReads=0;
   const waiting=new Promise((resolve,reject)=>{settle=()=>outcome==='offline'?reject(Error('synthetic-outage')):resolve({user_id:outcome==='wrong-owner'?'foreign':'synthetic-owner',requires_password_setup:false});});
   const e=run('hooks/useAuth',{react:h.api,
-    '@/integrations/supabase/client':{supabase:{auth:{getSession:async()=>({data:{session:{access_token:'e30.e30.c3ludGhldGlj',user:{id:'synthetic-owner',email_confirmed_at:'2026-10-13T00:00:00Z'}}},error:null})},from(){throw Error('must not read profile outside Worker');}}},
-    '@/lib/auth-backend':{isBetterAuthEnabled:()=>false,betterAuthClient:{}},
-    '@/lib/profile-api':{getOwnProfileBackend:()=> 'worker',resolveOwnProfileAuth,loadOwnProfile:async options=>{profileReads++;assert.equal(options.expectedUserId,'synthetic-owner');assert.equal(options.accessToken,'e30.e30.c3ludGhldGlj');return waiting;}}
-  },{setTimeout:fn=>{scheduled.push(fn);return 0;}});
+    '@/lib/auth-backend':{betterAuthClient:{getSession:async()=>({user:{id:'synthetic-owner',emailVerified:true}})}},
+    '@/lib/profile-api':{loadOwnProfile:async()=>{profileReads++;return waiting;}}
+  });
   const context=()=>{h.reset();return e.AuthProvider({children:null}).props.value;};
-  assert.equal(await context().refreshSession(),true);
-  assert.equal(context().loading,true);assert.equal(context().requiresPasswordSetup,true);
+  const refresh=context().refreshSession();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(profileReads,1);assert.equal(context().loading,true);assert.equal(context().requiresPasswordSetup,true);
   assert.ok(!descendants(renderGate(context())).some(x=>x.props?.children==='protected-content'));
-  scheduled.shift()();await new Promise(resolve=>setImmediate(resolve));assert.equal(profileReads,1);assert.equal(context().loading,true);
-  settle();await new Promise(resolve=>setImmediate(resolve));const auth=context();
+  settle();assert.equal(await refresh,outcome==='ready');const auth=context();
   assert.equal(auth.loading,false);assert.equal(auth.profileGateError,outcome!=='ready');
   if(outcome==='ready')assert.equal(renderGate(auth).props.children,'protected-content');
   else assert.ok(!descendants(renderGate(auth)).some(x=>x.props?.children==='protected-content'));

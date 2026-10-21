@@ -7,19 +7,19 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { InvitationSystem } from '@/components/InvitationSystem';
 import { Button } from '@/components/ui/button';
-import { AuthLayout } from '@/components/AuthLayout';
+
 import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X, CheckCircle2, XCircle, Eye, EyeOff, RotateCw } from 'lucide-react';
+import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, CheckCircle2, XCircle, Eye, EyeOff, RotateCw } from 'lucide-react';
 import { FaGoogle, FaApple, FaDiscord, FaGithub } from 'react-icons/fa';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { PasswordRequirement as PasswordRequirementType, isPasswordValid } from '@/lib/password-validation';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { betterAuthClient } from '@/lib/auth-backend';
 import type { BetterAuthCapabilities } from '@/lib/better-auth-client';
 import { TotpLoginChallenge } from '@/components/auth/TotpLoginChallenge';
 
@@ -34,14 +34,11 @@ const Auth = () => {
   const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation, resendCooldown, exitAwaitingConfirmation, twoFactorRequired, verificationCode, setVerificationCode, verifyTwoFactor, cancelTwoFactor } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
-  const betterAuthEnabled = isBetterAuthEnabled();
+  const betterAuthEnabled = true;
   const [betterAuthCapabilities, setBetterAuthCapabilities] = useState<BetterAuthCapabilities | null>(null);
 
   useEffect(() => {
-    if (!betterAuthEnabled) {
-      setBetterAuthCapabilities(null);
-      return;
-    }
+
     let active = true;
     void betterAuthClient.getCapabilities()
       .then((capabilities) => {
@@ -55,18 +52,10 @@ const Auth = () => {
     };
   }, [betterAuthEnabled]);
 
-  const signupAvailable = betterAuthEnabled
-    ? betterAuthCapabilities?.signUp === true
-    : true;
-  const invitationGateActive = betterAuthEnabled
-    ? signupAvailable && Boolean(betterAuthCapabilities?.invitationRequired)
-    : !settingsLoading && settings.invitation_mode;
-  const betterAuthSocialProviders = betterAuthEnabled
-    ? SOCIAL_PROVIDER_ORDER.filter((provider) => betterAuthCapabilities?.socialProviders.includes(provider))
-    : undefined;
-  const socialLoginAvailable = betterAuthEnabled
-    ? (betterAuthSocialProviders?.length ?? 0) > 0
-    : !settingsLoading && settings.social_login_enabled;
+  const signupAvailable = betterAuthCapabilities?.signUp === true;
+  const invitationGateActive = signupAvailable && Boolean(betterAuthCapabilities?.invitationRequired);
+  const betterAuthSocialProviders = SOCIAL_PROVIDER_ORDER.filter((provider) => betterAuthCapabilities?.socialProviders.includes(provider));
+  const socialLoginAvailable = (betterAuthSocialProviders?.length ?? 0) > 0;
   const showSocialLogin = socialLoginAvailable && !invitationGateActive;
   const [invitationValidated, setInvitationValidated] = useState(false);
   const [validatedInvitationCode, setValidatedInvitationCode] = useState<string | null>(null);
@@ -87,10 +76,10 @@ const Auth = () => {
     const searchParams = new URLSearchParams(location.search);
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
-    
+
     if (error) {
       let errorMessage = t('auth.oauthError');
-      
+
       if (errorDescription) {
         // Check for invitation code requirement error
         if (errorDescription.includes('Invitation code') || errorDescription.includes('invitation_code')) {
@@ -99,13 +88,13 @@ const Auth = () => {
           errorMessage = errorDescription;
         }
       }
-      
+
       toast({
         title: t('common.error'),
         description: errorMessage,
         variant: 'destructive',
       });
-      
+
       // Clean up URL
       navigate(location.pathname, { replace: true });
     }
@@ -529,7 +518,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
   );
 };
 
-// Sign Up Form Component  
+// Sign Up Form Component
 interface SignUpFormProps {
   formData: AuthFormData;
   authState: AuthState;

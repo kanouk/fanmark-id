@@ -1,17 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  buildFanmarkTransferApiUrl,
-  callFanmarkTransferWorker,
-  getFanmarkTransferBackend,
-  FanmarkTransferApiError,
-} from "./fanmark-transfer-api.ts";
-
-test("defaults to Supabase and accepts the explicit Worker backend", () => {
-  assert.equal(getFanmarkTransferBackend(undefined), "supabase");
-  assert.equal(getFanmarkTransferBackend(" worker "), "worker");
-  assert.throws(() => getFanmarkTransferBackend("cloudflare"), { name: "FanmarkTransferApiError" });
-});
+import { buildFanmarkTransferApiUrl, callFanmarkTransferWorker, FanmarkTransferApiError } from "./fanmark-transfer-api.ts";
 
 test("builds all transfer routes on the configured app origin", () => {
   assert.equal(buildFanmarkTransferApiUrl("list", "https://app.example.test").href,
@@ -96,8 +85,7 @@ test("rejects cross-origin auth and malformed responses before accepting a resul
 });
 
 test("rejects unknown selectors and non-success operation responses", async () => {
-  assert.throws(() => getFanmarkTransferBackend("supabase-d1"), { name: "FanmarkTransferApiError" });
-  await assert.rejects(
+await assert.rejects(
     callFanmarkTransferWorker("cancel", {}, {
       baseUrl: "https://app.example.test",
       authBaseUrl: "https://app.example.test",

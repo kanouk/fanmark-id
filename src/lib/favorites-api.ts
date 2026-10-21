@@ -45,13 +45,6 @@ export class FavoritesApiError extends Error {
   }
 }
 
-export function getFavoritesBackend(value: string | undefined = import.meta.env?.VITE_FAVORITES_BACKEND): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FavoritesApiError("configuration");
-}
-
 function favoritesUrl(baseUrl: string): URL {
   let url: URL;
   try {
@@ -95,24 +88,6 @@ function isNullableText(value: unknown, maximum = 512): value is string | null {
 function isNonnegativeInt64Text(value: unknown): value is string {
   return typeof value === "string" && /^(?:0|[1-9]\d{0,18})$/u.test(value) &&
     (value.length < 19 || value <= MAX_INT64_TEXT);
-}
-
-function normalizeSupabaseInt64(value: unknown): string {
-  if (isNonnegativeInt64Text(value)) return value;
-  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) return String(value);
-  throw new FavoritesApiError("invalid_response");
-}
-
-export function normalizeSupabaseFavoriteFanmarkRows(value: unknown): FavoriteFanmarkRow[] {
-  if (!Array.isArray(value) || value.length > MAX_FAVORITES) throw new FavoritesApiError("invalid_response");
-  return value.map((item) => {
-    if (!isRecord(item)) throw new FavoritesApiError("invalid_response");
-    return {
-      ...item,
-      search_count: normalizeSupabaseInt64(item.search_count),
-      favorite_count: normalizeSupabaseInt64(item.favorite_count),
-    } as unknown as FavoriteFanmarkRow;
-  });
 }
 
 const FAVORITE_FIELDS = [

@@ -9,18 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { BarChart3, TrendingUp, Users, Lock, ArrowUpRight, ArrowDownRight, Repeat, Trophy } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Lock, Repeat, Trophy } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import {
-  fetchFanmarkAnalyticsFanmarksWorker,
-  fetchFanmarkAnalyticsWorker,
-  getFanmarkAnalyticsBackend,
-  type FanmarkAnalyticsMetrics,
-} from '@/lib/fanmark-analytics-api';
+import { fetchFanmarkAnalyticsFanmarksWorker, fetchFanmarkAnalyticsWorker, type FanmarkAnalyticsMetrics } from '@/lib/fanmark-analytics-api';
 
 type Period = '7d' | '30d' | '90d';
 
@@ -69,42 +64,6 @@ const COLORS = {
 const PIE_COLORS = ['#65C3C8', '#F472B6', '#FBBF24', '#94A3B8'];
 const RANKING_COLORS = ['#65C3C8', '#F472B6', '#FBBF24', '#A78BFA', '#34D399', '#FB923C', '#60A5FA', '#F87171', '#A3E635', '#94A3B8'];
 
-function summarizeDailyStats(rows: DailyStats[]): AnalyticsQueryData {
-  const summary: FanmarkAnalyticsMetrics = {
-    accessCount: 0, uniqueVisitors: 0,
-    referrerDirect: 0, referrerSearch: 0, referrerSocial: 0, referrerOther: 0,
-    deviceMobile: 0, deviceTablet: 0, deviceDesktop: 0,
-    accessTypeProfile: 0, accessTypeRedirect: 0, accessTypeText: 0, accessTypeInactive: 0,
-  };
-  const byDate = new Map<string, { access_count: number; unique_visitors: number }>();
-  const byFanmark = new Map<string, number>();
-  for (const row of rows) {
-    summary.accessCount += row.access_count;
-    summary.uniqueVisitors += row.unique_visitors;
-    summary.referrerDirect += row.referrer_direct;
-    summary.referrerSearch += row.referrer_search;
-    summary.referrerSocial += row.referrer_social;
-    summary.referrerOther += row.referrer_other;
-    summary.deviceMobile += row.device_mobile;
-    summary.deviceTablet += row.device_tablet;
-    summary.deviceDesktop += row.device_desktop;
-    summary.accessTypeProfile += row.access_type_profile;
-    summary.accessTypeRedirect += row.access_type_redirect;
-    summary.accessTypeText += row.access_type_text;
-    summary.accessTypeInactive += row.access_type_inactive;
-    const daily = byDate.get(row.stat_date) ?? { access_count: 0, unique_visitors: 0 };
-    daily.access_count += row.access_count;
-    daily.unique_visitors += row.unique_visitors;
-    byDate.set(row.stat_date, daily);
-    byFanmark.set(row.fanmark_id, (byFanmark.get(row.fanmark_id) ?? 0) + row.access_count);
-  }
-  return {
-    summary,
-    dailyStats: [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([stat_date, stats]) => ({ stat_date, ...stats })),
-    fanmarkTotals: [...byFanmark.entries()].map(([fanmark_id, access_count]) => ({ fanmark_id, access_count })),
-  };
-}
-
 const Analytics = () => {
   const { user, loading: authLoading } = useAuth();
   const { profile } = useProfile();
@@ -125,58 +84,13 @@ const Analytics = () => {
     queryKey: ['user-fanmarks-for-analytics', user?.id],
     enabled: !!user && canAccessAnalytics,
     queryFn: async () => {
-      if (getFanmarkAnalyticsBackend() === 'worker') {
+      {
         return fetchFanmarkAnalyticsFanmarksWorker();
       }
       // Get fanmarks with license_id
-      const { data: licensesData, error: licensesError } = await supabase
-        .from('fanmark_licenses')
-        .select(`
-          id,
-          fanmark_id,
-          display_fanmark,
-          fanmarks (
-            id,
-            short_id,
-            user_input_fanmark
-          )
-        `)
-        .eq('user_id', user!.id)
-        .eq('status', 'active');
-
-      if (licensesError) throw licensesError;
-
-      const licensesWithFanmarks = (licensesData || [])
-        .map((license) => ({
-          licenseId: license.id,
-          display_fanmark: license.display_fanmark as string | null,
-          fanmark: license.fanmarks as unknown as { id: string; short_id: string; user_input_fanmark: string } | null,
-        }))
-        .filter((item): item is { licenseId: string; display_fanmark: string | null; fanmark: { id: string; short_id: string; user_input_fanmark: string } } => item.fanmark !== null);
-
-      if (licensesWithFanmarks.length === 0) return [];
 
       // Get fanmark names from basic_configs using license_id
-      const licenseIds = licensesWithFanmarks.map((item) => item.licenseId);
-      const { data: configsData } = await supabase
-        .from('fanmark_basic_configs')
-        .select('license_id, fanmark_name')
-        .in('license_id', licenseIds);
 
-      const configsMap = new Map<string, string>();
-      (configsData || []).forEach((config) => {
-        if (config.fanmark_name) {
-          configsMap.set(config.license_id, config.fanmark_name);
-        }
-      });
-
-      return licensesWithFanmarks.map((item) => ({
-        id: item.fanmark.id,
-        short_id: item.fanmark.short_id,
-        user_input_fanmark: item.fanmark.user_input_fanmark,
-        display_fanmark: item.display_fanmark ?? '',
-        fanmark_name: configsMap.get(item.licenseId) || null,
-      })) as Fanmark[];
     },
   });
 
@@ -207,7 +121,7 @@ const Analytics = () => {
     queryKey: ['fanmark-analytics', selectedFanmarkId, period, user?.id, activeFanmarkIds],
     enabled: !!user && canAccessAnalytics && activeFanmarkIds.length > 0,
     queryFn: async () => {
-      if (getFanmarkAnalyticsBackend() === 'worker') {
+      {
         const result = await fetchFanmarkAnalyticsWorker({
           startDate: format(dateRange.startDate, 'yyyy-MM-dd'),
           endDate: format(dateRange.endDate, 'yyyy-MM-dd'),
@@ -219,40 +133,7 @@ const Analytics = () => {
           fanmarkTotals: result.fanmarkTotals,
         } satisfies AnalyticsQueryData;
       }
-      let query = supabase
-        .from('fanmark_access_daily_stats')
-        .select('*')
-        .gte('stat_date', format(dateRange.startDate, 'yyyy-MM-dd'))
-        .lte('stat_date', format(dateRange.endDate, 'yyyy-MM-dd'))
-        .order('stat_date', { ascending: true });
 
-      if (selectedFanmarkId) {
-        query = query.eq('fanmark_id', selectedFanmarkId);
-      } else {
-        // Filter by user's active fanmark IDs
-        query = query.in('fanmark_id', activeFanmarkIds);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      const rows = (data || []).map(row => ({
-        fanmark_id: row.fanmark_id,
-        stat_date: row.stat_date,
-        access_count: row.access_count ?? 0,
-        unique_visitors: row.unique_visitors ?? 0,
-        referrer_direct: row.referrer_direct ?? 0,
-        referrer_search: row.referrer_search ?? 0,
-        referrer_social: row.referrer_social ?? 0,
-        referrer_other: row.referrer_other ?? 0,
-        device_mobile: row.device_mobile ?? 0,
-        device_tablet: row.device_tablet ?? 0,
-        device_desktop: row.device_desktop ?? 0,
-        access_type_profile: row.access_type_profile ?? 0,
-        access_type_redirect: row.access_type_redirect ?? 0,
-        access_type_text: row.access_type_text ?? 0,
-        access_type_inactive: row.access_type_inactive ?? 0,
-      })) as DailyStats[];
-      return summarizeDailyStats(rows);
     },
   });
 
@@ -604,7 +485,7 @@ const Analytics = () => {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number, _name: string, props: any) => [
+                        formatter={(value: number, _name: string, props: { payload: { percentage: number; name: string } }) => [
                           `${value.toLocaleString()} (${props.payload.percentage}%)`,
                           props.payload.name,
                         ]}
@@ -675,9 +556,9 @@ const Analytics = () => {
                       ))}
                     </Pie>
                     <Legend
-                      formatter={(value, entry: any) => (
+                      formatter={(value, entry) => (
                         <span className="text-sm text-foreground">
-                          {value} ({entry.payload.percentage}%)
+                          {value} ({(entry.payload as { percentage?: number })?.percentage}%)
                         </span>
                       )}
                     />
@@ -737,9 +618,9 @@ const Analytics = () => {
                       ))}
                     </Pie>
                     <Legend
-                      formatter={(value, entry: any) => (
+                      formatter={(value, entry) => (
                         <span className="text-sm text-foreground">
-                          {value} ({entry.payload.percentage}%)
+                          {value} ({(entry.payload as { percentage?: number })?.percentage}%)
                         </span>
                       )}
                     />
@@ -779,9 +660,9 @@ const Analytics = () => {
                       ))}
                     </Pie>
                     <Legend
-                      formatter={(value, entry: any) => (
+                      formatter={(value, entry) => (
                         <span className="text-sm text-foreground">
-                          {value} ({entry.payload.percentage}%)
+                          {value} ({(entry.payload as { percentage?: number })?.percentage}%)
                         </span>
                       )}
                     />

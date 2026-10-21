@@ -23,10 +23,8 @@ test('local origin cannot target another host or include credentials or a path',
 });
 
 test('frontend uses local APIs and preserves disabled sends', () => {
-  const environment = localFrontendEnvironment('https://127.0.0.1:8080', {
-    scripts: { 'build:cloudflare-staging': 'VITE_PROFILE_BACKEND=worker VITE_BROADCAST_SEND_BACKEND=worker vite build ' },
-  });
-  assert.equal(environment.VITE_PROFILE_BACKEND, 'worker');
+  const environment = localFrontendEnvironment('https://127.0.0.1:8080');
+  assert.equal(Object.keys(environment).length, 5);
   assert.equal(environment.VITE_BROADCAST_SEND_BACKEND, 'disabled');
   assert.equal(environment.VITE_BROADCAST_TEST_SEND_BACKEND, 'disabled');
   assert.equal(environment.VITE_AUTH_API_BASE_URL, 'https://127.0.0.1:8080');

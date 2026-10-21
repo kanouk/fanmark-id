@@ -1,19 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  createManualNotificationEvent,
-  getNotificationMasterBackend,
-  loadNotificationDeliveries,
-  loadNotificationEvents,
-  loadNotificationRules,
-  loadNotificationTemplates,
-  updateNotificationRule,
-  updateNotificationTemplate,
-  type NotificationDeliveryLog,
-  type NotificationEventLog,
-  type NotificationTemplate,
-} from "@/lib/notification-master-api";
+
+import { createManualNotificationEvent, loadNotificationDeliveries, loadNotificationEvents, loadNotificationRules, loadNotificationTemplates, updateNotificationRule, updateNotificationTemplate, type NotificationTemplate } from "@/lib/notification-master-api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,7 +21,7 @@ const AdminNotificationManager = () => {
   const queryClient = useQueryClient();
   const [eventType, setEventType] = useState("");
   const [payload, setPayload] = useState("{}");
-  
+
   // Template editing state
   const [editingTemplate, setEditingTemplate] = useState<NotificationTemplate | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -53,7 +41,7 @@ const AdminNotificationManager = () => {
         throw new Error("無効なJSON形式です");
       }
 
-      if (getNotificationMasterBackend() === "worker") {
+      {
         await createManualNotificationEvent(
           eventType as "license_grace_started" | "license_expired" | "favorite_fanmark_available",
           parsedPayload as Record<string, unknown>,
@@ -61,14 +49,6 @@ const AdminNotificationManager = () => {
         return;
       }
 
-      const { data, error } = await supabase.rpc('create_notification_event', {
-        event_type_param: eventType,
-        payload_param: parsedPayload,
-        source_param: 'admin_manual',
-      });
-
-      if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       toast.success("通知イベントを作成しました");
@@ -85,15 +65,8 @@ const AdminNotificationManager = () => {
   const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useQuery({
     queryKey: ['notification-events'],
     queryFn: async () => {
-      if (getNotificationMasterBackend() === "worker") return loadNotificationEvents();
-      const { data, error } = await supabase
-        .from('notification_events')
-        .select('id,event_type,status,source,created_at,processed_at,error_reason')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      
-      if (error) throw error;
-      return data as NotificationEventLog[];
+      return loadNotificationEvents();
+
     },
   });
 
@@ -101,18 +74,8 @@ const AdminNotificationManager = () => {
   const { data: notifications, isLoading: notificationsLoading, refetch: refetchNotifications } = useQuery({
     queryKey: ['notifications-log'],
     queryFn: async () => {
-      if (getNotificationMasterBackend() === "worker") return loadNotificationDeliveries();
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('id,user_id,channel,status,delivered_at,read_at,priority')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      
-      if (error) throw error;
-      return data.map((notification) => ({
-        ...notification,
-        user_id: `${notification.user_id.slice(0, 8)}...`,
-      })) as NotificationDeliveryLog[];
+      return loadNotificationDeliveries();
+
     },
   });
 
@@ -120,14 +83,8 @@ const AdminNotificationManager = () => {
   const { data: rules, isLoading: rulesLoading, refetch: refetchRules } = useQuery({
     queryKey: ['notification-rules'],
     queryFn: async () => {
-      if (getNotificationMasterBackend() === "worker") return loadNotificationRules();
-      const { data, error } = await supabase
-        .from('notification_rules')
-        .select('*')
-        .order('priority', { ascending: true });
-      
-      if (error) throw error;
-      return data;
+      return loadNotificationRules();
+
     },
   });
 
@@ -135,31 +92,19 @@ const AdminNotificationManager = () => {
   const { data: templates, isLoading: templatesLoading, refetch: refetchTemplates } = useQuery({
     queryKey: ['notification-templates'],
     queryFn: async () => {
-      if (getNotificationMasterBackend() === "worker") return loadNotificationTemplates();
-      const { data, error } = await supabase
-        .from('notification_templates')
-        .select('*')
-        .order('template_id')
-        .order('language');
-      
-      if (error) throw error;
-      return data as NotificationTemplate[];
+      return loadNotificationTemplates();
+
     },
   });
 
   // ルール有効/無効切り替え
   const toggleRuleMutation = useMutation({
     mutationFn: async ({ ruleId, enabled, updatedAt }: { ruleId: string; enabled: boolean; updatedAt: string }) => {
-      if (getNotificationMasterBackend() === "worker") {
+      {
         await updateNotificationRule(ruleId, !enabled, updatedAt);
         return;
       }
-      const { error } = await supabase
-        .from('notification_rules')
-        .update({ enabled: !enabled })
-        .eq('id', ruleId);
-      
-      if (error) throw error;
+
     },
     onSuccess: () => {
       toast.success("ルールを更新しました");
@@ -175,7 +120,7 @@ const AdminNotificationManager = () => {
     mutationFn: async () => {
       if (!editingTemplate) throw new Error("テンプレートが選択されていません");
 
-      if (getNotificationMasterBackend() === "worker") {
+      {
         await updateNotificationTemplate(editingTemplate.id, {
           title: editTitle || null,
           body: editBody,
@@ -185,19 +130,7 @@ const AdminNotificationManager = () => {
         });
         return;
       }
-      
-      const { error } = await supabase
-        .from('notification_templates')
-        .update({
-          title: editTitle || null,
-          body: editBody,
-          summary: editSummary || null,
-          is_active: editIsActive,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingTemplate.id);
-      
-      if (error) throw error;
+
     },
     onSuccess: () => {
       toast.success("テンプレートを更新しました");
@@ -238,7 +171,7 @@ const AdminNotificationManager = () => {
     return labels[lang] || lang;
   };
 
-  const filteredTemplates = templates?.filter(t => 
+  const filteredTemplates = templates?.filter(t =>
     templateLanguageFilter === "all" || t.language === templateLanguageFilter
   );
 
@@ -739,12 +672,12 @@ const AdminNotificationManager = () => {
           <DialogHeader>
             <DialogTitle>テンプレート編集</DialogTitle>
             <DialogDescription>
-              テンプレートID: {editingTemplate?.template_id.substring(0, 8)}... | 
-              言語: {editingTemplate && getLanguageLabel(editingTemplate.language)} | 
+              テンプレートID: {editingTemplate?.template_id.substring(0, 8)}... |
+              言語: {editingTemplate && getLanguageLabel(editingTemplate.language)} |
               Ver: {editingTemplate?.version}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-title">タイトル</Label>
@@ -795,7 +728,7 @@ const AdminNotificationManager = () => {
             <Button variant="outline" onClick={() => setEditingTemplate(null)}>
               キャンセル
             </Button>
-            <Button 
+            <Button
               onClick={() => updateTemplateMutation.mutate()}
               disabled={updateTemplateMutation.isPending || !editBody}
             >

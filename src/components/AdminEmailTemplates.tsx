@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { createAdminEmailTemplatesApi, getAdminEmailTemplatesBackend } from "@/lib/admin-email-templates-api";
+
+import { createAdminEmailTemplatesApi } from "@/lib/admin-email-templates-api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,29 +40,21 @@ const LANGUAGES = [
 
 export const AdminEmailTemplates: React.FC = () => {
   const queryClient = useQueryClient();
-  const backend = getAdminEmailTemplatesBackend();
-  const workerApi = createAdminEmailTemplatesApi();
+    const workerApi = createAdminEmailTemplatesApi();
   const [selectedType, setSelectedType] = useState("signup");
   const [editingTemplates, setEditingTemplates] = useState<Record<string, Partial<EmailTemplate>>>({});
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ["email-templates"],
     queryFn: async () => {
-      if (backend === "worker") return workerApi.list();
-      const { data, error } = await supabase
-        .from("email_templates")
-        .select("*")
-        .order("email_type")
-        .order("language");
+      return workerApi.list();
 
-      if (error) throw error;
-      return data as EmailTemplate[];
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, expectedUpdatedAt, updates }: { id: string; expectedUpdatedAt: string; updates: Partial<EmailTemplate> }) => {
-      if (backend === "worker") {
+      {
         return workerApi.update({
           id,
           expectedUpdatedAt,
@@ -71,16 +63,7 @@ export const AdminEmailTemplates: React.FC = () => {
           buttonText: updates.button_text ?? "",
         });
       }
-      const { error } = await supabase
-        .from("email_templates")
-        .update({
-          subject: updates.subject,
-          body_text: updates.body_text,
-          button_text: updates.button_text,
-        })
-        .eq("id", id);
 
-      if (error) throw error;
     },
     onSuccess: (_data, variables) => {
       setEditingTemplates((previous) => {
@@ -166,7 +149,7 @@ export const AdminEmailTemplates: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {backend === "worker" && (
+      {(
         <p className="rounded-md border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
           認証メールテンプレートはCloudflare D1から読み込みます。変更は管理者MFAで保護され、送信処理も同じテンプレートを参照します。
         </p>

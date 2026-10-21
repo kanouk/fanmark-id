@@ -52,15 +52,6 @@ export class OwnedFanmarksApiError extends Error {
   }
 }
 
-export function getOwnedFanmarksBackend(
-  value: string | undefined = import.meta.env?.VITE_OWNED_FANMARKS_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new OwnedFanmarksApiError("configuration");
-}
-
 export function buildOwnedFanmarksApiUrl(baseUrl: string): URL {
   let url: URL;
   try {

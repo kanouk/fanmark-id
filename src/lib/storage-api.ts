@@ -13,7 +13,7 @@ const IMAGE_TYPES = new Set([
 ]);
 
 export type StorageBucket = 'avatars' | 'cover-images';
-export type StorageBackend = 'supabase' | 'r2';
+export type StorageBackend = 'r2';
 
 export type StorageApiErrorKind =
   | 'configuration'
@@ -71,22 +71,6 @@ function resolvedBaseUrl(baseUrl?: string): URL {
   }
   url.pathname = '';
   return url;
-}
-
-export function getStorageBackend(value: string | undefined = import.meta.env?.VITE_STORAGE_BACKEND): StorageBackend {
-  const backend = value?.trim();
-  if (!backend || backend === 'supabase') return 'supabase';
-  if (backend === 'r2') return 'r2';
-  throw new StorageApiError('configuration');
-}
-
-export function getImageStorageBackend(
-  betterAuthEnabled: boolean,
-  value: string | undefined = import.meta.env?.VITE_STORAGE_BACKEND,
-): StorageBackend {
-  const backend = getStorageBackend(value);
-  if (backend === 'r2' && !betterAuthEnabled) throw new StorageApiError('configuration');
-  return backend;
 }
 
 function apiUrl(base: URL, path: string): URL {

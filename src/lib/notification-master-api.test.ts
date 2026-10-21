@@ -1,16 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getNotificationMasterBackend,
-  createManualNotificationEvent,
-  loadNotificationDeliveries,
-  loadNotificationEvents,
-  loadNotificationRules,
-  loadNotificationTemplates,
-  NotificationMasterApiError,
-  updateNotificationRule,
-  updateNotificationTemplate,
-} from "./notification-master-api.ts";
+import { createManualNotificationEvent, loadNotificationDeliveries, loadNotificationEvents, loadNotificationRules, loadNotificationTemplates, NotificationMasterApiError, updateNotificationRule, updateNotificationTemplate } from "./notification-master-api.ts";
 
 const API_BASE = "https://api.example.test";
 const AUTH_BASE = "https://api.example.test";
@@ -48,12 +38,6 @@ const template = {
 function response(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
 }
-
-test("notification master selector defaults to Supabase and rejects unknown values", () => {
-  assert.equal(getNotificationMasterBackend(undefined), "supabase");
-  assert.equal(getNotificationMasterBackend(" worker "), "worker");
-  assert.throws(() => getNotificationMasterBackend("d1"), NotificationMasterApiError);
-});
 
 test("loads notification rules from a same-origin Worker with cookies and no cache", async () => {
   let capturedUrl = "";

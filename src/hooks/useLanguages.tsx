@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { fetchLanguageMaster, getLanguageReadBackend, type LanguageMasterItem } from '@/lib/language-master-api';
+
+import { fetchLanguageMaster, type LanguageMasterItem } from '@/lib/language-master-api';
 
 export type Language = LanguageMasterItem;
 
@@ -34,31 +34,13 @@ export function useLanguages(): UseLanguagesResult {
       setLoading(true);
       setError(null);
 
-      if (getLanguageReadBackend() === 'worker') {
+      {
         const result = await fetchLanguageMaster();
         setLanguages(result);
         updateCachedLanguages(result);
         return;
       }
 
-      const { data, error: fetchError } = await supabase
-        .from('languages')
-        .select('code, label, native_label, is_active, sort_order')
-        .order('sort_order', { ascending: true });
-
-      if (fetchError) throw fetchError;
-
-      if (data) {
-        const result = data.map((lang) => ({
-          code: lang.code,
-          label: lang.label,
-          nativeLabel: lang.native_label,
-          isActive: lang.is_active,
-          sortOrder: lang.sort_order,
-        }));
-        setLanguages(result);
-        updateCachedLanguages(result);
-      }
     } catch (err) {
       console.error('Failed to fetch languages:', err);
       setError(err instanceof Error ? err : new Error('Failed to fetch languages'));

@@ -1,14 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  createExtensionCouponThroughWorker,
-  deleteExtensionCouponThroughWorker,
-  ExtensionCouponAdminClientError,
-  getExtensionCouponAdminBackend,
-  listExtensionCouponUsagesThroughWorker,
-  listExtensionCouponsThroughWorker,
-  updateExtensionCouponThroughWorker,
-} from "./extension-coupon-admin-api.ts";
+import { createExtensionCouponThroughWorker, deleteExtensionCouponThroughWorker, ExtensionCouponAdminClientError, listExtensionCouponUsagesThroughWorker, listExtensionCouponsThroughWorker, updateExtensionCouponThroughWorker } from "./extension-coupon-admin-api.ts";
 
 const couponId = "00000000-0000-4000-8000-000000000001";
 const userId = "00000000-0000-4000-8000-000000000002";
@@ -35,12 +27,6 @@ function coupon() {
     updated_at: updatedAt,
   };
 }
-
-test("coupon admin backend defaults to Supabase and rejects unknown values", () => {
-  assert.equal(getExtensionCouponAdminBackend(undefined), "supabase");
-  assert.equal(getExtensionCouponAdminBackend("worker"), "worker");
-  assert.throws(() => getExtensionCouponAdminBackend("cloudflare"), ExtensionCouponAdminClientError);
-});
 
 test("lists and creates D1 coupon master rows through the authenticated same-origin API", async () => {
   let listRequest: Request | URL | null = null;

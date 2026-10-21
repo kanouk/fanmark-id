@@ -1,3 +1,4 @@
+import { frontendEnvironment } from '../frontend-build-config.mjs';
 import { randomUUID } from 'node:crypto';
 
 // Deliberate allowlist: no deployment config, inherited secrets, routes or Cron.
@@ -43,17 +44,6 @@ export function localBindings(origin) {
   };
 }
 
-export function localFrontendEnvironment(origin, packageJson) {
-  origin = assertLocalOrigin(origin);
-  const selectors = Object.fromEntries(
-    [...packageJson.scripts['build:cloudflare-staging'].matchAll(/\b(VITE_[A-Z_]+)=([a-z0-9-]+)\s/gu)]
-      .map(match => [match[1], match[2]]),
-  );
-  return {
-    ...selectors,
-    VITE_FANMARK_API_BASE_URL: origin,
-    VITE_AUTH_API_BASE_URL: origin,
-    VITE_BROADCAST_SEND_BACKEND: 'disabled',
-    VITE_BROADCAST_TEST_SEND_BACKEND: 'disabled',
-  };
+export function localFrontendEnvironment(origin) {
+  return frontendEnvironment('local', assertLocalOrigin(origin));
 }

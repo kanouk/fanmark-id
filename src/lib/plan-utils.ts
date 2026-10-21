@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { getOwnedFanmarksBackend, loadOwnedFanmarks } from './owned-fanmarks-api';
+import { loadOwnedFanmarks } from './owned-fanmarks-api';
 import { mapActiveOwnedFanmarks } from './owned-fanmarks-plan-projection';
 import type { ActiveFanmark } from './owned-fanmarks-plan-projection';
 
@@ -44,61 +43,14 @@ interface LicenseQueryResult {
 }
 
 export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark[]> {
-  if (getOwnedFanmarksBackend() === 'worker') {
+  {
     return mapActiveOwnedFanmarks(await loadOwnedFanmarks());
   }
-
-  const nowIso = new Date().toISOString();
 
   // Fetch active licenses where:
   // - status is 'active' (not grace or expired)
   // - license_end is NULL (perpetual) OR license_end > now (not expired)
-  const { data: licenses, error } = await supabase
-    .from('fanmark_licenses')
-    .select(`
-      id,
-      fanmark_id,
-      license_end,
-      display_fanmark,
-      fanmarks (
-        id,
-        user_input_fanmark,
-        emoji_ids
-      ),
-      fanmark_basic_configs (
-        fanmark_name,
-        access_type
-      )
-    `)
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .or(`license_end.is.null,license_end.gt.${nowIso}`)
-    .order('license_end', { ascending: true, nullsFirst: false });
 
-  if (error) throw error;
-
-  console.log('[fetchActiveFanmarks] Found licenses:', licenses?.length || 0);
-
-  return (
-    (licenses as LicenseQueryResult[] | null)?.map(license => {
-      const userInput = license.fanmarks?.user_input_fanmark ?? '';
-      const emojiIds = Array.isArray(license.fanmarks?.emoji_ids)
-        ? (license.fanmarks?.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
-        : [];
-      const displayFanmark = license.display_fanmark ?? '';
-
-      return {
-        id: license.fanmark_id,
-        user_input_fanmark: userInput,
-        emoji_ids: emojiIds,
-        fanmark: displayFanmark,
-        fanmark_name: (license.fanmark_basic_configs?.fanmark_name ?? displayFanmark ?? userInput) || null,
-        license_id: license.id,
-        license_end: license.license_end,
-        access_type: license.fanmark_basic_configs?.access_type ?? null,
-      };
-    }) || []
-  );
 }
 
 export interface PlanDowngradeEvaluation {

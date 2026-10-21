@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Home, AlertCircle, Sparkles } from 'lucide-react';
@@ -16,13 +16,10 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 import { useAuth } from '@/hooks/useAuth';
-import { FiCompass } from 'react-icons/fi';
-import { fetchPublicFanmarkByShortId, getPublicAccessReadBackend } from '@/lib/public-access-api';
-import {
-  getVerifiedAccessBackend,
-  type ProtectedFanmarkProjection,
-} from '@/lib/verified-access-api';
-import { getFanmarkAccessAnalyticsBackend, recordFanmarkAccessWithWorker } from '@/lib/fanmark-access-analytics-api';
+
+import { fetchPublicFanmarkByShortId } from '@/lib/public-access-api';
+import { type ProtectedFanmarkProjection } from '@/lib/verified-access-api';
+import { recordFanmarkAccessWithWorker } from '@/lib/fanmark-access-analytics-api';
 
 interface FanmarkData {
   id: string;
@@ -81,18 +78,8 @@ export const FanmarkAccessByShortId = () => {
         console.log('🎯 Loading fanmark by short_id:', shortId);
 
         let fanmarkData: FanmarkData | null;
-        if (getPublicAccessReadBackend() === 'worker') {
+        {
           fanmarkData = await fetchPublicFanmarkByShortId(shortId, { signal: controller.signal });
-        } else {
-          const { data, error } = await supabase
-            .rpc('get_fanmark_by_short_id', { shortid_param: shortId });
-
-          if (error) {
-            console.error('Database error:', error);
-            handleFanmarkUnavailable('common.failedToLoadFanmark', 'destructive');
-            return;
-          }
-          fanmarkData = Array.isArray(data) && data.length > 0 ? data[0] as FanmarkData : null;
         }
 
         if (!isMounted) return;
@@ -114,13 +101,6 @@ export const FanmarkAccessByShortId = () => {
 
         // Protected verification and lookup must use the same backend. The
         // Worker projection intentionally redacts content until proof succeeds.
-        if (
-          resolvedFanmark.is_password_protected &&
-          getPublicAccessReadBackend() !== getVerifiedAccessBackend()
-        ) {
-          handleFanmarkUnavailable('common.failedToLoadFanmark', 'destructive');
-          return;
-        }
 
         if (!resolvedFanmark.license_id) {
           console.warn('Loaded fanmark without license_id. Profile access requires active license linkage.');
@@ -140,10 +120,8 @@ export const FanmarkAccessByShortId = () => {
               utm_campaign: searchParams.get('utm_campaign'),
               access_type: resolvedFanmark.access_type || null,
             };
-            if (getFanmarkAccessAnalyticsBackend() === 'worker') {
+            {
               await recordFanmarkAccessWithWorker(body);
-            } else {
-              await supabase.functions.invoke('record-fanmark-access', { body });
             }
           } catch (error) {
             console.warn('Failed to record fanmark access:', error);

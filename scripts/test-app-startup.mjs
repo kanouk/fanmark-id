@@ -48,7 +48,7 @@ function runStartup({ catalog, serviceWorker = true, rootPresent = true, worker 
     __startupEnvironment: worker ? { VITE_EMOJI_CATALOG_BACKEND: "worker", VITE_FANMARK_API_BASE_URL: "https://worker.example.test" } : {},
     navigator: serviceWorker ? { serviceWorker: {} } : {},
     document: { getElementById(id) { assert.equal(id, "root"); return rootPresent ? root : null; }, createElement: element },
-    window: { location: { reload() { calls.push("reload"); } } },
+    window: { location: { origin: "https://worker.example.test", reload() { calls.push("reload"); } } },
   });
   return { calls, root };
 }
@@ -94,8 +94,8 @@ test("missing application root starts neither update registration nor catalog lo
   assert.deepEqual(state.calls, []);
 });
 
-test("the default bundled catalog path retains registration and application rendering", async () => {
-  const state = runStartup({ worker: false });
+test("an absent backend selector still loads the Worker catalog", async () => {
+  const state = runStartup({ worker: false, catalog: Promise.resolve({ items: [] }) });
   await setImmediate();
-  assert.deepEqual(state.calls, ["registerSW", "installCatalog", "render"]);
+  assert.deepEqual(state.calls, ["registerSW", "fetchCatalog", "installCatalog", "render"]);
 });

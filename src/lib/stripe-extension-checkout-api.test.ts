@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  buildStripeExtensionCheckoutUrl,
-  createStripeExtensionCheckoutThroughWorker,
-  getStripeExtensionCheckoutBackend,
-  StripeExtensionCheckoutApiError,
-} from "./stripe-extension-checkout-api.ts";
+import { buildStripeExtensionCheckoutUrl, createStripeExtensionCheckoutThroughWorker, StripeExtensionCheckoutApiError } from "./stripe-extension-checkout-api.ts";
 
 const licenseId = "00000000-0000-4000-8000-000000000001";
 const requestId = "00000000-0000-4000-8000-000000000002";
@@ -16,12 +11,6 @@ function jsonResponse(body: unknown, status = 200): Response {
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
-
-test("checkout backend defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getStripeExtensionCheckoutBackend(undefined), "supabase");
-  assert.equal(getStripeExtensionCheckoutBackend(" worker "), "worker");
-  assert.throws(() => getStripeExtensionCheckoutBackend("cloudflare"), StripeExtensionCheckoutApiError);
-});
 
 test("checkout URL replaces only the path on a validated API origin", () => {
   assert.equal(

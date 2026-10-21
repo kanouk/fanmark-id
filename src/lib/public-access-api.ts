@@ -75,15 +75,6 @@ interface FetchOptions {
   timeoutMs?: number;
 }
 
-export function getPublicAccessReadBackend(
-  value: string | undefined = import.meta.env?.VITE_PUBLIC_ACCESS_READ_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new PublicAccessApiError("configuration");
-}
-
 function isLoopbackHostname(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
   return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "[::1]";

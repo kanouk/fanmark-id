@@ -1,17 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  buildFanmarkAccessAnalyticsApiUrl,
-  FanmarkAccessAnalyticsApiError,
-  getFanmarkAccessAnalyticsBackend,
-  recordFanmarkAccessWithWorker,
-} from "./fanmark-access-analytics-api.ts";
-
-test("analytics backend is opt-in and rejects an unknown selector", () => {
-  assert.equal(getFanmarkAccessAnalyticsBackend(undefined), "supabase");
-  assert.equal(getFanmarkAccessAnalyticsBackend("worker"), "worker");
-  assert.throws(() => getFanmarkAccessAnalyticsBackend("typo"), FanmarkAccessAnalyticsApiError);
-});
+import { buildFanmarkAccessAnalyticsApiUrl, FanmarkAccessAnalyticsApiError, recordFanmarkAccessWithWorker } from "./fanmark-access-analytics-api.ts";
 
 test("analytics URL uses the bounded Worker origin", () => {
   assert.equal(buildFanmarkAccessAnalyticsApiUrl("https://api.example.test/").toString(), "https://api.example.test/api/fanmarks/access");

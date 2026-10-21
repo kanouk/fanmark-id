@@ -1,14 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  applyExtensionCouponThroughWorker,
-  buildExtensionCouponApplyUrl,
-  clearExtensionCouponRequestId,
-  ExtensionCouponApiError,
-  getExtensionCouponBackend,
-  getOrCreateExtensionCouponRequestId,
-  type ExtensionCouponRequestStorage,
-} from "./extension-coupon-api.ts";
+import { applyExtensionCouponThroughWorker, buildExtensionCouponApplyUrl, clearExtensionCouponRequestId, ExtensionCouponApiError, getOrCreateExtensionCouponRequestId, type ExtensionCouponRequestStorage } from "./extension-coupon-api.ts";
 
 const licenseId = "00000000-0000-4000-8000-000000000001";
 const requestId = "00000000-0000-4000-8000-000000000002";
@@ -44,12 +36,6 @@ function memoryStorage(): ExtensionCouponRequestStorage & { values: Map<string, 
     removeItem: (key) => { values.delete(key); },
   };
 }
-
-test("coupon backend defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getExtensionCouponBackend(undefined), "supabase");
-  assert.equal(getExtensionCouponBackend(" worker "), "worker");
-  assert.throws(() => getExtensionCouponBackend("cloudflare"), ExtensionCouponApiError);
-});
 
 test("Worker URL is same-origin path replacement", () => {
   assert.equal(buildExtensionCouponApplyUrl("https://app.example/").href,

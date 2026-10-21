@@ -1,14 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  addWorkerFavoriteFanmark,
-  FavoritesApiError,
-  getFavoritesBackend,
-  loadWorkerFavoriteFanmarkRows,
-  normalizeSupabaseFavoriteFanmarkRows,
-  parseFavoriteFanmarksPayload,
-  removeWorkerFavoriteFanmark,
-} from "./favorites-api.ts";
+import { addWorkerFavoriteFanmark, FavoritesApiError, loadWorkerFavoriteFanmarkRows, parseFavoriteFanmarksPayload, removeWorkerFavoriteFanmark } from "./favorites-api.ts";
 
 const favorite = {
   favorite_id: "beed0001-0c4f-4ae7-9aa9-7b969f0d9d01",
@@ -38,12 +30,6 @@ function jsonResponse(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
 }
 
-test("favorites backend defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getFavoritesBackend(undefined), "supabase");
-  assert.equal(getFavoritesBackend("worker"), "worker");
-  assert.throws(() => getFavoritesBackend("fallback"), FavoritesApiError);
-});
-
 test("parses the strict favorites DTO and rejects malformed response shapes", () => {
   assert.deepEqual(parseFavoriteFanmarksPayload({ schemaVersion: 2, items: [favorite] }), [favorite]);
   for (const payload of [
@@ -64,18 +50,6 @@ test("Worker favorite metadata never authorizes protected content", () => {
     { text_content: "Protected message" }]) {
     assert.throws(() => parseFavoriteFanmarksPayload({ schemaVersion: 2, items: [{ ...locked, ...content }] }), FavoritesApiError);
   }
-});
-
-test("normalizes source bigint counts without accepting rounded numbers", () => {
-  assert.deepEqual(normalizeSupabaseFavoriteFanmarkRows([{
-    ...favorite, search_count: 4, favorite_count: 0,
-  }]), [{ ...favorite, search_count: "4", favorite_count: "0" }]);
-  assert.deepEqual(normalizeSupabaseFavoriteFanmarkRows([{
-    ...favorite, search_count: "9007199254740993", favorite_count: "9223372036854775807",
-  }]), [{ ...favorite, search_count: "9007199254740993", favorite_count: "9223372036854775807" }]);
-  assert.throws(() => normalizeSupabaseFavoriteFanmarkRows([{
-    ...favorite, search_count: 9007199254740992,
-  }]), FavoritesApiError);
 });
 
 test("Worker list uses same-origin credentials, no-store, and a strict payload", async () => {

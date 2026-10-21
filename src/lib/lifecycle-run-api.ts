@@ -33,15 +33,6 @@ export class LifecycleRunApiError extends Error {
   }
 }
 
-export function getLifecycleRunBackend(
-  value: string | undefined = import.meta.env?.VITE_LIFECYCLE_RUN_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new LifecycleRunApiError("configuration");
-}
-
 function exactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
   return Object.keys(value).length === expected.length && expected.every((key) =>
     Object.prototype.hasOwnProperty.call(value, key));

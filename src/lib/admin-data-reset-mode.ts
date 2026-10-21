@@ -7,9 +7,9 @@ export class AdminDataResetModeError extends Error {
 
 export function getAdminDataResetMode(
   value: string | undefined = import.meta.env?.VITE_ADMIN_DATA_RESET_BACKEND,
-): "supabase" | "disabled" | "worker" {
+): "disabled" | "worker" {
   const mode = value?.trim();
-  if (!mode || mode === "supabase") return "supabase";
+  if (!mode || mode === "disabled") return "disabled";
   if (mode === "worker") return "worker";
   if (mode === "disabled") return "disabled";
   throw new AdminDataResetModeError();

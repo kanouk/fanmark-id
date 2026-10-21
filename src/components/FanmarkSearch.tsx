@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { EmojiInput } from "@/components/EmojiInput";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -117,7 +117,6 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
         </div>
       </div>
 
-
       {/* Error Display for invalid inputs */}
       {result && normalizedInputQuery && !loading && result.status === 'invalid' && result.error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
@@ -146,21 +145,21 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
                   <div className="flex w-full flex-col gap-2">
                     <span className="text-3xl tracking-[0.15em] leading-none">{fanmark.fanmark || '❓'}</span>
                     {getStatusBadge(fanmark)}
-                    
+
                     {/* Lottery info for grace/returning status */}
                     {fanmark.blocking_status === 'grace' && (fanmark.lottery_entry_count ?? 0) > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
                         {t('lottery.entryCount', { count: fanmark.lottery_entry_count })}
                       </p>
                     )}
-                    
+
                     <div className="flex gap-2 mt-2">
                       {fanmark.short_id && (
                         <Button variant="outline" size="sm" asChild>
                           <a href={`/f/${fanmark.short_id}`}>ファンマページを開く</a>
                         </Button>
                       )}
-                      
+
                       {fanmark.blocking_status === 'grace' && !fanmark.has_user_lottery_entry && (
                         <Button
                           size="sm"
@@ -178,7 +177,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
                           {t('lottery.applyButton')}
                         </Button>
                       )}
-                      
+
                       {fanmark.has_user_lottery_entry && (
                         <Badge className="bg-primary/10 text-primary border-primary/30">
                           {t('lottery.appliedBadge')}
