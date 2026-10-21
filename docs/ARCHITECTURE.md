@@ -1,5 +1,7 @@
 # 構造と画面の対応
 
+主要5画面の表示・controller・共有取得の入口は[画面変更ガイド](development/SCREENS.md)を参照する。
+
 現行本番はCloudflare Workers / Better Auth / split D1 / R2。
 [文書案内](README.md)と[運用入口](operations/README.md)を先に読み、過去のstaging受入れ記録とは区別する。
 

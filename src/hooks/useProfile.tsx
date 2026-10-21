@@ -1,121 +1,60 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-
 import { UserSettings } from '@/lib/profile-utils';
-import { checkOwnUsernameAvailability as checkWorkerUsernameAvailability, loadOwnProfile, resolveOwnProfileAuth, subscribeToOwnProfileUpdates, updateOwnProfile } from '@/lib/profile-api';
+import { ownerQueryKey } from '@/lib/owner-query';
+import { checkOwnUsernameAvailability, loadOwnProfile, resolveOwnProfileAuth, subscribeToOwnProfileUpdates, updateOwnProfile } from '@/lib/profile-api';
 
 export const useProfile = () => {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchProfile = useCallback(async (options: { silent?: boolean } = {}) => {
-    try {
-      if (!options.silent) setLoading(true);
-      {
-        const auth = await resolveOwnProfileAuth(user?.id);
-        const result = await loadOwnProfile(auth);
-        setProfile(result as UserSettings);
-        return;
-      }
-
-    } catch (error) {
-      console.error('[useProfile] Error fetching profile:', {
-        message: error instanceof Error ? error.message : String(error),
-        userId: user?.id ?? null,
-      });
-    } finally {
-      if (!options.silent) setLoading(false);
-    }
-  }, [user]);
+  const userId = user?.id;
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: ownerQueryKey('profile', userId),
+    enabled: Boolean(userId),
+    staleTime: 30_000,
+    retry: false,
+    queryFn: async ({ signal }): Promise<UserSettings> => {
+      const auth = await resolveOwnProfileAuth(userId);
+      const profile = await loadOwnProfile(auth);
+      if (signal.aborted) throw new Error('Profile request cancelled');
+      return profile;
+    },
+  });
+  const profile = userId ? query.data ?? null : null;
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
-    } else {
-      setProfile(null);
-      setLoading(false);
-    }
-  }, [user, fetchProfile]);
-
-  // Realtime subscription to keep profile in sync across the app
-
-  // Profile consumers share local update events and
-  // a quiet refresh when this tab/window becomes active again.
-  useEffect(() => {
-    if (!user) return;
-
-    const unsubscribe = subscribeToOwnProfileUpdates((updated) => {
-      if (updated.user_id === user.id) setProfile(updated as UserSettings);
+    if (!userId) return;
+    return subscribeToOwnProfileUpdates(updated => {
+      if (updated.user_id === userId) queryClient.setQueryData(ownerQueryKey('profile', userId), updated);
     });
-    let lastRefreshAt = 0;
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'hidden') return;
-      const now = Date.now();
-      if (now - lastRefreshAt < 1_500) return;
-      lastRefreshAt = now;
-      void fetchProfile({ silent: true });
-    };
+  }, [queryClient, userId]);
 
-    window.addEventListener('focus', refreshWhenVisible);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      unsubscribe();
-      window.removeEventListener('focus', refreshWhenVisible);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [user, fetchProfile]);
+  const { refetch } = query;
+  const fetchProfile = useCallback(async (_options: { silent?: boolean } = {}) => {
+    if (!userId) return;
+    await refetch();
+  }, [refetch, userId]);
 
   const updateProfile = async (updates: Partial<Omit<UserSettings, 'user_id' | 'id'>>) => {
-    if (!user || !profile) return;
-
-    try {
-      {
-        if (updates.plan_type !== undefined && updates.plan_type !== profile.plan_type) {
-          throw new Error('Plan changes require the billing workflow');
-        }
-        if (updates.username !== undefined && updates.username !== profile.username) {
-          throw new Error('Username changes are unavailable');
-        }
-        const patch: { display_name?: string | null; avatar_url?: string | null; preferred_language?: string } = {};
-        if (Object.prototype.hasOwnProperty.call(updates, 'display_name')) patch.display_name = updates.display_name ?? null;
-        if (Object.prototype.hasOwnProperty.call(updates, 'avatar_url')) patch.avatar_url = updates.avatar_url ?? null;
-        if (Object.prototype.hasOwnProperty.call(updates, 'preferred_language')) patch.preferred_language = updates.preferred_language;
-        if (Object.keys(patch).length === 0) return;
-        const auth = await resolveOwnProfileAuth(user.id);
-        const saved = await updateOwnProfile(patch, auth);
-        setProfile(saved as UserSettings);
-        return;
-      }
-
-      // Update local state
-
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      throw error;
-    }
+    if (!userId || !profile) return;
+    if (updates.plan_type !== undefined && updates.plan_type !== profile.plan_type) throw new Error('Plan changes require the billing workflow');
+    if (updates.username !== undefined && updates.username !== profile.username) throw new Error('Username changes are unavailable');
+    const patch: { display_name?: string | null; avatar_url?: string | null; preferred_language?: UserSettings["preferred_language"] } = {};
+    if (Object.prototype.hasOwnProperty.call(updates, 'display_name')) patch.display_name = updates.display_name ?? null;
+    if (Object.prototype.hasOwnProperty.call(updates, 'avatar_url')) patch.avatar_url = updates.avatar_url ?? null;
+    if (Object.prototype.hasOwnProperty.call(updates, 'preferred_language')) patch.preferred_language = updates.preferred_language;
+    if (!Object.keys(patch).length) return;
+    const saved = await updateOwnProfile(patch, await resolveOwnProfileAuth(userId));
+    // The API checks expectedUserId and publishes the same saved row to all consumers.
+    queryClient.setQueryData(ownerQueryKey('profile', userId), saved);
   };
 
   const checkUsernameAvailability = async (username: string): Promise<boolean> => {
-    if (!username) return false;
-
-    try {
-      {
-        const auth = await resolveOwnProfileAuth(user?.id);
-        return await checkWorkerUsernameAvailability(username, auth);
-      }
-
-    } catch (error) {
-      console.error('Error checking username:', error);
-      return false;
-    }
+    if (!username || !userId) return false;
+    try { return await checkOwnUsernameAvailability(username, await resolveOwnProfileAuth(userId)); }
+    catch { return false; }
   };
 
-  return {
-    profile,
-    loading,
-    updateProfile,
-    checkUsernameAvailability,
-    refetch: fetchProfile
-  };
+  return { profile, loading: Boolean(userId) && query.isPending, error: query.error, updateProfile, checkUsernameAvailability, refetch: fetchProfile };
 };

@@ -1,4 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ownerQueryKey } from '@/lib/owner-query';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { betterAuthClient } from '@/lib/auth-backend';
 import { loadOwnProfile } from '@/lib/profile-api';
 
@@ -39,6 +41,9 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const queryClient = useQueryClient();
+  const generation = useRef(0);
+  const identity = useRef<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,13 +51,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [requiresPasswordSetup, setRequiresPasswordSetup] = useState(false);
   const [profileGateError, setProfileGateError] = useState(false);
 
-  const applyBetterAuthSession = useCallback(async (nextSession: Awaited<ReturnType<typeof betterAuthClient.getSession>>) => {
+  const applyBetterAuthSession = useCallback(async (nextSession: Awaited<ReturnType<typeof betterAuthClient.getSession>>, request: number) => {
+    if (request !== generation.current) return false;
     setProfileGateError(false);
     const betterAuthUser = nextSession?.user;
     const nextUser: AuthUser | null = betterAuthUser ? {
       id: betterAuthUser.id,
       email: betterAuthUser.email,
     } : null;
+    if (identity.current !== (nextUser?.id ?? null)) {
+      queryClient.clear();
+      identity.current = nextUser?.id ?? null;
+    }
     setSession(nextUser ? { user: nextUser } : null);
     setUser(nextUser);
     setEmailConfirmed(Boolean(betterAuthUser?.emailVerified));
@@ -67,27 +77,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setLoading(true);
     setRequiresPasswordSetup(true);
     try {
-      const profile = await loadOwnProfile();
+      const profile = await queryClient.fetchQuery({
+        queryKey: ownerQueryKey('profile', nextUser.id),
+        queryFn: () => loadOwnProfile({ expectedUserId: nextUser.id }),
+        staleTime: 0,
+        retry: false,
+      });
+      if (request !== generation.current) return false;
       if (profile.user_id !== nextUser.id) throw new Error('Profile identity did not match the Better Auth session');
+      queryClient.setQueryData(ownerQueryKey('profile', nextUser.id), profile);
       setRequiresPasswordSetup(profile.requires_password_setup);
       return true;
     } catch (error) {
+      if (request !== generation.current) return false;
       console.error('Error loading Better Auth profile gate:', error);
       setRequiresPasswordSetup(true);
       setProfileGateError(true);
       return false;
     } finally {
-      setLoading(false);
+      if (request === generation.current) setLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const refreshSession = useCallback(async () => {
+    const request = ++generation.current;
     try {
       const nextSession = await betterAuthClient.getSession();
-      return await applyBetterAuthSession(nextSession);
+      return await applyBetterAuthSession(nextSession, request);
     } catch (error) {
       console.error('Error loading Better Auth session:', error);
-      await applyBetterAuthSession(null);
+      await applyBetterAuthSession(null, request);
       return false;
     }
   }, [applyBetterAuthSession]);
@@ -105,6 +124,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSigningOut(true);
       // Keep the authenticated UI until the server confirms revocation.
       await betterAuthClient.signOut();
+      generation.current++;
+      identity.current = null;
+      queryClient.clear();
+      setLoading(false);
 
       // Clear local state after Better Auth revocation succeeds.
       setUser(null);

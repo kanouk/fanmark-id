@@ -8,6 +8,8 @@ const COMMANDS = new Set([
   'npm run build:cloudflare-production-live:dry-run',
   'npm run typecheck', 'npm test', 'npm run build:dry-run',
   'npm run test:combined-recovery', 'npm run test:business-runtime-import',
+  'npm run test:staging-invitation-signup-local', 'npm run test:staging-profile-editor-local',
+  'npm run build:cloudflare-staging', 'npm run test:staging-profile-editor-ui',
 ]);
 
 export function validateWorkflow(source) {

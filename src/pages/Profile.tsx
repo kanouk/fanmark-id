@@ -1,49 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useTranslation } from '@/hooks/useTranslation';
 import { UserProfileForm } from '@/components/UserProfileForm';
+import { format } from 'date-fns';
+import { useProfileController } from './profile/useProfileController';
 
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PasswordRequirement } from '@/components/PasswordRequirement';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { CardDescription } from '@/components/ui/card';
-import { User, LogOut, CreditCard, Globe, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, ExternalLink, ArrowRight, Trash2, Save, BarChart3, Crown, Eye, EyeOff } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatStripeAmount } from '@/lib/currency';
+import { ACTIVE_LANGUAGES } from '@/lib/language';
+import { AlertTriangle, ArrowRight, BarChart3, Check, CreditCard, Crown, ExternalLink, Eye, EyeOff, Globe, Heart, Info, Languages, Loader2, Lock, LogOut, PencilLine, Save, ShieldCheck, Trash2, User, X } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { usePreferredLanguage } from '@/hooks/usePreferredLanguage';
-import { useSystemSettings } from '@/hooks/useSystemSettings';
-import { ACTIVE_LANGUAGES, isActiveLanguage, FALLBACK_LANGUAGE, ActiveLanguageCode } from '@/lib/language';
-import { getPlanLimit, type PlanLimits, type PlanType } from '@/lib/plan-utils';
-import { usePasswordValidation } from '@/hooks/usePasswordValidation';
-import { PasswordRequirement } from '@/components/PasswordRequirement';
-import { formatStripeAmount } from '@/lib/currency';
-
-import { betterAuthClient } from '@/lib/auth-backend';
-import { deleteAccountThroughWorker } from '@/lib/account-deletion-api';
-import { createStripeCustomerPortalThroughWorker } from '@/lib/stripe-customer-portal-api';
-
-type Section = 'account' | 'plan' | 'language';
-// TODO: Re-enable when features are implemented
-// type Section = 'account' | 'plan' | 'language' | 'display' | 'integrations' | 'notifications';
-
-interface SidebarItem {
-  id: Section;
-  label: string;
-  description?: string;
-  icon: typeof User;
-}
 
 const InputStatusIcon = ({ status, className }: { status: boolean | null; className?: string }) => {
   if (status === null) return null;
@@ -57,250 +31,64 @@ const InputStatusIcon = ({ status, className }: { status: boolean | null; classN
 };
 
 const Profile = () => {
-  const { user, signOut, signingOut, loading: authLoading, setRequiresPasswordSetup } = useAuth();
-  const { profile, loading, updateProfile } = useProfile();
   const {
+    user,
+    signingOut,
+    authLoading,
+    profile,
+    loading,
+    updateProfile,
     subscribed,
-    subscription_start: subscriptionStart,
-    subscription_end: subscriptionEnd,
-    amount: subscriptionAmount,
-    currency: subscriptionCurrency,
-    interval: subscriptionInterval,
-    interval_count: subscriptionIntervalCount,
-    cancel_at_period_end: subscriptionCancels,
-    loading: subLoading,
-    refetch: refetchSubscription,
-  } = useSubscription();
-  const { t } = useTranslation();
-  const { toast } = useToast();
-  const { persistPreferredLanguage, isSaving: isSavingPreferredLanguage } = usePreferredLanguage();
-  const { settings } = useSystemSettings();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const pathname = location.pathname;
-  const isOnDashboard = pathname.startsWith('/dashboard');
-  const isOnFavorites = pathname.startsWith('/favorites');
-  const isOnAnalytics = pathname.startsWith('/analytics');
-  const isOnProfilePage = pathname.startsWith('/profile');
-  const [activeSection, setActiveSection] = useState<Section>('account');
-  const [languagePreference, setLanguagePreference] = useState<ActiveLanguageCode>(
-    isActiveLanguage(profile?.preferred_language ?? null) ? (profile?.preferred_language as ActiveLanguageCode) : FALLBACK_LANGUAGE,
-  );
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deletePassword, setDeletePassword] = useState('');
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [portalLoading, setPortalLoading] = useState(false);
-  const { requirements: passwordRequirements, isValid: isPasswordValid } = usePasswordValidation(newPassword);
-
-  useEffect(() => {
-    setLanguagePreference(
-      isActiveLanguage(profile?.preferred_language ?? null)
-        ? (profile?.preferred_language as ActiveLanguageCode)
-        : FALLBACK_LANGUAGE,
-    );
-  }, [profile?.preferred_language]);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
-
-  const handlePasswordUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (newPassword !== confirmNewPassword) {
-      toast({
-        title: t('common.error'),
-        description: t('auth.passwordMismatch'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsUpdatingPassword(true);
-    try {
-      {
-        await betterAuthClient.changePassword(currentPassword, newPassword);
-      }
-
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmNewPassword('');
-      toast({
-        title: t('common.passwordUpdated'),
-        description: t('common.passwordUpdatedDesc'),
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : undefined;
-      toast({
-        title: t('common.error'),
-        description: message || t('common.tryAgain'),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUpdatingPassword(false);
-    }
-  };
-
-  const sidebarNav: SidebarItem[] = useMemo(
-    () => [
-      {
-        id: 'account',
-        label: t('userSettings.navAccount'),
-        description: t('userSettings.navAccountProfile'),
-        icon: User,
-      },
-      {
-        id: 'plan',
-        label: t('userSettings.navPlan'),
-        description: t('userSettings.navPlanDescription'),
-        icon: CreditCard,
-      },
-      // TODO: Re-enable when notifications feature is implemented
-      // {
-      //   id: 'notifications',
-      //   label: t('userSettings.navNotifications'),
-      //   description: t('userSettings.navNotificationsDescription'),
-      //   icon: Bell,
-      // },
-      {
-        id: 'language',
-        label: t('userSettings.navLanguage'),
-        description: t('userSettings.navLanguageDescription'),
-        icon: Globe,
-      },
-      // TODO: Re-enable when display settings feature is implemented
-      // {
-      //   id: 'display',
-      //   label: t('userSettings.navDisplay'),
-      //   description: t('userSettings.navDisplayDescription'),
-      //   icon: Palette,
-      // },
-      // TODO: Re-enable when integrations feature is implemented
-      // {
-      //   id: 'integrations',
-      //   label: t('userSettings.navIntegrations'),
-      //   description: t('userSettings.navIntegrationsDescription'),
-      //   icon: Link2,
-      // },
-    ],
-    [t],
-  );
-
-  const planLabelMap: Record<string, string> = {
-    free: t('userSettings.planTypeFree'),
-    creator: t('userSettings.planTypeCreator'),
-    business: t('userSettings.planTypeBusiness'),
-    enterprise: t('userSettings.planTypeEnterprise'),
-    admin: t('userSettings.planTypeAdmin'),
-  };
-  const currentPlanLabel = planLabelMap[profile?.plan_type ?? 'free'];
-  const planType = (profile?.plan_type ?? 'free') as PlanType;
-  const planLimits = useMemo<PlanLimits>(() => ({
-    free: settings.free_fanmarks_limit,
-    creator: settings.creator_fanmarks_limit,
-    max: settings.max_fanmarks_limit,
-    business: settings.business_fanmarks_limit,
-    enterprise: settings.enterprise_fanmarks_limit,
-    admin: -1,
-  }), [settings]);
-  const planLimit = getPlanLimit(planType, planLimits);
-  const planLimitCopy =
-    planLimit === -1 ? t('userSettings.planUnlimited') : t('userSettings.planLimitInfo', { limit: planLimit });
-
-  const passwordStatus = newPassword ? isPasswordValid : null;
-  const confirmPasswordStatus = confirmNewPassword
-    ? confirmNewPassword === newPassword && confirmNewPassword.length > 0
-    : null;
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    const accountDeletionBackend = "worker";
-    if (deleteConfirmText !== 'DELETE' || (accountDeletionBackend === 'worker' && !deletePassword)) return;
-
-    setIsDeletingAccount(true);
-    try {
-      {
-        await deleteAccountThroughWorker(deletePassword);
-      }
-
-      toast({
-        title: t('userSettings.deleteAccount.successTitle'),
-        description: t('userSettings.deleteAccount.successDescription'),
-      });
-
-      // Auto logout and redirect
-      await signOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Account deletion failed:', error);
-      toast({
-        title: t('userSettings.deleteAccount.errorTitle'),
-        description: t('userSettings.deleteAccount.errorDescription'),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeletingAccount(false);
-      setDeleteConfirmText('');
-      setDeletePassword('');
-    }
-  };
-
-  const handleLanguageSelect = async (value: string) => {
-    if (!isActiveLanguage(value) || value === languagePreference) return;
-    setLanguagePreference(value);
-    try {
-      await persistPreferredLanguage(value);
-      toast({
-        title: t('userSettings.languageUpdateSuccessTitle'),
-        description: t('userSettings.languageUpdateSuccessDescription'),
-      });
-    } catch (error) {
-      console.error('Failed to update language preference:', error);
-      setLanguagePreference(
-        isActiveLanguage(profile?.preferred_language ?? null)
-          ? (profile?.preferred_language as ActiveLanguageCode)
-          : FALLBACK_LANGUAGE,
-      );
-      toast({
-        title: t('userSettings.languageUpdateErrorTitle'),
-        description: t('userSettings.languageUpdateErrorDescription'),
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleOpenCustomerPortal = async () => {
-    setPortalLoading(true);
-    try {
-            const portal = await createStripeCustomerPortalThroughWorker();
-      window.open(portal.url, '_blank');
-    } catch (error) {
-      console.error('Failed to open customer portal:', error);
-      toast({
-        title: t('common.error'),
-        description: t('userSettings.portalError'),
-        variant: 'destructive',
-      });
-    } finally {
-      setPortalLoading(false);
-    }
-  };
+    subscriptionStart,
+    subscriptionEnd,
+    subscriptionAmount,
+    subscriptionCurrency,
+    subscriptionInterval,
+    subscriptionIntervalCount,
+    subscriptionCancels,
+    subLoading,
+    t,
+    isSavingPreferredLanguage,
+    navigate,
+    location,
+    pathname,
+    isOnDashboard,
+    isOnFavorites,
+    isOnAnalytics,
+    isOnProfilePage,
+    activeSection,
+    setActiveSection,
+    languagePreference,
+    newPassword,
+    setNewPassword,
+    confirmNewPassword,
+    setConfirmNewPassword,
+    currentPassword,
+    setCurrentPassword,
+    showNewPassword,
+    setShowNewPassword,
+    showConfirmNewPassword,
+    setShowConfirmNewPassword,
+    isUpdatingPassword,
+    deleteConfirmText,
+    setDeleteConfirmText,
+    deletePassword,
+    setDeletePassword,
+    isDeletingAccount,
+    portalLoading,
+    passwordRequirements,
+    isPasswordValid,
+    handlePasswordUpdate,
+    sidebarNav,
+    currentPlanLabel,
+    planLimitCopy,
+    passwordStatus,
+    confirmPasswordStatus,
+    handleLogout,
+    handleDeleteAccount,
+    handleLanguageSelect,
+    handleOpenCustomerPortal,
+  } = useProfileController();
 
   if (authLoading || loading) {
     return (

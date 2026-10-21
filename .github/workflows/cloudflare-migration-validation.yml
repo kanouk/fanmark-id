@@ -38,6 +38,14 @@ jobs:
         env:
           FANMARK_TEST_ARTIFACT_DIR: ${{ runner.temp }}/fanmark-local-browser
         run: npm run test:local
+      - name: Verify real local invitation signup and owner editor persistence
+        run: npm run test:staging-invitation-signup-local
+      - name: Verify owner editor with actual local Worker and R2 images
+        run: npm run test:staging-profile-editor-local
+      - name: Build staging frontend for isolated failure and draft checks
+        run: npm run build:cloudflare-staging
+      - name: Verify editor cold start, failed save, draft recovery and owner refusals
+        run: npm run test:staging-profile-editor-ui
       - name: Verify combined Business Auth Master and R2 recovery
         run: npm run test:combined-recovery
       - name: Build accepted production application

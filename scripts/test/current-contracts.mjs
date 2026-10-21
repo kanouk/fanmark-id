@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 // Current runtime and operational contracts. Historical source fingerprints,
 // source freeze/import rehearsals and remote smoke commands are not normal CI.
 const files = [
+  'scripts/test/owner-cache.mjs',
   'scripts/migration/test-staging-selector-coverage.mjs',
   'scripts/test-auth-login-mfa.mjs',
   'scripts/test-account-readiness.mjs',

@@ -126,12 +126,37 @@ export async function verifyLocalBrowser(stack) {
     assert.equal(saved.display_name, 'Local browser saved profile');
     await navigate('/a/' + owner.shortId);
     await wait('document.body.innerText.includes("Local browser saved profile")');
+    // Stay within this app instance across logout/login to exercise private cache isolation.
+    const profileReadStart = requests.filter(r => r.method === 'GET' && r.path === '/api/me/profile').length;
+    await navigate('/profile');
+    await wait('!!document.querySelector("#display_name")');
+    assert.equal(requests.filter(r => r.method === 'GET' && r.path === '/api/me/profile').length - profileReadStart, 1,
+      'Auth gate and multiple profile consumers must share the verified profile');
+    await value('document.querySelector("#display_name").select()');
+    await cdp.send('Input.insertText', { text: 'Local account saved' });
+    await value('document.querySelector("#display_name").closest("form").querySelector("button[type=submit]").click()');
+    await wait('document.body.innerText.includes("ユーザー設定が正常に更新されました")');
+    const savedAccount = await (await stack.runtime.getD1Database('FANMARK_DB'))
+      .prepare('SELECT display_name FROM user_settings WHERE user_id=?').bind(owner.id).first();
+    assert.equal(savedAccount.display_name, 'Local account saved');
+    await clickText('サインアウト');
+    await wait('location.pathname==="/" && Array.from(document.querySelectorAll("a")).some(a=>a.getAttribute("href")==="/auth")');
+    await value('Array.from(document.querySelectorAll("a")).find(a=>a.getAttribute("href")==="/auth").click()');
+    await wait('!!document.querySelector("#auth-email")');
+    const other = stack.fixtures.users[1];
+    await fill('#auth-email', other.email);
+    await fill('#auth-password', other.password);
+    await value('document.querySelector("#auth-email").closest("form").querySelector("button[type=submit]").click()');
+    await wait('location.pathname==="/dashboard" && document.body.innerText.includes('+JSON.stringify(other.displayFanmark)+')');
+    assert.equal(await value('document.body.innerText.includes('+JSON.stringify(owner.displayFanmark)+')'), false,
+      'The previous owner must never remain in a new owner dashboard');
+    console.log('[local browser] shared profile save and same-app owner switch verified');
     assert.deepEqual(exceptions, []);
     assert.ok(hmrConnections > 0, 'Vite hot reload must connect over local HTTPS');
     assert.deepEqual(stack.deniedOutbound, []);
     assert.ok(requests.some(request => request.path === '/api/fanmarks/register' && request.method === 'POST'));
     const report = { state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
-      searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true,
+      searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true, accountSavePersisted: true, ownerSwitchIsolated: true,
       externalApplicationRequests: stack.deniedOutbound.length, browserProxyRefusals: blocked.length, requests };
     await writeFile(path.join(artifactDirectory, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });
     console.log('[local browser] verified; artifacts: ' + artifactDirectory);

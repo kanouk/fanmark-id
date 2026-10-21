@@ -1,739 +1,93 @@
-import { getErrorMessage } from '@/lib/error-message';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { formatInTimeZone } from 'date-fns-tz';
-import { usePendingCheckout } from '@/hooks/usePendingCheckout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { formatInTimeZone } from 'date-fns-tz';
+import { createDashboardPresentation } from './dashboard/presentation';
+import { useDashboardController } from './dashboard/useDashboardController';
 
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
-import { useTranslation } from '@/hooks/useTranslation';
-import { Settings, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3, ArrowRightLeft, AlertTriangle } from 'lucide-react';
-import { FiTarget, FiLayers, FiCompass, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock } from 'react-icons/fi';
+import { AlertTriangle, ArrowRightLeft, BarChart3, Copy, ExternalLink, Heart, MoreVertical, QrCode, Settings, Undo2 } from 'lucide-react';
+import { FiClock, FiCompass, FiLayers, FiTarget } from 'react-icons/fi';
 import { MdSpaceDashboard } from 'react-icons/md';
+import { ExtendLicenseDialog } from './ExtendLicenseDialog';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
-import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
 import { FanmarkReturnLoading } from './FanmarkReturnLoading';
-import { ReturnFanmarkDialog } from './ReturnFanmarkDialog';
 import { LicenseCountdown } from './LicenseCountdown';
+import { ReturnFanmarkDialog } from './ReturnFanmarkDialog';
 // Using Undo2 for return/return action
 
-import { useLifecycleSettings } from '@/hooks/useLifecycleSettings';
-import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
-import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
-import { useSubscription } from '@/hooks/useSubscription';
-import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { parseDateString } from '@/lib/utils';
-import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
-import { fetchFanmarkAnalyticsSummaryWorker } from '@/lib/fanmark-analytics-api';
-import { returnFanmarkThroughWorker } from '@/lib/fanmark-return-api';
-import { loadOwnedFanmarks } from '@/lib/owned-fanmarks-api';
+import { getFanmarkUrlForClipboard, navigateToFanmark } from '@/utils/emojiUrl';
 
-import { createStripeExtensionCheckoutThroughWorker, waitForStripeExtensionApplication } from '@/lib/stripe-extension-checkout-api';
-import { useTransferCode } from '@/hooks/useTransferCode';
 import { FanmarkTransferSection } from '@/components/FanmarkTransferSection';
 import { TransferCodeIssueDialog } from '@/components/TransferCodeIssueDialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const LICENSE_STATUS_WEIGHT: Record<LicenseTimingResult['status'], number> = {
-  active: 0,
-  'grace-return': 2,
-  grace: 3,
-  expired: 4,
-};
-
-const ACTIVE_TAB_STORAGE_KEY = 'fanmark-dashboard:active-tab';
-const EXTENSION_CHECKOUT_REQUEST_STORAGE_PREFIX = 'fanmark:extension-checkout-request:';
-
-function clearExtensionCheckoutRequestIds() {
-  if (typeof window === 'undefined') return;
-  try {
-    for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
-      const key = sessionStorage.key(index);
-      if (key?.startsWith(EXTENSION_CHECKOUT_REQUEST_STORAGE_PREFIX)) {
-        sessionStorage.removeItem(key);
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to clear extension checkout request IDs:', error);
-  }
-}
-
-interface Fanmark {
-  id: string;
-  user_input_fanmark: string;
-  emoji_ids: string[];
-  fanmark: string;
-  emoji_key: string;
-  fanmark_name: string | null;
-  short_id: string;
-  access_type: string;
-  tier_level: number | null;
-  current_license_id: string | null;
-  is_transferable: boolean;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  user_id?: string;
-  fanmark_licenses?: {
-    license_start: string;
-    license_end: string | null;
-    grace_expires_at?: string | null;
-    status: string;
-    is_returned?: boolean | null;
-    excluded_at?: string | null;
-    excluded_from_plan?: string | null;
-  } | null;
-  current_license?: {
-    id: string;
-    license_start: string;
-    license_end: string | null;
-    status: string;
-    created_at: string;
-  };
-}
-
-interface Profile {
-  id: string;
-  username: string;
-  display_name: string;
-  bio: string;
-}
-
-interface DashboardLocationState {
-  prefillFanmark?: string;
-  scrollToSearch?: boolean;
-}
-
-interface ExtendLicenseResponse {
-  success: boolean;
-  license?: {
-    id: string;
-    license_end: string | null;
-    grace_expires_at: string | null;
-    status: string | null;
-  } | null;
-  price_yen?: number;
-  tier_level?: number;
-}
-
 export const FanmarkDashboard = () => {
-  const { user } = useAuth();
-  const { profile } = useProfile();
-  const { toast } = useToast();
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { settings: lifecycleSettings } = useLifecycleSettings();
-  const { limit: fanmarkLimit, isUnlimited } = useFanmarkLimit();
-  const { paymentFailureAt, nextPaymentAttempt, subscription_end: subscriptionEnd } = useSubscription();
-  const { count: favoriteCount, isLoading: favoritesLoading } = useFavoriteFanmarks({
-    enabled: Boolean(user),
-  });
-  const { getPendingCheckout, setPendingCheckout, clearPendingCheckout } = usePendingCheckout();
-
-  const canAccessAnalytics = useMemo(() => {
-    const planType = profile?.plan_type;
-    return planType === 'creator' || planType === 'business' || planType === 'enterprise' || planType === 'admin';
-  }, [profile?.plan_type]);
-
-  const [extensionConfirmation, setExtensionConfirmation] = useState<'pending' | 'timeout' | null>(null);
-  const [extensionConfirmationRetry, setExtensionConfirmationRetry] = useState(0);
-  const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTabState] = useState(() => {
-    if (typeof window === 'undefined') {
-      return 'my-fanmarks';
-    }
-    const stored = sessionStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-    return stored === 'acquisition' || stored === 'my-fanmarks' ? stored : 'my-fanmarks';
-  });
-  const setActiveTab = useCallback((value: string) => {
-    setActiveTabState(value);
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, value);
-    }
-  }, []);
-  const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
-  const [shouldScrollToSearch, setShouldScrollToSearch] = useState(false);
-  const [returningFanmarkId, setReturningFanmarkId] = useState<string | null>(null);
-  const [returningFanmarkEmoji, setReturningFanmarkEmoji] = useState<string | undefined>();
-  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
-  const [returnTargetFanmark, setReturnTargetFanmark] = useState<Fanmark | null>(null);
-  const [extendDialogOpen, setExtendDialogOpen] = useState(false);
-  const [extendTarget, setExtendTarget] = useState<ExtendLicenseTarget | null>(null);
-  const [extendSelectedPlan, setExtendSelectedPlan] = useState<ExtendPlanOption | null>(null);
-  const [extendPlans, setExtendPlans] = useState<ExtendPlanOption[]>([]);
-  const [extendProcessing, setExtendProcessing] = useState(false);
-  const extensionCheckoutRequestIds = useRef(new Map<string, string>());
-  const [totalAccessCount, setTotalAccessCount] = useState<number | null>(null);
-  const [accessCountLoading, setAccessCountLoading] = useState(true);
-  const paymentWarningDate = useMemo(() => {
-    const nextAttemptDate = parseDateString(nextPaymentAttempt);
-    const subscriptionEndDate = parseDateString(subscriptionEnd);
-    const candidate = nextAttemptDate && subscriptionEndDate
-      ? (nextAttemptDate > subscriptionEndDate ? nextAttemptDate : subscriptionEndDate)
-      : nextAttemptDate ?? subscriptionEndDate;
-
-    return candidate ? formatInTimeZone(candidate, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm') : null;
-  }, [nextPaymentAttempt, subscriptionEnd]);
-  const showPaymentWarning = Boolean(paymentFailureAt || nextPaymentAttempt);
-
-  // Transfer system - single source of truth
-  const transferCodeData = useTransferCode();
-  const { hasActiveTransfer, getTransferStatus, refetch: refetchTransfer } = transferCodeData;
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
-  const [transferTargetFanmark, setTransferTargetFanmark] = useState<{ fanmarkId: string; licenseId: string; emoji: string } | null>(null);
-
-  const openTransferDialog = (fanmark: Fanmark) => {
-    if (!fanmark.current_license_id) return;
-    setTransferTargetFanmark({
-      fanmarkId: fanmark.id,
-      licenseId: fanmark.current_license_id,
-      emoji: fanmark.fanmark,
-    });
-    setTransferDialogOpen(true);
-  };
-
-  const handleOpenSettings = (fanmarkId: string) => {
-    // Find and cache fanmark data for profile edit page
-    const fanmark = fanmarks.find(f => f.id === fanmarkId);
-    if (fanmark) {
-      const fanmarkData = {
-        user_input_fanmark: fanmark.user_input_fanmark,
-        fanmark: fanmark.fanmark,
-        emoji_ids: fanmark.emoji_ids,
-        fanmark_name: fanmark.fanmark_name,
-        fanmarkId: fanmarkId,
-        timestamp: Date.now()
-      };
-      localStorage.setItem('fanmark_settings_cache', JSON.stringify(fanmarkData));
-    }
-    navigate(`/fanmarks/${fanmarkId}/settings`);
-  };
-
-  const handleReturnFanmark = async (fanmarkId: string, fanmarkEmoji?: string) => {
-    setReturningFanmarkId(fanmarkId);
-    if (fanmarkEmoji) {
-      setReturningFanmarkEmoji(fanmarkEmoji);
-    }
-
-    try {
-      {
-        await returnFanmarkThroughWorker(fanmarkId);
-      }
-
-      toast({
-        title: t('dashboard.returnSuccess'),
-        description: t('dashboard.returnSuccessDescription'),
-      });
-
-      await fetchFanmarks();
-    } catch (error: unknown) {
-      console.error('Error returning fanmark via function:', error);
-      const desc = getErrorMessage(error, t('dashboard.returnErrorDescription'));
-      toast({
-        title: t('dashboard.returnError'),
-        description: desc,
-        variant: 'destructive',
-      });
-    } finally {
-      setReturningFanmarkId(null);
-      setReturningFanmarkEmoji(undefined);
-    }
-  };
-
-  const openReturnDialog = (fanmark: Fanmark) => {
-    setReturnTargetFanmark(fanmark);
-    setReturnDialogOpen(true);
-  };
-
-  const handleConfirmReturn = async () => {
-    if (!returnTargetFanmark) return;
-    await handleReturnFanmark(returnTargetFanmark.id, returnTargetFanmark.fanmark);
-    setReturnDialogOpen(false);
-    setReturnTargetFanmark(null);
-  };
-
-  const openExtendDialog = (fanmark: Fanmark, timing: LicenseTimingResult) => {
-    extensionCheckoutRequestIds.current.clear();
-    const licenseData = fanmark.fanmark_licenses;
-    setExtendTarget({
-      fanmarkId: fanmark.id,
-      licenseId: fanmark.current_license_id ?? null,
-      emoji: fanmark.fanmark,
-      shortId: fanmark.short_id,
-      licenseEnd: licenseData?.license_end ?? null,
-      graceExpiresAt: licenseData?.grace_expires_at ?? null,
-      status: timing.status,
-      tierLevel: fanmark.tier_level ?? null,
-    });
-    setExtendSelectedPlan(null);
-    setExtendDialogOpen(true);
-  };
-
-  const handleChangePlan = (plan: ExtendPlanOption | null) => {
-    setExtendSelectedPlan(plan);
-  };
-
-  const handleExtendSubmit = async () => {
-    if (!extendTarget || !extendSelectedPlan) return;
-    const requestScope = [
-      user?.id ?? 'anonymous',
-      extendTarget.licenseId ?? '',
-      extendTarget.fanmarkId,
-      extendSelectedPlan.months,
-    ].join(':');
-    const requestStorageKey = `${EXTENSION_CHECKOUT_REQUEST_STORAGE_PREFIX}${requestScope}`;
-    let requestId = extensionCheckoutRequestIds.current.get(requestScope);
-    if (!requestId) {
-      try {
-        const storedRequestId = sessionStorage.getItem(requestStorageKey);
-        requestId = storedRequestId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(storedRequestId)
-          ? storedRequestId
-          : undefined;
-      } catch (error) {
-        console.warn('Failed to read extension checkout request ID:', error);
-      }
-      requestId ??= crypto.randomUUID();
-      extensionCheckoutRequestIds.current.set(requestScope, requestId);
-      try {
-        sessionStorage.setItem(requestStorageKey, requestId);
-      } catch (error) {
-        console.warn('Failed to save extension checkout request ID:', error);
-      }
-    }
-    setExtendProcessing(true);
-
-    try {
-      let data: { url?: string | null } | null;
-      {
-
-        if (!extendTarget.licenseId) throw new Error('The license ID is unavailable.');
-        data = await createStripeExtensionCheckoutThroughWorker({
-          licenseId: extendTarget.licenseId,
-          months: extendSelectedPlan.months,
-          requestId,
-        });
-      }
-
-      if (!data?.url) throw new Error('Failed to create checkout session');
-
-      // Track pending checkout
-      setPendingCheckout(extendTarget.fanmarkId,
-        requestId, user?.id);
-
-      // Redirect to Stripe Checkout
-      window.location.href = data.url;
-    } catch (extendError) {
-      console.error('Error creating checkout session:', extendError);
-      const message = extendError instanceof Error ? extendError.message : null;
-      toast({
-        title: t('dashboard.extendDialog.errorTitle'),
-        description: message
-          ? t('dashboard.extendDialog.errorDescription', { message })
-          : t('dashboard.extendDialog.errorDescriptionFallback'),
-        variant: 'destructive',
-      });
-      setExtendProcessing(false);
-    }
-  };
-
-  useEffect(() => {
-    const locationState = location.state as DashboardLocationState | null;
-    let nextPrefill = locationState?.prefillFanmark;
-    const requestScroll = Boolean(locationState?.scrollToSearch);
-    let shouldClearState = Boolean(locationState);
-
-    // Check for extension URL parameters
-    const extensionStatus = searchParams.get('extension');
-
-    if (extensionStatus === 'success') {
-      if (!user) return;
-      const pending = getPendingCheckout();
-      if (!pending?.requestId || pending.userId !== user.id || pending.fanmarkId !== searchParams.get('fanmarkId')) {
-        setExtensionConfirmation('timeout');
-      }
-      // Checkout redirect is not proof that the signed application has committed.
-      navigate(location.pathname, { replace: true });
-    } else if (extensionStatus === 'canceled') {
-      clearPendingCheckout();
-      toast({
-        title: t('dashboard.canceledTitle'),
-        description: t('dashboard.canceledDescription'),
-      });
-      // Clear URL parameter
-      navigate(location.pathname, { replace: true });
-      return;
-    }
-
-    if (!nextPrefill) {
-      try {
-        const stored = localStorage.getItem('fanmark.prefill');
-        if (stored) {
-          nextPrefill = stored;
-          localStorage.removeItem('fanmark.prefill');
-        }
-      } catch (error) {
-        console.warn('Failed to access localStorage for fanmark prefill:', error);
-      }
-    }
-
-    if (nextPrefill) {
-      setPrefilledEmoji(nextPrefill);
-      setActiveTab('acquisition');
-      shouldClearState = true;
-    }
-
-    if (requestScroll) {
-      setActiveTab('acquisition');
-      setShouldScrollToSearch(true);
-      shouldClearState = true;
-    }
-
-    if (shouldClearState) {
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate, setActiveTab, toast, t, user, searchParams, getPendingCheckout, clearPendingCheckout]);
-
-  useEffect(() => {
-    if (!shouldScrollToSearch) return;
-
-    // ensure acquisition tab is active so the search section mounts
-    setActiveTab('acquisition');
-  }, [shouldScrollToSearch, setActiveTab]);
-
-  const fetchFanmarks = useCallback(async () => {
-    try {
-      {
-
-        setFanmarks(await loadOwnedFanmarks());
-        return true;
-      }
-
-      // First, get the licenses and fanmarks
-
-      // Get all license IDs to fetch configs
-
-      // Fetch basic configs for all licenses
-
-      // Create lookup maps for configs
-
-      // Process fanmarks with their configs
-
-    } catch (error) {
-      console.error('Error fetching fanmarks:', error);
-      toast({
-        title: t('dashboard.errorLoadingData'),
-        description: t('dashboard.failedToLoadFanmarks'),
-        variant: 'destructive',
-      });
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [t, toast, user?.id]);
-
-  useEffect(() => {
-    if (!user) return;
-    fetchFanmarks();
-  }, [fetchFanmarks, user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const pending = getPendingCheckout();
-    if (!pending?.requestId || pending.userId !== user.id) return;
-    const controller = new AbortController();
-    setExtensionConfirmation('pending');
-    void waitForStripeExtensionApplication(pending.requestId, pending.fanmarkId, { signal: controller.signal })
-      .then(async (result) => {
-        if (controller.signal.aborted) return;
-        if (result.status === 'applied') {
-          const refreshed = await fetchFanmarks();
-          if (controller.signal.aborted) return;
-          if (!refreshed) throw new Error('extension_refresh_unavailable');
-          toast({ title: t('dashboard.paymentSuccessTitle'), description: t('dashboard.paymentSuccessDescription') });
-        } else {
-          toast({ title: t('dashboard.extensionConfirmation.failed'), variant: 'destructive' });
-        }
-        clearPendingCheckout();
-        clearExtensionCheckoutRequestIds();
-        extensionCheckoutRequestIds.current.clear();
-        setExtensionConfirmation(null);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setExtensionConfirmation('timeout');
-      });
-    return () => controller.abort();
-  }, [user, fetchFanmarks, t, toast, getPendingCheckout, clearPendingCheckout, extensionConfirmationRetry]);
-
-  const gracePeriodDaysSetting = lifecycleSettings.grace_period_days;
-
-  // Fetch total access count for all fanmarks (available for all plans)
-  useEffect(() => {
-    const fetchTotalAccessCount = async () => {
-      if (!user) {
-        setAccessCountLoading(false);
-        return;
-      }
-
-      try {
-        setAccessCountLoading(true);
-
-        {
-          const total = await fetchFanmarkAnalyticsSummaryWorker({ days: 30 });
-          setTotalAccessCount(total);
-          return;
-        }
-
-        // Filter to only active fanmarks (exclude grace/expired status)
-
-        // If no active fanmarks, set count to 0
-
-        // Get date range for last 30 days
-
-      } catch (err) {
-        console.error('Failed to fetch access count:', err);
-        setTotalAccessCount(0);
-      } finally {
-        setAccessCountLoading(false);
-      }
-    };
-
-    fetchTotalAccessCount();
-  }, [user, fanmarks, gracePeriodDaysSetting]);
-
-  const getLicenseTiming = (licenseData: Fanmark['fanmark_licenses']) => {
-    return deriveLicenseTiming({
-      licenseEnd: licenseData?.license_end ?? null,
-      graceExpiresAt: licenseData?.grace_expires_at ?? null,
-      status: licenseData?.status ?? null,
-      gracePeriodDays: gracePeriodDaysSetting,
-      isReturned: licenseData?.is_returned ?? null,
-    });
-  };
-
-  const getStatusBadge = (timing: LicenseTimingResult) => {
-    let icon = <FiMoon className="h-3.5 w-3.5" />;
-    let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
-    let label = t('dashboard.statusUnknown');
-
-    switch (timing.status) {
-      case 'active':
-        icon = <FiCheckCircle className="h-3.5 w-3.5" />;
-        className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
-        label = t('dashboard.statusActive');
-        break;
-      case 'grace-return':
-        icon = <FiTarget className="h-3.5 w-3.5" />;
-        className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
-        label = t('dashboard.statusReturnProcessing');
-        break;
-      case 'grace':
-        icon = <FiTarget className="h-3.5 w-3.5" />;
-        className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
-        label = t('dashboard.statusGrace');
-        break;
-      case 'expired':
-      default:
-        icon = <FiTarget className="h-3.5 w-3.5" />;
-        className = 'border-rose-200/60 bg-rose-50 text-rose-600 shadow-sm';
-        label = t('dashboard.statusExpired');
-        break;
-    }
-
-    return (
-      <Badge className={`${className} inline-flex items-center gap-1 sm:gap-1.5 rounded-full border px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold tracking-wide whitespace-nowrap`}>
-        {icon}
-        <span>{label}</span>
-      </Badge>
-    );
-  };
-
-  // Helper function to determine if a fanmark is inactive/expired
-  const isFanmarkInactive = (fanmark: Fanmark) => {
-    const licenseData = fanmark.fanmark_licenses;
-    const timing = getLicenseTiming(licenseData);
-    return timing.status === 'expired';
-  };
-
-  // Helper function to determine if a fanmark is returned/expired
-  const isReturned = (fanmark: Fanmark) => {
-    const licenseData = fanmark.fanmark_licenses;
-    return Boolean(licenseData?.is_returned);
-  };
-
-  const getTierOvalStyle = (tierLevel: number): string => {
-    switch (tierLevel) {
-      case 4: // S Tier - Gold/Platinum
-        return "bg-gradient-to-br from-amber-200 via-yellow-100 to-amber-300 border-[3px] border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 tier-s-shine";
-      case 3: // A Tier - Purple/Violet
-        return "bg-gradient-to-br from-purple-200 via-violet-200 to-purple-300 border-[2.5px] border-purple-500 shadow-md hover:shadow-lg transition-all duration-300 tier-a-glow";
-      case 2: // B Tier - Blue/Cyan
-        return "bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-2 border-blue-400 shadow-sm hover:shadow-md transition-all duration-300";
-      case 1: // C Tier - Green/White
-        return "bg-gradient-to-br from-emerald-50 via-white to-emerald-100 border border-emerald-300 shadow-sm hover:shadow transition-all duration-300";
-      default:
-        return "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200";
-    }
-  };
-
-  const getTierBadgeStyle = (tierLevel: number): string => {
-    switch (tierLevel) {
-      case 4: // S Tier - Gold gradient
-        return "bg-gradient-to-br from-amber-500 to-yellow-600 text-white border border-amber-600";
-      case 3: // A Tier - Purple gradient
-        return "bg-gradient-to-br from-purple-500 to-violet-600 text-white border border-purple-600";
-      case 2: // B Tier - Blue gradient
-        return "bg-gradient-to-br from-blue-500 to-cyan-600 text-white border border-blue-600";
-      case 1: // C Tier - Green gradient
-        return "bg-gradient-to-br from-emerald-500 to-green-600 text-white border border-emerald-600";
-      default:
-        return "bg-foreground text-background";
-    }
-  };
-
-  const getTierLabel = (tierLevel: number | null | undefined) => {
-    switch (tierLevel) {
-      case 1:
-        return 'C';
-      case 2:
-        return 'B';
-      case 3:
-        return 'A';
-      case 4:
-        return 'S';
-      default:
-        return '—';
-    }
-  };
-
-  const getAccessTypeBadge = (accessType: string, fanmarkEmoji?: string) => {
-    let IconComponent = FiMoon;
-    let label = t('dashboard.accessTypes.inactive');
-
-    if (accessType === 'profile') {
-      IconComponent = FiUser;
-      label = t('dashboard.accessTypes.profile');
-    } else if (accessType === 'redirect') {
-      IconComponent = FiLink;
-      label = t('dashboard.accessTypes.redirect');
-    } else if (accessType === 'text') {
-      IconComponent = FiFileText;
-      label = t('dashboard.accessTypes.text');
-    }
-
-    const handleClick = fanmarkEmoji ? (e: React.MouseEvent) => {
-      e.stopPropagation();
-      navigateToFanmark(fanmarkEmoji, true);
-    } : undefined;
-
-    return (
-      <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-foreground">
-        <IconComponent className="h-3 w-3 text-foreground" aria-hidden="true" />
-        <span>{label}</span>
-        {fanmarkEmoji && accessType !== 'inactive' && (
-          <button
-            type="button"
-            onClick={handleClick}
-            className="ml-0.5 p-0.5 rounded hover:bg-primary/10 hover:text-primary transition-colors"
-            aria-label={t('dashboard.visitFanmarkTooltip')}
-          >
-            <ExternalLink className="h-3 w-3" />
-          </button>
-        )}
-      </span>
-    );
-  };
-
-  const dedupedFanmarks = useMemo(() => {
-    const map = new Map<string, Fanmark>();
-    fanmarks.forEach((fanmark) => {
-      const key = fanmark.emoji_key || fanmark.id;
-      const existing = map.get(key);
-      if (!existing) {
-        map.set(key, fanmark);
-        return;
-      }
-
-      const existingTiming = getLicenseTiming(existing.fanmark_licenses as Fanmark['fanmark_licenses']);
-      const currentTiming = getLicenseTiming(fanmark.fanmark_licenses as Fanmark['fanmark_licenses']);
-      const existingWeight = LICENSE_STATUS_WEIGHT[existingTiming.status] ?? Number.MAX_SAFE_INTEGER;
-      const currentWeight = LICENSE_STATUS_WEIGHT[currentTiming.status] ?? Number.MAX_SAFE_INTEGER;
-
-      if (currentWeight < existingWeight) {
-        map.set(key, fanmark);
-        return;
-      }
-
-      if (currentWeight === existingWeight) {
-        const existingDate = parseDateString((existing.fanmark_licenses)?.license_start)?.getTime() ?? 0;
-        const currentDate = parseDateString((fanmark.fanmark_licenses)?.license_start)?.getTime() ?? 0;
-        if (currentDate > existingDate) {
-          map.set(key, fanmark);
-        }
-      }
-    });
-
-    return Array.from(map.values());
-  }, [fanmarks, gracePeriodDaysSetting]);
-
-  const activeFanmarks = dedupedFanmarks.filter(f => {
-    const licenseData = f.fanmark_licenses;
-    const timing = getLicenseTiming(licenseData);
-    return timing.status === 'active' && !isReturned(f);
-  }).length;
-
-  const shouldBlockGraceExtension = useCallback(
-    (timing: LicenseTimingResult) => {
-      if (isUnlimited) return false;
-      if (fanmarkLimit <= 0) return true;
-      return (timing.status === 'grace' || timing.status === 'grace-return') && activeFanmarks >= fanmarkLimit;
-    },
-    [activeFanmarks, fanmarkLimit, isUnlimited],
-  );
-
-  const filteredFanmarks = useMemo(() => {
-    const sorted = [...dedupedFanmarks].sort((a, b) => {
-      const aLicenseData = a.fanmark_licenses;
-      const bLicenseData = b.fanmark_licenses;
-      const aTiming = getLicenseTiming(aLicenseData);
-      const bTiming = getLicenseTiming(bLicenseData);
-
-      const aWeight = LICENSE_STATUS_WEIGHT[aTiming.status] ?? Number.MAX_SAFE_INTEGER;
-      const bWeight = LICENSE_STATUS_WEIGHT[bTiming.status] ?? Number.MAX_SAFE_INTEGER;
-
-      if (aWeight !== bWeight) {
-        return aWeight - bWeight;
-      }
-
-      // Within the same status, sort by acquisition date (newest first)
-      const aAcquisitionDate = parseDateString(aLicenseData?.license_start);
-      const bAcquisitionDate = parseDateString(bLicenseData?.license_start);
-      const aAcquisition = aAcquisitionDate ? aAcquisitionDate.getTime() : 0;
-      const bAcquisition = bAcquisitionDate ? bAcquisitionDate.getTime() : 0;
-      return bAcquisition - aAcquisition;
-    });
-
-    return sorted;
-  }, [dedupedFanmarks, gracePeriodDaysSetting]);
-
-  const handleRequireAuth = (emoji: string) => {
-    try {
-      localStorage.setItem('fanmark.prefill', emoji);
-    } catch (error) {
-      console.warn('Failed to persist fanmark prefill before auth redirect:', error);
-    }
-    navigate('/auth', { state: { prefillFanmark: emoji } });
-  };
+  const {
+    toast,
+    t,
+    navigate,
+    location,
+    fanmarkLimit,
+    isUnlimited,
+    favoriteCount,
+    favoritesLoading,
+    getPendingCheckout,
+    canAccessAnalytics,
+    extensionConfirmation,
+    setExtensionConfirmationRetry,
+    loading,
+    activeTab,
+    setActiveTab,
+    prefilledEmoji,
+    setPrefilledEmoji,
+    shouldScrollToSearch,
+    setShouldScrollToSearch,
+    returningFanmarkId,
+    returningFanmarkEmoji,
+    returnDialogOpen,
+    setReturnDialogOpen,
+    returnTargetFanmark,
+    setReturnTargetFanmark,
+    extendDialogOpen,
+    setExtendDialogOpen,
+    extendTarget,
+    setExtendTarget,
+    extendSelectedPlan,
+    setExtendSelectedPlan,
+    extendProcessing,
+    totalAccessCount,
+    accessCountLoading,
+    paymentWarningDate,
+    showPaymentWarning,
+    transferCodeData,
+    hasActiveTransfer,
+    getTransferStatus,
+    refetchTransfer,
+    transferDialogOpen,
+    setTransferDialogOpen,
+    transferTargetFanmark,
+    openTransferDialog,
+    handleOpenSettings,
+    openReturnDialog,
+    handleConfirmReturn,
+    openExtendDialog,
+    handleChangePlan,
+    handleExtendSubmit,
+    fetchFanmarks,
+    getLicenseTiming,
+    isFanmarkInactive,
+    isReturned,
+    activeFanmarks,
+    shouldBlockGraceExtension,
+    filteredFanmarks,
+    handleRequireAuth,
+  } = useDashboardController();
+  const { getStatusBadge, getTierOvalStyle, getTierBadgeStyle, getTierLabel, getAccessTypeBadge } = createDashboardPresentation(t);
 
   if (loading) {
     return (

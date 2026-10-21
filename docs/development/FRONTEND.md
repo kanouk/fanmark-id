@@ -1,5 +1,7 @@
 # フロントの変更入口
 
+主要画面の責務分離と、ユーザー単位の共有cache・更新後同期は[画面変更ガイド](SCREENS.md)を参照する。
+
 フロントは同originのWorker APIとBetter Authを使う。Supabase client・SDK・JWTブリッジ・realtime購読は使わない。
 API関数は入力/応答の検証、timeout、origin、cookie、失敗形式を保持する。画面側からDBへ直接アクセスしない。
 
