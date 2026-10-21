@@ -5,19 +5,20 @@
 
 ## 本番移行と配備
 
-**最終照合: 2026-10-21 09:50 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
+**最終照合: 2026-10-22 03:01 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
 
 | 項目 | 最終確認した状態 |
 | --- | --- |
 | 本番URL | `https://fanmark.id/`。Worker Route方式。www/adminはalias Workerの限定転送 |
-| 本番app | `fanmark-app-production` / active 100% `d709b04e-ee97-417d-9887-290c5c8d271a` |
-| 配備operationのソース | `856599149b8faf9001f05e3ca5eccd69b7bf5f4a` / [PR43](https://github.com/kanouk/fanmark-id/pull/43) |
-| 配備時点のmain | `e3aedcd12f18c0451d64fd72d2d6eaf91bb34d06`。検証済みPR HEADとtree一致 |
-| 配備のPR CI / main CI | [39512200608](https://github.com/kanouk/fanmark-id/actions/runs/39512200608) / [39513921922](https://github.com/kanouk/fanmark-id/actions/runs/39513921922)。ともに2 job成功 |
+| 本番app | `fanmark-app-production` / active 100% `aec6964b-ac2c-49ea-bcba-0f10b543ff2e` |
+| 配備operationのソース | `b800e83c4813d546c7ad8eb1adb970d83d27b687` / [PR59](https://github.com/kanouk/fanmark-id/pull/59)。frontend build source `296dbd1c554f271480126f4786a893cbe0068666`とtree一致 |
+| 配備時点のmain | `b800e83c4813d546c7ad8eb1adb970d83d27b687`。検証済みPR HEADとtree一致 |
+| 配備のPR CI / main CI | [39644301238](https://github.com/kanouk/fanmark-id/actions/runs/39644301238) / [39646666317](https://github.com/kanouk/fanmark-id/actions/runs/39646666317)。ともに2 job成功 |
 | 文書入口の整理 | [PR44](https://github.com/kanouk/fanmark-id/pull/44)、main `3b13f283a6d479246d8bc285fbdeece8324451e9`。[main CI](https://github.com/kanouk/fanmark-id/actions/runs/39518911227)の2 job成功。アプリの再配備は不要 |
-| 実行コード・設定 | PR43はtest/文書のみ。PR42の実行scriptと全resourcesを保持。秘密設定名17件、全23静的資産、V3保存先、Cron保持 |
-| 公開確認 | root/Auth capabilities/maintenanceはHTTPS正常、未認証notificationsは401。最後にroot200とHTML hash保持を独立GETで確認 |
-| frontend資産 | [manifest](deployed-assets-2026-10-21.json)。frontend sourceは`bf21ef7d7258a192f9dadab88c96656761a3eede`、旧hash付き資産も保持 |
+| 開発入口の最終整理 | 配備後に旧遠隔smoke入口と起動/補助ガイドを整理。再buildした25資産が配備済み版とSHA-256一致。frontend/Worker sourceと依存関係は変更なし |
+| 実行コード・設定 | PR57〜59の開発基盤・フロント単一化・画面責務分離。秘密設定名17件、V3保存先・runtime・4 Cron・3 Routeを保持 |
+| 公開確認 | root/Auth capabilities/maintenanceは200、未認証profile/owned/notifications/admin sessionは401/no-store。PC/モバイル/PWAと旧hash資産を確認 |
+| frontend資産 | [manifest](deployed-assets-2026-10-22.json)。保持した旧hash資産を含む25 file。robots.txtの配信時追記はsource hashと区別 |
 
 後からmergeしたdocs-only commitはこの配備ソースに含まれない。文書のmergeとアプリの配備を別に管理する。
 通常production configがD1/R2/DO/Route/Cronの非秘密な構成を保持する。V1/V2や旧stagingの資源を本番と取り違えない。
@@ -54,9 +55,16 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 | --- | --- |
 | 自然日次backupの継続 | 初回は上記の通り確認済み。通常Cronとmonitorを継続し、障害時はreceipt/claim/実保存物を調べる。連続成功や将来の実削除は初回成功だけから推定しない。 |
 | 旧Supabase退役 | 原本保持中。10月28日ごろの見直しは提案で、削除承認ではない。[保持終了条件](../migration/production-operations.md#旧supabaseの保持終了を判断する条件)を確認する。 |
-| モバイル表示 | 移行時の390×844確認で18pxの横はみ出しと右端の無効ボタンの欠けを記録。今回の文書整理では修正していない。 |
+| モバイル表示 | 移行時の390×844確認では18pxの横はみ出しを記録。今回の匿名rootも390px指定で横幅400pxと観測。既存の幅超過は残るが更新前後で悪化なし。合成localのプロフィール編集は390px内に収まることを別に確認。 |
 | 過去のStripe履歴 | 旧subscription objectのprovider取得ができない履歴上の制約を保持。取得成功に書き換えない。解約済み自己テスト契約と未送信sandbox記録を保持する。 |
 | 別端末での鍵復旧 | 同じMacからの遠隔Sync読戻しは確認済み。Mac喪失時の別端末でのアクセス・復号は未実証。 |
+
+## 開発基盤改修の検証範囲
+
+[計画の完了記録](../REFACTORING_PLAN.md#2026-10-22-開発基盤の受け入れ)を参照する。
+合成localで認証・保存・権限拒否・画像・下書き・アカウント切替を検証し、本番は匿名の公開確認を行った。
+390px指定の匿名rootは更新前後とも横幅400pxとして観測され、既存の幅超過が残る。
+本人の実アカウントでの再受け入れ・実端末確認を実施済みとはしない。
 
 ## 詳細原本
 

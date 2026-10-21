@@ -6,6 +6,7 @@
 | --- | --- |
 | [旧README](README-legacy.md) | 当初の仕様とSupabase運用の背景 |
 | [整理前のPRODUCT](PRODUCT-2026-10-21.md) | 旧認証・当時のbackup受け入れと内部フローの原文 |
+| [旧CLAUDEガイド](CLAUDE-2026-10-22.md) | 旧コマンド・Supabase scanner除外規則の履歴。現行判断に使わない |
 | [旧TECH](TECH-2026-10-21.md) | 2026-10-21整理前の技術説明・移行testの詳細 |
 | [旧ARCHITECTURE](ARCHITECTURE-2026-10-21.md) | 旧画面/SQL/RLSの対応とstaging実証 |
 | [移行作業履歴](../migration/HANDOFF.md) | 判断・失敗・復旧の時系列 |

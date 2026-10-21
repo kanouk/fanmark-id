@@ -46,6 +46,19 @@
     "test:split-r2-import-stage": "node --test scripts/migration/test-split-r2-import-stage.mjs",
     "test:business-import-stage": "node --experimental-strip-types --test scripts/migration/test-business-import-stage.mjs",
     "test:production-r2-import": "node --experimental-strip-types --test scripts/migration/test-production-r2-import-service.mjs scripts/migration/test-production-remote-r2.mjs scripts/migration/test-production-import-gateway.mjs",
-    "test:source-stripe-receipt-only": "node --experimental-strip-types --test scripts/migration/test-source-stripe-receipt-only.mjs scripts/migration/test-stripe-receipt-transfer.mjs scripts/migration/test-stripe-receipt-return-custody.mjs"
+    "test:source-stripe-receipt-only": "node --experimental-strip-types --test scripts/migration/test-source-stripe-receipt-only.mjs scripts/migration/test-stripe-receipt-transfer.mjs scripts/migration/test-stripe-receipt-return-custody.mjs",
+    "test:cloudflare-reference-master": "node --experimental-strip-types --test supabase/functions/_shared/cloudflare-reference-master.test.ts",
+    "test:admin-mfa-assurance": "node --experimental-strip-types --test supabase/functions/_shared/admin-mfa.test.ts",
+    "test:staging-fanmark-registration-smoke": "node scripts/migration/staging-fanmark-registration-smoke.mjs",
+    "test:staging-fanmark-analytics-smoke": "node scripts/migration/staging-fanmark-analytics-smoke.mjs",
+    "test:staging-fanmark-analytics-ui": "node scripts/migration/staging-fanmark-analytics-smoke.mjs --verify-rendered-ui",
+    "test:staging-fanmark-details-ui": "node scripts/migration/staging-fanmark-analytics-smoke.mjs --verify-rendered-details-ui",
+    "test:staging-fanmark-transfer-smoke": "node scripts/migration/staging-fanmark-transfer-smoke.mjs",
+    "test:staging-fanmark-bulk-return-smoke": "node scripts/migration/staging-fanmark-bulk-return-smoke.mjs",
+    "test:staging-license-expiry-lottery-smoke": "node scripts/migration/staging-license-expiry-lottery-smoke.mjs",
+    "test:staging-notification-processor-smoke": "node scripts/migration/staging-notification-processor-smoke.mjs",
+    "test:staging-notification-archive-smoke": "node scripts/migration/staging-notification-archive-smoke.mjs",
+    "test:staging-r2-profile-smoke": "node scripts/migration/staging-r2-profile-smoke.mjs",
+    "test:staging-waitlist-signup-smoke": "node scripts/migration/staging-waitlist-signup-smoke.mjs"
   }
 }

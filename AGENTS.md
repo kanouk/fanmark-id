@@ -11,6 +11,7 @@ Description: 絵文字をIDとして利用するWebサービスおよびプラ�
 ## 現行本番と作業開始
 
 - 本番はCloudflareへ移行済み。新しいスレッドは`docs/README.md`から読み、会話の引継ぎを必須にしない。
+- 起動はdocs/development/LOCAL.md、主要画面のview/controllerと共有queryはdocs/development/SCREENS.md。通常検証はnpm run verify:app、実Worker/ブラウザ回帰はnpm run test:local。
 - 通常開発はPRODUCT / ARCHITECTURE / TECH、本番更新・障害対応は`docs/operations/README.md`を先に読む。
 - 最終確認状態は`docs/operations/current-state.md`。現在のHEAD・CI・active deploymentを独立確認し、古い再開票を実行指示にしない。
 - 秘密・実データ・操作journalはGit外。`docs/operations/private-access.md`から取得先を確認し、秘密値を表示/commitしない。

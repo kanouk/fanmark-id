@@ -21,14 +21,14 @@
 Node **22.6.0**を使用する。
 
 ```sh
-npm ci
+npm ci --legacy-peer-deps
 npm ci --prefix workers/api
-npm run typecheck
-npm --prefix workers/api run typecheck
-npm run check:ci
-npm run check:production-live-config
+npm run dev:local
 ```
 
+合成ユーザーで実アプリを操作できる。起動・MFA・終了時の破棄は[ローカル開発](docs/development/LOCAL.md)、
+画面の変更箇所は[画面変更ガイド](docs/development/SCREENS.md)を参照する。
+通常の検証は `npm run verify:app`、実Workerとブラウザの回帰は `npm run test:local`。
 これらは遠隔配備を行わない。画面・Workerの検証、buildとpreviewの違いは[TECH](docs/TECH.md)を参照する。
 GitHub Actionsは検証専用で、mergeしても本番は自動更新されない。
 

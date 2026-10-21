@@ -42,7 +42,7 @@ npm run test:staging-profile-editor-local
 最後のeditor testは名前にstagingを含むが、loopback HTTPS・合成Auth・local分割D1/R2を生成する
 `scripts/migration/test-owner-profile-editor-local.mjs`。実Workerを使った画面・認証・保存検証の出発点にする。
 他の`staging-*`や`migration:*`は遠隔書込みを含むものがあるため、名前だけで安全と判断しない。
-全体のWorker testは`npm --prefix workers/api test`。必要なDocker/PostgreSQL/SQLiteを含むCI環境は
+全体のWorker testは`npm --prefix workers/api test`。Node・Chrome・OpenSSLとlocal D1/R2を使うCI環境は
 [workflow](../.github/workflows/cloudflare-migration-validation.yml)を参照する。
 
 ## 開発サーバー・build・preview

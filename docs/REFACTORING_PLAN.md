@@ -57,13 +57,28 @@ Workerルートは公開・本人・管理者・Webhookの認証境界を保持�
 
 ## 完了記録
 
-- [ ] R0: local常駐・合成導線・権限拒否・終了処理
-- [ ] R1: frontend単一経路・依存除去・契約維持
-- [ ] R2: 主要画面の責務分離・取得更新同期・画面回帰
-- [ ] R3: 通常検証コマンド・PR/main CI・文書再現性
-- [ ] 本番: 候補/active照合・公開確認・旧資産保持・配備記録
+- [x] R0: local常駐・合成導線・権限拒否・終了処理
+- [x] R1: frontend単一経路・依存除去・契約維持
+- [x] R2: 主要画面の責務分離・取得更新同期・画面回帰
+- [x] R3: 通常検証コマンド・PR/main CI・文書再現性
+- [x] 本番: 候補/active照合・公開確認・旧資産保持・配備記録
 
-成功commit・テスト結果・PR/CI・配備versionを辿れる記録へ追記する。
+
+## 2026-10-22 開発基盤の受け入れ
+
+- R0: [PR57](https://github.com/kanouk/fanmark-id/pull/57)。同一HTTPSのVite/実Worker/Better Auth/合成D1・R2、管理者MFAと終了時破棄。
+- R1: [PR58](https://github.com/kanouk/fanmark-id/pull/58)。フロントの旧SDK・二重認証を除去。送信停止・MFA・API権限境界・復旧契約を保持。
+- R2/R3: [PR59](https://github.com/kanouk/fanmark-id/pull/59)。主要5画面をview/controllerへ分離し、本人ID付き共有queryと更新後同期を採用。
+- 検証: client218件・現行契約121件・型検査・Lint（error 0、既存warning 19件）、実Worker/ブラウザ、実R2画像、失敗保存と下書き復元、他人拒否、別人ログイン、隔離UI8ケース、招待signup、Worker全契約・統合復旧、本番build/dry-runが成功。
+- PR CI: R0 [39639195401](https://github.com/kanouk/fanmark-id/actions/runs/39639195401)、R1 [39642945634](https://github.com/kanouk/fanmark-id/actions/runs/39642945634)、R2 [39644301238](https://github.com/kanouk/fanmark-id/actions/runs/39644301238)。全2 job成功。
+- 配備ソースmain: `b800e83c4813d546c7ad8eb1adb970d83d27b687`、main CI [39646666317](https://github.com/kanouk/fanmark-id/actions/runs/39646666317)。検証済みR2 HEAD `296dbd1c554f271480126f4786a893cbe0068666`とtree一致。
+- 本番: 2026-10-22 03:01 JSTにactive 100% `aec6964b-ac2c-49ea-bcba-0f10b543ff2e`を独立照合。秘密設定名17件・保存先・runtime・4 Cron・3 Routeと他3 Workerを保持。
+- 公開: root/Auth capabilities/maintenanceは200、個人3 API・admin sessionは401/no-store。PC・390px指定のブラウザ、PWAの制御とcache、旧hash資産のbyte一致を確認。rootの既存モバイル幅超過は更新前後で悪化なし。実端末・本人の実アカウントでの再受け入れは今回行っていない。
+- 現行フロントのentry JSはgzip約623KB（基準約669KB）。管理画面の遅延読込み等は次の必要性で判断する。
+
+今後の起動は[LOCAL](development/LOCAL.md)、画面の変更箇所は[SCREENS](development/SCREENS.md)、通常検証は `npm run verify:app` と `npm run test:local` を参照する。
+Git外原本: [保管先とアクセス](operations/private-access.md)。配備ソースと、その後の開発コマンド・文書のcommitは別々に管理する。
+
 
 ## 今回の後に再評価する項目
 

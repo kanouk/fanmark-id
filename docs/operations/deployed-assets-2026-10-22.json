@@ -1,0 +1,139 @@
+{
+  "observedAt": "2026-10-21T18:01:26.095Z",
+  "appVersion": "aec6964b-ac2c-49ea-bcba-0f10b543ff2e",
+  "deploymentSourceCommit": "b800e83c4813d546c7ad8eb1adb970d83d27b687",
+  "frontendSourceCommit": "296dbd1c554f271480126f4786a893cbe0068666",
+  "verifiedTree": "08efed4375d5053eb2200046536fb823cc1a4ba7",
+  "node": "22.6.0",
+  "note": "Public static source artifacts including retained hashed assets. Recheck active version before use. robots.txt receives Cloudflare-managed content signals at the edge; restore its exact source from the pinned Git commit only after SHA-256 verification.",
+  "edgeTransformedPaths": [
+    "robots.txt"
+  ],
+  "artifacts": [
+    {
+      "name": "assets/index-B-l2afQA.js",
+      "bytes": 2458173,
+      "sha256": "95579fe9a9f85715649d31c22b3a6e6b5d0f3bc407988804913494c8d26340ad"
+    },
+    {
+      "name": "assets/index-BI7Ha9vg.js",
+      "bytes": 2286265,
+      "sha256": "6d7444e113bfb5ce8cf4b153823c4d13220424b4f12cef2e6b780ddf83cae4f3"
+    },
+    {
+      "name": "assets/index-B_npmcW9.css",
+      "bytes": 144394,
+      "sha256": "c13ef830813da4c4890c6086b8433daa85c72ddbbce3838da4c80c2e93088498"
+    },
+    {
+      "name": "assets/index-BiDH-QSd.css",
+      "bytes": 146635,
+      "sha256": "9af8015e127bfb40d1a8df17463379522f5675a1aba056d10856d21c90594dac"
+    },
+    {
+      "name": "assets/index-BrD8JX-f.css",
+      "bytes": 146218,
+      "sha256": "9a4f31e15cbec4ea6f63e394b0f6ee9d4a867cfa1500f4d33b9fd46fefa8328d"
+    },
+    {
+      "name": "assets/index-C42muhhL.js",
+      "bytes": 2458737,
+      "sha256": "9f78a4dfcaea6f500b604b26a57a6723783f8cc4f12f4e11db93e13b58742039"
+    },
+    {
+      "name": "assets/index-CKUIIEzI.js",
+      "bytes": 2458124,
+      "sha256": "7ccee793257b9d061b937ba4fb41210d5dcc049be426c16826047680737e5768"
+    },
+    {
+      "name": "assets/index-Cs7uUmmT.js",
+      "bytes": 3576108,
+      "sha256": "5d5ac9d184e97d8d33232333b36010ecd9b732f9dfb2c1983e54b2c104370bee"
+    },
+    {
+      "name": "assets/index-bYp76Dld.css",
+      "bytes": 146789,
+      "sha256": "3b57e9e26974debed697abd46a3b8aa89824712b633566ab7835affcff541fb8"
+    },
+    {
+      "name": "assets/sparkles-BdQND3_E.png",
+      "bytes": 12227,
+      "sha256": "a1054b5c2c098c952f8ea365739ccb46cb488465246dc6c8b49acde9f5d01be1"
+    },
+    {
+      "name": "assets/workbox-window.prod.es5-B9K5rw8f.js",
+      "bytes": 5720,
+      "sha256": "9a3611574014578c297dc9f141ce5f47c5b83d44814bbcfd65a06151517874f4"
+    },
+    {
+      "name": "build-target.json",
+      "bytes": 449,
+      "sha256": "ca61420c01debb7dd6ed0cee86d78f9896de535b8583d613be264219590095e0"
+    },
+    {
+      "name": "clear-legacy-api-cache.js",
+      "bytes": 264,
+      "sha256": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6"
+    },
+    {
+      "name": "favicon.ico",
+      "bytes": 6714,
+      "sha256": "3d054cf491d691f699fd0f344d7d27d95d76a3054d3cd1823802911c045eaa78"
+    },
+    {
+      "name": "favicon.png",
+      "bytes": 12227,
+      "sha256": "a1054b5c2c098c952f8ea365739ccb46cb488465246dc6c8b49acde9f5d01be1"
+    },
+    {
+      "name": "index.html",
+      "bytes": 2896,
+      "sha256": "51f6c4df5d94a74c6e654126f7daae714fa6cbc5308c95c07f484da5c2c46baf"
+    },
+    {
+      "name": "manifest.webmanifest",
+      "bytes": 417,
+      "sha256": "df40212c6eee5770b21862e455f9a849e377ab86a8223ead31f695d1e239546a"
+    },
+    {
+      "name": "og-image.png",
+      "bytes": 690436,
+      "sha256": "eadbe4c37e24b45488711a7901627e221c6d1be52ab7d4f58e354fc570d8c479"
+    },
+    {
+      "name": "placeholder.svg",
+      "bytes": 3253,
+      "sha256": "64badf7aabda0b9630b87020ffb6095cb858ccbcf66b355c2aa08b1063954d3b"
+    },
+    {
+      "name": "pwa-192x192.png",
+      "bytes": 6987,
+      "sha256": "2f82471748543fb6ed63fbcb2891bc44a39dd1d84709fad2e5690ab38f2fead5"
+    },
+    {
+      "name": "pwa-512x512.png",
+      "bytes": 23050,
+      "sha256": "b5d36c32a1c208a91b3e184ceb35d48808ba54c94e569cdb826fae083f48d880"
+    },
+    {
+      "name": "robots.txt",
+      "bytes": 201,
+      "sha256": "b9b4424bd9e05e4e60a1683cc7d10752c36f3a3c7b1e3d1c63f34eb00e59afd2"
+    },
+    {
+      "name": "sitemap.xml",
+      "bytes": 631,
+      "sha256": "cfa48b6767356a168d8b2f0b03fd5baef704ff3d9f103d0f3db2d385537f1986"
+    },
+    {
+      "name": "sw.js",
+      "bytes": 4124,
+      "sha256": "6bd30ed5beb294b6074b54a0cf60db156ea492ae0340be951331902f56280cc4"
+    },
+    {
+      "name": "workbox-28d7c21f.js",
+      "bytes": 131384,
+      "sha256": "0c1d12ec6466b03c93de7de363bbc991760bc6421996073d7b84eb75224197d4"
+    }
+  ]
+}

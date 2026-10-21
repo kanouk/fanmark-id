@@ -55,11 +55,13 @@ READMEからintent/receipt/manifest/暗号化原本を辿る。Git外の`common.
 本番の現在状態はGit側の[状態](current-state.md)と独立readbackから始められ、過去の会話を読む必要はない。
 原本を失った場合の詳細照合や復旧には、所有者による外部保管先へのアクセスが必要。
 
+- `~/.codex/private/fanmark-development-foundation-2026-10-22/`: PR57〜59、更新前/候補/activeの照合、旧資産の復元と保持、公開/PC/モバイル/PWA検証の原本。新しい通常更新で当時のonce scriptを再実行しない。
+
 ## 記録の境界
 
 Gitへ保存するのは構成・非秘密ID・公開資産hash・日時・commit/CI/配備version・検証結果・未確認事項。
 秘密値、認証URL、cookie、MFA情報、ユーザーデータ、決済payload、DB dump、復号backupは保存しない。
 private操作記録はdirectory 0700/file 0600とし、原本を上書きしない。
 鍵・backupの再生成やrotationは通常更新とは別の明示的な作業として扱う。
-`.env`/`.dev.vars`等の未追跡な秘密設定fileはignoreする。追跡済みの旧`.env`には公開frontend設定だけがあり、
-ignore追加では追跡が解除されないため、秘密値を追記せずGit外のprivate保管を使う。
+`.env`/`.dev.vars`等の秘密設定fileはignoreする。旧`.env`はGitの追跡から外した。
+公開設定の例は`.env.example`を使い、秘密値はGit外のprivate保管へ置く。
