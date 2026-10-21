@@ -1,3 +1,5 @@
+> 履歴・当時の実証記録。現行の入口は[運用](../operations/README.md)と[最終確認状態](../operations/current-state.md)。本文中の「現在」「次の工程」や未マージ/未切替は当時の状態。完了済みhelperを再実行しない。
+
 ## 2026-10-20: 再移行準備完了・新cohort V2は閉鎖、開始確認待ち
 
 [再準備票](RETRY-PREPARATION-2026-10-20.md) と [完了証拠](evidence/production-cohort-v2-prepared-2026-10-20.json) を優先する。認証期限管理・Master確定記録/応答消失復旧を修正し、実Cloudflare合成試験、3,944件/仮想105分のnative試験、初回115表backup/実隔離復元を確認した。コード14815ae/CI39353698738両job成功の新runtimeを閉鎖配備済み。実利用者データの再移送・旧側停止・Route/DNS切替は未実施。旧Supabaseが稼働し、mainを維持している。

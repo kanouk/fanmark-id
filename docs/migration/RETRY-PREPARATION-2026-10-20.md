@@ -1,3 +1,5 @@
+> 履歴・当時の実証記録。現行の入口は[運用](../operations/README.md)と[最終確認状態](../operations/current-state.md)。本文中の「現在」「次の工程」や未マージ/未切替は当時の状態。完了済みhelperを再実行しない。
+
 ## 2026-10-20: 再移送は最初の画像処理で中止・旧Supabase復旧済み
 
 [最新の再移送中止・復旧票](CUTOVER-RETRY-ABORT-2026-10-20.md)を最初に読む。

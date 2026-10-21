@@ -1,7 +1,9 @@
 # Cloudflare本番の通常運用
 
 2026-10-20にV3の実データを移送し、Worker Route方式で公開した。
-公開後の最終検証状態は[再開票](RESUME-2026-10-20-V3.md)を優先する。
+新しい作業は[運用入口](../operations/README.md)と[最終確認状態](../operations/current-state.md)から始める。
+更新は[配備手順](../operations/deployment.md)、障害は[調査・修復](../operations/incident-response.md)。
+移行再開票は当時の記録で、現行の実行指示ではない。
 旧Supabaseは停止した原本であり、二重書込み・旧側の自動再開はしない。
 旧Supabaseのプロジェクト単位GitHub接続は解除済み。本番・preview自動配備を停止し、
 元projectとmain branchは保持した。アカウント全体のOAuth grantは変更していない。
@@ -61,7 +63,8 @@ www/adminはAPI・callback・認証情報付きqueryを転送しない。
 ## Backupと通知
 
 手動の実データbackup、118表・109画像の隔離復旧、UTC20の日次slot保存は独立照合済み。
-日次slotの明示保存は自然Cronの発火確認と区別する。次の自然dailyは2026-10-21 09:05 JST。
+日次slotの明示保存は自然Cronの発火確認と区別する。自然dailyの受け入れ状況は
+[最終確認状態](../operations/current-state.md#続けて確認すること)へ日時付きで記録する。
 すでに使用したslot・manual UUID・復旧POST・通知試験を再実行しない。
 自然Cronや通知が失敗した場合はreceipt/claim/archive/署名ledgerを先に読み、結果不明の要求を再送しない。
 

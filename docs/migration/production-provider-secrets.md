@@ -1,3 +1,5 @@
+> 履歴・当時の実証記録。現行の入口は[運用](../operations/README.md)と[最終確認状態](../operations/current-state.md)。本文中の「現在」「次の工程」や未マージ/未切替は当時の状態。完了済みhelperを再実行しない。
+
 # 本番アプリの資格情報と残っている接続確認
 
 2026-10-19時点。閉鎖中の `fanmark-app-production` に設定した内容と、公開前に必要な確認を分ける。値・暗号文・鍵の保管先はGitへ入れない。[読戻し証拠](evidence/production-application-secrets-readiness-2026-10-19.json)。

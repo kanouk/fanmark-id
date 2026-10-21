@@ -1,3 +1,5 @@
+> 履歴・当時の実証記録。現行の入口は[運用](../operations/README.md)と[最終確認状態](../operations/current-state.md)。本文中の「現在」「次の工程」や未マージ/未切替は当時の状態。完了済みhelperを再実行しない。
+
 # 本番用の鍵の保管
 
 2026-10-19、本番用のarchive鍵とBetter Authの秘密鍵を独立して作成した。検証環境の鍵は流用していない。まだCloudflareへ設定しておらず、既存ユーザーの認証・旧環境には影響しない。[実証](evidence/production-key-custody-2026-10-19.json)。

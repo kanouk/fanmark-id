@@ -1,3 +1,5 @@
+> 履歴・当時の実証記録。現行の入口は[運用](../operations/README.md)と[最終確認状態](../operations/current-state.md)。本文中の「現在」「次の工程」や未マージ/未切替は当時の状態。完了済みhelperを再実行しない。
+
 ## 現在の確認結果（2026-10-13 12:15 JST）
 
 9794a49/[CI38338723332](https://github.com/kanouk/fanmark-id/actions/runs/38338723332)はアプリ・Worker両job成功。

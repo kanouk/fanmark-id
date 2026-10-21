@@ -1,17 +1,13 @@
 # fanmark.id PRODUCT.md
 
-本番移行の本人確認中は、同じサイト内の公開データ取得も短命な本人確認cookieを送る。
-通常のログイン・管理者MFA・権限確認は別途必要で、cookieを持たない一般アクセスはメンテナンスを維持する。
-PWAは本人確認専用URLを保存済みアプリ画面へ置き換えず、ネットワークへ通す。
+現行の実装対応は[ARCHITECTURE](ARCHITECTURE.md)、更新・障害対応は[運用入口](operations/README.md)を参照する。
+以下の業務要件は保持する。詳細な課金フロー内の旧Edge Function/RPC名は旧実装の識別名で、
+現行本番の呼出し先ではない。Cloudflare API契約と現在のソースで対応を確認する。
 
 ## プロダクトの意図
 絵文字1〜5個をID（ファンマ）として取得・保持し、プロフィール／リンク／メッセージを届けるサービス。検索→取得→設定→公開→返却・移管までを一貫して提供し、多言語での利用を前提にしている。
 
 現行本番はCloudflare Workers・Better Auth・D1・R2へ切替済みで、2026-10-20の公開検証を完了。旧Supabaseは停止した保存原本として保持する。
-
-移行開始前の方針は2026-10-13の本人回答で確定した。本番は最終切り替えまでSupabaseを維持し、Cloudflareの検証環境をWorkers・Better Auth・D1・R2で完成させる。移行途中の旧Supabaseログインを全Cloudflare APIへ中継する機能は今回の対象に含めない。既存ユーザーのデータ移送と再ログイン、および本番ドメイン切り替えは最後に実施する。旧新DBへ二重書き込みしない。
-
-移行先を閉じる準備として、Stripeの署名検証済み通知の保存だけを続け、一般画面・認証・業務処理を停止するモードを実装した。画面には503のメンテナンス案内を返す。通知の処理は停止解除後に再開する。2026-10-15時点ではローカル検証のみで未配備。旧Supabaseや開始済み処理の停止を代行するものではない。
 
 本番切替用の別名ドメイン誘導は2026-10-20に有効化し、www/adminの本番hostを接続した。wwwの通常閲覧はpath/queryを保ってapexへ、adminのqueryなしルートは `/admin` へ一時誘導する。API書込みや旧認証callback・認証情報付きqueryは転送しない。旧URLのfragmentは引き継がず、必要な場合はapexで再ログインする。
 
@@ -19,15 +15,11 @@ PWAは本人確認専用URLを保存済みアプリ画面へ置き換えず、�
 
 ## コア体験
 
-本番移行の本人確認では、一般メンテナンスを維持し、期限と配備版を限定した確認用cookieを持つ
-本人だけが既存accountへログインできる候補を用意した。通常の認証・MFA・各API権限を要求し、
-確認中の新規signupを閉じる。実受信を含む確認モードの有効化はG5の前進復旧境界として扱う。
-公開用の初期設定は無効。
 - 外部のログイン・決済画面からアプリへ戻るときも、戻り先の画面とクエリを保持する。
 - Cloudflareのアカウント情報を確認できない場合は、現在のURLを保って再試行を表示する。確認が完了するまで画面操作を止め、パスワード未設定と推測しない。メンテナンス設定の取得失敗も再試行を表示し、確認済みのメンテナンスと区別する。
 - 言語選択: 日本語・英語・韓国語・インドネシア語の表示に合わせてHTMLの言語指定も更新する。保存済みの表示言語やログイン後の優先言語にも同じ同期を適用する。
 - 伝言板のプレビューボタンと空の本文表示、お気に入りの登録日は、選択した4言語に合わせて表示する。日付のタイムゾーンはAsia/Tokyoを維持する。
-- 検索・取得: 絵文字入力を正規化して空き状況とティア・初回日数を提示。上限未満なら `register-fanmark` Edge Function 経由で取得し設定画面へ遷移。
+- 検索・取得: 絵文字入力を正規化して空き状況とティア・初回日数を提示。上限未満ならWorkerの取得API経由で取得し設定画面へ遷移。
 - Cloudflareの検索詳細は、有効な所有ライセンス、取得を保留するgrace期間、その他の履歴の順に選ぶ。古い終了済みライセンスがある場合も、現在の所有者と取得不可の状態を維持する。
 - Cloudflareの取得APIも本人のプランと有効な所有ライセンス件数を確認する。無期限Tier Cも件数に含め、Adminは無制限とする。同時取得や操作中の上限変更で枠を超えないよう、保存する時にも確認する。上限超過・設定取得失敗では取得内容を保存しない。
 - Cloudflareの抽選申請は、確認後にプランや保有上限が変わった場合は保存せず、現在の条件で再試行できる。
@@ -37,7 +29,7 @@ PWAは本人確認専用URLを保存済みアプリ画面へ置き換えず、�
 - Cloudflareの移管申請・承認では受取人のプランと保有上限を確認する。確認後に条件が変わった場合は移管を止め、現在の条件で再試行できる。拒否した操作によって所有者・設定・申請状態を変更しない。
 - Adminの移管も無制限とし、Maxプランの上限を適用しない。操作中にAdminから別のプランへ変更された場合も、現在の条件で再試行する。
 - 設定: アクセスタイプ（redirect/profile/text/inactive）を編集。リダイレクトは URL/Phone を選択、プロフィール型は初期プロフィール自動生成。ドラフトを sessionStorage に保存し、保存完了または閉じるで破棄。
-- 公開アクセス: `/a/:shortId` / `/:emojiPath` でアクセスし、RPC `get_fanmark_by_emoji` などから最小データを取得して UI 分岐。パスワード保護時は 4 桁認証。
+- 公開アクセス: `/a/:shortId` / `/:emojiPath` でアクセスし、Workerの公開アクセスAPIから最小データを取得して UI 分岐。パスワード保護時は 4 桁認証。
 - Cloudflareの絵文字IDによる公開参照では、無期限Tier Cのactiveライセンスも有効とする。有効なライセンスが複数ある場合は参照を拒否し、パスワード保護時は公開応答に内容を含めない。
 - プロフィール管理: ユーザー自身のプロフィール・アバター・公開設定を編集。画像はローカルステートを単一ソースとして同期。
 - ファンマのプロフィール編集: Cloudflare経路では本人のactiveライセンスを確認し、有効期限内または無期限Tier Cなら編集できる。他人・grace・expiredのライセンスと、所有ライセンスが曖昧な状態は拒否する。
@@ -53,7 +45,7 @@ Cloudflareの告知メールは、苦情・恒久的なバウンスで確定し�
 
 バックアップ用の停止設定を有効にしたCloudflare環境は、認証・外部サービスの通知・画面参照を含む新規HTTPアクセスを一時的に503で停止する。停止中の通知キューは保持し、解除後に処理を再開する。通常設定は停止無効。
 
-ステージングのバックアップ方針は、担当者をサービス所有者、1日1回・30日保存、専用の非公開R2に暗号化保存、鍵をMacキーチェーンとVaultの`10_sensitive`に保管とする。復旧先では旧セッション・MFA assurance・verificationを失効させる。RPO24時間・RTO4時間は目標値であり、実測保証ではない。2026-10-09時点で、旧検証領域を保持した新しい専用領域のマスター・共通設定と空の認証/画像領域を、運用鍵で保存・隔離復旧・独立照合した。日次09:05 JSTの定期保存と毎時35分の別監視Workerを有効化し、30日保存処理の完了記録、通知1通の実配送・本人受信を確認した。2026-10-09 12:35:05 JSTの自然監視は当日保存正常・例外なしで完了した。2026-10-11の読戻しで10日・11日の自然日次保存はいずれも失敗、停止owner解除済みと確認した。新scopeにも終了未確認の処理記録1件が残り、日次保存は受け入れ未完了。失敗receiptには固定された工程・理由と待機件数だけを追加し、SQL・例外本文・個人情報・資格情報を保存しない。 鍵のJSON原本は保持し、同期対象のMarkdownへ同じ完成済み鍵と暗号化SDK escrowを保存した。遠隔保存版の全バイト一致を確認済み。Vault全体の同期設定と既存鍵は変更しない。別の監視Workerは毎時35分に保存receipt・保存ファイルの存在/容量・30日保存処理の終了を確認し、同じ日付/状態の通知は一度だけ本人の番号付きテストメールに送る。正常時は通知しない。送信応答が不明な場合は自動再送せず記録を調査する。本番ユーザーデータとドメイン切り替えは別の最終工程とする。
+本番backupは所有者管理の非公開R2へ暗号化し、1日1回・30日保存を行う。鍵はGit外のKeychain/Vaultへ保管する。復旧先では旧session・MFA assurance・verificationを失効させる。RPO24時間・RTO4時間は目標で実測保証ではない。移行時に実backupの118表・109画像を隔離復旧して照合した。自然日次の受け入れと監視結果は[最終確認状態](operations/current-state.md)で別に管理し、発火設定だけを保存成功としない。
 
 2026-10-13に通常ステージングを独立したV3領域へ切り替えた。旧検証データと終了未確認の処理記録は旧領域に保持する。V3の運用鍵による手動保存・隔離復旧・全テーブルhash照合と30日保存処理は成功した。日次保存と別監視Workerの設定は新領域へ更新済みだが、V3の03:35:30 JST自然監視は保存正常・例外なしで完了した。自然日次保存の成功は別途確認する。新Authでの初回登録・パスワード設定と再ログインも別の受け入れ項目とする。
 
@@ -67,12 +59,12 @@ Cloudflareの告知メールは、苦情・恒久的なバウンスで確定し�
 - お気に入り、通知設定・受信箱、プロフィール、所有者ロールなどアカウントに属する行を削除する。本人が申請した未実行の抽選は取消し、過去の抽選履歴は残して勝者のユーザーIDを外す。監査にはユーザーIDと操作時刻を残し、メールアドレスは複製しない。 未実行の抽選を取り消す際も、申請ごとに旧・新状態と取消理由の監査を残す。
 - `broadcast_emails.created_by` の参照によりAuth削除が拒否される場合は、他の副作用を始める前に削除を止める。
 - Cloudflare経路では、抽選取消と退会の監査、必要な削除・参照解除、保持する履歴を業務D1の同じtransaction内で検証する。欠落・改変・抑止時はその業務変更を取り消す。認証D1では本人ユーザーと全セッション・認証情報を同じtransactionで削除し、失敗時は認証情報を保持する。業務D1と認証D1は別のtransactionなので、認証削除の再試行では保存済み退会監査を保持し、二重に作らない。
-- Cloudflare staging では `ACCOUNT_DELETION_BACKEND=d1` と `VITE_ACCOUNT_DELETION_BACKEND=worker` を明示した経路を検証する。production の既定は引き続きSupabaseで、実ユーザーに対する削除操作は移行対象に含めない。
+- 本番も `ACCOUNT_DELETION_BACKEND=d1` と `VITE_ACCOUNT_DELETION_BACKEND=worker` を選択し、Better Authと分割D1の削除APIを使う。実ユーザーの削除を検証用に実行しない。
 
 ## 管理者によるファンマーデータリセット
 - 管理画面のデータリセットは、ファンマ本体・ライセンス・5種の設定/プロフィール・お気に入りの8テーブルを対象にする。ユーザーアカウント、ユーザー設定、システム/マスター設定、招待コード、待機リストは保持する。既存FKのcascadeとnil UUIDの除外を保つ。
 - Cloudflare版の経路は同一sessionの管理者MFAと確認語 `DELETE` を必須にし、削除・件数記録・監査を単一transactionで確定する。削除/監査の失敗や抑止では全体を取り消す。削除を妨げるクーポン利用履歴や失効処理記録は保持して拒否し、途中までの削除を成功と表示しない。
-- 操作IDが同じ再試行は保存済み結果を返し、初回完了後に新しく作られたデータを削除しない。Cloudflare stagingの有効化は、空の業務/Authデータ、固定account/version、検証用UUID以外の削除を拒否するnative guardと復旧journalを確認した合成検証と併せて行う。remote検証の完了までは移行済みと扱わない。
+- 操作IDが同じ再試行は保存済み結果を返し、初回完了後に新しく作られたデータを削除しない。破壊的な検証は合成環境と検証用UUIDへ限定する。
 
 ## 料金プランとティア
 - Cloudflareのプラン画面は公開設定から料金と上限を読み、Stripe Price IDは取得しない。決済用価格IDはサーバーで解決し、管理者の設定画面ではMFA認証後にのみ読み書きできる。公開設定が取得できない場合は再試行を表示してプラン変更を止める。
@@ -84,7 +76,7 @@ Cloudflareの告知メールは、苦情・恒久的なバウンスで確定し�
 ## 絵文字マスターの更新と公開
 
 管理画面のimportはMFAを確認して更新用のMaster D1へ保存し、既存emojiのUUIDを維持する。公開版は別に検証し、途中importは表示しない。
-通常stagingでは所有者のCloudflare認証を使う専用CLIから、サービスbinding専用の公開処理を呼び出す。既存の隔離bootstrap用ツールは通常Masterへ使わない。
+通常運用では環境を固定した所有者のCloudflare認証を使う専用CLIから、サービスbinding専用の公開処理を呼び出す。既存の隔離bootstrap用ツールは通常Masterへ使わない。
 UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のrecords/module/identity hash、固定Master接続、現行の版と世代を照合してから新版を準備し、公開時にも旧UUID/emoji/codepointsを維持する。
 公開処理はバックアップのwriter追跡に入り、同時の別公開と停止中の書き込みを拒否する。CLIは応答不明の書き込みを自動再送せず、非公開journalと読み取り専用statusで調査する。
 以前に公開したready版へ戻す場合も、その時点の全公開IDを保持する必要がある。公開版に新IDを追加した後、そのIDを含まない旧版へのrollbackは拒否する。
@@ -115,10 +107,10 @@ UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のre
 ## お気に入り・通知
 - Cloudflareの検索記録・お気に入り追加/削除は、発見データの件数・表記・時刻、お気に入り行、操作イベントの一致を同じ業務D1 transactionで確認する。必要な保存が失敗・抑止された場合は全更新を取り消す。重複追加では件数を増やさず、登録済みの表記・時刻を保持する。
 - Cloudflareのお気に入り一覧は、登録時の絵文字表記・公開概要・状態を表示する。パスワード保護が有効なファンマは、名称・リンク先・本文を返さない。ログイン、お気に入り登録、proof cookieの付与だけでは一覧から保護内容を取得できない。閲覧には専用のパスワード確認経路を使い、所有者の設定編集権限とは分ける。
-- お気に入り: 新規ファンマ取得時は、順序を保った正規化UUID列が一致する既存の発見データと、その発見データを指す全ユーザーのお気に入りに取得IDを紐付ける。お気に入りの表示・登録日時、発見日時・件数は保持する。Cloudflare経路では取得と同じBusiness D1 transactionで行い、連携の欠落や同一identityの重複時は取得全体を取り消す。`fanmark_discoveries` / `fanmark_favorites` で未取得ファンマも管理。トグルは RPC `add/remove_fanmark_favorite`。返却完了時にお気に入り登録者へ `favorite_fanmark_available` 通知イベントを生成。
+- お気に入り: 新規ファンマ取得時は、順序を保った正規化UUID列が一致する既存の発見データと、その発見データを指す全ユーザーのお気に入りに取得IDを紐付ける。お気に入りの表示・登録日時、発見日時・件数は保持する。Cloudflare経路では取得と同じBusiness D1 transactionで行い、連携の欠落や同一identityの重複時は取得全体を取り消す。`fanmark_discoveries` / `fanmark_favorites` で未取得ファンマも管理。トグルはWorkerのお気に入りAPI。返却完了時にお気に入り登録者へ `favorite_fanmark_available` 通知イベントを生成。
 - 通知基盤: `notification_events` → `notification_rules` → `notifications`。イベント例: grace開始/失効、抽選当落、移管関連、手動告知。`process-notification-events` は、pending イベント追加時だけ有効になる毎分Cronワーカーとして展開・配信し、キューが空になると停止する。これにより通知の最大約1分の反映時間を維持しながら、空キューの定期実行を行わない。in-app/メール等に対応。
 
-- Cloudflareの通知workerはpending保存後に起動し、キューが空になると停止する方式へ置き換える。未来のイベントと処理中断からの復旧を扱う。再起動に失敗した場合は処理要求を保持し、管理者MFAで状態確認・再起動できる。stagingにはD1 wake markerとDurable Object alarmを配備済みで、毎分Cronを除いた。手動通知作成はトリガーを含む合計更新件数ではなく挿入IDのreceiptを検証する。実signin/TOTP/MFAの合成検証で、作成・日本語配信・空queueでの停止・未来通知の復旧/時刻変更を確認した。
+- Cloudflareの通知workerはpending保存後に起動し、キューが空になると停止する方式を使う。未来のイベントと処理中断からの復旧を扱う。再起動に失敗した場合は処理要求を保持し、管理者MFAで状態確認・再起動できる。stagingにはD1 wake markerとDurable Object alarmを配備済みで、毎分Cronを除いた。手動通知作成はトリガーを含む合計更新件数ではなく挿入IDのreceiptを検証する。実signin/TOTP/MFAの合成検証で、作成・日本語配信・空queueでの停止・未来通知の復旧/時刻変更を確認した。
 
 ## 表示と正規化（ファンマ）
 - 内部の同一性判定・検索は正規化済み（肌色除去）を使用し、表示はユーザーが意図した表記を保持する。
@@ -129,7 +121,7 @@ UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のre
 ## 招待・認証
 - 招待制: `system_settings.invitation_mode` が ON の場合、サインアップ前に `validate_invitation_code` 成功が必須。`use_invitation_code` で消費し、残数と期限を検証。待機リストは `waitlist` テーブルで管理し、管理UIから招待コード配布。
 - 管理待機リスト: Cloudflare経路では同じsessionの管理者MFAとadmin planを要求する。一覧はメールのhashだけを返し、個別メールの参照前に監査を保存する。権限不足の一覧/メール参照も監査し、メール参照の拒否には対象IDと重大度を保持する。運用警告は監査IDと操作種別・時刻だけを記録し、メール・IP・cookie・tokenを複製しない。
-- 認証: Supabase Auth。`social_login_enabled=false` または招待モード中は OAuth を抑止し、OAuth でも初回パスワード設定を強制。パスワード要件表示、メール確認・再送、リセット対応。
+- 認証: Better AuthとAuth D1。`social_login_enabled=false` または招待モード中は OAuth を抑止し、OAuth でも初回パスワード設定を強制。パスワード要件表示、メール確認・再送、リセット対応。
 - CloudflareのOAuthは認証開始・コールバック・利用可能provider表示で業務DBの上記設定を確認する。設定を読めない場合もOAuthへ進めない。メール機能の有効化とは独立した制御とし、認証開始後の設定変更をコールバックで再確認する。
 - Appleの認証結果はApple由来のフォームPOSTを専用callbackで受け付け、SDKのGETへの遷移後に元のstate cookieを照合する。他の認証操作へのApple由来アクセスと、state不正・cookie欠落・再利用は拒否する。
 - Cloudflare経路の新規認証IDはUUIDで生成し、業務・課金APIのID契約に合わせる。既存IDを変更せず、ユーザーデータの実移送は別工程で扱う。
@@ -137,8 +129,8 @@ UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のre
 - Cloudflareのログアウトはサーバーのsession失効に成功してから画面の認証状態を解除する。失敗時は認証状態を保持し、成功通知やguest画面への遷移を行わずエラーを表示する。
 - Cloudflareの通常メールログインでも、既存の二段階認証が有効なら6桁TOTPを要求する。認証コードの検証と有効sessionの取得後にだけ保護画面へ進み、不正コード・期限切れ・session取得失敗ではログインを完了扱いにしない。入力したpassword/codeは確認段階の切替・取消・送信後に消去し、保存しない。
 - Cloudflareのパスワード再設定はログイン前に利用できる。送信設定が有効な場合に再設定メールを要求し、メールのtokenを使う再設定画面で新しいパスワードを保存する。tokenの期限・有効性は認証APIで検証し、tokenなしでは再設定メールの要求画面へ戻す。
-- Cloudflare stagingのメール確認リンクは発行から1時間有効。signupメールの4言語本文も1時間と記載する。確認前はログインsessionを発行せず、確認リンクを開くだけでもsessionは作成しない。
-- 確認メール: Supabase Auth の Confirm email は ON。メール/パスワード登録のみ確認メールを送信し、OAuth ユーザーは `send-auth-email` で `signup` および `password_changed_notification` をスキップする（provider≠email の場合）。
+- Cloudflare経路のメール確認リンクは発行から1時間有効。signupメールの4言語本文も1時間と記載する。確認前はログインsessionを発行せず、確認リンクを開くだけでもsessionは作成しない。
+- 確認メール: メール/パスワード登録ではBetter Authのメール確認を要求し、確認前のsession発行を拒否する。送信はWorkerの認証メール処理を使う。旧SupabaseのConfirm email設定や旧送信関数は現行本番の設定ではない。
 - 多言語: 日本語/英語の翻訳バンドルを用意し、ヘッダーで切替可能。
 
 ## アクセスタイプ仕様
@@ -149,7 +141,7 @@ UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のre
 
 ## データモデル概要
 - 主要テーブル: `fanmarks`, `fanmark_licenses` (status/日付/Tier/`display_fanmark`), `fanmark_tiers`, `emoji_profiles`, `fanmark_basic/redirect/messageboard/password_configs`, `fanmark_discoveries`, `fanmark_favorites` (`display_fanmark`), `fanmark_lottery_entries/history`, `fanmark_transfer_codes/requests`, `invitation_codes`, `waitlist`, `system_settings`, `notification_events/rules/notifications`, `audit_logs`.
-- RPC/Functions (抜粋): `check_fanmark_availability`, `get_fanmark_by_emoji`, `register-fanmark`, `return-fanmark`, `bulk-return-fanmarks`, `extend-fanmark-license`, `check-expired-licenses`, `generate/apply/approve/reject/cancel-transfer-code`, `apply/cancel-lottery-entry`, `process-notification-events`.
+- 旧実装のRPC/Functions名（現行の呼出し先ではない。対応はARCHITECTUREと各API契約を参照）: `check_fanmark_availability`, `get_fanmark_by_emoji`, `register-fanmark`, `return-fanmark`, `bulk-return-fanmarks`, `extend-fanmark-license`, `check-expired-licenses`, `generate/apply/approve/reject/cancel-transfer-code`, `apply/cancel-lottery-entry`, `process-notification-events`.
 
 ## UXポイント
 - ダッシュボード: 統計カードにお気に入り数、抽選/移管バッジ、プラン選択導線。
@@ -164,7 +156,7 @@ UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のre
 
 ## 絵文字マスターの管理と監査
 
-- Cloudflare stagingの管理画面では、管理者roleと同じログインsessionのMFA確認を必須にし、公開版とは別の編集用マスターを更新する。
+- Cloudflareの管理画面では、管理者roleと同じログインsessionのMFA確認を必須にし、公開版とは別の編集用マスターを更新する。
 - 作成・編集・一括取込では、認証済み管理者ID、操作種別、対象UUID、絵文字と名称、操作日時を変更と同じMaster D1 transactionに保存する。監査の保存に失敗した場合は、変更も取り消す。編集者IDをブラウザ入力から受け取らない。
 - 一括取込は最大100件。既存絵文字のUUIDと作成日時を保ち、各行の変更を監査する。古い編集の競合、公開済みidentityの変更、管理APIからの削除は拒否する。
 - コードポイント列は絵文字の実際の文字列と順序・長さを一致させる。家族・肌色・ZWJなど正しい合成表記の同じコードポイントの繰り返しは受け入れ、不一致や欠落は拒否する。
@@ -174,6 +166,11 @@ UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のre
 ---
 
 ## 課金システム詳細仕様
+
+以下の料金・画面・状態遷移の要件は継続する。内部処理のEdge Function/RPC名は旧実装の参照名であり、
+本番の操作手順ではない。現在のCheckout/plan change/customer portalは`workers/api/src/stripe-*-d1-api.ts`、
+署名receipt/反映は`stripe-webhook-d1-*`、所有権・通知はBusiness D1 APIへ対応する。
+実際の呼出し・再試行・transactionの境界は各WorkerのAPI契約を優先する。
 
 ### 1. プラン課金（サブスクリプション）
 
@@ -397,7 +394,7 @@ UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のre
 4. ユーザー: 上限数だけ選択して確定
 5. フロントエンド: `handleFanmarkSelectionConfirm(selectedIds)`
    a. 未選択ファンマの `license_id` リストを算出
-   b. Supabase既定では `supabase.functions.invoke('bulk-return-fanmarks', { body: { license_ids } })`。Cloudflare選択時は `POST /api/me/fanmarks/bulk-return` を呼ぶ
+   b. 現行本番では `POST /api/me/fanmarks/bulk-return` を呼ぶ
 6. Edge Function または Worker `bulk-return-fanmarks`:
    a. 所有者のactive licenseを確認
    b. status を 'grace' に更新し、grace_expires_at を設定
@@ -447,7 +444,7 @@ UUID付きexportと成果物生成はNode 22.6.0を使用する。成果物のre
 | 6 | Stripe Checkout で決済 | 決済画面 |
 | 7a | 成功 | `/dashboard?extension=success&fanmarkId=xxx` |
 | 7b | キャンセル | `/dashboard?extension=canceled` |
-| 8 | 決済反映を確認 | Cloudflare stagingでは署名処理の適用を待ち、日付を再取得してから完了トースト。未確認の間は確認中表示、時間切れや通信失敗時は再確認できる |
+| 8 | 決済反映を確認 | Cloudflare経路では署名処理の適用を待ち、日付を再取得してから完了トースト。未確認の間は確認中表示、時間切れや通信失敗時は再確認できる |
 
 **ダイアログ表示内容:**
 - タイトル: 「{絵文字} の期間を延長」
@@ -539,7 +536,7 @@ function addMonths(base: Date, months: number): Date {
 
 適用成功では、クーポン利用数、利用履歴、ライセンス期間、抽選取消、応募者への通知イベント、監査ログを一体として確定する。再送にはUUIDの`request_id`を使い、同一要求は保存済みの成功結果を返す。抽選中の延長では、そのライセンスのpending応募を`cancelled_by_extension`へ遷移させ、応募者へ通知する。取消対象の応募ごとに、申請者・旧/新状態・取消理由・操作時刻の監査も保存する。監査保存が失敗した場合はクーポン適用全体を取り消し、再送できる。
 
-管理画面のクーポン作成・有効切替・使用履歴は管理者専用であり、Cloudflare stagingではBetter AuthのMFAをWorkerで確認する。stagingのクーポン設定と適用APIはD1を使う。Supabaseの既存クーポンや利用履歴はこの切替で自動コピーしない。
+管理画面のクーポン作成・有効切替・使用履歴は管理者専用であり、Cloudflare経路ではBetter AuthのMFAをWorkerで確認する。本番のクーポン設定と適用APIはBusiness D1を使い、移送済みの既存履歴を保持する。
 
 ### 6. 返却・移管時の課金への影響
 
@@ -666,7 +663,7 @@ const priceIdToPlanType = {
 
 #### 10.2 Webhook 遅延/未着時
 
-- `check-subscription` Edge Function で手動同期可能
+- 現行のsubscription API・署名receipt/dispatchの状態を確認して再取得する。旧`check-subscription` Edge Functionを本番の同期入口にしない
 - UI ポーリング: 新規決済の戻りとプラン変更後に最長90秒。時間切れ後も画面内で再確認可能。
 - タイムアウト時メッセージ: 「プランへの反映をまだ確認できていません。時間をおいて再確認してください。」
 - 最終手段: Customer Portal で状態確認
@@ -744,7 +741,7 @@ const priceIdToPlanType = {
 
 **表示条件**:
 - 延長後のライセンス期間が現在日時から6ヶ月超となる場合
-- ライセンス延長ダイアログ ([ExtendLicenseDialog.tsx](src/components/ExtendLicenseDialog.tsx:412-433)) に警告を表示
+- ライセンス延長ダイアログ ([ExtendLicenseDialog.tsx](../src/components/ExtendLicenseDialog.tsx)) に警告を表示
 
 **警告内容**:
 ```
@@ -761,7 +758,7 @@ const priceIdToPlanType = {
 
 #### 14.4 利用規約への明記
 
-利用規約 ([TermsOfService.tsx](src/pages/TermsOfService.tsx:22)) の第12条「サービス終了および中止」に以下を明記:
+利用規約 ([TermsOfService.tsx](../src/pages/TermsOfService.tsx)) の第12条「サービス終了および中止」に以下を明記:
 
 1. **通知義務**: 6ヶ月前の事前通知
 2. **ライセンス延長上限**: 1回最大6ヶ月
@@ -832,17 +829,9 @@ const showWarning = extendedEnd > sixMonthsFromNow;
 - 期限までに支払いがない場合、Free 移行とランダム返却が自動で行われること。
 - 未ログインでも返却が発生すること。
 
-2026-10-13の通常ステージングは独立V4領域へ切替済み。旧V3の終了未確認記録と旧データを保持し、Master・共通設定と空Auth/画像領域を、運用鍵で保存・別資源へ復旧・全表hash照合した。日次保存/別監視の設定と実配備は一致した。新領域の自然日次保存・監視とApple初回登録/メール再ログイン・実スマホは別の受け入れ項目として残す。実Supabaseユーザー移送と本番ドメインは最後の工程とする。
-
 Cloudflareの本人プロフィール画面では、アバター未設定でも表示名を保存できる。未設定の画像入力を保存時に「画像なし」として扱い、既存の画像URLは変更しない。
 
-## 移行中の旧認証を保持するプロフィールAPI候補
+## 移行時の実装・検証履歴
 
-旧Supabase JWTを選んだWorkerプロフィールAPIは、本人の旧ユーザー設定だけを読み取り、
-表示名・アバター・言語だけをSupabaseへ保存する。ユーザーID・plan・課金・初回password flagは変更できない。
-認証失敗・通信失敗では別の認証方式/DBへフォールバックしない。
-候補はlocal合成検証までで、現行stagingのBetter Auth/D1とproductionの既定を変更しない。
-
-旧AuthのWorkerプロフィールを選んだ画面は、プロフィール確認中/失敗に保護画面を開かない。
-本人IDに一致する現在のsessionを使い、表示名/画像/言語の保存とusernameの空き確認を同じWorkerで扱う。
-確認失敗時は再試行し、別のDBへ直接書き込み直さない。候補の画面/remote採用は未確認。
+本人確認cookie・旧JWT bridge・当時のstaging受け入れ状態は[整理前の仕様](history/PRODUCT-2026-10-21.md)に保存する。
+通常本番の認証や配備手順をこれらへ戻さない。

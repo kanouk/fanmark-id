@@ -1,3 +1,5 @@
+> 履歴・当時の実証記録。現行の入口は[運用](../operations/README.md)と[最終確認状態](../operations/current-state.md)。本文中の「現在」「次の工程」や未マージ/未切替は当時の状態。完了済みhelperを再実行しない。
+
 # 閉鎖中の本番バックアップ準備
 
 `production-backup-pins.json` は実D1の定義を2回読み取り、一致したhashと、遠隔から復元確認済みの鍵IDを固定する。値は本番app/monitorの閉鎖configへ設定する。秘密鍵はconfigに入れず、appだけのsecret bindingへ登録する。
