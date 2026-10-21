@@ -13,8 +13,8 @@ export interface OwnProfile {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
-  plan_type: string;
-  preferred_language: string;
+  plan_type: 'free' | 'creator' | 'max' | 'business' | 'enterprise' | 'admin';
+  preferred_language: 'ja' | 'en' | 'ko' | 'id';
   created_at: string;
   updated_at: string;
   requires_password_setup: boolean;

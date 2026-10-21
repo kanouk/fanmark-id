@@ -1,3 +1,4 @@
+import { ownerQueryKey } from '../src/lib/owner-query.ts';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
@@ -18,6 +19,7 @@ function hooks() {
   }};
 }
 function run(source, imports) {
+  imports = { '@/lib/owner-query': { ownerQueryKey }, '@tanstack/react-query': { useQueryClient: () => ({ clear() {}, setQueryData() {}, fetchQuery: ({queryFn}) => queryFn() }) }, ...imports };
   const exports = {};
   runInNewContext(compile(source), {exports, require(name) { assert.ok(name in imports, `Unexpected dependency ${name}`); return imports[name]; }, navigator: {language: 'ja'}, window: {}, console: {error() {}, warn() {}}});
   return exports;

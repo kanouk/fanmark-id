@@ -1,8 +1,8 @@
+import { useAuth } from '@/hooks/useAuth';
+import { ownerQueryKey } from '@/lib/owner-query';
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { loadFavoriteFanmarkRows } from '@/lib/favorites-backend';
-
-export const FAVORITE_FANMARKS_QUERY_KEY = ['favoriteFanmarks'];
 
 export interface FavoriteFanmark {
   favoriteId: string;
@@ -75,13 +75,18 @@ export interface UseFavoriteFanmarksOptions {
 }
 
 export const useFavoriteFanmarks = (options?: UseFavoriteFanmarksOptions) => {
+  const { user } = useAuth();
   const query = useQuery({
-    queryKey: FAVORITE_FANMARKS_QUERY_KEY,
-    queryFn: fetchFavoriteFanmarks,
+    queryKey: ownerQueryKey('favorites', user?.id),
+    queryFn: async ({ signal }) => {
+      const rows = await fetchFavoriteFanmarks();
+      if (signal.aborted) throw new Error('Favorite request cancelled');
+      return rows;
+    },
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    enabled: options?.enabled ?? true,
+    enabled: Boolean(user) && (options?.enabled ?? true),
   });
 
   const count = useMemo(() => (query.data ? query.data.length : 0), [query.data]);
@@ -95,6 +100,6 @@ export const useFavoriteFanmarks = (options?: UseFavoriteFanmarksOptions) => {
 
 export const useInvalidateFavoriteFanmarks = () => {
   const queryClient = useQueryClient();
-
-  return () => queryClient.invalidateQueries({ queryKey: FAVORITE_FANMARKS_QUERY_KEY });
+  const { user } = useAuth();
+  return () => queryClient.invalidateQueries({ queryKey: ownerQueryKey('favorites', user?.id) });
 };

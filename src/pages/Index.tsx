@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
 
-import { loadOwnedFanmarks } from '@/lib/owned-fanmarks-api';
+import { useOwnedFanmarks } from '@/hooks/useOwnedFanmarks';
 import { countActiveOwnedFanmarks } from '@/lib/owned-fanmarks-plan-projection';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { RecentFanmarksScroll } from '@/components/RecentFanmarksScroll';
@@ -21,7 +21,8 @@ const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, tWithBreaks } = useTranslation();
-  const [fanmarkCount, setFanmarkCount] = useState(0);
+  const { fanmarks } = useOwnedFanmarks();
+  const fanmarkCount = countActiveOwnedFanmarks(fanmarks);
   const { limit: fanmarkLimit, loading: limitLoading } = useFanmarkLimit();
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
   const exampleCards = [
@@ -71,38 +72,6 @@ const Index = () => {
       description: emoji,
     });
   };
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchFanmarkCount = async () => {
-      if (!user) {
-        if (isMounted) {
-          setFanmarkCount(0);
-        }
-        return;
-      }
-
-      try {
-        {
-          const items = await loadOwnedFanmarks();
-          if (isMounted) setFanmarkCount(countActiveOwnedFanmarks(items));
-          return;
-        }
-
-      } catch (error) {
-        if (!isMounted) return;
-        console.error('Unexpected error fetching fanmark count:', error);
-        setFanmarkCount(0);
-      }
-    };
-
-    fetchFanmarkCount();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
 
   const handleRequireAuth = (emoji: string) => {
     try {
@@ -225,7 +194,6 @@ const Index = () => {
             prefilledEmoji={prefilledEmoji}
             rememberSearch
             onRequireAuth={handleRequireAuth}
-            onObtain={() => setFanmarkCount((count) => count + 1)}
           />
         </div>
       </div>
