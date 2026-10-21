@@ -11,6 +11,7 @@
 | [移行作業履歴](../migration/HANDOFF.md) | 判断・失敗・復旧の時系列 |
 | [V3移行票](../migration/RESUME-2026-10-20-V3.md) | 2026-10-20の移送と公開受け入れ |
 | [空本文の横断点検](../migration/empty-body-audit-2026-10-21.md) | 全件既読修正後の操作点検 |
+| [旧リファクタリング計画](REFACTORING_PLAN-2026-06-12.md) | Supabase Edge Functions前提の2026-06-12計画。現行は[REFACTORING_PLAN](../REFACTORING_PLAN.md) |
 
 `docs/migration/`には現在のAPI契約と過去の操作票が混在する。関数名・実装契約は参照できるが、
 「現在」「未切替」「PR41未マージ」「stagingのみ」といった当時の状態を現行本番へ当てはめない。

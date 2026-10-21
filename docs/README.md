@@ -10,6 +10,7 @@
 | 障害の調査・修復 | [障害対応](operations/incident-response.md) | [本番通常設定](migration/production-operations.md)、対象APIの契約 |
 | 秘密設定・backup原本が必要 | [保管先とアクセス](operations/private-access.md) | ownerによる権限付与、保存済み暗号化原本の照合 |
 | 移行理由・過去の実証を調べる | [履歴案内](history/README.md) | `migration/`の個別契約・証拠 |
+| 移行後の構造整理（リファクタリング） | [リファクタリング計画](REFACTORING_PLAN.md) | 各PhaseのPRで触るARCHITECTURE / TECH |
 
 ## 情報の優先順位
 
