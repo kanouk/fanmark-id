@@ -110,7 +110,7 @@ export async function startLocalStack({ port = 8080, watch = true } = {}) {
     for (const name of Object.keys(inherited)) delete process.env[name];
     try {
       vite = await createViteServer({
-        root, mode: 'cloudflare-local', envDir: emptyEnv,
+        root, mode: 'cloudflare-staging', envDir: emptyEnv,
         define: Object.fromEntries(Object.entries(environment).map(([name, value]) => ['import.meta.env.' + name, JSON.stringify(value)])),
         server: { middlewareMode: true, host: '127.0.0.1', hmr: { server }, preTransformRequests: false },
       });

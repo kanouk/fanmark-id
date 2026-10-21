@@ -1,7 +1,7 @@
 import { createBetterAuthClient } from '@/lib/better-auth-client';
 
 export const isBetterAuthEnabled = (): boolean =>
-  import.meta.env.MODE === 'cloudflare-local' || import.meta.env.MODE === 'cloudflare-staging' || import.meta.env.MODE === 'cloudflare-production';
+  import.meta.env.MODE === 'cloudflare-staging' || import.meta.env.MODE === 'cloudflare-production';
 
 const configuredAuthApiUrl = import.meta.env.VITE_AUTH_API_BASE_URL?.trim();
 
