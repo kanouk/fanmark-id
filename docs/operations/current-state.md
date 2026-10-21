@@ -5,15 +5,16 @@
 
 ## 本番移行と配備
 
-**最終照合: 2026-10-21 08:30 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
+**最終照合: 2026-10-21 09:50 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
 
 | 項目 | 最終確認した状態 |
 | --- | --- |
 | 本番URL | `https://fanmark.id/`。Worker Route方式。www/adminはalias Workerの限定転送 |
 | 本番app | `fanmark-app-production` / active 100% `d709b04e-ee97-417d-9887-290c5c8d271a` |
 | 配備operationのソース | `856599149b8faf9001f05e3ca5eccd69b7bf5f4a` / [PR43](https://github.com/kanouk/fanmark-id/pull/43) |
-| その時点のmain | `e3aedcd12f18c0451d64fd72d2d6eaf91bb34d06`。検証済みPR HEADとtree一致 |
-| PR CI / main CI | [39512200608](https://github.com/kanouk/fanmark-id/actions/runs/39512200608) / [39513921922](https://github.com/kanouk/fanmark-id/actions/runs/39513921922)。ともに2 job成功 |
+| 配備時点のmain | `e3aedcd12f18c0451d64fd72d2d6eaf91bb34d06`。検証済みPR HEADとtree一致 |
+| 配備のPR CI / main CI | [39512200608](https://github.com/kanouk/fanmark-id/actions/runs/39512200608) / [39513921922](https://github.com/kanouk/fanmark-id/actions/runs/39513921922)。ともに2 job成功 |
+| 文書入口の整理 | [PR44](https://github.com/kanouk/fanmark-id/pull/44)、main `3b13f283a6d479246d8bc285fbdeece8324451e9`。[main CI](https://github.com/kanouk/fanmark-id/actions/runs/39518911227)の2 job成功。アプリの再配備は不要 |
 | 実行コード・設定 | PR43はtest/文書のみ。PR42の実行scriptと全resourcesを保持。秘密設定名17件、全23静的資産、V3保存先、Cron保持 |
 | 公開確認 | root/Auth capabilities/maintenanceはHTTPS正常、未認証notificationsは401。最後にroot200とHTML hash保持を独立GETで確認 |
 | frontend資産 | [manifest](deployed-assets-2026-10-21.json)。frontend sourceは`bf21ef7d7258a192f9dadab88c96656761a3eede`、旧hash付き資産も保持 |
@@ -29,12 +30,29 @@
 - [PR42](https://github.com/kanouk/fanmark-id/pull/42): 全件既読の空stream誤判定を修正。本人UIと独立D1 SELECTで残4件の既読化・未読0・内容保持を確認した。
 - PR43: 関連6経路を点検し追加同型不具合なし。関連83件とWorker型検査が成功。本番の所有者データを使った削除/決済試験はしていない。
 
+## 自然日次backupの初回確認
+
+2026-10-21のUTC slotを、手動実行せず照合した。時刻はJST。
+
+| 項目 | 確認した結果 |
+| --- | --- |
+| 自然daily | 09:05:25開始、09:07:33にreceiptが`verified`。09:07:36の`production_backup_verified`と、`5 0 * * *`のscheduledイベントの`outcome: ok`を照合 |
+| 実保存物 | R2から暗号化archive全33,306,335 bytesを独立GET。receipt・自然実行ログ・実ファイルのSHA-256一致。既存鍵で認証付き復号し、全part・118表・109画像の整合性を確認。今回の確認では復旧先への書込みはしていない |
+| 保持処理 | 30日保持処理は09:07:35完了、期限対象の削除0件。30日経過後の実削除を確認したという意味ではない |
+| 停止解除 | receiptの`fenceReleased: true`と現在の調停状態を独立照合。09:46時点でownerなし、active writer 0、完全ticket走査で残存0 |
+| 定期monitor | 09:35:16のscheduledイベントが`outcome: ok`、`production_backup_monitor_healthy`のslotが`2026-10-21`。当該時間帯のbackup/monitorログはともにerror 0、当日scopeの障害通知8種類のclaimはすべて不存在 |
+| 公開と設定 | root/Auth capabilities/maintenanceは200、一般メンテナンス解除、未認証notifications/admin sessionは401。app/backup/monitorの100% versionとCronを保持 |
+
+backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
+`1d8029c1-545e-46ae-8a1b-c06d198ce8df`。修正や本番appの再配備は不要だった。
+完全な証拠は[Git外journal](private-access.md#保存済みの操作記録を探す)に保存した。
+これは初回の単発確認であり、新しい毎日の外部確認を予約したものではない。
+
 ## 続けて確認すること
 
 | 項目 | 最終記録時点の境界・次の確認 |
 | --- | --- |
-| 初回の自然日次backup | 2026-10-21 09:05 JST予定。08:30時点では未照合。UTC slot `2026-10-21`のreceipt/claim/archive/保持とwriter解除を確認する。手動保存やUTC20 slotの成功で代用しない。 |
-| 自然日次後のmonitor | 同日09:35 JSTを照合する。既存Macの外部automationに09:40の単発確認を予約済み。cloneや新スレッド作成では予約は移らない。結果を得た担当者が本票へ日時と根拠を追記する。 |
+| 自然日次backupの継続 | 初回は上記の通り確認済み。通常Cronとmonitorを継続し、障害時はreceipt/claim/実保存物を調べる。連続成功や将来の実削除は初回成功だけから推定しない。 |
 | 旧Supabase退役 | 原本保持中。10月28日ごろの見直しは提案で、削除承認ではない。[保持終了条件](../migration/production-operations.md#旧supabaseの保持終了を判断する条件)を確認する。 |
 | モバイル表示 | 移行時の390×844確認で18pxの横はみ出しと右端の無効ボタンの欠けを記録。今回の文書整理では修正していない。 |
 | 過去のStripe履歴 | 旧subscription objectのprovider取得ができない履歴上の制約を保持。取得成功に書き換えない。解約済み自己テスト契約と未送信sandbox記録を保持する。 |
