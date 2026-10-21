@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 // source freeze/import rehearsals and remote smoke commands are not normal CI.
 const files = [
   'scripts/test/owner-cache.mjs',
+  'scripts/test/browser-navigation.test.mjs',
   'scripts/migration/test-staging-selector-coverage.mjs',
   'scripts/test-auth-login-mfa.mjs',
   'scripts/test-hook-effects.mjs',

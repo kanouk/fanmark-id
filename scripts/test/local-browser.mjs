@@ -5,6 +5,7 @@ import { readFile, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { cdpConnection } from './browser-cdp.mjs';
+import { navigateDocument } from './browser-navigation.mjs';
 import { createLocalBrowserEgressProxy } from '../migration/local-browser-egress-proxy.mjs';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -71,7 +72,7 @@ export async function verifyLocalBrowser(stack) {
       throw new Error('Browser wait failed: ' + expression + ' value=' + JSON.stringify(last));
     }
     async function navigate(pathname) {
-      await cdp.send('Page.navigate', { url: stack.origin + pathname });
+      await navigateDocument(cdp, stack.origin + pathname);
     }
     async function fill(selector, text) {
       await value('document.querySelector(' + JSON.stringify(selector) + ').focus()');
