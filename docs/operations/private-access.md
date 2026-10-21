@@ -57,6 +57,8 @@ READMEからintent/receipt/manifest/暗号化原本を辿る。Git外の`common.
 
 - `~/.codex/private/fanmark-development-foundation-2026-10-22/`: PR57〜59、更新前/候補/activeの照合、旧資産の復元と保持、公開/PC/モバイル/PWA検証の原本。新しい通常更新で当時のonce scriptを再実行しない。
 
+- `~/.codex/private/fanmark-mobile-lint-2026-10-22/`: PR60、4言語/4画面幅の改修前後・Lint 0件・実local/CI・候補/active/公開と旧資産保持の照合。新operationのintentを一度だけ実行した記録。
+
 ## 記録の境界
 
 Gitへ保存するのは構成・非秘密ID・公開資産hash・日時・commit/CI/配備version・検証結果・未確認事項。

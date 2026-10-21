@@ -80,6 +80,14 @@ Workerルートは公開・本人・管理者・Webhookの認証境界を保持�
 Git外原本: [保管先とアクセス](operations/private-access.md)。配備ソースと、その後の開発コマンド・文書のcommitは別々に管理する。
 
 
+## 2026-10-22 モバイル・Lintの残存項目を解消
+
+- [PR60](https://github.com/kanouk/fanmark-id/pull/60)で取得ボタン右側の補助操作を狭い画面では折り返す通常配置へ変更。本番4言語×320/375/390/430pxで画面幅とscroll幅の一致を確認。
+- Hook依存関係、Providerと購読hook/context、UI variantのmodule境界を修正し、Lint警告19件を0件へ。npm run lintは警告0件を必須にする。
+- client218件・現行契約132件、実Worker/ブラウザ、5絵文字/dialog/picker、保存・本人切替、既存の失敗保存/下書き/画像/拒否・統合復旧が成功。検索・延長料金の古い応答競合7ケースと、[PR61](https://github.com/kanouk/fanmark-id/pull/61)のブラウザ遷移同期4ケースを含む。
+- PR CI [39694302383](https://github.com/kanouk/fanmark-id/actions/runs/39694302383)とmain CI [39694309591](https://github.com/kanouk/fanmark-id/actions/runs/39694309591)の全2 job成功。
+- 2026-10-22 08:54 JSTにactive 100% `9397fc9a-0456-4ac9-8605-44ccdd4ca369`と公開・PWA・旧資産を照合。保存先・秘密設定名・runtime・Cron/Route・他Workerは変更なし。詳細は[最終確認状態](operations/current-state.md)。
+
 ## 今回の後に再評価する項目
 
 Worker全ファイル移動、全mjsのTS化、全vitest設定統合、全画面React Query化、全面strict化、
