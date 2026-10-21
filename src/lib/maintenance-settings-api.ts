@@ -34,15 +34,6 @@ export class MaintenanceSettingsApiError extends Error {
   }
 }
 
-export function getMaintenanceSettingsBackend(
-  value: string | undefined = import.meta.env?.VITE_MAINTENANCE_SETTINGS_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new MaintenanceSettingsApiError("configuration");
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

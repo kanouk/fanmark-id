@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAuth } from '@/hooks/useAuth';
-import { isBetterAuthEnabled } from '@/lib/auth-backend';
-import { deleteStorageObject, getImageStorageBackend, uploadStorageObject } from '@/lib/storage-api';
+
+import { deleteStorageObject, uploadStorageObject } from '@/lib/storage-api';
 import { useTranslation } from './useTranslation';
 
 export const useCoverImageUpload = () => {
@@ -16,13 +16,13 @@ export const useCoverImageUpload = () => {
     if (file.size > MAX_COVER_IMAGE_SIZE) {
       throw new Error(t('common.coverImageSizeLimit'));
     }
-    
+
     setUploading(true);
     try {
       // Resize image for cover images (larger dimensions, maintain aspect ratio)
       const resized = await resizeCoverImage(file, 2400, 1200);
 
-      if (getImageStorageBackend(isBetterAuthEnabled()) === 'r2') {
+      {
         const { publicUrl } = await uploadStorageObject('cover-images', user.id, resized.file);
         return {
           url: publicUrl,
@@ -31,30 +31,9 @@ export const useCoverImageUpload = () => {
         };
       }
 
-      // Create a unique filename for the legacy Supabase Storage backend.
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}_cover.${fileExt}`;
 
-      // Upload to Supabase Storage (cover-images bucket)
-      const { data, error } = await supabase.storage
-        .from('cover-images')
-        .upload(fileName, resized.file, {
-          cacheControl: '3600',
-          upsert: true
-        });
 
-      if (error) throw error;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('cover-images')
-        .getPublicUrl(data.path);
-
-      return {
-        url: publicUrl,
-        width: resized.width,
-        height: resized.height,
-      };
     } finally {
       setUploading(false);
     }
@@ -69,7 +48,7 @@ export const useCoverImageUpload = () => {
       img.onload = () => {
         // Calculate new dimensions maintaining aspect ratio
         let { width, height } = img;
-        
+
         // Calculate scale to fit within max dimensions while maintaining aspect ratio
         const scaleX = maxWidth / width;
         const scaleY = maxHeight / height;
@@ -106,25 +85,16 @@ export const useCoverImageUpload = () => {
 
   const deleteCoverImage = async (coverImageUrl: string): Promise<void> => {
     if (!user) throw new Error(t('common.userNotAuthenticated'));
-    
+
     try {
-      if (getImageStorageBackend(isBetterAuthEnabled()) === 'r2') {
+      {
         await deleteStorageObject('cover-images', user.id, coverImageUrl);
         return;
       }
 
       // Extract file path from URL
-      const url = new URL(coverImageUrl);
-      const pathSegments = url.pathname.split('/');
-      const fileName = pathSegments[pathSegments.length - 1];
-      const filePath = `${user.id}/${fileName}`;
 
-      // Delete from Supabase Storage
-      const { error } = await supabase.storage
-        .from('cover-images')
-        .remove([filePath]);
 
-      if (error) throw error;
     } catch (error) {
       console.error('Error deleting cover image:', error);
       throw error;

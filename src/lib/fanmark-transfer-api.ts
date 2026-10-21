@@ -1,7 +1,7 @@
 import { buildRecentFanmarksApiUrl, getRecentFanmarksApiBaseUrl } from "./recent-fanmarks.ts";
 
 export type FanmarkTransferAction = "list" | "issue" | "apply" | "cancel" | "approve" | "reject";
-export type FanmarkTransferBackend = "supabase" | "worker";
+export type FanmarkTransferBackend = "worker";
 
 const PATHS: Record<FanmarkTransferAction, string> = {
   list: "/api/me/transfers",
@@ -32,15 +32,6 @@ export class FanmarkTransferApiError extends Error {
     this.status = status;
     this.context = context;
   }
-}
-
-export function getFanmarkTransferBackend(
-  value: string | undefined = import.meta.env?.VITE_FANMARK_TRANSFER_BACKEND,
-): FanmarkTransferBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkTransferApiError("configuration");
 }
 
 export function buildFanmarkTransferApiUrl(action: FanmarkTransferAction, baseUrl: string): URL {

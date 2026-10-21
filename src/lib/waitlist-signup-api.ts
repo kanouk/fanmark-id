@@ -16,15 +16,6 @@ export class WaitlistSignupApiError extends Error {
   }
 }
 
-export function getWaitlistSignupBackend(
-  value: string | undefined = import.meta.env?.VITE_WAITLIST_SIGNUP_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new WaitlistSignupApiError("configuration");
-}
-
 interface WaitlistSignupOptions {
   baseUrl?: string;
   appBaseUrl?: string;

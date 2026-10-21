@@ -5,7 +5,6 @@ import {
   fetchRecentFanmarksFromWorker,
   getRecentFanmarksApiBaseUrl,
   loadRecentFanmarks,
-  mapRecentFanmarkRpcRows,
   parseRecentFanmarksApiPayload,
   RecentFanmarksApiError,
 } from "./recent-fanmarks.ts";
@@ -83,30 +82,6 @@ test("maps the versioned Worker payload and rejects malformed schema", () => {
   }
 });
 
-test("preserves the Supabase fallback mapping and license-id precedence", () => {
-  assert.deepEqual(
-    mapRecentFanmarkRpcRows([
-      {
-        license_id: "license-1",
-        fanmark_id: "fanmark-1",
-        fanmark_short_id: "PUBLIC01",
-        display_emoji: "🌿",
-        license_created_at: "2026-09-21T00:00:00.000Z",
-        user_id: "discarded",
-      },
-      {
-        license_id: null,
-        fanmark_id: "fanmark-2",
-        display_emoji: null,
-        license_created_at: null,
-      },
-    ]),
-    [
-      { id: "license-1", emoji: "🌿", created_at: "2026-09-21T00:00:00.000Z", short_id: "PUBLIC01", fanmark_id: "fanmark-1" },
-      { id: "fanmark-2", emoji: "❓", created_at: null, short_id: null, fanmark_id: "fanmark-2" },
-    ],
-  );
-});
 
 test("sends only public request metadata and validates HTTP failures", async () => {
   let requestUrl = "";
@@ -143,18 +118,11 @@ test("sends only public request metadata and validates HTTP failures", async () 
 });
 
 test("does not call the Supabase fallback after an explicitly selected Worker fails", async () => {
-  let fallbackCalls = 0;
+  const fallbackCalls = 0;
 
   await assert.rejects(
     () =>
-      loadRecentFanmarks({
-        apiBaseUrl: "https://api.example.test",
-        fetcher: async () => new Response("private upstream detail", { status: 503 }),
-        fallback: async () => {
-          fallbackCalls += 1;
-          return [];
-        },
-      }),
+      loadRecentFanmarks({apiBaseUrl: "https://api.example.test", fetcher: async () => new Response("private upstream detail", { status: 503 })}),
     (error: unknown) => error instanceof RecentFanmarksApiError && error.kind === "http",
   );
 

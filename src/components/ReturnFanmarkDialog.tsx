@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useState } from 'react';
-import { formatInTimeZone } from 'date-fns-tz';
+
 import { differenceInDays } from 'date-fns';
 
 interface ReturnFanmarkDialogProps {
@@ -32,7 +32,7 @@ export const ReturnFanmarkDialog = ({
   const { t } = useTranslation();
   const [understood, setUnderstood] = useState(false);
 
-  const remainingDays = fanmark?.licenseEnd 
+  const remainingDays = fanmark?.licenseEnd
     ? differenceInDays(new Date(fanmark.licenseEnd), new Date())
     : 0;
 

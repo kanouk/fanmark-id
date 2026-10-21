@@ -1,8 +1,8 @@
 import { buildRecentFanmarksApiUrl, getRecentFanmarksApiBaseUrl } from "./recent-fanmarks.ts";
 
 export type FanmarkLotteryAction = "apply" | "cancel";
-export type FanmarkLotteryBackend = "supabase" | "worker";
-export interface SupabaseLotteryResult<T> {
+export type FanmarkLotteryBackend = "worker";
+export interface FanmarkLotteryResult<T> {
   data: T | null;
   error: { message: string } | null;
 }
@@ -23,15 +23,6 @@ export class FanmarkLotteryApiError extends Error {
     this.kind = kind;
     this.status = status;
   }
-}
-
-export function getFanmarkLotteryBackend(
-  value: string | undefined = import.meta.env?.VITE_FANMARK_LOTTERY_BACKEND,
-): FanmarkLotteryBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkLotteryApiError("configuration");
 }
 
 export function buildFanmarkLotteryApiUrl(action: FanmarkLotteryAction, baseUrl: string): URL {
@@ -119,13 +110,9 @@ export async function callFanmarkLotteryWorker<T>(
   }
 }
 
-export async function invokeFanmarkLotteryAction<T>(
-  action: FanmarkLotteryAction,
-  body: unknown,
-  supabaseInvoke: () => Promise<SupabaseLotteryResult<T>>,
-  options: Parameters<typeof callFanmarkLotteryWorker>[2] & { backend?: string } = {},
-): Promise<SupabaseLotteryResult<T>> {
-  if (getFanmarkLotteryBackend(options.backend) === "supabase") return supabaseInvoke();
+export async function invokeFanmarkLotteryAction<T>(action: FanmarkLotteryAction, body: unknown, options: Parameters<typeof callFanmarkLotteryWorker>[2] & { backend?: string } = {}
+): Promise<FanmarkLotteryResult<T>> {
+
   try {
     return { data: await callFanmarkLotteryWorker<T>(action, body, options), error: null };
   } catch (error) {

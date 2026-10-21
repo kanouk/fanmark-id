@@ -102,7 +102,7 @@ async function readNewPassword(request: Request): Promise<string> {
   const meetsProductPolicy = /[a-z]/u.test(password) &&
     /[A-Z]/u.test(password) &&
     /\d/u.test(password) &&
-    /[!@#$%^&*(),.?":{}|<>_+=';/~\[\]\\`-]/u.test(password);
+    /[!@#$%^&*(),.?":{}|<>_+=';/~[\]\\`-]/u.test(password);
   if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH || !meetsProductPolicy) {
     throw new PasswordSetupApiError("invalid_password_length", 400);
   }

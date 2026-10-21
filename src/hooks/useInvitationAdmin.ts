@@ -1,18 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
-import {
-  createInvitationCode,
-  deleteInvitationCode,
-  getInvitationAdminBackend,
-  loadInvitationCodes,
-  updateInvitationCode,
-} from '@/lib/invitation-admin-api';
+
+import type { InvitationAdminCode } from '@/lib/invitation-admin-api';
+import { createInvitationCode, deleteInvitationCode, loadInvitationCodes, updateInvitationCode } from '@/lib/invitation-admin-api';
 
 // Export the Row type for use in other components
-export type InvitationCodeRow = Database['public']['Tables']['invitation_codes']['Row'];
-type InvitationCodeInsert = Database['public']['Tables']['invitation_codes']['Insert'];
-type InvitationCodeUpdate = Database['public']['Tables']['invitation_codes']['Update'];
+export type InvitationCodeRow = InvitationAdminCode;
+type InvitationCodeInsert = Pick<InvitationAdminCode, 'code' | 'max_uses' | 'expires_at' | 'special_perks' | 'is_active'>;
+type InvitationCodeUpdate = Partial<Pick<InvitationAdminCode, 'max_uses' | 'expires_at' | 'special_perks' | 'is_active'>>;
 
 export interface InvitationCodeFormValues {
   code?: string;
@@ -30,17 +24,11 @@ export function useInvitationAdmin() {
     setLoading(true);
     setError(null);
     try {
-      if (getInvitationAdminBackend() === 'worker') {
+      {
         setCodes(await loadInvitationCodes() as unknown as InvitationCodeRow[]);
         return;
       }
-      const { data, error: fetchError } = await supabase
-        .from('invitation_codes')
-        .select('*')
-        .order('created_at', { ascending: false });
 
-      if (fetchError) throw fetchError;
-      setCodes(data ?? []);
     } catch (err) {
       console.error('Failed to fetch invitation codes:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch invitation codes');
@@ -60,16 +48,15 @@ export function useInvitationAdmin() {
         code: values.code?.trim().toUpperCase() ?? generateCode(),
         max_uses: values.maxUses,
         expires_at: values.expiresAt || null,
-        special_perks: (values.specialPerks as Database['public']['Tables']['invitation_codes']['Insert']['special_perks']) ?? null,
+        special_perks: (values.specialPerks as InvitationAdminCode['special_perks']) ?? null,
         is_active: true,
       };
 
       try {
-        if (getInvitationAdminBackend() === 'worker') {
+        {
           const created = await createInvitationCode({
             // Let the Worker generate codes with its cryptographic RNG when
-            // the admin leaves the field blank. Keep the legacy generator on
-            // the unchanged Supabase path only.
+            // the admin leaves the field blank.
             code: values.code?.trim() ? values.code.trim().toUpperCase() : null,
             max_uses: payload.max_uses,
             expires_at: payload.expires_at ?? null,
@@ -78,10 +65,7 @@ export function useInvitationAdmin() {
           await fetchCodes();
           return { success: true, code: created.code };
         }
-        const { error: insertError } = await supabase.from('invitation_codes').insert(payload);
-        if (insertError) throw insertError;
-        await fetchCodes();
-        return { success: true, code: payload.code };
+
       } catch (err) {
         console.error('Failed to create invitation code:', err);
         setError(err instanceof Error ? err.message : 'Failed to create invitation code');
@@ -95,7 +79,7 @@ export function useInvitationAdmin() {
     async (id: string, updates: InvitationCodeUpdate) => {
       setError(null);
       try {
-        if (getInvitationAdminBackend() === 'worker') {
+        {
           const row = codes.find((code) => code.id === id);
           if (!row) throw new Error('Invitation code changed; refresh and try again');
           const patch: Parameters<typeof updateInvitationCode>[1] = { expectedUpdatedAt: row.updated_at };
@@ -107,10 +91,7 @@ export function useInvitationAdmin() {
           await fetchCodes();
           return { success: true };
         }
-        const { error: updateError } = await supabase.from('invitation_codes').update(updates).eq('id', id);
-        if (updateError) throw updateError;
-        await fetchCodes();
-        return { success: true };
+
       } catch (err) {
         console.error('Failed to update invitation code:', err);
         setError(err instanceof Error ? err.message : 'Failed to update invitation code');
@@ -131,15 +112,12 @@ export function useInvitationAdmin() {
     async (id: string) => {
       setError(null);
       try {
-        if (getInvitationAdminBackend() === 'worker') {
+        {
           await deleteInvitationCode(id);
           await fetchCodes();
           return { success: true };
         }
-        const { error: deleteError } = await supabase.from('invitation_codes').delete().eq('id', id);
-        if (deleteError) throw deleteError;
-        await fetchCodes();
-        return { success: true };
+
       } catch (err) {
         console.error('Failed to delete invitation code:', err);
         setError(err instanceof Error ? err.message : 'Failed to delete invitation code');

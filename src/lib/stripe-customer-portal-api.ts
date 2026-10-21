@@ -4,7 +4,7 @@ const PORTAL_PATH = "/api/billing/customer-portal";
 const MAX_RESPONSE_BYTES = 8 * 1024;
 const DEFAULT_TIMEOUT_MS = 15_000;
 
-export type StripeCustomerPortalBackend = "supabase" | "worker";
+export type StripeCustomerPortalBackend = "worker";
 export type StripeCustomerPortalApiErrorKind = "configuration" | "http" | "invalid_response" | "network" | "timeout";
 
 export class StripeCustomerPortalApiError extends Error {
@@ -21,15 +21,6 @@ export class StripeCustomerPortalApiError extends Error {
     this.status = status;
     this.code = code;
   }
-}
-
-export function getStripeCustomerPortalBackend(
-  value: string | undefined = import.meta.env?.VITE_STRIPE_CUSTOMER_PORTAL_BACKEND,
-): StripeCustomerPortalBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new StripeCustomerPortalApiError("configuration");
 }
 
 export function buildStripeCustomerPortalUrl(baseUrl: string): URL {

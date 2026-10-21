@@ -1,15 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  buildOwnProfileApiUrl,
-  checkOwnUsernameAvailability,
-  getOwnProfileBackend,
-  loadOwnProfile,
-  ProfileApiError,
-  resolveOwnProfileAuth,
-  subscribeToOwnProfileUpdates,
-  updateOwnProfile,
-} from "./profile-api.ts";
+import { buildOwnProfileApiUrl, checkOwnUsernameAvailability, loadOwnProfile, ProfileApiError, resolveOwnProfileAuth, subscribeToOwnProfileUpdates, updateOwnProfile } from "./profile-api.ts";
 
 const profile = {
   id: "profile-row",
@@ -24,48 +15,16 @@ const profile = {
   requires_password_setup: false,
 };
 
-const legacyToken = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.c3ludGhldGlj";
-
-test("profile auth resolves only the current owner and keeps Better Auth out of Supabase", async () => {
-  let reads = 0;
-  const reader = async () => { reads++; return { data: { session: { access_token: legacyToken, user: { id: profile.user_id } } }, error: null }; };
-  assert.deepEqual(await resolveOwnProfileAuth(profile.user_id, true, reader), { expectedUserId: profile.user_id });
-  assert.equal(reads, 0);
-  assert.deepEqual(await resolveOwnProfileAuth(profile.user_id, false, reader), { accessToken: legacyToken, expectedUserId: profile.user_id });
-  assert.equal(reads, 1);
-  await assert.rejects(resolveOwnProfileAuth("other", false, reader), ProfileApiError);
-  await assert.rejects(resolveOwnProfileAuth(undefined, false, reader), ProfileApiError);
-  await assert.rejects(resolveOwnProfileAuth(profile.user_id, false, async () => ({ data: { session: null }, error: null })), ProfileApiError);
-  await assert.rejects(resolveOwnProfileAuth(profile.user_id, false, async () => { throw Error("private-session-error"); }), e => e instanceof ProfileApiError && e.kind === "network");
+test("profile requests carry the expected owner and refuse a missing identity", async () => {
+  assert.deepEqual(await resolveOwnProfileAuth(profile.user_id), { expectedUserId: profile.user_id });
+  await assert.rejects(resolveOwnProfileAuth(undefined), ProfileApiError);
 });
 
-test("legacy GET PATCH and username lookup send an explicit bearer without cookies or fallback", async () => {
-  const methods: string[] = [];
-  const options = { baseUrl: "https://api.example.test", expectedUserId: profile.user_id, accessToken: legacyToken,
-    fetchImpl: (async (input, init) => {
-      const headers = new Headers(init?.headers);
-      assert.equal(headers.get("authorization"), `Bearer ${legacyToken}`);
-      assert.equal(init?.credentials, "omit"); assert.equal(init?.cache, "no-store");
-      methods.push(init?.method ?? "GET");
-      return Response.json(String(input).includes("username-availability") ? { schemaVersion: 1, available: true } : { schemaVersion: 1, profile });
-    }) as typeof fetch };
-  assert.deepEqual(await loadOwnProfile(options), profile);
-  assert.deepEqual(await updateOwnProfile({ display_name: "Edited" }, options), profile);
-  assert.equal(await checkOwnUsernameAvailability("owner", options), true);
-  assert.deepEqual(methods, ["GET", "PATCH", "GET"]);
-  let attempts = 0;
-  await assert.rejects(loadOwnProfile({ ...options, fetchImpl: async () => { attempts++; return Response.json({}, { status: 401 }); } }), ProfileApiError);
-  assert.equal(attempts, 1);
-  await assert.rejects(loadOwnProfile({ ...options, expectedUserId: "foreign" }), e => e instanceof ProfileApiError && e.kind === "invalid_response");
-  await assert.rejects(loadOwnProfile({ ...options, authBaseUrl: "https://foreign.example" }), ProfileApiError);
-  await assert.rejects(loadOwnProfile({ ...options, accessToken: "" }), ProfileApiError);
-  await assert.rejects(checkOwnUsernameAvailability("owner", { ...options, accessToken: "not a token" }), ProfileApiError);
-});
-
-test("profile backend defaults to Supabase and rejects unknown values", () => {
-  assert.equal(getOwnProfileBackend(undefined), "supabase");
-  assert.equal(getOwnProfileBackend("worker"), "worker");
-  assert.throws(() => getOwnProfileBackend("fallback"), ProfileApiError);
+test("a response for another owner is rejected before it can update profile state", async () => {
+  await assert.rejects(loadOwnProfile({
+    baseUrl: "https://app.example.test", expectedUserId: "another-user",
+    fetchImpl: async () => Response.json({ schemaVersion: 1, profile }),
+  }), (error: unknown) => error instanceof ProfileApiError && error.kind === "invalid_response");
 });
 
 test("profile API URL and auth origin must use the same clean HTTPS origin", async () => {

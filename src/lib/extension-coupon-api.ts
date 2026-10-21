@@ -7,7 +7,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const COUPON_CODE = /^[A-Z0-9][A-Z0-9_-]{2,63}$/u;
 const ALLOWED_MONTHS = new Set([1, 2, 3, 6]);
 
-export type ExtensionCouponBackend = "supabase" | "worker";
+export type ExtensionCouponBackend = "worker";
 export type ExtensionCouponApiErrorKind = "configuration" | "http" | "invalid_response" | "network" | "storage" | "timeout";
 
 export class ExtensionCouponApiError extends Error {
@@ -41,15 +41,6 @@ export interface ExtensionCouponRequestStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
-}
-
-export function getExtensionCouponBackend(
-  value: string | undefined = import.meta.env?.VITE_EXTENSION_COUPON_BACKEND,
-): ExtensionCouponBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new ExtensionCouponApiError("configuration");
 }
 
 export function buildExtensionCouponApplyUrl(baseUrl: string): URL {

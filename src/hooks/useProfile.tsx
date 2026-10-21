@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+
 import { UserSettings } from '@/lib/profile-utils';
-import { checkOwnUsernameAvailability as checkWorkerUsernameAvailability, getOwnProfileBackend, loadOwnProfile, resolveOwnProfileAuth, subscribeToOwnProfileUpdates, updateOwnProfile } from '@/lib/profile-api';
-import { isBetterAuthEnabled } from '@/lib/auth-backend';
+import { checkOwnUsernameAvailability as checkWorkerUsernameAvailability, loadOwnProfile, resolveOwnProfileAuth, subscribeToOwnProfileUpdates, updateOwnProfile } from '@/lib/profile-api';
 
 export const useProfile = () => {
   const { user } = useAuth();
@@ -13,27 +12,13 @@ export const useProfile = () => {
   const fetchProfile = useCallback(async (options: { silent?: boolean } = {}) => {
     try {
       if (!options.silent) setLoading(true);
-      if (getOwnProfileBackend() === 'worker') {
-        const auth = await resolveOwnProfileAuth(user?.id, isBetterAuthEnabled(), () => supabase.auth.getSession());
+      {
+        const auth = await resolveOwnProfileAuth(user?.id);
         const result = await loadOwnProfile(auth);
         setProfile(result as UserSettings);
         return;
       }
-      console.info('[useProfile] fetching profile', {
-        userId: user?.id ?? null,
-      });
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
 
-      if (error) throw error;
-      console.info('[useProfile] profile fetch success', {
-        userId: data.user_id,
-        planType: data.plan_type,
-      });
-      setProfile(data as UserSettings);
     } catch (error) {
       console.error('[useProfile] Error fetching profile:', {
         message: error instanceof Error ? error.message : String(error),
@@ -54,29 +39,11 @@ export const useProfile = () => {
   }, [user, fetchProfile]);
 
   // Realtime subscription to keep profile in sync across the app
-  useEffect(() => {
-    if (!user || getOwnProfileBackend() === 'worker') return;
 
-    const channel = supabase
-      .channel('user-settings-updates')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'user_settings', filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          setProfile(payload.new as UserSettings);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  // Worker-backed profiles replace Supabase Realtime with local update events and
+  // Profile consumers share local update events and
   // a quiet refresh when this tab/window becomes active again.
   useEffect(() => {
-    if (!user || getOwnProfileBackend() !== 'worker') return;
+    if (!user) return;
 
     const unsubscribe = subscribeToOwnProfileUpdates((updated) => {
       if (updated.user_id === user.id) setProfile(updated as UserSettings);
@@ -103,7 +70,7 @@ export const useProfile = () => {
     if (!user || !profile) return;
 
     try {
-      if (getOwnProfileBackend() === 'worker') {
+      {
         if (updates.plan_type !== undefined && updates.plan_type !== profile.plan_type) {
           throw new Error('Plan changes require the billing workflow');
         }
@@ -115,23 +82,14 @@ export const useProfile = () => {
         if (Object.prototype.hasOwnProperty.call(updates, 'avatar_url')) patch.avatar_url = updates.avatar_url ?? null;
         if (Object.prototype.hasOwnProperty.call(updates, 'preferred_language')) patch.preferred_language = updates.preferred_language;
         if (Object.keys(patch).length === 0) return;
-        const auth = await resolveOwnProfileAuth(user.id, isBetterAuthEnabled(), () => supabase.auth.getSession());
+        const auth = await resolveOwnProfileAuth(user.id);
         const saved = await updateOwnProfile(patch, auth);
         setProfile(saved as UserSettings);
         return;
       }
-      const { error } = await supabase
-        .from('user_settings')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
 
-      if (error) throw error;
-      
       // Update local state
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -140,19 +98,13 @@ export const useProfile = () => {
 
   const checkUsernameAvailability = async (username: string): Promise<boolean> => {
     if (!username) return false;
-    
+
     try {
-      if (getOwnProfileBackend() === 'worker') {
-        const auth = await resolveOwnProfileAuth(user?.id, isBetterAuthEnabled(), () => supabase.auth.getSession());
+      {
+        const auth = await resolveOwnProfileAuth(user?.id);
         return await checkWorkerUsernameAvailability(username, auth);
       }
-      const { data, error } = await supabase.rpc('check_username_availability_secure', {
-        username_to_check: username,
-        current_user_id: user?.id || null
-      });
 
-      if (error) throw error;
-      return data === true;
     } catch (error) {
       console.error('Error checking username:', error);
       return false;

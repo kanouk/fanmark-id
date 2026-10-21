@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { addMonths, differenceInMonths } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { addMonths } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
@@ -8,17 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatInTimeZone } from 'date-fns-tz';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  applyExtensionCouponThroughWorker,
-  clearExtensionCouponRequestId,
-  getExtensionCouponBackend,
-  getOrCreateExtensionCouponRequestId,
-} from '@/lib/extension-coupon-api';
-import {
-  fetchExtensionPriceMaster,
-  getExtensionPricingBackend,
-} from '@/lib/reference-master-api';
+
+import { applyExtensionCouponThroughWorker, clearExtensionCouponRequestId, getOrCreateExtensionCouponRequestId } from '@/lib/extension-coupon-api';
+import { fetchExtensionPriceMaster } from '@/lib/reference-master-api';
 import { CreditCard, Loader2, Info, Ticket, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -91,23 +83,13 @@ export const ExtendLicenseDialog = ({
 
       setLoadingPlans(true);
       try {
-        const pricingBackend = getExtensionPricingBackend();
+        const pricingBackend = "worker";
         let options: ExtendPlanOption[];
-        if (pricingBackend === 'worker') {
+        {
           const prices = await fetchExtensionPriceMaster();
           options = prices
             .filter(item => item.tierLevel === target.tierLevel && item.isActive)
             .map(item => ({ months: item.months, price: item.priceYen }));
-        } else {
-          const { data, error } = await supabase
-            .from('fanmark_tier_extension_prices')
-            .select('months, price_yen')
-            .eq('tier_level', target.tierLevel)
-            .eq('is_active', true)
-            .order('months', { ascending: true });
-
-          if (error) throw error;
-          options = (data ?? []).map(item => ({ months: item.months, price: item.price_yen }));
         }
         setPlans(options);
 
@@ -245,7 +227,7 @@ export const ExtendLicenseDialog = ({
     const errorCodeFromMessage =
       err instanceof Error ? parseErrorCode(err.message) : null;
 
-    // Check error object structure (for supabase.functions.invoke errors)
+    // Preserve structured operation errors when a transport provides them.
     if (err && typeof err === 'object') {
       // Direct error property
       const errorObject = err as { error?: unknown; context?: unknown };
@@ -319,7 +301,7 @@ export const ExtendLicenseDialog = ({
     try {
       const normalizedCode = couponCode.trim().toUpperCase();
       let months: number;
-      if (getExtensionCouponBackend() === 'worker') {
+      {
         const requestId = await getOrCreateExtensionCouponRequestId(licenseId, normalizedCode);
         const result = await applyExtensionCouponThroughWorker({
           licenseId,
@@ -332,21 +314,6 @@ export const ExtendLicenseDialog = ({
         } catch (storageError) {
           console.warn('[ExtendLicenseDialog] Could not clear completed coupon request marker:', storageError);
         }
-      } else {
-        const { data, error } = await supabase.functions.invoke('apply-extension-coupon', {
-          body: {
-            coupon_code: normalizedCode,
-            license_id: licenseId,
-          },
-        });
-
-        if (error) throw error;
-        if (data?.error) {
-          // Create error object with error code for proper parsing
-          const errorObj = new Error(data.error);
-          throw errorObj;
-        }
-        months = data.months;
       }
 
       toast.success(t('dashboard.extendDialog.couponSuccessTitle'), {

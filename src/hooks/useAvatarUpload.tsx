@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAuth } from '@/hooks/useAuth';
-import { isBetterAuthEnabled } from '@/lib/auth-backend';
-import { deleteStorageObject, getImageStorageBackend, uploadStorageObject } from '@/lib/storage-api';
+
+import { deleteStorageObject, uploadStorageObject } from '@/lib/storage-api';
 import { useTranslation } from './useTranslation';
 
 export const useAvatarUpload = () => {
@@ -16,37 +16,20 @@ export const useAvatarUpload = () => {
     if (file.size > MAX_AVATAR_SIZE) {
       throw new Error(t('userSettings.avatarSizeLimit'));
     }
-    
+
     setUploading(true);
     try {
       // Resize image if needed
       const resizedFile = await resizeImage(file, 256, 256);
 
-      if (getImageStorageBackend(isBetterAuthEnabled()) === 'r2') {
+      {
         const { publicUrl } = await uploadStorageObject('avatars', user.id, resizedFile);
         return publicUrl;
       }
 
-      // Create a unique filename for the legacy Supabase Storage backend.
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, resizedFile, {
-          cacheControl: '3600',
-          upsert: true
-        });
 
-      if (error) throw error;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(data.path);
-
-      return publicUrl;
     } finally {
       setUploading(false);
     }
@@ -96,25 +79,16 @@ export const useAvatarUpload = () => {
 
   const deleteAvatar = async (avatarUrl: string): Promise<void> => {
     if (!user) throw new Error(t('common.userNotAuthenticated'));
-    
+
     try {
-      if (getImageStorageBackend(isBetterAuthEnabled()) === 'r2') {
+      {
         await deleteStorageObject('avatars', user.id, avatarUrl);
         return;
       }
 
       // Extract file path from URL
-      const url = new URL(avatarUrl);
-      const pathSegments = url.pathname.split('/');
-      const fileName = pathSegments[pathSegments.length - 1];
-      const filePath = `${user.id}/${fileName}`;
 
-      // Delete from Supabase Storage
-      const { error } = await supabase.storage
-        .from('avatars')
-        .remove([filePath]);
 
-      if (error) throw error;
     } catch (error) {
       console.error('Error deleting avatar:', error);
       throw error;

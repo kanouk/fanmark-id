@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { isBetterAuthEnabled } from "@/lib/auth-backend";
+
 import { createEmojiMasterAdminApi, type EmojiMasterAdminInput } from "@/lib/emoji-master-admin-api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Textarea } from "@/components/ui/textarea";
+
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
@@ -57,13 +56,9 @@ const EMPTY_FORM: EmojiFormState = {
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
-function sanitizeSearchTerm(value: string) {
-  return value.replace(/[,]/g, " ").trim();
-}
-
 async function fetchEmojiMaster(params: { page: number; pageSize: number; search: string }) {
   const { page, pageSize, search } = params;
-  if (isBetterAuthEnabled()) {
+  {
     const result = await emojiMasterAdminApi.list(params);
     return {
       items: result.items.map((item): EmojiMasterRecord => ({
@@ -83,31 +78,7 @@ async function fetchEmojiMaster(params: { page: number; pageSize: number; search
       activeReleaseVersion: result.activeReleaseVersion,
     };
   }
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
 
-  let query = supabase
-    .from("emoji_master")
-    .select("*", { count: "exact" })
-    .order("sort_order", { ascending: true, nullsFirst: true })
-    .order("emoji", { ascending: true })
-    .range(from, to);
-
-  if (search) {
-    const sanitized = sanitizeSearchTerm(search);
-    query = query.or(`short_name.ilike.%${sanitized}%,emoji.ilike.%${sanitized}%`);
-  }
-
-  const { data, error, count } = await query;
-  if (error) {
-    throw new Error(error.message || "Failed to load emoji master");
-  }
-
-  return {
-    items: (data ?? []) as EmojiMasterRecord[],
-    total: count ?? 0,
-    activeReleaseVersion: null,
-  };
 }
 
 function parseKeywords(input: string): string[] {
@@ -157,7 +128,7 @@ async function upsertEmoji(record: EmojiFormState, id?: string, updatedAt?: stri
     sort_order: record.sort_order ? Number(record.sort_order) : null,
   };
 
-  if (isBetterAuthEnabled()) {
+  {
     const adminInput: EmojiMasterAdminInput = {
       emoji: payload.emoji,
       shortName: payload.short_name,
@@ -176,29 +147,11 @@ async function upsertEmoji(record: EmojiFormState, id?: string, updatedAt?: stri
     return id ?? "created";
   }
 
-  if (id) {
-    const { error } = await supabase.from("emoji_master").update(payload).eq("id", id);
-    if (error) throw new Error(error.message);
-    return id;
-  } else {
-    const { data, error } = await supabase.from("emoji_master").insert(payload).select("id").single();
-    if (error) throw new Error(error.message);
-    return data?.id as string;
-  }
 }
 
 async function deleteEmoji(id: string) {
-  if (isBetterAuthEnabled()) throw new Error("Cloudflare staging の管理画面では削除できません。");
-  const { error } = await supabase.from("emoji_master").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-}
+  throw new Error("Cloudflare staging の管理画面では削除できません。");
 
-function chunkArray<T>(items: T[], chunkSize: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += chunkSize) {
-    chunks.push(items.slice(i, i + chunkSize));
-  }
-  return chunks;
 }
 
 async function importEmojiRecords(records: ImportRecord[]) {
@@ -212,7 +165,7 @@ async function importEmojiRecords(records: ImportRecord[]) {
     sort_order: record.sort_order ?? null,
   }));
 
-  if (isBetterAuthEnabled()) {
+  {
     return emojiMasterAdminApi.import(prepared.map((record) => ({
       emoji: record.emoji,
       shortName: record.short_name,
@@ -224,13 +177,6 @@ async function importEmojiRecords(records: ImportRecord[]) {
     })));
   }
 
-  const chunks = chunkArray(prepared, 500);
-  for (const chunk of chunks) {
-    const { error } = await supabase.from("emoji_master").upsert(chunk, { onConflict: "emoji" });
-    if (error) {
-      throw new Error(error.message);
-    }
-  }
 }
 
 function parseJsonImport(text: string): ImportRecord[] {
@@ -330,7 +276,7 @@ export const AdminEmojiMaster: React.FC = () => {
   const [formState, setFormState] = useState<EmojiFormState>(EMPTY_FORM);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const cloudflareAdminMode = isBetterAuthEnabled();
+  const cloudflareAdminMode = true;
 
   const queryKey = useMemo(
     () => ["emoji-master-list", { page, pageSize, search }],
@@ -349,10 +295,8 @@ export const AdminEmojiMaster: React.FC = () => {
     },
     onSuccess: () => {
       toast({
-        title: cloudflareAdminMode ? "ドラフトに保存しました" : "保存しました",
-        description: cloudflareAdminMode
-          ? "公開カタログには反映されていません。"
-          : "絵文字マスタが更新されました。",
+        title: "ドラフトに保存しました",
+        description: "公開カタログには反映されていません。",
       });
       queryClient.invalidateQueries({ queryKey: ["emoji-master-list"] });
       setIsFormOpen(false);
@@ -414,10 +358,8 @@ export const AdminEmojiMaster: React.FC = () => {
       }
       const importedCount = await importEmojiRecords(records);
       toast({
-        title: cloudflareAdminMode ? "ドラフトへインポートしました" : "インポート完了",
-        description: cloudflareAdminMode
-          ? `${importedCount ?? records.length} 件を保存しました。公開カタログには反映されていません。`
-          : `${records.length} 件の絵文字を取り込みました。`,
+        title: "ドラフトへインポートしました",
+        description: `${importedCount ?? records.length} 件を保存しました。公開カタログには反映されていません。`,
       });
       queryClient.invalidateQueries({ queryKey: ["emoji-master-list"] });
     } catch (error) {

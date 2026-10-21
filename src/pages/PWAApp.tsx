@@ -1,3 +1,4 @@
+import type { FanmarkSearchResult } from '@/hooks/useFanmarkSearch';
 import { useState, useEffect, useMemo } from "react";
 import { Search, History, ExternalLink, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -18,7 +19,7 @@ type TabType = "search" | "history";
 
 export default function PWAApp() {
   const [activeTab, setActiveTab] = useState<TabType>("search");
-  const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchResult, setSearchResult] = useState<FanmarkSearchResult | null>(null);
   const { history, addToHistory, clearHistory } = useFanmarkHistory();
   const [searchQuery, setSearchQuery] = useState("");
   const { t } = useTranslation();
@@ -45,10 +46,10 @@ export default function PWAApp() {
     }
   }, []);
 
-  const handleSearchResult = (result: any) => {
+  const handleSearchResult = (result: FanmarkSearchResult | null) => {
     setSearchResult(result);
-    if (result?.status === "taken" && result?.shortId && searchQuery) {
-      addToHistory(searchQuery, result.shortId);
+    if (result?.status === "taken" && result?.short_id && searchQuery) {
+      addToHistory(searchQuery, result.short_id);
     }
   };
 
@@ -161,7 +162,7 @@ export default function PWAApp() {
                       onClick={() => {
                         if (searchResult?.blocking_status === "grace") return;
                         // 履歴に追加
-                        const shortId = searchResult?.shortId || searchQuery;
+                        const shortId = searchResult?.short_id || searchQuery;
                         addToHistory(searchQuery, shortId);
                         // ファンマページへ移動
                         navigateToFanmark(searchQuery, true);

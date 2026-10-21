@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Loader2, Shield, Eye, EyeOff, AlertTriangle, Download } from 'lucide-react';
-import {
-  getWaitlistAdminBackend,
-  loadWaitlistAdmin,
-  revealWaitlistAdminEmail,
-  WaitlistAdminClientError,
-} from '@/lib/waitlist-admin-api';
+import { loadWaitlistAdmin, revealWaitlistAdminEmail, WaitlistAdminClientError } from '@/lib/waitlist-admin-api';
 import {
   Dialog,
   DialogContent,
@@ -34,7 +29,7 @@ interface SecurityLog {
   user_id?: string;
   action: string;
   resource_type: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -48,37 +43,8 @@ export const SecureWaitlistAdmin = () => {
   const [revealedEmails, setRevealedEmails] = useState<Set<string>>(new Set());
   const [actualEmails, setActualEmails] = useState<Map<string, string>>(new Map());
 
-  const verifyAdminAccess = async () => {
-    try {
-      setVerifying(true);
-      const { data: isValidAdmin, error } = await supabase.rpc('is_super_admin');
-
-      if (error) {
-        console.error('Admin verification error:', error);
-        if ((error as { code?: string }).code !== '22P02') {
-          toast({
-            title: 'Access Denied',
-            description: 'Unable to verify admin credentials',
-            variant: 'destructive',
-          });
-        }
-        setIsAdmin(false);
-        return false;
-      }
-
-      setIsAdmin(Boolean(isValidAdmin));
-      return Boolean(isValidAdmin);
-    } catch (error) {
-      console.error('Admin verification failed:', error);
-      setIsAdmin(false);
-      return false;
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   const loadWaitlistData = async () => {
-    if (getWaitlistAdminBackend() === 'worker') {
+    {
       try {
         const snapshot = await loadWaitlistAdmin();
         setWaitlistData(snapshot.entries);
@@ -89,38 +55,11 @@ export const SecureWaitlistAdmin = () => {
       }
       return;
     }
-    try {
-      const { data, error } = await supabase.rpc('get_waitlist_secure', { p_limit: 100, p_offset: 0 });
-      if (error) throw error;
-      setWaitlistData(data || []);
-    } catch (error) {
-      console.error('Error loading waitlist:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load waitlist data',
-        variant: 'destructive',
-      });
-    }
-  };
 
-  const loadSecurityLogs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .in('resource_type', ['waitlist', 'system'])
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setSecurityLogs(data || []);
-    } catch (error) {
-      console.error('Error loading security logs:', error);
-    }
   };
 
   const revealEmail = async (waitlistId: string) => {
-    if (getWaitlistAdminBackend() === 'worker') {
+    {
       try {
         const result = await revealWaitlistAdminEmail(waitlistId);
         setActualEmails((prev) => new Map(prev).set(waitlistId, result.email));
@@ -133,28 +72,7 @@ export const SecureWaitlistAdmin = () => {
       }
       return;
     }
-    try {
-      const { data: email, error } = await supabase.rpc('get_waitlist_email_by_id', {
-        waitlist_id: waitlistId,
-      });
 
-      if (error) throw error;
-
-      setActualEmails((prev) => new Map(prev).set(waitlistId, email));
-      setRevealedEmails((prev) => new Set(prev).add(waitlistId));
-
-      toast({
-        title: 'Email Revealed',
-        description: 'This action has been logged for security purposes',
-      });
-    } catch (error) {
-      console.error('Error revealing email:', error);
-      toast({
-        title: 'Access Denied',
-        description: 'Failed to reveal email address',
-        variant: 'destructive',
-      });
-    }
   };
 
   const exportWaitlistData = () => {
@@ -185,7 +103,7 @@ export const SecureWaitlistAdmin = () => {
 
   useEffect(() => {
     const initializeAdmin = async () => {
-      if (getWaitlistAdminBackend() === 'worker') {
+      {
         try {
           const snapshot = await loadWaitlistAdmin();
           setWaitlistData(snapshot.entries);
@@ -202,11 +120,7 @@ export const SecureWaitlistAdmin = () => {
         }
         return;
       }
-      const hasAccess = await verifyAdminAccess();
-      if (hasAccess) {
-        await Promise.all([loadWaitlistData(), loadSecurityLogs()]);
-      }
-      setLoading(false);
+
     };
 
     initializeAdmin();

@@ -5,7 +5,7 @@ const MAX_RESPONSE_BYTES = 8 * 1024;
 const DEFAULT_TIMEOUT_MS = 15_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-export type StripePlanCheckoutBackend = "supabase" | "worker";
+export type StripePlanCheckoutBackend = "worker";
 export type StripePlanCheckoutPlan = "creator" | "max" | "business";
 export type StripePlanCheckoutApiErrorKind = "configuration" | "http" | "invalid_response" | "network" | "timeout";
 
@@ -23,15 +23,6 @@ export class StripePlanCheckoutApiError extends Error {
     this.status = status;
     this.code = code;
   }
-}
-
-export function getStripePlanCheckoutBackend(
-  value: string | undefined = import.meta.env?.VITE_STRIPE_PLAN_CHECKOUT_BACKEND,
-): StripePlanCheckoutBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new StripePlanCheckoutApiError("configuration");
 }
 
 export function buildStripePlanCheckoutUrl(baseUrl: string): URL {

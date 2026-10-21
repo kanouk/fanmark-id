@@ -22,23 +22,12 @@ import {
 } from '@/lib/plan-utils';
 import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
-import { supabase } from '@/integrations/supabase/client';
-import { bulkReturnFanmarksThroughWorker, getFanmarkReturnBackend } from '@/lib/fanmark-return-api';
-import { createStripeCustomerPortalThroughWorker, getStripeCustomerPortalBackend } from '@/lib/stripe-customer-portal-api';
-import {
-  changeStripePlanThroughWorker,
-  clearStripePlanChangeRequestId,
-  getStripePlanChangeBackend,
-  getStripePlanChangeRequestId,
-} from '@/lib/stripe-plan-change-api';
-import {
-  clearStripePlanCheckoutRequestIds,
-  createStripePlanCheckoutThroughWorker,
-  getStripePlanCheckoutBackend,
-  getStripePlanCheckoutRequestId,
-  StripePlanCheckoutApiError,
-} from '@/lib/stripe-plan-checkout-api';
-import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, Flame, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
+
+import { bulkReturnFanmarksThroughWorker } from '@/lib/fanmark-return-api';
+import { createStripeCustomerPortalThroughWorker } from '@/lib/stripe-customer-portal-api';
+import { changeStripePlanThroughWorker, clearStripePlanChangeRequestId, getStripePlanChangeRequestId } from '@/lib/stripe-plan-change-api';
+import { clearStripePlanCheckoutRequestIds, createStripePlanCheckoutThroughWorker, getStripePlanCheckoutRequestId, StripePlanCheckoutApiError } from '@/lib/stripe-plan-checkout-api';
+import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
 
 const PENDING_PLAN_CHANGE_KEY = 'fanmark.plan-change.pending-plan';
 
@@ -162,7 +151,7 @@ const PlanSelection = () => {
     }
 
     if (expectedPlan) {
-      if (getStripePlanChangeBackend() === 'worker') {
+      {
         clearStripePlanChangeRequestId(expectedPlan as 'free' | 'creator' | 'max' | 'business');
         try { window.sessionStorage.removeItem(PENDING_PLAN_CHANGE_KEY); } catch { /* Storage is optional. */ }
       }
@@ -191,14 +180,7 @@ const PlanSelection = () => {
     if (result.requiresAction) {
       setPlanProcessingMode('stripe');
       try { window.sessionStorage.setItem(PENDING_PLAN_CHANGE_KEY, planType); } catch { /* Portal return remains usable without storage. */ }
-      const portal = getStripeCustomerPortalBackend() === 'worker'
-        ? await createStripeCustomerPortalThroughWorker()
-        : await (async () => {
-          const { data, error } = await supabase.functions.invoke('customer-portal');
-          if (error) throw error;
-          if (typeof data?.url !== 'string') throw new Error('customer portal URL is missing');
-          return { url: data.url as string };
-        })();
+      const portal = await createStripeCustomerPortalThroughWorker();
       window.location.href = portal.url;
       return;
     }
@@ -208,7 +190,7 @@ const PlanSelection = () => {
 
   // Resume plan projection polling after a Customer Portal payment-action round trip.
   useEffect(() => {
-    if (getStripePlanChangeBackend() !== 'worker' || pendingPlanSync || projectionTimeout) return;
+    if (pendingPlanSync || projectionTimeout) return;
     let pendingPlan: string | null = null;
     try { pendingPlan = window.sessionStorage.getItem(PENDING_PLAN_CHANGE_KEY); } catch { return; }
     if (!['free', 'creator', 'max', 'business'].includes(pendingPlan ?? '')) return;
@@ -241,9 +223,9 @@ const PlanSelection = () => {
       setInitialPlanType((profile?.plan_type || 'free') as PlanType);
       setProjectionTimeout(null);
       setPollState(user ? 'polling' : 'waiting-session');
-      
+
       clearQuery();
-      
+
       // Poll for subscription update
       toast({
         title: t('planSelection.processingPayment'),
@@ -259,7 +241,7 @@ const PlanSelection = () => {
     }
   }, [location.search, refetchSubscription, refetchProfile, profile?.plan_type, t, toast, user]);
 
-  // Transition from waiting-session to polling when the Supabase session is ready
+  // Transition from waiting-session to polling when the authentication session is ready
   useEffect(() => {
     if (!pendingCheckout) return;
     if (pollState !== 'waiting-session') return;
@@ -288,7 +270,7 @@ const PlanSelection = () => {
     finishPlanSync('success', expectedPlan);
   }, [finishPlanSync, pendingPlanSync, profile?.plan_type, projectionTimeout]);
 
-  // Timeout while waiting for Supabase session recovery
+  // Timeout while waiting for authentication session recovery
   useEffect(() => {
     if (!pendingCheckout) return;
     if (pollState !== 'waiting-session') return;
@@ -335,12 +317,12 @@ const PlanSelection = () => {
 
     try {
       const currentPlanType = profile.plan_type as PlanType;
-      
+
       // Upgrading from free to paid plan
       if (currentPlanType === 'free' && (planType === 'creator' || planType === 'business')) {
         setPlanProcessingMode('stripe');
 
-        if (getStripePlanCheckoutBackend() === 'worker') {
+        {
           const checkout = await createStripePlanCheckoutThroughWorker({
             planType,
             requestId: getStripePlanCheckoutRequestId(planType),
@@ -348,30 +330,12 @@ const PlanSelection = () => {
           window.location.href = checkout.url;
           return;
         }
-        
-        const { data, error } = await supabase.functions.invoke('create-checkout', {
-          body: { plan_type: planType }
-        });
-        
-        if (error) {
-          setPlanProcessingMode(null);
-          throw error;
-        }
-        
-        if (data?.url) {
-          setTimeout(() => {
-            window.location.href = data.url;
-          }, 500);
-        } else {
-          setPlanProcessingMode(null);
-          throw new Error('Checkout URL not received');
-        }
-        return;
+
       }
-      
+
       // Check if downgrade requires fanmark selection
       const evaluation = await evaluatePlanDowngrade(user.id, currentPlanType, planType, planLimits);
-      
+
       if (evaluation.requiresSelection) {
         // Show fanmark selection modal for downgrades
         setPendingPlanType(planType);
@@ -381,7 +345,7 @@ const PlanSelection = () => {
         setProcessingPlan(null);
         return;
       }
-      
+
       // Determine if this is an upgrade or downgrade
       const planOrder: Record<PlanType, number> = {
         free: 0,
@@ -391,60 +355,25 @@ const PlanSelection = () => {
         enterprise: 4,
         admin: 5,
       };
-      
+
       const isUpgrade = planOrder[planType] > planOrder[currentPlanType];
-      
+
       if (isUpgrade) {
         // UPGRADE: Use change-subscription with proration (no warning)
-        if (getStripePlanChangeBackend() === 'worker') {
+        {
           await beginWorkerPlanChange(planType);
-          return;
-        }
-        setPlanProcessingMode('processing');
-        
-        const { data, error } = await supabase.functions.invoke('change-subscription', {
-          body: { 
-            current_plan_type: currentPlanType,
-            new_plan_type: planType 
-          }
-        });
-        
-        if (error) {
-          setPlanProcessingMode(null);
-          throw error;
-        }
-        
-        if (data?.portal_url) {
-          setPlanProcessingMode('stripe');
-          setTimeout(() => {
-            window.location.href = data.portal_url;
-          }, 500);
           return;
         }
 
         // Redirect to Stripe Checkout if checkout_url is returned
-        if (data?.checkout_url) {
-          setTimeout(() => {
-            window.location.href = data.checkout_url;
-          }, 500);
-          return;
-        }
-        
+
         // Fallback: If no checkout_url (shouldn't happen for upgrades)
-        await Promise.all([refetchProfile(), refetchSubscription()]);
-        
-        setPlanProcessingMode(null);
-        toast({
-          title: t('planSelection.upgradeSuccess'),
-          description: t('planSelection.upgradeSuccessDescription', { 
-            plan: t(`planSelection.${planType}.name`) 
-          }),
-        });
+
       } else {
         // DOWNGRADE: Show warning dialog first
         const currentLimit = getPlanLimit(currentPlanType, planLimits);
         const newLimit = getPlanLimit(planType, planLimits);
-        
+
         setDowngradeInfo({
           currentPlan: currentPlanType,
           newPlan: planType,
@@ -478,41 +407,15 @@ const PlanSelection = () => {
     setPlanProcessingMode('processing');
 
     try {
-      if (getStripePlanChangeBackend() === 'worker') {
+      {
         await beginWorkerPlanChange(downgradeInfo.newPlan);
-        return;
-      }
-      const { data, error } = await supabase.functions.invoke('change-subscription', {
-        body: { 
-          current_plan_type: downgradeInfo.currentPlan,
-          new_plan_type: downgradeInfo.newPlan 
-        }
-      });
-      
-      if (error) {
-        setPlanProcessingMode(null);
-        throw error;
-      }
-      
-      if (data?.portal_url) {
-        setPlanProcessingMode('stripe');
-        setTimeout(() => {
-          window.location.href = data.portal_url;
-        }, 500);
         return;
       }
 
       // Check if we need to redirect to Checkout (for paid plan downgrades)
-      if (data?.checkout_url) {
-        setPlanProcessingMode('stripe');
-        setTimeout(() => {
-          window.location.href = data.checkout_url;
-        }, 500);
-        return;
-      }
-      
+
       // For downgrades, wait for plan_type to sync before unlocking the UI.
-      startPlanSync(downgradeInfo.newPlan);
+
     } catch (error) {
       console.error('Downgrade confirmation error:', error);
       setPlanProcessingMode(null);
@@ -538,15 +441,8 @@ const PlanSelection = () => {
       // Return unselected fanmarks using bulk-return-fanmarks
       if (unselectedLicenseIds.length > 0) {
         let bulkReturnData: { success: boolean; failed?: Array<{ licenseId: string; error: string }> } | null;
-        if (getFanmarkReturnBackend() === 'worker') {
+        {
           bulkReturnData = await bulkReturnFanmarksThroughWorker(unselectedLicenseIds);
-        } else {
-          const { error: bulkReturnError, data } = await supabase.functions.invoke<{
-            success: boolean;
-            failed?: Array<{ licenseId: string; error: string }>;
-          }>('bulk-return-fanmarks', { body: { license_ids: unselectedLicenseIds } });
-          if (bulkReturnError) throw bulkReturnError;
-          bulkReturnData = data;
         }
 
         if (bulkReturnData?.failed && bulkReturnData.failed.length > 0) {
@@ -561,42 +457,15 @@ const PlanSelection = () => {
 
       const currentPlanType = profile?.plan_type as PlanType;
 
-      if (getStripePlanChangeBackend() === 'worker') {
+      {
         await beginWorkerPlanChange(pendingPlanType);
-        return;
-      }
-      
-      const { data, error } = await supabase.functions.invoke('change-subscription', {
-        body: { 
-          current_plan_type: currentPlanType,
-          new_plan_type: pendingPlanType 
-        }
-      });
-      
-      if (error) {
-        setPlanProcessingMode(null);
-        throw error;
-      }
-      
-      if (data?.portal_url) {
-        setPlanProcessingMode('stripe');
-        setTimeout(() => {
-          window.location.href = data.portal_url;
-        }, 500);
         return;
       }
 
       // Check if we need to redirect to Checkout (for paid plan downgrades)
-      if (data?.checkout_url) {
-        setPlanProcessingMode('stripe');
-        setTimeout(() => {
-          window.location.href = data.checkout_url;
-        }, 500);
-        return;
-      }
-      
+
       // For downgrades, wait for plan_type to sync before unlocking the UI.
-      startPlanSync(pendingPlanType);
+
     } catch (error) {
       console.error('Fanmark selection error:', error);
       setPlanProcessingMode(null);
@@ -709,8 +578,8 @@ const PlanSelection = () => {
                 )}
                 <div
                   className={`relative flex h-full flex-col gap-6 rounded-3xl border-2 bg-background/95 p-6 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_25px_55px_rgba(101,195,200,0.16)] ${
-                    isCurrent 
-                      ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' 
+                    isCurrent
+                      ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20'
                       : 'border-primary/10'
                   }`}
                 >

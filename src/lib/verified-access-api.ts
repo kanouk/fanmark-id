@@ -54,15 +54,6 @@ interface RequestOptions {
   timeoutMs?: number;
 }
 
-export function getVerifiedAccessBackend(
-  value: string | undefined = import.meta.env?.VITE_VERIFIED_ACCESS_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new VerifiedAccessApiError("configuration");
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

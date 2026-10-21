@@ -7,7 +7,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const PLAN_TYPES = ["free", "creator", "max", "business"] as const;
 
 export type StripePlanChangePlan = typeof PLAN_TYPES[number];
-export type StripePlanChangeBackend = "supabase" | "worker";
+export type StripePlanChangeBackend = "worker";
 
 export class StripePlanChangeApiError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network" | "timeout";
@@ -23,15 +23,6 @@ export class StripePlanChangeApiError extends Error {
     this.status = status;
     this.code = code;
   }
-}
-
-export function getStripePlanChangeBackend(
-  value: string | undefined = import.meta.env?.VITE_STRIPE_PLAN_CHANGE_BACKEND,
-): StripePlanChangeBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new StripePlanChangeApiError("configuration");
 }
 
 export function buildStripePlanChangeUrl(baseUrl: string): URL {

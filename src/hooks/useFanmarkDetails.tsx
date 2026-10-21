@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAuth } from './useAuth';
 import { useFavoriteFanmarks, useInvalidateFavoriteFanmarks } from './useFavoriteFanmarks';
-import { getFavoritesBackend } from '@/lib/favorites-api';
+
 import { addFavoriteFanmark, removeFavoriteFanmark } from '@/lib/favorites-backend';
 import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
-import { fetchFanmarkDetailsFromWorker, FanmarkDetailsApiError, getFanmarkDetailsBackend } from '@/lib/fanmark-details-api';
+import { fetchFanmarkDetailsFromWorker, FanmarkDetailsApiError } from '@/lib/fanmark-details-api';
 
 export interface FanmarkDetails {
   fanmark_id: string;
@@ -53,9 +53,9 @@ export interface LicenseHistoryItem {
 
 export const useFanmarkDetails = (shortId: string | undefined) => {
   const { user, loading: authLoading } = useAuth();
-  const workerDetailsEnabled = getFanmarkDetailsBackend() === 'worker';
+  const workerDetailsEnabled = true;
   const invalidateFavorites = useInvalidateFavoriteFanmarks();
-  const workerFavoritesEnabled = getFavoritesBackend() === 'worker';
+  const workerFavoritesEnabled = true;
   const { favorites, isLoading: favoritesLoading, isError: favoritesError } = useFavoriteFanmarks({
     enabled: Boolean(user) && workerFavoritesEnabled,
   });
@@ -79,7 +79,7 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
     setError(null);
 
     try {
-      if (workerDetailsEnabled) {
+      {
         const data = await fetchFanmarkDetailsFromWorker(shortId);
         if (requestId !== requestSequence.current) return;
         setDetailsSourceKey(sourceKey);
@@ -88,54 +88,6 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
           setDetails(null);
         } else {
           setDetails(data as unknown as FanmarkDetails);
-        }
-      } else {
-        const { data, error } = await supabase.rpc('get_fanmark_details_by_short_id', {
-          shortid_param: shortId
-        });
-        if (requestId !== requestSequence.current) return;
-        if (error) throw error;
-        if (!data || data.length === 0) {
-          setError('not-found');
-          setDetails(null);
-        } else {
-        const fanmarkData = data[0];
-        const emojiIds = Array.isArray(fanmarkData.emoji_ids)
-          ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
-          : [];
-        const displayFanmark = fanmarkData.display_fanmark ?? '';
-        const normalizedDisplay = fanmarkData.normalized_emoji ?? '';
-
-        // Determine if current user is the owner
-        const isCurrentOwner = user ? user.id === fanmarkData.current_owner_id : false;
-        
-        // Check if current user has pending lottery (only relevant if user is owner and in grace period)
-        const hasPendingLottery = isCurrentOwner && 
-          fanmarkData.current_license_status === 'grace' && 
-          fanmarkData.has_user_lottery_entry === true;
-
-        setDetails({
-          ...fanmarkData,
-          emoji_ids: emojiIds,
-          display_fanmark: displayFanmark,
-          fanmark: normalizedDisplay,
-          license_history: Array.isArray(fanmarkData.license_history)
-            ? (fanmarkData.license_history as unknown as LicenseHistoryItem[]).map((item) => ({
-                license_start: item.license_start,
-                license_end: item.license_end,
-                grace_expires_at: item.grace_expires_at ?? null,
-                excluded_at: item.excluded_at ?? null,
-                is_returned: item.is_returned ?? false,
-                username: item.username,
-                display_name: item.display_name,
-                status: item.status,
-                is_initial_license: item.is_initial_license
-              }))
-            : [],
-          history_available: true,
-          has_pending_lottery: hasPendingLottery,
-          is_current_owner: isCurrentOwner,
-        } as FanmarkDetails);
         }
       }
     } catch (err) {
@@ -149,7 +101,7 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
       console.error('Error fetching fanmark details:', err);
       setError('load-failed');
       setDetails(null);
-      if (workerDetailsEnabled) setDetailsSourceKey(sourceKey);
+      setDetailsSourceKey(sourceKey);
     } finally {
       if (requestId === requestSequence.current) setLoading(false);
     }

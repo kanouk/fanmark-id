@@ -7,13 +7,7 @@ import { EmojiPicker } from 'frimousse';
 import { Plus, X, Eraser, Clipboard, Keyboard } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import {
-  segmentEmojiSequence,
-  convertEmojiSequenceToIdPair,
-  convertEmojiIdsToSequence,
-  canonicalizeEmojiString,
-  extractEmojiString,
-} from '@/lib/emojiConversion';
+import { segmentEmojiSequence, convertEmojiSequenceToIdPair, canonicalizeEmojiString, extractEmojiString } from '@/lib/emojiConversion';
 import { useImeAwareSubmit } from '@/hooks/useImeAwareSubmit';
 
 const normalizeInput = (text: string) => {
@@ -94,9 +88,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     (text: string) => {
       if (!text) return [] as string[];
 
-      if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
-        const segmenter = new (Intl as any).Segmenter('en', { granularity: 'grapheme' });
-        return Array.from(segmenter.segment(text), (segment: any) => segment.segment);
+      if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+        return Array.from(segmenter.segment(text), (segment) => segment.segment);
       }
 
       return segmentInput(text);
@@ -138,7 +132,6 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     }
     return graphemes;
   }, [segmentInput, splitGraphemes, value, maxLength]);
-
 
   const updateValue = useCallback(
     (newSegments: string[]) => {
@@ -324,7 +317,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       }
 
       const wasEmojiOnly = isEmojiOnly(sanitized);
-      let segments = segmentInput(sanitized);
+      const segments = segmentInput(sanitized);
       if (process.env.NODE_ENV === 'development') {
         console.log('[EmojiInput] handlePaste', { sanitized, wasEmojiOnly, segments });
       }
@@ -415,7 +408,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
     const wasEmojiOnly = isEmojiOnly(sanitized);
 
-    let segments = segmentInput(sanitized);
+    const segments = segmentInput(sanitized);
     if (process.env.NODE_ENV === 'development') {
       console.log('[EmojiInput] handleDirectInputConfirm', { sanitized, wasEmojiOnly, segments });
     }

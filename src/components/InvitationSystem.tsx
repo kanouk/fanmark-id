@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Check, Mail, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+
 import { useTranslation } from '@/hooks/useTranslation';
 import { useInvitationCode, InvitationPerks } from '@/hooks/useInvitationCode';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +17,7 @@ export function InvitationSystem({ onValidCode, onReset, allowWaitlist = true }:
   const { t } = useTranslation();
   const { validateCode, validationLoading, joinWaitlist } = useInvitationCode();
   const { toast } = useToast();
-  
+
   const [invitationCode, setInvitationCode] = useState('');
   const [validationMessage, setValidationMessage] = useState('');
   const [isValidCode, setIsValidCode] = useState(false);
@@ -42,7 +41,7 @@ export function InvitationSystem({ onValidCode, onReset, allowWaitlist = true }:
 
     setWaitlistLoading(true);
     const success = await joinWaitlist(waitlistEmail, 'invitation_page');
-    
+
     if (success) {
       toast({
         title: "✨ " + t('invitation.waitlistSuccess'),

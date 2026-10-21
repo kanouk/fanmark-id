@@ -205,6 +205,7 @@ function textEncoderLength(value: string): number {
 }
 
 function hasControlOrPathSeparator(value: string): boolean {
+  // eslint-disable-next-line no-control-regex -- Public paths must reject ASCII controls.
   return /[\u0000-\u001f\u007f\\/]/u.test(value);
 }
 
@@ -312,6 +313,7 @@ function assertAccessType(value: unknown): PublicAccessRecord["accessType"] {
 }
 
 function assertSafeUrl(value: string): string {
+  // eslint-disable-next-line no-control-regex -- Public URLs must reject ASCII controls and whitespace.
   if (textEncoderLength(value) > PUBLIC_ACCESS_URL_BYTES || /[\u0000-\u0020\u007f]/u.test(value)) {
     throw new PublicAccessUpstreamError();
   }

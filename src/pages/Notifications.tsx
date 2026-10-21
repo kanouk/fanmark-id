@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
-import { supabase } from '@/integrations/supabase/client';
+
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Bell, Check, Link2 } from 'lucide-react';
 import { useNotificationFormatter } from '@/hooks/useNotificationFormatter';
-import {
-  getNotificationsBackend,
-  loadOwnNotifications,
-  markAllOwnNotificationsRead,
-  markOwnNotificationRead,
-  type UserNotification,
-} from '@/lib/notifications-api';
+import { loadOwnNotifications, markAllOwnNotificationsRead, markOwnNotificationRead, type UserNotification } from '@/lib/notifications-api';
 
 export default function Notifications() {
   const { user } = useAuth();
@@ -27,7 +21,7 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
-  const notificationsBackend = getNotificationsBackend();
+  const notificationsBackend = "worker";
 
   useEffect(() => {
     if (!user) return;
@@ -35,18 +29,11 @@ export default function Notifications() {
     const fetchNotifications = async () => {
       setLoading(true);
       try {
-        if (notificationsBackend === 'worker') {
+        {
           setNotifications(await loadOwnNotifications(50));
           return;
         }
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('id, payload, read_at, triggered_at, priority, channel')
-          .eq('user_id', user.id)
-          .order('triggered_at', { ascending: false })
-          .limit(50);
-        if (error) throw error;
-        setNotifications((data || []) as unknown as UserNotification[]);
+
       } catch (error) {
         console.error('Error fetching notifications:', error);
         toast.error(t('notifications.toastFetchError'));
@@ -57,43 +44,19 @@ export default function Notifications() {
 
     void fetchNotifications();
 
-    if (notificationsBackend === 'worker') {
+    {
       const interval = window.setInterval(() => void fetchNotifications(), 30000);
       return () => window.clearInterval(interval);
     }
 
     // Realtime subscription
-    const channel = supabase
-      .channel('notifications-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          void fetchNotifications();
-        }
-      )
-      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user, notificationsBackend, t]);
 
   const markAsRead = async (notificationId: string) => {
     try {
-      if (notificationsBackend === 'worker') {
+      {
         await markOwnNotificationRead(notificationId, 'app');
-      } else {
-        const { error } = await supabase.rpc('mark_notification_read', {
-          notification_id_param: notificationId,
-          read_via_param: 'app'
-        });
-        if (error) throw error;
       }
       toast.success(t('notifications.toastMarkReadSuccess'));
       setNotifications((prev) =>
@@ -122,28 +85,13 @@ export default function Notifications() {
 
     setLoading(true);
     try {
-      if (notificationsBackend === 'worker') {
+      {
         await markAllOwnNotificationsRead();
-      } else {
-        const { error } = await supabase.rpc('mark_all_notifications_read', {
-          user_id_param: user.id,
-          read_via_param: 'app'
-        });
-        if (error) throw error;
       }
       toast.success(t('notifications.toastMarkAllReadSuccess'));
       try {
-        if (notificationsBackend === 'worker') {
+        {
           setNotifications(await loadOwnNotifications(50));
-        } else {
-          const { data, error } = await supabase
-            .from('notifications')
-            .select('id, payload, read_at, triggered_at, priority, channel')
-            .eq('user_id', user.id)
-            .order('triggered_at', { ascending: false })
-            .limit(50);
-          if (error) throw error;
-          setNotifications((data || []) as unknown as UserNotification[]);
         }
       } catch (refreshError) {
         console.error('Error refreshing notifications after marking all read:', refreshError);

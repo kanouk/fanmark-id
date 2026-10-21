@@ -1,12 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  buildFanmarkProfileApiUrl,
-  FanmarkProfileApiError,
-  getFanmarkProfileBackend,
-  getOwnerFanmarkProfileContext,
-  updateOwnerFanmarkProfile,
-} from "./fanmark-profile-api.ts";
+import { buildFanmarkProfileApiUrl, FanmarkProfileApiError, getOwnerFanmarkProfileContext, updateOwnerFanmarkProfile } from "./fanmark-profile-api.ts";
 
 const fanmarkId = "4d5884a0-304d-4205-8f73-251a2ba2f2d0";
 const licenseId = "45111111-1111-4111-8111-111111111111";
@@ -33,12 +27,6 @@ const context = {
     updated_at: "2026-09-25T00:00:00.000000Z",
   },
 };
-
-test("fanmark-profile backend defaults to Supabase and rejects unknown values", () => {
-  assert.equal(getFanmarkProfileBackend(undefined), "supabase");
-  assert.equal(getFanmarkProfileBackend("worker"), "worker");
-  assert.throws(() => getFanmarkProfileBackend("fallback"), FanmarkProfileApiError);
-});
 
 test("profile URL uses a validated fanmark id and clean Worker origin", () => {
   assert.equal(

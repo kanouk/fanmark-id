@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/error-message';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -7,15 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3, ArrowRightLeft, AlertTriangle } from 'lucide-react';
-import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock, FiInbox } from 'react-icons/fi';
+import { Settings, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3, ArrowRightLeft, AlertTriangle } from 'lucide-react';
+import { FiTarget, FiLayers, FiCompass, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock } from 'react-icons/fi';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
@@ -23,7 +24,7 @@ import { FanmarkReturnLoading } from './FanmarkReturnLoading';
 import { ReturnFanmarkDialog } from './ReturnFanmarkDialog';
 import { LicenseCountdown } from './LicenseCountdown';
 // Using Undo2 for return/return action
-import { supabase } from '@/integrations/supabase/client';
+
 import { useLifecycleSettings } from '@/hooks/useLifecycleSettings';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
@@ -31,15 +32,11 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
-import { fetchFanmarkAnalyticsSummaryWorker, getFanmarkAnalyticsBackend } from '@/lib/fanmark-analytics-api';
-import { getFanmarkReturnBackend, returnFanmarkThroughWorker } from '@/lib/fanmark-return-api';
-import { getOwnedFanmarksBackend, loadOwnedFanmarks } from '@/lib/owned-fanmarks-api';
-import { isBetterAuthEnabled } from '@/lib/auth-backend';
-import {
-  createStripeExtensionCheckoutThroughWorker,
-  getStripeExtensionCheckoutBackend,
-  waitForStripeExtensionApplication,
-} from '@/lib/stripe-extension-checkout-api';
+import { fetchFanmarkAnalyticsSummaryWorker } from '@/lib/fanmark-analytics-api';
+import { returnFanmarkThroughWorker } from '@/lib/fanmark-return-api';
+import { loadOwnedFanmarks } from '@/lib/owned-fanmarks-api';
+
+import { createStripeExtensionCheckoutThroughWorker, waitForStripeExtensionApplication } from '@/lib/stripe-extension-checkout-api';
 import { useTransferCode } from '@/hooks/useTransferCode';
 import { FanmarkTransferSection } from '@/components/FanmarkTransferSection';
 import { TransferCodeIssueDialog } from '@/components/TransferCodeIssueDialog';
@@ -142,7 +139,7 @@ export const FanmarkDashboard = () => {
     enabled: Boolean(user),
   });
   const { getPendingCheckout, setPendingCheckout, clearPendingCheckout } = usePendingCheckout();
-  
+
   const canAccessAnalytics = useMemo(() => {
     const planType = profile?.plan_type;
     return planType === 'creator' || planType === 'business' || planType === 'enterprise' || planType === 'admin';
@@ -230,13 +227,8 @@ export const FanmarkDashboard = () => {
     }
 
     try {
-      if (getFanmarkReturnBackend() === 'worker') {
+      {
         await returnFanmarkThroughWorker(fanmarkId);
-      } else {
-        const { error } = await supabase.functions.invoke('return-fanmark', {
-          body: { fanmark_id: fanmarkId },
-        });
-        if (error) throw error;
       }
 
       toast({
@@ -245,9 +237,9 @@ export const FanmarkDashboard = () => {
       });
 
       await fetchFanmarks();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error returning fanmark via function:', error);
-      const desc = error?.message || t('dashboard.returnErrorDescription');
+      const desc = getErrorMessage(error, t('dashboard.returnErrorDescription'));
       toast({
         title: t('dashboard.returnError'),
         description: desc,
@@ -323,31 +315,21 @@ export const FanmarkDashboard = () => {
 
     try {
       let data: { url?: string | null } | null;
-      if (getStripeExtensionCheckoutBackend() === 'worker') {
-        if (!isBetterAuthEnabled()) throw new Error('The Worker extension checkout requires Better Auth.');
+      {
+
         if (!extendTarget.licenseId) throw new Error('The license ID is unavailable.');
         data = await createStripeExtensionCheckoutThroughWorker({
           licenseId: extendTarget.licenseId,
           months: extendSelectedPlan.months,
           requestId,
         });
-      } else {
-        const result = await supabase.functions.invoke('create-extension-checkout', {
-          body: {
-            license_id: extendTarget.licenseId,
-            months: extendSelectedPlan.months,
-            request_id: requestId,
-          },
-        });
-        if (result.error) throw new Error(result.error.message ?? 'Failed to create checkout session');
-        data = result.data;
       }
 
       if (!data?.url) throw new Error('Failed to create checkout session');
 
       // Track pending checkout
       setPendingCheckout(extendTarget.fanmarkId,
-        getStripeExtensionCheckoutBackend() === 'worker' ? requestId : undefined, user?.id);
+        requestId, user?.id);
 
       // Redirect to Stripe Checkout
       window.location.href = data.url;
@@ -374,7 +356,7 @@ export const FanmarkDashboard = () => {
     // Check for extension URL parameters
     const extensionStatus = searchParams.get('extension');
 
-    if (extensionStatus === 'success' && getStripeExtensionCheckoutBackend() === 'worker') {
+    if (extensionStatus === 'success') {
       if (!user) return;
       const pending = getPendingCheckout();
       if (!pending?.requestId || pending.userId !== user.id || pending.fanmarkId !== searchParams.get('fanmarkId')) {
@@ -382,18 +364,6 @@ export const FanmarkDashboard = () => {
       }
       // Checkout redirect is not proof that the signed application has committed.
       navigate(location.pathname, { replace: true });
-    } else if (extensionStatus === 'success') {
-      clearExtensionCheckoutRequestIds();
-      extensionCheckoutRequestIds.current.clear();
-      clearPendingCheckout();
-      toast({
-        title: t('dashboard.paymentSuccessTitle'),
-        description: t('dashboard.paymentSuccessDescription'),
-      });
-      // Clear URL parameter and trigger refetch
-      navigate(location.pathname, { replace: true });
-      setLoading(true);
-      return;
     } else if (extensionStatus === 'canceled') {
       clearPendingCheckout();
       toast({
@@ -443,136 +413,22 @@ export const FanmarkDashboard = () => {
 
   const fetchFanmarks = useCallback(async () => {
     try {
-      if (getOwnedFanmarksBackend() === 'worker') {
-        if (!isBetterAuthEnabled()) {
-          throw new Error('The Worker-owned fanmarks backend requires Better Auth.');
-        }
+      {
+
         setFanmarks(await loadOwnedFanmarks());
         return true;
       }
 
       // First, get the licenses and fanmarks
-      const { data: licenses, error: licensesError } = await supabase
-        .from('fanmark_licenses')
-        .select(`
-          id,
-          fanmark_id,
-          license_start,
-          license_end,
-          grace_expires_at,
-          status,
-          is_returned,
-          excluded_at,
-          plan_excluded,
-          created_at,
-          display_fanmark,
-          fanmarks (
-            id,
-            user_input_fanmark,
-            emoji_ids,
-            normalized_emoji,
-            short_id,
-            status,
-            created_at,
-            updated_at,
-            tier_level
-          )
-        `)
-        .eq('user_id', user?.id)
-        .in('status', ['active', 'expired', 'grace'])
-        .order('created_at', { ascending: false });
-
-      if (licensesError) throw licensesError;
-
-      if (!licenses || licenses.length === 0) {
-        setFanmarks([]);
-        return;
-      }
 
       // Get all license IDs to fetch configs
-      const licenseIds = licenses.map(license => license.id).filter(Boolean);
 
       // Fetch basic configs for all licenses
-      const { data: basicConfigs, error: configError } = await supabase
-        .from('fanmark_basic_configs')
-        .select('license_id, access_type, fanmark_name')
-        .in('license_id', licenseIds);
-
-      if (configError) {
-        console.warn('Error fetching basic configs:', configError);
-      }
 
       // Create lookup maps for configs
-      const basicConfigMap = new Map((basicConfigs || []).map(config => [config.license_id, config]));
 
       // Process fanmarks with their configs
-      const fanmarksWithDefaults = licenses
-        .map((license) => {
-          const fanmark = license.fanmarks as unknown as {
-            id: string;
-            user_input_fanmark?: string | null;
-            emoji_ids?: (string | null)[] | null;
-            normalized_emoji?: string | null;
-            short_id: string;
-            status: string;
-            created_at: string;
-            updated_at: string;
-            tier_level?: number | null;
-          } | null;
 
-          if (!fanmark) {
-            return null;
-          }
-
-          const rawEmojiIds = Array.isArray(fanmark.emoji_ids)
-            ? (fanmark.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
-            : [];
-          const userInputValue =
-            typeof fanmark.user_input_fanmark === 'string' && fanmark.user_input_fanmark.length > 0
-              ? fanmark.user_input_fanmark
-              : '';
-          const displayFanmark = license.display_fanmark ?? '';
-          const emojiKey = rawEmojiIds.length > 0
-            ? rawEmojiIds.join(':')
-            : displayFanmark || userInputValue || fanmark.id;
-          const basicConfig = basicConfigMap.get(license.id);
-
-          return {
-            ...fanmark,
-            user_input_fanmark: userInputValue,
-            emoji_ids: rawEmojiIds,
-            fanmark: displayFanmark,
-            emoji_key: emojiKey,
-            // Fill in required properties from Fanmark interface
-            access_type: basicConfig?.access_type || 'inactive',
-            fanmark_name: basicConfig?.fanmark_name || displayFanmark || userInputValue || '',
-            license_id: license.id,
-            tier_level: typeof fanmark.tier_level === 'number' ? fanmark.tier_level : null,
-            current_license_id: license.id,
-            is_transferable: true, // Default value
-            user_id: '', // Not available in new schema
-            // Add license information for compatibility
-            current_license: {
-              id: license.id,
-              license_start: license.license_start,
-              license_end: license.license_end,
-              status: license.status,
-              created_at: license.created_at,
-            },
-            fanmark_licenses: {
-              license_start: license.license_start,
-              license_end: license.license_end,
-              grace_expires_at: license.grace_expires_at,
-              status: license.status,
-              is_returned: license.is_returned ?? false,
-              excluded_at: license.excluded_at ?? null,
-              excluded_from_plan: license.plan_excluded ? String(license.plan_excluded) : null,
-            },
-          } as Fanmark;
-        })
-        .filter((item): item is Fanmark => item !== null);
-      
-      setFanmarks(fanmarksWithDefaults);
     } catch (error) {
       console.error('Error fetching fanmarks:', error);
       toast({
@@ -592,7 +448,7 @@ export const FanmarkDashboard = () => {
   }, [fetchFanmarks, user]);
 
   useEffect(() => {
-    if (!user || getStripeExtensionCheckoutBackend() !== 'worker') return;
+    if (!user) return;
     const pending = getPendingCheckout();
     if (!pending?.requestId || pending.userId !== user.id) return;
     const controller = new AbortController();
@@ -632,56 +488,18 @@ export const FanmarkDashboard = () => {
       try {
         setAccessCountLoading(true);
 
-        if (getFanmarkAnalyticsBackend() === 'worker') {
+        {
           const total = await fetchFanmarkAnalyticsSummaryWorker({ days: 30 });
           setTotalAccessCount(total);
           return;
         }
 
         // Filter to only active fanmarks (exclude grace/expired status)
-        const activeFanmarkIds = fanmarks
-          .filter((fanmark) => {
-            const timing = deriveLicenseTiming({
-              licenseEnd: fanmark.fanmark_licenses?.license_end ?? null,
-              graceExpiresAt: fanmark.fanmark_licenses?.grace_expires_at ?? null,
-              status: fanmark.fanmark_licenses?.status ?? null,
-              gracePeriodDays: gracePeriodDaysSetting,
-              isReturned: fanmark.fanmark_licenses?.is_returned ?? null,
-            });
-            return timing.status === 'active';
-          })
-          .map((fanmark) => fanmark.id);
 
         // If no active fanmarks, set count to 0
-        if (activeFanmarkIds.length === 0) {
-          setTotalAccessCount(0);
-          setAccessCountLoading(false);
-          return;
-        }
 
         // Get date range for last 30 days
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30);
 
-        const formatDate = (date: Date) => {
-          return date.toISOString().split('T')[0];
-        };
-
-        const { data, error } = await supabase
-          .from('fanmark_access_daily_stats')
-          .select('access_count')
-          .in('fanmark_id', activeFanmarkIds)
-          .gte('stat_date', formatDate(startDate))
-          .lte('stat_date', formatDate(endDate));
-
-        if (error) throw error;
-
-        const total = (data || []).reduce(
-          (sum: number, row: { access_count: number }) => sum + (row.access_count || 0),
-          0
-        );
-        setTotalAccessCount(total);
       } catch (err) {
         console.error('Failed to fetch access count:', err);
         setTotalAccessCount(0);
@@ -742,14 +560,14 @@ export const FanmarkDashboard = () => {
 
   // Helper function to determine if a fanmark is inactive/expired
   const isFanmarkInactive = (fanmark: Fanmark) => {
-    const licenseData = fanmark.fanmark_licenses as any;
+    const licenseData = fanmark.fanmark_licenses;
     const timing = getLicenseTiming(licenseData);
     return timing.status === 'expired';
   };
 
   // Helper function to determine if a fanmark is returned/expired
   const isReturned = (fanmark: Fanmark) => {
-    const licenseData = fanmark.fanmark_licenses as any;
+    const licenseData = fanmark.fanmark_licenses;
     return Boolean(licenseData?.is_returned);
   };
 
@@ -857,8 +675,8 @@ export const FanmarkDashboard = () => {
       }
 
       if (currentWeight === existingWeight) {
-        const existingDate = parseDateString((existing.fanmark_licenses as any)?.license_start)?.getTime() ?? 0;
-        const currentDate = parseDateString((fanmark.fanmark_licenses as any)?.license_start)?.getTime() ?? 0;
+        const existingDate = parseDateString((existing.fanmark_licenses)?.license_start)?.getTime() ?? 0;
+        const currentDate = parseDateString((fanmark.fanmark_licenses)?.license_start)?.getTime() ?? 0;
         if (currentDate > existingDate) {
           map.set(key, fanmark);
         }
@@ -869,7 +687,7 @@ export const FanmarkDashboard = () => {
   }, [fanmarks, gracePeriodDaysSetting]);
 
   const activeFanmarks = dedupedFanmarks.filter(f => {
-    const licenseData = f.fanmark_licenses as any;
+    const licenseData = f.fanmark_licenses;
     const timing = getLicenseTiming(licenseData);
     return timing.status === 'active' && !isReturned(f);
   }).length;
@@ -885,8 +703,8 @@ export const FanmarkDashboard = () => {
 
   const filteredFanmarks = useMemo(() => {
     const sorted = [...dedupedFanmarks].sort((a, b) => {
-      const aLicenseData = a.fanmark_licenses as any;
-      const bLicenseData = b.fanmark_licenses as any;
+      const aLicenseData = a.fanmark_licenses;
+      const bLicenseData = b.fanmark_licenses;
       const aTiming = getLicenseTiming(aLicenseData);
       const bTiming = getLicenseTiming(bLicenseData);
 
@@ -993,7 +811,7 @@ export const FanmarkDashboard = () => {
                 </div>
               </div>
               <div className="mt-4 w-full overflow-hidden rounded-full bg-muted h-2.5">
-                 <div 
+                 <div
                    className="bg-primary h-2.5 rounded-full transition-all duration-500"
                    style={{ width: `${isUnlimited ? 0 : Math.min((activeFanmarks / fanmarkLimit) * 100, 100)}%` }}
                  />
@@ -1077,14 +895,14 @@ export const FanmarkDashboard = () => {
         {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           <TabsList className="grid w-full grid-cols-2 gap-1.5 sm:gap-2 rounded-full border border-primary/20 bg-background/70 p-1.5 sm:p-2 backdrop-blur">
-            <TabsTrigger 
+            <TabsTrigger
               value="my-fanmarks"
               className="gap-1.5 sm:gap-2 rounded-full py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg whitespace-nowrap"
             >
               <FiLayers className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               {t('dashboard.tabs.myFanmarks')}
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="acquisition"
               className="gap-1.5 sm:gap-2 rounded-full py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg whitespace-nowrap"
             >

@@ -32,11 +32,8 @@ import { Loader2, Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Eye } from '
 import { useToast } from '@/hooks/use-toast';
 import { useExtensionCouponAdmin, ExtensionCouponRow, ExtensionCouponUsageRow, CreateCouponValues } from '@/hooks/useExtensionCouponAdmin';
 import { useTranslation } from '@/hooks/useTranslation';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  fetchFanmarkTierMaster,
-  getReferenceMasterReadBackend,
-} from '@/lib/reference-master-api';
+
+import { fetchFanmarkTierMaster } from '@/lib/reference-master-api';
 
 interface TierOption {
   tier_level: number;
@@ -64,7 +61,7 @@ export const AdminExtensionCoupons = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { coupons, loading, error, refresh, createCoupon, toggleActive, deleteCoupon, fetchUsages } = useExtensionCouponAdmin();
-  
+
   const [tierOptions, setTierOptions] = useState<TierOption[]>([]);
   const [tiersLoading, setTiersLoading] = useState(true);
   const [tiersError, setTiersError] = useState(false);
@@ -83,10 +80,8 @@ export const AdminExtensionCoupons = () => {
       setTiersLoading(true);
       setTiersError(false);
       try {
-        const backend = getReferenceMasterReadBackend();
-        mayUseLegacyFallback = backend === 'supabase';
-        const activeTiers = backend === 'worker'
-          ? (await fetchFanmarkTierMaster())
+                mayUseLegacyFallback = false;
+        const activeTiers = (await fetchFanmarkTierMaster())
             .filter((tier) => tier.isActive)
             .map((tier) => ({
               tier_level: tier.tierLevel,
@@ -94,15 +89,7 @@ export const AdminExtensionCoupons = () => {
               emoji_count_min: tier.emojiCountMin,
               emoji_count_max: tier.emojiCountMax,
               is_active: tier.isActive,
-            }))
-          : await (async () => {
-            const { data, error: tierError } = await supabase
-              .from('fanmark_tiers')
-              .select('tier_level, display_name, emoji_count_min, emoji_count_max, is_active')
-              .order('tier_level', { ascending: true });
-            if (tierError) throw tierError;
-            return (data || []).filter((tier) => tier.is_active !== false);
-          })();
+            }));
         if (isMounted) {
           if (activeTiers.length === 0) throw new Error('No active fanmark tiers in the selected release');
           setTierOptions(activeTiers);
@@ -433,7 +420,7 @@ const CreateCouponDialog = ({ loading, tierOptions, tiersLoading, onSubmit, onCl
             maxLength={20}
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label>延長月数</Label>
           <Select value={String(months)} onValueChange={(v) => setMonths(Number(v))}>

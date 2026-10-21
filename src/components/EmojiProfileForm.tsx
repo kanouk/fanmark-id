@@ -12,8 +12,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { useCoverImageUpload } from '@/hooks/useCoverImageUpload';
 import type { EmojiProfile, EmojiProfileUpdates } from '@/hooks/useEmojiProfile';
-import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User, Eye } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, User, Eye } from 'lucide-react';
+
 import { normalizeSocialUrlForSave, socialPlatforms } from '@/lib/social-platforms';
 import { SocialLinkInputCard } from '@/components/SocialLinkInputCard';
 
@@ -580,8 +580,6 @@ export const EmojiProfileForm = ({
             </div>
           </CardContent>
         </Card>
-
-
 
         {/* Social Links */}
         <Card className="rounded-3xl border border-primary/20 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur card-pop">

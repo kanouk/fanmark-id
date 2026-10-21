@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+
 import { Clock, PlayCircle } from 'lucide-react';
-import {
-  getLifecycleRunBackend,
-  LifecycleRunApiError,
-  runLicenseExpiryInWorker,
-  type LifecycleRunResult,
-} from '@/lib/lifecycle-run-api';
+import { LifecycleRunApiError, runLicenseExpiryInWorker, type LifecycleRunResult } from '@/lib/lifecycle-run-api';
 
 type LegacyExpirationResult = {
   cloudflareLifecycleRun?: LifecycleRunResult;
@@ -46,7 +41,7 @@ export const AdminExpirationTest = () => {
   const runExpirationCheck = async () => {
     setIsRunning(true);
     try {
-      if (getLifecycleRunBackend() === 'worker') {
+      {
         const result = await runLicenseExpiryInWorker();
         setLastResult({ cloudflareLifecycleRun: result });
         setLastRunAt(new Date());
@@ -63,21 +58,6 @@ export const AdminExpirationTest = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('check-expired-licenses', {
-        body: { manual_trigger: true }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const result = data as LegacyExpirationResult | null;
-      setLastResult(result);
-      setLastRunAt(new Date());
-      toast({
-        title: '失効処理完了',
-        description: `${result?.licenses_to_grace || 0}件が失効処理中に、${result?.licenses_to_expired || 0}件が失効になりました`,
-      });
     } catch (error: unknown) {
       console.error('Error running expiration check:', error);
       const message = error instanceof Error ? error.message : '失効処理の実行に失敗しました';

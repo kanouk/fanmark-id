@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getWaitlistAdminBackend,
-  loadWaitlistAdmin,
-  revealWaitlistAdminEmail,
-  WaitlistAdminClientError,
-} from "./waitlist-admin-api.ts";
+import { loadWaitlistAdmin, revealWaitlistAdminEmail, WaitlistAdminClientError } from "./waitlist-admin-api.ts";
 
 const baseUrl = "https://app.example.test";
 const id = "46111111-1111-4111-8111-111111111111";
@@ -29,12 +24,6 @@ function jsonResponse(value: unknown, status = 200): Response {
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
-
-test("waitlist admin backend defaults to Supabase and accepts an explicit Worker selection", () => {
-  assert.equal(getWaitlistAdminBackend(undefined), "supabase");
-  assert.equal(getWaitlistAdminBackend(" worker "), "worker");
-  assert.throws(() => getWaitlistAdminBackend("other"), WaitlistAdminClientError);
-});
 
 test("loads only hashed waitlist rows and safe audit projections through the same-origin Worker", async () => {
   let requestedUrl: URL | null = null;

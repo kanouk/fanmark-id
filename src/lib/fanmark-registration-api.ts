@@ -3,6 +3,24 @@ import { buildRecentFanmarksApiUrl, getRecentFanmarksApiBaseUrl } from "./recent
 const REGISTER_PATH = "/api/fanmarks/register";
 const MAX_RESPONSE_BYTES = 12 * 1024;
 
+export interface FanmarkRegistrationResponse {
+  success: true;
+  fanmark: {
+    id: string;
+    user_input_fanmark: string;
+    display_fanmark: string;
+    emoji_ids: string[];
+    normalized_emoji_ids: string[];
+    short_id: string;
+    canonical_url: string;
+    display_url: string;
+    tier_level: number;
+    tier_display_name: string;
+    initial_license_days: number | null;
+  };
+  error?: string;
+}
+
 export type FanmarkRegistrationErrorKind = "configuration" | "http" | "invalid_response" | "network" | "timeout";
 
 export class FanmarkRegistrationApiError extends Error {
@@ -17,15 +35,6 @@ export class FanmarkRegistrationApiError extends Error {
     this.kind = kind;
     this.status = status;
   }
-}
-
-export function getFanmarkRegistrationBackend(
-  value: string | undefined = import.meta.env?.VITE_FANMARK_REGISTRATION_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new FanmarkRegistrationApiError("configuration");
 }
 
 export function buildFanmarkRegistrationApiUrl(baseUrl: string): URL {
@@ -79,7 +88,7 @@ async function readResponse(response: Response): Promise<unknown> {
   }
 }
 
-export async function registerFanmarkThroughWorker<T>(
+export async function registerFanmarkThroughWorker<T = FanmarkRegistrationResponse>(
   body: unknown,
   options: {
     baseUrl?: string;
@@ -131,18 +140,15 @@ export async function registerFanmarkThroughWorker<T>(
   }
 }
 
-export interface SupabaseRegistrationResult<T> {
+export interface FanmarkRegistrationResult<T> {
   data: T | null;
   error: { message: string } | null;
 }
 
-export async function invokeFanmarkRegistration<T>(
-  body: unknown,
-  supabaseInvoke: () => Promise<SupabaseRegistrationResult<T>>,
-  options: Parameters<typeof registerFanmarkThroughWorker>[1] & { backend?: string } = {},
-): Promise<SupabaseRegistrationResult<T>> {
-  const backend = getFanmarkRegistrationBackend(options.backend);
-  if (backend === "supabase") return supabaseInvoke();
+export async function invokeFanmarkRegistration<T = FanmarkRegistrationResponse>(body: unknown, options: Parameters<typeof registerFanmarkThroughWorker>[1] & { backend?: string } = {}
+): Promise<FanmarkRegistrationResult<T>> {
+  const backend = "worker";
+
   try {
     return { data: await registerFanmarkThroughWorker<T>(body, options), error: null };
   } catch (error) {

@@ -8,9 +8,8 @@ import { EmojiProfileForm } from '@/components/EmojiProfileForm';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, PenLine } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { getFanmarkProfileBackend } from '@/lib/fanmark-profile-api';
 
 export default function EmojiProfileEdit() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
@@ -31,32 +30,11 @@ export default function EmojiProfileEdit() {
     const fetchLicenseId = async () => {
       setLicenseLoading(true);
       try {
-        if (getFanmarkProfileBackend() === 'worker') {
+        {
           setLicenseId(fanmarkId);
           return;
         }
 
-        const { data, error } = await supabase
-          .from('fanmark_licenses')
-          .select('id')
-          .eq('fanmark_id', fanmarkId)
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .gt('license_end', new Date().toISOString())
-          .single();
-
-        if (error) {
-          console.error('Error fetching license:', error);
-          toast({
-            title: t('emojiProfile.licenseError'),
-            description: t('emojiProfile.licenseErrorDescription'),
-            variant: 'destructive',
-          });
-          navigate(`/fanmarks/${fanmarkId}/settings`);
-          return;
-        }
-
-        setLicenseId(data.id);
       } catch (error) {
         console.error('Error fetching license:', error);
         toast({
@@ -75,9 +53,9 @@ export default function EmojiProfileEdit() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/auth', { 
+      navigate('/auth', {
         state: { from: location.pathname + location.search + location.hash },
-        replace: true 
+        replace: true
       });
     }
   }, [authLoading, user, navigate, location]);

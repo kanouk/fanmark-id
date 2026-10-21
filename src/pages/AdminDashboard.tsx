@@ -15,7 +15,7 @@ import AdminEmailTemplates from "@/components/AdminEmailTemplates";
 import { AdminBroadcastEmail } from "@/components/AdminBroadcastEmail";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import { LogOut, Sparkles } from "lucide-react";
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();

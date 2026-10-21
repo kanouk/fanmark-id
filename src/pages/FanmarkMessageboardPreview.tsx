@@ -6,8 +6,8 @@ import { ArrowLeft, Loader2, MessageSquare, Edit, Eye } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { supabase } from '@/integrations/supabase/client';
-import { getFanmarkSettingsBackend, getOwnerFanmarkSettings } from '@/lib/fanmark-settings-api';
+
+import { getOwnerFanmarkSettings } from '@/lib/fanmark-settings-api';
 
 interface Fanmark {
   id: string;
@@ -48,7 +48,7 @@ export default function FanmarkMessageboardPreview() {
 
       setLoading(true);
       try {
-        if (getFanmarkSettingsBackend() === 'worker') {
+        {
           const fanmarkData = await getOwnerFanmarkSettings(fanmarkId);
           const displayFanmark = fanmarkData.display_fanmark ?? fanmarkData.user_input_fanmark;
           setFanmark({
@@ -66,37 +66,7 @@ export default function FanmarkMessageboardPreview() {
         }
 
         // Use the same RPC function as FanmarkSettingsPage
-        const { data, error } = await supabase.rpc('get_fanmark_complete_data', {
-          fanmark_id_param: fanmarkId
-        });
 
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          console.error('Fanmark not found');
-          navigate('/dashboard');
-          return;
-        }
-
-        const fanmarkData = data[0];
-        const emojiIds = Array.isArray(fanmarkData.emoji_ids)
-          ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
-          : [];
-        const displayFanmark = fanmarkData.display_fanmark ?? '';
-
-        const fanmark: Fanmark = {
-          id: fanmarkData.id,
-          user_input_fanmark: fanmarkData.user_input_fanmark,
-          display_fanmark: displayFanmark,
-          emoji_ids: emojiIds,
-          fanmark: displayFanmark,
-          fanmark_name: fanmarkData.fanmark_name || displayFanmark,
-          access_type: fanmarkData.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
-          text_content: fanmarkData.text_content || '',
-          is_password_protected: fanmarkData.is_password_protected || false,
-        };
-
-        setFanmark(fanmark);
       } catch (error) {
         console.error('Error fetching fanmark:', error);
         navigate('/dashboard');
@@ -219,10 +189,10 @@ export default function FanmarkMessageboardPreview() {
                   <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-accent/25 rounded-full blur-2xl animate-float" style={{ animationDelay: '1s' }} />
                   <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-primary/15 rounded-full blur-xl animate-float" style={{ animationDelay: '2s' }} />
                 </div>
-                
+
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-                
+
                 {/* Fanmark Badge - Same position as Profile */}
                 <div className="absolute top-4 left-4">
                   <span className="inline-flex items-center px-4 py-2 text-xl md:text-2xl font-semibold text-primary tracking-[0.3em] leading-none rounded-2xl bg-background/90 backdrop-blur-md shadow-lg border border-primary/10">

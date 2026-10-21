@@ -9,7 +9,6 @@ import { isStagingNotificationWakeTarget } from "./staging-notification-wake-tar
 const packageJson = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
 const envTypes = readFileSync(new URL("../../src/vite-env.d.ts", import.meta.url), "utf8");
 const stagingBuild = packageJson.scripts["build:cloudflare-staging"];
-const sourceRoot = fileURLToPath(new URL("../../src", import.meta.url));
 const workerSourceRoot = fileURLToPath(new URL("../../workers/api/src", import.meta.url));
 const appStagingConfig = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
 const lifecycleProfileMigrations = [
@@ -44,56 +43,6 @@ function listWorkerSourceFiles(directory) {
     return /\.(?:mjs|ts)$/u.test(entry.name) ? [entryPath] : [];
   });
 }
-
-test("Cloudflare staging build explicitly selects every typed backend", () => {
-  assert.equal(typeof stagingBuild, "string");
-
-  const declaredSelectors = [...envTypes.matchAll(/readonly\s+(VITE_[A-Z0-9_]+_BACKEND)\??\s*:/gu)]
-    .map((match) => match[1]);
-  const sourceText = listTypeScriptFiles(sourceRoot)
-    .filter((filePath) => path.basename(filePath) !== "vite-env.d.ts")
-    .map((filePath) => readFileSync(filePath, "utf8"))
-    .join("\n");
-  const sourceSelectors = [...new Set([...sourceText.matchAll(/\b(VITE_[A-Z0-9_]+_BACKEND)\b/gu)].map((match) => match[1]))]
-    .sort((left, right) => left.localeCompare(right));
-  assert.deepEqual([...declaredSelectors].sort((left, right) => left.localeCompare(right)), sourceSelectors,
-    "every backend selector consumed by frontend source must have an ImportMetaEnv declaration");
-
-  const assignments = new Map(
-    [...stagingBuild.matchAll(/\b(VITE_[A-Z0-9_]+_BACKEND)=([A-Za-z0-9_-]+)/gu)]
-      .map((match) => [match[1], match[2]]),
-  );
-  assert.deepEqual([...assignments.keys()].sort((left, right) => left.localeCompare(right)), sourceSelectors,
-    "the staging build must explicitly assign every consumed backend selector and no unknown selectors");
-
-  const missing = declaredSelectors.filter((selector) => !assignments.has(selector));
-  assert.deepEqual(missing, [], "staging must not silently use a selector's Supabase default");
-  assert.ok(declaredSelectors.length > 0, "the frontend backend contract must remain discoverable");
-  assert.ok([...assignments.values()].every((value) => ["worker", "supabase", "d1", "r2", "disabled"].includes(value)));
-
-  const supabaseSelected = [...assignments.entries()].filter(([, value]) => value === "supabase").map(([name]) => name);
-  assert.deepEqual(supabaseSelected, [], "Cloudflare staging must not route a typed backend back to Supabase");
-
-  const nonWorker = [...assignments.entries()]
-    .filter(([, value]) => value !== "worker")
-    .sort(([left], [right]) => left.localeCompare(right));
-  assert.deepEqual(nonWorker, [
-    ["VITE_BROADCAST_SEND_BACKEND", "disabled"],
-    ["VITE_BROADCAST_TEST_SEND_BACKEND", "disabled"],
-    ["VITE_REFERENCE_MASTER_ADMIN_BACKEND", "d1"],
-    ["VITE_STORAGE_BACKEND", "r2"],
-  ], "only unconfigured broadcast delivery is disabled; reference masters and Storage use native adapters");
-});
-
-test("every typed frontend backend selector has an implementation reference", () => {
-  const sourceFiles = listTypeScriptFiles(sourceRoot).filter((filePath) => path.basename(filePath) !== "vite-env.d.ts");
-  const sourceText = sourceFiles.map((filePath) => readFileSync(filePath, "utf8")).join("\n");
-  const declaredSelectors = [...envTypes.matchAll(/readonly\s+(VITE_[A-Z0-9_]+_BACKEND)\??\s*:/gu)]
-    .map((match) => match[1]);
-  const unused = declaredSelectors.filter((selector) => !sourceText.includes(selector));
-
-  assert.deepEqual(unused, [], "declared selectors must be consumed by frontend source, not just named in the build");
-});
 
 test("the exact sequence-backed fanmark event bigint key stays internal to SQL", () => {
   const workerSources = listWorkerSourceFiles(workerSourceRoot).map((filePath) => ({

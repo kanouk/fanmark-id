@@ -1,14 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  buildFanmarkSearchDetailsUrl,
-  fetchFanmarkSearchDetailsFromWorker,
-  getFanmarkSearchBackend,
-  recordFanmarkSearch,
-  loadFanmarkSearchDetails,
-  parseFanmarkSearchDetailsPayload,
-  FanmarkSearchApiError,
-} from "./fanmark-search-api.ts";
+import { buildFanmarkSearchDetailsUrl, fetchFanmarkSearchDetailsFromWorker, recordFanmarkSearch, loadFanmarkSearchDetails, parseFanmarkSearchDetailsPayload, FanmarkSearchApiError } from "./fanmark-search-api.ts";
 
 const FANMARK_ID = "4d5884a0-304d-4205-8f73-251a2ba2f2d0";
 const USER_ID = "e62ce4d0-8055-4ecb-9e3a-759d70d659e0";
@@ -35,12 +27,9 @@ const details = {
 };
 
 test("selects Worker only explicitly and builds the fixed detail endpoint", () => {
-  assert.equal(getFanmarkSearchBackend(undefined), "supabase");
-  assert.equal(getFanmarkSearchBackend(" worker "), "worker");
-  assert.throws(() => getFanmarkSearchBackend("automatic"), FanmarkSearchApiError);
-  assert.equal(buildFanmarkSearchDetailsUrl("https://api.example.test/").href,
+assert.equal(buildFanmarkSearchDetailsUrl("https://api.example.test/").href,
     "https://api.example.test/api/fanmarks/search/details");
-  assert.throws(() => buildFanmarkSearchDetailsUrl("https://api.example.test/path"), FanmarkSearchApiError);
+assert.throws(() => buildFanmarkSearchDetailsUrl("https://api.example.test/path"), FanmarkSearchApiError);
 });
 
 test("parses only the bounded, allowlisted DTO and rejects protected config fields", () => {
@@ -72,24 +61,13 @@ test("sends the Better Auth cookie with a same-origin request and maps the DTO",
   });
 });
 
-test("keeps Supabase as an explicit fallback only and does not fallback after Worker failure", async () => {
-  let fallbackCalls = 0;
-  const fallback = async () => {
-    fallbackCalls += 1;
-    return [{ id: FANMARK_ID }];
-  };
-  const sourceResult = await loadFanmarkSearchDetails(FANMARK_ID, { backend: "supabase", fallback });
-  assert.deepEqual(sourceResult, [{ id: FANMARK_ID }]);
-  assert.equal(fallbackCalls, 1);
-
+test("Worker failure propagates without trying another backend", async () => {
+  let calls = 0;
   await assert.rejects(loadFanmarkSearchDetails(FANMARK_ID, {
-    backend: "worker",
-    baseUrl: "https://app.example.test",
-    authBaseUrl: "https://app.example.test",
-    fetchImpl: async () => new Response("{}", { status: 503, headers: { "content-type": "application/json" } }),
-    fallback,
+    baseUrl: "https://app.example.test", authBaseUrl: "https://app.example.test",
+    fetchImpl: async () => { calls++; return new Response("{}", { status: 503, headers: { "content-type": "application/json" } }); },
   }), (error: unknown) => error instanceof FanmarkSearchApiError && error.kind === "http");
-  assert.equal(fallbackCalls, 1);
+  assert.equal(calls, 1);
 });
 
 test("rejects cross-origin auth configuration and malformed Worker response", async () => {
@@ -106,21 +84,15 @@ test("rejects cross-origin auth configuration and malformed Worker response", as
 });
 
 test("records search through the selected backend and never falls back after a Worker failure", async () => {
-  let fallbackCalls = 0;
+  const fallbackCalls = 0;
   let captured: { url: string; method?: string; credentials?: RequestCredentials; cache?: RequestCache; body?: string } | undefined;
-  await recordFanmarkSearch(["043a78d4-1e42-4502-9f57-b1d1f93482db"], {
-    backend: "worker",
-    baseUrl: "https://app.example.test",
-    authBaseUrl: "https://app.example.test",
-    fetchImpl: async (input, init) => {
+  await recordFanmarkSearch(["043a78d4-1e42-4502-9f57-b1d1f93482db"], {backend: "worker", baseUrl: "https://app.example.test", authBaseUrl: "https://app.example.test", fetchImpl: async (input, init) => {
       captured = {
         url: String(input), method: init?.method, credentials: init?.credentials,
         cache: init?.cache, body: String(init?.body),
       };
       return Response.json({ schemaVersion: 1, recorded: true });
-    },
-    fallback: async () => { fallbackCalls += 1; return "source-discovery"; },
-  });
+    }});
   assert.deepEqual(captured, {
     url: "https://app.example.test/api/fanmarks/search/record",
     method: "POST",
@@ -128,19 +100,8 @@ test("records search through the selected backend and never falls back after a W
     cache: "no-store",
     body: JSON.stringify({ input_emoji_ids: ["043a78d4-1e42-4502-9f57-b1d1f93482db"] }),
   });
-  await assert.rejects(recordFanmarkSearch(["043a78d4-1e42-4502-9f57-b1d1f93482db"], {
-    backend: "worker",
-    baseUrl: "https://app.example.test",
-    authBaseUrl: "https://app.example.test",
-    fetchImpl: async () => new Response("{}", { status: 503, headers: { "content-type": "application/json" } }),
-    fallback: async () => { fallbackCalls += 1; return "source-discovery"; },
-  }), (error: unknown) => error instanceof FanmarkSearchApiError && error.kind === "http");
+  await assert.rejects(recordFanmarkSearch(["043a78d4-1e42-4502-9f57-b1d1f93482db"], {backend: "worker", baseUrl: "https://app.example.test", authBaseUrl: "https://app.example.test", fetchImpl: async () => new Response("{}", { status: 503, headers: { "content-type": "application/json" } })}), (error: unknown) => error instanceof FanmarkSearchApiError && error.kind === "http");
   assert.equal(fallbackCalls, 0);
 
-  const sourceResult = await recordFanmarkSearch(["043a78d4-1e42-4502-9f57-b1d1f93482db"], {
-    backend: "supabase",
-    fallback: async () => { fallbackCalls += 1; return "source-discovery"; },
-  });
-  assert.equal(sourceResult, "source-discovery");
-  assert.equal(fallbackCalls, 1);
+
 });

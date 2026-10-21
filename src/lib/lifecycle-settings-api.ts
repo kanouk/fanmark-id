@@ -23,15 +23,6 @@ export class LifecycleSettingsApiError extends Error {
   }
 }
 
-export function getLifecycleSettingsBackend(
-  value: string | undefined = import.meta.env?.VITE_LIFECYCLE_SETTINGS_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new LifecycleSettingsApiError("configuration");
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

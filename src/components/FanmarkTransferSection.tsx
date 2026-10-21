@@ -1,12 +1,13 @@
+import type { useTransferCode } from '@/hooks/useTransferCode';
 import { useMemo, useState } from 'react';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { TransferCode, TransferRequest } from '@/hooks/useTransferCode';
-import { Copy, AlertTriangle, ArrowRightLeft, Clock, X, Check, Handshake } from 'lucide-react';
+import { Copy, ArrowRightLeft, Clock, X, Check, Handshake } from 'lucide-react';
 import { TransferCodeInputDialog } from './TransferCodeInputDialog';
 import { TransferApprovalDialog } from './TransferApprovalDialog';
 
@@ -15,10 +16,10 @@ interface FanmarkTransferSectionProps {
   pendingRequests: TransferRequest[];
   myRequests: TransferRequest[];
   loading: boolean;
-  cancelCode: (id: string) => Promise<any>;
-  approveRequest: (id: string, transferredFanmarkName?: string) => Promise<any>;
-  rejectRequest: (id: string) => Promise<any>;
-  applyTransferCode: (code: string) => Promise<any>;
+  cancelCode: ReturnType<typeof useTransferCode>['cancelCode'];
+  approveRequest: ReturnType<typeof useTransferCode>['approveRequest'];
+  rejectRequest: ReturnType<typeof useTransferCode>['rejectRequest'];
+  applyTransferCode: ReturnType<typeof useTransferCode>['applyTransferCode'];
   onDataChange?: () => void;
 }
 

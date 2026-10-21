@@ -1,33 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  createStorageApi,
-  getImageStorageBackend,
-  getStorageBackend,
-  StorageApiError,
-} from './storage-api.ts';
+import { createStorageApi, StorageApiError } from './storage-api.ts';
 
 const API_BASE = 'https://app.example.test';
 const OWNER_ID = '5c5f9001-449c-4b7f-a01d-284302a71ea1';
 const OBJECT_ID = '7f57cc22-9a0a-4ae7-bad2-4e81351cc1de';
 const publicUrl = `${API_BASE}/api/storage/public/avatars/${OWNER_ID}/${OBJECT_ID}.png`;
-
-test('storage selector defaults to Supabase and only accepts explicit supported values', () => {
-  assert.equal(getStorageBackend(''), 'supabase');
-  assert.equal(getStorageBackend(' supabase '), 'supabase');
-  assert.equal(getStorageBackend('r2'), 'r2');
-  assert.equal(getImageStorageBackend(false, 'supabase'), 'supabase');
-  assert.equal(getImageStorageBackend(true, 'supabase'), 'supabase');
-  assert.equal(getImageStorageBackend(true, 'r2'), 'r2');
-  assert.throws(
-    () => getImageStorageBackend(false, 'r2'),
-    (error) => error instanceof StorageApiError && error.kind === 'configuration',
-  );
-  assert.throws(
-    () => getStorageBackend('worker'),
-    (error) => error instanceof StorageApiError && error.kind === 'configuration',
-  );
-});
 
 test('R2 upload sends the image with cookie credentials and validates the server-owned object URL', async () => {
   let requestUrl = '';

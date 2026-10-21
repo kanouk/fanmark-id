@@ -40,15 +40,6 @@ export class AvailabilityRulesAdminApiError extends Error {
   }
 }
 
-export function getAvailabilityRulesAdminBackend(
-  value: string | undefined = import.meta.env?.VITE_AVAILABILITY_RULES_ADMIN_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new AvailabilityRulesAdminApiError("configuration");
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

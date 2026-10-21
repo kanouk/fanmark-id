@@ -1,13 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  buildStripePlanCheckoutUrl,
-  clearStripePlanCheckoutRequestIds,
-  createStripePlanCheckoutThroughWorker,
-  getStripePlanCheckoutBackend,
-  getStripePlanCheckoutRequestId,
-  StripePlanCheckoutApiError,
-} from "./stripe-plan-checkout-api.ts";
+import { buildStripePlanCheckoutUrl, clearStripePlanCheckoutRequestIds, createStripePlanCheckoutThroughWorker, getStripePlanCheckoutRequestId, StripePlanCheckoutApiError } from "./stripe-plan-checkout-api.ts";
 
 const requestId = "00000000-0000-4000-8000-000000000002";
 
@@ -17,12 +10,6 @@ function jsonResponse(body: unknown, status = 200): Response {
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
-
-test("plan checkout backend defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getStripePlanCheckoutBackend(undefined), "supabase");
-  assert.equal(getStripePlanCheckoutBackend(" worker "), "worker");
-  assert.throws(() => getStripePlanCheckoutBackend("cloudflare"), StripePlanCheckoutApiError);
-});
 
 test("plan checkout URL replaces only the path on a validated API origin", () => {
   assert.equal(

@@ -1,12 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  buildFanmarkSettingsApiUrl,
-  FanmarkSettingsApiError,
-  getFanmarkSettingsBackend,
-  getOwnerFanmarkSettings,
-  saveOwnerFanmarkSettings,
-} from "./fanmark-settings-api.ts";
+import { buildFanmarkSettingsApiUrl, FanmarkSettingsApiError, getOwnerFanmarkSettings, saveOwnerFanmarkSettings } from "./fanmark-settings-api.ts";
 
 const ID = "45111111-1111-4111-8111-111111111111";
 const context = {
@@ -28,12 +22,6 @@ const context = {
     has_active_license: true,
   },
 };
-
-test("settings backend selector defaults to Supabase and rejects unknown values", () => {
-  assert.equal(getFanmarkSettingsBackend(undefined), "supabase");
-  assert.equal(getFanmarkSettingsBackend("worker"), "worker");
-  assert.throws(() => getFanmarkSettingsBackend("fallback"), FanmarkSettingsApiError);
-});
 
 test("settings URL is scoped to the authenticated fanmark and API origin", () => {
   assert.equal(buildFanmarkSettingsApiUrl("https://api.example.test/", ID.toUpperCase()).href,

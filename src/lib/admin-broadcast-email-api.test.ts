@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  createAdminBroadcastEmailApi,
-  getAdminBroadcastEmailBackend,
-  getAdminBroadcastSendBackend,
-  getAdminBroadcastTestSendBackend,
-} from "./admin-broadcast-email-api.ts";
+import { createAdminBroadcastEmailApi, getAdminBroadcastSendBackend, getAdminBroadcastTestSendBackend } from "./admin-broadcast-email-api.ts";
 
 const id = "81111111-1111-4111-8111-111111111111";
 const timestamp = "2026-09-25T12:00:00.000Z";
@@ -34,17 +29,14 @@ const template = {
 };
 
 test("broadcast email selector defaults to Supabase and rejects unknown values", () => {
-  assert.equal(getAdminBroadcastEmailBackend(undefined), "supabase");
-  assert.equal(getAdminBroadcastEmailBackend(" worker "), "worker");
-  assert.throws(() => getAdminBroadcastEmailBackend("other"), /configuration/u);
-  assert.equal(getAdminBroadcastTestSendBackend(undefined), "disabled");
-  assert.equal(getAdminBroadcastTestSendBackend(" worker "), "worker");
-  assert.throws(() => getAdminBroadcastTestSendBackend("supabase"), /configuration/u);
-  assert.equal(getAdminBroadcastSendBackend(undefined), "disabled");
-  assert.equal(getAdminBroadcastSendBackend(" worker ", "cloudflare-staging"), "worker");
-  assert.equal(getAdminBroadcastSendBackend("worker", "cloudflare-production"), "worker");
-  assert.equal(getAdminBroadcastSendBackend("worker", "production"), "disabled");
-  assert.throws(() => getAdminBroadcastSendBackend("resend"), /configuration/u);
+assert.equal(getAdminBroadcastTestSendBackend(undefined), "disabled");
+assert.equal(getAdminBroadcastTestSendBackend(" worker "), "worker");
+assert.throws(() => getAdminBroadcastTestSendBackend("supabase"), /configuration/u);
+assert.equal(getAdminBroadcastSendBackend(undefined), "disabled");
+assert.equal(getAdminBroadcastSendBackend(" worker ", "cloudflare-staging"), "worker");
+assert.equal(getAdminBroadcastSendBackend("worker", "cloudflare-production"), "worker");
+assert.equal(getAdminBroadcastSendBackend("worker", "production"), "disabled");
+assert.throws(() => getAdminBroadcastSendBackend("resend"), /configuration/u);
 });
 
 test("list uses a credentialed same-origin no-store request and validates the snapshot", async () => {

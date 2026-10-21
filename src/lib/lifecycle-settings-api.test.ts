@@ -1,19 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  fetchLifecycleSettingsFromWorker,
-  getLifecycleSettingsBackend,
-  LifecycleSettingsApiError,
-  parseLifecycleSettingsPayload,
-  updateGracePeriodInWorker,
-} from "./lifecycle-settings-api.ts";
-
-test("selects Supabase by default and rejects unknown lifecycle backends", () => {
-  assert.equal(getLifecycleSettingsBackend(undefined), "supabase");
-  assert.equal(getLifecycleSettingsBackend(" "), "supabase");
-  assert.equal(getLifecycleSettingsBackend("worker"), "worker");
-  assert.throws(() => getLifecycleSettingsBackend("d1"), LifecycleSettingsApiError);
-});
+import { fetchLifecycleSettingsFromWorker, LifecycleSettingsApiError, parseLifecycleSettingsPayload, updateGracePeriodInWorker } from "./lifecycle-settings-api.ts";
 
 test("accepts the versioned lifecycle settings response and validates its exact shape", () => {
   assert.deepEqual(

@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,12 +55,7 @@ import {
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { useLanguages } from "@/hooks/useLanguages";
-import {
-  createAdminBroadcastEmailApi,
-  getAdminBroadcastEmailBackend,
-  getAdminBroadcastSendBackend,
-  getAdminBroadcastTestSendBackend,
-} from "@/lib/admin-broadcast-email-api";
+import { createAdminBroadcastEmailApi, getAdminBroadcastSendBackend, getAdminBroadcastTestSendBackend } from "@/lib/admin-broadcast-email-api";
 
 type BroadcastStatus = "draft" | "scheduled" | "sending" | "completed" | "failed" | "cancelled";
 
@@ -124,7 +119,7 @@ const broadcastApi = createAdminBroadcastEmailApi();
 export function AdminBroadcastEmail() {
   const queryClient = useQueryClient();
   const { activeLanguages } = useLanguages();
-  const useWorkerBackend = getAdminBroadcastEmailBackend() === "worker";
+  const useWorkerBackend = true;
   const workerBulkSendEnabled = useWorkerBackend && getAdminBroadcastSendBackend() === "worker";
   const workerTestSendEnabled = useWorkerBackend && getAdminBroadcastTestSendBackend() === "worker";
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -151,21 +146,12 @@ export function AdminBroadcastEmail() {
     registered_before: "",
   });
 
-  // Staging Worker mode reads D1; standard builds keep the current Supabase path.
+  // The Worker returns both broadcasts and templates from the current master.
   const { data: broadcastSnapshot, isLoading } = useQuery({
     queryKey: ["broadcast-emails"],
     queryFn: async () => {
-      if (useWorkerBackend) return broadcastApi.list();
-      const [broadcastResponse, templateResponse] = await Promise.all([
-        supabase.from("broadcast_emails").select("*").order("created_at", { ascending: false }).limit(50),
-        supabase.from("email_templates").select("*").like("email_type", "broadcast_%").eq("is_active", true),
-      ]);
-      if (broadcastResponse.error) throw broadcastResponse.error;
-      if (templateResponse.error) throw templateResponse.error;
-      return {
-        broadcasts: broadcastResponse.data as BroadcastEmail[],
-        templates: templateResponse.data as EmailTemplate[],
-      };
+      return broadcastApi.list();
+
     },
     refetchInterval: 5000, // Poll every 5 seconds for status updates
   });
@@ -185,29 +171,11 @@ export function AdminBroadcastEmail() {
   const estimateRecipients = useCallback(async () => {
     setIsEstimating(true);
     try {
-      if (useWorkerBackend) {
+      {
         setEstimatedCount(await broadcastApi.estimateRecipients(currentRecipientFilter()));
         return;
       }
-      let query = supabase.from("user_settings").select("user_id", { count: "exact", head: true });
 
-      if (filterData.plan_types && filterData.plan_types.length > 0) {
-        // Cast to the expected type for Supabase
-        query = query.in("plan_type", filterData.plan_types as ("free" | "creator" | "max" | "business" | "enterprise" | "admin")[]);
-      }
-      if (filterData.languages && filterData.languages.length > 0) {
-        query = query.in("preferred_language", filterData.languages as ("en" | "ja" | "ko" | "id")[]);
-      }
-      if (filterData.registered_after) {
-        query = query.gte("created_at", filterData.registered_after);
-      }
-      if (filterData.registered_before) {
-        query = query.lte("created_at", filterData.registered_before);
-      }
-
-      const { count, error } = await query;
-      if (error) throw error;
-      setEstimatedCount(count ?? 0);
     } catch (err) {
       console.error("Failed to estimate recipients:", err);
       toast.error("対象者数の取得に失敗しました");
@@ -235,7 +203,7 @@ export function AdminBroadcastEmail() {
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const recipientFilter = currentRecipientFilter();
-      if (useWorkerBackend) {
+      {
         return broadcastApi.createDraft({
           emailType: data.email_type,
           subject: data.subject,
@@ -243,24 +211,7 @@ export function AdminBroadcastEmail() {
           recipientFilter,
         });
       }
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session?.user) throw new Error("Not authenticated");
 
-      const { data: result, error } = await supabase
-        .from("broadcast_emails")
-        .insert([{
-          email_type: data.email_type,
-          subject: data.subject,
-          body_text: data.body_text,
-          created_by: session.session.user.id,
-          status: "draft" as const,
-          recipient_filter: recipientFilter as unknown as null,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["broadcast-emails"] });
@@ -278,28 +229,18 @@ export function AdminBroadcastEmail() {
   // Send broadcast mutation
   const sendMutation = useMutation({
     mutationFn: async ({ broadcastId, requestId }: { broadcastId: string; requestId: string }) => {
-      if (useWorkerBackend) {
+      {
         if (!workerBulkSendEnabled) throw new Error("Cloudflare bulk email delivery is disabled");
         return broadcastApi.startSend({ broadcastId, requestId });
       }
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session?.access_token) throw new Error("Not authenticated");
 
-      const response = await supabase.functions.invoke("send-broadcast-email", {
-        body: { broadcastId },
-      });
-
-      if (response.error) throw response.error;
-      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["broadcast-emails"] });
       setIsConfirmOpen(false);
       setSelectedBroadcast(null);
       setSendRequest(null);
-      toast.success("accepted" in data
-        ? "配信キューを作成しました。対象確定後、Worker Cronが処理します。"
-        : data.message || "送信を開始しました");
+      toast.success("配信キューを作成しました。対象確定後、Worker Cronが処理します。");
     },
     onError: (error) => {
       toast.error(`送信失敗: ${error.message}`);
@@ -309,22 +250,13 @@ export function AdminBroadcastEmail() {
   // Test send mutation
   const testSendMutation = useMutation({
     mutationFn: async ({ broadcastId, email, language }: { broadcastId: string; email?: string; language: string }) => {
-      if (useWorkerBackend) {
+      {
         if (!workerTestSendEnabled) throw new Error("Cloudflare test email is disabled");
         const requestId = testSendRequestId ?? crypto.randomUUID();
         if (!testSendRequestId) setTestSendRequestId(requestId);
         return broadcastApi.sendTest({ broadcastId, language, requestId });
       }
-      if (!email) throw new Error("Not authenticated");
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session?.access_token) throw new Error("Not authenticated");
 
-      const response = await supabase.functions.invoke("send-broadcast-email", {
-        body: { broadcastId, testMode: true, testEmail: email, testLanguage: language },
-      });
-
-      if (response.error) throw response.error;
-      return response.data;
     },
     onSuccess: (data) => {
       setIsTestSendOpen(false);
@@ -374,32 +306,20 @@ export function AdminBroadcastEmail() {
   const openTestSendDialog = (broadcast: BroadcastEmail) => {
     if (useWorkerBackend && !workerTestSendEnabled) return;
     setSelectedBroadcast(broadcast);
-    setTestSendRequestId(useWorkerBackend ? crypto.randomUUID() : null);
+    setTestSendRequestId(crypto.randomUUID());
     setIsTestSendOpen(true);
   };
 
   const handleTestSend = () => {
     if (!selectedBroadcast) return;
-    if (useWorkerBackend) {
+    {
       if (!workerTestSendEnabled) return;
       testSendMutation.mutate({ broadcastId: selectedBroadcast.id, language: testLanguage });
       return;
     }
-    if (!testEmail.trim()) {
-      toast.error("テスト送信先のメールアドレスを入力してください");
-      return;
-    }
+
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(testEmail.trim())) {
-      toast.error("有効なメールアドレスを入力してください");
-      return;
-    }
-    testSendMutation.mutate({
-      broadcastId: selectedBroadcast.id,
-      email: testEmail.trim(),
-      language: testLanguage,
-    });
+
   };
 
   const getTemplatePreview = (emailType: string, language: string) => {
@@ -917,9 +837,7 @@ export function AdminBroadcastEmail() {
               送信確認
             </DialogTitle>
             <DialogDescription>
-              {useWorkerBackend
-                ? "送信を開始すると対象者とテンプレートを固定し、Worker Cron が配信処理を進めます。"
-                : "この操作は取り消せません。対象ユーザーにメールが送信されます。"}
+              {"送信を開始すると対象者とテンプレートを固定し、Worker Cron が配信処理を進めます。"}
             </DialogDescription>
           </DialogHeader>
 
@@ -1060,9 +978,7 @@ export function AdminBroadcastEmail() {
               テスト送信
             </DialogTitle>
             <DialogDescription>
-              {useWorkerBackend
-                ? "Cloudflare側に設定された許可済みテスト宛先だけに送信します。実ユーザーへの一括配信は行いません。"
-                : "指定したメールアドレスにテストメールを送信します。実際の送信前に内容を確認できます。"}
+              {"Cloudflare側に設定された許可済みテスト宛先だけに送信します。実ユーザーへの一括配信は行いません。"}
             </DialogDescription>
           </DialogHeader>
 
@@ -1079,20 +995,9 @@ export function AdminBroadcastEmail() {
                 </p>
               </div>
 
-              {useWorkerBackend ? (
+              {(
                 <div className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
                   送信先はWorkerの固定allowlistで制御され、画面から変更できません。
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="test-email">送信先メールアドレス</Label>
-                  <Input
-                    id="test-email"
-                    type="email"
-                    placeholder="test@example.com"
-                    value={testEmail}
-                    onChange={(e) => setTestEmail(e.target.value)}
-                  />
                 </div>
               )}
 
@@ -1123,7 +1028,7 @@ export function AdminBroadcastEmail() {
             </Button>
             <Button
               onClick={handleTestSend}
-              disabled={(useWorkerBackend ? !workerTestSendEnabled : !testEmail.trim()) || testSendMutation.isPending}
+              disabled={(!workerTestSendEnabled) || testSendMutation.isPending}
             >
               {testSendMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

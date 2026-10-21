@@ -2,7 +2,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { formatInTimeZone } from 'date-fns-tz';
 import { ja, enUS, ko, id as idLocale } from 'date-fns/locale';
 import { AppHeader } from '@/components/layout/AppHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,7 +66,7 @@ export default function Favorites() {
     }
   };
 
-const getAccessTypeLabel = (t: (key: string, ...args: any[]) => string, accessType: string | null, isRegistered: boolean) => {
+const getAccessTypeLabel = (t: ReturnType<typeof useTranslation>['t'], accessType: string | null, isRegistered: boolean) => {
   if (!isRegistered || !accessType) {
     return t('favorites.unclaimedBadge');
   }

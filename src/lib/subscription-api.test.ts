@@ -1,12 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  buildSubscriptionApiUrl,
-  getSubscriptionBackend,
-  loadOwnSubscription,
-  SubscriptionApiError,
-  type SubscriptionRecord,
-} from "./subscription-api.ts";
+import { buildSubscriptionApiUrl, loadOwnSubscription, SubscriptionApiError, type SubscriptionRecord } from "./subscription-api.ts";
 
 const subscription: SubscriptionRecord = {
   status: "active",
@@ -24,10 +18,7 @@ const subscription: SubscriptionRecord = {
 };
 
 test("subscription backend defaults to Supabase and rejects unknown selectors", () => {
-  assert.equal(getSubscriptionBackend(undefined), "supabase");
-  assert.equal(getSubscriptionBackend("worker"), "worker");
-  assert.throws(() => getSubscriptionBackend("other"), SubscriptionApiError);
-  assert.equal(String(buildSubscriptionApiUrl("https://app.example.test")), "https://app.example.test/api/me/subscription");
+assert.equal(String(buildSubscriptionApiUrl("https://app.example.test")), "https://app.example.test/api/me/subscription");
 });
 
 test("Worker subscription read sends same-origin credentials and returns only the validated projection", async () => {

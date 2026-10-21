@@ -1,13 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  createInvitationCode,
-  deleteInvitationCode,
-  getInvitationAdminBackend,
-  InvitationAdminClientError,
-  loadInvitationCodes,
-  updateInvitationCode,
-} from "./invitation-admin-api.ts";
+import { createInvitationCode, deleteInvitationCode, InvitationAdminClientError, loadInvitationCodes, updateInvitationCode } from "./invitation-admin-api.ts";
 
 const API_BASE = "https://api.example.test";
 const CODE_ID = "46111111-1111-4111-8111-111111111111";
@@ -20,12 +13,6 @@ const code = {
 function response(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
 }
-
-test("invitation admin selector defaults to Supabase and rejects unknown values", () => {
-  assert.equal(getInvitationAdminBackend(undefined), "supabase");
-  assert.equal(getInvitationAdminBackend(" worker "), "worker");
-  assert.throws(() => getInvitationAdminBackend("d1"), InvitationAdminClientError);
-});
 
 test("loads only validated invitation fields using same-origin cookies and no cache", async () => {
   let capturedUrl = "";

@@ -1,13 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  buildOwnedFanmarksApiUrl,
-  assertOwnedFanmarksAuthOrigin,
-  getOwnedFanmarksBackend,
-  loadOwnedFanmarks,
-  OwnedFanmarksApiError,
-  parseOwnedFanmarksApiPayload,
-} from './owned-fanmarks-api.ts';
+import { buildOwnedFanmarksApiUrl, assertOwnedFanmarksAuthOrigin, loadOwnedFanmarks, OwnedFanmarksApiError, parseOwnedFanmarksApiPayload } from './owned-fanmarks-api.ts';
 
 const sampleFanmark = {
   id: 'synthetic-fanmark-id',
@@ -41,12 +34,6 @@ const sampleFanmark = {
     excluded_from_plan: null,
   },
 };
-
-test('backend selection defaults to Supabase and rejects unknown explicit values', () => {
-  assert.equal(getOwnedFanmarksBackend(undefined), 'supabase');
-  assert.equal(getOwnedFanmarksBackend('worker'), 'worker');
-  assert.throws(() => getOwnedFanmarksBackend('fallback'), OwnedFanmarksApiError);
-});
 
 test('API URL validation accepts only a clean HTTPS Worker base URL', () => {
   assert.equal(String(buildOwnedFanmarksApiUrl('https://api.example.test')), 'https://api.example.test/api/me/fanmarks');

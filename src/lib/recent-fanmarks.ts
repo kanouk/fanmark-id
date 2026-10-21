@@ -43,14 +43,13 @@ export class RecentFanmarksApiError extends Error {
 /**
  * Returns the trimmed Worker base URL, or undefined when the Worker has not
  * been selected for this frontend build. An invalid non-empty value is kept
- * here and rejected by buildRecentFanmarksApiUrl so it cannot activate the
- * Supabase fallback accidentally.
+ * here and rejected by buildRecentFanmarksApiUrl.
  */
 export function getRecentFanmarksApiBaseUrl(
   value: string | undefined = import.meta.env?.VITE_FANMARK_API_BASE_URL,
 ): string | undefined {
   const trimmed = value?.trim();
-  return trimmed || undefined;
+  return trimmed || (typeof window === "undefined" ? undefined : window.location.origin);
 }
 
 function isLoopbackHostname(hostname: string): boolean {
@@ -185,25 +184,18 @@ export interface RecentFanmarksFetchOptions {
 }
 
 export interface RecentFanmarksLoadOptions extends RecentFanmarksFetchOptions {
-  /** Used only when the Worker base URL is unset or blank. */
-  fallback: () => Promise<RecentFanmark[]>;
   apiBaseUrl?: string;
 }
 
 export async function loadRecentFanmarks(
-  options: RecentFanmarksLoadOptions,
+  options: RecentFanmarksLoadOptions = {},
 ): Promise<RecentFanmark[]> {
-  const configuredApiBaseUrl =
-    options.apiBaseUrl === undefined
-      ? getRecentFanmarksApiBaseUrl()
-      : getRecentFanmarksApiBaseUrl(options.apiBaseUrl);
-
-  if (configuredApiBaseUrl) {
-    const { fallback: _fallback, apiBaseUrl: _apiBaseUrl, ...fetchOptions } = options;
-    return fetchRecentFanmarksFromWorker(configuredApiBaseUrl, fetchOptions);
-  }
-
-  return options.fallback();
+  const baseUrl = options.apiBaseUrl === undefined
+    ? getRecentFanmarksApiBaseUrl()
+    : getRecentFanmarksApiBaseUrl(options.apiBaseUrl);
+  if (!baseUrl) throw new RecentFanmarksApiError("configuration");
+  const { apiBaseUrl: _apiBaseUrl, ...fetchOptions } = options;
+  return fetchRecentFanmarksFromWorker(baseUrl, fetchOptions);
 }
 
 function abortError(

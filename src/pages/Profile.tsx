@@ -6,7 +6,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useTranslation } from '@/hooks/useTranslation';
 import { UserProfileForm } from '@/components/UserProfileForm';
-import { LanguageToggle } from '@/components/LanguageToggle';
+
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { CardDescription } from '@/components/ui/card';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell, ExternalLink, ArrowRight, Trash2, Save, BarChart3, Crown, Eye, EyeOff } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, ExternalLink, ArrowRight, Trash2, Save, BarChart3, Crown, Eye, EyeOff } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Badge } from '@/components/ui/badge';
@@ -29,13 +29,10 @@ import { getPlanLimit, type PlanLimits, type PlanType } from '@/lib/plan-utils';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { formatStripeAmount } from '@/lib/currency';
-import { supabase } from '@/integrations/supabase/client';
-import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
-import { deleteAccountThroughWorker, getAccountDeletionBackend } from '@/lib/account-deletion-api';
-import {
-  createStripeCustomerPortalThroughWorker,
-  getStripeCustomerPortalBackend,
-} from '@/lib/stripe-customer-portal-api';
+
+import { betterAuthClient } from '@/lib/auth-backend';
+import { deleteAccountThroughWorker } from '@/lib/account-deletion-api';
+import { createStripeCustomerPortalThroughWorker } from '@/lib/stripe-customer-portal-api';
 
 type Section = 'account' | 'plan' | 'language';
 // TODO: Re-enable when features are implemented
@@ -129,21 +126,8 @@ const Profile = () => {
 
     setIsUpdatingPassword(true);
     try {
-      if (isBetterAuthEnabled()) {
+      {
         await betterAuthClient.changePassword(currentPassword, newPassword);
-      } else {
-        const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-        if (updateError) throw updateError;
-
-        if (user?.id) {
-          const { error: flagError } = await supabase
-            .from('user_settings')
-            .update({ requires_password_setup: false })
-            .eq('user_id', user.id);
-
-          if (flagError) throw flagError;
-        }
-        setRequiresPasswordSetup(false);
       }
 
       setCurrentPassword('');
@@ -246,23 +230,20 @@ const Profile = () => {
   };
 
   const handleDeleteAccount = async () => {
-    const accountDeletionBackend = getAccountDeletionBackend();
+    const accountDeletionBackend = "worker";
     if (deleteConfirmText !== 'DELETE' || (accountDeletionBackend === 'worker' && !deletePassword)) return;
-    
+
     setIsDeletingAccount(true);
     try {
-      if (accountDeletionBackend === 'worker') {
+      {
         await deleteAccountThroughWorker(deletePassword);
-      } else {
-        const { error } = await supabase.functions.invoke('delete-user-account');
-        if (error) throw error;
       }
-      
+
       toast({
         title: t('userSettings.deleteAccount.successTitle'),
         description: t('userSettings.deleteAccount.successDescription'),
       });
-      
+
       // Auto logout and redirect
       await signOut();
       navigate('/');
@@ -307,15 +288,7 @@ const Profile = () => {
   const handleOpenCustomerPortal = async () => {
     setPortalLoading(true);
     try {
-      const backend = getStripeCustomerPortalBackend();
-      const portal = backend === 'worker'
-        ? await createStripeCustomerPortalThroughWorker()
-        : await (async () => {
-          const { data, error } = await supabase.functions.invoke('customer-portal');
-          if (error) throw error;
-          if (typeof data?.url !== 'string') throw new Error('customer portal URL is missing');
-          return { url: data.url as string };
-        })();
+            const portal = await createStripeCustomerPortalThroughWorker();
       window.open(portal.url, '_blank');
     } catch (error) {
       console.error('Failed to open customer portal:', error);
@@ -388,7 +361,7 @@ const Profile = () => {
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <form onSubmit={handlePasswordUpdate} className="space-y-5">
-              {isBetterAuthEnabled() && (
+              {(
                 <div className="space-y-2">
                   <Label htmlFor="profile-current-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                     <Lock className="h-4 w-4" />
@@ -481,7 +454,7 @@ const Profile = () => {
                   type="submit"
                   disabled={
                     isUpdatingPassword ||
-                    (isBetterAuthEnabled() && currentPassword.length === 0) ||
+                    (currentPassword.length === 0) ||
                     !isPasswordValid ||
                     newPassword.length === 0 ||
                     newPassword !== confirmNewPassword
@@ -537,7 +510,7 @@ const Profile = () => {
                     </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                
+
                 {subscribed && subscriptionEnd && !subLoading && (
                   <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/10 p-4 space-y-2">
                     <div className="flex items-start gap-2">
@@ -562,7 +535,7 @@ const Profile = () => {
                 )}
 
                 <div className="space-y-4">
-                  {getAccountDeletionBackend() === 'worker' && (
+                  {(
                     <div className="space-y-2">
                       <Label htmlFor="delete-password">{t('userSettings.deleteAccount.passwordPrompt')}</Label>
                       <Input
@@ -592,7 +565,7 @@ const Profile = () => {
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDeleteAccount}
-                    disabled={deleteConfirmText !== 'DELETE' || (getAccountDeletionBackend() === 'worker' && !deletePassword) || isDeletingAccount}
+                    disabled={deleteConfirmText !== 'DELETE' || (!deletePassword) || isDeletingAccount}
                     className="bg-destructive hover:bg-destructive/90"
                   >
                     {isDeletingAccount
@@ -992,7 +965,7 @@ const Profile = () => {
               <span className="text-3xl animate-pulse">👋</span>
             </div>
           </div>
-          
+
           {/* Message */}
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-foreground">
@@ -1002,7 +975,7 @@ const Profile = () => {
               {t('userSettings.deleteAccount.deletingDescription')}
             </p>
           </div>
-          
+
           {/* Progress dots */}
           <div className="flex gap-1.5">
             <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: '0ms' }} />

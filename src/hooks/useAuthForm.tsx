@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
-import { supabase } from '@/integrations/supabase/client';
-import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+
+import { betterAuthClient } from '@/lib/auth-backend';
 import { BetterAuthClientError } from '@/lib/better-auth-client';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthFormData, AuthState } from '@/types/auth';
@@ -30,13 +30,13 @@ export const useAuthForm = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
   const { refreshSession } = useAuth();
-  
+
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
     password: '',
     confirmPassword: ''
   });
-  
+
   const [authState, setAuthState] = useState<AuthState>({
     loading: false,
     error: '',
@@ -92,20 +92,6 @@ export const useAuthForm = () => {
     setAuthState(prev => ({ ...prev, awaitingConfirmation: awaiting }));
   };
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase.functions.invoke<CheckEmailExistsResponse>('check-email-exists', {
-        body: { email }
-      });
-      
-      if (error) throw error;
-      return data?.exists || false;
-    } catch (error) {
-      console.error('Error checking email:', error);
-      return false;
-    }
-  };
-
   const signUp = async (options?: SignUpOptions) => {
     if (formData.password !== formData.confirmPassword) {
       setError('パスワードが一致しません');
@@ -125,7 +111,7 @@ export const useAuthForm = () => {
     setError('');
 
     try {
-      if (isBetterAuthEnabled()) {
+      {
         const preferredLanguage = detectBrowserLanguage();
         const terms = JSON.stringify([
           formData.email.trim().toLowerCase(),
@@ -145,75 +131,6 @@ export const useAuthForm = () => {
         });
         signupCommandIdRef.current = null;
         signupTermsRef.current = null;
-      } else {
-        const emailExists = await checkEmailExists(formData.email);
-        if (emailExists) {
-          setError('このメールアドレスは既に登録されています');
-          return;
-        }
-
-        if (invitationRequired && normalizedInvitationCode) {
-          const { data, error } = await supabase.rpc('validate_invitation_code', {
-            code_to_check: normalizedInvitationCode
-          });
-
-          if (error) {
-            console.error('Error validating invitation code before signup:', error);
-            setError(t('invitation.errorValidating'));
-            return;
-          }
-
-          const result = data?.[0];
-          if (!result?.is_valid) {
-            setError(t('invitation.invalidCode'));
-            return;
-          }
-
-          if ((result.remaining_uses ?? 0) <= 0) {
-            setError(t('invitation.codeFullyUsed'));
-            return;
-          }
-        }
-
-        const signUpOptions = {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            preferred_language: detectBrowserLanguage(),
-            ...(normalizedInvitationCode && { invitation_code: normalizedInvitationCode })
-          }
-        };
-
-        const { data: signUpData, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: signUpOptions
-        });
-
-        if (error) throw error;
-
-        if (normalizedInvitationCode && !invitationRequired) {
-          const { error: consumeError } = await supabase.rpc('use_invitation_code', {
-            code_to_use: normalizedInvitationCode
-          });
-
-          if (consumeError) {
-            console.error('Error consuming invitation code:', consumeError);
-            toast({
-              title: t('common.error'),
-              description: t('invitation.errorValidating'),
-              variant: 'destructive',
-            });
-          } else if (signUpData?.user?.id) {
-            const { error: settingsError } = await supabase
-              .from('user_settings')
-              .update({ invited_by_code: normalizedInvitationCode })
-              .eq('user_id', signUpData.user.id);
-
-            if (settingsError) {
-              console.error('Error updating user settings with invitation code:', settingsError);
-            }
-          }
-        }
       }
 
       setAwaitingConfirmation(true);
@@ -252,7 +169,7 @@ export const useAuthForm = () => {
     setError('');
 
     try {
-      if (isBetterAuthEnabled()) {
+      {
         const result = await betterAuthClient.signInWithEmail(formData.email, formData.password);
         if ('twoFactorRedirect' in result && result.twoFactorRedirect) {
           setTwoFactorRequired(true);
@@ -265,23 +182,6 @@ export const useAuthForm = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setError('メールアドレスまたはパスワードが正しくありません');
-        } else if (error.message.includes('Email not confirmed')) {
-          setError('メールアドレスの確認が完了していません。確認メールをご確認ください。');
-        } else {
-          setError(error.message);
-        }
-        return;
-      }
-
-      navigate('/dashboard');
     } catch (error) {
       if (error instanceof BetterAuthClientError && error.status === 401) {
         setError('メールアドレスまたはパスワードが正しくありません');
@@ -297,7 +197,7 @@ export const useAuthForm = () => {
   };
 
   const verifyTwoFactor = async () => {
-    if (!isBetterAuthEnabled() || !twoFactorRequired || authState.loading) return;
+    if (!twoFactorRequired || authState.loading) return;
     if (!/^\d{6}$/u.test(verificationCode)) {
       setError(t('mfa.invalidCode'));
       return;
@@ -332,16 +232,11 @@ export const useAuthForm = () => {
 
     setLoading(true);
     try {
-      if (isBetterAuthEnabled()) {
+      {
         await betterAuthClient.requestPasswordReset(
           formData.email,
           `${window.location.origin}/reset-password`,
         );
-      } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-          redirectTo: `${window.location.origin}/reset-password`
-        });
-        if (error) throw error;
       }
 
       toast({
@@ -368,20 +263,11 @@ export const useAuthForm = () => {
 
     setLoading(true);
     try {
-      if (isBetterAuthEnabled()) {
+      {
         await betterAuthClient.sendVerificationEmail(
           formData.email,
           `${window.location.origin}/auth`,
         );
-      } else {
-        const { error } = await supabase.auth.resend({
-          type: 'signup',
-          email: formData.email,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`
-          }
-        });
-        if (error) throw error;
       }
 
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
@@ -402,21 +288,14 @@ export const useAuthForm = () => {
     setError('');
 
     try {
-      if (isBetterAuthEnabled()) {
+      {
         window.location.assign(await betterAuthClient.signInWithSocial(
           'google',
           `${window.location.origin}/auth`,
         ));
         return;
       }
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth`
-        }
-      });
 
-      if (error) throw error;
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       setError(message || 'Googleログインに失敗しました');
@@ -430,21 +309,14 @@ export const useAuthForm = () => {
     setError('');
 
     try {
-      if (isBetterAuthEnabled()) {
+      {
         window.location.assign(await betterAuthClient.signInWithSocial(
           'github',
           `${window.location.origin}/auth`,
         ));
         return;
       }
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
-      });
 
-      if (error) throw error;
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       setError(message || 'GitHubログインに失敗しました');
@@ -458,21 +330,14 @@ export const useAuthForm = () => {
     setError('');
 
     try {
-      if (isBetterAuthEnabled()) {
+      {
         window.location.assign(await betterAuthClient.signInWithSocial(
           'discord',
           `${window.location.origin}/auth`,
         ));
         return;
       }
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: {
-          redirectTo: `${window.location.origin}/auth`
-        }
-      });
 
-      if (error) throw error;
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       setError(message || 'Discordログインに失敗しました');
@@ -486,21 +351,14 @@ export const useAuthForm = () => {
     setError('');
 
     try {
-      if (isBetterAuthEnabled()) {
+      {
         window.location.assign(await betterAuthClient.signInWithSocial(
           'apple',
           `${window.location.origin}/auth`,
         ));
         return;
       }
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: `${window.location.origin}/auth`
-        }
-      });
 
-      if (error) throw error;
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       setError(message || 'Appleログインに失敗しました');

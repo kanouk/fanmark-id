@@ -32,7 +32,7 @@ export interface ExtensionCouponUsageAdminRecord {
   user_display_name: string;
 }
 
-export type ExtensionCouponAdminBackend = "supabase" | "worker";
+export type ExtensionCouponAdminBackend = "worker";
 
 export class ExtensionCouponAdminClientError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network" | "timeout";
@@ -46,15 +46,6 @@ export class ExtensionCouponAdminClientError extends Error {
     this.status = status;
     this.code = code;
   }
-}
-
-export function getExtensionCouponAdminBackend(
-  value: string | undefined = import.meta.env?.VITE_EXTENSION_COUPON_ADMIN_BACKEND,
-): ExtensionCouponAdminBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new ExtensionCouponAdminClientError("configuration");
 }
 
 function buildUrl(baseUrl: string, suffix = ""): URL {

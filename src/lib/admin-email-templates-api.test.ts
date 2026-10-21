@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createAdminEmailTemplatesApi, getAdminEmailTemplatesBackend } from "./admin-email-templates-api.ts";
+import { createAdminEmailTemplatesApi } from "./admin-email-templates-api.ts";
 
 const id = "81111111-1111-4111-8111-111111111111";
 const updatedAt = "2026-09-25T12:00:00.000Z";
@@ -8,12 +8,6 @@ const template = {
   id, email_type: "signup", language: "ja", subject: "登録確認", body_text: "本文", button_text: "確認",
   is_active: true, created_at: updatedAt, updated_at: updatedAt,
 };
-
-test("email template selector defaults to Supabase and rejects unknown values", () => {
-  assert.equal(getAdminEmailTemplatesBackend(undefined), "supabase");
-  assert.equal(getAdminEmailTemplatesBackend(" worker "), "worker");
-  assert.throws(() => getAdminEmailTemplatesBackend("other"), /configuration/u);
-});
 
 test("list uses credentialed same-origin no-store GET and validates bounded DTOs", async () => {
   let actualUrl = "";

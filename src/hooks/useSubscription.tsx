@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAuth } from './useAuth';
-import { getSubscriptionBackend, loadOwnSubscription, type SubscriptionRecord } from '@/lib/subscription-api';
+import { loadOwnSubscription, type SubscriptionRecord } from '@/lib/subscription-api';
 
 export interface SubscriptionStatus {
   subscribed: boolean;
@@ -60,10 +60,9 @@ const EMPTY_STATUS = statusFromSubscription(null);
 
 export function useSubscription() {
   const { user } = useAuth();
-  const backend = getSubscriptionBackend();
-  const [status, setStatus] = useState<SubscriptionStatus>({ ...EMPTY_STATUS, loading: true });
+    const [status, setStatus] = useState<SubscriptionStatus>({ ...EMPTY_STATUS, loading: true });
 
-  const fetchSubscription = useCallback(async (syncSupabase = false, silent = false) => {
+  const fetchSubscription = useCallback(async (synchronizePlan = false, silent = false) => {
     if (!user) {
       setStatus({ ...EMPTY_STATUS });
       return;
@@ -73,32 +72,13 @@ export function useSubscription() {
       setStatus((previous) => ({ ...previous, loading: true, error: null }));
     }
     try {
-      if (backend === 'worker') {
+      {
         // The Cloudflare read is intentionally read-only. Stripe state is projected by the Worker webhook path.
         const data = await loadOwnSubscription();
         setStatus(statusFromSubscription(data as SubscriptionRecord | null));
         return;
       }
 
-      if (syncSupabase) {
-        const { data: session } = await supabase.auth.getSession();
-        if (session?.session) {
-          const { error: syncError } = await supabase.functions.invoke('check-subscription', {
-            headers: { Authorization: `Bearer ${session.session.access_token}` },
-          });
-          if (syncError) console.warn('[useSubscription] Subscription sync warning:', syncError);
-        }
-      }
-
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      setStatus(statusFromSubscription(data));
     } catch (error) {
       if (silent) {
         console.warn('[useSubscription] Background refresh failed:', error);
@@ -111,25 +91,12 @@ export function useSubscription() {
         }));
       }
     }
-  }, [backend, user]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
       setStatus({ ...EMPTY_STATUS });
       return;
-    }
-
-    if (backend === 'supabase') {
-      void fetchSubscription(true);
-      const channel = supabase
-        .channel('user-subscription-updates')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'user_subscriptions', filter: `user_id=eq.${user.id}` },
-          () => { void fetchSubscription(false); },
-        )
-        .subscribe();
-      return () => { void supabase.removeChannel(channel); };
     }
 
     let refreshPending = true;
@@ -147,7 +114,7 @@ export function useSubscription() {
       document.removeEventListener('visibilitychange', refreshWhenVisible);
       window.clearInterval(intervalId);
     };
-  }, [backend, fetchSubscription, user]);
+  }, [fetchSubscription, user]);
 
   const refetch = useCallback(async () => {
     if (!user) return;

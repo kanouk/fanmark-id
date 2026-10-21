@@ -1,3 +1,4 @@
+import { localFrontendEnvironment } from '../dev/local-config.mjs';
 import assert from 'node:assert/strict';
 import {spawn, execFileSync} from 'node:child_process';
 import {readFile,writeFile,mkdtemp,mkdir,chmod,rm} from 'node:fs/promises';
@@ -46,8 +47,8 @@ assert.ok(config.r2_buckets.every(binding=>binding.remote===false));
 for(const key of ['AUTH_SOCIAL_BACKEND','AUTH_EMAIL_BACKEND','STRIPE_WEBHOOK_BACKEND','STRIPE_DISPATCH_BACKEND','BROADCAST_SEND_BACKEND','LICENSE_EXPIRY_BACKEND','NOTIFICATION_ARCHIVE_BACKEND'])assert.ok(!config.vars[key]);
 await privateWrite(configPath,JSON.stringify(config,null,2));
 const manifest=JSON.parse(await readFile(path.join(root,'package.json'),'utf8'));
-const selectors=Object.fromEntries([...manifest.scripts['build:cloudflare-staging'].matchAll(/\b(VITE_[A-Z_]+)=([a-z0-9-]+)\s/gu)].map(match=>[match[1],match[2]]));
-assert.equal(Object.keys(selectors).length,45);
+const selectors=localFrontendEnvironment(origin);
+assert.equal(Object.keys(selectors).length,5);
 const emptyEnv=path.join(temp,'empty-env');await mkdir(emptyEnv);
 const buildEnv={...process.env};for(const key of Object.keys(buildEnv))if(key.startsWith('VITE_'))delete buildEnv[key];
 Object.assign(buildEnv,selectors,{FANMARK_VITE_ENV_DIR:emptyEnv,VITE_FANMARK_API_BASE_URL:origin,VITE_AUTH_API_BASE_URL:origin,VITE_SUPABASE_URL:'https://synthetic-db.example.invalid',VITE_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_fixture_only',WRANGLER_SEND_METRICS:'false'});

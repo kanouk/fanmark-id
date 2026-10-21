@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  fetchFanmarkDetailsFromWorker,
-  getFanmarkDetailsBackend,
-  parseFanmarkDetailsPayload,
-  FanmarkDetailsApiError,
-} from "./fanmark-details-api.ts";
+import { fetchFanmarkDetailsFromWorker, parseFanmarkDetailsPayload, FanmarkDetailsApiError } from "./fanmark-details-api.ts";
 
 const details = {
   fanmark_id: "d8416a59-3f01-4c4d-9d9d-201f4f57f00a",
@@ -37,17 +32,14 @@ const details = {
 };
 
 test("selects the Worker only explicitly and validates the exact DTO", () => {
-  assert.equal(getFanmarkDetailsBackend(undefined), "supabase");
-  assert.equal(getFanmarkDetailsBackend(" worker "), "worker");
-  assert.throws(() => getFanmarkDetailsBackend("automatic"), FanmarkDetailsApiError);
-  assert.deepEqual(parseFanmarkDetailsPayload({ schemaVersion: 1, result: details }), details);
-  assert.equal(parseFanmarkDetailsPayload({ schemaVersion: 1, result: null }), null);
-  assert.throws(() => parseFanmarkDetailsPayload({ schemaVersion: 1, result: { ...details, user_id: "private" } }),
+assert.deepEqual(parseFanmarkDetailsPayload({ schemaVersion: 1, result: details }), details);
+assert.equal(parseFanmarkDetailsPayload({ schemaVersion: 1, result: null }), null);
+assert.throws(() => parseFanmarkDetailsPayload({ schemaVersion: 1, result: { ...details, user_id: "private" } }),
     (error: unknown) => error instanceof FanmarkDetailsApiError && error.kind === "invalid_response");
-  assert.throws(() => parseFanmarkDetailsPayload({ schemaVersion: 1, result: {
+assert.throws(() => parseFanmarkDetailsPayload({ schemaVersion: 1, result: {
     ...details, history_available: false, current_owner_username: "should-not-be-public",
   } }), FanmarkDetailsApiError);
-  assert.throws(() => parseFanmarkDetailsPayload({ schemaVersion: 2, result: details }), FanmarkDetailsApiError);
+assert.throws(() => parseFanmarkDetailsPayload({ schemaVersion: 2, result: details }), FanmarkDetailsApiError);
 });
 
 test("sends the same-origin Better Auth cookie and bounded short-ID request", async () => {

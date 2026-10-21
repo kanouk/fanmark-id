@@ -31,7 +31,7 @@ export const SYSTEM_SETTINGS_ADMIN_KEYS = [
   "enterprise_pricing",
 ] as const;
 
-export type SystemSettingsBackend = "supabase" | "worker";
+export type SystemSettingsBackend = "worker";
 
 export class SystemSettingsApiError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network" | "timeout";
@@ -45,15 +45,6 @@ export class SystemSettingsApiError extends Error {
     this.kind = kind;
     this.status = status;
   }
-}
-
-export function getSystemSettingsBackend(
-  value: string | undefined = import.meta.env?.VITE_SYSTEM_SETTINGS_BACKEND,
-): SystemSettingsBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new SystemSettingsApiError("configuration");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

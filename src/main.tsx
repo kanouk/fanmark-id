@@ -49,15 +49,7 @@ function showCatalogStartupError(): void {
 }
 
 async function loadSelectedEmojiCatalog(): Promise<void> {
-  const backend = import.meta.env.VITE_EMOJI_CATALOG_BACKEND;
-  if (!backend) {
-    const bundledCatalog = await import("@/data/emojiCatalog");
-    installEmojiCatalog(bundledCatalog.emojiCatalogEntries, bundledCatalog.emojiToId);
-    return;
-  }
-  if (backend !== "worker") throw new Error("Unsupported emoji catalog backend");
-
-  const baseUrl = import.meta.env.VITE_FANMARK_API_BASE_URL?.trim();
+  const baseUrl = import.meta.env.VITE_FANMARK_API_BASE_URL?.trim() || window.location.origin;
   if (!baseUrl) throw new Error("Worker API base URL is required for the emoji catalog");
 
   const pinnedVersion = import.meta.env.VITE_EMOJI_CATALOG_VERSION?.trim();
@@ -75,9 +67,7 @@ async function startApplication(): Promise<void> {
     registerSW({ immediate: true });
   }
 
-  if (import.meta.env.VITE_EMOJI_CATALOG_BACKEND?.trim()) {
-    showCatalogLoading();
-  }
+  showCatalogLoading();
 
   try {
     await loadSelectedEmojiCatalog();

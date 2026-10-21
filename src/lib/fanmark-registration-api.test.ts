@@ -1,11 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  buildFanmarkRegistrationApiUrl,
-  getFanmarkRegistrationBackend,
-  invokeFanmarkRegistration,
-  registerFanmarkThroughWorker,
-} from './fanmark-registration-api.ts';
+import { buildFanmarkRegistrationApiUrl, invokeFanmarkRegistration } from './fanmark-registration-api.ts';
 
 const successPayload = {
   success: true,
@@ -24,12 +19,6 @@ const successPayload = {
   },
 };
 
-test('backend defaults to Supabase and rejects unknown selectors', () => {
-  assert.equal(getFanmarkRegistrationBackend(undefined), 'supabase');
-  assert.equal(getFanmarkRegistrationBackend(' worker '), 'worker');
-  assert.throws(() => getFanmarkRegistrationBackend('cloudflare'), /configuration/);
-});
-
 test('builds the same-origin registration URL', () => {
   assert.equal(buildFanmarkRegistrationApiUrl('https://app.example.test/').href,
     'https://app.example.test/api/fanmarks/register');
@@ -46,12 +35,8 @@ test('uses Better Auth cookies and no-store for the selected Worker without Supa
       headers: { 'content-type': 'application/json' },
     });
   };
-  let supabaseCalls = 0;
-  const result = await invokeFanmarkRegistration(
-    body,
-    async () => { supabaseCalls += 1; return { data: null, error: null }; },
-    { backend: 'worker', baseUrl: 'https://app.example.test', authBaseUrl: 'https://app.example.test', fetchImpl },
-  );
+  const supabaseCalls = 0;
+  const result = await invokeFanmarkRegistration(body, { backend: 'worker', baseUrl: 'https://app.example.test', authBaseUrl: 'https://app.example.test', fetchImpl });
   assert.equal(result.error, null);
   assert.equal(result.data?.success, true);
   assert.equal(supabaseCalls, 0);
@@ -63,23 +48,9 @@ test('uses Better Auth cookies and no-store for the selected Worker without Supa
   assert.deepEqual(JSON.parse(String(calls[0].init.body)), body);
 });
 
-test('preserves the existing Supabase function path by default', async () => {
-  let called = false;
-  const expected = { data: { success: true }, error: null };
-  const result = await invokeFanmarkRegistration({}, async () => {
-    called = true;
-    return expected;
-  }, { backend: undefined });
-  assert.equal(called, true);
-  assert.equal(result, expected);
-});
-
 test('does not fall back when the selected Worker rejects registration', async () => {
-  let supabaseCalls = 0;
-  const result = await invokeFanmarkRegistration(
-    {},
-    async () => { supabaseCalls += 1; return { data: null, error: null }; },
-    {
+  const supabaseCalls = 0;
+  const result = await invokeFanmarkRegistration({}, {
       backend: 'worker',
       baseUrl: 'https://app.example.test',
       authBaseUrl: 'https://app.example.test',
@@ -87,8 +58,7 @@ test('does not fall back when the selected Worker rejects registration', async (
         status: 409,
         headers: { 'content-type': 'application/json' },
       }),
-    },
-  );
+    });
   assert.equal(result.data, null);
   assert.match(result.error?.message ?? '', /already taken/);
   assert.equal(supabaseCalls, 0);
@@ -96,16 +66,12 @@ test('does not fall back when the selected Worker rejects registration', async (
 
 test('rejects cross-origin cookie authentication before network access', async () => {
   let requests = 0;
-  const result = await invokeFanmarkRegistration(
-    {},
-    async () => ({ data: null, error: null }),
-    {
+  const result = await invokeFanmarkRegistration({}, {
       backend: 'worker',
       baseUrl: 'https://api.example.test',
       authBaseUrl: 'https://app.example.test',
       fetchImpl: async () => { requests += 1; return new Response(); },
-    },
-  );
+    });
   assert.equal(result.data, null);
   assert.match(result.error?.message ?? '', /configuration/);
   assert.equal(requests, 0);

@@ -1,12 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  FanmarkAnalyticsApiError,
-  fetchFanmarkAnalyticsFanmarksWorker,
-  fetchFanmarkAnalyticsSummaryWorker,
-  fetchFanmarkAnalyticsWorker,
-  getFanmarkAnalyticsBackend,
-} from "./fanmark-analytics-api.ts";
+import { FanmarkAnalyticsApiError, fetchFanmarkAnalyticsFanmarksWorker, fetchFanmarkAnalyticsSummaryWorker, fetchFanmarkAnalyticsWorker } from "./fanmark-analytics-api.ts";
 
 const FANMARK_ID = "d8416a59-3f01-4c4d-9d9d-201f4f57f00a";
 const FANMARK = {
@@ -21,12 +15,6 @@ const METRICS = {
   deviceMobile: 1, deviceTablet: 0, deviceDesktop: 0,
   accessTypeProfile: 4, accessTypeRedirect: 0, accessTypeText: 0, accessTypeInactive: 0,
 };
-
-test("analytics selector defaults to Supabase and rejects unknown backends", () => {
-  assert.equal(getFanmarkAnalyticsBackend(undefined), "supabase");
-  assert.equal(getFanmarkAnalyticsBackend("worker"), "worker");
-  assert.throws(() => getFanmarkAnalyticsBackend("unknown"), FanmarkAnalyticsApiError);
-});
 
 test("worker analytics calls include cookies only for the same trusted auth origin", async () => {
   let seen: Request | undefined;

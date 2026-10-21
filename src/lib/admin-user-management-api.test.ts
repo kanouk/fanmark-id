@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  AdminUserManagementApiError,
-  createAdminUserManagementApi,
-  getAdminUserManagementBackend,
-} from "./admin-user-management-api.ts";
+import { AdminUserManagementApiError, createAdminUserManagementApi } from "./admin-user-management-api.ts";
 
 const userId = "41111111-1111-4111-8111-111111111111";
 const licenseId = "51111111-1111-4111-8111-111111111111";
@@ -24,12 +20,6 @@ function listPayload() {
     meta: { totalMatchedBeforeStatus: 1 },
   };
 }
-
-test("keeps Supabase as the default and rejects unknown backend selectors", () => {
-  assert.equal(getAdminUserManagementBackend(undefined), "supabase");
-  assert.equal(getAdminUserManagementBackend("worker"), "worker");
-  assert.throws(() => getAdminUserManagementBackend("fallback"), AdminUserManagementApiError);
-});
 
 test("posts list filters with credentialed no-store requests and validates the projection", async () => {
   let seenRequest: Request | undefined;

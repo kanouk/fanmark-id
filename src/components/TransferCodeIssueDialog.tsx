@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/error-message';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -45,18 +46,18 @@ export const TransferCodeIssueDialog = ({
         description: t('transfer.success.codeIssuedDesc').replace('{code}', result.transfer_code)
       });
       onSuccess();
-    } catch (error: any) {
-      const message = error?.message || '';
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
       let errorKey = 'transfer.error.issueFailed';
       let errorDescription: string | undefined;
-      
+
       if (message.includes('48') || message.includes('insufficient')) {
         errorKey = 'transfer.error.insufficientLicense';
       } else if (message.includes('pending') || message.includes('applied')) {
         errorKey = 'transfer.error.pendingRequest';
       } else if (message.includes('transfer_locked') || message.includes('locked')) {
         errorKey = 'transfer.error.transferLocked';
-        const lockedUntil = error?.lockedUntil as string | undefined;
+        const lockedUntil = error && typeof error === 'object' && 'lockedUntil' in error && typeof error.lockedUntil === 'string' ? error.lockedUntil : undefined;
         if (lockedUntil) {
           const date = new Date(lockedUntil);
           if (!Number.isNaN(date.getTime())) {

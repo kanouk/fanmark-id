@@ -1,5 +1,5 @@
 import { buildRecentFanmarksApiUrl, getRecentFanmarksApiBaseUrl } from "./recent-fanmarks.ts";
-import type { Json } from "@/integrations/supabase/types";
+import type { JsonValue as Json } from "./json-value";
 
 const API_PATH = "/api/admin/invitation-codes";
 const MAX_RESPONSE_BYTES = 128 * 1024;
@@ -28,13 +28,6 @@ export class InvitationAdminClientError extends Error {
     this.kind = kind;
     this.status = status;
   }
-}
-
-export function getInvitationAdminBackend(value: string | undefined = import.meta.env?.VITE_INVITATION_ADMIN_BACKEND): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new InvitationAdminClientError("configuration");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

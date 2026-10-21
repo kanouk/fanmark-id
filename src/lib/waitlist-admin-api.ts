@@ -38,15 +38,6 @@ export class WaitlistAdminClientError extends Error {
   }
 }
 
-export function getWaitlistAdminBackend(
-  value: string | undefined = import.meta.env?.VITE_WAITLIST_ADMIN_BACKEND,
-): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new WaitlistAdminClientError("configuration");
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -27,39 +27,18 @@ export interface OwnProfileRequestOptions {
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   authBaseUrl?: string;
-  accessToken?: string;
   expectedUserId?: string;
 }
 
 export async function resolveOwnProfileAuth(
   userId: string | undefined,
-  betterAuthEnabled: boolean,
-  readSupabaseSession: () => Promise<{ data: { session: { access_token: string; user: { id: string } } | null }; error: unknown }>,
-): Promise<Pick<OwnProfileRequestOptions, "accessToken" | "expectedUserId">> {
+): Promise<Pick<OwnProfileRequestOptions, "expectedUserId">> {
   if (!userId) throw new ProfileApiError("http", 401);
-  if (betterAuthEnabled) return { expectedUserId: userId };
-  let result: Awaited<ReturnType<typeof readSupabaseSession>>;
-  try { result = await readSupabaseSession(); }
-  catch { throw new ProfileApiError("network"); }
-  const session = result.data.session;
-  if (result.error || !session || session.user.id !== userId) throw new ProfileApiError("http", 401);
-  assertAccessToken(session.access_token);
-  return { accessToken: session.access_token, expectedUserId: userId };
+  return { expectedUserId: userId };
 }
 
-function assertAccessToken(value: string): void {
-  if (typeof value !== "string" || value.length > 8192 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u.test(value)) {
-    throw new ProfileApiError("configuration");
-  }
-}
-
-function authenticationHeaders(options: OwnProfileRequestOptions): Headers {
-  const headers = new Headers({ accept: "application/json" });
-  if (options.accessToken !== undefined) {
-    assertAccessToken(options.accessToken);
-    headers.set("authorization", `Bearer ${options.accessToken}`);
-  }
-  return headers;
+function authenticationHeaders(): Headers {
+  return new Headers({ accept: "application/json" });
 }
 
 export type ProfileApiErrorKind = "configuration" | "http" | "invalid_response" | "network" | "timeout";
@@ -74,13 +53,6 @@ export class ProfileApiError extends Error {
     this.kind = kind;
     this.status = status;
   }
-}
-
-export function getOwnProfileBackend(value: string | undefined = import.meta.env?.VITE_PROFILE_BACKEND): "supabase" | "worker" {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new ProfileApiError("configuration");
 }
 
 export function buildOwnProfileApiUrl(baseUrl: string): URL {
@@ -169,7 +141,7 @@ async function requestProfile(patch?: OwnProfilePatch, options: OwnProfileReques
   const authBaseUrl = options.authBaseUrl ?? (import.meta.env?.VITE_AUTH_API_BASE_URL?.trim() ||
     (typeof window === "undefined" ? undefined : window.location.origin));
   assertAuthOrigin(baseUrl, authBaseUrl);
-  const headers = authenticationHeaders(options);
+  const headers = authenticationHeaders();
   if (patch) headers.set("content-type", "application/json");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -178,7 +150,7 @@ async function requestProfile(patch?: OwnProfilePatch, options: OwnProfileReques
       method: patch ? "PATCH" : "GET",
       headers,
       ...(patch ? { body: JSON.stringify(patch) } : {}),
-      credentials: options.accessToken === undefined ? "include" : "omit",
+      credentials: "include",
       cache: "no-store",
       signal: controller.signal,
     });
@@ -245,14 +217,14 @@ export async function checkOwnUsernameAvailability(username: string, options: Ow
   const authBaseUrl = options.authBaseUrl ?? (import.meta.env?.VITE_AUTH_API_BASE_URL?.trim() ||
     (typeof window === "undefined" ? undefined : window.location.origin));
   assertAuthOrigin(baseUrl, authBaseUrl);
-  const headers = authenticationHeaders(options);
+  const headers = authenticationHeaders();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await (options.fetchImpl ?? fetch)(url, {
       method: "GET",
       headers,
-      credentials: options.accessToken === undefined ? "include" : "omit",
+      credentials: "include",
       cache: "no-store",
       signal: controller.signal,
     });

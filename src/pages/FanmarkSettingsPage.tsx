@@ -7,8 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
-import { supabase } from '@/integrations/supabase/client';
-import { getFanmarkSettingsBackend, getOwnerFanmarkSettings } from '@/lib/fanmark-settings-api';
+
+import { getOwnerFanmarkSettings } from '@/lib/fanmark-settings-api';
 import { showEmojiConfetti } from '@/lib/emojiConfetti';
 
 interface FanmarkRecord {
@@ -45,7 +45,7 @@ const FanmarkSettingsPage = () => {
     setFetchError(null);
 
     try {
-      if (getFanmarkSettingsBackend() === 'worker') {
+      {
         const fanmarkData = await getOwnerFanmarkSettings(fanmarkId);
         if (!fanmarkData.has_active_license) {
           setFetchError(t('fanmarkSettings.errors.graceStatusEdit'));
@@ -76,67 +76,12 @@ const FanmarkSettingsPage = () => {
       }
 
       // Use the new comprehensive function to get all fanmark data
-      const { data, error } = await supabase.rpc('get_fanmark_complete_data', {
-        fanmark_id_param: fanmarkId
-      });
 
-      if (error) {
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        setFetchError(t('fanmarkSettings.errors.notFound'));
-        setFanmark(null);
-        return;
-      }
-
-      const fanmarkData = data[0]; // Get first result since function returns array
+       // Get first result since function returns array
       // Check if license is expired or in grace period
-      if (!fanmarkData.has_active_license) {
-        setFetchError(t('fanmarkSettings.errors.graceStatusEdit'));
-        setFanmark(null);
-        toast({
-          title: t('fanmarkSettings.errors.graceStatusEdit'),
-          description: t('fanmarkSettings.errors.graceStatusDescription'),
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const emojiIds = Array.isArray(fanmarkData.emoji_ids)
-        ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
-        : [];
 
       // Fetch is_public from fanmark_profiles table (regardless of access_type to preserve setting)
-      let isPublic = false;
-      if (fanmarkData.license_id) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('fanmark_profiles')
-          .select('is_public')
-          .eq('license_id', fanmarkData.license_id)
-          .maybeSingle();
 
-        if (!profileError && profileData) {
-          isPublic = profileData.is_public ?? false;
-        }
-      }
-
-      setFanmark({
-        id: fanmarkData.id,
-        user_input_fanmark: fanmarkData.user_input_fanmark,
-        emoji_ids: emojiIds,
-        fanmark: fanmarkData.display_fanmark,
-        fanmark_name: fanmarkData.fanmark_name?.trim() || null,
-        access_type: fanmarkData.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
-        target_url: fanmarkData.target_url ?? undefined,
-        text_content: fanmarkData.text_content ?? undefined,
-        is_password_protected: fanmarkData.is_password_protected ?? false,
-        status: fanmarkData.status,
-        short_id: fanmarkData.short_id,
-        license_id: fanmarkData.license_id,
-        is_public: isPublic,
-
-      });
     } catch (error) {
       console.error('Failed to load fanmark:', error);
       setFetchError(t('fanmarkSettings.errors.loadFailed'));

@@ -5,7 +5,7 @@ const MAX_RESPONSE_BYTES = 8 * 1024;
 const TIMEOUT_MS = 15_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-export type StripeExtensionCheckoutBackend = "supabase" | "worker";
+export type StripeExtensionCheckoutBackend = "worker";
 export type StripeExtensionCheckoutErrorKind = "configuration" | "http" | "invalid_response" | "network" | "timeout";
 
 export class StripeExtensionCheckoutApiError extends Error {
@@ -22,15 +22,6 @@ export class StripeExtensionCheckoutApiError extends Error {
     this.status = status;
     this.code = code;
   }
-}
-
-export function getStripeExtensionCheckoutBackend(
-  value: string | undefined = import.meta.env?.VITE_STRIPE_EXTENSION_CHECKOUT_BACKEND,
-): StripeExtensionCheckoutBackend {
-  const backend = value?.trim();
-  if (!backend || backend === "supabase") return "supabase";
-  if (backend === "worker") return "worker";
-  throw new StripeExtensionCheckoutApiError("configuration");
 }
 
 export function buildStripeExtensionCheckoutUrl(baseUrl: string): URL {
@@ -149,7 +140,6 @@ export async function createStripeExtensionCheckoutThroughWorker(
   }
   return { url: payload.url };
 }
-
 
 export type StripeExtensionApplicationStatus =
   | { status: "pending" | "failed"; fanmark_id: string }
