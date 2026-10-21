@@ -68,9 +68,11 @@ export const ExtendLicenseDialog = ({
   }, [selectedPlan]);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchPlans = async () => {
       if (!open || !target?.tierLevel) {
         setPlans([]);
+        setLoadingPlans(false);
         return;
       }
 
@@ -83,7 +85,6 @@ export const ExtendLicenseDialog = ({
 
       setLoadingPlans(true);
       try {
-        const pricingBackend = "worker";
         let options: ExtendPlanOption[];
         {
           const prices = await fetchExtensionPriceMaster();
@@ -91,6 +92,7 @@ export const ExtendLicenseDialog = ({
             .filter(item => item.tierLevel === target.tierLevel && item.isActive)
             .map(item => ({ months: item.months, price: item.priceYen }));
         }
+        if (cancelled) return;
         setPlans(options);
 
         if (!selectedPlanRef.current) {
@@ -101,17 +103,18 @@ export const ExtendLicenseDialog = ({
           }
         }
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load extension plans:', err);
         setPlans([]);
         onChangePlan(null);
       } finally {
-        setLoadingPlans(false);
+        if (!cancelled) setLoadingPlans(false);
       }
     };
 
-    fetchPlans();
-    // Intentionally re-run when open state or target tier changes
-  }, [open, target?.tierLevel]);
+    void fetchPlans();
+    return () => { cancelled = true; };
+  }, [open, target?.tierLevel, target?.licenseEnd, onChangePlan]);
 
   const initialPlan = plans[0] ?? null;
   const activePlan = selectedPlan ?? initialPlan ?? null;

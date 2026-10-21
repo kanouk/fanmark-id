@@ -241,9 +241,9 @@ export function useDashboardController() {
     setExtendDialogOpen(true);
   };
 
-  const handleChangePlan = (plan: ExtendPlanOption | null) => {
+  const handleChangePlan = useCallback((plan: ExtendPlanOption | null) => {
     setExtendSelectedPlan(plan);
-  };
+  }, []);
 
   const handleExtendSubmit = async () => {
     if (!extendTarget || !extendSelectedPlan) return;

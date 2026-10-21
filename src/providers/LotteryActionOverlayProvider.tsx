@@ -1,25 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import { LotteryActionOverlayContext, type OverlayState, type LotteryAction, type OverlayMeta, type LotteryActionOverlayContextValue } from "@/hooks/useLotteryActionOverlay";
+import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import { createPortal } from 'react-dom';
 import LotteryActionLoading from '@/components/LotteryActionLoading';
-
-type LotteryAction = 'applying' | 'cancelling';
-
-interface OverlayMeta {
-  emoji?: string | null;
-}
-
-interface OverlayState {
-  visible: boolean;
-  action: LotteryAction | null;
-  emoji?: string | null;
-  shownAt: number | null;
-}
-
-interface LotteryActionOverlayContextValue {
-  show: (action: LotteryAction, meta?: OverlayMeta) => void;
-  hide: () => void;
-  state: OverlayState;
-}
 
 const MIN_DISPLAY_DURATION_MS = 500;
 const initialState: OverlayState = {
@@ -28,8 +10,6 @@ const initialState: OverlayState = {
   emoji: null,
   shownAt: null,
 };
-
-const LotteryActionOverlayContext = createContext<LotteryActionOverlayContextValue | undefined>(undefined);
 
 export const LotteryActionOverlayProvider = ({ children }: PropsWithChildren) => {
   const [state, setState] = useState<OverlayState>(initialState);
@@ -102,12 +82,4 @@ export const LotteryActionOverlayProvider = ({ children }: PropsWithChildren) =>
         : null}
     </LotteryActionOverlayContext.Provider>
   );
-};
-
-export const useLotteryActionOverlay = () => {
-  const context = useContext(LotteryActionOverlayContext);
-  if (!context) {
-    throw new Error('useLotteryActionOverlay must be used within a LotteryActionOverlayProvider');
-  }
-  return context;
 };

@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { TranslationProvider } from "@/hooks/useTranslation";
-import { AuthProvider } from "@/hooks/useAuth";
+import { TranslationProvider } from "@/providers/TranslationProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 
 import { betterAuthClient } from "@/lib/auth-backend";

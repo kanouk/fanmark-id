@@ -84,7 +84,7 @@ export const useEmojiProfile = (licenseId: string | null, fanmarkId?: string | n
     } finally {
       if (generation === readGeneration.current) setLoading(false);
     }
-  }, [authLoading, user, licenseId, fanmarkId]);
+  }, [authLoading, user, fanmarkId]);
 
   const updateProfile = useCallback(async (updates: EmojiProfileUpdates) => {
         if (!user || (!fanmarkId)) throw new Error(t('common.userNotAuthenticated'));
@@ -101,7 +101,7 @@ export const useEmojiProfile = (licenseId: string | null, fanmarkId?: string | n
       console.error('Error updating emoji profile:', error);
       throw error;
     }
-  }, [user, licenseId, fanmarkId, t]);
+  }, [user, fanmarkId, t]);
 
   useEffect(() => {
     void fetchProfile();

@@ -25,10 +25,18 @@ controllerの戻り値の型は実装から推論し、APIのDTOは既存client�
 - 決済から戻っただけでは成功にしない。既存の署名された適用結果と上限付きpollingを保持する。
 - 入力・下書き・編集中のパスワードはフォーム側に残す。保存失敗時に消さず、保存成功時だけ下書きを消す。
 
+## Providerと共有関数
+
+AuthProvider / TranslationProviderはsrc/providers/の表示用module、useAuth / useTranslationはsrc/hooks/の購読hook。
+同じcontextを専用moduleで共有し、Provider側からhookを再exportしない。
+Themeと抽選overlayも同じ分離を使う。uiのvariant関数は各*-variants.ts、form/sidebarのcontextとhookは*-context.ts。
+React部品のmoduleは部品だけを公開し、ViteのFast Refreshで状態を保持できる境界にする。
+検索effectは入力・本人・言語の変更時に再実行し、cleanup後の古い応答を表示や完了通知へ反映しない。
+
 ## 回帰確認
 
 `verify:app`で型・Lint・client・認証競合とcache契約を確認する。
-`test:local`は実Worker、DBへの保存、検索・取得、PC/390px、本人プロフィール共有、アカウント切替を確認する。
+`test:local`は実Worker、DBへの保存、検索・取得、PC/320〜430pxの4言語・5絵文字・入力dialog・picker、本人プロフィール共有、アカウント切替を確認する。
 `test:staging-profile-editor-local`は実Worker/R2で失敗保存・下書き復元・画像・他人拒否、
 `test:staging-profile-editor-ui`は隔離した応答でcold start・拒否・通信失敗・再試行を確認する。
 通常CIにこれらを含める。外部providerを使う成功試験の代用とはしない。

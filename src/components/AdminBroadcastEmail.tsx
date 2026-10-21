@@ -182,7 +182,7 @@ export function AdminBroadcastEmail() {
     } finally {
       setIsEstimating(false);
     }
-  }, [currentRecipientFilter, filterData, useWorkerBackend]);
+  }, [currentRecipientFilter]);
 
   // Re-estimate when filters change
   useEffect(() => {

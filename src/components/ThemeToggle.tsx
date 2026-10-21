@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Palette } from 'lucide-react';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '@/hooks/useTheme';
 
 const themes = [
   { value: 'pastel', label: 'Pastel' },

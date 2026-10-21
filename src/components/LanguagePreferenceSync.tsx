@@ -10,8 +10,10 @@ export const LanguagePreferenceSync = () => {
   const { setLanguage } = useTranslation();
   const lastAppliedRef = useRef<string | null>(null);
 
+  const userId = user?.id;
+
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       lastAppliedRef.current = null;
       return;
     }
@@ -37,7 +39,7 @@ export const LanguagePreferenceSync = () => {
     } catch (error) {
       console.warn('Failed to persist preferred language locally:', error);
     }
-  }, [user?.id, profile?.preferred_language, setLanguage]);
+  }, [userId, profile?.preferred_language, setLanguage]);
 
   return null;
 };

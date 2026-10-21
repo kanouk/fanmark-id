@@ -4,11 +4,11 @@ import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
-const files = ['hooks/useAuth','components/AuthReadinessGate','components/PasswordSetupGate','components/MaintenanceGate'];
+const files = ['providers/AuthProvider','components/AuthReadinessGate','components/PasswordSetupGate','components/MaintenanceGate'];
 const source = Object.fromEntries(await Promise.all(files.map(async name => [name, await readFile(new URL('../src/'+name+'.tsx',import.meta.url),'utf8')])));
 const jsx = (type,props) => ({type,props});
 function run(name,imports,globals={}) {
-  imports = { '@/lib/owner-query': { ownerQueryKey }, '@tanstack/react-query': { useQueryClient: () => ({ clear() {}, setQueryData() {}, fetchQuery: ({queryFn}) => queryFn() }) }, ...imports };
+  imports = { '@/hooks/auth-context': { AuthContext: { Provider: 'Provider' } }, '@/lib/owner-query': { ownerQueryKey }, '@tanstack/react-query': { useQueryClient: () => ({ clear() {}, setQueryData() {}, fetchQuery: ({queryFn}) => queryFn() }) }, ...imports };
   const exports={};
   const code=ts.transpileModule(source[name],{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
   runInNewContext(code,{exports,require(key){if(key==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:'fragment'};assert.ok(key in imports,key);return imports[key];},console:{error(){},warn(){}},...globals});return exports;
@@ -26,7 +26,7 @@ const uiImports={'lucide-react':{Loader2:'Spinner'},'@/components/ui/button':{Bu
 for (const outcome of ['ready','wrong-owner','offline']) test('Better Auth profile keeps protection closed until verified: '+outcome,async()=>{
   const h=hooks();let settle,profileReads=0;
   const waiting=new Promise((resolve,reject)=>{settle=()=>outcome==='offline'?reject(Error('synthetic-outage')):resolve({user_id:outcome==='wrong-owner'?'foreign':'synthetic-owner',requires_password_setup:false});});
-  const e=run('hooks/useAuth',{react:h.api,
+  const e=run('providers/AuthProvider',{react:h.api,
     '@/lib/auth-backend':{betterAuthClient:{getSession:async()=>({user:{id:'synthetic-owner',emailVerified:true}})}},
     '@/lib/profile-api':{loadOwnProfile:async()=>{profileReads++;return waiting;}}
   });
@@ -43,7 +43,7 @@ function descendants(tree) {if(!tree||typeof tree!=='object')return [];return [t
 function renderGate(auth) {return run('components/AuthReadinessGate',{...uiImports,'@/hooks/useAuth':{useAuth:()=>auth}}).AuthReadinessGate({children:'protected-content'});}
 test('an unproved profile keeps content closed and retries the read without claiming password setup',async()=>{
   const h=hooks();let outcome='timeout',reads=0;
-  const e=run('hooks/useAuth',{react:h.api,'@/integrations/supabase/client':{supabase:{}},'@/lib/auth-backend':{isBetterAuthEnabled:()=>true,betterAuthClient:{getSession:async()=>({user:{id:'synthetic-user',emailVerified:true}})}},'@/lib/profile-api':{loadOwnProfile:async()=>{reads++;if(outcome==='timeout')throw Error('timeout');return {user_id:outcome==='mismatch'?'other':'synthetic-user',requires_password_setup:outcome==='oauth'};}}});
+  const e=run('providers/AuthProvider',{react:h.api,'@/integrations/supabase/client':{supabase:{}},'@/lib/auth-backend':{isBetterAuthEnabled:()=>true,betterAuthClient:{getSession:async()=>({user:{id:'synthetic-user',emailVerified:true}})}},'@/lib/profile-api':{loadOwnProfile:async()=>{reads++;if(outcome==='timeout')throw Error('timeout');return {user_id:outcome==='mismatch'?'other':'synthetic-user',requires_password_setup:outcome==='oauth'};}}});
   const context=()=>{h.reset();return e.AuthProvider({children:null}).props.value;};
   assert.equal(await context().refreshSession(),false);let auth=context();assert.equal(auth.profileGateError,true);assert.equal(auth.loading,false);
   const tree=renderGate(auth);assert.ok(descendants(tree).some(x=>x.props?.role==='alert'));assert.ok(!descendants(tree).some(x=>x.props?.children==='protected-content'));
@@ -69,7 +69,7 @@ test('maintenance read failure offers retry; only confirmed maintenance renders 
 test('a late session read cannot replace a newer authenticated owner', async () => {
   const h=hooks(); let settleFirst, calls=0, profileReads=0;
   const first=new Promise(resolve=>{settleFirst=resolve;});
-  const e=run('hooks/useAuth',{react:h.api,
+  const e=run('providers/AuthProvider',{react:h.api,
     '@/lib/auth-backend':{betterAuthClient:{getSession:()=>++calls===1?first:Promise.resolve({user:{id:'new-owner',emailVerified:true}})}},
     '@/lib/profile-api':{loadOwnProfile:async()=>{profileReads++;return {user_id:'new-owner',requires_password_setup:false};}}
   });
@@ -85,7 +85,7 @@ test('logout invalidates a pending profile gate and clears private cache only af
   const h=hooks(); let settle, clears=0, writes=0;
   const waiting=new Promise(resolve=>{settle=resolve;});
   const client={clear(){clears++;},setQueryData(){writes++;},fetchQuery:({queryFn})=>queryFn()};
-  const e=run('hooks/useAuth',{react:h.api,'@tanstack/react-query':{useQueryClient:()=>client},
+  const e=run('providers/AuthProvider',{react:h.api,'@tanstack/react-query':{useQueryClient:()=>client},
     '@/lib/auth-backend':{betterAuthClient:{getSession:async()=>({user:{id:'owner',emailVerified:true}}),signOut:async()=>{}}},
     '@/lib/profile-api':{loadOwnProfile:()=>waiting}
   });
@@ -100,7 +100,7 @@ test('logout invalidates a pending profile gate and clears private cache only af
 test('failed revocation keeps authenticated state and cached data available for retry', async () => {
   const h=hooks();let clears=0;
   const client={clear(){clears++;},setQueryData(){},fetchQuery:({queryFn})=>queryFn()};
-  const e=run('hooks/useAuth',{react:h.api,'@tanstack/react-query':{useQueryClient:()=>client},
+  const e=run('providers/AuthProvider',{react:h.api,'@tanstack/react-query':{useQueryClient:()=>client},
     '@/lib/auth-backend':{betterAuthClient:{getSession:async()=>({user:{id:'owner',emailVerified:true}}),signOut:async()=>{throw Error('offline');}}},
     '@/lib/profile-api':{loadOwnProfile:async()=>({user_id:'owner',requires_password_setup:false})}
   });

@@ -24,6 +24,8 @@
 - `workers/api/src/staging-backup.ts` / `recovery-set.ts`: 名前にstagingを含むが、本番にも使うbackup/復旧実装。
   通常設定・保存先は[本番通常運用](migration/production-operations.md)で選ぶ。
 
+AuthProvider / TranslationProviderはsrc/providers/、購読hookと共有contextはsrc/hooks/。UI variantとform/sidebar contextは専用moduleへ分離する。詳しくは[画面変更ガイド](development/SCREENS.md)を参照する。
+
 ## 画面・操作から実装を探す
 
 表中の画面名を入口に`src/lib/`のclientと`workers/api/src/`の対応API、該当testを読む。
