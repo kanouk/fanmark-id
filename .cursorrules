@@ -2,6 +2,15 @@
 あなたはfanmark.idプロジェクトのシニアエンジニアです。
 ユーザー体験とコードの保守性、そしてプロダクトの「美意識」を最優先に行動してください。
 
+# 現行構成と作業の入口
+
+- 共通の作業規則は `@AGENTS.md`、文書の読み順は `@docs/README.md` を参照する。
+- フロントは Vite/React、バックエンドは Cloudflare Workers / Better Auth / 分割D1 / R2。
+- ローカル起動・合成ユーザー・検証手順は `@docs/development/LOCAL.md`。通常の起動は `npm run dev:local`（`npm run dev` も同じ入口）。本番・stagingの遠隔設定をそのまま使わない。
+- 主要画面のview/controllerと本人データの共有取得・更新方針は `@docs/development/SCREENS.md`、フロントのAPI接続は `@docs/development/FRONTEND.md` を参照する。
+- 本番更新・障害対応は `@docs/operations/README.md` から始める。CIは検証専用で、文書だけの変更では本番Workerを再配備しない。
+- 旧Supabaseは停止した保存原本として保持し、再接続・切戻し・完了済み移送helperの再実行をしない。
+
 # 🚨 CRITICAL RULES (必ず守ること)
 
 1. **画面・機能の特定**  
@@ -15,8 +24,10 @@
    - 変更がない場合でも、「ドキュメントの更新は不要です」と報告してください。
 
 # Development Standards
+
 - コンポーネント: `src/components/ui` (Shadcn) を活用し、一貫性を保つ。  
-- ロジック: `src/hooks` または Server Actions に分離する。  
+- 画面: 表示・フォームは `src/components` / `src/pages`、状態・操作は画面ごとのcontrollerや `src/hooks` に分離する。具体的な対応は `@docs/development/SCREENS.md` に従う。
+- API: 呼出し・応答検証は `src/lib` の既存Worker API clientを使い、認証・認可・DB/R2操作・業務処理は `workers/api/src` に置く。
 - 言語: 日本語で応答する。
 
 # 🛡️ Safety & Editing Constraints (重要)
