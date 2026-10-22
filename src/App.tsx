@@ -11,28 +11,10 @@ import { LanguagePreferenceSync } from "@/components/LanguagePreferenceSync";
 import { DocumentTitleSync } from "@/components/DocumentTitleSync";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import PasswordSetup from "./pages/PasswordSetup";
-import Profile from "./pages/Profile";
-import Dashboard from "./pages/Dashboard";
-import FanmarkSettingsPage from "./pages/FanmarkSettingsPage";
-import EmojiProfileEdit from "./pages/EmojiProfileEdit";
-import FanmarkProfilePreview from "./pages/FanmarkProfilePreview";
-import FanmarkMessageboardPreview from "./pages/FanmarkMessageboardPreview";
 import NotFound from "./pages/NotFound";
 import { FanmarkAccess } from "./components/FanmarkAccess";
 import { FanmarkAccessByShortId } from "./components/FanmarkAccessByShortId";
 import FanmarkDetailsPage from "./pages/FanmarkDetailsPage";
-import FanmarkPublicQR from "./pages/FanmarkPublicQR";
-import Favorites from "./pages/Favorites";
-import Notifications from "./pages/Notifications";
-import PWAApp from "./pages/PWAApp";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import ContactUs from "./pages/ContactUs";
-import CommercialTransactions from "./pages/CommercialTransactions";
-import About from "./pages/About";
 import Maintenance from "./pages/Maintenance";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
@@ -44,12 +26,34 @@ import { AuthReadinessGate } from "@/components/AuthReadinessGate";
 import { EmojiCatalogNotice } from "@/components/EmojiCatalogStatus";
 import { AppStartupSkeleton } from '@/components/AppStartupSkeleton';
 import { RouteLoadBoundary } from '@/components/RouteLoadBoundary';
+import { RouteModulePreload } from '@/components/RouteModulePreload';
+import { routeModules } from '@/lib/route-modules';
 
 const AdminApp = lazy(() => import('./components/AdminApp'));
 const AdminRoute = lazy(() => import('./components/AdminApp').then(module => ({ default: module.AdminRoute })));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const PlanSelection = lazy(() => import('./pages/PlanSelection'));
+// Keep component identities stable across renders. Shared providers and the
+// public home/login stay mounted while route-specific code loads.
+const ForgotPassword = lazy(routeModules.ForgotPassword);
+const ResetPassword = lazy(routeModules.ResetPassword);
+const PasswordSetup = lazy(routeModules.PasswordSetup);
+const Profile = lazy(routeModules.Profile);
+const Dashboard = lazy(routeModules.Dashboard);
+const FanmarkSettingsPage = lazy(routeModules.FanmarkSettingsPage);
+const EmojiProfileEdit = lazy(routeModules.EmojiProfileEdit);
+const FanmarkProfilePreview = lazy(routeModules.FanmarkProfilePreview);
+const FanmarkMessageboardPreview = lazy(routeModules.FanmarkMessageboardPreview);
+const FanmarkPublicQR = lazy(routeModules.FanmarkPublicQR);
+const Favorites = lazy(routeModules.Favorites);
+const Notifications = lazy(routeModules.Notifications);
+const PWAApp = lazy(routeModules.PWAApp);
+const PrivacyPolicy = lazy(routeModules.PrivacyPolicy);
+const TermsOfService = lazy(routeModules.TermsOfService);
+const ContactUs = lazy(routeModules.ContactUs);
+const CommercialTransactions = lazy(routeModules.CommercialTransactions);
+const About = lazy(routeModules.About);
 
 const queryClient = new QueryClient();
 
@@ -66,6 +70,7 @@ const MainApp = () => (
             <Sonner />
             <BrowserRouter>
               <ScrollToTop />
+              <RouteModulePreload />
               <MaintenanceGate>
               <AuthReadinessGate>
               <PasswordSetupGate />

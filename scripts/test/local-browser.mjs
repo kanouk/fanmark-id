@@ -53,7 +53,7 @@ export async function verifyLocalBrowser(stack) {
     });
     cdp.on('Runtime.exceptionThrown', event => {
       const description = event.exceptionDetails?.exception?.description ?? '';
-      if (expectedModuleFailure && /Failed to fetch dynamically imported module.*\/src\/components\/AdminApp\.tsx/u.test(description)) return;
+      if (expectedModuleFailure && /Failed to fetch dynamically imported module.*\/src\/(?:components\/AdminApp|pages\/Profile)\.tsx/u.test(description)) return;
       exceptions.push(event.exceptionDetails?.text || 'uncaught exception');
     });
     cdp.on('Network.requestWillBeSent', event => {
@@ -87,6 +87,14 @@ export async function verifyLocalBrowser(stack) {
     async function clickText(text, within = 'document') {
       await value('Array.from(' + within + '.querySelectorAll("button")).find(button => button.textContent.trim()===' +
         JSON.stringify(text) + '&&!button.disabled).click()');
+    }
+    async function pointerClick(elementExpression) {
+      // Radix menus animate into position. Wait for their finite animations
+      // before measuring coordinates so fast automation cannot miss a row.
+      await value('(async()=>{const element=' + elementExpression + ';element.scrollIntoView({block:"center",behavior:"instant"});const root=element.closest("[role=menu]")||element;await Promise.all(root.getAnimations({subtree:true}).filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>undefined)));return true;})()');
+      const point = await value('(()=>{const r=(' + elementExpression + ').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()');
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
     }
     const catalogStartup = await verifyCatalogStartup({ cdp, value, wait, navigate, fill, clickText, artifactDirectory, owner: stack.fixtures.users[0] });
     const deferredRoutes = await verifyDeferredRoutes({ cdp, value, wait, navigate, expectModuleFailure: value => { expectedModuleFailure = value; } });
@@ -173,6 +181,18 @@ export async function verifyLocalBrowser(stack) {
     assert.ok(width.scroll <= 390, 'Profile editor must fit the mobile viewport');
     await value('document.querySelector("input[name=display_name]").select()');
     await cdp.send('Input.insertText', { text: 'Local browser saved profile' });
+    await value('window.__routeDraftField=document.querySelector("input[name=display_name]");true');
+    for (const [language, label] of [['en', 'English'], ['ko', '한국어'], ['id', 'Bahasa Indonesia'], ['ja', '日本語']]) {
+      await pointerClick('document.querySelector("button:has(svg.lucide-globe)")');
+      await wait('!!document.querySelector("[role=menuitem]")');
+      await pointerClick('Array.from(document.querySelectorAll("[role=menuitem]")).find(item=>item.textContent.trim()===' + JSON.stringify(label) + ')');
+      await wait('document.documentElement.lang===' + JSON.stringify(language));
+      await wait('!document.querySelector("[role=menu]")');
+      assert.equal(await value('document.querySelector("input[name=display_name]")===window.__routeDraftField'), true,
+        'Language switching must not remount the deferred editor');
+      assert.equal(await value('window.__routeDraftField.value'), 'Local browser saved profile');
+      assert.equal(await value('!!document.querySelector("[data-app-startup]")'), false);
+    }
     await clickText('保存する');
     await wait('document.body.innerText.includes("更新しました") || document.body.innerText.includes("保存しました") || location.pathname.endsWith("/settings")');
     const saved = await (await stack.runtime.getD1Database('FANMARK_DB'))
@@ -211,6 +231,7 @@ export async function verifyLocalBrowser(stack) {
     assert.ok(requests.some(request => request.path === '/api/fanmarks/register' && request.method === 'POST'));
     const report = { catalogStartup, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
       searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true, accountSavePersisted: true, ownerSwitchIsolated: true,
+      languageSwitchRetainsEditorAndDraft: true,
       externalApplicationRequests: stack.deniedOutbound.length, browserProxyRefusals: blocked.length, requests };
     await writeFile(path.join(artifactDirectory, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });
     console.log('[local browser] verified; artifacts: ' + artifactDirectory);
