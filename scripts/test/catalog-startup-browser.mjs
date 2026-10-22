@@ -120,17 +120,56 @@ export async function verifyDeferredRoutes({ cdp, value, wait, navigate, expectM
     assert.ok(refused.length > 0, 'The deferred admin module must actually be requested and refused');
     assert.equal(await value('Array.from(document.querySelectorAll("button")).some(button=>button.textContent==="再読み込み")'), true);
     await cdp.send('Fetch.disable');
-    unsubscribe();
     await navigate('/admin');
     await wait('!!document.querySelector("#cloudflare-admin-email")');
     assert.equal(await value('document.body.innerText.includes("ユーザー管理")'), false, 'Anonymous retry must show admin login, never admin data');
     expectModuleFailure(false);
-    for (const pathname of ['/analytics', '/plans']) {
+    expectModuleFailure(true);
+    await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*/src/pages/Profile.tsx*', requestStage: 'Request' }] });
+    const beforeProfileFailure = refused.length;
+    await navigate('/profile');
+    await wait('!!document.querySelector("[role=alert]") && document.body.innerText.includes("画面を読み込めませんでした")');
+    assert.ok(refused.length > beforeProfileFailure, 'The newly deferred owner module must be requested and refused');
+    await cdp.send('Fetch.disable');
+    expectModuleFailure(false);
+    await navigate('/profile');
+    await wait('location.pathname==="/auth" && !!document.querySelector("#auth-email")');
+
+    let dashboardCodeLoaded = false;
+    const stopResponses = cdp.on('Network.responseReceived', event => {
+      if (new URL(event.response.url).pathname.endsWith('/src/pages/Dashboard.tsx')) dashboardCodeLoaded = true;
+    });
+    const heldSession = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => {
+      window.__routePrivateReads=0;
+      const original=fetch.bind(window);
+      window.fetch=async(input,init)=>{
+        const url=new URL(typeof input==='string'||input instanceof URL?input:input.url,location.href);
+        if(url.pathname==='/api/auth/get-session')await new Promise(resolve=>window.__routeReleaseAuth=resolve);
+        if(url.pathname.startsWith('/api/me/'))window.__routePrivateReads++;
+        return original(input,init);
+      };
+    })();` });
+    try {
+      await navigate('/dashboard');
+      for (let attempt = 0; attempt < 200 && !dashboardCodeLoaded; attempt++) await new Promise(resolve => setTimeout(resolve, 50));
+      assert.equal(dashboardCodeLoaded, true, 'Direct-route code should load alongside readiness, not wait for another round trip');
+      await wait('!!window.__routeReleaseAuth && !!document.querySelector("[data-app-startup]")');
+      assert.equal(await value('window.__routePrivateReads'), 0, 'Preloading must not mount owner effects before session verification');
+      await value('window.__routeReleaseAuth()');
+      await wait('location.pathname==="/auth" && !!document.querySelector("#auth-email")');
+    } finally {
+      stopResponses();
+      await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: heldSession.identifier });
+    }
+
+    for (const pathname of ['/analytics', '/plans', '/favorites', '/notifications']) {
       await navigate(pathname);
       await wait('location.pathname==="/auth" && !!document.querySelector("#auth-email")');
     }
     assert.deepEqual(failures, []);
-    return { deferredModuleFailureOffersReload: true, adminRetryKeepsMfaGate: true, protectedDeferredRoutesRequireLogin: true };
+    return { deferredModuleFailureOffersReload: true, ownerModuleFailureOffersReload: true,
+      directRouteCodeOverlapsReadiness: true, preloadingDoesNotReadPrivateData: true,
+      adminRetryKeepsMfaGate: true, protectedDeferredRoutesRequireLogin: true };
   } finally {
     expectModuleFailure(false);
     unsubscribe();

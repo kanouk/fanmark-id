@@ -48,6 +48,10 @@ main.tsxはPWA更新を登録し、Workerの公開カタログを裏で取得し
 認証ProviderとMaintenanceGateの取得は並行する。両方の確認が済むまでAuthReadinessGate等の保護を維持し、
 個人情報を含まない`AppStartupSkeleton`だけを表示する。管理・分析・プランはlazy importし、失敗時はRouteLoadBoundaryで再読み込みを案内する。
 
+所有者画面・QR・PWA・案内/復旧も`route-modules.ts`の安定したloaderで分割する。`RouteModulePreload`は現在pathのコードだけをreadinessと並行取得し、個人データを先読みしない。
+トップ・ログインと4言語辞書は初期chunkに保持し、言語切替に新しい待機や失敗状態を追加しない。routeのURL・query・入力/下書き・権限境界は変えない。
+実localブラウザでは所有者moduleの取得失敗/再読み込み、session保留中の並行コード取得と個人API未実行も検証する。
+
 `test:local`はカタログとsession応答を意図的に保留し、確認前の保護、並行取得、カタログ未取得でのトップ表示、
 入力取消・失敗/再試行と絵文字URLの誤判定防止を実ブラウザで検証する。通常のモバイル・画像・下書き・本人切替の回帰も維持する。
 src/data/emojiCatalog.tsはlocal seedに使う公開データで、frontendからはimportしない。
