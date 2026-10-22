@@ -89,7 +89,10 @@ export async function verifyLocalBrowser(stack) {
         JSON.stringify(text) + '&&!button.disabled).click()');
     }
     async function pointerClick(elementExpression) {
-      const point = await value('(()=>{const element=' + elementExpression + ';element.scrollIntoView({block:"center"});const r=element.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()');
+      // Radix menus animate into position. Wait for their finite animations
+      // before measuring coordinates so fast automation cannot miss a row.
+      await value('(async()=>{const element=' + elementExpression + ';element.scrollIntoView({block:"center",behavior:"instant"});const root=element.closest("[role=menu]")||element;await Promise.all(root.getAnimations({subtree:true}).filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>undefined)));return true;})()');
+      const point = await value('(()=>{const r=(' + elementExpression + ').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()');
       await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
     }
