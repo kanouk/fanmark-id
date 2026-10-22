@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { catalogPageCount } from './slow-network-summary.mjs';
 
 const profiles = {
   'slow-4g': { latency: 150, downloadThroughput: 1_600_000 / 8, uploadThroughput: 750_000 / 8 },
@@ -66,7 +67,7 @@ try {
   const targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();
   cdp=transport(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await cdp.opened;
   const conditions={offline:false,...profiles[profile],connectionType:'cellular4g'};
-  const errors=[], requests=new Map(), childTasks=[];
+  const errors=[], requests=new Map(), childTasks=[], catalogMetadata=new Map();
   let label='setup';
   async function throttle(session){await cdp.send('Network.enable',{},session);await cdp.send('Network.emulateNetworkConditions',conditions,session);}
   cdp.on('Target.attachedToTarget',(e)=>{
@@ -79,7 +80,21 @@ try {
   });
   cdp.on('Network.responseReceived',(e,session)=>{const r=requests.get(session+':'+e.requestId);if(r)Object.assign(r,{status:e.response.status,headersAt:e.timestamp,fromSW:e.response.fromServiceWorker||false,fromDisk:e.response.fromDiskCache||false,protocol:e.response.protocol,encoding:e.response.headers['content-encoding'],cacheControl:e.response.headers['cache-control'],timing:e.response.timing});});
   cdp.on('Network.requestServedFromCache',(e,session)=>{const r=requests.get(session+':'+e.requestId);if(r)r.fromCache=true;});
-  cdp.on('Network.loadingFinished',(e,session)=>{const r=requests.get(session+':'+e.requestId);if(r)Object.assign(r,{end:e.timestamp,wireBytes:e.encodedDataLength});});
+  cdp.on('Network.loadingFinished',(e,session)=>{
+    const r=requests.get(session+':'+e.requestId);if(!r)return;
+    Object.assign(r,{end:e.timestamp,wireBytes:e.encodedDataLength});
+    if(session==='page'&&r.path==='/api/emoji/catalog'&&Number(new URLSearchParams(r.query).get('offset')||0)===0){
+      // Read metadata over CDP after the body finishes. Do not clone or delay
+      // application fetches, or infer completeness from headers alone.
+      childTasks.push((async()=>{
+        const response=await cdp.send('Network.getResponseBody',{requestId:e.requestId});
+        const body=JSON.parse(response.base64Encoded?Buffer.from(response.body,'base64').toString('utf8'):response.body);
+        assert.equal(body.schemaVersion,1);assert.equal(body.offset,0);
+        const metadata={version:body.version,total:body.total,limit:body.limit};
+        catalogPageCount(metadata);catalogMetadata.set(r.label,metadata);
+      })().catch(error=>errors.push(error.message)));
+    }
+  });
   cdp.on('Network.loadingFailed',(e,session)=>{const r=requests.get(session+':'+e.requestId);if(r)Object.assign(r,{failure:e.errorText});});
   await cdp.send('Page.enable');await cdp.send('Runtime.enable');await throttle();
   await cdp.send('Target.setAutoAttach',{autoAttach:true,waitForDebuggerOnStart:false,flatten:true});
@@ -94,7 +109,10 @@ try {
     const began=Date.now();let ready;
     while(Date.now()-began<90_000){
       const p=await value('window.__audit && ({ready:window.__audit.marks.ready,catalog:window.__audit.catalog.length,bodies:performance.getEntriesByType("resource").filter(e=>new URL(e.name).pathname==="/api/emoji/catalog").length,now:performance.now(),controlled:!!navigator.serviceWorker.controller})');
-      if(p?.ready&&p.catalog===8&&p.bodies===8&&p.now-p.ready>5000&&p.controlled){ready=p;break;}
+      const metadata=catalogMetadata.get(state);
+      const expected=metadata&&catalogPageCount(metadata);
+      if(p?.ready&&expected&&p.catalog===expected&&p.bodies===expected&&p.now-p.ready>5000&&p.controlled){ready=p;break;}
+      assert.deepEqual(errors,[], 'Audit instrumentation failed');
       await pause(200);
     }
     assert.ok(ready,'Timed out before ready + catalog + service worker control');
@@ -109,7 +127,7 @@ try {
       await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:bounds.x,y:bounds.y,button:'left',clickCount:1});
       snapshot.dialogClick=await value(`new Promise(resolve=>{const check=()=>{if(document.querySelector('[role=dialog] input'))requestAnimationFrame(()=>requestAnimationFrame(()=>resolve({afterMs:performance.now()-${bounds.start},appeared:true})));else requestAnimationFrame(check);};check();})`);
     }
-    const sample={state,...snapshot,requests:[...requests.values()].filter(r=>r.label===state)};
+    const sample={state,catalogMetadata:catalogMetadata.get(state),...snapshot,requests:[...requests.values()].filter(r=>r.label===state)};
     assert.ok(sample.requests.every(r=>['GET','HEAD','OPTIONS'].includes(r.method)), 'Unexpected network mutation');
     report.runs.push(sample);
     await writeFile(path.join(output,'report.json'),JSON.stringify({...report,errors},null,2)+'\n',{mode:0o600});

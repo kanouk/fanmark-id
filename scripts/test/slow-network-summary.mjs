@@ -3,6 +3,25 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+export function catalogPageCount(metadata) {
+  assert.ok(Number.isSafeInteger(metadata?.total) && metadata.total > 0);
+  assert.ok(Number.isSafeInteger(metadata?.limit) && metadata.limit > 0);
+  assert.match(metadata.version, /^[0-9a-f]{64}$/);
+  return Math.ceil(metadata.total / metadata.limit);
+}
+
+export function assertCompatibleSamples(samples) {
+  assert.ok(samples.length);
+  const common = sample => ({ entry: sample.entry, browser: sample.browser, viewport: sample.viewport,
+    cpuSlowdown: sample.cpuSlowdown, origin: sample.origin, catalog: sample.catalogMetadata });
+  const profiles = new Map();
+  for (const sample of samples) {
+    assert.deepEqual(common(sample), common(samples[0]), 'Do not aggregate different builds, catalogs or browser/device configurations');
+    if (profiles.has(sample.profile)) assert.deepEqual(sample.conditions, profiles.get(sample.profile), 'A profile name must have one network definition');
+    else profiles.set(sample.profile, sample.conditions);
+  }
+}
+
 // CLS uses the largest session window, excluding shifts after recent input.
 // Windows end at a 1s gap or after 5s from their first shift.
 export function largestShiftWindow(shifts) {
@@ -22,11 +41,12 @@ export function largestShiftWindow(shifts) {
 
 export function summarizeRun(run) {
   assert.ok(run.probe.marks.readyPaint && run.probe.lcp.length);
-  assert.equal(run.probe.catalog.length, 8);
+  const expected = catalogPageCount(run.catalogMetadata);
+  assert.equal(run.probe.catalog.length, expected);
   assert.deepEqual(run.probe.writes, []);
   assert.ok(run.requests.every(r => ['GET', 'HEAD', 'OPTIONS'].includes(r.method)));
   const catalog = run.resources.filter(r => r.path === '/api/emoji/catalog');
-  assert.equal(catalog.length, 8);
+  assert.equal(catalog.length, expected);
   const network = run.requests.filter(r => !(r.fromSW || r.fromDisk || r.fromCache));
   const wire = rows => rows.reduce((total, r) => total + (r.wireBytes || 0), 0);
   const main = run.resources.find(r => r.path === run.entry);
@@ -71,9 +91,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     for (const run of report.runs) samples.push({
       profile: report.profile, route: report.route, observedAt: report.observedAt,
       browser: report.browser, conditions: report.conditions, cpuSlowdown: report.cpuSlowdown,
-      viewport: report.viewport, entry: run.entry, ...summarizeRun(run),
+      viewport: report.viewport, origin: report.origin, entry: run.entry, catalogMetadata: run.catalogMetadata, ...summarizeRun(run),
     });
   }
+  assertCompatibleSamples(samples);
   const groupKeys = [...new Set(samples.map(s => `${s.profile}:${s.route}:${s.state}`))];
   const fields = ['ttfbMs', 'fcpMs', 'lcpMs', 'cls', 'uiReadyPaintMs', 'catalogBodyCompleteMs', 'firstCatalogBodyCompleteMs', 'totalWireBytes', 'precacheWireBytes', 'ogPrecacheWireBytes', 'dialogOpenMs'];
   const groups = groupKeys.map(key => {

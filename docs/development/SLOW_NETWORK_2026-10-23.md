@@ -81,11 +81,23 @@ Node 22.6.0とインストール済みChromeを使用する。計測は通常CI�
 `CHROME_PATH`でChromeの実行fileを指定できる。初回・再訪の組を3回ずつ直列に取り、buildや他のブラウザ計測を同時実行しない。
 
 ```sh
-node scripts/test/slow-network-audit.mjs slow-4g / /tmp/fanmark-4g-1
-node scripts/test/slow-network-audit.mjs slow-3g / /tmp/fanmark-3g-1
-node scripts/test/slow-network-summary.mjs /tmp/fanmark-summary.json /tmp/fanmark-4g-1 /tmp/fanmark-3g-1
-node --test scripts/test/slow-network-summary.test.mjs
+(
+  set -e
+  audit_dir=$(mktemp -d)
+  for sample in 1 2 3; do
+    node scripts/test/slow-network-audit.mjs slow-4g / "$audit_dir/4g-$sample"
+  done
+  for sample in 1 2 3; do
+    node scripts/test/slow-network-audit.mjs slow-3g / "$audit_dir/3g-$sample"
+  done
+  node scripts/test/slow-network-summary.mjs "$audit_dir/summary.json" \
+    "$audit_dir/4g-1" "$audit_dir/4g-2" "$audit_dir/4g-3" \
+    "$audit_dir/3g-1" "$audit_dir/3g-2" "$audit_dir/3g-3"
+  node --test scripts/test/slow-network-summary.test.mjs
+)
 ```
 
 速度設定名は独自の識別名。計測器はGET/HEAD/OPTIONS以外のfetchを拒否し、観測したmethodも照合する。
+現在の再現スクリプトは先頭応答の版・総件数・page sizeから必要な要求数を求める。build・browser・viewport・CPU・catalog版・同じ名前の通信設定が異なる組の集計は拒否する。前後の変更は別JSONへ集計して比較する。
+公開済み18 sampleの生記録は当時の3,944件・500件/ページで採取した。元記録は保持し、同じ版の固定APIを独立GETして照合したmetadataを付けたコピーからも同じ値になることを確認した。
 生のタイミングと画面はGit外の `~/.codex/private/fanmark-network-audit-2026-10-23/` に保持する。
