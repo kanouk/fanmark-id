@@ -1,0 +1,118 @@
+{
+  "sourceMainCommit": "2c4cd1ace9778bd1ec6fc31720f5c2d297f18cbf",
+  "node": "22.6.0",
+  "entry": "assets/index-B5VE3_jg.js",
+  "entrySha256": "a427147e42f35c3b0a5b1a74f58616577322870282b88bff51409f58281b139e",
+  "entryBytes": 1587014,
+  "note": "Diagnostic Vite build uses the same production selectors and locked dependencies. Rollup renderedLength is JavaScript characters before final minification, not encoded network bytes. The extra emitted report changes the diagnostic SW manifest only; it was not deployed.",
+  "topModules": [
+    {
+      "id": "node_modules/react-dom/cjs/react-dom.production.min.js",
+      "renderedLength": 133618
+    },
+    {
+      "id": "node_modules/zod/v3/types.js",
+      "renderedLength": 115451
+    },
+    {
+      "id": "src/translations/id.json",
+      "renderedLength": 92159
+    },
+    {
+      "id": "src/translations/en.json",
+      "renderedLength": 87053
+    },
+    {
+      "id": "node_modules/react-hook-form/dist/index.esm.mjs",
+      "renderedLength": 85406
+    },
+    {
+      "id": "node_modules/tailwind-merge/dist/bundle-mjs.mjs",
+      "renderedLength": 71991
+    },
+    {
+      "id": "src/components/FanmarkDashboard.tsx",
+      "renderedLength": 63366
+    },
+    {
+      "id": "src/translations/ja.json",
+      "renderedLength": 61647
+    },
+    {
+      "id": "src/translations/ko.json",
+      "renderedLength": 61635
+    },
+    {
+      "id": "node_modules/@radix-ui/react-select/dist/index.mjs",
+      "renderedLength": 48787
+    },
+    {
+      "id": "node_modules/qrcode.react/lib/esm/index.js",
+      "renderedLength": 44636
+    },
+    {
+      "id": "src/pages/Profile.tsx",
+      "renderedLength": 41260
+    },
+    {
+      "id": "src/pages/Auth.tsx",
+      "renderedLength": 36418
+    },
+    {
+      "id": "node_modules/sonner/dist/index.mjs",
+      "renderedLength": 33419
+    },
+    {
+      "id": "node_modules/@radix-ui/react-menu/dist/index.mjs",
+      "renderedLength": 33001
+    },
+    {
+      "id": "src/components/FanmarkSettings.tsx",
+      "renderedLength": 31330
+    },
+    {
+      "id": "node_modules/frimousse/dist/index.js",
+      "renderedLength": 30064
+    },
+    {
+      "id": "node_modules/@remix-run/router/dist/router.js",
+      "renderedLength": 29327
+    },
+    {
+      "id": "src/components/EmojiProfileForm.tsx",
+      "renderedLength": 28524
+    },
+    {
+      "id": "node_modules/@floating-ui/core/dist/floating-ui.core.mjs",
+      "renderedLength": 26977
+    },
+    {
+      "id": "node_modules/@radix-ui/react-toast/dist/index.mjs",
+      "renderedLength": 26212
+    },
+    {
+      "id": "src/components/FanmarkTransferSection.tsx",
+      "renderedLength": 26060
+    },
+    {
+      "id": "node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs",
+      "renderedLength": 24657
+    },
+    {
+      "id": "node_modules/date-fns/format.js",
+      "renderedLength": 24295
+    },
+    {
+      "id": "node_modules/date-fns/_lib/format/formatters.js",
+      "renderedLength": 22816
+    }
+  ],
+  "dynamicImports": [
+    "assets/AdminApp-BvtXlxIM.js",
+    "assets/AdminApp-BvtXlxIM.js",
+    "assets/AdminDashboard-CROTG7FJ.js",
+    "assets/Analytics-Cv0oCBQc.js",
+    "assets/PlanSelection-D34vORri.js",
+    "assets/workbox-window.prod.es5-B9K5rw8f.js"
+  ]
+}

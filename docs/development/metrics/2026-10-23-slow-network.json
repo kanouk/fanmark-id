@@ -1,0 +1,3068 @@
+{
+  "schemaVersion": 1,
+  "samples": [
+    {
+      "profile": "slow-4g",
+      "route": "/about",
+      "observedAt": "2026-10-22T22:24:53.986Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 456.3000000715256,
+      "fcpMs": 3216,
+      "lcpMs": 4620,
+      "lcpElement": "p.mt-6.text-base.text-foreground/80",
+      "cls": 0.00012381797354057636,
+      "uiReadyPaintMs": 3473.3000000715256,
+      "catalogBodyCompleteMs": 5249.800000071526,
+      "firstCatalogBodyCompleteMs": 3682.7000000476837,
+      "catalogEncodedBytes": 236906,
+      "mainJsDurationMs": 2468.7999999523163,
+      "mainJsEncodedBytes": 434255,
+      "mainJsTransferBytes": 434555,
+      "totalWireBytes": 1694395,
+      "precacheWireBytes": 930179,
+      "ogPrecacheWireBytes": 691543,
+      "observedMs": 11420.300000071526,
+      "longTaskCount": 6,
+      "longTaskExcessMs": 122,
+      "requestCount": 42,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 523.3999999761581,
+          "endMs": 819,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 524.2000000476837,
+          "endMs": 923.2000000476837,
+          "encodedBytes": 21989,
+          "transferBytes": 22289
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 524.2000000476837,
+          "endMs": 2993,
+          "encodedBytes": 434255,
+          "transferBytes": 434555
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 539.5,
+          "endMs": 749.5,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 924.7000000476837,
+          "endMs": 1087.3999999761581,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 3080.3000000715256,
+          "endMs": 3248.100000023842,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 3153.600000023842,
+          "endMs": 3585.3000000715256,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 3203.100000023842,
+          "endMs": 3541.399999976158,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 3203.2000000476837,
+          "endMs": 3536.2000000476837,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 3586.3000000715256,
+          "endMs": 3804.899999976158,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/about",
+      "observedAt": "2026-10-22T22:24:53.986Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 1.7000000476837158,
+      "fcpMs": 204,
+      "lcpMs": 612,
+      "lcpElement": "p.mt-6.text-base.text-foreground/80",
+      "cls": 0,
+      "uiReadyPaintMs": 591.8999999761581,
+      "catalogBodyCompleteMs": 2098,
+      "firstCatalogBodyCompleteMs": 433.89999997615814,
+      "catalogEncodedBytes": 236926,
+      "mainJsDurationMs": 4.799999952316284,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 240605,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 5543.899999976158,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 67,
+      "requestCount": 21,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 10.399999976158142,
+          "endMs": 12.600000023841858,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 11.600000023841858,
+          "endMs": 16.399999976158142,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 11.700000047683716,
+          "endMs": 13.600000023841858,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 23.300000071525574,
+          "endMs": 25.600000023841858,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 31.899999976158142,
+          "endMs": 33.5,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 109.70000004768372,
+          "endMs": 110.89999997615814,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 167.30000007152557,
+          "endMs": 168.20000004768372,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 215.60000002384186,
+          "endMs": 216.89999997615814,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/admin",
+      "observedAt": "2026-10-22T22:24:32.227Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 407.10000002384186,
+      "fcpMs": 3152,
+      "lcpMs": 4144,
+      "lcpElement": "p.mt-2.text-sm.text-muted-foreground",
+      "cls": 0,
+      "uiReadyPaintMs": 4131.600000023842,
+      "catalogBodyCompleteMs": 5457.700000047684,
+      "firstCatalogBodyCompleteMs": 3912.600000023842,
+      "catalogEncodedBytes": 237016,
+      "mainJsDurationMs": 2465.5,
+      "mainJsEncodedBytes": 434206,
+      "mainJsTransferBytes": 434506,
+      "totalWireBytes": 1695238,
+      "precacheWireBytes": 870010,
+      "ogPrecacheWireBytes": 691566,
+      "observedMs": 11047.100000023842,
+      "longTaskCount": 2,
+      "longTaskExcessMs": 17,
+      "requestCount": 44,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 530.6000000238419,
+          "endMs": 905.1000000238419,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 531.5,
+          "endMs": 926.6000000238419,
+          "encodedBytes": 21926,
+          "transferBytes": 22226
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 531.5,
+          "endMs": 2997,
+          "encodedBytes": 434206,
+          "transferBytes": 434506
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 546.7000000476837,
+          "endMs": 739,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 928.3000000715256,
+          "endMs": 1091.5,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 3063.3000000715256,
+          "endMs": 3230.3000000715256,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 3118.600000023842,
+          "endMs": 3485.5,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 3150.600000023842,
+          "endMs": 3552.3000000715256,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 3150.8000000715256,
+          "endMs": 3560,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/AdminApp-BvtXlxIM.js",
+          "startMs": 3299.2000000476837,
+          "endMs": 3583.100000023842,
+          "encodedBytes": 3778,
+          "transferBytes": 4078
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/AdminDashboard-CROTG7FJ.js",
+          "startMs": 3299.3000000715256,
+          "endMs": 4069.899999976158,
+          "encodedBytes": 56473,
+          "transferBytes": 56773
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 3554.2000000476837,
+          "endMs": 3904.5,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/admin",
+      "observedAt": "2026-10-22T22:24:32.227Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 1.7999999523162842,
+      "fcpMs": 192,
+      "lcpMs": 420,
+      "lcpElement": "p.mt-2.text-sm.text-muted-foreground",
+      "cls": 0,
+      "uiReadyPaintMs": 430.60000002384186,
+      "catalogBodyCompleteMs": 2066.5,
+      "firstCatalogBodyCompleteMs": 468.7999999523163,
+      "catalogEncodedBytes": 236976,
+      "mainJsDurationMs": 4.699999928474426,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 240651,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 5485.299999952316,
+      "longTaskCount": 2,
+      "longTaskExcessMs": 21,
+      "requestCount": 23,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 11,
+          "endMs": 13.5,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 11.700000047683716,
+          "endMs": 16.399999976158142,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 11.799999952316284,
+          "endMs": 14.799999952316284,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 26.100000023841858,
+          "endMs": 28.100000023841858,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 33,
+          "endMs": 34.39999997615814,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 103.39999997615814,
+          "endMs": 104.70000004768372,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 156.89999997615814,
+          "endMs": 157.79999995231628,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 202.39999997615814,
+          "endMs": 203.70000004768372,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/AdminApp-BvtXlxIM.js",
+          "startMs": 329.89999997615814,
+          "endMs": 331.5,
+          "encodedBytes": 10722,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/AdminDashboard-CROTG7FJ.js",
+          "startMs": 330.39999997615814,
+          "endMs": 332.10000002384186,
+          "encodedBytes": 237795,
+          "transferBytes": 0
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/auth",
+      "observedAt": "2026-10-22T22:24:10.286Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 272.2000000476837,
+      "fcpMs": 3108,
+      "lcpMs": 3336,
+      "lcpElement": "p.mx-auto.max-w-2xl.text-sm",
+      "cls": 0.02076874986681595,
+      "uiReadyPaintMs": 3316.100000023842,
+      "catalogBodyCompleteMs": 5192.5,
+      "firstCatalogBodyCompleteMs": 3603.2999999523163,
+      "catalogEncodedBytes": 236896,
+      "mainJsDurationMs": 2472.100000023842,
+      "mainJsEncodedBytes": 434603,
+      "mainJsTransferBytes": 434903,
+      "totalWireBytes": 1695622,
+      "precacheWireBytes": 930207,
+      "ogPrecacheWireBytes": 691606,
+      "observedMs": 11341.200000047684,
+      "longTaskCount": 3,
+      "longTaskExcessMs": 38,
+      "requestCount": 44,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 455.7999999523163,
+          "endMs": 834.7999999523163,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 456,
+          "endMs": 2928.100000023842,
+          "encodedBytes": 434603,
+          "transferBytes": 434903
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 456.2999999523163,
+          "endMs": 760.8999999761581,
+          "encodedBytes": 21911,
+          "transferBytes": 22211
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 546.2999999523163,
+          "endMs": 827.7000000476837,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 762.5,
+          "endMs": 925.8999999761581,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 2995.2000000476837,
+          "endMs": 3159.600000023842,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 3070.899999976158,
+          "endMs": 3498.600000023842,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 3105.399999976158,
+          "endMs": 3430.399999976158,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 3106.2999999523163,
+          "endMs": 3444.600000023842,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 3432.600000023842,
+          "endMs": 3677.2999999523163,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/auth",
+      "observedAt": "2026-10-22T22:24:10.286Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 3.1999999284744263,
+      "fcpMs": 240,
+      "lcpMs": 484,
+      "lcpElement": "p.mx-auto.max-w-2xl.text-sm",
+      "cls": 0.020457127981666965,
+      "uiReadyPaintMs": 484.1999999284744,
+      "catalogBodyCompleteMs": 2071.899999976158,
+      "firstCatalogBodyCompleteMs": 459.6999999284744,
+      "catalogEncodedBytes": 236912,
+      "mainJsDurationMs": 13.200000047683716,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 241503,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 5573.100000023842,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 33,
+      "requestCount": 23,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 13.199999928474426,
+          "endMs": 15.699999928474426,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 14.199999928474426,
+          "endMs": 27.399999976158142,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 14.600000023841858,
+          "endMs": 17.100000023841858,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 32,
+          "endMs": 35.89999997615814,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 42.799999952316284,
+          "endMs": 45.89999997615814,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 128.79999995231628,
+          "endMs": 130.10000002384186,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 195.60000002384186,
+          "endMs": 197.10000002384186,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 244.69999992847443,
+          "endMs": 246.19999992847443,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:20:32.967Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 436.5,
+      "fcpMs": 3196,
+      "lcpMs": 3716,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0,
+      "uiReadyPaintMs": 3684.600000023842,
+      "catalogBodyCompleteMs": 5510.100000023842,
+      "firstCatalogBodyCompleteMs": 3822.8000000715256,
+      "catalogEncodedBytes": 236858,
+      "mainJsDurationMs": 2467,
+      "mainJsEncodedBytes": 434019,
+      "mainJsTransferBytes": 434319,
+      "totalWireBytes": 1696849,
+      "precacheWireBytes": 930275,
+      "ogPrecacheWireBytes": 691492,
+      "observedMs": 11543.200000047684,
+      "dialogOpenMs": 136.19999992847443,
+      "longTaskCount": 3,
+      "longTaskExcessMs": 66,
+      "requestCount": 45,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 568.4000000953674,
+          "endMs": 897.7000000476837,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 568.5,
+          "endMs": 958.1000000238419,
+          "encodedBytes": 21926,
+          "transferBytes": 22226
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 568.5,
+          "endMs": 3035.5,
+          "encodedBytes": 434019,
+          "transferBytes": 434319
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 580.6000000238419,
+          "endMs": 777,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 960,
+          "endMs": 1121.9000000953674,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 3106.100000023842,
+          "endMs": 3275.5,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 3161.100000023842,
+          "endMs": 3493.2000000476837,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 3192.7000000476837,
+          "endMs": 3469.4000000953674,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 3192.7000000476837,
+          "endMs": 3522.8000000715256,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 3471.8000000715256,
+          "endMs": 3754.100000023842,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:20:32.967Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 3.799999952316284,
+      "fcpMs": 252,
+      "lcpMs": 496,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0,
+      "uiReadyPaintMs": 499.6999999284744,
+      "catalogBodyCompleteMs": 2061.6999999284744,
+      "firstCatalogBodyCompleteMs": 494.6999999284744,
+      "catalogEncodedBytes": 236929,
+      "mainJsDurationMs": 6.599999904632568,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 243383,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 5565.799999952316,
+      "dialogOpenMs": 90.89999997615814,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 109,
+      "requestCount": 24,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 13.099999904632568,
+          "endMs": 15.799999952316284,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 14,
+          "endMs": 20.59999990463257,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 14.5,
+          "endMs": 18.199999928474426,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 25.799999952316284,
+          "endMs": 27.199999928474426,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 33.299999952316284,
+          "endMs": 34.799999952316284,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 114.09999990463257,
+          "endMs": 116.5,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 190.29999995231628,
+          "endMs": 192.79999995231628,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 253.69999992847443,
+          "endMs": 256.89999997615814,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:20:56.270Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 480.09999990463257,
+      "fcpMs": 3124,
+      "lcpMs": 3684,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0,
+      "uiReadyPaintMs": 3629.2999999523163,
+      "catalogBodyCompleteMs": 5777.199999928474,
+      "firstCatalogBodyCompleteMs": 3781,
+      "catalogEncodedBytes": 236905,
+      "mainJsDurationMs": 2467.2999999523163,
+      "mainJsEncodedBytes": 434019,
+      "mainJsTransferBytes": 434319,
+      "totalWireBytes": 1696744,
+      "precacheWireBytes": 930271,
+      "ogPrecacheWireBytes": 691568,
+      "observedMs": 11323.599999904633,
+      "dialogOpenMs": 119.79999995231628,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 84,
+      "requestCount": 45,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 496.7999999523163,
+          "endMs": 881,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 497.7999999523163,
+          "endMs": 2965.0999999046326,
+          "encodedBytes": 434019,
+          "transferBytes": 434319
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 498.2999999523163,
+          "endMs": 887.2999999523163,
+          "encodedBytes": 21926,
+          "transferBytes": 22226
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 512.2999999523163,
+          "endMs": 707,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 888.3999999761581,
+          "endMs": 1051.1999999284744,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 3033.899999976158,
+          "endMs": 3205.399999976158,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 3087.6999999284744,
+          "endMs": 3526.899999976158,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 3121.899999976158,
+          "endMs": 3377.5999999046326,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 3122.2999999523163,
+          "endMs": 3384,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 3380.5,
+          "endMs": 3670.0999999046326,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:20:56.270Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 2.3000000715255737,
+      "fcpMs": 256,
+      "lcpMs": 632,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0,
+      "uiReadyPaintMs": 627.2000000476837,
+      "catalogBodyCompleteMs": 2214.899999976158,
+      "firstCatalogBodyCompleteMs": 557.2000000476837,
+      "catalogEncodedBytes": 236914,
+      "mainJsDurationMs": 9.400000095367432,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 243407,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 5657.600000023842,
+      "dialogOpenMs": 89.79999995231628,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 173,
+      "requestCount": 24,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 13.100000023841858,
+          "endMs": 16.300000071525574,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 14.899999976158142,
+          "endMs": 24.300000071525574,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 15,
+          "endMs": 19.300000071525574,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 31.200000047683716,
+          "endMs": 33.800000071525574,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 40.39999997615814,
+          "endMs": 42.800000071525574,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 127.89999997615814,
+          "endMs": 130.39999997615814,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 199.30000007152557,
+          "endMs": 203,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 272.39999997615814,
+          "endMs": 278.60000002384186,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:21:18.768Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 462.7999999523163,
+      "fcpMs": 3208,
+      "lcpMs": 3520,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0.0003862049542739554,
+      "uiReadyPaintMs": 3483.0999999046326,
+      "catalogBodyCompleteMs": 5388.099999904633,
+      "firstCatalogBodyCompleteMs": 3843.2999999523163,
+      "catalogEncodedBytes": 237167,
+      "mainJsDurationMs": 2460.7999999523163,
+      "mainJsEncodedBytes": 434206,
+      "mainJsTransferBytes": 434506,
+      "totalWireBytes": 1697392,
+      "precacheWireBytes": 930312,
+      "ogPrecacheWireBytes": 691502,
+      "observedMs": 11140.299999952316,
+      "dialogOpenMs": 104.20000004768372,
+      "longTaskCount": 3,
+      "longTaskExcessMs": 59,
+      "requestCount": 45,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 595.3999999761581,
+          "endMs": 962.8999999761581,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 595.5,
+          "endMs": 3056.2999999523163,
+          "encodedBytes": 434206,
+          "transferBytes": 434506
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 596.2999999523163,
+          "endMs": 985.2999999523163,
+          "encodedBytes": 21926,
+          "transferBytes": 22226
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 607.8999999761581,
+          "endMs": 888.6999999284744,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 986.0999999046326,
+          "endMs": 1151.1999999284744,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 3119.899999976158,
+          "endMs": 3282.1999999284744,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 3172.6999999284744,
+          "endMs": 3573,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 3202.899999976158,
+          "endMs": 3520.1999999284744,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 3204.0999999046326,
+          "endMs": 3505.7999999523163,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 3522.5999999046326,
+          "endMs": 3821.1999999284744,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-4g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:21:18.768Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 150,
+        "downloadThroughput": 200000,
+        "uploadThroughput": 93750,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 6.100000023841858,
+      "fcpMs": 212,
+      "lcpMs": 600,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0,
+      "uiReadyPaintMs": 598.6000000238419,
+      "catalogBodyCompleteMs": 2171.6999999284744,
+      "firstCatalogBodyCompleteMs": 514.1999999284744,
+      "catalogEncodedBytes": 236926,
+      "mainJsDurationMs": 8.5,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 243384,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 5591.199999928474,
+      "dialogOpenMs": 126.5,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 111,
+      "requestCount": 24,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 15.5,
+          "endMs": 17.799999952316284,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 16.699999928474426,
+          "endMs": 25.199999928474426,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 16.799999952316284,
+          "endMs": 23.199999928474426,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 28.600000023841858,
+          "endMs": 30.199999928474426,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 37.89999997615814,
+          "endMs": 39.799999952316284,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 115.19999992847443,
+          "endMs": 116.29999995231628,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 174.29999995231628,
+          "endMs": 175.89999997615814,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 222.10000002384186,
+          "endMs": 224.19999992847443,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        }
+      ]
+    },
+    {
+      "profile": "slow-3g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:25:47.884Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 400,
+        "downloadThroughput": 50000,
+        "uploadThroughput": 50000,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 418.2999999523163,
+      "fcpMs": 10720,
+      "lcpMs": 11400,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0.00038758718875966914,
+      "uiReadyPaintMs": 11342.399999976158,
+      "catalogBodyCompleteMs": 18623.799999952316,
+      "firstCatalogBodyCompleteMs": 13099.199999928474,
+      "catalogEncodedBytes": 236916,
+      "mainJsDurationMs": 9658.899999976158,
+      "mainJsEncodedBytes": 435244,
+      "mainJsTransferBytes": 435544,
+      "totalWireBytes": 1698317,
+      "precacheWireBytes": 930347,
+      "ogPrecacheWireBytes": 691500,
+      "observedMs": 37395.5,
+      "dialogOpenMs": 112.60000002384186,
+      "longTaskCount": 6,
+      "longTaskExcessMs": 185,
+      "requestCount": 44,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 835.0999999046326,
+          "endMs": 1612.1999999284744,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 835.3999999761581,
+          "endMs": 2152.5,
+          "encodedBytes": 21926,
+          "transferBytes": 22226
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 835.3999999761581,
+          "endMs": 10494.299999952316,
+          "encodedBytes": 435244,
+          "transferBytes": 435544
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 842.7999999523163,
+          "endMs": 1344.1999999284744,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 2153.7999999523163,
+          "endMs": 2602.5,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 10574.399999976158,
+          "endMs": 11063.799999952316,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 10648.199999928474,
+          "endMs": 12319.699999928474,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 10715.599999904633,
+          "endMs": 11991,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 10740.899999976158,
+          "endMs": 12021.599999904633,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 11996.399999976158,
+          "endMs": 13070.099999904633,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-3g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:25:47.884Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 400,
+        "downloadThroughput": 50000,
+        "uploadThroughput": 50000,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 6.099999904632568,
+      "fcpMs": 260,
+      "lcpMs": 852,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0,
+      "uiReadyPaintMs": 856.1999999284744,
+      "catalogBodyCompleteMs": 6872.699999928474,
+      "firstCatalogBodyCompleteMs": 1350.2999999523163,
+      "catalogEncodedBytes": 236959,
+      "mainJsDurationMs": 34.40000009536743,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 243424,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 7005,
+      "dialogOpenMs": 147.29999995231628,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 139,
+      "requestCount": 24,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 17.699999928474426,
+          "endMs": 26.299999952316284,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 20.59999990463257,
+          "endMs": 55,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 20.699999928474426,
+          "endMs": 36.09999990463257,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 41.09999990463257,
+          "endMs": 49.5,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 57.199999928474426,
+          "endMs": 67.59999990463257,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 149.09999990463257,
+          "endMs": 150.59999990463257,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 217.39999997615814,
+          "endMs": 218.69999992847443,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 264.6999999284744,
+          "endMs": 267.09999990463257,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        }
+      ]
+    },
+    {
+      "profile": "slow-3g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:26:37.899Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 400,
+        "downloadThroughput": 50000,
+        "uploadThroughput": 50000,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 441.2999999523163,
+      "fcpMs": 10652,
+      "lcpMs": 11740,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0.0003872416301382407,
+      "uiReadyPaintMs": 11704.5,
+      "catalogBodyCompleteMs": 18604.299999952316,
+      "firstCatalogBodyCompleteMs": 13081,
+      "catalogEncodedBytes": 236837,
+      "mainJsDurationMs": 9627.100000023842,
+      "mainJsEncodedBytes": 434506,
+      "mainJsTransferBytes": 434806,
+      "totalWireBytes": 1697551,
+      "precacheWireBytes": 930439,
+      "ogPrecacheWireBytes": 691551,
+      "observedMs": 37956.199999928474,
+      "dialogOpenMs": 126.69999992847443,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 67,
+      "requestCount": 45,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 847.6999999284744,
+          "endMs": 1655,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 848.5,
+          "endMs": 2165.899999976158,
+          "encodedBytes": 21926,
+          "transferBytes": 22226
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 848.5,
+          "endMs": 10475.600000023842,
+          "encodedBytes": 434506,
+          "transferBytes": 434806
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 855.3999999761581,
+          "endMs": 1385.3999999761581,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 2167.100000023842,
+          "endMs": 2615.1999999284744,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 10551.199999928474,
+          "endMs": 11045.299999952316,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 10613.299999952316,
+          "endMs": 12301.199999928474,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 10649,
+          "endMs": 11885.100000023842,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 10650,
+          "endMs": 11852.899999976158,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 11888,
+          "endMs": 13021.799999952316,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-3g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:26:37.899Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 400,
+        "downloadThroughput": 50000,
+        "uploadThroughput": 50000,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 3.399999976158142,
+      "fcpMs": 208,
+      "lcpMs": 780,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0,
+      "uiReadyPaintMs": 785.6000000238419,
+      "catalogBodyCompleteMs": 6838.899999976158,
+      "firstCatalogBodyCompleteMs": 1317.8999999761581,
+      "catalogEncodedBytes": 236888,
+      "mainJsDurationMs": 5.600000023841858,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 243415,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 7025.799999952316,
+      "dialogOpenMs": 89.80000007152557,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 98,
+      "requestCount": 24,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 12.700000047683716,
+          "endMs": 15.200000047683716,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 13.5,
+          "endMs": 19.100000023841858,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 13.600000023841858,
+          "endMs": 16.600000023841858,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 30.399999976158142,
+          "endMs": 32.299999952316284,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 43.5,
+          "endMs": 46.39999997615814,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 113.39999997615814,
+          "endMs": 114.60000002384186,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 172.10000002384186,
+          "endMs": 173.29999995231628,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 214.20000004768372,
+          "endMs": 215.39999997615814,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        }
+      ]
+    },
+    {
+      "profile": "slow-3g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:27:28.303Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 400,
+        "downloadThroughput": 50000,
+        "uploadThroughput": 50000,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "cold",
+      "ttfbMs": 385.89999997615814,
+      "fcpMs": 10588,
+      "lcpMs": 11216,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0.00038758718875966914,
+      "uiReadyPaintMs": 11175.399999976158,
+      "catalogBodyCompleteMs": 18576.099999904633,
+      "firstCatalogBodyCompleteMs": 13021.399999976158,
+      "catalogEncodedBytes": 237053,
+      "mainJsDurationMs": 9628.099999904633,
+      "mainJsEncodedBytes": 434206,
+      "mainJsTransferBytes": 434506,
+      "totalWireBytes": 1697384,
+      "precacheWireBytes": 930189,
+      "ogPrecacheWireBytes": 691513,
+      "observedMs": 37861.299999952316,
+      "dialogOpenMs": 166.89999997615814,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 90,
+      "requestCount": 45,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 786.2999999523163,
+          "endMs": 1564.2999999523163,
+          "encodedBytes": 457,
+          "transferBytes": 757
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 787,
+          "endMs": 2105.1999999284744,
+          "encodedBytes": 21989,
+          "transferBytes": 22289
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 787,
+          "endMs": 10415.099999904633,
+          "encodedBytes": 434206,
+          "transferBytes": 434506
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 792.0999999046326,
+          "endMs": 1295.6999999284744,
+          "encodedBytes": 283,
+          "transferBytes": 583
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 2106.0999999046326,
+          "endMs": 2555.899999976158,
+          "encodedBytes": 431,
+          "transferBytes": 731
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 10486.899999976158,
+          "endMs": 10983.899999976158,
+          "encodedBytes": 2466,
+          "transferBytes": 2766
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 10548,
+          "endMs": 12211.5,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.ico",
+          "startMs": 10585.099999904633,
+          "endMs": 11885.5,
+          "encodedBytes": 6723,
+          "transferBytes": 7023
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 10585.899999976158,
+          "endMs": 11911.599999904633,
+          "encodedBytes": 6987,
+          "transferBytes": 7287
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/favicon.png",
+          "startMs": 11887.699999928474,
+          "endMs": 12963.699999928474,
+          "encodedBytes": 12227,
+          "transferBytes": 12527
+        }
+      ]
+    },
+    {
+      "profile": "slow-3g",
+      "route": "/",
+      "observedAt": "2026-10-22T22:27:28.303Z",
+      "browser": "Chrome/155.0.8059.85",
+      "conditions": {
+        "offline": false,
+        "latency": 400,
+        "downloadThroughput": 50000,
+        "uploadThroughput": 50000,
+        "connectionType": "cellular4g"
+      },
+      "cpuSlowdown": 4,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "entry": "/assets/index-B5VE3_jg.js",
+      "state": "warm",
+      "ttfbMs": 2.6999999284744263,
+      "fcpMs": 220,
+      "lcpMs": 836,
+      "lcpElement": "p.mt-6.text-base.leading-relaxed",
+      "cls": 0,
+      "uiReadyPaintMs": 840.6999999284744,
+      "catalogBodyCompleteMs": 6883.799999952316,
+      "firstCatalogBodyCompleteMs": 1333.5,
+      "catalogEncodedBytes": 236889,
+      "mainJsDurationMs": 6.600000023841858,
+      "mainJsEncodedBytes": 1587014,
+      "mainJsTransferBytes": 0,
+      "totalWireBytes": 243362,
+      "precacheWireBytes": 0,
+      "ogPrecacheWireBytes": 0,
+      "observedMs": 7004.099999904633,
+      "dialogOpenMs": 135.30000007152557,
+      "longTaskCount": 4,
+      "longTaskExcessMs": 169,
+      "requestCount": 24,
+      "serviceWorkerControlled": true,
+      "precachedPaths": [
+        "/assets/AdminApp-BvtXlxIM.js",
+        "/assets/AdminDashboard-CROTG7FJ.js",
+        "/assets/Analytics-Cv0oCBQc.js",
+        "/assets/PlanSelection-D34vORri.js",
+        "/assets/index-B5VE3_jg.js",
+        "/assets/index-Y1UEkqE7.css",
+        "/assets/sparkles-BdQND3_E.png",
+        "/assets/trending-up-CEEsNU8V.js",
+        "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+        "/clear-legacy-api-cache.js",
+        "/favicon.ico",
+        "/favicon.png",
+        "/index.html",
+        "/manifest.webmanifest",
+        "/og-image.png",
+        "/placeholder.svg",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png"
+      ],
+      "resourceSummary": [
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 11.399999976158142,
+          "endMs": 14.5,
+          "encodedBytes": 457,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-Y1UEkqE7.css",
+          "startMs": 12.599999904632568,
+          "endMs": 17.09999990463257,
+          "encodedBytes": 145117,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/index-B5VE3_jg.js",
+          "startMs": 12.599999904632568,
+          "endMs": 19.199999928474426,
+          "encodedBytes": 1587014,
+          "transferBytes": 0
+        },
+        {
+          "host": "fonts.googleapis.com",
+          "path": "/css2",
+          "startMs": 26.699999928474426,
+          "endMs": 28.799999952316284,
+          "encodedBytes": 431,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/manifest.webmanifest",
+          "startMs": 34.89999997615814,
+          "endMs": 36.199999928474426,
+          "encodedBytes": 417,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/workbox-window.prod.es5-B9K5rw8f.js",
+          "startMs": 111.19999992847443,
+          "endMs": 112.29999995231628,
+          "encodedBytes": 5720,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/assets/sparkles-BdQND3_E.png",
+          "startMs": 174.79999995231628,
+          "endMs": 175.89999997615814,
+          "encodedBytes": 12227,
+          "transferBytes": 0
+        },
+        {
+          "host": "fanmark.id",
+          "path": "/pwa-192x192.png",
+          "startMs": 217.5,
+          "endMs": 218.79999995231628,
+          "encodedBytes": 6987,
+          "transferBytes": 0
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "key": "slow-4g:/about:cold",
+      "count": 1,
+      "metrics": {
+        "ttfbMs": {
+          "median": 456.3000000715256,
+          "min": 456.3000000715256,
+          "max": 456.3000000715256
+        },
+        "fcpMs": {
+          "median": 3216,
+          "min": 3216,
+          "max": 3216
+        },
+        "lcpMs": {
+          "median": 4620,
+          "min": 4620,
+          "max": 4620
+        },
+        "cls": {
+          "median": 0.00012381797354057636,
+          "min": 0.00012381797354057636,
+          "max": 0.00012381797354057636
+        },
+        "uiReadyPaintMs": {
+          "median": 3473.3000000715256,
+          "min": 3473.3000000715256,
+          "max": 3473.3000000715256
+        },
+        "catalogBodyCompleteMs": {
+          "median": 5249.800000071526,
+          "min": 5249.800000071526,
+          "max": 5249.800000071526
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 3682.7000000476837,
+          "min": 3682.7000000476837,
+          "max": 3682.7000000476837
+        },
+        "totalWireBytes": {
+          "median": 1694395,
+          "min": 1694395,
+          "max": 1694395
+        },
+        "precacheWireBytes": {
+          "median": 930179,
+          "min": 930179,
+          "max": 930179
+        },
+        "ogPrecacheWireBytes": {
+          "median": 691543,
+          "min": 691543,
+          "max": 691543
+        }
+      }
+    },
+    {
+      "key": "slow-4g:/about:warm",
+      "count": 1,
+      "metrics": {
+        "ttfbMs": {
+          "median": 1.7000000476837158,
+          "min": 1.7000000476837158,
+          "max": 1.7000000476837158
+        },
+        "fcpMs": {
+          "median": 204,
+          "min": 204,
+          "max": 204
+        },
+        "lcpMs": {
+          "median": 612,
+          "min": 612,
+          "max": 612
+        },
+        "cls": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uiReadyPaintMs": {
+          "median": 591.8999999761581,
+          "min": 591.8999999761581,
+          "max": 591.8999999761581
+        },
+        "catalogBodyCompleteMs": {
+          "median": 2098,
+          "min": 2098,
+          "max": 2098
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 433.89999997615814,
+          "min": 433.89999997615814,
+          "max": 433.89999997615814
+        },
+        "totalWireBytes": {
+          "median": 240605,
+          "min": 240605,
+          "max": 240605
+        },
+        "precacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "ogPrecacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        }
+      }
+    },
+    {
+      "key": "slow-4g:/admin:cold",
+      "count": 1,
+      "metrics": {
+        "ttfbMs": {
+          "median": 407.10000002384186,
+          "min": 407.10000002384186,
+          "max": 407.10000002384186
+        },
+        "fcpMs": {
+          "median": 3152,
+          "min": 3152,
+          "max": 3152
+        },
+        "lcpMs": {
+          "median": 4144,
+          "min": 4144,
+          "max": 4144
+        },
+        "cls": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uiReadyPaintMs": {
+          "median": 4131.600000023842,
+          "min": 4131.600000023842,
+          "max": 4131.600000023842
+        },
+        "catalogBodyCompleteMs": {
+          "median": 5457.700000047684,
+          "min": 5457.700000047684,
+          "max": 5457.700000047684
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 3912.600000023842,
+          "min": 3912.600000023842,
+          "max": 3912.600000023842
+        },
+        "totalWireBytes": {
+          "median": 1695238,
+          "min": 1695238,
+          "max": 1695238
+        },
+        "precacheWireBytes": {
+          "median": 870010,
+          "min": 870010,
+          "max": 870010
+        },
+        "ogPrecacheWireBytes": {
+          "median": 691566,
+          "min": 691566,
+          "max": 691566
+        }
+      }
+    },
+    {
+      "key": "slow-4g:/admin:warm",
+      "count": 1,
+      "metrics": {
+        "ttfbMs": {
+          "median": 1.7999999523162842,
+          "min": 1.7999999523162842,
+          "max": 1.7999999523162842
+        },
+        "fcpMs": {
+          "median": 192,
+          "min": 192,
+          "max": 192
+        },
+        "lcpMs": {
+          "median": 420,
+          "min": 420,
+          "max": 420
+        },
+        "cls": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uiReadyPaintMs": {
+          "median": 430.60000002384186,
+          "min": 430.60000002384186,
+          "max": 430.60000002384186
+        },
+        "catalogBodyCompleteMs": {
+          "median": 2066.5,
+          "min": 2066.5,
+          "max": 2066.5
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 468.7999999523163,
+          "min": 468.7999999523163,
+          "max": 468.7999999523163
+        },
+        "totalWireBytes": {
+          "median": 240651,
+          "min": 240651,
+          "max": 240651
+        },
+        "precacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "ogPrecacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        }
+      }
+    },
+    {
+      "key": "slow-4g:/auth:cold",
+      "count": 1,
+      "metrics": {
+        "ttfbMs": {
+          "median": 272.2000000476837,
+          "min": 272.2000000476837,
+          "max": 272.2000000476837
+        },
+        "fcpMs": {
+          "median": 3108,
+          "min": 3108,
+          "max": 3108
+        },
+        "lcpMs": {
+          "median": 3336,
+          "min": 3336,
+          "max": 3336
+        },
+        "cls": {
+          "median": 0.02076874986681595,
+          "min": 0.02076874986681595,
+          "max": 0.02076874986681595
+        },
+        "uiReadyPaintMs": {
+          "median": 3316.100000023842,
+          "min": 3316.100000023842,
+          "max": 3316.100000023842
+        },
+        "catalogBodyCompleteMs": {
+          "median": 5192.5,
+          "min": 5192.5,
+          "max": 5192.5
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 3603.2999999523163,
+          "min": 3603.2999999523163,
+          "max": 3603.2999999523163
+        },
+        "totalWireBytes": {
+          "median": 1695622,
+          "min": 1695622,
+          "max": 1695622
+        },
+        "precacheWireBytes": {
+          "median": 930207,
+          "min": 930207,
+          "max": 930207
+        },
+        "ogPrecacheWireBytes": {
+          "median": 691606,
+          "min": 691606,
+          "max": 691606
+        }
+      }
+    },
+    {
+      "key": "slow-4g:/auth:warm",
+      "count": 1,
+      "metrics": {
+        "ttfbMs": {
+          "median": 3.1999999284744263,
+          "min": 3.1999999284744263,
+          "max": 3.1999999284744263
+        },
+        "fcpMs": {
+          "median": 240,
+          "min": 240,
+          "max": 240
+        },
+        "lcpMs": {
+          "median": 484,
+          "min": 484,
+          "max": 484
+        },
+        "cls": {
+          "median": 0.020457127981666965,
+          "min": 0.020457127981666965,
+          "max": 0.020457127981666965
+        },
+        "uiReadyPaintMs": {
+          "median": 484.1999999284744,
+          "min": 484.1999999284744,
+          "max": 484.1999999284744
+        },
+        "catalogBodyCompleteMs": {
+          "median": 2071.899999976158,
+          "min": 2071.899999976158,
+          "max": 2071.899999976158
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 459.6999999284744,
+          "min": 459.6999999284744,
+          "max": 459.6999999284744
+        },
+        "totalWireBytes": {
+          "median": 241503,
+          "min": 241503,
+          "max": 241503
+        },
+        "precacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "ogPrecacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        }
+      }
+    },
+    {
+      "key": "slow-4g:/:cold",
+      "count": 3,
+      "metrics": {
+        "ttfbMs": {
+          "median": 462.7999999523163,
+          "min": 436.5,
+          "max": 480.09999990463257
+        },
+        "fcpMs": {
+          "median": 3196,
+          "min": 3124,
+          "max": 3208
+        },
+        "lcpMs": {
+          "median": 3684,
+          "min": 3520,
+          "max": 3716
+        },
+        "cls": {
+          "median": 0,
+          "min": 0,
+          "max": 0.0003862049542739554
+        },
+        "uiReadyPaintMs": {
+          "median": 3629.2999999523163,
+          "min": 3483.0999999046326,
+          "max": 3684.600000023842
+        },
+        "catalogBodyCompleteMs": {
+          "median": 5510.100000023842,
+          "min": 5388.099999904633,
+          "max": 5777.199999928474
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 3822.8000000715256,
+          "min": 3781,
+          "max": 3843.2999999523163
+        },
+        "totalWireBytes": {
+          "median": 1696849,
+          "min": 1696744,
+          "max": 1697392
+        },
+        "precacheWireBytes": {
+          "median": 930275,
+          "min": 930271,
+          "max": 930312
+        },
+        "ogPrecacheWireBytes": {
+          "median": 691502,
+          "min": 691492,
+          "max": 691568
+        },
+        "dialogOpenMs": {
+          "median": 119.79999995231628,
+          "min": 104.20000004768372,
+          "max": 136.19999992847443
+        }
+      }
+    },
+    {
+      "key": "slow-4g:/:warm",
+      "count": 3,
+      "metrics": {
+        "ttfbMs": {
+          "median": 3.799999952316284,
+          "min": 2.3000000715255737,
+          "max": 6.100000023841858
+        },
+        "fcpMs": {
+          "median": 252,
+          "min": 212,
+          "max": 256
+        },
+        "lcpMs": {
+          "median": 600,
+          "min": 496,
+          "max": 632
+        },
+        "cls": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uiReadyPaintMs": {
+          "median": 598.6000000238419,
+          "min": 499.6999999284744,
+          "max": 627.2000000476837
+        },
+        "catalogBodyCompleteMs": {
+          "median": 2171.6999999284744,
+          "min": 2061.6999999284744,
+          "max": 2214.899999976158
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 514.1999999284744,
+          "min": 494.6999999284744,
+          "max": 557.2000000476837
+        },
+        "totalWireBytes": {
+          "median": 243384,
+          "min": 243383,
+          "max": 243407
+        },
+        "precacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "ogPrecacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "dialogOpenMs": {
+          "median": 90.89999997615814,
+          "min": 89.79999995231628,
+          "max": 126.5
+        }
+      }
+    },
+    {
+      "key": "slow-3g:/:cold",
+      "count": 3,
+      "metrics": {
+        "ttfbMs": {
+          "median": 418.2999999523163,
+          "min": 385.89999997615814,
+          "max": 441.2999999523163
+        },
+        "fcpMs": {
+          "median": 10652,
+          "min": 10588,
+          "max": 10720
+        },
+        "lcpMs": {
+          "median": 11400,
+          "min": 11216,
+          "max": 11740
+        },
+        "cls": {
+          "median": 0.00038758718875966914,
+          "min": 0.0003872416301382407,
+          "max": 0.00038758718875966914
+        },
+        "uiReadyPaintMs": {
+          "median": 11342.399999976158,
+          "min": 11175.399999976158,
+          "max": 11704.5
+        },
+        "catalogBodyCompleteMs": {
+          "median": 18604.299999952316,
+          "min": 18576.099999904633,
+          "max": 18623.799999952316
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 13081,
+          "min": 13021.399999976158,
+          "max": 13099.199999928474
+        },
+        "totalWireBytes": {
+          "median": 1697551,
+          "min": 1697384,
+          "max": 1698317
+        },
+        "precacheWireBytes": {
+          "median": 930347,
+          "min": 930189,
+          "max": 930439
+        },
+        "ogPrecacheWireBytes": {
+          "median": 691513,
+          "min": 691500,
+          "max": 691551
+        },
+        "dialogOpenMs": {
+          "median": 126.69999992847443,
+          "min": 112.60000002384186,
+          "max": 166.89999997615814
+        }
+      }
+    },
+    {
+      "key": "slow-3g:/:warm",
+      "count": 3,
+      "metrics": {
+        "ttfbMs": {
+          "median": 3.399999976158142,
+          "min": 2.6999999284744263,
+          "max": 6.099999904632568
+        },
+        "fcpMs": {
+          "median": 220,
+          "min": 208,
+          "max": 260
+        },
+        "lcpMs": {
+          "median": 836,
+          "min": 780,
+          "max": 852
+        },
+        "cls": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "uiReadyPaintMs": {
+          "median": 840.6999999284744,
+          "min": 785.6000000238419,
+          "max": 856.1999999284744
+        },
+        "catalogBodyCompleteMs": {
+          "median": 6872.699999928474,
+          "min": 6838.899999976158,
+          "max": 6883.799999952316
+        },
+        "firstCatalogBodyCompleteMs": {
+          "median": 1333.5,
+          "min": 1317.8999999761581,
+          "max": 1350.2999999523163
+        },
+        "totalWireBytes": {
+          "median": 243415,
+          "min": 243362,
+          "max": 243424
+        },
+        "precacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "ogPrecacheWireBytes": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "dialogOpenMs": {
+          "median": 135.30000007152557,
+          "min": 89.80000007152557,
+          "max": 147.29999995231628
+        }
+      }
+    }
+  ],
+  "source": {
+    "mainCommit": "2c4cd1ace9778bd1ec6fc31720f5c2d297f18cbf",
+    "deployedSourceCommit": "b1d7cfbf16e68de75e516893c5f9856bfd01ab28",
+    "publicEntryVerification": {
+      "at": "2026-10-22T22:25:29.222Z",
+      "path": "/assets/index-B5VE3_jg.js",
+      "bytes": 1587014,
+      "sha256": "a427147e42f35c3b0a5b1a74f58616577322870282b88bff51409f58281b139e"
+    }
+  },
+  "method": {
+    "host": "Apple M1 / macOS",
+    "network": "CDP Network.emulateNetworkConditions on page and attached service worker",
+    "cpu": "page main thread 4x slowdown, not a calibrated physical phone",
+    "scope": "Anonymous Japanese hard navigations, 390x844 CSS px, DPR 1. No app changes or deployment.",
+    "sampling": "Home 3 serial cold/warm pairs per profile; auth/admin/about one pair each at 1.6Mbps. Cold uses fresh Chrome profile. Warm follows completed SW precache in same profile; not HTTP-cache-only.",
+    "observation": "At least 5s after UI marker, eight catalog resource response bodies completed, SW controlling. Metrics snapshot before any click/scroll.",
+    "transfer": "Sum of observed CDP encodedDataLength, excluding responses served from SW/disk/memory cache. Includes response header bytes; not TLS packet accounting. Page and SW budgets are CDP-target emulation, not one globally shaped physical link. Early SW bootstrap traffic may precede attachment.",
+    "lcp": "Last largest-contentful-paint entry in observation window. Not field p75.",
+    "cls": "Maximum 5s session window with less than 1s gaps; recent-input shifts excluded. Not full visit lifecycle.",
+    "ready": "Home direct input button / auth email / admin email / about heading appears, then two animation frames. Does not assert completed authentication or every route operation.",
+    "catalog": "Eight response bodies finished; not a separate measurement of validation/install completion.",
+    "interaction": "Home dialog open after resources settle: CDP mouse dispatch to two frames after input exists. Includes command overhead. Not INP or TTI.",
+    "exclusions": "Smoke trials with observer errors, CPU-overlapping builds/browsers or incomplete final catalog bodies were excluded. Only directories selected for this summary were used."
+  }
+}
