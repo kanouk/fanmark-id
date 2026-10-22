@@ -9,7 +9,7 @@ import { FanmarkMessage } from './FanmarkMessage';
 import { PasswordProtection } from './PasswordProtection';
 import { RedirectLoading } from './RedirectLoading';
 import { MessageboardLoading } from './MessageboardLoading';
-import { segmentEmojiSequence } from '@/lib/emojiConversion';
+import { segmentEmojiForDisplay } from '@/lib/emoji-display';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -231,7 +231,7 @@ export const FanmarkAccessByShortId = () => {
     [displayFanmark]
   );
   const segmentedFanmark = useMemo(
-    () => segmentEmojiSequence(displayFanmark),
+    () => segmentEmojiForDisplay(displayFanmark),
     [displayFanmark]
   );
   const isUnclaimed = useMemo(() => !fanmark?.license_id, [fanmark?.license_id]);

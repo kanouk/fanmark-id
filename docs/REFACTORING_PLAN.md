@@ -90,6 +90,12 @@ Git外原本: [保管先とアクセス](operations/private-access.md)。配備�
 
 ## 今回の後に再評価する項目
 
+### 起動と体感待ちの改善（#53の限定範囲）
+
+カタログの背景取得・版固定後の並列取得、必要時だけの待機と入力保持、認証/maintenance確認の並行化、
+管理・分析・プランの遅延importを実施する。[比較と検証範囲](development/STARTUP_PERFORMANCE.md)を参照する。
+本番の低速回線LCP/CLSや全route最適化を実施済みとはしない。
+
 ### CI待ち時間の改善（#52の限定範囲）
 
 既存の全Worker検査を4群に分け、独立したCI runnerで実行する。

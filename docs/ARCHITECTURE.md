@@ -11,7 +11,7 @@
 `scripts/dev/local-stack.mjs`が実Worker/Better Auth/local D1・R2とViteを同一HTTPS originへ接続する。
 本番の業務実装を共有し、データ・外部接続・秘密設定を分離する。
 
-- `src/`: Vite/Reactの画面・client・hook。`src/main.tsx`で共通CSSと絵文字catalogを準備する。
+- `src/`: Vite/Reactの画面・client・hook。`src/main.tsx`で共通CSSを読み、絵文字catalogは裏で取得する。`emoji-catalog-state.ts` / `useEmojiCatalog` / `EmojiCatalogStatus.tsx`が必要時だけの待機・再試行を扱う。
 - `workers/api/src/index.ts`: 同originのStatic Assets、API、Auth、公開アクセス、Webhookへの入口。
 - `workers/api/src/better-auth.mjs` / `auth-social.mjs`: Better Auth、session/MFA、OAuthと新規ユーザー処理。
 - `workers/api/src/*-d1-api.ts`: 本人・所有権・管理者MFAを確認する業務API。

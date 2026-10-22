@@ -5,6 +5,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmojiCatalog } from '@/hooks/useEmojiCatalog';
+import { emojiCatalog } from '@/lib/emoji-catalog-state';
 import { FanmarkSearchResult } from '@/hooks/useFanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
 import { canonicalizeEmojiString, convertEmojiSequenceToIdPair, extractEmojiString, segmentEmojiSequence } from '@/lib/emojiConversion';
@@ -40,6 +42,7 @@ export function useAcquisitionController({
   const { t, language } = useTranslation();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { ready: catalogReady } = useEmojiCatalog();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,6 +61,7 @@ export function useAcquisitionController({
   const [favoriteProcessing, setFavoriteProcessing] = useState(false);
   const normalizeQuery = useCallback((value: string | undefined) => {
     if (!value) return '';
+    if (emojiCatalog.getSnapshot().phase !== 'ready') return value;
     const extracted = extractEmojiString(value);
     if (!extracted) return '';
     const canonical = canonicalizeEmojiString(extracted);
@@ -65,6 +69,9 @@ export function useAcquisitionController({
   }, []);
 
   const [query, setQuery] = useState(() => normalizeQuery(prefilledEmoji));
+  useEffect(() => {
+    if (catalogReady) setQuery(current => normalizeQuery(current));
+  }, [catalogReady, normalizeQuery]);
   const scopedUserKey = user?.id ?? 'guest';
   const storageKey = useMemo(
     () => (rememberSearch ? `fanmark-search:${scopedUserKey}:${location.pathname}` : null),
@@ -187,6 +194,11 @@ export function useAcquisitionController({
         return;
       }
 
+      if (!catalogReady) {
+        setQuery(trimmed);
+        if (rememberSearch && storageKey) sessionStorage.setItem(storageKey, trimmed);
+        return;
+      }
       const extracted = extractEmojiString(trimmed);
       if (!extracted) {
         toast({
@@ -208,7 +220,7 @@ export function useAcquisitionController({
 
       sessionStorage.setItem(storageKey, normalized);
     },
-    [rememberSearch, storageKey, normalizeQuery, toast, t],
+    [catalogReady, rememberSearch, storageKey, normalizeQuery, toast, t],
   );
 
   const handleConfirmAcquire = useCallback(async () => {

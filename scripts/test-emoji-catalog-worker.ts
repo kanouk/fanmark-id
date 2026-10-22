@@ -47,6 +47,55 @@ test("builds an API URL only from a clean secure Worker origin", () => {
   assert.throws(() => buildEmojiCatalogApiUrl(`${BASE_URL}?token=secret`), { name: "EmojiCatalogApiError" });
 });
 
+test("loads pinned pages three at a time and preserves order when responses arrive backwards", async () => {
+  const pending = new Map<number, () => void>();
+  const offsets: number[] = [];
+  let active = 0;
+  let peak = 0;
+  const item = (offset: number) => ({ ...FIRST_ITEM,
+    id: `00000000-0000-4000-8000-${String(offset + 1).padStart(12, '0')}`,
+    emoji: String.fromCodePoint(0x1f600 + offset), codepoints: [(0x1f600 + offset).toString(16).toUpperCase()],
+  });
+  const fetcher: typeof fetch = async input => {
+    const url = new URL(String(input));
+    const offset = Number(url.searchParams.get('offset') ?? 0);
+    offsets.push(offset);
+    if (offset > 0) {
+      assert.equal(url.searchParams.get('version'), VERSION);
+      active++; peak = Math.max(peak, active);
+      await new Promise<void>(resolve => pending.set(offset, resolve));
+      active--;
+    }
+    return response({ schemaVersion: 1, version: VERSION, total: 8, offset, limit: 1,
+      nextOffset: offset < 7 ? offset + 1 : null, items: [item(offset)] });
+  };
+  const waitFor = async (count: number) => {
+    for (let attempt = 0; attempt < 100 && offsets.length < count; attempt++) await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(offsets.length, count);
+  };
+  const loading = loadEmojiCatalogFromWorker(BASE_URL, { fetcher, pageSize: 1 });
+  await waitFor(4);
+  assert.deepEqual(offsets, [0, 1, 2, 3]);
+  for (const offset of [3, 2, 1]) pending.get(offset)!();
+  await waitFor(7);
+  for (const offset of [6, 5, 4]) pending.get(offset)!();
+  await waitFor(8);
+  pending.get(7)!();
+  assert.equal(peak, 3);
+  const release = await loading;
+  assert.deepEqual(release.items.map(entry => entry.id), Array.from({ length: 8 }, (_, offset) => item(offset).id));
+});
+
+test("a duplicate in separately fetched pages rejects the entire catalog", async () => {
+  const fetcher: typeof fetch = async input => {
+    const offset = Number(new URL(String(input)).searchParams.get('offset') ?? 0);
+    return response({ schemaVersion: 1, version: VERSION, total: 3, offset, limit: 1,
+      nextOffset: offset < 2 ? offset + 1 : null, items: [offset === 0 ? FIRST_ITEM : SECOND_ITEM] });
+  };
+  await assert.rejects(loadEmojiCatalogFromWorker(BASE_URL, { fetcher, pageSize: 1 }),
+    (error: unknown) => error instanceof EmojiCatalogApiError && error.kind === 'invalid_response');
+});
+
 test("loads every page pinned to the first release version with same-origin cookies and without cache", async () => {
   const calls: Array<{ url: URL; init?: RequestInit }> = [];
   const fetcher: typeof fetch = async (input, init) => {

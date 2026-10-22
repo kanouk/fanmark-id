@@ -6,9 +6,11 @@ import { useImeAwareSubmit } from '@/hooks/useImeAwareSubmit';
 import { useTranslation } from '@/hooks/useTranslation';
 import { EmojiPicker } from 'frimousse';
 import { Clipboard, Eraser, Keyboard, Plus, X } from 'lucide-react';
-import React,{ useState } from 'react';
+import React,{ useEffect, useRef, useState } from 'react';
 import { DEFAULT_MAX_LENGTH, type EmojiInputProps } from './emoji-input/model';
 import { useEmojiInputController } from './emoji-input/useEmojiInputController';
+import { requireEmojiCatalog } from '@/lib/emoji-catalog-state';
+import { EmojiCatalogInlineStatus } from '@/components/EmojiCatalogStatus';
 
 export const EmojiInput: React.FC<EmojiInputProps> = ({
   value,
@@ -194,7 +196,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
       {/* 直接入力モーダル */}
       <Dialog open={showDirectInput} onOpenChange={setShowDirectInput}>
-        <DialogContent className="max-w-md">
+        <DialogContent data-emoji-catalog-input className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">
               {t('common.directInput')}
@@ -214,6 +216,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 {...directInputImeHandlers}
               />
             </div>
+            <EmojiCatalogInlineStatus />
             <div className="flex justify-end gap-3">
               <Button
                 type="button"
@@ -261,6 +264,13 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
   const { t } = useTranslation();
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
   const [directInputText, setDirectInputText] = useState<string>('');
+  const [confirming, setConfirming] = useState(false);
+  const latestInput = useRef({ text: directInputText, open: showDirectInput, alive: true });
+  latestInput.current = { ...latestInput.current, text: directInputText, open: showDirectInput };
+  useEffect(() => {
+    latestInput.current.alive = true;
+    return () => { latestInput.current.alive = false; };
+  }, []);
 
   const handleDirectInputClick = () => {
     if (disabled || !onDirectInput) return;
@@ -285,20 +295,26 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
     }
   };
 
-  const handleDirectInputConfirm = () => {
+  const handleDirectInputConfirm = async () => {
+    if (confirming) return;
     if (!directInputText.trim()) {
       setShowDirectInput(false);
       return;
     }
 
-    onDirectInput?.(directInputText);
-    setShowDirectInput(false);
-    setDirectInputText('');
+    setConfirming(true);
+    try {
+      if (!await requireEmojiCatalog()) return;
+      if (!latestInput.current.alive || !latestInput.current.open || latestInput.current.text !== directInputText) return;
+      onDirectInput?.(directInputText);
+      setShowDirectInput(false);
+      setDirectInputText('');
+    } finally { setConfirming(false); }
   };
 
   const utilitiesImeHandlers = useImeAwareSubmit({
     onSubmit: () => handleDirectInputConfirm(),
-    isDisabled: disabled,
+    isDisabled: disabled || confirming,
   });
 
   return (
@@ -348,7 +364,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
 
       {/* 直接入力モーダル */}
       <Dialog open={showDirectInput} onOpenChange={setShowDirectInput}>
-        <DialogContent className="max-w-md">
+        <DialogContent data-emoji-catalog-input className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">
               {t('common.directInput')}
@@ -368,6 +384,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
                 {...utilitiesImeHandlers}
               />
             </div>
+            <EmojiCatalogInlineStatus />
             <div className="flex justify-end gap-3">
               <Button
                 type="button"
@@ -379,7 +396,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
               </Button>
               <Button
                 onClick={handleDirectInputConfirm}
-                disabled={!directInputText.trim()}
+                disabled={!directInputText.trim() || confirming}
                 className="px-4"
               >
                 {t('common.confirm')}

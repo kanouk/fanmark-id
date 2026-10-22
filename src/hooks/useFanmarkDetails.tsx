@@ -5,6 +5,7 @@ import { useFavoriteFanmarks, useInvalidateFavoriteFanmarks } from './useFavorit
 
 import { addFavoriteFanmark, removeFavoriteFanmark } from '@/lib/favorites-backend';
 import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
+import { useEmojiCatalog } from './useEmojiCatalog';
 import { fetchFanmarkDetailsFromWorker, FanmarkDetailsApiError } from '@/lib/fanmark-details-api';
 
 export interface FanmarkDetails {
@@ -52,6 +53,7 @@ export interface LicenseHistoryItem {
 }
 
 export const useFanmarkDetails = (shortId: string | undefined) => {
+  const { ready: catalogReady } = useEmojiCatalog();
   const { user, loading: authLoading } = useAuth();
   const workerDetailsEnabled = true;
   const invalidateFavorites = useInvalidateFavoriteFanmarks();
@@ -138,13 +140,13 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
   };
 
   useEffect(() => {
-    if (!workerFavoritesEnabled || !user || !details || favoritesLoading || favoritesError) return;
+    if (!catalogReady || !workerFavoritesEnabled || !user || !details || favoritesLoading || favoritesError) return;
     const normalizedIds = convertEmojiSequenceToIdPair(details.normalized_emoji || details.display_fanmark).normalizedEmojiIds;
     if (normalizedIds.length === 0) return;
     const normalizedKey = normalizedIds.join(',');
     const isFavorited = favorites.some((favorite) => favorite.normalizedEmojiIds.join(',') === normalizedKey);
     setDetails((current) => current && current.is_favorited !== isFavorited ? { ...current, is_favorited: isFavorited } : current);
-  }, [details, favorites, favoritesError, favoritesLoading, user, workerFavoritesEnabled]);
+  }, [catalogReady, details, favorites, favoritesError, favoritesLoading, user, workerFavoritesEnabled]);
 
   useEffect(() => {
     void fetchDetails();

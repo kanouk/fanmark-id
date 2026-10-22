@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,8 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { TranslationProvider } from "@/providers/TranslationProvider";
 import { useSubdomain } from "@/hooks/useSubdomain";
-import AdminApp, { AdminRoute } from "./components/AdminApp";
-import AdminDashboard from "./pages/AdminDashboard";
 import { LanguagePreferenceSync } from "@/components/LanguagePreferenceSync";
 import { DocumentTitleSync } from "@/components/DocumentTitleSync";
 import Index from "./pages/Index";
@@ -26,7 +24,6 @@ import NotFound from "./pages/NotFound";
 import { FanmarkAccess } from "./components/FanmarkAccess";
 import { FanmarkAccessByShortId } from "./components/FanmarkAccessByShortId";
 import FanmarkDetailsPage from "./pages/FanmarkDetailsPage";
-import PlanSelection from "./pages/PlanSelection";
 import FanmarkPublicQR from "./pages/FanmarkPublicQR";
 import Favorites from "./pages/Favorites";
 import Notifications from "./pages/Notifications";
@@ -36,7 +33,6 @@ import TermsOfService from "./pages/TermsOfService";
 import ContactUs from "./pages/ContactUs";
 import CommercialTransactions from "./pages/CommercialTransactions";
 import About from "./pages/About";
-import Analytics from "./pages/Analytics";
 import Maintenance from "./pages/Maintenance";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
@@ -44,6 +40,16 @@ import { PasswordSetupGate } from "@/components/PasswordSetupGate";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import MaintenanceGate from "@/components/MaintenanceGate";
 import { AuthReadinessGate } from "@/components/AuthReadinessGate";
+
+import { EmojiCatalogNotice } from "@/components/EmojiCatalogStatus";
+import { AppStartupSkeleton } from '@/components/AppStartupSkeleton';
+import { RouteLoadBoundary } from '@/components/RouteLoadBoundary';
+
+const AdminApp = lazy(() => import('./components/AdminApp'));
+const AdminRoute = lazy(() => import('./components/AdminApp').then(module => ({ default: module.AdminRoute })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const PlanSelection = lazy(() => import('./pages/PlanSelection'));
 
 const queryClient = new QueryClient();
 
@@ -55,13 +61,15 @@ const MainApp = () => (
           <LanguagePreferenceSync />
           <DocumentTitleSync />
           <TooltipProvider>
+            <EmojiCatalogNotice />
             <Toaster />
             <Sonner />
             <BrowserRouter>
               <ScrollToTop />
+              <MaintenanceGate>
               <AuthReadinessGate>
               <PasswordSetupGate />
-              <MaintenanceGate>
+                <RouteLoadBoundary><Suspense fallback={<AppStartupSkeleton />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
@@ -100,8 +108,9 @@ const MainApp = () => (
                   <Route path="/:emojiPath" element={<FanmarkAccess />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </MaintenanceGate>
+                </Suspense></RouteLoadBoundary>
               </AuthReadinessGate>
+              </MaintenanceGate>
             </BrowserRouter>
           </TooltipProvider>
         </LotteryActionOverlayProvider>
@@ -120,7 +129,7 @@ const App = () => {
   
   // 管理画面サブドメインの場合は管理画面アプリを表示
   if (isAdmin) {
-    return <AdminApp />;
+    return <RouteLoadBoundary><Suspense fallback={<AppStartupSkeleton />}><AdminApp /></Suspense></RouteLoadBoundary>;
   }
   
   // 通常のファンマークアプリを表示

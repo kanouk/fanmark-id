@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { AppStartupSkeleton } from '@/components/AppStartupSkeleton';
 import { useMaintenanceSettings } from "@/hooks/useMaintenanceSettings";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -69,11 +69,7 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
   const shouldBypass = isAdminPath || isMaintenancePreview || isAdmin;
 
   if (loading || checkingAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <AppStartupSkeleton />;
   }
 
   if (error && !shouldBypass) {

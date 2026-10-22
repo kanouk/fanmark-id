@@ -15,7 +15,7 @@ import { getPublicEmojiProfile, type PublicEmojiProfile } from '@/hooks/useEmoji
 import type { ProtectedFanmarkProfile } from '@/lib/verified-access-api';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { segmentEmojiSequence } from '@/lib/emojiConversion';
+import { segmentEmojiForDisplay } from '@/lib/emoji-display';
 import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 import {
   FiInstagram,
@@ -169,7 +169,7 @@ export const FanmarkProfile = ({ fanmark, protectedProfile }: FanmarkProfileProp
   );
 
   const segmentedFanmark = useMemo(
-    () => segmentEmojiSequence(displayFanmark),
+    () => segmentEmojiForDisplay(displayFanmark),
     [displayFanmark]
   );
 

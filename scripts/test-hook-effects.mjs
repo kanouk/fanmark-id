@@ -21,7 +21,8 @@ const source = await readFile(new URL('../src/hooks/useFanmarkSearch.tsx', impor
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 const settle = () => new Promise(resolve => setImmediate(resolve));
-function fixture() {
+function fixture(initialCatalogReady = true) {
+  let catalogReady = initialCatalogReady;
   const h = hookRuntime(), reads = [], completed = [];
   let user = { id: 'owner-a' }, query = '😀';
   const t = key => key;
@@ -29,6 +30,8 @@ function fixture() {
     react: h.api,
     '@/lib/fanmark-availability': { loadFanmarkAvailability: () => { const d = deferred(); reads.push(d); return d.promise; } },
     '@/lib/recent-fanmarks': { loadRecentFanmarks: async () => [] },
+    './useEmojiCatalog': { useEmojiCatalog: () => ({ ready: catalogReady }) },
+    '@/lib/emoji-catalog-state': { requireEmojiCatalog: async () => true },
     './useTranslation': { useTranslation: () => ({ t }) },
     './useAuth': { useAuth: () => ({ user, loading: false }) },
     './useFavoriteFanmarks': { useInvalidateFavoriteFanmarks: () => () => {} },
@@ -40,7 +43,7 @@ function fixture() {
   const exports = {};
   runInNewContext(code, { exports, require(name) { assert.ok(name in imports, name); return imports[name]; }, AbortController, process: { env: { NODE_ENV: 'test' } }, console: { error() {}, warn() {} } });
   const onSearchCompleted = v => completed.push(v);
-  return { reads, completed, render: () => h.render(() => exports.useFanmarkSearch({ searchQuery: query, onSearchCompleted })), query(v) { query = v; }, owner(v) { user = { id: v }; }, unmount: () => h.unmount() };
+  return { reads, completed, catalog(ready) { catalogReady = ready; }, render: () => h.render(() => exports.useFanmarkSearch({ searchQuery: query, onSearchCompleted })), query(v) { query = v; }, owner(v) { user = { id: v }; }, unmount: () => h.unmount() };
 }
 
 test('a late old search cannot replace a newer result or completion callback', async () => {
@@ -102,4 +105,18 @@ test('extension pricing preserves the selected duration; unrelated rerenders do 
   const x = extensionFixture(); x.update({ selectedPlan: { months: 12, price: 1200 } }); x.render(); x.render();
   assert.equal(x.reads.length, 1); x.reads[0].resolve([price(1, 1), price(1, 12)]); await settle(); x.render();
   assert.deepEqual(x.selections, []); assert.equal(x.reads.length, 1);
+});
+
+
+test('catalog-pending input is retained and only the latest query searches after readiness', async () => {
+  const x = fixture(false);
+  assert.equal(x.render().result, null);
+  assert.equal(x.reads.length, 0);
+  x.query('🌙'); x.render();
+  assert.equal(x.reads.length, 0);
+  x.catalog(true); x.render();
+  assert.equal(x.reads.length, 1);
+  x.reads[0].resolve({ available: true }); await settle();
+  assert.equal(x.render().result.fanmark, '🌙');
+  assert.deepEqual(x.completed, ['🌙']);
 });

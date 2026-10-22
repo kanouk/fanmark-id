@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Loader2 } from 'lucide-react';
+import { AppStartupSkeleton } from '@/components/AppStartupSkeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ export const AuthReadinessGate = ({ children }: { children: ReactNode }) => {
   const { t } = useTranslation();
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <AppStartupSkeleton />;
   }
   if (profileGateError) {
     return (

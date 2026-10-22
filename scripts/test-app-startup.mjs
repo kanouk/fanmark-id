@@ -22,6 +22,9 @@ const compiled = ts.transpileModule(source, {
   }] },
 }).outputText;
 
+const stateSource = await readFile(new URL("../src/lib/emoji-catalog-state.ts", import.meta.url), "utf8");
+const stateCode = ts.transpileModule(stateSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+
 function runStartup({ catalog, serviceWorker = true, rootPresent = true, worker = true } = {}) {
   const calls = [];
   const root = { textContent: "", children: [], replaceChildren(...children) { this.children = children; } };
@@ -31,6 +34,9 @@ function runStartup({ catalog, serviceWorker = true, rootPresent = true, worker 
       addEventListener(key, listener) { this.listeners[key] = listener; },
       append(...children) { this.children.push(...children); } };
   }
+  const resourceExports = {};
+  runInNewContext(stateCode, { exports: resourceExports });
+  let resource;
   const imports = {
     react: { default: { createElement: (...args) => ({ args }) } },
     "react-dom/client": { createRoot(target) { assert.equal(target, root); return { render() { calls.push("render"); } }; } },
@@ -40,7 +46,7 @@ function runStartup({ catalog, serviceWorker = true, rootPresent = true, worker 
     "virtual:pwa-register": { registerSW(options) { assert.equal(options.immediate, true); assert.deepEqual(Object.keys(options), ["immediate"]); calls.push("registerSW"); } },
     "@/lib/emojiConversion": { installEmojiCatalog() { calls.push("installCatalog"); } },
     "@/lib/emoji-catalog-worker": { loadEmojiCatalogFromWorker() { calls.push("fetchCatalog"); return catalog; } },
-    "@/data/emojiCatalog": { emojiCatalogEntries: [], emojiToId: {} },
+    "@/lib/emoji-catalog-state": { startEmojiCatalog(loader) { resource = resourceExports.createEmojiCatalogResource(loader); return resource.load(); } },
   };
   runInNewContext(compiled, {
     exports: {},
@@ -50,42 +56,40 @@ function runStartup({ catalog, serviceWorker = true, rootPresent = true, worker 
     document: { getElementById(id) { assert.equal(id, "root"); return rootPresent ? root : null; }, createElement: element },
     window: { location: { origin: "https://worker.example.test", reload() { calls.push("reload"); } } },
   });
-  return { calls, root };
+  return { calls, root, getState: () => resource?.getSnapshot() };
 }
 
-test("a stalled catalog cannot prevent the PWA update check; application stays gated", async () => {
+test("a stalled catalog never blocks application rendering or the PWA update check", async () => {
   let resolveCatalog;
-  const pending = new Promise((resolve) => { resolveCatalog = resolve; });
-  const state = runStartup({ catalog: pending });
-  assert.deepEqual(state.calls, ["registerSW", "fetchCatalog"]);
-  const status = state.root.children[0].children[0];
-  assert.equal(status.attributes.role, "status");
-  assert.equal(status.children[0].attributes["aria-hidden"], "true");
-  assert.equal(status.children[1].textContent, "絵文字カタログを読み込んでいます…");
+  const state = runStartup({ catalog: new Promise(resolve => { resolveCatalog = resolve; }) });
+  assert.deepEqual(state.calls, ["registerSW", "render"]);
   await setImmediate();
-  assert.ok(!state.calls.includes("render"));
+  assert.deepEqual(state.calls, ["registerSW", "render", "fetchCatalog"]);
+  assert.equal(state.getState().phase, "loading");
+  assert.equal(state.getState().demanded, false);
+  assert.deepEqual(state.root.children, []);
   resolveCatalog({ items: [] });
   await setImmediate();
-  assert.deepEqual(state.calls, ["registerSW", "fetchCatalog", "installCatalog", "render"]);
+  assert.deepEqual(state.calls, ["registerSW", "render", "fetchCatalog", "installCatalog"]);
+  assert.equal(state.getState().phase, "ready");
 });
 
-test("catalog rejection keeps update registration and renders a retry error without fallback", async () => {
-  const state = runStartup({ catalog: Promise.reject(new Error("synthetic catalog unavailable")) });
+test("catalog rejection preserves the application and never installs a fallback", async () => {
+  let rejectCatalog;
+  const state = runStartup({ catalog: new Promise((resolve, reject) => { rejectCatalog = reject; }) });
   await setImmediate();
-  assert.deepEqual(state.calls, ["registerSW", "fetchCatalog"]);
-  const main = state.root.children[0];
-  assert.equal(main.attributes.role, "alert");
-  assert.equal(main.children[0].children[0].textContent, "絵文字カタログを読み込めませんでした");
-  const retry = main.children[0].children[2];
-  assert.equal(retry.textContent, "再読み込み");
-  retry.listeners.click();
-  assert.equal(state.calls.at(-1), "reload");
+  rejectCatalog(new Error("synthetic catalog unavailable"));
+  await setImmediate();
+  assert.deepEqual(state.calls, ["registerSW", "render", "fetchCatalog"]);
+  assert.equal(state.getState().phase, "error");
+  assert.equal(state.getState().demanded, false);
+  assert.deepEqual(state.root.children, []);
 });
 
-test("a browser without Service Worker support still loads and renders the selected catalog", async () => {
+test("a browser without Service Worker support still renders immediately and loads the selected catalog", async () => {
   const state = runStartup({ serviceWorker: false, catalog: Promise.resolve({ items: [] }) });
   await setImmediate();
-  assert.deepEqual(state.calls, ["fetchCatalog", "installCatalog", "render"]);
+  assert.deepEqual(state.calls, ["render", "fetchCatalog", "installCatalog"]);
 });
 
 test("missing application root starts neither update registration nor catalog loading", async () => {
@@ -97,5 +101,5 @@ test("missing application root starts neither update registration nor catalog lo
 test("an absent backend selector still loads the Worker catalog", async () => {
   const state = runStartup({ worker: false, catalog: Promise.resolve({ items: [] }) });
   await setImmediate();
-  assert.deepEqual(state.calls, ["registerSW", "fetchCatalog", "installCatalog", "render"]);
+  assert.deepEqual(state.calls, ["registerSW", "render", "fetchCatalog", "installCatalog"]);
 });

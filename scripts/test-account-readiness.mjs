@@ -21,7 +21,7 @@ function hooks() {
     useCallback:fn=>fn,useMemo:fn=>fn(),useEffect:fn=>effects.push(fn),createContext:()=>({Provider:'Provider'}),useContext(){throw Error('Unexpected context');}
   }};
 }
-const uiImports={'lucide-react':{Loader2:'Spinner'},'@/components/ui/button':{Button:'Button'},'@/hooks/useTranslation':{useTranslation:()=>({t:key=>key})}};
+const uiImports={'@/components/AppStartupSkeleton':{AppStartupSkeleton:'StartupSkeleton'},'lucide-react':{Loader2:'Spinner'},'@/components/ui/button':{Button:'Button'},'@/hooks/useTranslation':{useTranslation:()=>({t:key=>key})}};
 
 for (const outcome of ['ready','wrong-owner','offline']) test('Better Auth profile keeps protection closed until verified: '+outcome,async()=>{
   const h=hooks();let settle,profileReads=0;
@@ -57,7 +57,8 @@ test('an unproved profile keeps content closed and retries the read without clai
   gateHooks.reset();run('components/PasswordSetupGate',{react:gateHooks.api,'@/hooks/useAuth':{useAuth:()=>auth},'react-router-dom':{useNavigate:()=> (...args)=>navigation.push(args),useLocation:()=>({pathname:'/plans',search:'?checkout=success'})}}).PasswordSetupGate();gateHooks.effects.forEach(fn=>fn());assert.equal(navigation[0][0],'/password-setup');assert.equal(navigation[0][1].state.from,'/plans?checkout=success');
 });
 test('profile verification in progress blocks content, while guests retain normal routes',()=>{
-  assert.ok(descendants(renderGate({loading:true})).some(x=>x.type==='Spinner'));
+  assert.ok(descendants(renderGate({loading:true})).some(x=>x.type==='StartupSkeleton'));
+  assert.ok(!descendants(renderGate({loading:true})).some(x=>x.props?.children==='protected-content'));
   assert.equal(renderGate({loading:false,profileGateError:false}).props.children,'protected-content');
 });
 test('maintenance read failure offers retry; only confirmed maintenance renders maintenance',async()=>{
