@@ -53,9 +53,13 @@ jobs:
       - name: Validate active production configuration and bundles without deployment
         run: npm run build:cloudflare-production-live:dry-run
 
-  worker:
-    name: Validate Cloudflare Worker API
+  worker-contracts:
+    name: Worker contracts (${{ matrix.suite }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [core, business, billing-admin, recovery]
     defaults:
       run:
         working-directory: workers/api
@@ -68,10 +72,35 @@ jobs:
           cache-dependency-path: workers/api/package-lock.json
       - name: Install Worker dependencies
         run: npm ci
+      - name: Verify unchanged Worker test coverage
+        run: npm run test:plan
+      - name: Verify Worker contract group
+        run: npm run test:ci:${{ matrix.suite }}
+
+  worker:
+    # Preserve the required check name and reject failed, cancelled or skipped groups.
+    name: Validate Cloudflare Worker API
+    needs: worker-contracts
+    if: always()
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workers/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: workers/api/package-lock.json
+      - name: Require every Worker contract group to succeed
+        env:
+          WORKER_CONTRACTS_RESULT: ${{ needs.worker-contracts.result }}
+        run: node ../../scripts/check-worker-test-result.mjs
+      - name: Install Worker dependencies
+        run: npm ci
       - name: Verify Worker types
         run: npm run typecheck
-      - name: Verify complete current Worker contracts and recovery
-        run: npm test
       - name: Verify current Business and Auth runtime import
         run: npm run test:business-runtime-import
       - name: Validate Worker bundle without deployment
