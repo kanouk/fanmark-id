@@ -88,6 +88,11 @@ export async function verifyLocalBrowser(stack) {
       await value('Array.from(' + within + '.querySelectorAll("button")).find(button => button.textContent.trim()===' +
         JSON.stringify(text) + '&&!button.disabled).click()');
     }
+    async function pointerClick(elementExpression) {
+      const point = await value('(()=>{const element=' + elementExpression + ';element.scrollIntoView({block:"center"});const r=element.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()');
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
+    }
     const catalogStartup = await verifyCatalogStartup({ cdp, value, wait, navigate, fill, clickText, artifactDirectory, owner: stack.fixtures.users[0] });
     const deferredRoutes = await verifyDeferredRoutes({ cdp, value, wait, navigate, expectModuleFailure: value => { expectedModuleFailure = value; } });
     console.log('[local browser] background catalog, retained input, retries and parallel readiness verified');
@@ -175,9 +180,9 @@ export async function verifyLocalBrowser(stack) {
     await cdp.send('Input.insertText', { text: 'Local browser saved profile' });
     await value('window.__routeDraftField=document.querySelector("input[name=display_name]");true');
     for (const [language, label] of [['en', 'English'], ['ko', '한국어'], ['id', 'Bahasa Indonesia'], ['ja', '日本語']]) {
-      await value('document.querySelector("button:has(svg.lucide-globe)").click()');
+      await pointerClick('document.querySelector("button:has(svg.lucide-globe)")');
       await wait('!!document.querySelector("[role=menuitem]")');
-      await value('Array.from(document.querySelectorAll("[role=menuitem]")).find(item=>item.textContent.trim()===' + JSON.stringify(label) + ').click()');
+      await pointerClick('Array.from(document.querySelectorAll("[role=menuitem]")).find(item=>item.textContent.trim()===' + JSON.stringify(label) + ')');
       await wait('document.documentElement.lang===' + JSON.stringify(language));
       assert.equal(await value('document.querySelector("input[name=display_name]")===window.__routeDraftField'), true,
         'Language switching must not remount the deferred editor');
