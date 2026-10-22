@@ -40,3 +40,6 @@ productionのindex.htmlからmodule scriptとmodulepreloadを列挙し、各file
 根拠は`npm run verify:app`、`npm run test:local`、正規production buildとPR/main CI。
 localの計測は意図的に応答を保留しており、本番LCP/CLSや実端末・低速回線の実測として扱わない。
 IndexedDB等の永続catalog cacheや全routeのlazy化は今回含めない。追加変更は実測に基づいて分ける。
+
+続く[低速回線の模擬計測](SLOW_NETWORK_2026-10-23.md)で、初回・PWA再訪のLCP/CLS・UI出現と先読み転送量を確認した。
+実端末・自然回線の測定とは区別し、追加実装の優先順位と採用条件を同記録へまとめた。

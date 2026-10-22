@@ -65,7 +65,8 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 合成localで認証・保存・権限拒否・画像・下書き・アカウント切替を検証し、本番は匿名の公開確認を行った。
 続く[PR60](https://github.com/kanouk/fanmark-id/pull/60)で匿名rootの幅超過とLint警告19件を解消。client218件・現行契約132件と実Worker/ブラウザ・PR/main CIが成功した。
 [PR64](https://github.com/kanouk/fanmark-id/pull/64)で初期JS gzip 618,153→446,087 bytes（約28%減）。型・Lint 0・client222件・現行契約138件、実Worker/ブラウザの待機・取消・失敗/再試行・遅延module・認証拒否と通常回帰が成功した。公開では既存PWA更新・catalog待機なしのトップ・16表示幅・34資産を独立確認した。詳細は[起動の比較](../development/STARTUP_PERFORMANCE.md)。
-本人の実アカウントでの再受け入れ・実端末・低速回線LCP/CLSの確認を実施済みとはしない。
+続く[低速回線の模擬計測](../development/SLOW_NETWORK_2026-10-23.md)で、公開本番の初回/PWA再訪を通信・CPU制限下で測定した。これはアプリ更新や再配備ではない。
+本人の実アカウントでの再受け入れ・実端末・自然回線のLCP/CLS確認は未実施。
 
 ## 詳細原本
 
