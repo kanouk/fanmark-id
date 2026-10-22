@@ -187,6 +187,7 @@ export async function verifyLocalBrowser(stack) {
       await wait('!!document.querySelector("[role=menuitem]")');
       await pointerClick('Array.from(document.querySelectorAll("[role=menuitem]")).find(item=>item.textContent.trim()===' + JSON.stringify(label) + ')');
       await wait('document.documentElement.lang===' + JSON.stringify(language));
+      await wait('!document.querySelector("[role=menu]")');
       assert.equal(await value('document.querySelector("input[name=display_name]")===window.__routeDraftField'), true,
         'Language switching must not remount the deferred editor');
       assert.equal(await value('window.__routeDraftField.value'), 'Local browser saved profile');
