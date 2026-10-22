@@ -9,7 +9,7 @@
     "build:cloudflare-production": "node scripts/build-cloudflare-production.mjs",
     "test:cloudflare-production-build": "node --test scripts/test-cloudflare-production-build.mjs",
     "build:cloudflare-staging": "node scripts/build-cloudflare-staging.mjs",
-    "check:ci": "node scripts/check-ci.mjs && node --test scripts/test-ci.mjs",
+    "check:ci": "node scripts/check-ci.mjs && node --test scripts/test-ci.mjs scripts/test-worker-test-plan.mjs",
     "check:cloudflare-schedules": "node --experimental-strip-types scripts/migration/scheduled-job-coverage.mjs",
     "lint": "eslint . --max-warnings 0",
     "test:app-startup": "node --test scripts/test-app-startup.mjs",

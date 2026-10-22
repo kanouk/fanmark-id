@@ -75,6 +75,33 @@ job名にstagingがあっても本番通常設定の検査も含む。CIは秘�
 CIはさらに実localブラウザ、Worker全契約、Business/Auth/Master/R2統合復旧、本番build/dry-runを実行する。
 移送時点のソースfingerprintやsource freeze試行は通常CIに含めず、過去証拠を再生成しない。
 
+### Workerテストの実行群
+
+`npm --prefix workers/api test`は検査範囲を照合した後、次の4群を順番に実行する。
+CIでは同じ4群を別々のrunnerへ分け、各群内は従来の順次実行・Vitest設定・合成local D1/R2を維持する。
+
+| Worker側コマンド | 検査範囲 |
+| --- | --- |
+| `npm run test:ci:core` | 基本契約・公開アクセス認証・Webhook受信/適用・Auth/MFA・退会 |
+| `npm run test:ci:business` | カタログ・公開参照・本人設定/通知/お気に入り・検索/取得/抽選/移管などのAPI契約 |
+| `npm run test:ci:billing-admin` | 課金checkout/変更・coupon・管理者・招待/登録待ち・告知メール |
+| `npm run test:ci:recovery` | 絵文字公開・通知wake・writer drain・各storeのbackup/復旧・隔離復旧 |
+
+変更前main `dc850e681f2396bf3c9c19d70c192aa8e0fb3f8f` の `npm test`を展開した
+63種類のコマンドを `scripts/worker-test-baseline.json` に保存し、`test:plan`と`check:ci`で
+全対象が1回ずつ実行されることを照合する。重複していたwriter drainとimport coordinatorの2実行だけを除く。
+テスト追加時は対象群とbaselineを同じPRで更新し、検査の省略を許すための書き換えはしない。
+
+CIは`fail-fast: false`で他群の検証を継続する。既存の必須チェック名
+`Validate Cloudflare Worker API`を集約先として保持し、全群成功後に型・実行時import・bundleを検証する。
+失敗・キャンセル・skip・結果欠落はいずれも成功にしない。ブラウザ・画像・下書き・統合復旧と
+本番build/dry-runを含むアプリ側jobも全変更で実行する。パスによる検査省略は行わない。
+
+比較基準のmain CI [39782249447](https://github.com/kanouk/fanmark-id/actions/runs/39782249447)は
+Worker jobが15分1秒（全契約/復旧13分51秒）、アプリjobが5分12秒。
+短縮効果は同じNode/lockfileで、queue待ちとjob実行時間を分けてPR/main CIで確認する。
+本変更は検査の実行構成のみで、本番Workerの再配備は不要。
+
 PWAはAPIを静的cacheへ入れない。更新時は旧hash資産を保持し、新しいHTML/SW/manifestを使う。
 `test:app-startup`、`test:staging-asset-retention`と[更新手順](operations/deployment.md)を参照する。
 D1 schema変更はstoreとmigration sequenceを分けてレビューし、適用先・backup・検証・失敗時の前進復旧を
