@@ -34,8 +34,8 @@ export function useEmojiInputController({
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
   const [directInputText, setDirectInputText] = useState<string>('');
-  const latestInput = useRef({ value, text: directInputText, open: showDirectInput, alive: true });
-  latestInput.current = { ...latestInput.current, value, text: directInputText, open: showDirectInput };
+  const latestInput = useRef({ value, text: directInputText, open: showDirectInput, activeIndex, alive: true });
+  latestInput.current = { ...latestInput.current, value, text: directInputText, open: showDirectInput, activeIndex };
   const pickerRequest = useRef(0);
   useEffect(() => {
     latestInput.current.alive = true;
@@ -238,8 +238,11 @@ export function useEmojiInputController({
     }, 200);
   }, []);
 
-  const handleSelect = (index: number, emoji: string) => {
+  const handleSelect = async (index: number, emoji: string) => {
     if (disabled) return;
+    const request = ++pickerRequest.current;
+    if (!await requireEmojiCatalog()) return;
+    if (!latestInput.current.alive || latestInput.current.value !== value || latestInput.current.activeIndex !== index || request !== pickerRequest.current) return;
     const newSegments = [...segments];
     const targetIndex = Math.min(index, newSegments.length);
     if (targetIndex < newSegments.length) {
@@ -281,8 +284,6 @@ export function useEmojiInputController({
       }
 
       const clipboardText = await navigator.clipboard.readText();
-      if (!await requireEmojiCatalog()) return;
-      if (!latestInput.current.alive || latestInput.current.value !== value) return;
 
       if (!clipboardText.trim()) {
         toast({
@@ -293,6 +294,8 @@ export function useEmojiInputController({
         return;
       }
 
+      if (!await requireEmojiCatalog()) return;
+      if (!latestInput.current.alive || latestInput.current.value !== value) return;
       const extracted = extractEmojiString(clipboardText);
       if (!extracted) {
         toast({
@@ -452,11 +455,9 @@ export function useEmojiInputController({
     setDirectInputText('');
   };
 
-  const handleOpenChange = async (index: number, open: boolean) => {
+  const handleOpenChange = (index: number, open: boolean) => {
     if (disabled) return;
-    const request = ++pickerRequest.current;
-    if (open && !await requireEmojiCatalog()) return;
-    if (!latestInput.current.alive || request !== pickerRequest.current) return;
+    pickerRequest.current++;
     setActiveIndex(open ? index : null);
   };
 

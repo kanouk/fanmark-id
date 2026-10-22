@@ -120,3 +120,55 @@ test('catalog-pending input is retained and only the latest query searches after
   assert.equal(x.render().result.fanmark, '🌙');
   assert.deepEqual(x.completed, ['🌙']);
 });
+
+const inputSource = await readFile(new URL('../src/components/emoji-input/useEmojiInputController.tsx', import.meta.url), 'utf8');
+const inputCode = ts.transpileModule(inputSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+function inputFixture(clipboard = '') {
+  const h = hookRuntime(), catalog = deferred(), changes = [], notices = [];
+  let ready = false, demands = 0, value = '';
+  const imports = {
+    react: h.api,
+    '@/hooks/useToast': {},
+    '@/hooks/use-toast': { useToast: () => ({ toast: notice => notices.push(notice) }) },
+    '@/hooks/useImeAwareSubmit': { useImeAwareSubmit: () => ({}) },
+    '@/hooks/useTranslation': { useTranslation: () => ({ t: key => key }) },
+    '@/hooks/useEmojiCatalog': { useEmojiCatalog: () => ({ ready }) },
+    '@/lib/emoji-catalog-state': { requireEmojiCatalog: () => { demands++; return catalog.promise; } },
+    '@/lib/emoji-display': { segmentEmojiForDisplay: v => Array.from(v) },
+    '@/lib/emojiConversion': { canonicalizeEmojiString: v => v, segmentEmojiSequence: v => Array.from(v), extractEmojiString: v => v, convertEmojiSequenceToIdPair: v => ({ emojiIds: [v], normalizedEmojiIds: [v] }) },
+    './model': { DEFAULT_MAX_LENGTH: 5 },
+  };
+  const exports = {};
+  runInNewContext(inputCode, { exports, require(name) { assert.ok(name in imports, name); return imports[name]; },
+    navigator: { clipboard: { readText: async () => clipboard } }, process: { env: { NODE_ENV: 'test' } }, console });
+  return { changes, notices, demands: () => demands,
+    ready() { ready = true; catalog.resolve(true); },
+    render: () => h.render(() => exports.useEmojiInputController({ value, onChange: next => { value = next; changes.push(next); } })),
+  };
+}
+
+test('empty clipboard reports empty content without demanding a stalled catalog', async () => {
+  const x = inputFixture('  \n ');
+  await x.render().handlePaste();
+  assert.equal(x.demands(), 0);
+  assert.equal(x.notices[0].title, 'common.clipboardEmptyTitle');
+});
+test('picker opens immediately and closing it cancels a pending emoji selection', async () => {
+  const x = inputFixture();
+  x.render().handleOpenChange(0, true);
+  const picker = x.render();
+  assert.equal(picker.activeIndex, 0);
+  assert.equal(x.demands(), 0);
+  const selection = picker.handleSelect(0, '😀');
+  assert.equal(x.demands(), 1);
+  picker.handleOpenChange(0, false); x.render();
+  x.ready(); await selection;
+  assert.deepEqual(x.changes, []);
+});
+test('an open picker resumes its selected emoji after catalog validation', async () => {
+  const x = inputFixture();
+  x.render().handleOpenChange(0, true);
+  const selection = x.render().handleSelect(0, '😀');
+  x.ready(); x.render(); await selection;
+  assert.deepEqual(x.changes, ['😀']);
+});
