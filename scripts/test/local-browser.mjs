@@ -6,6 +6,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { cdpConnection } from './browser-cdp.mjs';
 import { navigateDocument } from './browser-navigation.mjs';
+import { verifyCatalogStartup, verifyDeferredRoutes } from './catalog-startup-browser.mjs';
 import { createLocalBrowserEgressProxy } from '../migration/local-browser-egress-proxy.mjs';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -30,6 +31,7 @@ export async function verifyLocalBrowser(stack) {
     await mkdtemp(path.join(tmpdir(), 'fanmark-local-browser-'));
   await mkdir(artifactDirectory, { recursive: true, mode: 0o700 });
   const exceptions = [], requests = [];
+  let expectedModuleFailure = false;
   let hmrConnections = 0;
   try {
     let debugPort;
@@ -49,7 +51,11 @@ export async function verifyLocalBrowser(stack) {
     cdp.on('Network.webSocketHandshakeResponseReceived', event => {
       if (event.response.status === 101) hmrConnections++;
     });
-    cdp.on('Runtime.exceptionThrown', event => exceptions.push(event.exceptionDetails?.text || 'uncaught exception'));
+    cdp.on('Runtime.exceptionThrown', event => {
+      const description = event.exceptionDetails?.exception?.description ?? '';
+      if (expectedModuleFailure && /Failed to fetch dynamically imported module.*\/src\/components\/AdminApp\.tsx/u.test(description)) return;
+      exceptions.push(event.exceptionDetails?.text || 'uncaught exception');
+    });
     cdp.on('Network.requestWillBeSent', event => {
       const url = new URL(event.request.url);
       if (url.origin === stack.origin && url.pathname.startsWith('/api/')) {
@@ -82,6 +88,9 @@ export async function verifyLocalBrowser(stack) {
       await value('Array.from(' + within + '.querySelectorAll("button")).find(button => button.textContent.trim()===' +
         JSON.stringify(text) + '&&!button.disabled).click()');
     }
+    const catalogStartup = await verifyCatalogStartup({ cdp, value, wait, navigate, fill, clickText, artifactDirectory, owner: stack.fixtures.users[0] });
+    const deferredRoutes = await verifyDeferredRoutes({ cdp, value, wait, navigate, expectModuleFailure: value => { expectedModuleFailure = value; } });
+    console.log('[local browser] background catalog, retained input, retries and parallel readiness verified');
     const mobileLayouts = [];
     async function assertViewport(width, label) {
       const dimensions = await value('({width:innerWidth,client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth})');
@@ -200,7 +209,7 @@ export async function verifyLocalBrowser(stack) {
     assert.ok(hmrConnections > 0, 'Vite hot reload must connect over local HTTPS');
     assert.deepEqual(stack.deniedOutbound, []);
     assert.ok(requests.some(request => request.path === '/api/fanmarks/register' && request.method === 'POST'));
-    const report = { mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
+    const report = { catalogStartup, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
       searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true, accountSavePersisted: true, ownerSwitchIsolated: true,
       externalApplicationRequests: stack.deniedOutbound.length, browserProxyRefusals: blocked.length, requests };
     await writeFile(path.join(artifactDirectory, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });

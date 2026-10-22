@@ -13,6 +13,8 @@ import { invokeFanmarkRegistration, type FanmarkRegistrationResponse } from '@/l
 import { loadFanmarkSearchDetails, recordFanmarkSearch } from '@/lib/fanmark-search-api';
 import { betterAuthClient } from '@/lib/auth-backend';
 import { useAuth } from './useAuth';
+import { useEmojiCatalog } from './useEmojiCatalog';
+import { requireEmojiCatalog } from '@/lib/emoji-catalog-state';
 import { useInvalidateFavoriteFanmarks } from './useFavoriteFanmarks';
 
 export interface FanmarkSearchResult {
@@ -106,6 +108,9 @@ type UseFanmarkSearchOptions = {
 const normalizeEmoji = (emoji: string): string => stripSkinToneModifiers(emoji);
 
 export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkSearchOptions) {
+  const { ready: catalogReady } = useEmojiCatalog();
+  const needsCatalog = Boolean(searchQuery);
+  useEffect(() => { if (needsCatalog && !catalogReady) void requireEmojiCatalog(); }, [needsCatalog, catalogReady]);
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const invalidateFavorites = useInvalidateFavoriteFanmarks();
@@ -114,10 +119,11 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
   const [recentFanmarks, setRecentFanmarks] = useState<FanmarkSearchResult[]>([]);
 
   const normalizedQuery = useMemo(() => {
+    if (!catalogReady) return '';
     const canonical = canonicalizeEmojiString(searchQuery);
     const limited = segmentEmojiSequence(canonical).slice(0, MAX_QUERY_LENGTH).join('');
     return limited.trim();
-  }, [searchQuery]);
+  }, [searchQuery, catalogReady]);
 
   const fetchRecentFanmarks = useCallback(async (signal?: AbortSignal) => {
     try {

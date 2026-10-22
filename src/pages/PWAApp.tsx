@@ -12,6 +12,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { FanmarkSearchPanel } from "@/components/FanmarkSearchPanel";
 import { EmojiInputUtilities } from "@/components/EmojiInput";
 import { extractEmojiString } from "@/lib/emojiConversion";
+import { requireEmojiCatalog } from '@/lib/emoji-catalog-state';
 import { useToast } from "@/hooks/use-toast";
 import { navigateToFanmark } from "@/utils/emojiUrl";
 
@@ -72,6 +73,7 @@ export default function PWAApp() {
         });
         return true;
       }
+      if (!await requireEmojiCatalog()) return true;
       const extracted = extractEmojiString(clipboardText);
       if (!extracted) {
         toast({

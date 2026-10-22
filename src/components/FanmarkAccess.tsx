@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { normalizeEmojiPath, isEmojiOnly } from '@/utils/emojiUrl';
 import { convertEmojiSequenceToIdPair, segmentEmojiSequence } from '@/lib/emojiConversion';
 import NotFound from '@/pages/NotFound';
+import { EmojiCatalogGate } from '@/components/EmojiCatalogStatus';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchPublicFanmarkByEmojiIds } from '@/lib/public-access-api';
 import { type ProtectedFanmarkProjection } from '@/lib/verified-access-api';
@@ -39,6 +40,14 @@ interface FanmarkData {
 }
 
 export const FanmarkAccess = () => {
+  const { emojiPath = '' } = useParams<{ emojiPath: string }>();
+  let decoded = emojiPath;
+  try { decoded = decodeURIComponent(emojiPath); } catch { /* Preserve the original invalid path. */ }
+  if (!isEmojiOnly(decoded)) return <NotFound />;
+  return <EmojiCatalogGate><LoadedFanmarkAccess /></EmojiCatalogGate>;
+};
+
+const LoadedFanmarkAccess = () => {
   const { emojiPath } = useParams<{ emojiPath: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();

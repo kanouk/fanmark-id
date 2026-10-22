@@ -21,7 +21,8 @@ const source = await readFile(new URL('../src/hooks/useFanmarkSearch.tsx', impor
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 const settle = () => new Promise(resolve => setImmediate(resolve));
-function fixture() {
+function fixture(initialCatalogReady = true) {
+  let catalogReady = initialCatalogReady;
   const h = hookRuntime(), reads = [], completed = [];
   let user = { id: 'owner-a' }, query = '😀';
   const t = key => key;
@@ -29,6 +30,8 @@ function fixture() {
     react: h.api,
     '@/lib/fanmark-availability': { loadFanmarkAvailability: () => { const d = deferred(); reads.push(d); return d.promise; } },
     '@/lib/recent-fanmarks': { loadRecentFanmarks: async () => [] },
+    './useEmojiCatalog': { useEmojiCatalog: () => ({ ready: catalogReady }) },
+    '@/lib/emoji-catalog-state': { requireEmojiCatalog: async () => true },
     './useTranslation': { useTranslation: () => ({ t }) },
     './useAuth': { useAuth: () => ({ user, loading: false }) },
     './useFavoriteFanmarks': { useInvalidateFavoriteFanmarks: () => () => {} },
@@ -40,7 +43,7 @@ function fixture() {
   const exports = {};
   runInNewContext(code, { exports, require(name) { assert.ok(name in imports, name); return imports[name]; }, AbortController, process: { env: { NODE_ENV: 'test' } }, console: { error() {}, warn() {} } });
   const onSearchCompleted = v => completed.push(v);
-  return { reads, completed, render: () => h.render(() => exports.useFanmarkSearch({ searchQuery: query, onSearchCompleted })), query(v) { query = v; }, owner(v) { user = { id: v }; }, unmount: () => h.unmount() };
+  return { reads, completed, catalog(ready) { catalogReady = ready; }, render: () => h.render(() => exports.useFanmarkSearch({ searchQuery: query, onSearchCompleted })), query(v) { query = v; }, owner(v) { user = { id: v }; }, unmount: () => h.unmount() };
 }
 
 test('a late old search cannot replace a newer result or completion callback', async () => {
@@ -102,4 +105,70 @@ test('extension pricing preserves the selected duration; unrelated rerenders do 
   const x = extensionFixture(); x.update({ selectedPlan: { months: 12, price: 1200 } }); x.render(); x.render();
   assert.equal(x.reads.length, 1); x.reads[0].resolve([price(1, 1), price(1, 12)]); await settle(); x.render();
   assert.deepEqual(x.selections, []); assert.equal(x.reads.length, 1);
+});
+
+
+test('catalog-pending input is retained and only the latest query searches after readiness', async () => {
+  const x = fixture(false);
+  assert.equal(x.render().result, null);
+  assert.equal(x.reads.length, 0);
+  x.query('🌙'); x.render();
+  assert.equal(x.reads.length, 0);
+  x.catalog(true); x.render();
+  assert.equal(x.reads.length, 1);
+  x.reads[0].resolve({ available: true }); await settle();
+  assert.equal(x.render().result.fanmark, '🌙');
+  assert.deepEqual(x.completed, ['🌙']);
+});
+
+const inputSource = await readFile(new URL('../src/components/emoji-input/useEmojiInputController.tsx', import.meta.url), 'utf8');
+const inputCode = ts.transpileModule(inputSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+function inputFixture(clipboard = '') {
+  const h = hookRuntime(), catalog = deferred(), changes = [], notices = [];
+  let ready = false, demands = 0, value = '';
+  const imports = {
+    react: h.api,
+    '@/hooks/useToast': {},
+    '@/hooks/use-toast': { useToast: () => ({ toast: notice => notices.push(notice) }) },
+    '@/hooks/useImeAwareSubmit': { useImeAwareSubmit: () => ({}) },
+    '@/hooks/useTranslation': { useTranslation: () => ({ t: key => key }) },
+    '@/hooks/useEmojiCatalog': { useEmojiCatalog: () => ({ ready }) },
+    '@/lib/emoji-catalog-state': { requireEmojiCatalog: () => { demands++; return catalog.promise; } },
+    '@/lib/emoji-display': { segmentEmojiForDisplay: v => Array.from(v) },
+    '@/lib/emojiConversion': { canonicalizeEmojiString: v => v, segmentEmojiSequence: v => Array.from(v), extractEmojiString: v => v, convertEmojiSequenceToIdPair: v => ({ emojiIds: [v], normalizedEmojiIds: [v] }) },
+    './model': { DEFAULT_MAX_LENGTH: 5 },
+  };
+  const exports = {};
+  runInNewContext(inputCode, { exports, require(name) { assert.ok(name in imports, name); return imports[name]; },
+    navigator: { clipboard: { readText: async () => clipboard } }, process: { env: { NODE_ENV: 'test' } }, console });
+  return { changes, notices, demands: () => demands,
+    ready() { ready = true; catalog.resolve(true); },
+    render: () => h.render(() => exports.useEmojiInputController({ value, onChange: next => { value = next; changes.push(next); } })),
+  };
+}
+
+test('empty clipboard reports empty content without demanding a stalled catalog', async () => {
+  const x = inputFixture('  \n ');
+  await x.render().handlePaste();
+  assert.equal(x.demands(), 0);
+  assert.equal(x.notices[0].title, 'common.clipboardEmptyTitle');
+});
+test('picker opens immediately and closing it cancels a pending emoji selection', async () => {
+  const x = inputFixture();
+  x.render().handleOpenChange(0, true);
+  const picker = x.render();
+  assert.equal(picker.activeIndex, 0);
+  assert.equal(x.demands(), 0);
+  const selection = picker.handleSelect(0, '😀');
+  assert.equal(x.demands(), 1);
+  picker.handleOpenChange(0, false); x.render();
+  x.ready(); await selection;
+  assert.deepEqual(x.changes, []);
+});
+test('an open picker resumes its selected emoji after catalog validation', async () => {
+  const x = inputFixture();
+  x.render().handleOpenChange(0, true);
+  const selection = x.render().handleSelect(0, '😀');
+  x.ready(); x.render(); await selection;
+  assert.deepEqual(x.changes, ['😀']);
 });

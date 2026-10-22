@@ -4,6 +4,9 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { canonicalizeEmojiString, convertEmojiSequenceToIdPair, extractEmojiString, segmentEmojiSequence } from '@/lib/emojiConversion';
 import React,{ useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_MAX_LENGTH, type EmojiInputProps } from './model';
+import { useEmojiCatalog } from '@/hooks/useEmojiCatalog';
+import { requireEmojiCatalog } from '@/lib/emoji-catalog-state';
+import { segmentEmojiForDisplay } from '@/lib/emoji-display';
 
 const normalizeInput = (text: string) => {
   if (!text) return '';
@@ -23,6 +26,7 @@ export function useEmojiInputController({
 }: EmojiInputProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { ready: catalogReady } = useEmojiCatalog();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -30,6 +34,13 @@ export function useEmojiInputController({
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
   const [directInputText, setDirectInputText] = useState<string>('');
+  const latestInput = useRef({ value, text: directInputText, open: showDirectInput, activeIndex, alive: true });
+  latestInput.current = { ...latestInput.current, value, text: directInputText, open: showDirectInput, activeIndex };
+  const pickerRequest = useRef(0);
+  useEffect(() => {
+    latestInput.current.alive = true;
+    return () => { latestInput.current.alive = false; };
+  }, []);
   const directInputImeHandlers = useImeAwareSubmit({
     onSubmit: () => handleDirectInputConfirm(),
     isDisabled: disabled,
@@ -38,14 +49,16 @@ export function useEmojiInputController({
   const isAnimatingInitial = useRef(false);
 
   useEffect(() => {
+    if (!catalogReady) return;
     const canonicalValue = normalizeInput(value);
     if (value && canonicalValue && value !== canonicalValue) {
       onChange(canonicalValue);
     }
-  }, [value, onChange]);
+  }, [value, onChange, catalogReady]);
 
   const segmentInput = useCallback((text: string) => {
     if (!text) return [] as string[];
+    if (!catalogReady) return segmentEmojiForDisplay(text);
 
     try {
       const normalized = normalizeInput(text);
@@ -63,7 +76,7 @@ export function useEmojiInputController({
       console.error('Failed to segment input text:', error);
       return [];
     }
-  }, []);
+  }, [catalogReady]);
 
   const splitGraphemes = useCallback(
     (text: string) => {
@@ -225,8 +238,11 @@ export function useEmojiInputController({
     }, 200);
   }, []);
 
-  const handleSelect = (index: number, emoji: string) => {
+  const handleSelect = async (index: number, emoji: string) => {
     if (disabled) return;
+    const request = ++pickerRequest.current;
+    if (!await requireEmojiCatalog()) return;
+    if (!latestInput.current.alive || latestInput.current.value !== value || latestInput.current.activeIndex !== index || request !== pickerRequest.current) return;
     const newSegments = [...segments];
     const targetIndex = Math.min(index, newSegments.length);
     if (targetIndex < newSegments.length) {
@@ -278,6 +294,8 @@ export function useEmojiInputController({
         return;
       }
 
+      if (!await requireEmojiCatalog()) return;
+      if (!latestInput.current.alive || latestInput.current.value !== value) return;
       const extracted = extractEmojiString(clipboardText);
       if (!extracted) {
         toast({
@@ -361,12 +379,14 @@ export function useEmojiInputController({
     setShowDirectInput(true);
   };
 
-  const handleDirectInputConfirm = () => {
+  const handleDirectInputConfirm = async () => {
     if (!directInputText.trim()) {
       setShowDirectInput(false);
       return;
     }
 
+    if (!await requireEmojiCatalog()) return;
+    if (!latestInput.current.alive || !latestInput.current.open || latestInput.current.text !== directInputText) return;
     const extracted = extractEmojiString(directInputText);
     if (!extracted) {
       toast({
@@ -437,6 +457,7 @@ export function useEmojiInputController({
 
   const handleOpenChange = (index: number, open: boolean) => {
     if (disabled) return;
+    pickerRequest.current++;
     setActiveIndex(open ? index : null);
   };
 

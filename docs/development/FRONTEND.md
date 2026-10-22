@@ -33,8 +33,23 @@ API関数は入力/応答の検証、timeout、origin、cookie、失敗形式を
 
 ## カタログ
 
-main.tsxはWorkerから公開カタログを読み、取得完了後にアプリを起動する。
-失敗時はエラーと再試行を表示し、別カタログへfallbackしない。PWA更新確認はカタログ取得より先に行う。
+main.tsxはPWA更新を登録し、Workerの公開カタログを裏で取得しながらアプリを起動する。
+`emoji-catalog-state.ts`が同時要求を1つへまとめ、検証済みrelease全件のinstall後だけreadyにする。
+最初のページでreleaseを固定し、残りを最大3ページずつ並列取得する。順序・総件数・版・重複の検証を保つ。
+部分的なcatalogや別catalogを使わず、APIのcache/認証設定も変えない。
+
+`useEmojiCatalog`で準備状態を購読する。検索は入力を保ってreadyまでAPI要求を遅らせる。
+絵文字選択・入力確定・pasteは`requireEmojiCatalog`を通し、未取得を未対応絵文字と誤判定しない。
+必要になるまで読込み表示やエラーを出さず、必要な操作でだけ`EmojiCatalogNotice`と入力内の状態を表示する。
+再試行はページ再読込みを伴わない。取り消し・入力変更・unmount後の古い入力確定を反映しない。
+有効な絵文字URLは`EmojiCatalogGate`で待ち、失敗をnot-foundやトップへの移動として扱わない。
+無効URL・短縮URL・既存の表示用文字列はカタログを待たない。表示だけの分割には`emoji-display.ts`を使い、UUID変換には流用しない。
+
+認証ProviderとMaintenanceGateの取得は並行する。両方の確認が済むまでAuthReadinessGate等の保護を維持し、
+個人情報を含まない`AppStartupSkeleton`だけを表示する。管理・分析・プランはlazy importし、失敗時はRouteLoadBoundaryで再読み込みを案内する。
+
+`test:local`はカタログとsession応答を意図的に保留し、確認前の保護、並行取得、カタログ未取得でのトップ表示、
+入力取消・失敗/再試行と絵文字URLの誤判定防止を実ブラウザで検証する。通常のモバイル・画像・下書き・本人切替の回帰も維持する。
 src/data/emojiCatalog.tsはlocal seedに使う公開データで、frontendからはimportしない。
 生成CLIは明示したUUID付きJSONなどのファイルを読む。旧サービスの認証情報から取得しない。
 

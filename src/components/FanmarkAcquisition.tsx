@@ -18,6 +18,7 @@ AlertDialogTitle,
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { extractEmojiString } from '@/lib/emojiConversion';
+import { requireEmojiCatalog } from '@/lib/emoji-catalog-state';
 
 import { FanmarkSearchPanel } from '@/components/FanmarkSearchPanel';
 
@@ -195,6 +196,7 @@ export const FanmarkAcquisition = ({
                     return true;
                   }
 
+                  if (!await requireEmojiCatalog()) return true;
                   const extracted = extractEmojiString(clipboardText);
                   if (!extracted) {
                     toast({

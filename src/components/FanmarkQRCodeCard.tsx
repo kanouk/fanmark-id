@@ -1,6 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
-import { segmentEmojiSequence } from '@/lib/emojiConversion';
+import { segmentEmojiForDisplay } from '@/lib/emoji-display';
 import { AlertTriangle } from 'lucide-react';
 
 interface FanmarkQRCodeCardProps {
@@ -51,7 +51,7 @@ const getEmojiLayoutClasses = (count: number) => {
 };
 
 export const FanmarkQRCodeCard = ({ emoji, url, shortId, className }: FanmarkQRCodeCardProps) => {
-  const emojiSegments = segmentEmojiSequence(emoji ?? '').slice(0, 5);
+  const emojiSegments = segmentEmojiForDisplay(emoji ?? '').slice(0, 5);
   const displaySegments = emojiSegments.length > 0 ? emojiSegments : ['✨'];
   const layout = getEmojiLayoutClasses(displaySegments.length);
 

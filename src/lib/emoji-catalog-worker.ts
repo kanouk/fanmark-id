@@ -223,35 +223,38 @@ export async function loadEmojiCatalogFromWorker(
     throw new EmojiCatalogApiError("configuration");
   }
 
-  let version = options.version;
-  let total: number | undefined;
-  let offset = 0;
+  // Discover the active immutable release once, then load at most three pinned
+  // pages at a time. Never install a partial or mixed-version catalog.
+  const first = parsePage(await fetchPage(buildEmojiCatalogApiUrl(baseUrl, {
+    version: options.version, limit: pageSize,
+  }), fetcher, timeoutMs), 0, pageSize);
+  const version = first.version;
+  const total = first.total;
+  if (options.version !== undefined && version !== options.version) {
+    throw new EmojiCatalogApiError("invalid_response");
+  }
+  const pages: ParsedPage[] = [first];
+  for (let offset = pageSize; offset < total; offset += pageSize * 3) {
+    const offsets = [offset, offset + pageSize, offset + pageSize * 2].filter(value => value < total);
+    pages.push(...await Promise.all(offsets.map(async value => {
+      const page = parsePage(await fetchPage(buildEmojiCatalogApiUrl(baseUrl, {
+        version, offset: value, limit: pageSize,
+      }), fetcher, timeoutMs), value, pageSize);
+      if (page.version !== version || page.total !== total) throw new EmojiCatalogApiError("invalid_response");
+      return page;
+    })));
+  }
   const items: EmojiCatalogApiItem[] = [];
   const ids = new Set<string>();
   const emojis = new Set<string>();
-
-  while (total === undefined || offset < total) {
-    const url = buildEmojiCatalogApiUrl(baseUrl, { version, offset, limit: pageSize });
-    const page = parsePage(await fetchPage(url, fetcher, timeoutMs), offset, pageSize);
-    if (version !== undefined && page.version !== version) {
-      throw new EmojiCatalogApiError("invalid_response");
-    }
-    if (total !== undefined && page.total !== total) {
-      throw new EmojiCatalogApiError("invalid_response");
-    }
-
-    version = page.version;
-    total = page.total;
+  for (const page of pages) {
     for (const item of page.items) {
       const normalizedEmoji = item.emoji.normalize("NFC");
-      if (ids.has(item.id) || emojis.has(normalizedEmoji)) {
-        throw new EmojiCatalogApiError("invalid_response");
-      }
+      if (ids.has(item.id) || emojis.has(normalizedEmoji)) throw new EmojiCatalogApiError("invalid_response");
       ids.add(item.id);
       emojis.add(normalizedEmoji);
       items.push(item);
     }
-    offset = page.nextOffset ?? total;
   }
 
   if (!version || total === undefined || items.length !== total) {

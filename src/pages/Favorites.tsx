@@ -10,7 +10,7 @@ import { ExternalLink, Heart, Sparkles } from 'lucide-react';
 import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
-import { segmentEmojiSequence } from '@/lib/emojiConversion';
+import { segmentEmojiForDisplay } from '@/lib/emoji-display';
 import { FiHeart } from 'react-icons/fi';
 
 const ACCESS_TYPE_LABEL_KEY: Record<string, string> = {
@@ -161,7 +161,7 @@ const getAccessTypeLabel = (t: ReturnType<typeof useTranslation>['t'], accessTyp
                   };
                 })();
 
-                const emojiSegments = segmentEmojiSequence(favorite.fanmark);
+                const emojiSegments = segmentEmojiForDisplay(favorite.fanmark);
                 const currentStatus = favorite.currentLicenseStatus?.toLowerCase?.() ?? null;
                 const availability = favorite.availabilityStatus?.toLowerCase?.() ?? null;
                 const isRegistered = Boolean(favorite.fanmarkId);

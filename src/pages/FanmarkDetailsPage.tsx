@@ -15,7 +15,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { parseDateString } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { encodeEmojiForUrl } from '@/utils/emojiUrl';
-import { segmentEmojiSequence } from '@/lib/emojiConversion';
+import { segmentEmojiForDisplay } from '@/lib/emoji-display';
 
 export default function FanmarkDetailsPage() {
   const { shortId } = useParams<{ shortId: string }>();
@@ -147,7 +147,7 @@ export default function FanmarkDetailsPage() {
           <section className="relative p-6 pb-6 pt-16 text-center sm:px-10 sm:pb-10 sm:pt-20">
             <div className="flex flex-col items-center gap-6">
               <div className="flex flex-wrap items-center justify-center gap-3 rounded-[2.75rem] border border-primary/20 bg-primary/10 px-8 py-6 text-5xl shadow-inner md:px-10 md:py-7 md:text-6xl">
-                {segmentEmojiSequence(details.fanmark).map((segment, index) => (
+                {segmentEmojiForDisplay(details.fanmark).map((segment, index) => (
                   <span key={`${segment}-${index}`} className="inline-flex min-w-[2.4rem] justify-center">
                     {segment}
                   </span>

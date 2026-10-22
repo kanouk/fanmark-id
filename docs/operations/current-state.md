@@ -5,20 +5,20 @@
 
 ## 本番移行と配備
 
-**最終照合: 2026-10-22 08:54 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
+**最終照合: 2026-10-23 06:50 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
 
 | 項目 | 最終確認した状態 |
 | --- | --- |
 | 本番URL | `https://fanmark.id/`。Worker Route方式。www/adminはalias Workerの限定転送 |
-| 本番app | `fanmark-app-production` / active 100% `9397fc9a-0456-4ac9-8605-44ccdd4ca369` |
-| 配備operationのソース | `ebfa8afec82a9dc29e791ba83a039a8724c0b53c` / [PR60](https://github.com/kanouk/fanmark-id/pull/60)・[PR61](https://github.com/kanouk/fanmark-id/pull/61)。frontend source `ebfa8afec82a9dc29e791ba83a039a8724c0b53c`とtree一致 |
-| 配備時点のmain | `ebfa8afec82a9dc29e791ba83a039a8724c0b53c`。検証済みPR HEADとtree一致 |
-| 配備のPR CI / main CI | [39694302383](https://github.com/kanouk/fanmark-id/actions/runs/39694302383) / [39694309591](https://github.com/kanouk/fanmark-id/actions/runs/39694309591)。ともに2 job成功 |
+| 本番app | `fanmark-app-production` / active 100% `7de243f5-1907-4080-8408-53a70983b318` |
+| 配備operationのソース | `b1d7cfbf16e68de75e516893c5f9856bfd01ab28` / [PR64](https://github.com/kanouk/fanmark-id/pull/64)。frontendも同じ検証済みソースからbuild |
+| 配備時点のmain | `256a8507a647e23b47121e6ed8db55b2c650cc89`。配備後のmain/CIはPR64を参照。非文書fileの同一性を配備ソースと別に照合 |
+| 配備のPR CI / main CI | 候補 [39859114353](https://github.com/kanouk/fanmark-id/actions/runs/39859114353) の全6 job成功。最終main CI・取り込み結果は[PR64](https://github.com/kanouk/fanmark-id/pull/64)を参照 |
 | 文書入口の整理 | [PR44](https://github.com/kanouk/fanmark-id/pull/44)、main `3b13f283a6d479246d8bc285fbdeece8324451e9`。[main CI](https://github.com/kanouk/fanmark-id/actions/runs/39518911227)の2 job成功。アプリの再配備は不要 |
 | 開発入口の最終整理 | `c1b29fd`で旧遠隔smoke入口と起動/補助ガイドを整理。当時の25資産が当時の配備済み版とSHA-256一致。今回の改修・資産は別行に記録 |
-| 実行コード・設定 | PR60とテスト補修PR61でモバイル取得操作の横はみ出しとLint警告19件を修正。Lintは警告0件必須。秘密設定名17件、V3保存先・runtime・4 Cron・3 Routeを保持 |
-| 公開確認 | root/Auth capabilities/maintenanceは200、未認証profile/owned/notifications/admin sessionは401/no-store。4言語×320/375/390/430pxで横はみ出しなし。PC/PWAと旧hash資産を確認 |
-| frontend資産 | [manifest](deployed-assets-2026-10-22-mobile-lint.json)。保持した旧hash資産を含む27 file。robots.txtの配信時追記はsource hashと区別 |
+| 実行コード・設定 | PR64でcatalog背景取得・必要時だけの待機・入力保持、認証/maintenance並行確認、管理/分析/プランの遅延import。Lint 0必須。秘密設定名17件、D1/R2/DO・runtime・4 Cron・3 Routeと他3 Workerを保持 |
+| 公開確認 | root/Auth capabilities/maintenanceは200、未認証profile/owned/notifications/admin sessionは401/no-store。カタログ応答0件のままトップ表示。既存PWA更新・4言語×320/375/390/430pxと旧hash資産を確認。公開確認でPOSTは実行していない |
+| frontend資産 | [manifest](deployed-assets-2026-10-23-startup.json)。旧hashを保持した34 file。robots.txtの配信時追記はsource hashと区別し、公開の更新前後byte一致も確認 |
 
 後からmergeしたdocs-only commitはこの配備ソースに含まれない。文書のmergeとアプリの配備を別に管理する。
 通常production configがD1/R2/DO/Route/Cronの非秘密な構成を保持する。V1/V2や旧stagingの資源を本番と取り違えない。
@@ -64,7 +64,8 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 [計画の完了記録](../REFACTORING_PLAN.md#2026-10-22-開発基盤の受け入れ)を参照する。
 合成localで認証・保存・権限拒否・画像・下書き・アカウント切替を検証し、本番は匿名の公開確認を行った。
 続く[PR60](https://github.com/kanouk/fanmark-id/pull/60)で匿名rootの幅超過とLint警告19件を解消。client218件・現行契約132件と実Worker/ブラウザ・PR/main CIが成功した。
-本人の実アカウントでの再受け入れ・実端末確認を実施済みとはしない。
+[PR64](https://github.com/kanouk/fanmark-id/pull/64)で初期JS gzip 618,153→446,087 bytes（約28%減）。型・Lint 0・client222件・現行契約138件、実Worker/ブラウザの待機・取消・失敗/再試行・遅延module・認証拒否と通常回帰が成功した。公開では既存PWA更新・catalog待機なしのトップ・16表示幅・34資産を独立確認した。詳細は[起動の比較](../development/STARTUP_PERFORMANCE.md)。
+本人の実アカウントでの再受け入れ・実端末・低速回線LCP/CLSの確認を実施済みとはしない。
 
 ## 詳細原本
 

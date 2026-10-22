@@ -11,6 +11,7 @@ import { useLotteryEntry } from "@/hooks/useLotteryEntry";
 import { FanmarkStatusBadge, FanmarkStatus } from "@/components/FanmarkStatusBadge";
 import { FiAlertTriangle, FiInfo } from 'react-icons/fi';
 import { canonicalizeEmojiString, segmentEmojiSequence } from '@/lib/emojiConversion';
+import { useEmojiCatalog } from '@/hooks/useEmojiCatalog';
 
 interface FanmarkSearchProps {
   onSignupPrompt?: () => void;
@@ -36,13 +37,14 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   fixedSize = false,
 }) => {
   const { t } = useTranslation();
+  const { ready: catalogReady } = useEmojiCatalog();
   const { applyToLottery, cancelLotteryEntry, loading: lotteryLoading } = useLotteryEntry();
 
   const normalizedInputQuery = useMemo(() => {
-    if (!query) return '';
+    if (!query || !catalogReady) return '';
     const canonical = canonicalizeEmojiString(query);
     return segmentEmojiSequence(canonical).slice(0, 5).join('');
-  }, [query]);
+  }, [query, catalogReady]);
 
   const {
     result,

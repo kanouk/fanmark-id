@@ -1,4 +1,4 @@
-import { segmentEmojiSequence } from './emojiConversion';
+import { segmentEmojiForDisplay } from './emoji-display';
 
 interface ConfettiOptions {
   duration?: number;
@@ -48,7 +48,7 @@ export function showEmojiConfetti(
 
   try {
     // 絵文字を配列に分解
-    const emojiArray = segmentEmojiSequence(emojiSequence);
+    const emojiArray = segmentEmojiForDisplay(emojiSequence);
     if (emojiArray.length === 0) {
       return;
     }
