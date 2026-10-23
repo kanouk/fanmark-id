@@ -145,7 +145,9 @@ export async function findWithJev(
       },
       body,
       signal,
-      redirect: "error",
+      // Workers supports manual/follow only. Refuse 3xx through response.ok
+      // instead of following a redirect with the provider credential.
+      redirect: "manual",
     });
     if (!response.ok) {
       // Never expose provider response text, headers, credentials, or prompts.

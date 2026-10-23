@@ -63,6 +63,8 @@ function req(
 let calls = 0;
 const provider: typeof fetch = async (_url, init) => {
   calls++;
+  // Validate outbound options with the real workerd Request implementation.
+  new Request(_url, init);
   const data = JSON.parse(String(init?.body));
   expect(data.model).toBe(JEV_MODEL);
   expect(data.state).toEqual({ search_text: expect.any(String) });
@@ -341,6 +343,21 @@ describe("public palette on actual D1", () => {
         )
         .first("searches"),
     ).toBe(1);
+  });
+  it("does not follow provider redirects or forward credentials to their target", async () => {
+    let outbound = 0;
+    const response = await send(req(), configured(), async (url, init) => {
+      const request = new Request(url, init);
+      expect(request.redirect).toBe("manual");
+      outbound++;
+      return new Response(null, {
+        status: 302,
+        headers: { location: "https://untrusted.example.test" },
+      });
+    });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({ error: "provider_error" });
+    expect(outbound).toBe(3);
   });
   it("keeps every actual master entry reachable within the choice limit and rejects malformed probabilities", async () => {
     const entries = makeJevCatalog(
