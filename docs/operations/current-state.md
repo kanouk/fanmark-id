@@ -5,20 +5,20 @@
 
 ## 本番移行と配備
 
-**最終照合: 2026-10-24 02:54 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
+**最終照合: 2026-10-24 04:15 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。起動対策を反映したが、内部調停の長い待ちと認証503は未解消。
 
 | 項目 | 最終確認した状態 |
 | --- | --- |
 | 本番URL | `https://fanmark.id/`。Worker Route方式。www/adminはalias Workerの限定転送 |
-| 本番app | `fanmark-app-production` / active 100% `7595c567-11c0-4c32-be62-34c219128b55` |
-| 配備operationのソース | `4d1e883aa7f2fc68cb4d8e36076adc20572fcb98` / [PR72](https://github.com/kanouk/fanmark-id/pull/72)。frontendは`bcddd7616b113760c94c98ce94802e4cfc6325c5`のbuildと入力/byte同一を照合 |
-| 配備時点のmain | `e29f4a9528d78f75db5b8a18231266d439eeb053`。取り込み後のmain/CIは[PR72](https://github.com/kanouk/fanmark-id/pull/72)を参照。非文書fileを配備ソースと別に照合 |
-| 配備のPR CI / main CI | ソース[39996796830](https://github.com/kanouk/fanmark-id/actions/runs/39996796830)の全6 job成功。最終文書HEADのPR CI・main CIは[PR72](https://github.com/kanouk/fanmark-id/pull/72)を参照 |
+| 本番app | `fanmark-app-production` / active 100% `e79e7c07-2d12-48b7-8c73-170923e17919` |
+| 配備operationのソース | `ba88563d88007c82236f0829a28b318a96e6e7f8` / [PR73](https://github.com/kanouk/fanmark-id/pull/73)。frontendは`edae935aba02d71290d2cd4e55b1f267262a6f8d`のbuildと入力/byte同一を照合 |
+| 配備時点のmain | `76bf806769d92341d56d8e37a9d64956617160ce`。取り込み後のmain/CIは[PR73](https://github.com/kanouk/fanmark-id/pull/73)を参照。非文書fileを配備ソースと別に照合 |
+| 配備のPR CI / main CI | ソース[40008492396](https://github.com/kanouk/fanmark-id/actions/runs/40008492396)の全6 job成功。最終文書HEADのPR CI・main CIは[PR73](https://github.com/kanouk/fanmark-id/pull/73)を参照 |
 | 文書入口の整理 | [PR44](https://github.com/kanouk/fanmark-id/pull/44)、main `3b13f283a6d479246d8bc285fbdeece8324451e9`。[main CI](https://github.com/kanouk/fanmark-id/actions/runs/39518911227)の2 job成功。アプリの再配備は不要 |
 | 開発入口の最終整理 | `c1b29fd`で旧遠隔smoke入口と起動/補助ガイドを整理。当時の25資産が当時の配備済み版とSHA-256一致。今回の改修・資産は別行に記録 |
 | 実行コード・設定 | PR64のcatalog背景取得・必要時だけの待機・入力保持、認証/maintenance並行確認、管理/分析/プランの遅延importに加え、PR66で所有者・案内等18 routeを分割。4言語は即時切替を維持。PR67で共有用OG画像だけPWA先読みから除外し、全画面コードと基本画面・アイコンは保持。PR68で公開catalogをIndexedDBへ保存し、ready版をオンライン照合して同版だけ再利用。版変更・破損・保存障害は通常取得へ戻し、個人API/SW cache方針は保持。PR69でフォント指定を非同期の1件へ統一し、公開HTMLの早期表示と認証機能の確認待ち領域予約を追加。PR70で共有絵文字パレットの4言語名称検索・Jev候補・連続選択/Undoを導入。最大5個・既存正規化/取得・catalog再利用を保持。Jev失敗時も名称/一覧は使える。予算集計は既存system_settingsの非公開keyに置き、DB構造とbackupのschema pinを保持。Lint 0必須。秘密設定名はJevキーを含む18件、D1/R2/DO・runtime・4 Cron・3 Routeと他3 Workerを保持。PR72で公開設定GETのread admission、設定確認の一時失敗時の1回再試行と調停診断を追加。静的配信・公開Masterの待ち方とwrite/sessionの追跡を保持 |
 | 公開確認 | root/capabilities/maintenance各4回200。PC/モバイル12回起動、既存PWAの通常更新・catalog3,944件/checksumとstorage保持、一時503の自動復帰・待機指示時の手動再試行を確認。未認証のadmin/profile/owned/notificationsは別照合で401/no-store/error本文だけ。先行するadmin20秒未完了と長い調停待ちも保存し、全APIの安定性は認定しない。[比較・失敗・範囲](../development/STARTUP_RECOVERY_2026-10-24.md) |
-| frontend資産 | [manifest](deployed-assets-2026-10-24-startup-recovery.json)。旧hashを保持した280 file。279 fileの公開本文SHA-256とrobots.txtのCloudflare追記を別に検証。追加辞書の必要時取得方針は保持 |
+| frontend資産 | [manifest](deployed-assets-2026-10-24-startup-long-waits.json)。旧hashを保持した329 file。328 fileの公開本文SHA-256とrobots.txtのCloudflare追記を別に検証。追加辞書の必要時取得方針は保持 |
 
 後からmergeしたdocs-only commitはこの配備ソースに含まれない。文書のmergeとアプリの配備を別に管理する。
 通常production configがD1/R2/DO/Route/Cronの非秘密な構成を保持する。V1/V2や旧stagingの資源を本番と取り違えない。
@@ -76,6 +76,8 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 [PR72](https://github.com/kanouk/fanmark-id/pull/72)で起動時の設定確認を修正。client243・契約150・native writer24/import22と全6 jobのCIが成功し、公開の旧PWA更新・自動/手動再試行・12回起動と280資産を照合した。初期JS gzip増分126B。配備直後の失敗と管理APIの長い待ちも残し、[比較・限界](../development/STARTUP_RECOVERY_2026-10-24.md)と#71で継続する。
 
 ## 詳細原本
+
+[PR73](https://github.com/kanouk/fanmark-id/pull/73)で短い起動確認期限を見直し、通常公開の固定ファイルとPWA更新を内部調停から分離。設定/認証/業務データ/動的OGP・所有者限定受付・全体停止の境界を維持する。公開329資産・既存PWAの設定失敗中の自動更新・snapshot保持・12回の匿名トップ表示を照合。認証503の1回、設定28.617秒・保護API32.973秒も保持し、完全復旧とは扱わない。[比較・全失敗と限界](../development/STARTUP_LONG_WAITS_2026-10-24.md)。
 
 非秘密の完了要約はこの文書とPR/CI。個人データを含む操作証拠、鍵・backupのcustody、intent/receiptは
 [Git外保管先](private-access.md)へ辿る。旧再開票の「PR41未マージ」「移送前」「本番Supabase」は当時の記録。
