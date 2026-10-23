@@ -41,11 +41,15 @@ function scopeFor(env: Env): string {
 async function command(env: Env, operation: string, id: string, kind: RecoveryWriterKind = "unknown"): Promise<RecoveryWriterStatus> {
   const scope = scopeFor(env);
   const stub = env.RECOVERY_DRAIN!.get(env.RECOVERY_DRAIN!.idFromName(NAME));
+  const started = Date.now();
+  let status: number | null = null, coordinatorRevision: string | null = null;
   try {
     const response = await stub.fetch(`${ORIGIN}/${operation}`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, scope,
         ...(operation === "enter" ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null, kind } : {}) }),
     });
+    status = response.status;
+    coordinatorRevision = response.headers.get("x-recovery-coordinator-revision");
     if (response.status !== 200) throw new RecoveryWriterDrainError();
     const value = await response.json() as RecoveryWriterStatus;
     if (value.scope !== scope || !Number.isSafeInteger(value.active) || value.active < 0 ||
@@ -53,6 +57,13 @@ async function command(env: Env, operation: string, id: string, kind: RecoveryWr
         value.drained !== (value.owner !== null && value.active === 0)) throw new RecoveryWriterDrainError();
     return value;
   } catch { throw new RecoveryWriterDrainError(); }
+  finally {
+    const elapsedMs = Date.now() - started;
+    if (elapsedMs >= 1_000 || status !== 200) console.warn(JSON.stringify({
+      event: "recovery-writer-command", operation, elapsedMs, status,
+      coordinatorRevision: coordinatorRevision === "sqlite-sync-v1" ? coordinatorRevision : "unconfirmed",
+    }));
+  }
 }
 
 async function leaveCompletedWriter(env: Env, id: string): Promise<void> {
@@ -221,7 +232,8 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
       return { status: 200, body: { owner, scope: input.scope, active, drained: owner !== null && active === 0 } };
     });
     return new Response(result.body ? JSON.stringify(result.body) : null, {
-      status: result.status, headers: { "content-type": "application/json", "cache-control": "no-store" },
+      status: result.status, headers: { "content-type": "application/json", "cache-control": "no-store",
+        "x-recovery-coordinator-revision": "sqlite-sync-v1" },
     });
   }
 }

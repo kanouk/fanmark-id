@@ -439,3 +439,16 @@ it("preserves async KV tickets through concurrent synchronous admission, inspect
     body: JSON.stringify({ id: legacy, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }) });
   await assertRecoveryWriterFence(runtime, owner);
 });
+
+
+it("identifies the internal SQLite coordinator without exposing its marker on public startup responses", async () => {
+  const direct = await gate.fetch("https://recovery-writer.internal/inspect", { method: "POST",
+    body: JSON.stringify({ id: owner, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }) });
+  expect(direct.status).toBe(200);
+  expect(direct.headers.get("x-recovery-coordinator-revision")).toBe("sqlite-sync-v1");
+  const response = await worker.fetch(new Request("https://app.example.test/api/system/maintenance"), {
+    ...runtime, MAINTENANCE_SETTINGS_BACKEND: "d1",
+  });
+  expect(response.status).toBe(200);
+  expect(response.headers.has("x-recovery-coordinator-revision")).toBe(false);
+});
