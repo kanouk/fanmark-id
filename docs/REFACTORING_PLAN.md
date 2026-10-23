@@ -93,8 +93,10 @@ Git外原本: [保管先とアクセス](operations/private-access.md)。配備�
 ### 起動と体感待ちの改善（#53の限定範囲）
 
 カタログの背景取得・版固定後の並列取得、必要時だけの待機と入力保持、認証/maintenance確認の並行化、
-管理・分析・プランの遅延importを実施する。[比較と検証範囲](development/STARTUP_PERFORMANCE.md)を参照する。
-本番の低速回線LCP/CLSや全route最適化を実施済みとはしない。
+管理・分析・プランの遅延importを実施済み。[起動改善](development/STARTUP_PERFORMANCE.md)に続き、
+[初期JSの追加分割](development/ROUTE_SPLITTING_2026-10-23.md)、[OG画像のPWA先読み除外](development/PWA_PRECACHE_2026-10-23.md)、
+[版付き公開catalogの再利用](development/CATALOG_REUSE_2026-10-23.md)を個別に比較・検証する。
+通信制限下のlab計測と、未実施の実端末・自然回線・利用者p75を区別する。全route最適化を実施済みとはしない。
 
 ### CI待ち時間の改善（#52の限定範囲）
 
