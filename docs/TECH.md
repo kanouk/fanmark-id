@@ -147,4 +147,4 @@ SQLiteのwriter coordinatorは既存KVの同じkey/valueを同期KVと`transacti
 
 HTTP読取りの内部通信が2回とも失敗した503には固定60秒のRetry-Afterを付けず、公開maintenance GETの1回の再試行へ進める。fence/設定不整合と、writerのACK不明を含む書込み経路の503は従来の60秒指示を保持する。読取り成功を推測してgateを開くことはしない。
 
-root HTML・`/assets/`・SW/Workboxと公開固定ファイルの明示allowlistは、captured D1/R2を読まないため内部調停を経ず配信する。未知のpath・動的OGP・API・非GET/HEADはこの例外へ入れない。`handleRequest`を経由し、HTTPS・owner受付・RECOVERY_WRITE_FREEZE/CUTOVER_WRITE_FREEZE・staging noindex等は維持する。public shellだけでは操作を開かず、設定・認証gateと全データ経路のfenceは維持する。native Workerは調停停止/実fence下でも固定ファイルが配信され、maintenance・Auth capabilities・catalog・動的OGPは503、全体停止では固定ファイルも503となることを検証する。
+通常公開のroot HTML・`/assets/`・SW/Workboxと公開固定ファイルの明示allowlistは、captured D1/R2を読まないため内部調停を経ず配信する。未知のpath・動的OGP・API・非GET/HEADはこの例外へ入れない。`handleRequest`を経由し、HTTPS・owner受付・RECOVERY_WRITE_FREEZE/CUTOVER_WRITE_FREEZE・staging noindex等は維持する。閉鎖本番の所有者限定受付は固定ファイルにも従来のfence照合を維持する。public shellだけでは操作を開かず、設定・認証gateと全データ経路のfenceは維持する。native Workerは調停停止/実fence下でも固定ファイルが配信され、maintenance・Auth capabilities・catalog・動的OGPは503、全体停止では固定ファイルも503となることを検証する。

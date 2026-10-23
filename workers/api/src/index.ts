@@ -1809,7 +1809,7 @@ const worker = {
       // view still enforces HTTPS, explicit recovery/cutover closure and owner
       // acceptance. Only public file delivery skips the unrelated DB admission;
       // maintenance/session and every data/OGP route keep their existing gates.
-      if (publicStaticRead(request, url, env)) return await view();
+      if (!ownerAllowed && publicStaticRead(request, url, env)) return await view();
       // Static/OGP responses and public Master reads do not mutate captured
       // D1/R2 stores. In particular, a disconnected asset download must not
       // permanently block backups. Auth (including GET callbacks/session

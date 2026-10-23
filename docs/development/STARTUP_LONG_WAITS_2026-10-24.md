@@ -24,3 +24,5 @@ client244件・現行契約150件・型/Lint警告0・native writer24/import22�
 同時間帯のWorker logは、maintenanceのwall 2,897ms/CPU 8msに対しinspect 2,832ms、所有一覧のwall 16,783ms/CPU 26msに対しenter 13,742ms/leave 3,040msを記録した。低CPUでも調停の通信待ちが長い。待ちの原因がtransportか永続化かは未確定。[Cloudflareの北米接続障害](https://www.cloudflarestatus.com/incidents/sufgcbe8rrwt)も報告されているが、本件との因果は証明していない。
 
 公開HTML・JS/CSS・SWまで調停に依存すると、停止中に修正版のPWAを届ける経路も止まる。これら固定ファイルだけを明示allowlistで分離する。handlerの全体停止/HTTPS/owner受付は維持し、動的OGP・APIと全業務データのfenceは保持する。未知のpathや書込みを例外へ入れない。frontendは初回配備とbyte同一で、追加の保存先・秘密設定・migration・ticket整理は行わない。
+
+追加修正のCIで、閉鎖本番の所有者限定受付にもfence照合が必要な境界を既存testが検知した。通常公開の固定ファイルにだけ例外を適用し、所有者限定受付は元のread admissionを維持するよう修正する。検査を削除/緩和せず、失敗したCIも保持する。
