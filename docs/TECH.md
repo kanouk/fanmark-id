@@ -141,9 +141,9 @@ SQLiteのwriter coordinatorは既存KVの同じkey/valueを同期KVと`transacti
 
 [Cloudflareの同期KV/transaction仕様](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/)を参照。起動障害の観測・公開検証は[運用状態](operations/current-state.md)へ記録する。
 
-メンテナンスの公開GETはnetwork/timeoutと待機指示のない502/503/504だけ、250ms後に1回再試行する。各回5秒、合計最大約10.25秒を上限とし、その間は起動gateを閉じたままにする。Retry-After付き応答・権限拒否・schema不正・PATCHは再実行しない。調停RPCの1秒以上の遅延/HTTP失敗はoperation・経過ms・status・固定の実装markerだけをlogへ記録し、検索語・URL・cookie・ticket ID・秘密値を含めない。markerは内部応答に限定し公開APIへ転送しない。
+メンテナンスの公開GETはnetwork/timeoutと待機指示のない502/503/504だけ、250ms後に1回再試行する。各回30秒、合計最大約60.25秒を上限とし、その間は起動gateを閉じたままにする。Retry-After付き応答・権限拒否・schema不正・PATCHは再実行しない。PATCHの期限は5秒のまま。React起動待機が5秒を超えると公開shell内に4言語のstatusを表示し、設定取得前の操作は増やさない。調停RPCの1秒以上の遅延/HTTP失敗はoperation・経過ms・status・固定の実装markerだけをlogへ記録し、検索語・URL・cookie・ticket ID・秘密値を含めない。markerは内部応答に限定し公開APIへ転送しない。
 
-起動用のmaintenance/capabilities GETのread admissionでは、内部inspect RPCを各2秒・最大2回（間隔100ms）へ制限する。通信失敗/内部5xxだけ新しいstubで再照合し、scope/形式不整合・fenceは再試行せず拒否する。古いopen結果は使わず、viewを呼ぶ前に現在のfenceを確認する。enter/claim等の書込みRPCには、このtimeout/再試行を適用しない。特権の通常status照会の制限も変更しない。
+起動用のmaintenance/capabilities GETを含むread admissionでは、内部inspect RPCを短い人工的な期限で中断しない。正常応答が2秒を超える本番観測に基づく。実際の通信失敗は最大2回（間隔100ms）まで照合する。通信失敗/内部5xxだけ新しいstubで再照合し、scope/形式不整合・fenceは再試行せず拒否する。古いopen結果は使わず、viewを呼ぶ前に現在のfenceを確認する。enter/claim等の書込みRPCには、この再試行を適用しない。特権の通常status照会の制限も変更しない。
 
 HTTP読取りの内部通信が2回とも失敗した503には固定60秒のRetry-Afterを付けず、公開maintenance GETの1回の再試行へ進める。fence/設定不整合と、writerのACK不明を含む書込み経路の503は従来の60秒指示を保持する。読取り成功を推測してgateを開くことはしない。
 

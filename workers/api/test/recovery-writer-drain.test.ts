@@ -460,13 +460,13 @@ it("retries only a lost read inspection ACK with a fresh stub and keeps the cens
   const retrying = { ...runtime, RECOVERY_DRAIN: {
     idFromName: namespace.idFromName.bind(namespace),
     get() { stubs++; return { async fetch(input: string, init: RequestInit) {
-      expect(input.endsWith("/inspect")).toBe(true); expect(init.signal).toBeInstanceOf(AbortSignal);
+      expect(input.endsWith("/inspect")).toBe(true); expect(init.signal).toBeUndefined();
       const response = await gate.fetch(input, init);
       if (++inspections === 1) throw Error("synthetic lost read ACK");
       return response;
     } }; },
   } as unknown as DurableObjectNamespace };
-  await withRecoveryRead(retrying, async () => { reads++; }, 2_000);
+  await withRecoveryRead(retrying, async () => { reads++; });
   expect({ stubs, inspections, reads }).toEqual({ stubs: 2, inspections: 2, reads: 1 });
   expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
 });
@@ -486,19 +486,20 @@ it("rechecks the current fence on a read retry instead of using an earlier open 
   await assertRecoveryWriterFence(runtime, owner);
 });
 
-it("bounds a stalled read to its signal deadline then retries without executing the view twice", async () => {
-  let inspections = 0, reads = 0;
-  const retrying = { ...runtime, RECOVERY_DRAIN: {
+it("waits beyond the former startup deadline for authoritative admission without retrying or writing tickets", async () => {
+  let inspections = 0;
+  const slow = { ...runtime, MAINTENANCE_SETTINGS_BACKEND: "d1", RECOVERY_DRAIN: {
     idFromName: namespace.idFromName.bind(namespace),
     get() { return { async fetch(input: string, init: RequestInit) {
-      if (++inspections === 1) return new Promise<Response>((_resolve, reject) => {
-        init.signal!.addEventListener("abort", () => reject(Error("synthetic stalled transport")), { once: true });
-      });
+      inspections++; expect(init.signal).toBeUndefined();
+      await new Promise(resolve => setTimeout(resolve, 3_000));
       return gate.fetch(input, init);
     } }; },
   } as unknown as DurableObjectNamespace };
-  await withRecoveryRead(retrying, async () => { reads++; }, 2_000);
-  expect({ inspections, reads }).toEqual({ inspections: 2, reads: 1 });
+  const response = await worker.fetch(new Request("https://app.example.test/api/system/maintenance"), slow);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ schemaVersion: 1, settings: { maintenance_mode: false } });
+  expect(inspections).toBe(1);
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
 });
 

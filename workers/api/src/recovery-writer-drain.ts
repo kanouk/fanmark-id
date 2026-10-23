@@ -38,7 +38,7 @@ function scopeFor(env: Env): string {
   return env.RECOVERY_DRAIN_SCOPE_DIGEST!;
 }
 
-async function command(env: Env, operation: string, id: string, kind: RecoveryWriterKind = "unknown", signal?: AbortSignal): Promise<RecoveryWriterStatus> {
+async function command(env: Env, operation: string, id: string, kind: RecoveryWriterKind = "unknown"): Promise<RecoveryWriterStatus> {
   const scope = scopeFor(env);
   const stub = env.RECOVERY_DRAIN!.get(env.RECOVERY_DRAIN!.idFromName(NAME));
   const started = Date.now();
@@ -46,7 +46,7 @@ async function command(env: Env, operation: string, id: string, kind: RecoveryWr
   try {
     const response = await stub.fetch(`${ORIGIN}/${operation}`, {
       method: "POST", headers: { "content-type": "application/json" },
-      ...(operation === "inspect" && signal ? { signal } : {}), body: JSON.stringify({ id, scope,
+      body: JSON.stringify({ id, scope,
         ...(operation === "enter" ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null, kind } : {}) }),
     });
     status = response.status;
@@ -104,8 +104,8 @@ export async function settleRecoveryWriterTasks(tasks: Promise<unknown>[]): Prom
 }
 
 /** Privileged binding-only operations. These are not exposed as public HTTP routes. */
-export async function inspectRecoveryWriters(env: Env, signal?: AbortSignal): Promise<RecoveryWriterInspection> {
-  const status = await command(env, "inspect", crypto.randomUUID(), "unknown", signal) as RecoveryWriterInspection;
+export async function inspectRecoveryWriters(env: Env): Promise<RecoveryWriterInspection> {
+  const status = await command(env, "inspect", crypto.randomUUID()) as RecoveryWriterInspection;
   if (typeof status.initialized !== "boolean" || (!status.initialized && (status.active !== 0 || status.owner !== null))) {
     throw new RecoveryWriterDrainError();
   }
@@ -113,7 +113,7 @@ export async function inspectRecoveryWriters(env: Env, signal?: AbortSignal): Pr
 }
 
 /** Only audited read-only handlers may use this admission; they never create a writer ticket. */
-export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>, timeoutMs?: number): Promise<T> {
+export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>): Promise<T> {
   if (!recoveryWriterTrackingSelected(env)) return operation();
   // A read admitted before claim may finish afterwards: it cannot change a
   // captured store. New reads still refuse the same fence as mutating requests.
@@ -121,9 +121,9 @@ export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>,
   for (let attempt = 0; ; attempt++) {
     let status: RecoveryWriterInspection;
     try {
-      // This inspection cannot mutate stores or strand a ticket. Startup APIs
-      // bound the transport wait; assets/Master retain their original wait.
-      status = await inspectRecoveryWriters(env, timeoutMs === undefined ? undefined : AbortSignal.timeout(timeoutMs));
+      // Wait for authoritative admission. A short internal deadline rejected
+      // valid startup reads during coordinator latency; only actual failures retry.
+      status = await inspectRecoveryWriters(env);
     } catch (error) {
       if (attempt !== 0 || !(error instanceof RecoveryWriterDrainError) || !error.retryable) {
         // Only this failed, side-effect-free admission may be retried by an

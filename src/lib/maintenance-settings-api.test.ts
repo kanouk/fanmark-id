@@ -129,3 +129,21 @@ test("never retries a settings mutation after a transport failure", async () => 
   }));
   assert.equal(calls, 1);
 });
+
+test("waits for a confirmed read beyond the former five-second deadline but keeps mutation timeouts short", async () => {
+  let calls = 0;
+  const fetcher: typeof fetch = async (_input, init) => {
+    calls++;
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, 6_000);
+      init!.signal!.addEventListener("abort", () => { clearTimeout(timer); reject(new Error("synthetic timeout")); }, { once: true });
+    });
+    return Response.json({ schemaVersion: 1, settings });
+  };
+  assert.deepEqual(await fetchMaintenanceSettingsFromWorker({ apiBaseUrl: "https://api.example.test", fetcher }), settings);
+  assert.equal(calls, 1);
+  await assert.rejects(updateMaintenanceSettingsInWorker({ maintenance_mode: false }, {
+    apiBaseUrl: "https://api.example.test", fetcher,
+  }), (error: unknown) => error instanceof MaintenanceSettingsApiError && error.kind === "timeout");
+  assert.equal(calls, 2, "A timed out mutation must not replay");
+});

@@ -10,6 +10,7 @@ import { navigateDocument } from './browser-navigation.mjs';
 import { verifyCatalogStartup, verifyDeferredRoutes } from './catalog-startup-browser.mjs';
 import { verifyCatalogPersistence } from './catalog-persistence-browser.mjs';
 import { verifySupportingUx } from './supporting-ux-browser.mjs';
+import { verifyStartupWait } from './startup-wait-browser.mjs';
 import { createLocalBrowserEgressProxy } from '../migration/local-browser-egress-proxy.mjs';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -99,6 +100,7 @@ export async function verifyLocalBrowser(stack) {
       await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
     }
+    const startupWait = await verifyStartupWait({ cdp, value, wait, navigate });
     const catalogStartup = await verifyCatalogStartup({ cdp, value, wait, navigate, fill, clickText, artifactDirectory, owner: stack.fixtures.users[0] });
     const catalogPersistence = await verifyCatalogPersistence({ stack, cdp, value, wait, navigate, fill, clickText });
     const supportingUx = await verifySupportingUx({ stack, cdp, value, wait, navigate, fill, artifactDirectory });
@@ -258,7 +260,7 @@ export async function verifyLocalBrowser(stack) {
     assert.ok(hmrConnections > 0, 'Vite hot reload must connect over local HTTPS');
     assert.deepEqual(stack.deniedOutbound, []);
     assert.ok(requests.some(request => request.path === '/api/fanmarks/register' && request.method === 'POST'));
-    const report = { catalogStartup, catalogPersistence, supportingUx, emojiPalette, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
+    const report = { startupWait, catalogStartup, catalogPersistence, supportingUx, emojiPalette, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
       searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true, accountSavePersisted: true, ownerSwitchIsolated: true,
       languageSwitchRetainsEditorAndDraft: true,
       externalApplicationRequests: stack.deniedOutbound.length, browserProxyRefusals: blocked.length, requests };

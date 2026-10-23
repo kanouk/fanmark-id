@@ -2,7 +2,8 @@ import { buildRecentFanmarksApiUrl, getRecentFanmarksApiBaseUrl } from "./recent
 
 const PUBLIC_PATH = "/api/system/maintenance";
 const ADMIN_PATH = "/api/admin/system-settings/maintenance";
-const TIMEOUT_MS = 5_000;
+const READ_TIMEOUT_MS = 30_000;
+const WRITE_TIMEOUT_MS = 5_000;
 const MAX_MESSAGE_LENGTH = 2_000;
 const MAX_RESPONSE_BYTES = 8 * 1024;
 
@@ -153,7 +154,7 @@ async function request(
   const authBaseUrl = options.authBaseUrl ?? (import.meta.env?.VITE_AUTH_API_BASE_URL?.trim() ||
     (typeof window === "undefined" ? undefined : window.location.origin));
   assertSameOrigin(apiBaseUrl, authBaseUrl);
-  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
+  const timeoutMs = options.timeoutMs ?? (method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000) {
     throw new MaintenanceSettingsApiError("configuration");
   }

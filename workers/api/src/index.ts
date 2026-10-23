@@ -1803,7 +1803,7 @@ const worker = {
       const startupRead = request.method === "GET" &&
         ["/api/system/maintenance", "/api/auth/capabilities"].includes(url.pathname);
       if (readMethod && (assetRead || masterRead || startupRead)) {
-        return await withRecoveryRead(env, view, startupRead ? 2_000 : undefined);
+        return await withRecoveryRead(env, view);
       }
       return await withRecoveryWriter(env, async () => {
         try { return await view(); }
