@@ -13,7 +13,8 @@ export function catalogPageCount(metadata) {
 export function assertCompatibleSamples(samples) {
   assert.ok(samples.length);
   const common = sample => ({ entry: sample.entry, browser: sample.browser, viewport: sample.viewport,
-    cpuSlowdown: sample.cpuSlowdown, origin: sample.origin, catalog: sample.catalogMetadata });
+    cpuSlowdown: sample.cpuSlowdown, origin: sample.origin, auditMode: sample.auditMode ?? 'passive',
+    catalog: sample.auditMode === 'catalog-action' ? { version: sample.catalogMetadata.version, total: sample.catalogMetadata.total } : sample.catalogMetadata });
   const profiles = new Map();
   for (const sample of samples) {
     assert.deepEqual(common(sample), common(samples[0]), 'Do not aggregate different builds, catalogs or browser/device configurations');
@@ -39,9 +40,40 @@ export function largestShiftWindow(shifts) {
   return maximum;
 }
 
+export function validateCatalogActionTransport(run) {
+  assert.ok(Number.isFinite(run.catalogAction?.startMs) && Number.isFinite(run.catalogAction?.readyPaintMs));
+  assert.ok(run.catalogAction.readyPaintMs >= run.catalogAction.startMs);
+  catalogPageCount(run.catalogMetadata); // Validate the observed version/count.
+  const requests = run.requests.filter(r => r.path === '/api/emoji/catalog');
+  const resources = run.resources.filter(r => r.path === '/api/emoji/catalog');
+  assert.ok(requests.length > 0);
+  assert.equal(run.probe.catalog.length, requests.length);
+  assert.equal(resources.length, requests.length, 'Every observed catalog body must finish');
+  assert.ok(requests.every(r => r.method === 'GET' && r.status === 200 && Number.isFinite(r.end) && !r.failure));
+  const probe = [], pages = [];
+  for (const r of requests) {
+    const q = new URLSearchParams(r.query);
+    if (q.get('limit') === '1' && !q.has('offset')) probe.push(r);
+    else {
+      assert.equal(q.get('limit'), '500');
+      const offset = Number(q.get('offset') || 0); assert.ok(Number.isSafeInteger(offset) && offset >= 0);
+      if (offset > 0 || q.has('version')) assert.equal(q.get('version'), run.catalogMetadata.version);
+      pages.push(offset);
+    }
+  }
+  assert.ok(probe.length <= 1);
+  if (pages.length) {
+    assert.deepEqual(pages.sort((a, b) => a - b), Array.from({ length: Math.ceil(run.catalogMetadata.total / 500) }, (_, i) => i * 500));
+    return { strategy: 'full-pages', requests: requests.length };
+  }
+  assert.equal(probe.length, 1); assert.equal(run.catalogMetadata.limit, 1);
+  return { strategy: 'validated-local', requests: 1 };
+}
+
 export function summarizeRun(run) {
   assert.ok(run.probe.marks.readyPaint && run.probe.lcp.length);
-  const expected = catalogPageCount(run.catalogMetadata);
+  const transport = run.auditMode === 'catalog-action' ? validateCatalogActionTransport(run) : undefined;
+  const expected = transport?.requests ?? catalogPageCount(run.catalogMetadata);
   assert.equal(run.probe.catalog.length, expected);
   assert.deepEqual(run.probe.writes, []);
   assert.ok(run.requests.every(r => ['GET', 'HEAD', 'OPTIONS'].includes(r.method)));
@@ -52,6 +84,8 @@ export function summarizeRun(run) {
   const main = run.resources.find(r => r.path === run.entry);
   return {
     state: run.state,
+    ...(transport ? { catalogTransport: transport, catalogOperationReadyMs: run.catalogAction.readyPaintMs,
+      catalogOperationWaitMs: run.catalogAction.waitMs } : {}),
     ttfbMs: run.navigation[0].ttfb,
     fcpMs: run.paints.find(p => p.name === 'first-contentful-paint').at,
     lcpMs: run.probe.lcp.at(-1).at,
@@ -89,14 +123,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     assert.deepEqual(report.errors, [], 'Reject samples with runtime/instrumentation errors');
     assert.equal(report.runs.length, 2, 'Reject incomplete cold/warm pairs');
     for (const run of report.runs) samples.push({
-      profile: report.profile, route: report.route, observedAt: report.observedAt,
+      profile: report.profile, route: report.route, observedAt: report.observedAt, auditMode: report.auditMode ?? 'passive',
       browser: report.browser, conditions: report.conditions, cpuSlowdown: report.cpuSlowdown,
       viewport: report.viewport, origin: report.origin, entry: run.entry, catalogMetadata: run.catalogMetadata, ...summarizeRun(run),
     });
   }
   assertCompatibleSamples(samples);
   const groupKeys = [...new Set(samples.map(s => `${s.profile}:${s.route}:${s.state}`))];
-  const fields = ['ttfbMs', 'fcpMs', 'lcpMs', 'cls', 'uiReadyPaintMs', 'catalogBodyCompleteMs', 'firstCatalogBodyCompleteMs', 'totalWireBytes', 'precacheWireBytes', 'ogPrecacheWireBytes', 'dialogOpenMs'];
+  const fields = ['ttfbMs', 'fcpMs', 'lcpMs', 'cls', 'uiReadyPaintMs', 'catalogBodyCompleteMs', 'firstCatalogBodyCompleteMs', 'totalWireBytes', 'precacheWireBytes', 'ogPrecacheWireBytes', 'dialogOpenMs', 'catalogOperationReadyMs', 'catalogOperationWaitMs', 'catalogEncodedBytes'];
   const groups = groupKeys.map(key => {
     const rows = samples.filter(s => `${s.profile}:${s.route}:${s.state}` === key);
     const median = values => { const sorted = values.sort((a, b) => a - b); const middle = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2; };

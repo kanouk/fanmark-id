@@ -5,7 +5,7 @@ import "./index.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { registerSW } from "virtual:pwa-register";
 import { installEmojiCatalog } from "@/lib/emojiConversion";
-import { loadEmojiCatalogFromWorker } from "@/lib/emoji-catalog-worker";
+import { loadReusableEmojiCatalog } from "@/lib/emoji-catalog-cache";
 import { startEmojiCatalog } from "@/lib/emoji-catalog-state";
 
 const rootElement = document.getElementById("root");
@@ -15,7 +15,7 @@ async function loadSelectedEmojiCatalog(): Promise<void> {
   if (!baseUrl) throw new Error("Worker API base URL is required for the emoji catalog");
 
   const pinnedVersion = import.meta.env.VITE_EMOJI_CATALOG_VERSION?.trim();
-  const release = await loadEmojiCatalogFromWorker(baseUrl, {
+  const release = await loadReusableEmojiCatalog(baseUrl, {
     ...(pinnedVersion ? { version: pinnedVersion } : {}),
   });
   installEmojiCatalog(release.items);
