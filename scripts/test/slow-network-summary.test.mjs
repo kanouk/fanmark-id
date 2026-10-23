@@ -67,3 +67,18 @@ test('aggregation refuses build, device, catalog and network mismatches', () => 
   const action = { ...sample, auditMode: 'catalog-action' };
   assert.doesNotThrow(() => assertCompatibleSamples([action, { ...action, catalogMetadata: { ...metadata, limit: 1 } }]));
 });
+
+test('supporting UX observes chrome, input and metadata separately without claiming catalog install', () => {
+  const run = { ...actionRun(true), cacheEntries: [], auditMode: 'supporting-ux', entry: '/a.js', state: 'warm',
+    interaction: { typed: true, submitted: false, inputPaintMs: 40 },
+    probe: { catalog: [{}], marks: { readyPaint: 100, publicChromePaint: 20 }, lcp: [{ at: 80 }], shifts: [],
+      writes: [], longtasks: [], authPositions: [{ at: 100, top: 200 }, { at: 200, top: 240 }] },
+    navigation: [{ ttfb: 10 }], paints: [{ name: 'first-contentful-paint', at: 20 }],
+    resources: [{ path: '/api/emoji/catalog', end: 200, encodedBodySize: 298 }, { path: '/a.js', duration: 20, encodedBodySize: 100, transferSize: 400 }],
+  };
+  const result = summarizeRun(run);
+  assert.equal(result.catalogTransport.strategy, 'metadata-check');
+  assert.equal(result.publicChromePaintMs, 20); assert.equal(result.inputPaintMs, 40); assert.equal(result.authInputShiftPx, 40);
+  for (const change of [{ interaction: { ...run.interaction, submitted: true } },
+    { probe: { ...run.probe, marks: { readyPaint: 100 } } }, { interaction: undefined }]) assert.throws(() => summarizeRun({ ...run, ...change }));
+});

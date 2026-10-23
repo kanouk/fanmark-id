@@ -12,6 +12,7 @@
 本番の業務実装を共有し、データ・外部接続・秘密設定を分離する。
 
 - `src/`: Vite/Reactの画面・client・hook。`src/main.tsx`で共通CSSを読み、絵文字catalogは裏で取得する。`emoji-catalog-state.ts` / `useEmojiCatalog` / `EmojiCatalogStatus.tsx`が必要時だけの待機・再試行を扱う。
+- `index.html` / `AppStartupSkeleton.tsx`: 公開ブランドだけの起動表示。小さい共通CSSをHTMLへ置き、JS前とreadiness待機中で共有する。Google FontsはHTMLの1指定へ統一し非同期に適用。`pages/Auth.tsx`はcapabilities確認待ちのsignup・reset・SNS領域を予約し、確認前の操作は増やさない。
 - `src/lib/emoji-catalog-cache.ts`: 全件検証した公開catalogのIndexedDB snapshot。`emoji-catalog-worker.ts`の既存APIによる1件取得でready版を照合し、保存不備は全件取得、版確認失敗は従来の再試行へ進む。SWのAPI cacheや本人queryとは分離する。
 - `src/lib/route-modules.ts` / `RouteModulePreload.tsx`: トップで使わない画面のimportと対象path。直撃URLのコード取得をreadinessと並行させ、画面のmountとAPI権限確認は既存gateに従う。
 - `vite.config.ts` / `scripts/check-pwa-cache.mjs`: PWAの静的先読みと生成SW検査。共有用OG画像を除外し、基本HTML・全画面コード・CSS・アイコンを保持する。更新・新規導入・オフライン静的資産は`scripts/test/pwa-precache-browser.mjs`で検証する。

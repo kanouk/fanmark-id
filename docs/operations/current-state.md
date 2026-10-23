@@ -5,20 +5,20 @@
 
 ## 本番移行と配備
 
-**最終照合: 2026-10-23 18:42 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
+**最終照合: 2026-10-23 21:16 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
 
 | 項目 | 最終確認した状態 |
 | --- | --- |
 | 本番URL | `https://fanmark.id/`。Worker Route方式。www/adminはalias Workerの限定転送 |
-| 本番app | `fanmark-app-production` / active 100% `1dcd421c-bc35-4a64-b688-403ae0e47c30` |
-| 配備operationのソース | `f87cc01cfba05ecbb8533c260eb6a53857e68a78` / [PR68](https://github.com/kanouk/fanmark-id/pull/68)。frontendも同じ検証済みソースからbuild |
-| 配備時点のmain | `e5a9d256490ef3de9acd4bb9899910d10df21b1c`。配備後のmain/CIはPR68を参照。非文書fileの同一性を配備ソースと別に照合 |
-| 配備のPR CI / main CI | 候補 [39932639298](https://github.com/kanouk/fanmark-id/actions/runs/39932639298) の全6 job成功。最終main CI・取り込み結果は[PR68](https://github.com/kanouk/fanmark-id/pull/68)を参照 |
+| 本番app | `fanmark-app-production` / active 100% `9b978526-57d8-422d-9a60-e942352ccbd3` |
+| 配備operationのソース | `ad424218242aa5d31390bfa2dfce5a04b6491358` / [PR69](https://github.com/kanouk/fanmark-id/pull/69)。frontendも同じ検証済みソースからbuild |
+| 配備時点のmain | `10f9a285a90ffeaff8ef4e1921075bfd447e4120`。配備後のmain/CIはPR69を参照。非文書fileの同一性を配備ソースと別に照合 |
+| 配備のPR CI / main CI | 候補 [39951178136](https://github.com/kanouk/fanmark-id/actions/runs/39951178136) の全6 job成功。最終main CI・取り込み結果は[PR69](https://github.com/kanouk/fanmark-id/pull/69)を参照 |
 | 文書入口の整理 | [PR44](https://github.com/kanouk/fanmark-id/pull/44)、main `3b13f283a6d479246d8bc285fbdeece8324451e9`。[main CI](https://github.com/kanouk/fanmark-id/actions/runs/39518911227)の2 job成功。アプリの再配備は不要 |
 | 開発入口の最終整理 | `c1b29fd`で旧遠隔smoke入口と起動/補助ガイドを整理。当時の25資産が当時の配備済み版とSHA-256一致。今回の改修・資産は別行に記録 |
-| 実行コード・設定 | PR64のcatalog背景取得・必要時だけの待機・入力保持、認証/maintenance並行確認、管理/分析/プランの遅延importに加え、PR66で所有者・案内等18 routeを分割。4言語は即時切替を維持。PR67で共有用OG画像だけPWA先読みから除外し、全画面コードと基本画面・アイコンは保持。PR68で公開catalogをIndexedDBへ保存し、ready版をオンライン照合して同版だけ再利用。版変更・破損・保存障害は通常取得へ戻し、個人API/SW cache方針は保持。Lint 0必須。秘密設定名17件、D1/R2/DO・runtime・4 Cron・3 Routeと他3 Workerを保持 |
-| 公開確認 | root/Auth capabilities/maintenanceは200、未認証profile/owned/notifications/admin sessionは401/no-store。カタログ応答0件のままトップ表示。既存PWA更新・保存snapshotのSHA-256・3,944件・再訪limit=1照合、4言語×320/375/390/430pxと旧hash資産を確認。公開確認で業務POSTは実行していない |
-| frontend資産 | [manifest](deployed-assets-2026-10-23-catalog-reuse.json)。旧hashを保持した130 file。robots.txtの配信時追記はsource hashと区別し、公開の更新前後byte一致も確認 |
+| 実行コード・設定 | PR64のcatalog背景取得・必要時だけの待機・入力保持、認証/maintenance並行確認、管理/分析/プランの遅延importに加え、PR66で所有者・案内等18 routeを分割。4言語は即時切替を維持。PR67で共有用OG画像だけPWA先読みから除外し、全画面コードと基本画面・アイコンは保持。PR68で公開catalogをIndexedDBへ保存し、ready版をオンライン照合して同版だけ再利用。版変更・破損・保存障害は通常取得へ戻し、個人API/SW cache方針は保持。PR69でフォント指定を非同期の1件へ統一し、公開HTMLの早期表示と認証機能の確認待ち領域予約を追加。Lint 0必須。秘密設定名17件、D1/R2/DO・runtime・4 Cron・3 Routeと他3 Workerを保持 |
+| 公開確認 | root/Auth capabilities/maintenanceは200、未認証profile/owned/notifications/admin sessionは401/no-store。カタログ応答0件のままトップ表示。既存PWA更新・同じ保存snapshotのSHA-256・3,944件・再訪limit=1照合、認証確認前後の入力DOM/値/フォーカス/位置保持、4言語×320/375/390/430pxと旧hash資産を確認。公開確認で業務POSTは実行していない |
+| frontend資産 | [manifest](deployed-assets-2026-10-23-supporting-ux.json)。旧hashを保持した179 file。robots.txtの配信時追記はsource hashと区別し、公開の更新前後byte一致も確認 |
 
 後からmergeしたdocs-only commitはこの配備ソースに含まれない。文書のmergeとアプリの配備を別に管理する。
 通常production configがD1/R2/DO/Route/Cronの非秘密な構成を保持する。V1/V2や旧stagingの資源を本番と取り違えない。
@@ -69,6 +69,7 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 [PR66](https://github.com/kanouk/fanmark-id/pull/66)で初期JS gzip 446,087→338,962 bytes（約24%減）。型・Lint 0・client225件・現行契約138件と実local/公開確認が成功。今回取り直した初回LCP中央値は1.6Mbpsで3.764→3.240秒、400kbpsで11.416→9.268秒。PWA再訪はほぼ同等、初回総転送量は約3.5%増でPWA先読みを次の改善候補に残した。[比較と限界](../development/ROUTE_SPLITTING_2026-10-23.md)。
 [PR67](https://github.com/kanouk/fanmark-id/pull/67)でOG画像だけをPWA先読みから除外。公開82 fileの変更はSWのみで、他はbyte同一。初回総転送量は約1.755→1.064MB（約39%減）、SW先読み約1.091→0.400MB（約63%減）。初回LCP中央値は3.072→3.600秒／9.432→9.764秒、TTFBも増えており表示速度の改善は未確認。隔離SWの新規導入/更新/オフライン/入力・storage保持、既存公開PWAの自動更新・cache60→59差分、実Worker回帰と4言語×4幅が成功。[比較と限界](../development/PWA_PRECACHE_2026-10-23.md)。
 [PR68](https://github.com/kanouk/fanmark-id/pull/68)で版付き公開catalogをIndexedDBへ保存し、再訪は既存APIの1件照合で同版を再利用。実localのready版変更・破損・拒否/block/quota/abort、旧公開PWA更新・snapshot検証・4言語/4幅と130資産保持が成功。前後24 navigationで入力受理と転送量を比較。[比較と限界](../development/CATALOG_REUSE_2026-10-23.md)。
+[PR69](https://github.com/kanouk/fanmark-id/pull/69)でGoogle Fontsの重複除去/非同期適用、HTMLの公開起動表示、認証機能確認待ちの領域予約を追加。前後48 navigationで表示・操作を比較し、実localの11 UX条件・通常回帰、既存PWA更新・catalog snapshot保持・公開4言語/4幅と179資産を検証。[比較と限界](../development/SUPPORTING_UX_2026-10-23.md)。
 本人の実アカウントでの再受け入れ・実端末・自然回線のLCP/CLS確認は未実施。
 
 ## 詳細原本

@@ -103,6 +103,7 @@ Worker jobが15分1秒（全契約/復旧13分51秒）、アプリjobが5分12�
 本変更は検査の実行構成のみで、本番Workerの再配備は不要。
 
 PWAはAPIを静的cacheへ入れない。更新時は旧hash資産を保持し、新しいHTML/SW/manifestを使う。
+起動表示の小さいCSSは`index.html`へ置き、JS前の公開shellとReactの`AppStartupSkeleton`で共有する。フォント指定はHTMLに1件、既存300〜800の太さを保持し、外部CSSはprint mediaで取得してload後にallへ切り替える。失敗しても代替フォントで描画する。`test:local`はmain moduleを保留した実HTML表示・保護route拒否と、capabilitiesの遅延/失敗/無効/1・4 providerの入力・フォーカス保持を検証する。
 公開catalogだけは`fanmark-public-emoji-catalog-v1` IndexedDBの`catalogs`へAPI origin当たり1 snapshotを保存する。毎起動の版確認を省かず、通信できないときの古い版の利用には使わない。保存は単一transactionで置換し、読取り/書込みは750msで打切り、失敗時も通常取得と入力を維持する。cookie・本人情報・個人APIは保存しない。`test:local`は実Master D1のready版変更と実IndexedDBの破損・利用拒否・block・quota・transaction abortも検証する。
 画面コード・CSS・基本HTML・アイコンは先読みを維持する。画面内で使わない共有用`og-image.png`だけは先読みから除外し、公開配信とOGメタ情報は保持する。
 正規builderは生成SWを検査する。CIはさらに`node scripts/test/pwa-precache-browser.mjs`で新規導入・旧方針からの更新・オフライン静的資産・API非cacheを検証する。
