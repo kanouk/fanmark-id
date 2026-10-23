@@ -71,3 +71,5 @@ providerのcallbackは既存設定を維持する。Webhookは署名検証・rec
 旧Supabaseは停止原本で、移送後の書込みを戻す切戻し先にはしない。
 
 旧画面説明、RLS、移行実験とstaging配備履歴は[旧ARCHITECTURE](history/ARCHITECTURE-2026-10-21.md)に保存した。
+
+公開root HTML・JS/CSS・SW等の固定ファイルは`workers/api/src/index.ts`の明示allowlistで内部調停から分離する。配信handlerの全体停止・HTTPS・owner受付は保持する。動的OGP・API・未知のpathは従来の調停を経由し、Reactのreadiness gateは省かない。
