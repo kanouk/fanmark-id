@@ -1,0 +1,5273 @@
+{
+  "observedDate": "2026-10-23",
+  "model": "jev-1.13.0",
+  "catalogVersion": "10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed",
+  "dictionaryVersion": "3772e63a79d50ad9ca99a5ee4e57e657f66215f76ff4401645fa4536a927a077",
+  "priceReference": "https://docs.typesafe.ai/models",
+  "inputUsdPerMillion": 0.042,
+  "outputUsdPerMillion": 0,
+  "method": "Fixed example expected groups authored before calls; top10 comparison strips FE0F only. Model use is actual direct provider HTTP; no app cache. Holdout and three multilingual skin hints were not used to tune ranking. This is example coverage, not broad precision, human acceptance, or field p95. Failed intermediate port variants retained.",
+  "summaries": {
+    "saved": {
+      "n": 20,
+      "expectedGroupsInTop10": 20,
+      "medianMs": 509.0,
+      "maximumMs": 1147,
+      "inputTokens": 1912933,
+      "estimatedUsd": 0.080343186,
+      "providerCalls": 101
+    },
+    "initialPort": {
+      "n": 20,
+      "expectedGroupsInTop10": 19,
+      "medianMs": 513.5,
+      "maximumMs": 749,
+      "inputTokens": 1868767,
+      "estimatedUsd": 0.07848821400000001,
+      "providerCalls": 109
+    },
+    "descriptionRepair": {
+      "n": 20,
+      "expectedGroupsInTop10": 18,
+      "medianMs": 513.0,
+      "maximumMs": 823,
+      "inputTokens": 2132706,
+      "estimatedUsd": 0.089573652,
+      "providerCalls": 111
+    },
+    "orderedPort": {
+      "n": 20,
+      "expectedGroupsInTop10": 20,
+      "medianMs": 503.5,
+      "maximumMs": 680,
+      "inputTokens": 2057307,
+      "estimatedUsd": 0.08640689400000001,
+      "providerCalls": 107
+    },
+    "holdout": {
+      "n": 9,
+      "expectedGroupsInTop10": 9,
+      "medianMs": 616,
+      "maximumMs": 769,
+      "inputTokens": 1110315,
+      "estimatedUsd": 0.04663323,
+      "providerCalls": 54
+    },
+    "skinHints": {
+      "n": 3,
+      "expectedGroupsInTop10": 3,
+      "medianMs": 667,
+      "maximumMs": 690,
+      "inputTokens": 478673,
+      "estimatedUsd": 0.020104266000000003,
+      "providerCalls": 18
+    }
+  },
+  "estimatedTotalUsd": 0.40154944200000003,
+  "providerSearches": 92,
+  "datasets": {
+    "saved": [
+      {
+        "which": "saved",
+        "query": "美容室",
+        "expectedGroups": [
+          [
+            "💈",
+            "✂️",
+            "💇",
+            "💇‍♀️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "🪞",
+          "🛵",
+          "🪮",
+          "🦽",
+          "💄"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 678,
+        "inputTokens": 79149,
+        "outputTokens": 5415,
+        "requestCount": 4,
+        "estimatedUsd": 0.003324258,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 359,
+            "usage": {
+              "input_tokens": 16295,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 370,
+            "usage": {
+              "input_tokens": 16304,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 382,
+            "usage": {
+              "input_tokens": 16247,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 289,
+            "usage": {
+              "input_tokens": 30303,
+              "output_tokens": 4327
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "東京の床屋",
+        "expectedGroups": [
+          [
+            "💈",
+            "💇",
+            "💇‍♂️"
+          ],
+          [
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "🇯🇵",
+          "💇‍♂️",
+          "🗼",
+          "🎋",
+          "🪒",
+          "💇",
+          "🎴",
+          "✂️"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 494,
+        "inputTokens": 100928,
+        "outputTokens": 8575,
+        "requestCount": 5,
+        "estimatedUsd": 0.004238976,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 209,
+            "usage": {
+              "input_tokens": 16306,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 216,
+            "usage": {
+              "input_tokens": 16249,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 217,
+            "usage": {
+              "input_tokens": 16297,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 256,
+            "usage": {
+              "input_tokens": 24768,
+              "output_tokens": 3517
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 273,
+            "usage": {
+              "input_tokens": 27308,
+              "output_tokens": 3969
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "東京の美味しいラーメン",
+        "expectedGroups": [
+          [
+            "🍜"
+          ],
+          [
+            "🗼",
+            "🏙️",
+            "🇯🇵"
+          ],
+          [
+            "😋",
+            "🤤"
+          ]
+        ],
+        "emojis": [
+          "🍜",
+          "🏮",
+          "😋",
+          "👍️",
+          "🥢",
+          "🗼",
+          "👘",
+          "🤤",
+          "🔴",
+          "😍",
+          "👅",
+          "🥣"
+        ],
+        "hits": [
+          true,
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 511,
+        "inputTokens": 158213,
+        "outputTokens": 16543,
+        "requestCount": 8,
+        "estimatedUsd": 0.0066449460000000005,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 208,
+            "usage": {
+              "input_tokens": 16303,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 207,
+            "usage": {
+              "input_tokens": 16312,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 224,
+            "usage": {
+              "input_tokens": 16255,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 282,
+            "usage": {
+              "input_tokens": 18589,
+              "output_tokens": 2546
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 282,
+            "usage": {
+              "input_tokens": 15392,
+              "output_tokens": 2169
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 283,
+            "usage": {
+              "input_tokens": 22547,
+              "output_tokens": 3257
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 283,
+            "usage": {
+              "input_tokens": 28659,
+              "output_tokens": 4097
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 283,
+            "usage": {
+              "input_tokens": 24156,
+              "output_tokens": 3387
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true,
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "AIを使ったコンサル",
+        "expectedGroups": [
+          [
+            "🤖",
+            "🧠"
+          ]
+        ],
+        "emojis": [
+          "🤖",
+          "💻️",
+          "🧠",
+          "⚙️",
+          "👽️",
+          "💡",
+          "🖥️"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 503,
+        "inputTokens": 108499,
+        "outputTokens": 9516,
+        "requestCount": 5,
+        "estimatedUsd": 0.004556958000000001,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 204,
+            "usage": {
+              "input_tokens": 16301,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 208,
+            "usage": {
+              "input_tokens": 16253,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 222,
+            "usage": {
+              "input_tokens": 16310,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 278,
+            "usage": {
+              "input_tokens": 28814,
+              "output_tokens": 4099
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 278,
+            "usage": {
+              "input_tokens": 30821,
+              "output_tokens": 4330
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "京都",
+        "expectedGroups": [
+          [
+            "⛩️",
+            "🏯",
+            "🍵",
+            "👘",
+            "🌸"
+          ]
+        ],
+        "emojis": [
+          "⛩️",
+          "👘",
+          "🦊",
+          "🍁",
+          "🏮",
+          "🍵",
+          "🗾",
+          "🌸",
+          "🍣",
+          "🏛️",
+          "🍡",
+          "🏯"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 474,
+        "inputTokens": 136022,
+        "outputTokens": 13907,
+        "requestCount": 7,
+        "estimatedUsd": 0.005712924,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 208,
+            "usage": {
+              "input_tokens": 16302,
+              "output_tokens": 364
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 210,
+            "usage": {
+              "input_tokens": 16293,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 214,
+            "usage": {
+              "input_tokens": 16245,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 249,
+            "usage": {
+              "input_tokens": 12190,
+              "output_tokens": 1808
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 250,
+            "usage": {
+              "input_tokens": 24035,
+              "output_tokens": 3522
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 250,
+            "usage": {
+              "input_tokens": 27054,
+              "output_tokens": 3972
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 254,
+            "usage": {
+              "input_tokens": 23903,
+              "output_tokens": 3516
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "原宿",
+        "expectedGroups": [
+          [
+            "👗",
+            "🎀",
+            "🛍️",
+            "👚",
+            "👘",
+            "🍭"
+          ]
+        ],
+        "emojis": [
+          "🛹",
+          "🎀",
+          "🛍️",
+          "🌸",
+          "👗",
+          "✨️",
+          "⛩️",
+          "🎃"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 509,
+        "inputTokens": 99704,
+        "outputTokens": 8341,
+        "requestCount": 5,
+        "estimatedUsd": 0.004187568,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 210,
+            "usage": {
+              "input_tokens": 16303,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 222,
+            "usage": {
+              "input_tokens": 16294,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 228,
+            "usage": {
+              "input_tokens": 16246,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 277,
+            "usage": {
+              "input_tokens": 21264,
+              "output_tokens": 2926
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 277,
+            "usage": {
+              "input_tokens": 29597,
+              "output_tokens": 4327
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "春っぽい",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌱",
+            "🌼",
+            "🌿"
+          ]
+        ],
+        "emojis": [
+          "🌸",
+          "🦋",
+          "🌱",
+          "🎎",
+          "🌡️",
+          "😊",
+          "🌼",
+          "🎏",
+          "☀️",
+          "🙂",
+          "💐",
+          "🎴"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 517,
+        "inputTokens": 93738,
+        "outputTokens": 7440,
+        "requestCount": 6,
+        "estimatedUsd": 0.003936996,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 214,
+            "usage": {
+              "input_tokens": 16305,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 215,
+            "usage": {
+              "input_tokens": 16248,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 215,
+            "usage": {
+              "input_tokens": 16296,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 202,
+            "usage": {
+              "input_tokens": 8024,
+              "output_tokens": 1043
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 298,
+            "usage": {
+              "input_tokens": 19562,
+              "output_tokens": 2884
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 299,
+            "usage": {
+              "input_tokens": 17303,
+              "output_tokens": 2427
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "美しい夕焼けを見てほっとした",
+        "expectedGroups": [
+          [
+            "🌇",
+            "🌅"
+          ],
+          [
+            "😌",
+            "☺️"
+          ]
+        ],
+        "emojis": [
+          "🌇",
+          "😌",
+          "☀️",
+          "☮️",
+          "🌆",
+          "😮‍💨",
+          "🔥",
+          "🔆",
+          "🌈",
+          "🛜",
+          "🕊️",
+          "🧡"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 524,
+        "inputTokens": 121415,
+        "outputTokens": 11391,
+        "requestCount": 6,
+        "estimatedUsd": 0.00509943,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 219,
+            "usage": {
+              "input_tokens": 16306,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 225,
+            "usage": {
+              "input_tokens": 16258,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 280,
+            "usage": {
+              "input_tokens": 16315,
+              "output_tokens": 364
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 233,
+            "usage": {
+              "input_tokens": 23458,
+              "output_tokens": 3338
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 239,
+            "usage": {
+              "input_tokens": 25994,
+              "output_tokens": 3619
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 239,
+            "usage": {
+              "input_tokens": 23084,
+              "output_tokens": 3346
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "coffee",
+        "expectedGroups": [
+          [
+            "☕",
+            "🫘"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🫖",
+          "🍵",
+          "🫘"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 415,
+        "inputTokens": 64379,
+        "outputTokens": 3273,
+        "requestCount": 4,
+        "estimatedUsd": 0.002703918,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 205,
+            "usage": {
+              "input_tokens": 16245,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 205,
+            "usage": {
+              "input_tokens": 16293,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 205,
+            "usage": {
+              "input_tokens": 16302,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 207,
+            "usage": {
+              "input_tokens": 15539,
+              "output_tokens": 2187
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "quiet encouragement",
+        "expectedGroups": [
+          [
+            "🫶",
+            "💪",
+            "🤝",
+            "👍",
+            "🤗",
+            "🫂",
+            "🌱"
+          ]
+        ],
+        "emojis": [
+          "🤫",
+          "🔇",
+          "🙂",
+          "🔈️",
+          "🙂‍↕️",
+          "😊",
+          "👍️",
+          "😌",
+          "🔉",
+          "❤️"
+        ],
+        "hits": [
+          false
+        ],
+        "allGroupsHit": false,
+        "anyGroupHit": false,
+        "elapsedMs": 522,
+        "inputTokens": 126985,
+        "outputTokens": 11944,
+        "requestCount": 6,
+        "estimatedUsd": 0.00533337,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 212,
+            "usage": {
+              "input_tokens": 16246,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 217,
+            "usage": {
+              "input_tokens": 16303,
+              "output_tokens": 364
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 230,
+            "usage": {
+              "input_tokens": 16294,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 285,
+            "usage": {
+              "input_tokens": 25513,
+              "output_tokens": 3623
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 286,
+            "usage": {
+              "input_tokens": 21538,
+              "output_tokens": 2906
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 286,
+            "usage": {
+              "input_tokens": 31091,
+              "output_tokens": 4328
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "hair salno",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "🪮",
+          "🪞",
+          "🪒"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 508,
+        "inputTokens": 79149,
+        "outputTokens": 5415,
+        "requestCount": 4,
+        "estimatedUsd": 0.003324258,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 207,
+            "usage": {
+              "input_tokens": 16247,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 223,
+            "usage": {
+              "input_tokens": 16295,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 229,
+            "usage": {
+              "input_tokens": 16304,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 273,
+            "usage": {
+              "input_tokens": 30303,
+              "output_tokens": 4327
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "birthday party",
+        "expectedGroups": [
+          [
+            "🎂",
+            "🎉",
+            "🎈",
+            "🥳"
+          ]
+        ],
+        "emojis": [
+          "🎉",
+          "🎂",
+          "🥳",
+          "🎈",
+          "🕯️",
+          "😃",
+          "🪅",
+          "🎊",
+          "👑"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 518,
+        "inputTokens": 122943,
+        "outputTokens": 11647,
+        "requestCount": 6,
+        "estimatedUsd": 0.005163606,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 210,
+            "usage": {
+              "input_tokens": 16246,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 219,
+            "usage": {
+              "input_tokens": 16294,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 218,
+            "usage": {
+              "input_tokens": 16303,
+              "output_tokens": 364
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 292,
+            "usage": {
+              "input_tokens": 24902,
+              "output_tokens": 3605
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 291,
+            "usage": {
+              "input_tokens": 23719,
+              "output_tokens": 3344
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 292,
+            "usage": {
+              "input_tokens": 25479,
+              "output_tokens": 3609
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "東京 coffee",
+        "expectedGroups": [
+          [
+            "☕"
+          ],
+          [
+            "🗼",
+            "🏙️",
+            "🇯🇵"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🌸",
+          "🇯🇵",
+          "🗼",
+          "🏮",
+          "🟤",
+          "🫖",
+          "👘",
+          "🫗",
+          "🫘"
+        ],
+        "hits": [
+          false,
+          true
+        ],
+        "allGroupsHit": false,
+        "anyGroupHit": true,
+        "elapsedMs": 509,
+        "inputTokens": 108973,
+        "outputTokens": 9798,
+        "requestCount": 6,
+        "estimatedUsd": 0.004576866,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 202,
+            "usage": {
+              "input_tokens": 16246,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 212,
+            "usage": {
+              "input_tokens": 16303,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 219,
+            "usage": {
+              "input_tokens": 16294,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 183,
+            "usage": {
+              "input_tokens": 7923,
+              "output_tokens": 1095
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 280,
+            "usage": {
+              "input_tokens": 22806,
+              "output_tokens": 3287
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 282,
+            "usage": {
+              "input_tokens": 29401,
+              "output_tokens": 4329
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "미용실",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "💇‍♀️",
+          "🪞",
+          "🪒"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 1147,
+        "inputTokens": 79022,
+        "outputTokens": 5415,
+        "requestCount": 4,
+        "estimatedUsd": 0.0033189240000000004,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 211,
+            "usage": {
+              "input_tokens": 16247,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 211,
+            "usage": {
+              "input_tokens": 16304,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 879,
+            "usage": {
+              "input_tokens": 16295,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 266,
+            "usage": {
+              "input_tokens": 30176,
+              "output_tokens": 4327
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "봄 꽃",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌼"
+          ]
+        ],
+        "emojis": [
+          "🌼",
+          "🌸",
+          "🌷",
+          "💐"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 474,
+        "inputTokens": 78481,
+        "outputTokens": 5303,
+        "requestCount": 5,
+        "estimatedUsd": 0.0032962020000000002,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 207,
+            "usage": {
+              "input_tokens": 16304,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 208,
+            "usage": {
+              "input_tokens": 16247,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 209,
+            "usage": {
+              "input_tokens": 16295,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 262,
+            "usage": {
+              "input_tokens": 19946,
+              "output_tokens": 2848
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 262,
+            "usage": {
+              "input_tokens": 9689,
+              "output_tokens": 1369
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "고양이",
+        "expectedGroups": [
+          [
+            "🐈",
+            "🐱",
+            "🐈‍⬛"
+          ]
+        ],
+        "emojis": [
+          "🐈️",
+          "🐱",
+          "🤡"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 416,
+        "inputTokens": 63648,
+        "outputTokens": 3251,
+        "requestCount": 4,
+        "estimatedUsd": 0.0026732160000000004,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 212,
+            "usage": {
+              "input_tokens": 16295,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 211,
+            "usage": {
+              "input_tokens": 16304,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 16247,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 199,
+            "usage": {
+              "input_tokens": 14802,
+              "output_tokens": 2165
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "kedai kopi",
+        "expectedGroups": [
+          [
+            "☕",
+            "🫘"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🏪",
+          "🫖",
+          "🫘",
+          "🫗"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 518,
+        "inputTokens": 71250,
+        "outputTokens": 4344,
+        "requestCount": 4,
+        "estimatedUsd": 0.0029925,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 202,
+            "usage": {
+              "input_tokens": 16247,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 211,
+            "usage": {
+              "input_tokens": 16304,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 16295,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 300,
+            "usage": {
+              "input_tokens": 22404,
+              "output_tokens": 3258
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "salon rambut",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "🪮",
+          "💇‍♀️",
+          "🪞",
+          "🪒"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 508,
+        "inputTokens": 79149,
+        "outputTokens": 5415,
+        "requestCount": 4,
+        "estimatedUsd": 0.003324258,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 206,
+            "usage": {
+              "input_tokens": 16304,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 214,
+            "usage": {
+              "input_tokens": 16247,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 226,
+            "usage": {
+              "input_tokens": 16295,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 279,
+            "usage": {
+              "input_tokens": 30303,
+              "output_tokens": 4327
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "bunga musim semi",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌼"
+          ]
+        ],
+        "emojis": [
+          "🌷",
+          "🌼",
+          "🌱",
+          "💐",
+          "🌸"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 524,
+        "inputTokens": 92422,
+        "outputTokens": 7489,
+        "requestCount": 5,
+        "estimatedUsd": 0.003881724,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 206,
+            "usage": {
+              "input_tokens": 16305,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 224,
+            "usage": {
+              "input_tokens": 16296,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 229,
+            "usage": {
+              "input_tokens": 16248,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 290,
+            "usage": {
+              "input_tokens": 27165,
+              "output_tokens": 3973
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 291,
+            "usage": {
+              "input_tokens": 16408,
+              "output_tokens": 2430
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "saved",
+        "query": "zxqvnotaplace773",
+        "expectedGroups": [],
+        "emojis": [],
+        "hits": [],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 240,
+        "inputTokens": 48864,
+        "outputTokens": 1086,
+        "requestCount": 3,
+        "estimatedUsd": 0.002052288,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 209,
+            "usage": {
+              "input_tokens": 16310,
+              "output_tokens": 363
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 212,
+            "usage": {
+              "input_tokens": 16301,
+              "output_tokens": 361
+            },
+            "model": "jev-1.14.0"
+          },
+          {
+            "status": 200,
+            "ms": 237,
+            "usage": {
+              "input_tokens": 16253,
+              "output_tokens": 362
+            },
+            "model": "jev-1.14.0"
+          }
+        ],
+        "normalizedHits": [],
+        "normalizedAllGroupsHit": true
+      }
+    ],
+    "initialPort": [
+      {
+        "which": "ported",
+        "query": "美容室",
+        "expectedGroups": [
+          [
+            "💈",
+            "✂️",
+            "💇",
+            "💇‍♀️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "🪞",
+          "💄",
+          "💇‍♀️",
+          "✂️",
+          "✨️",
+          "❇️",
+          "💅",
+          "🪮",
+          "🌐",
+          "🌖",
+          "🧴"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 749,
+        "inputTokens": 97428,
+        "outputTokens": 9361,
+        "requestCount": 6,
+        "estimatedUsd": 0.004091976,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 223,
+            "usage": {
+              "input_tokens": 17026,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 244,
+            "usage": {
+              "input_tokens": 17017,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 485,
+            "usage": {
+              "input_tokens": 16969,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 222,
+            "usage": {
+              "input_tokens": 16395,
+              "output_tokens": 2991
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 242,
+            "usage": {
+              "input_tokens": 18713,
+              "output_tokens": 3347
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 257,
+            "usage": {
+              "input_tokens": 11308,
+              "output_tokens": 1935
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "東京の床屋",
+        "expectedGroups": [
+          [
+            "💈",
+            "💇",
+            "💇‍♂️"
+          ],
+          [
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "🇯🇵",
+          "🪒",
+          "💇‍♂️",
+          "🗼",
+          "🎎",
+          "👘",
+          "💇",
+          "🎴",
+          "💴",
+          "🗾"
+        ],
+        "hits": [
+          true,
+          false
+        ],
+        "allGroupsHit": false,
+        "anyGroupHit": true,
+        "elapsedMs": 503,
+        "inputTokens": 103198,
+        "outputTokens": 10147,
+        "requestCount": 6,
+        "estimatedUsd": 0.004334316,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 218,
+            "usage": {
+              "input_tokens": 17028,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 218,
+            "usage": {
+              "input_tokens": 16971,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 219,
+            "usage": {
+              "input_tokens": 17019,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 279,
+            "usage": {
+              "input_tokens": 17877,
+              "output_tokens": 2845
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 280,
+            "usage": {
+              "input_tokens": 22653,
+              "output_tokens": 4050
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 279,
+            "usage": {
+              "input_tokens": 11650,
+              "output_tokens": 2166
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true,
+          false
+        ],
+        "normalizedAllGroupsHit": false
+      },
+      {
+        "which": "ported",
+        "query": "東京の美味しいラーメン",
+        "expectedGroups": [
+          [
+            "🍜"
+          ],
+          [
+            "🗼",
+            "🏙️",
+            "🇯🇵"
+          ],
+          [
+            "😋",
+            "🤤"
+          ]
+        ],
+        "emojis": [
+          "🍜",
+          "⛩️",
+          "🥡",
+          "😋",
+          "🤤",
+          "🥢",
+          "🗼",
+          "🚅",
+          "🍛",
+          "❇️",
+          "🇯🇵",
+          "💯"
+        ],
+        "hits": [
+          true,
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 522,
+        "inputTokens": 142051,
+        "outputTokens": 17441,
+        "requestCount": 8,
+        "estimatedUsd": 0.005966142000000001,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 204,
+            "usage": {
+              "input_tokens": 16977,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 216,
+            "usage": {
+              "input_tokens": 17025,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 227,
+            "usage": {
+              "input_tokens": 17034,
+              "output_tokens": 365
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 288,
+            "usage": {
+              "input_tokens": 19862,
+              "output_tokens": 3771
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 287,
+            "usage": {
+              "input_tokens": 15846,
+              "output_tokens": 2908
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 288,
+            "usage": {
+              "input_tokens": 14670,
+              "output_tokens": 2232
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 287,
+            "usage": {
+              "input_tokens": 21495,
+              "output_tokens": 3822
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 289,
+            "usage": {
+              "input_tokens": 19142,
+              "output_tokens": 3617
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true,
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "AIを使ったコンサル",
+        "expectedGroups": [
+          [
+            "🤖",
+            "🧠"
+          ]
+        ],
+        "emojis": [
+          "🤖",
+          "🧠",
+          "⚛️",
+          "💻️",
+          "👔",
+          "💡",
+          "👨‍💻",
+          "🖱️",
+          "🖥️",
+          "🗡️",
+          "🖖",
+          "🧮"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 565,
+        "inputTokens": 109126,
+        "outputTokens": 11687,
+        "requestCount": 6,
+        "estimatedUsd": 0.004583292,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 218,
+            "usage": {
+              "input_tokens": 17032,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 225,
+            "usage": {
+              "input_tokens": 16975,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 297,
+            "usage": {
+              "input_tokens": 17023,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 215,
+            "usage": {
+              "input_tokens": 10713,
+              "output_tokens": 1935
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 258,
+            "usage": {
+              "input_tokens": 23195,
+              "output_tokens": 4328
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 259,
+            "usage": {
+              "input_tokens": 24188,
+              "output_tokens": 4335
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "京都",
+        "expectedGroups": [
+          [
+            "⛩️",
+            "🏯",
+            "🍵",
+            "👘",
+            "🌸"
+          ]
+        ],
+        "emojis": [
+          "⛩️",
+          "👘",
+          "🍣",
+          "🍵",
+          "🍶",
+          "🇯🇵"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 498,
+        "inputTokens": 94755,
+        "outputTokens": 8825,
+        "requestCount": 5,
+        "estimatedUsd": 0.00397971,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 205,
+            "usage": {
+              "input_tokens": 17024,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 222,
+            "usage": {
+              "input_tokens": 16967,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 231,
+            "usage": {
+              "input_tokens": 17015,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 259,
+            "usage": {
+              "input_tokens": 20428,
+              "output_tokens": 3768
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 259,
+            "usage": {
+              "input_tokens": 23321,
+              "output_tokens": 3971
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "原宿",
+        "expectedGroups": [
+          [
+            "👗",
+            "🎀",
+            "🛍️",
+            "👚",
+            "👘",
+            "🍭"
+          ]
+        ],
+        "emojis": [
+          "⛩️",
+          "👜",
+          "🧋",
+          "🗼",
+          "🛍️",
+          "✨️",
+          "🛹",
+          "👠",
+          "🍩",
+          "🏬",
+          "🧷",
+          "🧸"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 514,
+        "inputTokens": 92612,
+        "outputTokens": 8827,
+        "requestCount": 5,
+        "estimatedUsd": 0.0038897040000000003,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 17025,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 218,
+            "usage": {
+              "input_tokens": 16968,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 268,
+            "usage": {
+              "input_tokens": 17016,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 242,
+            "usage": {
+              "input_tokens": 21174,
+              "output_tokens": 3973
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 243,
+            "usage": {
+              "input_tokens": 20429,
+              "output_tokens": 3768
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "春っぽい",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌱",
+            "🌼",
+            "🌿"
+          ]
+        ],
+        "emojis": [
+          "🌸",
+          "♈️",
+          "🌱",
+          "😊",
+          "🟢",
+          "🙂",
+          "🟩",
+          "☺️",
+          "♉️"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 513,
+        "inputTokens": 78998,
+        "outputTokens": 6196,
+        "requestCount": 5,
+        "estimatedUsd": 0.003317916,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 219,
+            "usage": {
+              "input_tokens": 16970,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 220,
+            "usage": {
+              "input_tokens": 17018,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 219,
+            "usage": {
+              "input_tokens": 17027,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 196,
+            "usage": {
+              "input_tokens": 13394,
+              "output_tokens": 2398
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 289,
+            "usage": {
+              "input_tokens": 14589,
+              "output_tokens": 2709
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "美しい夕焼けを見てほっとした",
+        "expectedGroups": [
+          [
+            "🌇",
+            "🌅"
+          ],
+          [
+            "😌",
+            "☺️"
+          ]
+        ],
+        "emojis": [
+          "🌇",
+          "😌",
+          "🌆",
+          "☀️",
+          "🥲",
+          "⚓️",
+          "😮‍💨",
+          "☁️"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 497,
+        "inputTokens": 106554,
+        "outputTokens": 11325,
+        "requestCount": 6,
+        "estimatedUsd": 0.004475268,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 209,
+            "usage": {
+              "input_tokens": 16980,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 218,
+            "usage": {
+              "input_tokens": 17037,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 236,
+            "usage": {
+              "input_tokens": 17028,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 254,
+            "usage": {
+              "input_tokens": 21801,
+              "output_tokens": 4049
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 254,
+            "usage": {
+              "input_tokens": 19771,
+              "output_tokens": 3618
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 254,
+            "usage": {
+              "input_tokens": 13937,
+              "output_tokens": 2570
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "coffee",
+        "expectedGroups": [
+          [
+            "☕",
+            "🫘"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🫜",
+          "🫖",
+          "🥄",
+          "🍵"
+        ],
+        "hits": [
+          false
+        ],
+        "allGroupsHit": false,
+        "anyGroupHit": false,
+        "elapsedMs": 619,
+        "inputTokens": 98570,
+        "outputTokens": 9846,
+        "requestCount": 6,
+        "estimatedUsd": 0.004139940000000001,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 304,
+            "usage": {
+              "input_tokens": 16967,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 304,
+            "usage": {
+              "input_tokens": 17024,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 317,
+            "usage": {
+              "input_tokens": 17015,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 203,
+            "usage": {
+              "input_tokens": 10874,
+              "output_tokens": 1934
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 296,
+            "usage": {
+              "input_tokens": 19700,
+              "output_tokens": 3621
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 297,
+            "usage": {
+              "input_tokens": 16990,
+              "output_tokens": 3202
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "quiet encouragement",
+        "expectedGroups": [
+          [
+            "🫶",
+            "💪",
+            "🤝",
+            "👍",
+            "🤗",
+            "🫂",
+            "🌱"
+          ]
+        ],
+        "emojis": [
+          "🙂",
+          "🔈️",
+          "🔇",
+          "👍️",
+          "🤫",
+          "💗",
+          "🙂‍↕️",
+          "📣",
+          "🤲",
+          "😊",
+          "🪬",
+          "🗣️"
+        ],
+        "hits": [
+          false
+        ],
+        "allGroupsHit": false,
+        "anyGroupHit": false,
+        "elapsedMs": 512,
+        "inputTokens": 107748,
+        "outputTokens": 11238,
+        "requestCount": 6,
+        "estimatedUsd": 0.004525416,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 204,
+            "usage": {
+              "input_tokens": 17025,
+              "output_tokens": 365
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 223,
+            "usage": {
+              "input_tokens": 17016,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 224,
+            "usage": {
+              "input_tokens": 16968,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 280,
+            "usage": {
+              "input_tokens": 16038,
+              "output_tokens": 2906
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 279,
+            "usage": {
+              "input_tokens": 19782,
+              "output_tokens": 3619
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 278,
+            "usage": {
+              "input_tokens": 20919,
+              "output_tokens": 3623
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "hair salno",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "🪮",
+          "💇‍♂️",
+          "🪞",
+          "🧴"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 519,
+        "inputTokens": 69998,
+        "outputTokens": 4434,
+        "requestCount": 4,
+        "estimatedUsd": 0.0029399160000000003,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 212,
+            "usage": {
+              "input_tokens": 17026,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 217,
+            "usage": {
+              "input_tokens": 16969,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 224,
+            "usage": {
+              "input_tokens": 17017,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 289,
+            "usage": {
+              "input_tokens": 18986,
+              "output_tokens": 3347
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "birthday party",
+        "expectedGroups": [
+          [
+            "🎂",
+            "🎉",
+            "🎈",
+            "🥳"
+          ]
+        ],
+        "emojis": [
+          "🎉",
+          "🎂",
+          "🥳",
+          "㊗️",
+          "🎈",
+          "🎊",
+          "🎁",
+          "🪅"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 508,
+        "inputTokens": 101906,
+        "outputTokens": 10606,
+        "requestCount": 6,
+        "estimatedUsd": 0.004280052,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 208,
+            "usage": {
+              "input_tokens": 16968,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 208,
+            "usage": {
+              "input_tokens": 17016,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 237,
+            "usage": {
+              "input_tokens": 17025,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 260,
+            "usage": {
+              "input_tokens": 10875,
+              "output_tokens": 1934
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 261,
+            "usage": {
+              "input_tokens": 21324,
+              "output_tokens": 3975
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 262,
+            "usage": {
+              "input_tokens": 18698,
+              "output_tokens": 3608
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "東京 coffee",
+        "expectedGroups": [
+          [
+            "☕"
+          ],
+          [
+            "🗼",
+            "🏙️",
+            "🇯🇵"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "⛩️",
+          "🇯🇵",
+          "🗼",
+          "🚅",
+          "🗾",
+          "🫖",
+          "🏙️",
+          "⏳️",
+          "🍵",
+          "🏪",
+          "🎢"
+        ],
+        "hits": [
+          false,
+          true
+        ],
+        "allGroupsHit": false,
+        "anyGroupHit": true,
+        "elapsedMs": 518,
+        "inputTokens": 131070,
+        "outputTokens": 15177,
+        "requestCount": 7,
+        "estimatedUsd": 0.005504940000000001,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 209,
+            "usage": {
+              "input_tokens": 17016,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 16968,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 17025,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 296,
+            "usage": {
+              "input_tokens": 19853,
+              "output_tokens": 3770
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 295,
+            "usage": {
+              "input_tokens": 25359,
+              "output_tokens": 4329
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 294,
+            "usage": {
+              "input_tokens": 23810,
+              "output_tokens": 4055
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 294,
+            "usage": {
+              "input_tokens": 11039,
+              "output_tokens": 1934
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "미용실",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "💄",
+          "✂️",
+          "🪞",
+          "🪮",
+          "✨️",
+          "🚊",
+          "🧴"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 440,
+        "inputTokens": 93647,
+        "outputTokens": 8614,
+        "requestCount": 6,
+        "estimatedUsd": 0.003933174,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 201,
+            "usage": {
+              "input_tokens": 16969,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 214,
+            "usage": {
+              "input_tokens": 17017,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 219,
+            "usage": {
+              "input_tokens": 17026,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 199,
+            "usage": {
+              "input_tokens": 13212,
+              "output_tokens": 2366
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 16395,
+              "output_tokens": 2993
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 13028,
+              "output_tokens": 2168
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "봄 꽃",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌼"
+          ]
+        ],
+        "emojis": [
+          "🌸",
+          "🌼",
+          "🌷",
+          "🐝",
+          "💮"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 509,
+        "inputTokens": 71682,
+        "outputTokens": 4842,
+        "requestCount": 5,
+        "estimatedUsd": 0.0030106440000000003,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 207,
+            "usage": {
+              "input_tokens": 16969,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 17017,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 216,
+            "usage": {
+              "input_tokens": 17026,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 182,
+            "usage": {
+              "input_tokens": 6296,
+              "output_tokens": 1043
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 287,
+            "usage": {
+              "input_tokens": 14374,
+              "output_tokens": 2711
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "고양이",
+        "expectedGroups": [
+          [
+            "🐈",
+            "🐱",
+            "🐈‍⬛"
+          ]
+        ],
+        "emojis": [
+          "🐱",
+          "🐈️"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 620,
+        "inputTokens": 73915,
+        "outputTokens": 5414,
+        "requestCount": 4,
+        "estimatedUsd": 0.0031044300000000005,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 298,
+            "usage": {
+              "input_tokens": 17017,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 300,
+            "usage": {
+              "input_tokens": 16969,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 362,
+            "usage": {
+              "input_tokens": 17026,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 248,
+            "usage": {
+              "input_tokens": 22903,
+              "output_tokens": 4326
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "kedai kopi",
+        "expectedGroups": [
+          [
+            "☕",
+            "🫘"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🏪",
+          "🈺",
+          "🫖",
+          "🥛",
+          "🍵",
+          "🍾",
+          "🥤"
+        ],
+        "hits": [
+          false
+        ],
+        "allGroupsHit": false,
+        "anyGroupHit": false,
+        "elapsedMs": 516,
+        "inputTokens": 102794,
+        "outputTokens": 10692,
+        "requestCount": 6,
+        "estimatedUsd": 0.004317348,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 208,
+            "usage": {
+              "input_tokens": 16969,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 221,
+            "usage": {
+              "input_tokens": 17017,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 234,
+            "usage": {
+              "input_tokens": 17026,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 271,
+            "usage": {
+              "input_tokens": 8219,
+              "output_tokens": 1457
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 272,
+            "usage": {
+              "input_tokens": 20835,
+              "output_tokens": 3819
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 273,
+            "usage": {
+              "input_tokens": 22728,
+              "output_tokens": 4327
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "salon rambut",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "🪮",
+          "💇‍♂️",
+          "🪞",
+          "🧴"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 518,
+        "inputTokens": 69998,
+        "outputTokens": 4434,
+        "requestCount": 4,
+        "estimatedUsd": 0.0029399160000000003,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 208,
+            "usage": {
+              "input_tokens": 17026,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 17017,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 215,
+            "usage": {
+              "input_tokens": 16969,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 299,
+            "usage": {
+              "input_tokens": 18986,
+              "output_tokens": 3347
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "bunga musim semi",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌼"
+          ]
+        ],
+        "emojis": [
+          "🌸",
+          "🌼",
+          "🌷",
+          "💮",
+          "🐝"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 512,
+        "inputTokens": 71687,
+        "outputTokens": 4842,
+        "requestCount": 5,
+        "estimatedUsd": 0.0030108540000000003,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 203,
+            "usage": {
+              "input_tokens": 16970,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 213,
+            "usage": {
+              "input_tokens": 17018,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 216,
+            "usage": {
+              "input_tokens": 17027,
+              "output_tokens": 364
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 158,
+            "usage": {
+              "input_tokens": 6297,
+              "output_tokens": 1043
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 292,
+            "usage": {
+              "input_tokens": 14375,
+              "output_tokens": 2711
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "which": "ported",
+        "query": "zxqvnotaplace773",
+        "expectedGroups": [],
+        "emojis": [],
+        "hits": [],
+        "allGroupsHit": true,
+        "anyGroupHit": true,
+        "elapsedMs": 266,
+        "inputTokens": 51030,
+        "outputTokens": 1086,
+        "requestCount": 3,
+        "estimatedUsd": 0.00214326,
+        "requests": [
+          {
+            "status": 200,
+            "ms": 260,
+            "usage": {
+              "input_tokens": 17032,
+              "output_tokens": 363
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 261,
+            "usage": {
+              "input_tokens": 17023,
+              "output_tokens": 361
+            },
+            "model": "jev-1.13.0"
+          },
+          {
+            "status": 200,
+            "ms": 261,
+            "usage": {
+              "input_tokens": 16975,
+              "output_tokens": 362
+            },
+            "model": "jev-1.13.0"
+          }
+        ],
+        "normalizedHits": [],
+        "normalizedAllGroupsHit": true
+      }
+    ],
+    "descriptionRepair": [
+      {
+        "query": "美容室",
+        "expectedGroups": [
+          [
+            "💈",
+            "✂️",
+            "💇",
+            "💇‍♀️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "💄",
+          "💇‍♀️",
+          "✂️",
+          "🪞",
+          "✨️",
+          "❇️",
+          "🌖",
+          "💅",
+          "🚔️",
+          "🧴",
+          "💆‍♀️"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 560,
+        "inputTokens": 110402,
+        "outputTokens": 9364,
+        "calls": 6,
+        "estimatedUsd": 0.004636884,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "東京の床屋",
+        "expectedGroups": [
+          [
+            "💈",
+            "💇",
+            "💇‍♂️"
+          ],
+          [
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "🇯🇵",
+          "🪒",
+          "💇",
+          "🗼",
+          "🎎",
+          "👘",
+          "💇‍♂️",
+          "🎌",
+          "💴",
+          "🗾",
+          "🎴"
+        ],
+        "hits": [
+          true,
+          false
+        ],
+        "allGroupsHit": false,
+        "elapsedMs": 823,
+        "inputTokens": 114667,
+        "outputTokens": 10147,
+        "calls": 6,
+        "estimatedUsd": 0.004816014,
+        "normalizedHits": [
+          true,
+          false
+        ],
+        "normalizedAllGroupsHit": false
+      },
+      {
+        "query": "東京の美味しいラーメン",
+        "expectedGroups": [
+          [
+            "🍜"
+          ],
+          [
+            "🗼",
+            "🏙️",
+            "🇯🇵"
+          ],
+          [
+            "😋",
+            "🤤"
+          ]
+        ],
+        "emojis": [
+          "🍜",
+          "⛩️",
+          "🥡",
+          "😋",
+          "🤤",
+          "🥢",
+          "🚅",
+          "🍛",
+          "😍",
+          "❇️",
+          "🏪",
+          "😊"
+        ],
+        "hits": [
+          true,
+          false,
+          true
+        ],
+        "allGroupsHit": false,
+        "elapsedMs": 622,
+        "inputTokens": 160420,
+        "outputTokens": 16650,
+        "calls": 8,
+        "estimatedUsd": 0.0067376400000000005,
+        "normalizedHits": [
+          true,
+          false,
+          true
+        ],
+        "normalizedAllGroupsHit": false
+      },
+      {
+        "query": "AIを使ったコンサル",
+        "expectedGroups": [
+          [
+            "🤖",
+            "🧠"
+          ]
+        ],
+        "emojis": [
+          "🤖",
+          "🧠",
+          "💻️",
+          "💡",
+          "👨‍💻",
+          "🖥️",
+          "🖖",
+          "💼",
+          "💁‍♂️"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 561,
+        "inputTokens": 127951,
+        "outputTokens": 11684,
+        "calls": 6,
+        "estimatedUsd": 0.005373942,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "京都",
+        "expectedGroups": [
+          [
+            "⛩️",
+            "🏯",
+            "🍵",
+            "👘",
+            "🌸"
+          ]
+        ],
+        "emojis": [
+          "⛩️",
+          "👘",
+          "🌸",
+          "🍵",
+          "🦊",
+          "🍣"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 509,
+        "inputTokens": 98660,
+        "outputTokens": 8016,
+        "calls": 5,
+        "estimatedUsd": 0.00414372,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "原宿",
+        "expectedGroups": [
+          [
+            "👗",
+            "🎀",
+            "🛍️",
+            "👚",
+            "👘",
+            "🍭"
+          ]
+        ],
+        "emojis": [
+          "⛩️",
+          "🛍️",
+          "🍩",
+          "🛹",
+          "👚",
+          "🧋",
+          "🌈",
+          "👘",
+          "🎀",
+          "🗼",
+          "👗",
+          "✨️"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 503,
+        "inputTokens": 104328,
+        "outputTokens": 8827,
+        "calls": 5,
+        "estimatedUsd": 0.0043817759999999996,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "春っぽい",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌱",
+            "🌼",
+            "🌿"
+          ]
+        ],
+        "emojis": [
+          "🌸",
+          "🌱",
+          "😊",
+          "🌼",
+          "🙂",
+          "😀"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 481,
+        "inputTokens": 86544,
+        "outputTokens": 6195,
+        "calls": 5,
+        "estimatedUsd": 0.0036348480000000004,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "美しい夕焼けを見てほっとした",
+        "expectedGroups": [
+          [
+            "🌇",
+            "🌅"
+          ],
+          [
+            "😌",
+            "☺️"
+          ]
+        ],
+        "emojis": [
+          "🌇",
+          "😌",
+          "🌆",
+          "😮‍💨",
+          "☀️",
+          "😇",
+          "⚓️"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 654,
+        "inputTokens": 125336,
+        "outputTokens": 11739,
+        "calls": 6,
+        "estimatedUsd": 0.0052641120000000005,
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "coffee",
+        "expectedGroups": [
+          [
+            "☕",
+            "🫘"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🫜",
+          "🫖",
+          "🫘",
+          "🍵"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 518,
+        "inputTokens": 113130,
+        "outputTokens": 9846,
+        "calls": 6,
+        "estimatedUsd": 0.00475146,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "quiet encouragement",
+        "expectedGroups": [
+          [
+            "🫶",
+            "💪",
+            "🤝",
+            "👍",
+            "🤗",
+            "🫂",
+            "🌱"
+          ]
+        ],
+        "emojis": [
+          "🤫",
+          "🙂",
+          "🔉",
+          "👍️",
+          "🔈️",
+          "🫂",
+          "🙂‍↕️",
+          "😊",
+          "📣",
+          "🗣️",
+          "🤗",
+          "😌"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 496,
+        "inputTokens": 126787,
+        "outputTokens": 11240,
+        "calls": 6,
+        "estimatedUsd": 0.005325054,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "hair salno",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "🪮",
+          "💇‍♂️",
+          "🪞",
+          "🚊",
+          "🩴"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 464,
+        "inputTokens": 75670,
+        "outputTokens": 4434,
+        "calls": 4,
+        "estimatedUsd": 0.0031781400000000003,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "birthday party",
+        "expectedGroups": [
+          [
+            "🎂",
+            "🎉",
+            "🎈",
+            "🥳"
+          ]
+        ],
+        "emojis": [
+          "🎂",
+          "🥳",
+          "🎉",
+          "㊗️",
+          "🪅",
+          "🎊",
+          "🪩",
+          "☑️",
+          "🎈"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 523,
+        "inputTokens": 119033,
+        "outputTokens": 10840,
+        "calls": 6,
+        "estimatedUsd": 0.004999386000000001,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "東京 coffee",
+        "expectedGroups": [
+          [
+            "☕"
+          ],
+          [
+            "🗼",
+            "🏙️",
+            "🇯🇵"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🗼",
+          "🇯🇵",
+          "🟤",
+          "🫖",
+          "🍣",
+          "🏙️",
+          "🇨🇿",
+          "🫗",
+          "🎌",
+          "🍵"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 566,
+        "inputTokens": 147176,
+        "outputTokens": 15175,
+        "calls": 7,
+        "estimatedUsd": 0.006181392000000001,
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "미용실",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "🪞",
+          "💄",
+          "💇‍♂️",
+          "🏜️",
+          "✨️",
+          "🤶",
+          "🪮",
+          "🚊",
+          "🧴"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 495,
+        "inputTokens": 113202,
+        "outputTokens": 9597,
+        "calls": 6,
+        "estimatedUsd": 0.004754484000000001,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "봄 꽃",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌼"
+          ]
+        ],
+        "emojis": [
+          "🌸",
+          "🌼",
+          "💮",
+          "🌷",
+          "🌱"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 517,
+        "inputTokens": 76805,
+        "outputTokens": 4842,
+        "calls": 5,
+        "estimatedUsd": 0.0032258100000000004,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "고양이",
+        "expectedGroups": [
+          [
+            "🐈",
+            "🐱",
+            "🐈‍⬛"
+          ]
+        ],
+        "emojis": [
+          "🐱",
+          "🐈️",
+          "🐲"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 442,
+        "inputTokens": 65887,
+        "outputTokens": 3252,
+        "calls": 4,
+        "estimatedUsd": 0.0027672540000000002,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "kedai kopi",
+        "expectedGroups": [
+          [
+            "☕",
+            "🫘"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🏪",
+          "🈺",
+          "🫖",
+          "🥛",
+          "🍵",
+          "🍾",
+          "🥤"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 528,
+        "inputTokens": 117469,
+        "outputTokens": 10692,
+        "calls": 6,
+        "estimatedUsd": 0.004933698,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "salon rambut",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "💇",
+          "💇‍♀️",
+          "✂️",
+          "👱‍♂️",
+          "🪮",
+          "💇‍♂️",
+          "👨‍🦱",
+          "💁",
+          "🪞",
+          "🚊",
+          "🤳"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 490,
+        "inputTokens": 114234,
+        "outputTokens": 9596,
+        "calls": 6,
+        "estimatedUsd": 0.0047978280000000005,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "bunga musim semi",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌼"
+          ]
+        ],
+        "emojis": [
+          "🌸",
+          "🌼",
+          "💮",
+          "🌱",
+          "🌷"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 485,
+        "inputTokens": 83975,
+        "outputTokens": 5967,
+        "calls": 5,
+        "estimatedUsd": 0.0035269500000000005,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "zxqvnotaplace773",
+        "expectedGroups": [],
+        "emojis": [],
+        "hits": [],
+        "allGroupsHit": true,
+        "elapsedMs": 248,
+        "inputTokens": 51030,
+        "outputTokens": 1086,
+        "calls": 3,
+        "estimatedUsd": 0.00214326,
+        "normalizedHits": [],
+        "normalizedAllGroupsHit": true
+      }
+    ],
+    "orderedPort": [
+      {
+        "query": "美容室",
+        "expectedGroups": [
+          [
+            "💈",
+            "✂️",
+            "💇",
+            "💇‍♀️"
+          ]
+        ],
+        "emojis": [
+          "💇",
+          "✂️",
+          "💈",
+          "🪞",
+          "💇‍♀️",
+          "🪒",
+          "💇‍♂️",
+          "💄"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 680,
+        "inputTokens": 79149,
+        "outputTokens": 5415,
+        "calls": 4,
+        "estimatedUsd": 0.003324258,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "東京の床屋",
+        "expectedGroups": [
+          [
+            "💈",
+            "💇",
+            "💇‍♂️"
+          ],
+          [
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "🇯🇵",
+          "🗼",
+          "🪒",
+          "🏙️",
+          "✂️",
+          "🗾"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 581,
+        "inputTokens": 148530,
+        "outputTokens": 15500,
+        "calls": 7,
+        "estimatedUsd": 0.00623826,
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "東京の美味しいラーメン",
+        "expectedGroups": [
+          [
+            "🍜"
+          ],
+          [
+            "🗼",
+            "🏙️",
+            "🇯🇵"
+          ],
+          [
+            "😋",
+            "🤤"
+          ]
+        ],
+        "emojis": [
+          "🍜",
+          "🏮",
+          "😋",
+          "❇️",
+          "🗼",
+          "🥢",
+          "👘",
+          "🤤",
+          "💯",
+          "🔆",
+          "😊",
+          "😍"
+        ],
+        "hits": [
+          true,
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 513,
+        "inputTokens": 164933,
+        "outputTokens": 17615,
+        "calls": 8,
+        "estimatedUsd": 0.006927186000000001,
+        "normalizedHits": [
+          true,
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "AIを使ったコンサル",
+        "expectedGroups": [
+          [
+            "🤖",
+            "🧠"
+          ]
+        ],
+        "emojis": [
+          "🤖",
+          "💻️",
+          "🧠",
+          "💼",
+          "🙆‍♂️",
+          "🖥️",
+          "💡"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 524,
+        "inputTokens": 124021,
+        "outputTokens": 11681,
+        "calls": 6,
+        "estimatedUsd": 0.005208882000000001,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "京都",
+        "expectedGroups": [
+          [
+            "⛩️",
+            "🏯",
+            "🍵",
+            "👘",
+            "🌸"
+          ]
+        ],
+        "emojis": [
+          "⛩️",
+          "🍵",
+          "🌸",
+          "👘",
+          "🍣",
+          "🍁",
+          "🍡",
+          "🫖"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 498,
+        "inputTokens": 100040,
+        "outputTokens": 8575,
+        "calls": 5,
+        "estimatedUsd": 0.00420168,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "原宿",
+        "expectedGroups": [
+          [
+            "👗",
+            "🎀",
+            "🛍️",
+            "👚",
+            "👘",
+            "🍭"
+          ]
+        ],
+        "emojis": [
+          "⛩️",
+          "🍩",
+          "🇯🇵",
+          "🛍️",
+          "🎀",
+          "🛹",
+          "🧋",
+          "👘",
+          "🍦"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 534,
+        "inputTokens": 96342,
+        "outputTokens": 7981,
+        "calls": 5,
+        "estimatedUsd": 0.004046364,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "春っぽい",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌱",
+            "🌼",
+            "🌿"
+          ]
+        ],
+        "emojis": [
+          "🌸",
+          "🌱",
+          "🌼",
+          "😊",
+          "🪐"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 445,
+        "inputTokens": 81545,
+        "outputTokens": 5630,
+        "calls": 5,
+        "estimatedUsd": 0.0034248900000000003,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "美しい夕焼けを見てほっとした",
+        "expectedGroups": [
+          [
+            "🌇",
+            "🌅"
+          ],
+          [
+            "😌",
+            "☺️"
+          ]
+        ],
+        "emojis": [
+          "🌇",
+          "😌",
+          "😮‍💨",
+          "🦽",
+          "🕊️",
+          "😊"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 500,
+        "inputTokens": 121110,
+        "outputTokens": 11388,
+        "calls": 6,
+        "estimatedUsd": 0.00508662,
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "coffee",
+        "expectedGroups": [
+          [
+            "☕",
+            "🫘"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🍫",
+          "🫖",
+          "🍵",
+          "🫘"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 493,
+        "inputTokens": 94476,
+        "outputTokens": 7552,
+        "calls": 5,
+        "estimatedUsd": 0.003967992,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "quiet encouragement",
+        "expectedGroups": [
+          [
+            "🫶",
+            "💪",
+            "🤝",
+            "👍",
+            "🤗",
+            "🫂",
+            "🌱"
+          ]
+        ],
+        "emojis": [
+          "🤫",
+          "🙂",
+          "👍️",
+          "📳",
+          "🔈️",
+          "🙂‍↕️",
+          "🔅",
+          "😊",
+          "🔇",
+          "✔️",
+          "💬",
+          "🤗"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 511,
+        "inputTokens": 126022,
+        "outputTokens": 11709,
+        "calls": 6,
+        "estimatedUsd": 0.005292924,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "hair salno",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "✂️",
+          "💇",
+          "🪮",
+          "💇‍♀️",
+          "🪞",
+          "🪒"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 498,
+        "inputTokens": 79149,
+        "outputTokens": 5416,
+        "calls": 4,
+        "estimatedUsd": 0.003324258,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "birthday party",
+        "expectedGroups": [
+          [
+            "🎂",
+            "🎉",
+            "🎈",
+            "🥳"
+          ]
+        ],
+        "emojis": [
+          "🎉",
+          "🎂",
+          "🥳",
+          "🕯️",
+          "🪅",
+          "🍒",
+          "👑",
+          "🎈",
+          "🌯",
+          "🍓"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 519,
+        "inputTokens": 101584,
+        "outputTokens": 8671,
+        "calls": 5,
+        "estimatedUsd": 0.004266528,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "東京 coffee",
+        "expectedGroups": [
+          [
+            "☕"
+          ],
+          [
+            "🗼",
+            "🏙️",
+            "🇯🇵"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🏮",
+          "🇯🇵",
+          "🗼",
+          "👘",
+          "🫖",
+          "🔴",
+          "🏙️",
+          "🍵",
+          "🗾",
+          "🇸🇳",
+          "🫗"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 599,
+        "inputTokens": 162829,
+        "outputTokens": 17633,
+        "calls": 8,
+        "estimatedUsd": 0.006838818,
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "미용실",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💈",
+          "💇",
+          "✂️",
+          "💄",
+          "🪞",
+          "💇‍♀️",
+          "🦽",
+          "🪒",
+          "🪮"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 501,
+        "inputTokens": 122651,
+        "outputTokens": 11558,
+        "calls": 6,
+        "estimatedUsd": 0.005151342000000001,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "봄 꽃",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌼"
+          ]
+        ],
+        "emojis": [
+          "🌼",
+          "🌸",
+          "🌷",
+          "💐",
+          "🌱"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 467,
+        "inputTokens": 66558,
+        "outputTokens": 3498,
+        "calls": 5,
+        "estimatedUsd": 0.002795436,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "고양이",
+        "expectedGroups": [
+          [
+            "🐈",
+            "🐱",
+            "🐈‍⬛"
+          ]
+        ],
+        "emojis": [
+          "🐈️",
+          "🐱",
+          "🤡"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 440,
+        "inputTokens": 63648,
+        "outputTokens": 3251,
+        "calls": 4,
+        "estimatedUsd": 0.0026732160000000004,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "kedai kopi",
+        "expectedGroups": [
+          [
+            "☕",
+            "🫘"
+          ]
+        ],
+        "emojis": [
+          "☕️",
+          "🏪",
+          "🍫",
+          "🫖",
+          "🍵"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 579,
+        "inputTokens": 130144,
+        "outputTokens": 12775,
+        "calls": 6,
+        "estimatedUsd": 0.005466048,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "salon rambut",
+        "expectedGroups": [
+          [
+            "💇",
+            "💇‍♀️",
+            "💇‍♂️",
+            "💈",
+            "✂️"
+          ]
+        ],
+        "emojis": [
+          "💇",
+          "✂️",
+          "💈",
+          "🪞",
+          "💇‍♀️",
+          "🪮",
+          "💇‍♂️",
+          "🪒"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 498,
+        "inputTokens": 79149,
+        "outputTokens": 5415,
+        "calls": 4,
+        "estimatedUsd": 0.003324258,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "bunga musim semi",
+        "expectedGroups": [
+          [
+            "🌸",
+            "🌷",
+            "🌼"
+          ]
+        ],
+        "emojis": [
+          "🌼",
+          "🌸",
+          "🌱",
+          "🌷",
+          "💐"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 506,
+        "inputTokens": 66563,
+        "outputTokens": 3498,
+        "calls": 5,
+        "estimatedUsd": 0.002795646,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "zxqvnotaplace773",
+        "expectedGroups": [],
+        "emojis": [],
+        "hits": [],
+        "allGroupsHit": true,
+        "elapsedMs": 278,
+        "inputTokens": 48864,
+        "outputTokens": 1086,
+        "calls": 3,
+        "estimatedUsd": 0.002052288,
+        "normalizedHits": [],
+        "normalizedAllGroupsHit": true
+      }
+    ],
+    "holdout": [
+      {
+        "query": "岡山の美味しいラーメン",
+        "expectedGroups": [
+          [
+            "🍜"
+          ],
+          [
+            "😋",
+            "🤤"
+          ]
+        ],
+        "emojis": [
+          "🍜",
+          "🇯🇵",
+          "😋",
+          "❇️",
+          "🥢",
+          "🏯",
+          "🤤",
+          "💯",
+          "🍇",
+          "😍",
+          "❤️",
+          "🥣"
+        ],
+        "hits": [
+          true,
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 641,
+        "inputTokens": 165056,
+        "outputTokens": 17524,
+        "calls": 8,
+        "estimatedUsd": 0.006932352000000001,
+        "normalizedHits": [
+          true,
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "American hamburger shop",
+        "expectedGroups": [
+          [
+            "🍔"
+          ]
+        ],
+        "emojis": [
+          "🍔",
+          "🇺🇸",
+          "🗽",
+          "🌎️",
+          "🍟",
+          "🍰",
+          "🇦🇸",
+          "🍞",
+          "🧁",
+          "🇮🇳",
+          "🥩"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 567,
+        "inputTokens": 115725,
+        "outputTokens": 10845,
+        "calls": 6,
+        "estimatedUsd": 0.0048604500000000005,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "AI consulting",
+        "expectedGroups": [
+          [
+            "🤖",
+            "🧠"
+          ]
+        ],
+        "emojis": [
+          "🤖",
+          "💻️",
+          "🧠",
+          "💼",
+          "🤔",
+          "💡",
+          "🤝",
+          "📋️"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 668,
+        "inputTokens": 108464,
+        "outputTokens": 9517,
+        "calls": 5,
+        "estimatedUsd": 0.004555488,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "金曜日の夜にリラックス",
+        "expectedGroups": [
+          [
+            "😌",
+            "🌙",
+            "🛀",
+            "🍷"
+          ]
+        ],
+        "emojis": [
+          "😌",
+          "🧖",
+          "☮️",
+          "🛁",
+          "😮‍💨",
+          "🧘",
+          "🛋️",
+          "💤",
+          "🌙",
+          "🛀",
+          "🎧️",
+          "😓"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 519,
+        "inputTokens": 151707,
+        "outputTokens": 14545,
+        "calls": 7,
+        "estimatedUsd": 0.006371694000000001,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "행운",
+        "expectedGroups": [
+          [
+            "🍀",
+            "🤞"
+          ]
+        ],
+        "emojis": [
+          "🍀",
+          "🤞",
+          "🪬",
+          "☘️",
+          "🧧",
+          "✴️",
+          "🔯",
+          "✨️",
+          "❇️",
+          "🫰",
+          "🧿"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 554,
+        "inputTokens": 104383,
+        "outputTokens": 8720,
+        "calls": 6,
+        "estimatedUsd": 0.004384086000000001,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "ulang tahun",
+        "expectedGroups": [
+          [
+            "🎂",
+            "🎉",
+            "🎈"
+          ]
+        ],
+        "emojis": [
+          "🎂",
+          "🥳",
+          "🎉",
+          "🕯️",
+          "🥧",
+          "🎞️",
+          "🪅",
+          "🍫",
+          "🎈"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 769,
+        "inputTokens": 114900,
+        "outputTokens": 10558,
+        "calls": 6,
+        "estimatedUsd": 0.0048258,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "日本の国旗",
+        "expectedGroups": [
+          [
+            "🇯🇵"
+          ]
+        ],
+        "emojis": [
+          "🇯🇵",
+          "🗻",
+          "🎋",
+          "👘",
+          "🎌",
+          "⭕️",
+          "⛳️",
+          "⛩️",
+          "🎏",
+          "🔰",
+          "🚩",
+          "🏯"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 616,
+        "inputTokens": 141466,
+        "outputTokens": 14579,
+        "calls": 7,
+        "estimatedUsd": 0.005941572,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "thumbs up dark skin tone",
+        "expectedGroups": [
+          [
+            "👍🏿"
+          ]
+        ],
+        "emojis": [
+          "👍🏿",
+          "👌🏿",
+          "👍️",
+          "👋🏿",
+          "👆🏿",
+          "✋🏿",
+          "👍🏾",
+          "☝🏿",
+          "🔅"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 647,
+        "inputTokens": 159756,
+        "outputTokens": 13716,
+        "calls": 6,
+        "estimatedUsd": 0.006709752,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "ぬょふぞきゅ",
+        "expectedGroups": [],
+        "emojis": [],
+        "hits": [],
+        "allGroupsHit": true,
+        "elapsedMs": 288,
+        "inputTokens": 48858,
+        "outputTokens": 1086,
+        "calls": 3,
+        "estimatedUsd": 0.002052036,
+        "normalizedHits": [],
+        "normalizedAllGroupsHit": true
+      }
+    ],
+    "skinHints": [
+      {
+        "query": "Thumbs Up DARK Skin Tone",
+        "expectedGroups": [
+          [
+            "👍🏿"
+          ]
+        ],
+        "emojis": [
+          "👍🏿",
+          "👌🏿",
+          "👍️",
+          "👋🏿",
+          "👆🏿",
+          "✋🏿",
+          "👍🏾",
+          "🔅",
+          "🤚🏿"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 690,
+        "inputTokens": 159766,
+        "outputTokens": 13716,
+        "calls": 6,
+        "estimatedUsd": 0.006710172,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "엄지척 어두운 피부색",
+        "expectedGroups": [
+          [
+            "👍🏿"
+          ]
+        ],
+        "emojis": [
+          "👍🏿",
+          "🔅",
+          "👍️",
+          "👋🏿",
+          "👆🏿",
+          "☝🏿",
+          "🟤",
+          "👌🏿",
+          "👉🏿",
+          "🤲",
+          "👍🏾",
+          "⚫️"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 659,
+        "inputTokens": 154999,
+        "outputTokens": 13483,
+        "calls": 6,
+        "estimatedUsd": 0.006509958000000001,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      },
+      {
+        "query": "jempol warna kulit gelap",
+        "expectedGroups": [
+          [
+            "👍🏿"
+          ]
+        ],
+        "emojis": [
+          "👍🏿",
+          "👍️",
+          "👆🏿",
+          "🤚🏿",
+          "👐🏽",
+          "👉🏿",
+          "👍🏾"
+        ],
+        "hits": [
+          true
+        ],
+        "allGroupsHit": true,
+        "elapsedMs": 667,
+        "inputTokens": 163908,
+        "outputTokens": 13714,
+        "calls": 6,
+        "estimatedUsd": 0.006884136000000001,
+        "normalizedHits": [
+          true
+        ],
+        "normalizedAllGroupsHit": true
+      }
+    ]
+  },
+  "excludedImplementationFailure": {
+    "file": "evaluation-skin.jsonl (private)",
+    "searches": 3,
+    "externalCalls": 0,
+    "cause": "missing import caught before any provider request; fixed and separately tested"
+  }
+}

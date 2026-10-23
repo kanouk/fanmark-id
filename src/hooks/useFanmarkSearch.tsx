@@ -114,7 +114,13 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const invalidateFavorites = useInvalidateFavoriteFanmarks();
-  const [result, setResult] = useState<FanmarkSearchResult | null>(null);
+  const userId = user?.id ?? null;
+  const resultKey = JSON.stringify([searchQuery, userId, authLoading, catalogReady]);
+  const [resultState, setResultState] = useState<{ key: string; value: FanmarkSearchResult | null } | null>(null);
+  const result = resultState?.key === resultKey ? resultState.value : null;
+  const setResult = useCallback((value: FanmarkSearchResult | null) => {
+    setResultState({ key: resultKey, value });
+  }, [resultKey]);
   const [loading, setLoading] = useState(false);
   const [recentFanmarks, setRecentFanmarks] = useState<FanmarkSearchResult[]>([]);
 
@@ -204,7 +210,6 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
     }
   }, [t]);
 
-  const userId = user?.id ?? null;
   useEffect(() => {
     let cancelled = false;
     const searchFanmarks = async (rawQuery: string) => {
@@ -446,7 +451,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       setLoading(false);
     }
     return () => { cancelled = true; };
-  }, [normalizedQuery, searchQuery, userId, authLoading, t, validateEmojiInput, onSearchCompleted]);
+  }, [normalizedQuery, searchQuery, userId, authLoading, t, validateEmojiInput, onSearchCompleted, setResult]);
 
   const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: FanmarkRow }> => {
     try {

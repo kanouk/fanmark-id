@@ -1,3 +1,4 @@
+import { handleEmojiPaletteRequest, PALETTE_PATH } from "./emoji-palette-api";
 export { ProductionR2ImportService } from "./production-r2-import-service";
 export { ProductionBackupService, ProductionBackupAlertService } from "./production-backup-service";
 export { ProductionImportCoordinatorService } from "./production-import-coordinator";
@@ -1084,6 +1085,9 @@ export async function handleRequest(
     return jsonResponse({ error: "cutover_write_freeze" }, 503, { "retry-after": "60" });
   }
 
+  const paletteResponse = await handleEmojiPaletteRequest(request, env, outboundFetch);
+  if (paletteResponse) return paletteResponse;
+
   const waitlistSignupResponse = await handleWaitlistSignupRequest(request, env);
   if (waitlistSignupResponse) return waitlistSignupResponse;
 
@@ -1800,12 +1804,12 @@ const worker = {
       return await withRecoveryWriter(env, async () => {
         try { return await view(); }
         finally {
-          // The operator route performs its own authorized force-wake. A refused
-          // Origin/MFA request must never replay an outbox through this finally.
+          // The operator route performs its own authorized force-wake. Palette
+          // budget writes do not produce notification events.
           if (!shouldFreezeRecoveryWrites(env.RECOVERY_WRITE_FREEZE) &&
               !shouldPauseScheduledJobsForCutover(env.CUTOVER_WRITE_FREEZE) &&
               !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
-              new URL(request.url).pathname !== "/api/admin/notifications/wake" &&
+              !["/api/admin/notifications/wake", PALETTE_PATH].includes(url.pathname) &&
               env.NOTIFICATION_WAKE_BACKEND?.trim() === "durable-object") {
             const wake = flushNotificationWakeSafely(env);
             if (ctx && !recoveryWriterTrackingSelected(env)) ctx.waitUntil(wake); else await wake;

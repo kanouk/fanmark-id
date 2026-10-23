@@ -49,12 +49,12 @@ export async function verifyCatalogStartup({ cdp, value, wait, navigate, fill, c
     await writeFile(path.join(artifactDirectory, 'home-before-catalog.png'),
       Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'), { mode: 0o600 });
     await value('document.querySelector("#search button[aria-haspopup=dialog]").click()');
-    await wait('!!document.querySelector("[data-radix-popper-content-wrapper]")');
+    await wait('!!document.querySelector("[data-palette-dialog]")');
     assert.equal(await value('window.__catalogProbe.completed'), 0);
-    assert.equal(await value('!!document.querySelector("[data-emoji-catalog-notice]")'), false);
+    assert.equal(await value('getComputedStyle(document.querySelector("[data-emoji-catalog-notice]")).display'), "none", "Palette must contain its own waiting message");
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
-    await wait('!document.querySelector("[data-radix-popper-content-wrapper]")');
+    await wait('!document.querySelector("[data-palette-dialog]")');
     report.pickerOpensBeforeCatalog = true;
     await value('document.querySelector("button[aria-label=直接入力]").click()');
     await wait('!!document.querySelector("[role=dialog] input")');

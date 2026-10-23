@@ -456,7 +456,7 @@ export function useEmojiInputController({
   };
 
   const handleOpenChange = (index: number, open: boolean) => {
-    if (disabled) return;
+    if (disabled && open) return;
     pickerRequest.current++;
     setActiveIndex(open ? index : null);
   };
@@ -482,6 +482,7 @@ export function useEmojiInputController({
     handleDragLeave,
     handleDragEnd,
     handleSelect,
+    handlePaletteChange: (next: string) => updateValue(segmentInput(next)),
     handleRemove,
     handleClear,
     handlePaste,

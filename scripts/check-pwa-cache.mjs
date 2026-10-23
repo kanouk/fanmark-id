@@ -24,6 +24,7 @@ assert.ok(!paths.has("og-image.png"), "social preview image must not be download
 assert.ok((await readFile(`${buildDir}/og-image.png`)).length > 0, "social preview image stays publicly available");
 assert.ok(paths.has("index.html") && paths.has("manifest.webmanifest"), "offline shell and install manifest remain cached");
 for (const name of await readdir(`${buildDir}/assets`)) {
+  if (/^palette-dictionary-[a-f0-9]{8}\.json$/.test(name)) assert.ok(!paths.has(`assets/${name}`), "Optional palette names must not be downloaded at startup");
   if (/\.(?:js|css)$/.test(name)) assert.ok(paths.has(`assets/${name}`), `${name} remains available offline`);
 }
 

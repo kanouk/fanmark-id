@@ -8,7 +8,7 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ["./test/emoji-catalog-api.test.ts"],
+    include: ["./test/emoji-catalog-api.test.ts", "./test/emoji-palette-api.test.ts"],
     fileParallelism: false,
     setupFiles: ["./test/setup.ts"],
   },

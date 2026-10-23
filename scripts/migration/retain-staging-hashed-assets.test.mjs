@@ -49,3 +49,12 @@ test('unhashed files and symlinks are refused before writes', async t => {
   await assert.rejects(retainStagingHashedAssets(previous, current), /Symlinks/);
   assert.deepEqual(await readdir(join(current, 'assets')), []);
 });
+
+
+test('old versioned palette dictionary remains available to installed clients', async t => {
+  const { previous, current } = await fixture(t);
+  await writeFile(join(previous, 'assets/palette-dictionary-aaaaaaaa.json'), '{"public":"names"}');
+  const result=await retainStagingHashedAssets(previous,current);
+  assert.equal(result.copied.length,1);
+  assert.equal(await readFile(join(current,'assets/palette-dictionary-aaaaaaaa.json'),'utf8'),'{"public":"names"}');
+});

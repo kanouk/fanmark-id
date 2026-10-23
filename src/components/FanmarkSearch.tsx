@@ -101,13 +101,13 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
           <EmojiInput
             value={query}
             onChange={(value) => {
+              if (value !== query) onResultChange?.(null);
               onQueryChange(value);
             }}
             onSearchPerformed={onSearchPerformed}
             placeholder={t('search.searchPlaceholder')}
             className="text-center"
             maxLength={5}
-            disabled={loading}
             showUtilities={false}
             fixedSize={fixedSize}
           />
