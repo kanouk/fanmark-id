@@ -23,6 +23,13 @@ export interface EmojiCatalogApiRelease {
   items: EmojiCatalogApiItem[];
 }
 
+export interface EmojiCatalogLoadOptions {
+  fetcher?: typeof fetch;
+  pageSize?: number;
+  timeoutMs?: number;
+  version?: string;
+}
+
 export type EmojiCatalogApiErrorKind =
   | "configuration"
   | "http"
@@ -206,14 +213,31 @@ async function fetchPage(
   }
 }
 
+/** Revalidate persisted data with the same item/count/duplicate rules as HTTP. */
+export function validateEmojiCatalogRelease(value: unknown, total: number): EmojiCatalogApiRelease {
+  if (!isRecord(value) || typeof value.version !== 'string' || !VERSION_RE.test(value.version) ||
+      !Number.isSafeInteger(total) || total < 1 || total > EMOJI_CATALOG_MAX_RECORDS ||
+      !Array.isArray(value.items) || value.items.length !== total) throw new EmojiCatalogApiError('invalid_response');
+  const items = value.items.map(parseItem);
+  const ids = new Set(items.map(item => item.id));
+  const emojis = new Set(items.map(item => item.emoji.normalize('NFC')));
+  if (ids.size !== total || emojis.size !== total) throw new EmojiCatalogApiError('invalid_response');
+  return { version: value.version, items };
+}
+
+/** Existing endpoint, one item: confirms the currently selected ready release. */
+export async function loadEmojiCatalogMetadata(baseUrl: string, options: EmojiCatalogLoadOptions = {}) {
+  const timeoutMs = options.timeoutMs ?? EMOJI_CATALOG_TIMEOUT_MS;
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000) throw new EmojiCatalogApiError('configuration');
+  const page = parsePage(await fetchPage(buildEmojiCatalogApiUrl(baseUrl, { version: options.version, limit: 1 }),
+    options.fetcher ?? fetch, timeoutMs), 0, 1);
+  if (options.version !== undefined && options.version !== page.version) throw new EmojiCatalogApiError('invalid_response');
+  return { version: page.version, total: page.total, firstItem: page.items[0] };
+}
+
 export async function loadEmojiCatalogFromWorker(
   baseUrl: string,
-  options: {
-    fetcher?: typeof fetch;
-    pageSize?: number;
-    timeoutMs?: number;
-    version?: string;
-  } = {},
+  options: EmojiCatalogLoadOptions = {},
 ): Promise<EmojiCatalogApiRelease> {
   const pageSize = options.pageSize ?? EMOJI_CATALOG_PAGE_SIZE;
   const timeoutMs = options.timeoutMs ?? EMOJI_CATALOG_TIMEOUT_MS;

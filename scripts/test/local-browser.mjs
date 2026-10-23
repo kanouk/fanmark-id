@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { cdpConnection } from './browser-cdp.mjs';
 import { navigateDocument } from './browser-navigation.mjs';
 import { verifyCatalogStartup, verifyDeferredRoutes } from './catalog-startup-browser.mjs';
+import { verifyCatalogPersistence } from './catalog-persistence-browser.mjs';
 import { createLocalBrowserEgressProxy } from '../migration/local-browser-egress-proxy.mjs';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -97,6 +98,7 @@ export async function verifyLocalBrowser(stack) {
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
     }
     const catalogStartup = await verifyCatalogStartup({ cdp, value, wait, navigate, fill, clickText, artifactDirectory, owner: stack.fixtures.users[0] });
+    const catalogPersistence = await verifyCatalogPersistence({ stack, cdp, value, wait, navigate, fill, clickText });
     const deferredRoutes = await verifyDeferredRoutes({ cdp, value, wait, navigate, expectModuleFailure: value => { expectedModuleFailure = value; } });
     console.log('[local browser] background catalog, retained input, retries and parallel readiness verified');
     const mobileLayouts = [];
@@ -229,7 +231,7 @@ export async function verifyLocalBrowser(stack) {
     assert.ok(hmrConnections > 0, 'Vite hot reload must connect over local HTTPS');
     assert.deepEqual(stack.deniedOutbound, []);
     assert.ok(requests.some(request => request.path === '/api/fanmarks/register' && request.method === 'POST'));
-    const report = { catalogStartup, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
+    const report = { catalogStartup, catalogPersistence, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
       searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true, accountSavePersisted: true, ownerSwitchIsolated: true,
       languageSwitchRetainsEditorAndDraft: true,
       externalApplicationRequests: stack.deniedOutbound.length, browserProxyRefusals: blocked.length, requests };

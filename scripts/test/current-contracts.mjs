@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 const files = [
   'scripts/test/owner-cache.mjs',
   'scripts/test/browser-navigation.test.mjs',
+  'scripts/test/slow-network-summary.test.mjs',
   'scripts/migration/test-staging-selector-coverage.mjs',
   'scripts/test-auth-login-mfa.mjs',
   'scripts/test-hook-effects.mjs',

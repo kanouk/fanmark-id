@@ -14,12 +14,15 @@ const profile = process.argv[2] || 'slow-4g';
 assert.ok(profiles[profile], 'Expected slow-4g or slow-3g');
 const route = process.argv[3] || '/';
 assert.ok(['/', '/auth', '/admin', '/about'].includes(route), 'Only anonymous read-only routes are allowed');
+const catalogActionMode = process.argv[5] === '--catalog-action';
+assert.ok(process.argv[5] === undefined || catalogActionMode);
+assert.ok(!catalogActionMode || route === '/');
 const output = process.argv[4] || await mkdtemp(path.join(os.tmpdir(), 'fanmark-network-audit-'));
 await mkdir(output, { recursive: true, mode: 0o700 });
 const chromeProfile = await mkdtemp(path.join(os.tmpdir(), 'fanmark-audit-chrome-'));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const probe = `(() => {
-  const p=window.__audit={marks:{},lcp:[],shifts:[],longtasks:[],catalog:[],writes:[]};
+  const p=window.__audit={marks:{},lcp:[],shifts:[],longtasks:[],catalog:[],writes:[],blockedAvailabilityReads:0};
   const element=node=>{const e=node?.nodeType===3?node.parentElement:node;return e?.tagName ? [e.tagName.toLowerCase(),e.id?'#'+e.id:'',...Array.from(e.classList||[]).slice(0,3).map(c=>'.'+c)].join('') : null;};
   new PerformanceObserver(list=>{for(const e of list.getEntries())p.lcp.push({at:e.startTime,size:e.size,element:element(e.element),url:e.url?new URL(e.url).pathname:null});}).observe({type:'largest-contentful-paint',buffered:true});
   new PerformanceObserver(list=>{for(const e of list.getEntries())p.shifts.push({at:e.startTime,value:e.value,recentInput:e.hadRecentInput,sources:(e.sources||[]).map(s=>({element:element(s.node),previous:s.previousRect.toJSON(),current:s.currentRect.toJSON()}))});}).observe({type:'layout-shift',buffered:true});
@@ -28,6 +31,11 @@ const probe = `(() => {
   window.fetch=async(input,init)=>{
     const u=new URL(typeof input==='string'||input instanceof URL?input:input.url,location.href);
     const method=(init?.method||(input instanceof Request?input.method:'GET')).toUpperCase();
+    // Measure catalog-backed input acceptance, not the subsequent availability
+    // query or search-history write. Stop that query locally in both releases.
+    if(${catalogActionMode}&&method==='POST'&&u.pathname==='/api/fanmarks/availability'){
+      p.blockedAvailabilityReads++;return new Response('{}',{status:503,headers:{'content-type':'application/json'}});
+    }
     if(!['GET','HEAD','OPTIONS'].includes(method)){p.writes.push({method,path:u.pathname});throw Error('audit_refuses_mutation');}
     const start=performance.now(); const r=await originalFetch(input,init);
     if(u.pathname==='/api/emoji/catalog')p.catalog.push({start,headers:performance.now(),status:r.status});
@@ -102,16 +110,28 @@ try {
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await cdp.send('Page.addScriptToEvaluateOnNewDocument',{source:probe});
   const value=async expression=>{const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});assert.ok(!r.exceptionDetails,'Browser evaluation failed: '+expression.slice(0,80));return r.result?.value;};
-  const report={observedAt:new Date().toISOString(),origin:'https://fanmark.id',route,profile,conditions,cpuSlowdown:4,viewport:{width:390,height:844},browser:version.Browser,userAgent:version['User-Agent'],runs:[]};
+const report={observedAt:new Date().toISOString(),origin:'https://fanmark.id',route,profile,conditions,cpuSlowdown:4,viewport:{width:390,height:844},browser:version.Browser,userAgent:version['User-Agent'],auditMode:catalogActionMode?'catalog-action':'passive',runs:[]};
   for(const state of ['cold','warm']){
     label=state;
     await cdp.send('Page.navigate',{url:'https://fanmark.id'+route});
-    const began=Date.now();let ready;
+    const began=Date.now();let ready,catalogAction;
     while(Date.now()-began<90_000){
       const p=await value('window.__audit && ({ready:window.__audit.marks.ready,catalog:window.__audit.catalog.length,bodies:performance.getEntriesByType("resource").filter(e=>new URL(e.name).pathname==="/api/emoji/catalog").length,now:performance.now(),controlled:!!navigator.serviceWorker.controller})');
       const metadata=catalogMetadata.get(state);
       const expected=metadata&&catalogPageCount(metadata);
-      if(p?.ready&&expected&&p.catalog===expected&&p.bodies===expected&&p.now-p.ready>5000&&p.controlled){ready=p;break;}
+      if(catalogActionMode&&p?.ready&&!catalogAction){
+        await value('document.querySelector("#search button[aria-label=直接入力]").click()');
+        await value('new Promise(resolve=>{const check=()=>{const input=document.querySelector("[role=dialog] input");if(input){input.focus();resolve(true);}else requestAnimationFrame(check);};check();})');
+        await cdp.send('Input.insertText',{text:'😀'});
+        catalogAction={startMs:await value('performance.now()')};
+        await value('Array.from(document.querySelector("[role=dialog]").querySelectorAll("button")).find(b=>b.textContent.trim()==="確定").click()');
+      }
+      if(catalogActionMode&&catalogAction&&!catalogAction.readyPaintMs&&await value('!document.querySelector("[role=dialog]")&&document.querySelector("#search")?.innerText.includes("😀")')){
+        catalogAction.readyPaintMs=await value('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(performance.now()))))');
+        catalogAction.waitMs=catalogAction.readyPaintMs-catalogAction.startMs;
+      }
+      const complete=catalogActionMode?!!catalogAction?.readyPaintMs:expected&&p?.catalog===expected&&p?.bodies===expected;
+      if(p?.ready&&complete&&p.now-p.ready>5000&&p.controlled){ready=p;break;}
       assert.deepEqual(errors,[], 'Audit instrumentation failed');
       await pause(200);
     }
@@ -120,14 +140,14 @@ try {
     const snapshot=await value(`(async()=>({probe:window.__audit,paints:performance.getEntriesByType('paint').map(e=>({name:e.name,at:e.startTime})),navigation:performance.getEntriesByType('navigation').map(e=>({ttfb:e.responseStart,domInteractive:e.domInteractive,domContentLoaded:e.domContentLoadedEventEnd,load:e.loadEventEnd,transferSize:e.transferSize})),resources:performance.getEntriesByType('resource').map(e=>({host:new URL(e.name).hostname,path:new URL(e.name).pathname,start:e.startTime,end:e.responseEnd,duration:e.duration,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize,decodedBodySize:e.decodedBodySize,initiator:e.initiatorType})),entry:document.querySelector('script[type=module]').getAttribute('src'),cacheKeys:await caches.keys(),cacheEntries:await Promise.all((await caches.keys()).map(async key=>({key,paths:(await(await caches.open(key)).keys()).map(r=>new URL(r.url).pathname)}))),controlled:!!navigator.serviceWorker.controller,fontsStatus:document.fonts.status,observedMs:performance.now()}))()`);
     assert.deepEqual(snapshot.probe.writes,[]);
     await writeFile(path.join(output,state+'.png'),Buffer.from((await cdp.send('Page.captureScreenshot',{format:'png'})).data,'base64'),{mode:0o600});
-    if(route==='/'){
+    if(route==='/'&&!catalogActionMode){
       await value('document.querySelector("#search button[aria-label=直接入力]").scrollIntoView({block:"center"})');
       const bounds=await value('(()=>{const r=document.querySelector("#search button[aria-label=直接入力]").getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,start:performance.now()};})()');
       await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x:bounds.x,y:bounds.y,button:'left',clickCount:1});
       await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:bounds.x,y:bounds.y,button:'left',clickCount:1});
       snapshot.dialogClick=await value(`new Promise(resolve=>{const check=()=>{if(document.querySelector('[role=dialog] input'))requestAnimationFrame(()=>requestAnimationFrame(()=>resolve({afterMs:performance.now()-${bounds.start},appeared:true})));else requestAnimationFrame(check);};check();})`);
     }
-    const sample={state,catalogMetadata:catalogMetadata.get(state),...snapshot,requests:[...requests.values()].filter(r=>r.label===state)};
+    const sample={state,auditMode:report.auditMode,catalogAction,catalogMetadata:catalogMetadata.get(state),...snapshot,requests:[...requests.values()].filter(r=>r.label===state)};
     assert.ok(sample.requests.every(r=>['GET','HEAD','OPTIONS'].includes(r.method)), 'Unexpected network mutation');
     report.runs.push(sample);
     await writeFile(path.join(output,'report.json'),JSON.stringify({...report,errors},null,2)+'\n',{mode:0o600});

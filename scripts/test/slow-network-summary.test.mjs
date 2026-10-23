@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { largestShiftWindow, summarizeRun, catalogPageCount, assertCompatibleSamples } from './slow-network-summary.mjs';
+import { largestShiftWindow, summarizeRun, catalogPageCount, assertCompatibleSamples, validateCatalogActionTransport } from './slow-network-summary.mjs';
 
 const metadata = { total: 3944, limit: 500, version: 'a'.repeat(64) };
 
@@ -10,6 +10,22 @@ test('CLS excludes recent input and uses the largest window, not lifetime sum', 
     { at: 500, value: 0.8, recentInput: true },
     { at: 2000, value: 0.4 },
   ]), 0.4);
+});
+
+function actionRun(local) {
+  const queries = local ? ['?limit=1'] : Array.from({ length: 8 }, (_, i) => '?limit=500' + (i ? '&offset=' + i * 500 + '&version=' + metadata.version : ''));
+  return { catalogAction: { startMs: 100, readyPaintMs: 200 }, catalogMetadata: { ...metadata, limit: local ? 1 : 500 },
+    probe: { catalog: queries.map(() => ({})) }, resources: queries.map(() => ({ path: '/api/emoji/catalog' })),
+    requests: queries.map(query => ({ path: '/api/emoji/catalog', method: 'GET', status: 200, end: 200, query })) };
+}
+test('catalog action requires complete pinned pages or a single metadata check and accepted input', () => {
+  assert.deepEqual(validateCatalogActionTransport(actionRun(false)), { strategy: 'full-pages', requests: 8 });
+  assert.deepEqual(validateCatalogActionTransport(actionRun(true)), { strategy: 'validated-local', requests: 1 });
+  for (const mutate of [r => { r.resources.pop(); }, r => { r.requests[0].status = 503; },
+    r => { r.catalogAction.readyPaintMs = undefined; }, r => { r.requests[0].end = undefined; },
+    r => { r.requests[1].query = '?limit=500&offset=500&version=' + 'b'.repeat(64); }]) {
+    const run = actionRun(false); mutate(run); assert.throws(() => validateCatalogActionTransport(run));
+  }
 });
 test('a gap of exactly one second starts a new CLS window', () => {
   assert.equal(largestShiftWindow([{ at: 100, value: 0.1 }, { at: 1100, value: 0.2 }]), 0.2);
@@ -43,8 +59,11 @@ test('aggregation refuses build, device, catalog and network mismatches', () => 
   for (const change of [
     { entry: '/assets/b.js' }, { browser: 'Chrome/156' }, { viewport: { width: 430, height: 844 } },
     { cpuSlowdown: 1 }, { origin: 'https://other.example' },
+    { auditMode: 'catalog-action' },
     { catalogMetadata: { ...metadata, version: 'b'.repeat(64) } },
     { conditions: { latency: 400, downloadThroughput: 50000 } },
   ]) assert.throws(() => assertCompatibleSamples([sample, { ...sample, ...change }]), { name: 'AssertionError' });
   assert.doesNotThrow(() => assertCompatibleSamples([sample, { ...sample, profile: 'slow-3g', conditions: { latency: 400 } }]));
+  const action = { ...sample, auditMode: 'catalog-action' };
+  assert.doesNotThrow(() => assertCompatibleSamples([action, { ...action, catalogMetadata: { ...metadata, limit: 1 } }]));
 });

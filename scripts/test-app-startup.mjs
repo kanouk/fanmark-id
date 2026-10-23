@@ -45,7 +45,7 @@ function runStartup({ catalog, serviceWorker = true, rootPresent = true, worker 
     "@/components/ThemeProvider": { ThemeProvider: "ThemeProvider" },
     "virtual:pwa-register": { registerSW(options) { assert.equal(options.immediate, true); assert.deepEqual(Object.keys(options), ["immediate"]); calls.push("registerSW"); } },
     "@/lib/emojiConversion": { installEmojiCatalog() { calls.push("installCatalog"); } },
-    "@/lib/emoji-catalog-worker": { loadEmojiCatalogFromWorker() { calls.push("fetchCatalog"); return catalog; } },
+    "@/lib/emoji-catalog-cache": { loadReusableEmojiCatalog() { calls.push("fetchCatalog"); return catalog; } },
     "@/lib/emoji-catalog-state": { startEmojiCatalog(loader) { resource = resourceExports.createEmojiCatalogResource(loader); return resource.load(); } },
   };
   runInNewContext(compiled, {
