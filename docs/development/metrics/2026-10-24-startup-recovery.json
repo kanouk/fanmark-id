@@ -1,0 +1,1326 @@
+{
+  "observedAt": "2026-10-23T17:54:01.288Z",
+  "source": "4d1e883aa7f2fc68cb4d8e36076adc20572fcb98",
+  "appVersion": "7595c567-11c0-4c32-be62-34c219128b55",
+  "entry": "/assets/index-DLxZm23a.js",
+  "browserConditions": {
+    "chrome": 155,
+    "viewports": [
+      1280,
+      390
+    ],
+    "height": 844,
+    "cpuThrottling": false,
+    "networkThrottling": false,
+    "note": "Initial browser cache cold; server was checked before measurement. These are lab observations, not field p75 or LCP."
+  },
+  "before": {
+    "http": [
+      [
+        {
+          "path": "/",
+          "status": 200,
+          "ms": 3115,
+          "error": null
+        },
+        {
+          "path": "/api/auth/capabilities",
+          "status": 200,
+          "ms": 4375,
+          "error": null
+        },
+        {
+          "path": "/api/system/maintenance",
+          "status": 200,
+          "ms": 4375,
+          "error": null
+        },
+        {
+          "path": "/api/admin/session",
+          "status": 401,
+          "ms": 4370,
+          "error": null
+        }
+      ],
+      [
+        {
+          "path": "/",
+          "status": 200,
+          "ms": 1144,
+          "error": null
+        },
+        {
+          "path": "/api/auth/capabilities",
+          "status": 200,
+          "ms": 2038,
+          "error": null
+        },
+        {
+          "path": "/api/system/maintenance",
+          "status": 200,
+          "ms": 2038,
+          "error": null
+        },
+        {
+          "path": "/api/admin/session",
+          "status": 401,
+          "ms": 2036,
+          "error": null
+        }
+      ],
+      [
+        {
+          "path": "/",
+          "status": 200,
+          "ms": 36,
+          "error": null
+        },
+        {
+          "path": "/api/auth/capabilities",
+          "status": 200,
+          "ms": 1626,
+          "error": null
+        },
+        {
+          "path": "/api/system/maintenance",
+          "status": 200,
+          "ms": 1635,
+          "error": null
+        },
+        {
+          "path": "/api/admin/session",
+          "status": 401,
+          "ms": 1622,
+          "error": null
+        }
+      ],
+      [
+        {
+          "path": "/",
+          "status": 200,
+          "ms": 677,
+          "error": null
+        },
+        {
+          "path": "/api/auth/capabilities",
+          "status": 200,
+          "ms": 2323,
+          "error": null
+        },
+        {
+          "path": "/api/system/maintenance",
+          "status": 200,
+          "ms": 1660,
+          "error": null
+        },
+        {
+          "path": "/api/admin/session",
+          "status": 401,
+          "ms": 1659,
+          "error": null
+        }
+      ]
+    ],
+    "browser": [
+      {
+        "i": 0,
+        "width": 1280,
+        "ready": false,
+        "error": false,
+        "scroll": 1280,
+        "controlled": false,
+        "ms": 21323,
+        "timing": [],
+        "text": "{\"error\":\"recovery_writer_unavailable\"}"
+      },
+      {
+        "i": 1,
+        "width": 390,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-C55A1AXa.js",
+        "scroll": 390,
+        "controlled": false,
+        "ms": 23009,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 3503.8000000715256,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 3503.600000023842,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 2,
+        "width": 1280,
+        "ready": false,
+        "error": true,
+        "entry": "/assets/index-C55A1AXa.js",
+        "scroll": 1280,
+        "controlled": false,
+        "ms": 8355,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 5002.200000047684,
+            "status": 0
+          }
+        ],
+        "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+      },
+      {
+        "i": 3,
+        "width": 390,
+        "ready": false,
+        "error": true,
+        "entry": "/assets/index-C55A1AXa.js",
+        "scroll": 390,
+        "controlled": false,
+        "ms": 9235,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 5001.200000047684,
+            "status": 0
+          }
+        ],
+        "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+      },
+      {
+        "i": 4,
+        "width": 1280,
+        "ready": false,
+        "error": true,
+        "entry": "/assets/index-C55A1AXa.js",
+        "scroll": 1280,
+        "controlled": false,
+        "ms": 9451,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 5002.799999952316,
+            "status": 0
+          }
+        ],
+        "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+      },
+      {
+        "i": 5,
+        "width": 390,
+        "ready": false,
+        "error": true,
+        "entry": "/assets/index-C55A1AXa.js",
+        "scroll": 390,
+        "controlled": false,
+        "ms": 11134,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 5002.100000023842,
+            "status": 0
+          }
+        ],
+        "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+      }
+    ]
+  },
+  "intermediate": {
+    "firstMitigation": {
+      "source": "e33236ebae1f04bf46422983b695eea14465e732",
+      "browser": [
+        {
+          "i": 0,
+          "width": 1280,
+          "ready": false,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1280,
+          "controlled": false,
+          "ms": 47780,
+          "timing": [],
+          "text": "ファンマID"
+        },
+        {
+          "i": 1,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": false,
+          "ms": 23977,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 90.10000002384186,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 11940,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 2,
+          "width": 1280,
+          "ready": false,
+          "error": true,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1280,
+          "controlled": false,
+          "ms": 13020,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 5002.5,
+              "status": 0
+            }
+          ],
+          "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+        },
+        {
+          "i": 3,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": false,
+          "ms": 12239,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 89.5,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 8483.100000023842,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 4,
+          "width": 1280,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1265,
+          "controlled": false,
+          "ms": 6185,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 2098.5,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 4186.799999952316,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 5,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": false,
+          "ms": 5648,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 88.19999992847443,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 2523.100000023842,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 6,
+          "width": 1280,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1265,
+          "controlled": false,
+          "ms": 3436,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 1492,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 2793.5,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 7,
+          "width": 390,
+          "ready": false,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 18841,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 3158.0999999046326,
+              "status": 200
+            }
+          ],
+          "text": "ファンマID"
+        },
+        {
+          "i": 8,
+          "width": 1280,
+          "ready": false,
+          "error": true,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1280,
+          "controlled": true,
+          "ms": 5076,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 5003.300000071526,
+              "status": 0
+            }
+          ],
+          "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+        },
+        {
+          "i": 9,
+          "width": 390,
+          "ready": false,
+          "error": true,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 5069,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 5003.200000047684,
+              "status": 0
+            }
+          ],
+          "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+        },
+        {
+          "i": 10,
+          "width": 1280,
+          "ready": false,
+          "error": true,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1280,
+          "controlled": true,
+          "ms": 5203,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 5002.200000047684,
+              "status": 0
+            }
+          ],
+          "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+        },
+        {
+          "i": 11,
+          "width": 390,
+          "ready": false,
+          "error": true,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 5201,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 5002.399999976158,
+              "status": 0
+            }
+          ],
+          "text": "サービス設定を確認できませんでした\n\n通信状態を確認して再試行してください。\n\n再試行"
+        }
+      ],
+      "laterBrowser": [
+        {
+          "i": 0,
+          "width": 1280,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1265,
+          "controlled": true,
+          "ms": 963,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 702.6000000238419,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 765.5999999046326,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 1,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 324,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 88.89999997615814,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 148.10000002384186,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 2,
+          "width": 1280,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1265,
+          "controlled": true,
+          "ms": 342,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 93.5,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 254.20000004768372,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 3,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 630,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 87,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 460.8000000715256,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 4,
+          "width": 1280,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1265,
+          "controlled": true,
+          "ms": 637,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 86.5,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 514.8999999761581,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 5,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 476,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 87,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 318,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 6,
+          "width": 1280,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1265,
+          "controlled": true,
+          "ms": 632,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 79.5,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 511.7000000476837,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 7,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 332,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 140.60000002384186,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 117.09999990463257,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 8,
+          "width": 1280,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1265,
+          "controlled": true,
+          "ms": 184,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 84.5,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 97.60000002384186,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 9,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 325,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 91.10000002384186,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 180.20000004768372,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 10,
+          "width": 1280,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 1265,
+          "controlled": true,
+          "ms": 486,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 110.10000002384186,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 266,
+              "status": 200
+            }
+          ]
+        },
+        {
+          "i": 11,
+          "width": 390,
+          "ready": true,
+          "error": false,
+          "entry": "/assets/index-C55A1AXa.js",
+          "scroll": 390,
+          "controlled": true,
+          "ms": 324,
+          "timing": [
+            {
+              "path": "/api/system/maintenance",
+              "ms": 173.70000004768372,
+              "status": 200
+            },
+            {
+              "path": "/api/auth/get-session",
+              "ms": 173.79999995231628,
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    "unacceptedGlobalShortDeadline": {
+      "source": "e543a483c38c4c09dd18fdf9b2b6a1f13f52dd60",
+      "http": [
+        [
+          {
+            "path": "/",
+            "status": 503,
+            "ms": 4491,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/system/maintenance",
+            "status": 503,
+            "ms": 4344,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/auth/capabilities",
+            "status": 503,
+            "ms": 4174,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/admin/session",
+            "error": "TimeoutError",
+            "ms": 20005
+          }
+        ],
+        [
+          {
+            "path": "/",
+            "status": 503,
+            "ms": 4234,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/system/maintenance",
+            "status": 503,
+            "ms": 4233,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/auth/capabilities",
+            "status": 503,
+            "ms": 4358,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/admin/session",
+            "error": "TimeoutError",
+            "ms": 20001
+          }
+        ],
+        [
+          {
+            "path": "/",
+            "status": 503,
+            "ms": 4173,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/system/maintenance",
+            "status": 503,
+            "ms": 4359,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/auth/capabilities",
+            "status": 503,
+            "ms": 4352,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"recovery_writer_unavailable\"}"
+          },
+          {
+            "path": "/api/admin/session",
+            "status": 401,
+            "ms": 15352,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"unauthenticated\"}"
+          }
+        ],
+        [
+          {
+            "path": "/",
+            "status": 200,
+            "ms": 1615,
+            "retry": null,
+            "cache": "public, max-age=0, must-revalidate",
+            "body": "expected_entry"
+          },
+          {
+            "path": "/api/system/maintenance",
+            "status": 200,
+            "ms": 1493,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"schemaVersion\":1,\"settings\":{\"maintenance_mode\":false,\"maintenance_message\":\"\",\"maintenance_end_time\":\"2026-10-21T05:20:35.098325+00:00\"}}"
+          },
+          {
+            "path": "/api/auth/capabilities",
+            "status": 200,
+            "ms": 2037,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"emailVerification\":true,\"passwordReset\":true,\"signUp\":true,\"invitationRequired\":false,\"socialProviders\":[\"apple\",\"discord\",\"github\",\"google\"]}"
+          },
+          {
+            "path": "/api/admin/session",
+            "status": 401,
+            "ms": 2191,
+            "retry": null,
+            "cache": "no-store",
+            "body": "{\"error\":\"unauthenticated\"}"
+          }
+        ]
+      ],
+      "pwaChecksIncomplete": 2
+    }
+  },
+  "accepted": {
+    "readiness": {
+      "at": "2026-10-23T17:48:36.588Z",
+      "status": 200,
+      "ms": 502,
+      "bytes": 7590,
+      "sha256": "f8b62eb812ef358f2738ba522f27cef132bac6a4f3c5fbe879322ef80bdf2d7f"
+    },
+    "http": [
+      [
+        {
+          "path": "/",
+          "status": 200,
+          "ms": 328,
+          "error": null
+        },
+        {
+          "path": "/api/auth/capabilities",
+          "status": 200,
+          "ms": 842,
+          "error": null
+        },
+        {
+          "path": "/api/system/maintenance",
+          "status": 200,
+          "ms": 430,
+          "error": null
+        },
+        {
+          "path": "/api/admin/session",
+          "status": 401,
+          "ms": 377,
+          "error": null
+        }
+      ],
+      [
+        {
+          "path": "/",
+          "status": 200,
+          "ms": 40,
+          "error": null
+        },
+        {
+          "path": "/api/auth/capabilities",
+          "status": 200,
+          "ms": 1126,
+          "error": null
+        },
+        {
+          "path": "/api/system/maintenance",
+          "status": 200,
+          "ms": 85,
+          "error": null
+        },
+        {
+          "path": "/api/admin/session",
+          "status": 401,
+          "ms": 1245,
+          "error": null
+        }
+      ],
+      [
+        {
+          "path": "/",
+          "status": 200,
+          "ms": 34,
+          "error": null
+        },
+        {
+          "path": "/api/auth/capabilities",
+          "status": 200,
+          "ms": 465,
+          "error": null
+        },
+        {
+          "path": "/api/system/maintenance",
+          "status": 200,
+          "ms": 113,
+          "error": null
+        },
+        {
+          "path": "/api/admin/session",
+          "status": 401,
+          "ms": 8476,
+          "error": null
+        }
+      ],
+      [
+        {
+          "path": "/",
+          "status": 200,
+          "ms": 66,
+          "error": null
+        },
+        {
+          "path": "/api/auth/capabilities",
+          "status": 200,
+          "ms": 717,
+          "error": null
+        },
+        {
+          "path": "/api/system/maintenance",
+          "status": 200,
+          "ms": 192,
+          "error": null
+        },
+        {
+          "path": "/api/admin/session",
+          "status": null,
+          "ms": 20003,
+          "error": "TimeoutError"
+        }
+      ]
+    ],
+    "browser": [
+      {
+        "i": 0,
+        "width": 1280,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 1265,
+        "controlled": false,
+        "ms": 1457,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 392.10000002384186,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 133.60000002384186,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 1,
+        "width": 390,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 390,
+        "controlled": false,
+        "ms": 514,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 113.79999995231628,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 98.40000009536743,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 2,
+        "width": 1280,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 1265,
+        "controlled": false,
+        "ms": 605,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 98.20000004768372,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 47,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 3,
+        "width": 390,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 390,
+        "controlled": false,
+        "ms": 792,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 134.70000004768372,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 133.20000004768372,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 4,
+        "width": 1280,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 1265,
+        "controlled": false,
+        "ms": 607,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 197.20000004768372,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 312.60000002384186,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 5,
+        "width": 390,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 390,
+        "controlled": false,
+        "ms": 471,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 168.79999995231628,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 155.39999997615814,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 6,
+        "width": 1280,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 1265,
+        "controlled": false,
+        "ms": 383,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 90,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 44.700000047683716,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 7,
+        "width": 390,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 390,
+        "controlled": false,
+        "ms": 376,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 82.29999995231628,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 73.5,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 8,
+        "width": 1280,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 1265,
+        "controlled": false,
+        "ms": 889,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 205.69999992847443,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 85.39999997615814,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 9,
+        "width": 390,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 390,
+        "controlled": true,
+        "ms": 335,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 114,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 101.5,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 10,
+        "width": 1280,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 1265,
+        "controlled": true,
+        "ms": 227,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 97,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 64.60000002384186,
+            "status": 200
+          }
+        ]
+      },
+      {
+        "i": 11,
+        "width": 390,
+        "ready": true,
+        "error": false,
+        "entry": "/assets/index-DLxZm23a.js",
+        "scroll": 390,
+        "controlled": true,
+        "ms": 334,
+        "timing": [
+          {
+            "path": "/api/system/maintenance",
+            "ms": 92.5,
+            "status": 200
+          },
+          {
+            "path": "/api/auth/get-session",
+            "ms": 114.89999997615814,
+            "status": 200
+          }
+        ]
+      }
+    ],
+    "protected": [
+      {
+        "path": "/api/admin/session",
+        "status": 401,
+        "ms": 748,
+        "cache": "no-store",
+        "keys": [
+          "error"
+        ],
+        "error": "unauthenticated"
+      },
+      {
+        "path": "/api/me/profile",
+        "status": 401,
+        "ms": 212,
+        "cache": "no-store",
+        "keys": [
+          "error"
+        ],
+        "error": "unauthorized"
+      },
+      {
+        "path": "/api/me/fanmarks",
+        "status": 401,
+        "ms": 134,
+        "cache": "no-store",
+        "keys": [
+          "error"
+        ],
+        "error": "unauthorized"
+      },
+      {
+        "path": "/api/me/notifications",
+        "status": 401,
+        "ms": 176,
+        "cache": "no-store",
+        "keys": [
+          "error"
+        ],
+        "error": "unauthorized"
+      }
+    ],
+    "existingPwa": {
+      "first": {
+        "entry": "/assets/index-C55A1AXa.js",
+        "controlled": true
+      },
+      "entry": "/assets/index-DLxZm23a.js",
+      "normalAutoUpdate": true,
+      "storageRetained": true,
+      "snapshot": {
+        "count": 3944,
+        "checksum": "aad700c28117614fc83ba8b60c5e932c476e88f525f2dbbc11b32426031df296",
+        "verified": true
+      },
+      "autoRetryMs": 628,
+      "manualRetryMs": 154,
+      "backoffRespected": true,
+      "protectedRedirect": true,
+      "authCapabilitiesReady": true,
+      "blocked": [],
+      "exceptions": []
+    },
+    "assets": {
+      "exact": 279,
+      "edgeTransformed": 1,
+      "total": 280
+    }
+  },
+  "limits": [
+    "A 20-second admin-session timeout remains in the accepted-runtime observations; later four protected GETs returned 401. This is not a claim of stable global API latency.",
+    "Intermediate unsuccessful attempts are retained; current successful samples do not erase them.",
+    "No real-user login, field p75, LCP/CLS or full low-bandwidth benchmark was performed in this incident.",
+    "No writer-ticket cleanup, fence release, backup run, payment, email or Jev inference was performed."
+  ]
+}
