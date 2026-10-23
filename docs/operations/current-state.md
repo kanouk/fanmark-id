@@ -5,20 +5,20 @@
 
 ## 本番移行と配備
 
-**最終照合: 2026-10-23 08:34 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
+**最終照合: 2026-10-23 09:24 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。
 
 | 項目 | 最終確認した状態 |
 | --- | --- |
 | 本番URL | `https://fanmark.id/`。Worker Route方式。www/adminはalias Workerの限定転送 |
-| 本番app | `fanmark-app-production` / active 100% `2ead3b1b-6722-4249-8f87-e667f3a9f59f` |
-| 配備operationのソース | `be75080dba1a67ce7bdd00c666cdc3dfdfe33e0e` / [PR66](https://github.com/kanouk/fanmark-id/pull/66)。frontendも同じ検証済みソースからbuild |
-| 配備時点のmain | `db3671bcf66444e4a669dc6f21581006b49f0fa7`。配備後のmain/CIはPR66を参照。非文書fileの同一性を配備ソースと別に照合 |
-| 配備のPR CI / main CI | 候補 [39871780864](https://github.com/kanouk/fanmark-id/actions/runs/39871780864) の全6 job成功。最終main CI・取り込み結果は[PR66](https://github.com/kanouk/fanmark-id/pull/66)を参照 |
+| 本番app | `fanmark-app-production` / active 100% `8bbf9f50-5dfb-4219-9fdb-321864f4afab` |
+| 配備operationのソース | `b01f80ed8aac8a98ed529a105b4f11d8d5d5749d` / [PR67](https://github.com/kanouk/fanmark-id/pull/67)。frontendも同じ検証済みソースからbuild |
+| 配備時点のmain | `b377e256f2da6f0da9d35d12d5a9b06edca76c7b`。配備後のmain/CIはPR67を参照。非文書fileの同一性を配備ソースと別に照合 |
+| 配備のPR CI / main CI | 候補 [39877238728](https://github.com/kanouk/fanmark-id/actions/runs/39877238728) の全6 job成功。最終main CI・取り込み結果は[PR67](https://github.com/kanouk/fanmark-id/pull/67)を参照 |
 | 文書入口の整理 | [PR44](https://github.com/kanouk/fanmark-id/pull/44)、main `3b13f283a6d479246d8bc285fbdeece8324451e9`。[main CI](https://github.com/kanouk/fanmark-id/actions/runs/39518911227)の2 job成功。アプリの再配備は不要 |
 | 開発入口の最終整理 | `c1b29fd`で旧遠隔smoke入口と起動/補助ガイドを整理。当時の25資産が当時の配備済み版とSHA-256一致。今回の改修・資産は別行に記録 |
-| 実行コード・設定 | PR64のcatalog背景取得・必要時だけの待機・入力保持、認証/maintenance並行確認、管理/分析/プランの遅延importに加え、PR66で所有者・案内等18 routeを分割。4言語は即時切替を維持。Lint 0必須。秘密設定名17件、D1/R2/DO・runtime・4 Cron・3 Routeと他3 Workerを保持 |
+| 実行コード・設定 | PR64のcatalog背景取得・必要時だけの待機・入力保持、認証/maintenance並行確認、管理/分析/プランの遅延importに加え、PR66で所有者・案内等18 routeを分割。4言語は即時切替を維持。PR67で共有用OG画像だけPWA先読みから除外し、全画面コードと基本画面・アイコンは保持。Lint 0必須。秘密設定名17件、D1/R2/DO・runtime・4 Cron・3 Routeと他3 Workerを保持 |
 | 公開確認 | root/Auth capabilities/maintenanceは200、未認証profile/owned/notifications/admin sessionは401/no-store。カタログ応答0件のままトップ表示。既存PWA更新・4言語×320/375/390/430pxと旧hash資産を確認。公開確認でPOSTは実行していない |
-| frontend資産 | [manifest](deployed-assets-2026-10-23-route-split.json)。旧hashを保持した82 file。robots.txtの配信時追記はsource hashと区別し、公開の更新前後byte一致も確認 |
+| frontend資産 | [manifest](deployed-assets-2026-10-23-pwa-precache.json)。旧hashを保持した82 file。robots.txtの配信時追記はsource hashと区別し、公開の更新前後byte一致も確認 |
 
 後からmergeしたdocs-only commitはこの配備ソースに含まれない。文書のmergeとアプリの配備を別に管理する。
 通常production configがD1/R2/DO/Route/Cronの非秘密な構成を保持する。V1/V2や旧stagingの資源を本番と取り違えない。
@@ -67,6 +67,7 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 [PR64](https://github.com/kanouk/fanmark-id/pull/64)で初期JS gzip 618,153→446,087 bytes（約28%減）。型・Lint 0・client222件・現行契約138件、実Worker/ブラウザの待機・取消・失敗/再試行・遅延module・認証拒否と通常回帰が成功した。公開では既存PWA更新・catalog待機なしのトップ・16表示幅・34資産を独立確認した。詳細は[起動の比較](../development/STARTUP_PERFORMANCE.md)。
 続く[低速回線の模擬計測](../development/SLOW_NETWORK_2026-10-23.md)で、公開本番の初回/PWA再訪を通信・CPU制限下で測定した。これはアプリ更新や再配備ではない。
 [PR66](https://github.com/kanouk/fanmark-id/pull/66)で初期JS gzip 446,087→338,962 bytes（約24%減）。型・Lint 0・client225件・現行契約138件と実local/公開確認が成功。今回取り直した初回LCP中央値は1.6Mbpsで3.764→3.240秒、400kbpsで11.416→9.268秒。PWA再訪はほぼ同等、初回総転送量は約3.5%増でPWA先読みを次の改善候補に残した。[比較と限界](../development/ROUTE_SPLITTING_2026-10-23.md)。
+[PR67](https://github.com/kanouk/fanmark-id/pull/67)でOG画像だけをPWA先読みから除外。公開82 fileの変更はSWのみで、他はbyte同一。初回総転送量は約1.755→1.064MB（約39%減）、SW先読み約1.091→0.400MB（約63%減）。初回LCP中央値は3.072→3.600秒／9.432→9.764秒、TTFBも増えており表示速度の改善は未確認。隔離SWの新規導入/更新/オフライン/入力・storage保持、既存公開PWAの自動更新・cache60→59差分、実Worker回帰と4言語×4幅が成功。[比較と限界](../development/PWA_PRECACHE_2026-10-23.md)。
 本人の実アカウントでの再受け入れ・実端末・自然回線のLCP/CLS確認は未実施。
 
 ## 詳細原本

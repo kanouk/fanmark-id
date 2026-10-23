@@ -1,0 +1,424 @@
+{
+  "observedAt": "2026-10-23T00:24:43.072Z",
+  "appVersion": "8bbf9f50-5dfb-4219-9fdb-321864f4afab",
+  "deploymentSourceCommit": "b01f80ed8aac8a98ed529a105b4f11d8d5d5749d",
+  "frontendSourceCommit": "b01f80ed8aac8a98ed529a105b4f11d8d5d5749d",
+  "verifiedTree": "dc5797d5aa73499836618d9719311a629a5b76a0",
+  "node": "22.6.0",
+  "note": "Only sw.js differs from previous deployment; all other public files, OG image and old hashed assets retained byte-identically. Public bytes independently verified. robots.txt source hash differs from Cloudflare content-signals response, whose before/after bytes were unchanged.",
+  "edgeTransformedPaths": [
+    "robots.txt"
+  ],
+  "artifacts": [
+    {
+      "name": "assets/About-BZIXFmJx.js",
+      "bytes": 10661,
+      "sha256": "9e0258fe37839dae2dda91d82b463d8bbd8e19dd43da674cb8d4e5edb302a65d"
+    },
+    {
+      "name": "assets/AdminApp-BvtXlxIM.js",
+      "bytes": 10722,
+      "sha256": "7371f583b8f5aa133d3990761aba629489690ca91367f786fe6c08459c0c7f02"
+    },
+    {
+      "name": "assets/AdminApp-C5UKXxVW.js",
+      "bytes": 11142,
+      "sha256": "1d5296375b596758d19813c6f3074131d831a57568a47d822ab057d9b1366cb9"
+    },
+    {
+      "name": "assets/AdminDashboard-CROTG7FJ.js",
+      "bytes": 237795,
+      "sha256": "af020f5272c5951a7b74c44d0426efd43a18d32240045f00f35c7eb8ba7a4362"
+    },
+    {
+      "name": "assets/AdminDashboard-CmnXPBb9.js",
+      "bytes": 238220,
+      "sha256": "c6da3b9270080b5eafc48fbfb25a970985cecebebc7bbaf0e5881376753f6751"
+    },
+    {
+      "name": "assets/Analytics-CDQn8R2v.js",
+      "bytes": 428147,
+      "sha256": "85422049ee25548120fc8bd35ca7821aec6730159f493e7a12e6b5e569b2deb0"
+    },
+    {
+      "name": "assets/Analytics-Cv0oCBQc.js",
+      "bytes": 428043,
+      "sha256": "3082740045fba28154bd07b9417219f40d3c0abac98fedd90aed97d9b7ed8ed9"
+    },
+    {
+      "name": "assets/AuthLayout-bIPtxZsS.js",
+      "bytes": 1002,
+      "sha256": "3b2d3c6fefed14c2e334dcd46b39563fbdeac15fece710388f4bf107945cce84"
+    },
+    {
+      "name": "assets/CommercialTransactions-BVRa2PjW.js",
+      "bytes": 3638,
+      "sha256": "91e1c678bad1d531f34cd4471ede2aeee8333adb0e437358bf30fbed3abb286f"
+    },
+    {
+      "name": "assets/ContactUs-DMet-zTs.js",
+      "bytes": 3673,
+      "sha256": "cfbfc4486107b8a53f53b16865711b22fe4b81c0ade367b3e27b99581e603eec"
+    },
+    {
+      "name": "assets/Dashboard-CV6j1Q2R.js",
+      "bytes": 97815,
+      "sha256": "f3e2c794400e4a7eb3107f27bc875f73aea4777abc89fe3ae7acf2f9ff002cf4"
+    },
+    {
+      "name": "assets/EmojiProfileEdit-Bzq1Ddrs.js",
+      "bytes": 22262,
+      "sha256": "b027f89c9913c94f493dc09edcadb497563be698d8e87988f80033b488e46bbc"
+    },
+    {
+      "name": "assets/FanmarkMessageboardPreview-CglcbRH7.js",
+      "bytes": 6902,
+      "sha256": "e5aeca0cd00b79fa48a15ea5321ae5ae3208e850bce5538b8c77f3214c9e20a8"
+    },
+    {
+      "name": "assets/FanmarkProfilePreview-AsZikxXN.js",
+      "bytes": 10044,
+      "sha256": "479e7651e070dfecb5159754d3e195b2e632dec2811f88dd97822bb1cd66d83d"
+    },
+    {
+      "name": "assets/FanmarkPublicQR-BVxT5zV8.js",
+      "bytes": 4079,
+      "sha256": "d0a38356c6d74a03af758587aeaad3ee7452b88cc158ddc05399335db6fd3c47"
+    },
+    {
+      "name": "assets/FanmarkSettingsPage-D5d7c6on.js",
+      "bytes": 30424,
+      "sha256": "77d06d4cb0bfe31e3476ac6612792a8720ff2f88bb33f378ea1a8d4092aba5cc"
+    },
+    {
+      "name": "assets/Favorites-B91_90QF.js",
+      "bytes": 7376,
+      "sha256": "3e220ac5dc50157df72998501264e780979f72de027ac83820784c688a9077b3"
+    },
+    {
+      "name": "assets/ForgotPassword-DTPnEKVe.js",
+      "bytes": 3731,
+      "sha256": "be72acf6e3389bae9fefa48a9cc71eba080319bd9347f7a7729293c9aa039e12"
+    },
+    {
+      "name": "assets/Notifications-Bt59Jjaq.js",
+      "bytes": 5853,
+      "sha256": "551276d4258ea440d34e4f670b97cc0668a25d4354122eb289252dbabe19543e"
+    },
+    {
+      "name": "assets/PWAApp-JVPPrbMC.js",
+      "bytes": 6844,
+      "sha256": "76a27add258139718f790813aecf06a3a1331a5623f40c865aad361a3824e7e1"
+    },
+    {
+      "name": "assets/PasswordSetup-BFT3QvWM.js",
+      "bytes": 4517,
+      "sha256": "831a4521e1bbacb3c6531c4bb2fedd164edb4a08052f1da6336431c624906640"
+    },
+    {
+      "name": "assets/PlanSelection-Bi_JMGax.js",
+      "bytes": 25742,
+      "sha256": "da0d39d056b95b42b86bf448776cd2b412b18de3c24adfe87aa65dfd7dd0d11d"
+    },
+    {
+      "name": "assets/PlanSelection-D34vORri.js",
+      "bytes": 25526,
+      "sha256": "844cb4855aecd52925c2f2689b1eaf8212ed966c007d17ff0336c712846bd66e"
+    },
+    {
+      "name": "assets/PrivacyPolicy-Dvj4RSZO.js",
+      "bytes": 2120,
+      "sha256": "e6a883cdb44cf850fabf19e76ea57293f0ed86090974ee2fc9f43c9144c86e11"
+    },
+    {
+      "name": "assets/Profile-BI9zQLcW.js",
+      "bytes": 40090,
+      "sha256": "9dd088be275fd986f2046a16b9c822e251a6afb43222d93a39eb18c4b4ad477a"
+    },
+    {
+      "name": "assets/ResetPassword-DNYtBv5N.js",
+      "bytes": 4546,
+      "sha256": "d1f5a6443d041de4f6c5e2c58338f151dda1759cc6c1c0643f38c3d07b0dd3ae"
+    },
+    {
+      "name": "assets/SocialLinkInputCard-B_3DicEC.js",
+      "bytes": 90883,
+      "sha256": "484154640c8999edb18f5bfd79dbd86d1ecc6254819e7d419165f1f45e7d7dec"
+    },
+    {
+      "name": "assets/TermsOfService-C21gmVXa.js",
+      "bytes": 2459,
+      "sha256": "d6aaeebc0e7f08df5278dcec1c6e805e84011ece5c4f672a96ff35140154286c"
+    },
+    {
+      "name": "assets/alert-Q_QGIle3.js",
+      "bytes": 613,
+      "sha256": "20eea33120862e08d19dff86b9a3b4169f056ee0c6cf5d489665e37455cd12af"
+    },
+    {
+      "name": "assets/checkbox-Wt92QGLZ.js",
+      "bytes": 3866,
+      "sha256": "df33b1aeb34faf8faeb6c42c0bfbeb00f44503cd44cc64967254452aa40589f2"
+    },
+    {
+      "name": "assets/clock-CjIeJemj.js",
+      "bytes": 347,
+      "sha256": "be7978911d0c2e4e04eed202d56776465c1317a533a90dd304880d53d5be66d6"
+    },
+    {
+      "name": "assets/fanmark-analytics-api-CnOdaFJK.js",
+      "bytes": 3833,
+      "sha256": "bc3122ebb78956dca53aeab4a2b96ddfe9b0b8ab34ba44599d9b09a1bde83fe1"
+    },
+    {
+      "name": "assets/fanmark-settings-api-DHn0ofMz.js",
+      "bytes": 3522,
+      "sha256": "79a104e90568e0b59a925173a86e9b6ac6ad5c6b22aad1d0dc9dbf6fc56c92e8"
+    },
+    {
+      "name": "assets/formatDistanceToNow-CTwgOqtl.js",
+      "bytes": 2441,
+      "sha256": "7ddde06fa48e8c51f80373c1a7f3656b495b198ca636f599527ffbbec6087841"
+    },
+    {
+      "name": "assets/index-B-l2afQA.js",
+      "bytes": 2458173,
+      "sha256": "95579fe9a9f85715649d31c22b3a6e6b5d0f3bc407988804913494c8d26340ad"
+    },
+    {
+      "name": "assets/index-B5VE3_jg.js",
+      "bytes": 1587014,
+      "sha256": "a427147e42f35c3b0a5b1a74f58616577322870282b88bff51409f58281b139e"
+    },
+    {
+      "name": "assets/index-BI7Ha9vg.js",
+      "bytes": 2286265,
+      "sha256": "6d7444e113bfb5ce8cf4b153823c4d13220424b4f12cef2e6b780ddf83cae4f3"
+    },
+    {
+      "name": "assets/index-B_O3fdd5.css",
+      "bytes": 144718,
+      "sha256": "6b0beae1dd5090d7f86b75a36cd63d387c1b6467390137878cb081a1b87e7133"
+    },
+    {
+      "name": "assets/index-B_npmcW9.css",
+      "bytes": 144394,
+      "sha256": "c13ef830813da4c4890c6086b8433daa85c72ddbbce3838da4c80c2e93088498"
+    },
+    {
+      "name": "assets/index-BiDH-QSd.css",
+      "bytes": 146635,
+      "sha256": "9af8015e127bfb40d1a8df17463379522f5675a1aba056d10856d21c90594dac"
+    },
+    {
+      "name": "assets/index-BrD8JX-f.css",
+      "bytes": 146218,
+      "sha256": "9a4f31e15cbec4ea6f63e394b0f6ee9d4a867cfa1500f4d33b9fd46fefa8328d"
+    },
+    {
+      "name": "assets/index-C42muhhL.js",
+      "bytes": 2458737,
+      "sha256": "9f78a4dfcaea6f500b604b26a57a6723783f8cc4f12f4e11db93e13b58742039"
+    },
+    {
+      "name": "assets/index-CKUIIEzI.js",
+      "bytes": 2458124,
+      "sha256": "7ccee793257b9d061b937ba4fb41210d5dcc049be426c16826047680737e5768"
+    },
+    {
+      "name": "assets/index-CVtYw8rw.js",
+      "bytes": 2286567,
+      "sha256": "596c294fb6032f220ed8bbae1ed623b80f91b5a112e0ab94d980bc04eea132e1"
+    },
+    {
+      "name": "assets/index-Cs7uUmmT.js",
+      "bytes": 3576108,
+      "sha256": "5d5ac9d184e97d8d33232333b36010ecd9b732f9dfb2c1983e54b2c104370bee"
+    },
+    {
+      "name": "assets/index-DIaXNGYF.js",
+      "bytes": 16682,
+      "sha256": "a8b983c5d3a33c96a7083e0c91b0b6fb75f232b2334e8f5f6efabdcb74e49583"
+    },
+    {
+      "name": "assets/index-DtWEsSXo.js",
+      "bytes": 1137849,
+      "sha256": "25cd2a86aa39197ba759804b2546821db90e8cd518ff12f8cd7091e4b0057941"
+    },
+    {
+      "name": "assets/index-Y1UEkqE7.css",
+      "bytes": 145117,
+      "sha256": "fe71adb6524aaf8cc1b18faec8dd72127d156e0adf41005883f2f64024f6af1b"
+    },
+    {
+      "name": "assets/index-bYp76Dld.css",
+      "bytes": 146789,
+      "sha256": "3b57e9e26974debed697abd46a3b8aa89824712b633566ab7835affcff541fb8"
+    },
+    {
+      "name": "assets/index-eQgC5Hy4.js",
+      "bytes": 232,
+      "sha256": "3569b32a334a3f4124ef4494739f061e51cb140777d097b18ec7823750a73370"
+    },
+    {
+      "name": "assets/info-Bmrm2Gqx.js",
+      "bytes": 699,
+      "sha256": "567e8461eba9e489ae9979d1aa54c0eb898fe97e310d6b1d2bb73f50ef682c23"
+    },
+    {
+      "name": "assets/ko-B5OAI8tN.js",
+      "bytes": 10744,
+      "sha256": "6061a5d78ccd24db1629bdf6770b6993596b5cda04c5b0d49f8ad74999cd70b4"
+    },
+    {
+      "name": "assets/link-2-CIQqNKQr.js",
+      "bytes": 410,
+      "sha256": "3cd14113838a99f3f0a1e72d3c48e9eaee1784cfae294fa8620c39668e54aa12"
+    },
+    {
+      "name": "assets/reference-master-api-Cf5_tdPL.js",
+      "bytes": 9686,
+      "sha256": "1a9efc00cbfdf89092a989dc390acff41adebf57fc63d8ac1e4e21f775b3e71e"
+    },
+    {
+      "name": "assets/refresh-cw-2hRkQp9z.js",
+      "bytes": 489,
+      "sha256": "e5daf900d1518d47ed00281746129f48f3763429e107151199a0244088f9f11e"
+    },
+    {
+      "name": "assets/select-pHa7WJAy.js",
+      "bytes": 21380,
+      "sha256": "0995303e5e78522d36aed2231297692750f246fd15f78a56e717a376462e29a4"
+    },
+    {
+      "name": "assets/shield-check-Crd_dTv4.js",
+      "bytes": 488,
+      "sha256": "f52ace95361e5ba2f14f95a2272a53d117df29d04decc7833a98608370a61a02"
+    },
+    {
+      "name": "assets/sparkles-BdQND3_E.png",
+      "bytes": 12227,
+      "sha256": "a1054b5c2c098c952f8ea365739ccb46cb488465246dc6c8b49acde9f5d01be1"
+    },
+    {
+      "name": "assets/square-pen-DoaSojaV.js",
+      "bytes": 488,
+      "sha256": "a2fd2eaeacf228b031f32549c290819a27405ce4870e1f8aa62bb6c7c3ff157a"
+    },
+    {
+      "name": "assets/stripe-customer-portal-api-BeQreFuB.js",
+      "bytes": 9145,
+      "sha256": "902b4bacbe283e87f5ecf1dcdf9fd855c9d0b8c25d7c427501065c12003d9e9d"
+    },
+    {
+      "name": "assets/textarea-CiobzVRj.js",
+      "bytes": 485,
+      "sha256": "193ed1b73377193b976d175fefd55f049049a2b0b3c98e5eadd8421fb8c496a4"
+    },
+    {
+      "name": "assets/trash-2-BzlinBZs.js",
+      "bytes": 973,
+      "sha256": "bdad1e58aa48a538a2212afdaeb6a69e51a9ad299fd30436eaa93441e0815e29"
+    },
+    {
+      "name": "assets/trending-up-CEEsNU8V.js",
+      "bytes": 373,
+      "sha256": "97949f1412d484756271511cb28438314eee26ba2119ef672fb0286e6eebd210"
+    },
+    {
+      "name": "assets/trending-up-DTVzGYKI.js",
+      "bytes": 373,
+      "sha256": "a6649be78ec6e34f7c7ac9bf2c296f1e4e62f9b8ab78ca233b0e301af7483cd2"
+    },
+    {
+      "name": "assets/upload-8d9AFDTT.js",
+      "bytes": 426,
+      "sha256": "9687837083dad7d9d89fab77254872de074b743eefffbf89305d5f65b0b1b7fd"
+    },
+    {
+      "name": "assets/useAvatarUpload-C1jR32lj.js",
+      "bytes": 5916,
+      "sha256": "10d949fbe19caf6eae8d14a6883dbea2f60fec4089fafb61d90312436e32be4b"
+    },
+    {
+      "name": "assets/useSubscription-DuHMsfwm.js",
+      "bytes": 10481,
+      "sha256": "eec22301fd1f352c0701bdea271fea371064a0749df86e42168d01da1b85fea7"
+    },
+    {
+      "name": "assets/workbox-window.prod.es5-B9K5rw8f.js",
+      "bytes": 5720,
+      "sha256": "9a3611574014578c297dc9f141ce5f47c5b83d44814bbcfd65a06151517874f4"
+    },
+    {
+      "name": "build-target.json",
+      "bytes": 449,
+      "sha256": "ca61420c01debb7dd6ed0cee86d78f9896de535b8583d613be264219590095e0"
+    },
+    {
+      "name": "clear-legacy-api-cache.js",
+      "bytes": 264,
+      "sha256": "807ff48072d12947b612d6f04948cd86e7790399eb8897af7b708428da8bd5f6"
+    },
+    {
+      "name": "favicon.ico",
+      "bytes": 6714,
+      "sha256": "3d054cf491d691f699fd0f344d7d27d95d76a3054d3cd1823802911c045eaa78"
+    },
+    {
+      "name": "favicon.png",
+      "bytes": 12227,
+      "sha256": "a1054b5c2c098c952f8ea365739ccb46cb488465246dc6c8b49acde9f5d01be1"
+    },
+    {
+      "name": "index.html",
+      "bytes": 2896,
+      "sha256": "10213377cf33d3bdaa7e7f992f27f8eba3611814b4f14a947ebf5a8f723dc567"
+    },
+    {
+      "name": "manifest.webmanifest",
+      "bytes": 417,
+      "sha256": "df40212c6eee5770b21862e455f9a849e377ab86a8223ead31f695d1e239546a"
+    },
+    {
+      "name": "og-image.png",
+      "bytes": 690436,
+      "sha256": "eadbe4c37e24b45488711a7901627e221c6d1be52ab7d4f58e354fc570d8c479"
+    },
+    {
+      "name": "placeholder.svg",
+      "bytes": 3253,
+      "sha256": "64badf7aabda0b9630b87020ffb6095cb858ccbcf66b355c2aa08b1063954d3b"
+    },
+    {
+      "name": "pwa-192x192.png",
+      "bytes": 6987,
+      "sha256": "2f82471748543fb6ed63fbcb2891bc44a39dd1d84709fad2e5690ab38f2fead5"
+    },
+    {
+      "name": "pwa-512x512.png",
+      "bytes": 23050,
+      "sha256": "b5d36c32a1c208a91b3e184ceb35d48808ba54c94e569cdb826fae083f48d880"
+    },
+    {
+      "name": "robots.txt",
+      "bytes": 201,
+      "sha256": "b9b4424bd9e05e4e60a1683cc7d10752c36f3a3c7b1e3d1c63f34eb00e59afd2"
+    },
+    {
+      "name": "sitemap.xml",
+      "bytes": 631,
+      "sha256": "cfa48b6767356a168d8b2f0b03fd5baef704ff3d9f103d0f3db2d385537f1986"
+    },
+    {
+      "name": "sw.js",
+      "bytes": 7516,
+      "sha256": "e711bb0b4a7ec39f0383b85222d6bd3a3e08d38543978e123c24ac8ade60875d"
+    },
+    {
+      "name": "workbox-28d7c21f.js",
+      "bytes": 131384,
+      "sha256": "0c1d12ec6466b03c93de7de363bbc991760bc6421996073d7b84eb75224197d4"
+    }
+  ]
+}

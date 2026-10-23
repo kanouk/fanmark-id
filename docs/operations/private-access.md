@@ -59,6 +59,7 @@ READMEからintent/receipt/manifest/暗号化原本を辿る。Git外の`common.
 
 - `~/.codex/private/fanmark-mobile-lint-2026-10-22/`: PR60、4言語/4画面幅の改修前後・Lint 0件・実local/CI・候補/active/公開と旧資産保持の照合。新operationのintentを一度だけ実行した記録。
 
+- `~/.codex/private/fanmark-pwa-precache-2026-10-23/`: PR67。OG画像の先読み除外。前後の低速回線測定、隔離localの実SW新規導入/更新/オフライン、実Worker回帰、公開の既存PWA自動更新・60→59 cache差分、82資産の保持。upload/deployの排他intentとreceipt、独立readbackを保存。再実行しない。
 - `~/.codex/private/fanmark-route-split-2026-10-23/`: PR66。初期route分割のソースCI・実local回帰、前後各16 navigation、82資産の旧hash保持、既存PWA更新・公開4言語/4幅。upload/deployの排他intent・receipt、候補/active・設定/他Workerの独立readbackを保存。再実行しない。
 - `~/.codex/private/fanmark-startup-2026-10-23-reviewed/`: PR64。最終候補のCI、更新前/候補/activeの照合、旧27資産の保持を含む34資産、既存PWA更新・公開4言語/4幅、catalog保留の実画面確認。upload/deployの排他intentと独立readbackを保存。先行する未配備preflightは別directoryへ保持し、再実行しない。
 
