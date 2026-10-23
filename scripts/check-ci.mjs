@@ -13,6 +13,7 @@ const COMMANDS = new Set([
   'npm run build:cloudflare-staging', 'npm run test:staging-profile-editor-ui',
   'npm run test:plan', 'npm run test:ci:${{ matrix.suite }}',
   'node ../../scripts/check-worker-test-result.mjs',
+  'node scripts/test/pwa-precache-browser.mjs',
 ]);
 
 export function validateWorkflow(source) {
@@ -50,7 +51,7 @@ export function validateWorkflow(source) {
     'npm run typecheck', 'npm run build:cloudflare-production-live:dry-run', 'npm run test:combined-recovery',
     'npm run test:business-runtime-import', 'npm run build:dry-run',
     'npm run test:staging-invitation-signup-local', 'npm run test:staging-profile-editor-local',
-    'npm run build:cloudflare-staging', 'npm run test:staging-profile-editor-ui']) {
+    'npm run build:cloudflare-staging', 'npm run test:staging-profile-editor-ui', 'node scripts/test/pwa-precache-browser.mjs']) {
     if (!commands.includes(command)) throw new Error('Required CI check missing: ' + command);
   }
   return { secretFree: true, deployment: false, commands: commands.length };

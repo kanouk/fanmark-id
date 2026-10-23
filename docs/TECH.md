@@ -103,6 +103,8 @@ Worker jobが15分1秒（全契約/復旧13分51秒）、アプリjobが5分12�
 本変更は検査の実行構成のみで、本番Workerの再配備は不要。
 
 PWAはAPIを静的cacheへ入れない。更新時は旧hash資産を保持し、新しいHTML/SW/manifestを使う。
+画面コード・CSS・基本HTML・アイコンは先読みを維持する。画面内で使わない共有用`og-image.png`だけは先読みから除外し、公開配信とOGメタ情報は保持する。
+正規builderは生成SWを検査する。CIはさらに`node scripts/test/pwa-precache-browser.mjs`で新規導入・旧方針からの更新・オフライン静的資産・API非cacheを検証する。
 `test:app-startup`、`test:staging-asset-retention`と[更新手順](operations/deployment.md)を参照する。
 D1 schema変更はstoreとmigration sequenceを分けてレビューし、適用先・backup・検証・失敗時の前進復旧を
 用意してから別の本番操作にする。`supabase db push`を通常更新に使わない。

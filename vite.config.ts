@@ -50,6 +50,9 @@ export default defineConfig(({ mode }) => ({
         ...(mode === "cloudflare-staging" ? { cacheId: "fanmark-staging-static-v2" } : {}),
         ...(mode === "cloudflare-production" ? { cacheId: "fanmark-cloudflare-production-static-v1" } : {}),
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        // Social preview crawlers request this directly; the app never renders
+        // it. Keep the published asset, but do not download it on PWA install.
+        globIgnores: ["**/og-image.png"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // API responses may contain account state. Only static build assets
         // are cached; requests outside precache go directly to the network.

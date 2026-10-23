@@ -14,6 +14,7 @@ for (const [name, mutate] of [
   ['raw deployment', text => text + '\n      - run: wrangler deploy\n'],
   ['shell command suffix', text => text.replace('run: npm run build\n', 'run: npm run build && curl https://example.invalid\n')],
   ['removed recovery test', text => text.replace('run: npm run test:combined-recovery', 'run: npm run typecheck')],
+  ['removed PWA update test', text => text.replace('run: node scripts/test/pwa-precache-browser.mjs', 'run: npm run typecheck')],
   ['omitted Worker group', text => text.replace('core, business, billing-admin, recovery', 'core, business, billing-admin')],
   ['early cancellation', text => text.replace('fail-fast: false', 'fail-fast: true')],
   ['missing aggregate dependency', text => text.replace('needs: worker-contracts', 'needs: application')],
