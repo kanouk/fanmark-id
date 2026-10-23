@@ -19,6 +19,7 @@ function signal() {
 }
 beforeAll(async () => {
   await db.prepare("CREATE TABLE drain_fixture (id INTEGER PRIMARY KEY)").run();
+  await db.prepare("CREATE TABLE system_settings (setting_key TEXT, setting_value TEXT, is_public INTEGER)").run();
   await db.prepare(`CREATE TABLE notification_worker_wake_state
     (singleton_id INTEGER PRIMARY KEY, requested_generation INTEGER, acknowledged_generation INTEGER)`).run();
 });
@@ -380,4 +381,61 @@ it("rejects a legacy object without changing its census when the binding points 
   });
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner, active: 0, drained: true });
   await releaseRecoveryWriterFence(runtime, owner);
+});
+
+
+it("admits only exact startup GETs as reads and keeps session, callbacks and writes tracked", async () => {
+  const commands: string[] = [];
+  const startupEnv: Env = { ...runtime, NOTIFICATION_WAKE_BACKEND: "", AUTH_BACKEND: "better-auth", AUTH_DB: db,
+    BETTER_AUTH_URL: "https://app.example.test", BETTER_AUTH_SECRET: "synthetic-startup-secret-00000000000000000000",
+    MAINTENANCE_SETTINGS_BACKEND: "d1", RECOVERY_DRAIN: {
+      idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch(input: string, init: RequestInit) {
+        commands.push(new URL(input).pathname); return gate.fetch(input, init);
+      } }; },
+    } as unknown as DurableObjectNamespace };
+  for (const path of ["/api/system/maintenance", "/api/auth/capabilities"]) {
+    commands.length = 0;
+    const response = await worker.fetch(new Request("https://app.example.test" + path), startupEnv);
+    expect(response.status).toBe(200); expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(commands).toEqual(["/inspect"]);
+    expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
+  }
+  for (const [path, method] of [["/api/auth/get-session", "GET"], ["/api/auth/callback/unknown", "GET"],
+    ["/api/system/maintenance", "POST"], ["/api/auth/capabilities", "POST"],
+    ["/api/system/maintenance/", "GET"]]) {
+    commands.length = 0;
+    await worker.fetch(new Request("https://app.example.test" + path, { method }), startupEnv);
+    expect(commands).toEqual(["/enter", "/leave"]);
+  }
+  await claimRecoveryWriterFence(runtime, owner);
+  for (const path of ["/api/system/maintenance", "/api/auth/capabilities"]) {
+    commands.length = 0;
+    const response = await worker.fetch(new Request("https://app.example.test" + path), startupEnv);
+    expect(response.status).toBe(503); expect(commands).toEqual(["/inspect"]);
+  }
+  await assertRecoveryWriterFence(runtime, owner);
+});
+
+it("preserves async KV tickets through concurrent synchronous admission, inspection and drain", async () => {
+  const legacy = "00000000-0000-4000-8000-000000000099";
+  await runInDurableObject(gate, async (_instance, state) => {
+    await state.storage.put({ scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1, ["writer:" + legacy]: true });
+  });
+  const finish = signal();
+  const entered = Array.from({ length: 32 }, () => signal());
+  const operations = entered.map(ready => withRecoveryWriter(runtime, async () => {
+    ready.resolve(); await finish.promise;
+  }, undefined, "http"));
+  await Promise.all(entered.map(ready => ready.promise));
+  const reads = await Promise.all(Array.from({ length: 32 }, () => inspectRecoveryWriters(runtime)));
+  for (const status of reads) expect(status).toMatchObject({ active: 33, tickets: { legacy: 1, kinds: { unknown: 1, http: 32 } } });
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 33, drained: false });
+  await expect(withRecoveryWriter(runtime, async () => { throw Error("must not execute"); })).rejects.toThrow("recovery_writer_unavailable");
+  finish.resolve(); await Promise.all(operations);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner, active: 1, drained: false, tickets: { legacy: 1 } });
+  // Only the owner of this fixture's settled legacy operation may remove it.
+  await gate.fetch("https://recovery-writer.internal/leave", { method: "POST",
+    body: JSON.stringify({ id: legacy, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }) });
+  await assertRecoveryWriterFence(runtime, owner);
 });

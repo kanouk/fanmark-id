@@ -131,3 +131,12 @@ API単価$0.042/100万入力tokens・出力無料（2026-10-23 [公式モデル�
 4言語CLDRは固定commitのUnicode文字列へ紐付け、IDを持たない。新Masterに名称がなければそのreleaseの英語名/keywordを使う。辞書JSONのSHA-256とdictionaryVersionを検証し、開く前には取得もPWA先読みもしない。PWAの既存画面code/cache/API非cache方針を保持する。旧hash辞書も `retain-staging-hashed-assets.mjs` で保持する。
 
 検証: `npm test` に名称検索・順序・ID・辞書hashの契約、既存 `test:emoji-catalog:d1` に実D1のAPI/日次競合/版変更/失敗テスト、`test:local` に共有パレットと通常Worker/Auth/D1/R2の回帰を含める。実モデルの検索品質は合成providerテストとは別に、固定例と保留例で評価する。
+
+
+## 起動時の設定確認とwriter追跡
+
+`GET /api/system/maintenance` と `GET /api/auth/capabilities` はSELECT/PRAGMAだけの固定経路として、静的資産・公開Masterと同じ`withRecoveryRead`を使う。scope・保存状態の不整合やfence時の拒否は保持し、cacheや設定の推測で確認を省かない。session・OAuth callbackを含む他のAuth GETと非GETは`withRecoveryWriter`を使う。
+
+SQLiteのwriter coordinatorは既存KVの同じkey/valueを同期KVと`transactionSync`で読み書きする。1要求ごとの`blockConcurrencyWhile`と非同期transactionの重複を除き、永続化待ちの間も後続要求の状態判定を実行できる。通常のoutput gateは有効なままで、永続化前にenterの成功を返さない。ticketの自動期限切れ・他処理の票削除・保存先の変更は行わない。native Worker testで旧非同期KVとの互換、同時32 writer/32 inspect、fence、ACK喪失と隔離復旧を検証する。
+
+[Cloudflareの同期KV/transaction仕様](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/)を参照。起動障害の観測・公開検証は[運用状態](operations/current-state.md)へ記録する。

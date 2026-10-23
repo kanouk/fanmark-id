@@ -1798,7 +1798,11 @@ const worker = {
       const readMethod = request.method === "GET" || request.method === "HEAD";
       const assetRead = Boolean(env.ASSETS) && !url.pathname.startsWith("/api/") && url.pathname !== "/api";
       const masterRead = url.pathname === "/api/emoji/catalog" || isReferenceMasterPath(url);
-      if (readMethod && (assetRead || masterRead)) {
+      // These exact GET handlers only read configuration/schema; unlike session
+      // and OAuth GETs, they cannot refresh sessions or write captured stores.
+      const startupRead = request.method === "GET" &&
+        ["/api/system/maintenance", "/api/auth/capabilities"].includes(url.pathname);
+      if (readMethod && (assetRead || masterRead || startupRead)) {
         return await withRecoveryRead(env, view);
       }
       return await withRecoveryWriter(env, async () => {
