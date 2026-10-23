@@ -1,3 +1,4 @@
+import { verifyEmojiPalette } from './emoji-palette-browser.mjs';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -101,6 +102,7 @@ export async function verifyLocalBrowser(stack) {
     const catalogStartup = await verifyCatalogStartup({ cdp, value, wait, navigate, fill, clickText, artifactDirectory, owner: stack.fixtures.users[0] });
     const catalogPersistence = await verifyCatalogPersistence({ stack, cdp, value, wait, navigate, fill, clickText });
     const supportingUx = await verifySupportingUx({ stack, cdp, value, wait, navigate, fill, artifactDirectory });
+    const emojiPalette = await verifyEmojiPalette({ cdp, value, wait, navigate, fill, artifactDirectory });
     const deferredRoutes = await verifyDeferredRoutes({ cdp, value, wait, navigate, expectModuleFailure: value => { expectedModuleFailure = value; } });
     console.log('[local browser] background catalog, retained input, retries and parallel readiness verified');
     const mobileLayouts = [];
@@ -140,7 +142,7 @@ export async function verifyLocalBrowser(stack) {
     await writeFile(path.join(artifactDirectory, 'search-mobile-320.png'),
       Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'), { mode: 0o600 });
     await value('document.querySelector("#search button[aria-haspopup=dialog]").click()');
-    await wait('!!document.querySelector("[data-radix-popper-content-wrapper]")');
+    await wait('!!document.querySelector("[data-palette-dialog]")');
     await assertViewport(320, 'emoji picker');
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
@@ -157,6 +159,29 @@ export async function verifyLocalBrowser(stack) {
     await wait('document.body.innerText.includes(' + JSON.stringify(owner.displayFanmark) + ')');
     await writeFile(path.join(artifactDirectory, 'dashboard-desktop.png'),
       Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'), { mode: 0o600 });
+    await pointerClick(`document.querySelector('[role="tab"][id$="-trigger-acquisition"]')`);
+    await wait('!!document.querySelector("#dashboard-fanmark-search button[aria-haspopup=dialog]:not(:disabled)")');
+    await value('document.querySelector("#dashboard-fanmark-search button[aria-haspopup=dialog]:not(:disabled)").click()');
+    await wait('!!document.querySelector("[data-palette-search]")');
+    await fill('[data-palette-search]', '桜');
+    await wait(`!!document.querySelector('[data-palette-emoji="🌸"]')`);
+    await value(`document.querySelector('[data-palette-emoji="🌸"]').click()`);
+    await wait('document.querySelector("#dashboard-fanmark-search").innerText.includes("🌸")');
+    for (const type of ['keyDown','keyUp']) await cdp.send('Input.dispatchKeyEvent',{type,key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    await wait('!document.querySelector("[data-palette-dialog]")');
+    emojiPalette.signedInDashboardSelection=true;
+    await pointerClick(`document.querySelector('[role="tab"][id$="-trigger-my-fanmarks"]')`);
+    await wait('document.body.innerText.includes(' + JSON.stringify(owner.displayFanmark) + ')');
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+    await navigate('/pwa');
+    await wait('!!document.querySelector("button[aria-haspopup=dialog]:not(:disabled)")');
+    await assertViewport(390, 'PWA shared input');
+    await value('document.querySelector("button[aria-haspopup=dialog]:not(:disabled)").click()');
+    await wait('!!document.querySelector("[data-palette-search]")');
+    await value(`document.querySelector('[data-palette-emoji="🌸"]').click()`);
+    for (const type of ['keyDown','keyUp']) await cdp.send('Input.dispatchKeyEvent',{type,key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    await wait('!document.querySelector("[data-palette-dialog]")');
+    emojiPalette.pwaSelection=true;
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await navigate('/');
     await wait('!!document.querySelector("button[aria-label=直接入力]")');
@@ -233,7 +258,7 @@ export async function verifyLocalBrowser(stack) {
     assert.ok(hmrConnections > 0, 'Vite hot reload must connect over local HTTPS');
     assert.deepEqual(stack.deniedOutbound, []);
     assert.ok(requests.some(request => request.path === '/api/fanmarks/register' && request.method === 'POST'));
-    const report = { catalogStartup, catalogPersistence, supportingUx, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
+    const report = { catalogStartup, catalogPersistence, supportingUx, emojiPalette, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
       searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true, accountSavePersisted: true, ownerSwitchIsolated: true,
       languageSwitchRetainsEditorAndDraft: true,
       externalApplicationRequests: stack.deniedOutbound.length, browserProxyRefusals: blocked.length, requests };

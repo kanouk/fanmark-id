@@ -113,3 +113,21 @@ D1 schema変更はstoreとmigration sequenceを分けてレビューし、適用
 
 旧RLS・移行準備・一回限りhelperの説明は[旧TECH](history/TECH-2026-10-21.md)に保存した。
 機能ごとのWorker API契約は`docs/migration/`に残るが、当時の「stagingのみ」「未配備」は履歴として読む。
+
+
+## Jev絵文字パレット（#26）
+
+共有 `EmojiInput` の選択UIだけを必要時importへ置換する。直接入力・clipboard・カタログgate・空き状況・取得・課金は既存の経路。
+`getInstalledEmojiCatalog()` は検証/install済みのrelease/versionだけを返す。受信ordinalではなく、マスターの `sortOrder` 順を検索分類と一覧に使う。IDの採番・同一性は変えない。
+
+`POST /api/emoji/palette/search`: 同origin＋専用header、JSON 2048 bytes、検索語2〜160文字、カテゴリ・variants・catalogVersion・dictionaryVersion・schemaVersion=1・normalizationVersion=1を検証する。各検索で現在ready版を照合し、版違いは409で候補を返さない。
+モデルは評価した `jev-1.13.0` に固定。6観点それぞれの分類→項目選択、最大255択（通常251）、最大8外部HTTP・12秒・自動再送なし。クライアントは350ms debounce・15秒取消で、IME中/空欄は送信しない。
+
+Workerの `TYPESAFE_API_KEY` は新しいsecret。通常local/CIには実鍵を渡さず外部送信を止める。未設定・停止・429・不正応答・catalog版違いでも名称検索と一覧を維持する。鍵をVite変数へ入れない。
+既存 `FANMARK_SEARCH_LIMITER` の別prefixを使い、既存Business `system_settings` の非公開key `internal.emoji_palette.budget.<UTC日付>` の日付別counterを原子的に増やす。全体でUTC日次100検索まで、失敗/取消も消費する。成功分のinput/output tokens/callsを集計するが、失敗時のprovider消費を完全に集計したとはしない。
+API単価$0.042/100万入力tokens・出力無料（2026-10-23 [公式モデル表](https://docs.typesafe.ai/models)）。現在の上限8×65,536 context×100検索から計算した保守的なAPI費用上限目安は約$2.21/UTC日。Cloudflare費用と価格改定は含めない。実測と運用を確認して上限を変更する。
+
+候補cacheはisolate内最大128件・利用期限10分。検索語を含むkeyはSHA-256にし、DBや共有CDNには保存しない。同一検索を同時処理する時は1推論へまとめる。provider側の保存条件はTypeSafeの規約に従う。
+4言語CLDRは固定commitのUnicode文字列へ紐付け、IDを持たない。新Masterに名称がなければそのreleaseの英語名/keywordを使う。辞書JSONのSHA-256とdictionaryVersionを検証し、開く前には取得もPWA先読みもしない。PWAの既存画面code/cache/API非cache方針を保持する。旧hash辞書も `retain-staging-hashed-assets.mjs` で保持する。
+
+検証: `npm test` に名称検索・順序・ID・辞書hashの契約、既存 `test:emoji-catalog:d1` に実D1のAPI/日次競合/版変更/失敗テスト、`test:local` に共有パレットと通常Worker/Auth/D1/R2の回帰を含める。実モデルの検索品質は合成providerテストとは別に、固定例と保留例で評価する。

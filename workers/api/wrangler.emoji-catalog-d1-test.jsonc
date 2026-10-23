@@ -13,6 +13,11 @@
       "binding": "MASTER_DB",
       "database_name": "fanmark-emoji-catalog-fixture",
       "database_id": "00000000-0000-0000-0000-000000000036"
+    },
+    {
+      "binding": "FANMARK_DB",
+      "database_name": "fanmark-emoji-palette-budget-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000071"
     }
   ]
 }

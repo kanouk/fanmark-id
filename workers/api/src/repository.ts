@@ -1,4 +1,5 @@
 export interface Env {
+  TYPESAFE_API_KEY?: string;
   CF_VERSION_METADATA?: { id: string };
   ASSETS?: Fetcher;
   FANMARK_DB?: D1Database;

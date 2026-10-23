@@ -14,7 +14,7 @@ export async function retainStagingHashedAssets(previousBuild, currentBuild) {
   const pending = [];
   let alreadyPresent = 0;
   for (const name of (await readdir(previous)).sort()) {
-    assert.match(name, /^[A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8}\.(?:js|css|png|svg|woff2?)$/u,
+    assert.match(name, /^[A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8}\.(?:js|css|json|png|svg|woff2?)$/u,
       'Only Vite hashed public assets may be retained');
     const source = join(previous, name), target = join(current, name);
     assert.equal((await lstat(source)).isFile(), true, 'Symlinks and directories are refused');

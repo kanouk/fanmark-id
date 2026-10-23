@@ -172,3 +172,12 @@ test('an open picker resumes its selected emoji after catalog validation', async
   x.ready(); x.render(); await selection;
   assert.deepEqual(x.changes, ['😀']);
 });
+
+
+test('changing a completed search hides its old result immediately, before a new response', async () => {
+  const x=fixture();x.render();x.reads[0].resolve({available:true});await settle();
+  assert.equal(x.render().result.fanmark,'😀');
+  x.query('🌙');assert.equal(x.render().result,null);
+  x.reads[1].resolve({available:true});await settle();assert.equal(x.render().result.fanmark,'🌙');
+  x.query('🌙');assert.equal(x.render().result.fanmark,'🌙');
+});

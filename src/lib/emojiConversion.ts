@@ -31,6 +31,8 @@ const emojiIdToRecord = new Map<string, EmojiCatalogEntry>();
 const normalizedCodepointsToId = new Map<string, string>();
 const keyToId = new Map<string, { id: string; priority: number }>();
 let lookupEntries: LookupEntry[] = [];
+let installedCatalogVersion = "";
+export const getInstalledEmojiCatalog = () => ({ version: installedCatalogVersion, items: [...emojiIdToRecord.values()] });
 let maxLookupKeyLength = 0;
 const lookupEntriesByFirstChar = new Map<string, LookupEntry[]>();
 
@@ -96,6 +98,7 @@ function buildEmojiLookupIndexes(
 export function installEmojiCatalog(
   entries: readonly EmojiCatalogEntry[],
   generatedAliases?: Record<string, string>,
+  version = "",
 ): void {
   if (
     entries.length === 0 ||
@@ -111,6 +114,7 @@ export function installEmojiCatalog(
     throw new Error('Invalid emoji catalog');
   }
   buildEmojiLookupIndexes(entries, generatedAliases);
+  installedCatalogVersion = version;
 }
 
 export const segmentEmojiSequence = (emojiSequence: string): string[] => {

@@ -175,6 +175,11 @@ const report={observedAt:new Date().toISOString(),origin:'https://fanmark.id',ro
     await cdp.send('Page.navigate',{url:'about:blank'});await pause(500);
   }
   assert.deepEqual(errors,[], 'Runtime errors invalidate this audit run; inspect report.json');
+} catch(error) {
+  let observed;
+  try { observed=(await cdp?.send('Runtime.evaluate',{expression:'JSON.stringify({path:location.pathname,probe:window.__audit,controlled:!!navigator.serviceWorker.controller,text:document.body?.innerText.slice(0,3000)})',returnByValue:true})).result?.value; } catch { /* Preserve the primary error. */ }
+  await writeFile(path.join(output,'failure.json'),JSON.stringify({at:new Date().toISOString(),error:String(error.message),observed:observed?JSON.parse(observed):undefined},null,2)+'\n',{mode:0o600});
+  throw error;
 } finally {
   cdp?.close();if(chrome.exitCode===null){const ended=new Promise(resolve=>chrome.once('exit',resolve));chrome.kill('SIGTERM');await Promise.race([ended,pause(3000)]);if(chrome.exitCode===null){chrome.kill('SIGKILL');await ended;}}
   await rm(chromeProfile,{recursive:true,force:true});

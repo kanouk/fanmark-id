@@ -18,7 +18,7 @@ async function loadSelectedEmojiCatalog(): Promise<void> {
   const release = await loadReusableEmojiCatalog(baseUrl, {
     ...(pinnedVersion ? { version: pinnedVersion } : {}),
   });
-  installEmojiCatalog(release.items);
+  installEmojiCatalog(release.items, undefined, release.version);
 }
 
 function startApplication(): void {
