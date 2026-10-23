@@ -60,7 +60,7 @@ slow-3g:/:warmでは、確定後の待ちは95.8%、観測総転送量は98.1%�
 - 実local Master D1でready版A→Bを通常のaudit/generation guardを維持して切り替え、新版に固定した8ページ取得・B保存・次回1件照合を確認。破損・読取り拒否・750ms block打切り・quota・transaction abortでも入力でき、失敗した置換はAを部分更新しない。最後にlocal Aへ復帰。
 - 隔離HTTPSと実SWで旧方針からの更新・新規導入・入力/DOM/storage保持・offline shell/code・API非cacheを検証。公開では同じ旧PWA profileの登録を残したまま新entryへ更新し、保存snapshotのSHA-256・3,944件・再訪1件照合、4言語×4幅・5絵文字入力・匿名拒否を確認。公開の本人account保存やoffline catalog利用を実証したとはしない。
 - 公開130資産のbytes/SHA-256と旧hash到達性を照合。robots.txtはCloudflare追記前のsourceと区別し、更新前後のedge応答一致を確認。OG画像の公開と先読み除外を保持。初回の独立GET接続リセットは読み取りだけ再実行し成功。
-- 公開PWAの初回観測は新cacheのdownload後、activation完了前にnavigateしたため旧document待機が終了しなかった。受入れでは同じprofileを保持し、旧entryのprune後の通常navigationで新entryを確認。登録解除・cache消去・再配備はしていない。
+- 公開PWAの初回観測は新cacheのdownloadだけを待ってnavigateし、旧documentのまま時間切れになった。activation完了を待つ条件が欠けていたため、この観測は受入れに使わない。受入れでは同じprofileを保持し、旧entryのprune後の通常navigationで新entryを確認。登録解除・cache消去・再配備はしていない。
 
 ## 配備・証拠
 
