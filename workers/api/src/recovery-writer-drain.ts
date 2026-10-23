@@ -113,7 +113,7 @@ export async function inspectRecoveryWriters(env: Env, signal?: AbortSignal): Pr
 }
 
 /** Only audited read-only handlers may use this admission; they never create a writer ticket. */
-export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>): Promise<T> {
+export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>, timeoutMs?: number): Promise<T> {
   if (!recoveryWriterTrackingSelected(env)) return operation();
   // A read admitted before claim may finish afterwards: it cannot change a
   // captured store. New reads still refuse the same fence as mutating requests.
@@ -121,9 +121,9 @@ export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>)
   for (let attempt = 0; ; attempt++) {
     let status: RecoveryWriterInspection;
     try {
-      // This inspection cannot mutate stores or strand a ticket. Bound each
-      // transport wait and acquire a fresh stub for the only permitted retry.
-      status = await inspectRecoveryWriters(env, AbortSignal.timeout(2_000));
+      // This inspection cannot mutate stores or strand a ticket. Startup APIs
+      // bound the transport wait; assets/Master retain their original wait.
+      status = await inspectRecoveryWriters(env, timeoutMs === undefined ? undefined : AbortSignal.timeout(timeoutMs));
     } catch (error) {
       if (attempt !== 0 || !(error instanceof RecoveryWriterDrainError) || !error.retryable) {
         // Only this failed, side-effect-free admission may be retried by an

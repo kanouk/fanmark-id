@@ -466,7 +466,7 @@ it("retries only a lost read inspection ACK with a fresh stub and keeps the cens
       return response;
     } }; },
   } as unknown as DurableObjectNamespace };
-  await withRecoveryRead(retrying, async () => { reads++; });
+  await withRecoveryRead(retrying, async () => { reads++; }, 2_000);
   expect({ stubs, inspections, reads }).toEqual({ stubs: 2, inspections: 2, reads: 1 });
   expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
 });
@@ -497,7 +497,7 @@ it("bounds a stalled read to its signal deadline then retries without executing 
       return gate.fetch(input, init);
     } }; },
   } as unknown as DurableObjectNamespace };
-  await withRecoveryRead(retrying, async () => { reads++; });
+  await withRecoveryRead(retrying, async () => { reads++; }, 2_000);
   expect({ inspections, reads }).toEqual({ inspections: 2, reads: 1 });
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
 });
@@ -535,4 +535,21 @@ it("keeps fence and uncertain writer backoff while allowing one client retry of 
   });
   expect(fenced.status).toBe(503); expect(fenced.headers.get("retry-after")).toBe("60");
   expect(assetReads).toBe(0); await assertRecoveryWriterFence(runtime, owner);
+});
+
+
+it("keeps slow static admission alive so a service worker update can complete", async () => {
+  let inspections = 0;
+  const slow = { ...runtime, ASSETS: { async fetch() { return new Response("synthetic service worker"); } } as unknown as Fetcher,
+    RECOVERY_DRAIN: { idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch(input: string, init: RequestInit) {
+        inspections++; expect(init.signal).toBeUndefined();
+        await new Promise(resolve => setTimeout(resolve, 3_000));
+        return gate.fetch(input, init);
+      } }; },
+    } as unknown as DurableObjectNamespace };
+  const response = await worker.fetch(new Request("https://app.example.test/sw.js"), slow);
+  expect(response.status).toBe(200); expect(await response.text()).toBe("synthetic service worker");
+  expect(inspections).toBe(1);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
 });
