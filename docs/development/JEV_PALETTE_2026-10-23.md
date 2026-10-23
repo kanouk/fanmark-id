@@ -36,8 +36,10 @@ API処理時間はMacからの直接呼出しで、350msの入力待機、ブラ
 
 ## 検証
 
-型・Lint0、client239件・現行契約150件、実D1のAPI14件、実local Worker/Auth/D1/R2/Chromeの通常回帰と共有パレット、PWA新規/旧方針更新・オフラインコード・入力/下書き保持、通常4Worker dry-run・CI構成検査が成功。合成providerは実モデルの品質評価と分ける。
+型・Lint0、client239件・現行契約150件、実D1のAPI15件、実local Worker/Auth/D1/R2/Chromeの通常回帰と共有パレット、PWA新規/旧方針更新・オフラインコード・入力/下書き保持、通常4Worker dry-run・CI構成検査が成功。合成providerは実モデルの品質評価と分ける。
 
 共有パレットでは4言語×320/768px、最大5個・削除後の追加・並べ替え・Undo・置換後のUndo、IME中の送信抑止、遅い旧応答・版違い・不正IDの拒否、Jev無効/実local未設定・履歴保存失敗を検証。マイページ取得タブ・PWAでも選択し、通常の取得/保存・MFA・下書き・本人切替を実Workerで確認した。実機タッチ・スクリーンリーダー全操作の受け入れとはしない。
 
-本番はJevキー1件と日次予算table0027だけを追加する。既存秘密設定17件・保存先・runtime・Cron/Route・他3Workerと旧hashを保持する。通常の取得・課金・メール送信などの本番業務操作はテストしない。
+本番はJevキー1件を追加し、既存の非公開system_settingsへ日付別の予算集計だけを保存する。DB構造・backupのschema pinは保持する。既存秘密設定17件・保存先・runtime・Cron/Route・他3Workerと旧hashを保持する。通常の取得・課金・メール送信などの本番業務操作はテストしない。
+
+CIで追加DDLと既存backupの固定schemaの不一致を検出したため、専用table案を撤回し既存の非公開設定領域を採用した。予算rowは管理UI/APIの許可keyに追加せず、検索APIだけが原子的に更新する。

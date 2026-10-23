@@ -10,6 +10,7 @@ import {
   NORMALIZATION_VERSION,
 } from "../../../shared/emoji-palette/version";
 
+export const BUDGET_PREFIX = "internal.emoji_palette.budget.";
 export const PALETTE_PATH = "/api/emoji/palette/search";
 export const DAILY_SEARCH_LIMIT = 100;
 const TTL = 600_000;
@@ -165,13 +166,25 @@ export async function handleEmojiPaletteRequest(
     if (existing)
       return json({ ...envelope, ids: (await existing).ids, cached: true });
     const run = (async () => {
-      const day = new Date().toISOString().slice(0, 10);
+      const now = new Date().toISOString(),
+        day = now.slice(0, 10),
+        budgetKey = BUDGET_PREFIX + day;
       const admitted = await database
         .prepare(
-          `INSERT INTO emoji_palette_daily_budget (day, searches, input_tokens, output_tokens, calls)
-        VALUES (?,1,0,0,0) ON CONFLICT(day) DO UPDATE SET searches=searches+1 WHERE searches<? RETURNING searches`,
+          `INSERT INTO system_settings (setting_key,setting_value,description,is_public,created_at,updated_at)
+        VALUES (?,json_object('searches',1,'input_tokens',0,'output_tokens',0,'calls',0),'Internal emoji search aggregate',0,?,?)
+        ON CONFLICT(setting_key) DO UPDATE SET
+          setting_value=json_set(setting_value,'$.searches',json_extract(setting_value,'$.searches')+1),
+          updated_at=excluded.updated_at
+        WHERE is_public=0 AND json_valid(setting_value)
+          AND json_type(setting_value,'$.searches')='integer'
+          AND json_extract(setting_value,'$.searches') BETWEEN 1 AND ?
+          AND json_type(setting_value,'$.input_tokens')='integer' AND json_extract(setting_value,'$.input_tokens')>=0
+          AND json_type(setting_value,'$.output_tokens')='integer' AND json_extract(setting_value,'$.output_tokens')>=0
+          AND json_type(setting_value,'$.calls')='integer' AND json_extract(setting_value,'$.calls')>=0
+        RETURNING setting_key`,
         )
-        .bind(day, DAILY_SEARCH_LIMIT)
+        .bind(budgetKey, now, now, DAILY_SEARCH_LIMIT - 1)
         .first();
       if (!admitted) throw new JevError("daily_limit", 429);
       let release = catalogs.get(scope + version);
@@ -216,9 +229,18 @@ export async function handleEmojiPaletteRequest(
         );
         await database
           .prepare(
-            "UPDATE emoji_palette_daily_budget SET input_tokens=input_tokens+?, output_tokens=output_tokens+?, calls=calls+? WHERE day=?",
+            `UPDATE system_settings SET setting_value=json_set(setting_value,
+              '$.input_tokens',json_extract(setting_value,'$.input_tokens')+CAST(? AS INTEGER),
+              '$.output_tokens',json_extract(setting_value,'$.output_tokens')+CAST(? AS INTEGER),
+              '$.calls',json_extract(setting_value,'$.calls')+CAST(? AS INTEGER)),updated_at=? WHERE setting_key=? AND is_public=0`,
           )
-          .bind(result.inputTokens, result.outputTokens, result.calls, day)
+          .bind(
+            result.inputTokens,
+            result.outputTokens,
+            result.calls,
+            new Date().toISOString(),
+            budgetKey,
+          )
           .run();
         if (resultCache.size >= 128)
           resultCache.delete(resultCache.keys().next().value!);

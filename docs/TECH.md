@@ -124,7 +124,7 @@ D1 schema変更はstoreとmigration sequenceを分けてレビューし、適用
 モデルは評価した `jev-1.13.0` に固定。6観点それぞれの分類→項目選択、最大255択（通常251）、最大8外部HTTP・12秒・自動再送なし。クライアントは350ms debounce・15秒取消で、IME中/空欄は送信しない。
 
 Workerの `TYPESAFE_API_KEY` は新しいsecret。通常local/CIには実鍵を渡さず外部送信を止める。未設定・停止・429・不正応答・catalog版違いでも名称検索と一覧を維持する。鍵をVite変数へ入れない。
-既存 `FANMARK_SEARCH_LIMITER` の別prefixを使い、Business migration `0027_emoji_palette_budget.sql` の日付別counterを原子的に増やす。全体でUTC日次100検索まで、失敗/取消も消費する。成功分のinput/output tokens/callsを集計するが、失敗時のprovider消費を完全に集計したとはしない。
+既存 `FANMARK_SEARCH_LIMITER` の別prefixを使い、既存Business `system_settings` の非公開key `internal.emoji_palette.budget.<UTC日付>` の日付別counterを原子的に増やす。全体でUTC日次100検索まで、失敗/取消も消費する。成功分のinput/output tokens/callsを集計するが、失敗時のprovider消費を完全に集計したとはしない。
 API単価$0.042/100万入力tokens・出力無料（2026-10-23 [公式モデル表](https://docs.typesafe.ai/models)）。現在の上限8×65,536 context×100検索から計算した保守的なAPI費用上限目安は約$2.21/UTC日。Cloudflare費用と価格改定は含めない。実測と運用を確認して上限を変更する。
 
 候補cacheはisolate内最大128件・利用期限10分。検索語を含むkeyはSHA-256にし、DBや共有CDNには保存しない。同一検索を同時処理する時は1推論へまとめる。provider側の保存条件はTypeSafeの規約に従う。

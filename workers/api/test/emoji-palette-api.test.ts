@@ -4,6 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   handleEmojiPaletteRequest,
   DAILY_SEARCH_LIMIT,
+  BUDGET_PREFIX,
 } from "../src/emoji-palette-api";
 import {
   findWithJev,
@@ -14,7 +15,10 @@ import {
 import { DICTIONARY_VERSION } from "../../../shared/emoji-palette/version";
 import { type Env } from "../src/repository";
 import schema from "./fixtures/d1-emoji-catalog-api.sql?raw";
-import budgetSchema from "../migrations-business/0027_emoji_palette_budget.sql?raw";
+import businessSchema from "../migrations-business/0000_business_schema_v4_staging.sql?raw";
+const budgetSchema = businessSchema.match(
+  /CREATE TABLE "system_settings" \([\s\S]*?\n\);/,
+)![0];
 
 const runtime = env as unknown as Env,
   master = runtime.MASTER_DB!,
@@ -103,7 +107,11 @@ beforeAll(async () => {
 });
 beforeEach(async () => {
   calls = 0;
-  await business.prepare("DELETE FROM emoji_palette_daily_budget").run();
+  await business
+    .prepare(
+      "DELETE FROM system_settings WHERE setting_key LIKE 'internal.emoji_palette.budget.%'",
+    )
+    .run();
   await master.batch(
     [
       "DELETE FROM fanmark_emoji_master_active_release",
@@ -138,7 +146,12 @@ describe("public palette on actual D1", () => {
       TYPESAFE_API_KEY: undefined,
       NOTIFICATION_WAKE_BACKEND: "durable-object",
       NOTIFICATION_PROCESSOR_BACKEND: "d1",
-      FANMARK_DB: { prepare() { databaseReads++; throw new Error("unexpected notification read"); } },
+      FANMARK_DB: {
+        prepare() {
+          databaseReads++;
+          throw new Error("unexpected notification read");
+        },
+      },
       NOTIFICATION_WAKE: {},
     } as unknown as Env;
     const response = await worker.fetch(req(), config);
@@ -160,7 +173,9 @@ describe("public palette on actual D1", () => {
     expect(calls).toBe(0);
     expect(
       await business
-        .prepare("SELECT count(*) n FROM emoji_palette_daily_budget")
+        .prepare(
+          "SELECT count(*) n FROM system_settings WHERE setting_key LIKE 'internal.emoji_palette.budget.%'",
+        )
         .first("n"),
     ).toBe(0);
   });
@@ -188,15 +203,23 @@ describe("public palette on actual D1", () => {
     expect(
       await business
         .prepare(
-          "SELECT searches,input_tokens,output_tokens,calls FROM emoji_palette_daily_budget",
+          "SELECT json_extract(setting_value,'$.searches') searches,json_extract(setting_value,'$.input_tokens') input_tokens,json_extract(setting_value,'$.output_tokens') output_tokens,json_extract(setting_value,'$.calls') calls FROM system_settings",
         )
         .first(),
     ).toEqual({ searches: 1, input_tokens: 400, output_tokens: 80, calls: 4 });
     expect(
       await business
-        .prepare("PRAGMA table_info(emoji_palette_daily_budget)")
+        .prepare("SELECT setting_key,is_public FROM system_settings")
         .all(),
-    ).toMatchObject({ success: true });
+    ).toMatchObject({
+      success: true,
+      results: [
+        {
+          setting_key: BUDGET_PREFIX + new Date().toISOString().slice(0, 10),
+          is_public: 0,
+        },
+      ],
+    });
   });
   it("rejects stale catalog before returning cached candidates", async () => {
     const config = configured();
@@ -228,9 +251,9 @@ describe("public palette on actual D1", () => {
     const day = new Date().toISOString().slice(0, 10);
     await business
       .prepare(
-        "INSERT INTO emoji_palette_daily_budget(day,searches)VALUES(?,?)",
+        "INSERT INTO system_settings(setting_key,setting_value,is_public,created_at,updated_at)VALUES(?,json_object('searches',CAST(? AS INTEGER),'input_tokens',0,'output_tokens',0,'calls',0),0,'test','test')",
       )
-      .bind(day, DAILY_SEARCH_LIMIT - 1)
+      .bind(BUDGET_PREFIX + day, DAILY_SEARCH_LIMIT - 1)
       .run();
     const config = configured(),
       responses = await Promise.all(
@@ -241,11 +264,47 @@ describe("public palette on actual D1", () => {
     expect(responses.map((r) => r.status).sort()).toEqual([200, 429, 429]);
     expect(
       await business
-        .prepare("SELECT searches FROM emoji_palette_daily_budget WHERE day=?")
-        .bind(day)
+        .prepare(
+          "SELECT json_extract(setting_value,'$.searches') searches FROM system_settings WHERE setting_key=?",
+        )
+        .bind(BUDGET_PREFIX + day)
         .first("searches"),
     ).toBe(DAILY_SEARCH_LIMIT);
     expect(calls).toBe(4);
+  });
+  it("refuses a corrupt or public budget row without resetting the allowance", async () => {
+    const key = BUDGET_PREFIX + new Date().toISOString().slice(0, 10);
+    for (const [value, isPublic] of [
+      ["broken", 0],
+      [
+        JSON.stringify({
+          searches: 1,
+          input_tokens: 0,
+          output_tokens: 0,
+          calls: 0,
+        }),
+        1,
+      ],
+    ]) {
+      await business
+        .prepare(
+          "INSERT OR REPLACE INTO system_settings(setting_key,setting_value,is_public,created_at,updated_at)VALUES(?,?,?,'test','test')",
+        )
+        .bind(key, value, isPublic)
+        .run();
+      expect((await send(req(), configured())).status).toBeGreaterThanOrEqual(
+        429,
+      );
+      expect(
+        await business
+          .prepare(
+            "SELECT setting_value FROM system_settings WHERE setting_key=?",
+          )
+          .bind(key)
+          .first("setting_value"),
+      ).toBe(value);
+    }
+    expect(calls).toBe(0);
   });
   it("fails closed for missing secrets or limiter and does not retry provider failures", async () => {
     expect(
@@ -277,7 +336,9 @@ describe("public palette on actual D1", () => {
     expect(failures).toBe(3);
     expect(
       await business
-        .prepare("SELECT searches FROM emoji_palette_daily_budget")
+        .prepare(
+          "SELECT json_extract(setting_value,'$.searches') searches FROM system_settings",
+        )
         .first("searches"),
     ).toBe(1);
   });
