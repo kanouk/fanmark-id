@@ -1822,7 +1822,8 @@ const worker = {
       }, ctx, "http");
     } catch (error) {
       if (error instanceof RecoveryWriterDrainError) {
-        return jsonResponse({ error: "recovery_writer_unavailable" }, 503, { "retry-after": "60" });
+        return jsonResponse({ error: "recovery_writer_unavailable" }, 503,
+          error.readOnly && error.retryable ? undefined : { "retry-after": "60" });
       }
       throw error;
     }

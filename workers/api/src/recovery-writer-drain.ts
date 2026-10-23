@@ -21,7 +21,7 @@ export type RecoveryWriterInspection = RecoveryWriterStatus & { initialized: boo
 } };
 
 export class RecoveryWriterDrainError extends Error {
-  constructor(readonly retryable = false) { super("recovery_writer_unavailable"); this.name = "RecoveryWriterDrainError"; }
+  constructor(readonly retryable = false, readonly readOnly = false) { super("recovery_writer_unavailable"); this.name = "RecoveryWriterDrainError"; }
 }
 
 export function recoveryWriterTrackingSelected(env: Env): boolean {
@@ -125,7 +125,12 @@ export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>)
       // transport wait and acquire a fresh stub for the only permitted retry.
       status = await inspectRecoveryWriters(env, AbortSignal.timeout(2_000));
     } catch (error) {
-      if (attempt !== 0 || !(error instanceof RecoveryWriterDrainError) || !error.retryable) throw error;
+      if (attempt !== 0 || !(error instanceof RecoveryWriterDrainError) || !error.retryable) {
+        // Only this failed, side-effect-free admission may be retried by an
+        // HTTP reader. Never advertise retryability for an uncertain writer ACK.
+        if (error instanceof RecoveryWriterDrainError && error.retryable) throw new RecoveryWriterDrainError(true, true);
+        throw error;
+      }
       await new Promise(resolve => setTimeout(resolve, 100));
       continue;
     }

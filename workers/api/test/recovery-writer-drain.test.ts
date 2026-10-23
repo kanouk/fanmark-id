@@ -516,3 +516,23 @@ it("does not retry an inconsistent read scope and stops repeated transport failu
     expect(inspections).toBe(failTransport ? 2 : 1); expect(reads).toBe(0);
   }
 });
+
+
+it("keeps fence and uncertain writer backoff while allowing one client retry of a failed read transport", async () => {
+  let assetReads = 0;
+  const failedTransport = { ...runtime, ASSETS: { async fetch() { assetReads++; return new Response("must not open"); } } as unknown as Fetcher,
+    RECOVERY_DRAIN: { idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch() { throw Error("synthetic unavailable"); } }; },
+    } as unknown as DurableObjectNamespace };
+  const transient = await worker.fetch(new Request("https://app.example.test/"), failedTransport);
+  expect(transient.status).toBe(503); expect(transient.headers.has("retry-after")).toBe(false);
+  expect(await transient.json()).toEqual({ error: "recovery_writer_unavailable" });
+  const writer = await worker.fetch(new Request("https://app.example.test/api/auth/get-session"), failedTransport);
+  expect(writer.status).toBe(503); expect(writer.headers.get("retry-after")).toBe("60");
+  await claimRecoveryWriterFence(runtime, owner);
+  const fenced = await worker.fetch(new Request("https://app.example.test/"), {
+    ...runtime, ASSETS: failedTransport.ASSETS,
+  });
+  expect(fenced.status).toBe(503); expect(fenced.headers.get("retry-after")).toBe("60");
+  expect(assetReads).toBe(0); await assertRecoveryWriterFence(runtime, owner);
+});
