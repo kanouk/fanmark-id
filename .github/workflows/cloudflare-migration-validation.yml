@@ -50,6 +50,8 @@ jobs:
         run: npm run test:combined-recovery
       - name: Build accepted production application
         run: npm run build
+      - name: Verify PWA fresh install, update and offline static assets
+        run: node scripts/test/pwa-precache-browser.mjs
       - name: Validate active production configuration and bundles without deployment
         run: npm run build:cloudflare-production-live:dry-run
 

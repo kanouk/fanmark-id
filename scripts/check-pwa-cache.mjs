@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { runInNewContext } from "node:vm";
 
 // Inspect the shipped worker, not only Vite configuration. Run after build.
@@ -13,6 +13,19 @@ assert.doesNotMatch(worker, /supabase-cache|new workbox\.(?:NetworkFirst|CacheFi
 assert.equal(manifest.start_url, "/pwa");
 assert.equal(manifest.display, "standalone");
 assert.ok(Array.isArray(manifest.icons));
+
+// Read the generated manifest rather than trusting source configuration. Keep
+// all code/CSS available offline; exclude only the unused social preview image.
+const precacheSource = worker.match(/workbox\.precacheAndRoute\((\[[\s\S]*?\]), \{\}\)/);
+assert.ok(precacheSource, "generated static precache manifest must be inspectable");
+const precache = JSON.parse(precacheSource[1]);
+const paths = new Set(precache.map(entry => entry.url));
+assert.ok(!paths.has("og-image.png"), "social preview image must not be downloaded on PWA install");
+assert.ok((await readFile(`${buildDir}/og-image.png`)).length > 0, "social preview image stays publicly available");
+assert.ok(paths.has("index.html") && paths.has("manifest.webmanifest"), "offline shell and install manifest remain cached");
+for (const name of await readdir(`${buildDir}/assets`)) {
+  if (/\.(?:js|css)$/.test(name)) assert.ok(paths.has(`assets/${name}`), `${name} remains available offline`);
+}
 
 for (const [size, dimension] of [["192x192", 192], ["512x512", 512]]) {
   const icon = manifest.icons.find((entry) => entry.sizes?.split(/\s+/).includes(size));

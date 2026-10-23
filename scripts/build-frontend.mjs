@@ -21,6 +21,9 @@ export async function buildFrontend(target) {
     const result = await promisify(execFile)(process.execPath, [join(root, 'node_modules/vite/bin/vite.js'), 'build', '--mode', mode, '--outDir', outDir],
       { cwd: root, env, timeout: 180000, maxBuffer: 4 * 1024 * 1024 });
     process.stdout.write(result.stdout); process.stderr.write(result.stderr);
+    const pwa = await promisify(execFile)(process.execPath, [join(root, 'scripts/check-pwa-cache.mjs'), outDir],
+      { cwd: root, env, timeout: 30000, maxBuffer: 1024 * 1024 });
+    process.stdout.write(pwa.stdout); process.stderr.write(pwa.stderr);
     await writeFile(join(root, outDir, 'build-target.json'), JSON.stringify({
       mode, origin, authBackend: 'better-auth', legacySupabaseDisabled: true, selectors, node: process.versions.node, deployed: false,
     }, null, 2) + '\n');

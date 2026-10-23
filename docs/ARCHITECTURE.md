@@ -13,6 +13,7 @@
 
 - `src/`: Vite/Reactの画面・client・hook。`src/main.tsx`で共通CSSを読み、絵文字catalogは裏で取得する。`emoji-catalog-state.ts` / `useEmojiCatalog` / `EmojiCatalogStatus.tsx`が必要時だけの待機・再試行を扱う。
 - `src/lib/route-modules.ts` / `RouteModulePreload.tsx`: トップで使わない画面のimportと対象path。直撃URLのコード取得をreadinessと並行させ、画面のmountとAPI権限確認は既存gateに従う。
+- `vite.config.ts` / `scripts/check-pwa-cache.mjs`: PWAの静的先読みと生成SW検査。共有用OG画像を除外し、基本HTML・全画面コード・CSS・アイコンを保持する。更新・新規導入・オフライン静的資産は`pwa-precache-browser.mjs`で検証する。
 - `workers/api/src/index.ts`: 同originのStatic Assets、API、Auth、公開アクセス、Webhookへの入口。
 - `workers/api/src/better-auth.mjs` / `auth-social.mjs`: Better Auth、session/MFA、OAuthと新規ユーザー処理。
 - `workers/api/src/*-d1-api.ts`: 本人・所有権・管理者MFAを確認する業務API。
