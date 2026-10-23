@@ -452,3 +452,67 @@ it("identifies the internal SQLite coordinator without exposing its marker on pu
   expect(response.status).toBe(200);
   expect(response.headers.has("x-recovery-coordinator-revision")).toBe(false);
 });
+
+
+it("retries only a lost read inspection ACK with a fresh stub and keeps the census unchanged", async () => {
+  let stubs = 0, inspections = 0, reads = 0;
+  const before = await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  const retrying = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { stubs++; return { async fetch(input: string, init: RequestInit) {
+      expect(input.endsWith("/inspect")).toBe(true); expect(init.signal).toBeInstanceOf(AbortSignal);
+      const response = await gate.fetch(input, init);
+      if (++inspections === 1) throw Error("synthetic lost read ACK");
+      return response;
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await withRecoveryRead(retrying, async () => { reads++; });
+  expect({ stubs, inspections, reads }).toEqual({ stubs: 2, inspections: 2, reads: 1 });
+  expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
+});
+
+it("rechecks the current fence on a read retry instead of using an earlier open result", async () => {
+  let inspections = 0, reads = 0;
+  const retrying = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      const response = await gate.fetch(input, init);
+      if (++inspections === 1) { await claimRecoveryWriterFence(runtime, owner); throw Error("synthetic lost read ACK"); }
+      return response;
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await expect(withRecoveryRead(retrying, async () => { reads++; })).rejects.toThrow("recovery_writer_unavailable");
+  expect({ inspections, reads }).toEqual({ inspections: 2, reads: 0 });
+  await assertRecoveryWriterFence(runtime, owner);
+});
+
+it("bounds a stalled read to its signal deadline then retries without executing the view twice", async () => {
+  let inspections = 0, reads = 0;
+  const retrying = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      if (++inspections === 1) return new Promise<Response>((_resolve, reject) => {
+        init.signal!.addEventListener("abort", () => reject(Error("synthetic stalled transport")), { once: true });
+      });
+      return gate.fetch(input, init);
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await withRecoveryRead(retrying, async () => { reads++; });
+  expect({ inspections, reads }).toEqual({ inspections: 2, reads: 1 });
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
+});
+
+it("does not retry an inconsistent read scope and stops repeated transport failures after two attempts", async () => {
+  for (const failTransport of [false, true]) {
+    let inspections = 0, reads = 0;
+    const refusing = { ...runtime, RECOVERY_DRAIN_SCOPE_DIGEST: "b".repeat(64), RECOVERY_DRAIN: {
+      idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch(input: string, init: RequestInit) {
+        inspections++; if (failTransport) throw Error("synthetic unavailable");
+        return gate.fetch(input, init);
+      } }; },
+    } as unknown as DurableObjectNamespace };
+    await expect(withRecoveryRead(refusing, async () => { reads++; })).rejects.toThrow("recovery_writer_unavailable");
+    expect(inspections).toBe(failTransport ? 2 : 1); expect(reads).toBe(0);
+  }
+});

@@ -77,3 +77,55 @@ test("rejects cross-origin and HTTP failures without a Supabase fallback", async
     ),
   }), (error: unknown) => error instanceof MaintenanceSettingsApiError && error.kind === "invalid_response");
 });
+
+
+test("retries a transient configuration read once and still returns confirmed maintenance", async () => {
+  for (const failure of ["network", "timeout", "502", "503", "504"]) {
+    const signals: AbortSignal[] = [];
+    const result = await fetchMaintenanceSettingsFromWorker({
+      apiBaseUrl: "https://api.example.test", timeoutMs: 20,
+      fetcher: async (_input, init) => {
+        signals.push(init!.signal!);
+        if (signals.length === 1) {
+          if (failure === "network") throw new TypeError("synthetic network failure");
+          if (failure === "timeout") return new Promise<Response>((_resolve, reject) => {
+            init!.signal!.addEventListener("abort", () => reject(new Error("synthetic timeout")), { once: true });
+          });
+          return new Response("unavailable", { status: Number(failure) });
+        }
+        return Response.json({ schemaVersion: 1, settings });
+      },
+    });
+    assert.deepEqual(result, settings);
+    assert.equal(signals.length, 2);
+    assert.notEqual(signals[0], signals[1]);
+    assert.equal(signals[1].aborted, false);
+  }
+});
+
+test("bounds persistent failures to two reads without inventing disabled maintenance", async () => {
+  let calls = 0;
+  await assert.rejects(fetchMaintenanceSettingsFromWorker({ apiBaseUrl: "https://api.example.test",
+    fetcher: async () => { calls++; throw new TypeError("synthetic offline"); },
+  }), (error: unknown) => error instanceof MaintenanceSettingsApiError && error.kind === "network");
+  assert.equal(calls, 2);
+});
+
+test("does not retry server backoff, permanent refusal or invalid settings", async () => {
+  for (const response of [new Response(null, { status: 503, headers: { "retry-after": "60" } }),
+    new Response(null, { status: 401 }), Response.json({ schemaVersion: 1, settings: { maintenance_mode: false } })]) {
+    let calls = 0;
+    await assert.rejects(fetchMaintenanceSettingsFromWorker({ apiBaseUrl: "https://api.example.test",
+      fetcher: async () => { calls++; return response; },
+    }), (error: unknown) => error instanceof MaintenanceSettingsApiError);
+    assert.equal(calls, 1);
+  }
+});
+
+test("never retries a settings mutation after a transport failure", async () => {
+  let calls = 0;
+  await assert.rejects(updateMaintenanceSettingsInWorker({ maintenance_mode: false }, {
+    apiBaseUrl: "https://api.example.test", fetcher: async () => { calls++; throw new TypeError("synthetic network failure"); },
+  }));
+  assert.equal(calls, 1);
+});

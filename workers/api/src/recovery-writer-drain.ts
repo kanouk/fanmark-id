@@ -21,7 +21,7 @@ export type RecoveryWriterInspection = RecoveryWriterStatus & { initialized: boo
 } };
 
 export class RecoveryWriterDrainError extends Error {
-  constructor() { super("recovery_writer_unavailable"); this.name = "RecoveryWriterDrainError"; }
+  constructor(readonly retryable = false) { super("recovery_writer_unavailable"); this.name = "RecoveryWriterDrainError"; }
 }
 
 export function recoveryWriterTrackingSelected(env: Env): boolean {
@@ -38,14 +38,15 @@ function scopeFor(env: Env): string {
   return env.RECOVERY_DRAIN_SCOPE_DIGEST!;
 }
 
-async function command(env: Env, operation: string, id: string, kind: RecoveryWriterKind = "unknown"): Promise<RecoveryWriterStatus> {
+async function command(env: Env, operation: string, id: string, kind: RecoveryWriterKind = "unknown", signal?: AbortSignal): Promise<RecoveryWriterStatus> {
   const scope = scopeFor(env);
   const stub = env.RECOVERY_DRAIN!.get(env.RECOVERY_DRAIN!.idFromName(NAME));
   const started = Date.now();
   let status: number | null = null, coordinatorRevision: string | null = null;
   try {
     const response = await stub.fetch(`${ORIGIN}/${operation}`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, scope,
+      method: "POST", headers: { "content-type": "application/json" },
+      ...(operation === "inspect" && signal ? { signal } : {}), body: JSON.stringify({ id, scope,
         ...(operation === "enter" ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null, kind } : {}) }),
     });
     status = response.status;
@@ -56,7 +57,7 @@ async function command(env: Env, operation: string, id: string, kind: RecoveryWr
         (value.owner !== null && !UUID.test(value.owner)) ||
         value.drained !== (value.owner !== null && value.active === 0)) throw new RecoveryWriterDrainError();
     return value;
-  } catch { throw new RecoveryWriterDrainError(); }
+  } catch { throw new RecoveryWriterDrainError(status === null || status >= 500); }
   finally {
     const elapsedMs = Date.now() - started;
     if (elapsedMs >= 1_000 || status !== 200) console.warn(JSON.stringify({
@@ -103,8 +104,8 @@ export async function settleRecoveryWriterTasks(tasks: Promise<unknown>[]): Prom
 }
 
 /** Privileged binding-only operations. These are not exposed as public HTTP routes. */
-export async function inspectRecoveryWriters(env: Env): Promise<RecoveryWriterInspection> {
-  const status = await command(env, "inspect", crypto.randomUUID()) as RecoveryWriterInspection;
+export async function inspectRecoveryWriters(env: Env, signal?: AbortSignal): Promise<RecoveryWriterInspection> {
+  const status = await command(env, "inspect", crypto.randomUUID(), "unknown", signal) as RecoveryWriterInspection;
   if (typeof status.initialized !== "boolean" || (!status.initialized && (status.active !== 0 || status.owner !== null))) {
     throw new RecoveryWriterDrainError();
   }
@@ -117,9 +118,20 @@ export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>)
   // A read admitted before claim may finish afterwards: it cannot change a
   // captured store. New reads still refuse the same fence as mutating requests.
   // Losing this read-only inspection's ACK cannot strand a persistent ticket.
-  const status = await inspectRecoveryWriters(env);
-  if (status.owner !== null) throw new RecoveryWriterDrainError();
-  return operation();
+  for (let attempt = 0; ; attempt++) {
+    let status: RecoveryWriterInspection;
+    try {
+      // This inspection cannot mutate stores or strand a ticket. Bound each
+      // transport wait and acquire a fresh stub for the only permitted retry.
+      status = await inspectRecoveryWriters(env, AbortSignal.timeout(2_000));
+    } catch (error) {
+      if (attempt !== 0 || !(error instanceof RecoveryWriterDrainError) || !error.retryable) throw error;
+      await new Promise(resolve => setTimeout(resolve, 100));
+      continue;
+    }
+    if (status.owner !== null) throw new RecoveryWriterDrainError();
+    return operation();
+  }
 }
 export async function claimRecoveryWriterFence(env: Env, owner: string): Promise<RecoveryWriterStatus> {
   if (!UUID.test(owner)) throw new RecoveryWriterDrainError();

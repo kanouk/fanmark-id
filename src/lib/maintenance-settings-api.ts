@@ -23,14 +23,16 @@ const DEFAULT_SETTINGS: MaintenanceSettings = {
 export class MaintenanceSettingsApiError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network" | "timeout";
   readonly status?: number;
+  readonly retryAfterPresent: boolean;
 
-  constructor(kind: MaintenanceSettingsApiError["kind"], status?: number) {
+  constructor(kind: MaintenanceSettingsApiError["kind"], status?: number, retryAfterPresent = false) {
     super(kind === "http" && status
       ? `maintenance settings request failed (${status})`
       : `maintenance settings request ${kind}`);
     this.name = "MaintenanceSettingsApiError";
     this.kind = kind;
     this.status = status;
+    this.retryAfterPresent = retryAfterPresent;
   }
 }
 
@@ -169,7 +171,7 @@ async function request(
     });
     if (!response.ok) {
       await response.body?.cancel();
-      throw new MaintenanceSettingsApiError("http", response.status);
+      throw new MaintenanceSettingsApiError("http", response.status, response.headers.has("retry-after"));
     }
     return parseMaintenanceSettingsPayload(await readJson(response));
   } catch (error) {
@@ -181,8 +183,19 @@ async function request(
   }
 }
 
-export function fetchMaintenanceSettingsFromWorker(options?: Parameters<typeof request>[3]): Promise<MaintenanceSettings> {
-  return request(PUBLIC_PATH, "GET", undefined, options);
+export async function fetchMaintenanceSettingsFromWorker(options?: Parameters<typeof request>[3]): Promise<MaintenanceSettings> {
+  try {
+    return await request(PUBLIC_PATH, "GET", undefined, options);
+  } catch (error) {
+    // Retry this read once after a transient transport failure. Keep the gate
+    // closed throughout; explicit server retry instructions take precedence.
+    const transient = error instanceof MaintenanceSettingsApiError &&
+      (error.kind === "network" || error.kind === "timeout" ||
+        (error.kind === "http" && !error.retryAfterPresent && [502, 503, 504].includes(error.status ?? 0)));
+    if (!transient) throw error;
+    await new Promise(resolve => setTimeout(resolve, 250));
+    return request(PUBLIC_PATH, "GET", undefined, options);
+  }
 }
 
 export function updateMaintenanceSettingsInWorker(

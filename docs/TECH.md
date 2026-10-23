@@ -140,3 +140,7 @@ API単価$0.042/100万入力tokens・出力無料（2026-10-23 [公式モデル�
 SQLiteのwriter coordinatorは既存KVの同じkey/valueを同期KVと`transactionSync`で読み書きする。1要求ごとの`blockConcurrencyWhile`と非同期transactionの重複を除き、永続化待ちの間も後続要求の状態判定を実行できる。通常のoutput gateは有効なままで、永続化前にenterの成功を返さない。ticketの自動期限切れ・他処理の票削除・保存先の変更は行わない。native Worker testで旧非同期KVとの互換、同時32 writer/32 inspect、fence、ACK喪失と隔離復旧を検証する。
 
 [Cloudflareの同期KV/transaction仕様](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/)を参照。起動障害の観測・公開検証は[運用状態](operations/current-state.md)へ記録する。
+
+メンテナンスの公開GETはnetwork/timeoutと待機指示のない502/503/504だけ、250ms後に1回再試行する。各回5秒、合計最大約10.25秒を上限とし、その間は起動gateを閉じたままにする。Retry-After付き応答・権限拒否・schema不正・PATCHは再実行しない。調停RPCの1秒以上の遅延/HTTP失敗はoperation・経過ms・status・固定の実装markerだけをlogへ記録し、検索語・URL・cookie・ticket ID・秘密値を含めない。markerは内部応答に限定し公開APIへ転送しない。
+
+HTTPのread admissionに限り、内部inspect RPCを各2秒・最大2回（間隔100ms）へ制限する。通信失敗/内部5xxだけ新しいstubで再照合し、scope/形式不整合・fenceは再試行せず拒否する。古いopen結果は使わず、viewを呼ぶ前に現在のfenceを確認する。enter/claim等の書込みRPCには、このtimeout/再試行を適用しない。特権の通常status照会の制限も変更しない。
