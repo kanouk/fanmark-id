@@ -1798,8 +1798,12 @@ const worker = {
       const readMethod = request.method === "GET" || request.method === "HEAD";
       const assetRead = Boolean(env.ASSETS) && !url.pathname.startsWith("/api/") && url.pathname !== "/api";
       const masterRead = url.pathname === "/api/emoji/catalog" || isReferenceMasterPath(url);
-      if (readMethod && (assetRead || masterRead)) {
-        return await withRecoveryRead(env, view);
+      // These exact GET handlers only read configuration/schema; unlike session
+      // and OAuth GETs, they cannot refresh sessions or write captured stores.
+      const startupRead = request.method === "GET" &&
+        ["/api/system/maintenance", "/api/auth/capabilities"].includes(url.pathname);
+      if (readMethod && (assetRead || masterRead || startupRead)) {
+        return await withRecoveryRead(env, view, startupRead ? 2_000 : undefined);
       }
       return await withRecoveryWriter(env, async () => {
         try { return await view(); }
@@ -1818,7 +1822,8 @@ const worker = {
       }, ctx, "http");
     } catch (error) {
       if (error instanceof RecoveryWriterDrainError) {
-        return jsonResponse({ error: "recovery_writer_unavailable" }, 503, { "retry-after": "60" });
+        return jsonResponse({ error: "recovery_writer_unavailable" }, 503,
+          error.readOnly && error.retryable ? undefined : { "retry-after": "60" });
       }
       throw error;
     }

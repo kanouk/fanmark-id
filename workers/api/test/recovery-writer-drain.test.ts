@@ -19,6 +19,7 @@ function signal() {
 }
 beforeAll(async () => {
   await db.prepare("CREATE TABLE drain_fixture (id INTEGER PRIMARY KEY)").run();
+  await db.prepare("CREATE TABLE system_settings (setting_key TEXT, setting_value TEXT, is_public INTEGER)").run();
   await db.prepare(`CREATE TABLE notification_worker_wake_state
     (singleton_id INTEGER PRIMARY KEY, requested_generation INTEGER, acknowledged_generation INTEGER)`).run();
 });
@@ -380,4 +381,175 @@ it("rejects a legacy object without changing its census when the binding points 
   });
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner, active: 0, drained: true });
   await releaseRecoveryWriterFence(runtime, owner);
+});
+
+
+it("admits only exact startup GETs as reads and keeps session, callbacks and writes tracked", async () => {
+  const commands: string[] = [];
+  const startupEnv: Env = { ...runtime, NOTIFICATION_WAKE_BACKEND: "", AUTH_BACKEND: "better-auth", AUTH_DB: db,
+    BETTER_AUTH_URL: "https://app.example.test", BETTER_AUTH_SECRET: "synthetic-startup-secret-00000000000000000000",
+    MAINTENANCE_SETTINGS_BACKEND: "d1", RECOVERY_DRAIN: {
+      idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch(input: string, init: RequestInit) {
+        commands.push(new URL(input).pathname); return gate.fetch(input, init);
+      } }; },
+    } as unknown as DurableObjectNamespace };
+  for (const path of ["/api/system/maintenance", "/api/auth/capabilities"]) {
+    commands.length = 0;
+    const response = await worker.fetch(new Request("https://app.example.test" + path), startupEnv);
+    expect(response.status).toBe(200); expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(commands).toEqual(["/inspect"]);
+    expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
+  }
+  for (const [path, method] of [["/api/auth/get-session", "GET"], ["/api/auth/callback/unknown", "GET"],
+    ["/api/system/maintenance", "POST"], ["/api/auth/capabilities", "POST"],
+    ["/api/system/maintenance/", "GET"]]) {
+    commands.length = 0;
+    await worker.fetch(new Request("https://app.example.test" + path, { method }), startupEnv);
+    expect(commands).toEqual(["/enter", "/leave"]);
+  }
+  await claimRecoveryWriterFence(runtime, owner);
+  for (const path of ["/api/system/maintenance", "/api/auth/capabilities"]) {
+    commands.length = 0;
+    const response = await worker.fetch(new Request("https://app.example.test" + path), startupEnv);
+    expect(response.status).toBe(503); expect(commands).toEqual(["/inspect"]);
+  }
+  await assertRecoveryWriterFence(runtime, owner);
+});
+
+it("preserves async KV tickets through concurrent synchronous admission, inspection and drain", async () => {
+  const legacy = "00000000-0000-4000-8000-000000000099";
+  await runInDurableObject(gate, async (_instance, state) => {
+    await state.storage.put({ scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1, ["writer:" + legacy]: true });
+  });
+  const finish = signal();
+  const entered = Array.from({ length: 32 }, () => signal());
+  const operations = entered.map(ready => withRecoveryWriter(runtime, async () => {
+    ready.resolve(); await finish.promise;
+  }, undefined, "http"));
+  await Promise.all(entered.map(ready => ready.promise));
+  const reads = await Promise.all(Array.from({ length: 32 }, () => inspectRecoveryWriters(runtime)));
+  for (const status of reads) expect(status).toMatchObject({ active: 33, tickets: { legacy: 1, kinds: { unknown: 1, http: 32 } } });
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 33, drained: false });
+  await expect(withRecoveryWriter(runtime, async () => { throw Error("must not execute"); })).rejects.toThrow("recovery_writer_unavailable");
+  finish.resolve(); await Promise.all(operations);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner, active: 1, drained: false, tickets: { legacy: 1 } });
+  // Only the owner of this fixture's settled legacy operation may remove it.
+  await gate.fetch("https://recovery-writer.internal/leave", { method: "POST",
+    body: JSON.stringify({ id: legacy, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }) });
+  await assertRecoveryWriterFence(runtime, owner);
+});
+
+
+it("identifies the internal SQLite coordinator without exposing its marker on public startup responses", async () => {
+  const direct = await gate.fetch("https://recovery-writer.internal/inspect", { method: "POST",
+    body: JSON.stringify({ id: owner, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }) });
+  expect(direct.status).toBe(200);
+  expect(direct.headers.get("x-recovery-coordinator-revision")).toBe("sqlite-sync-v1");
+  const response = await worker.fetch(new Request("https://app.example.test/api/system/maintenance"), {
+    ...runtime, MAINTENANCE_SETTINGS_BACKEND: "d1",
+  });
+  expect(response.status).toBe(200);
+  expect(response.headers.has("x-recovery-coordinator-revision")).toBe(false);
+});
+
+
+it("retries only a lost read inspection ACK with a fresh stub and keeps the census unchanged", async () => {
+  let stubs = 0, inspections = 0, reads = 0;
+  const before = await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  const retrying = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { stubs++; return { async fetch(input: string, init: RequestInit) {
+      expect(input.endsWith("/inspect")).toBe(true); expect(init.signal).toBeInstanceOf(AbortSignal);
+      const response = await gate.fetch(input, init);
+      if (++inspections === 1) throw Error("synthetic lost read ACK");
+      return response;
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await withRecoveryRead(retrying, async () => { reads++; }, 2_000);
+  expect({ stubs, inspections, reads }).toEqual({ stubs: 2, inspections: 2, reads: 1 });
+  expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
+});
+
+it("rechecks the current fence on a read retry instead of using an earlier open result", async () => {
+  let inspections = 0, reads = 0;
+  const retrying = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      const response = await gate.fetch(input, init);
+      if (++inspections === 1) { await claimRecoveryWriterFence(runtime, owner); throw Error("synthetic lost read ACK"); }
+      return response;
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await expect(withRecoveryRead(retrying, async () => { reads++; })).rejects.toThrow("recovery_writer_unavailable");
+  expect({ inspections, reads }).toEqual({ inspections: 2, reads: 0 });
+  await assertRecoveryWriterFence(runtime, owner);
+});
+
+it("bounds a stalled read to its signal deadline then retries without executing the view twice", async () => {
+  let inspections = 0, reads = 0;
+  const retrying = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      if (++inspections === 1) return new Promise<Response>((_resolve, reject) => {
+        init.signal!.addEventListener("abort", () => reject(Error("synthetic stalled transport")), { once: true });
+      });
+      return gate.fetch(input, init);
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await withRecoveryRead(retrying, async () => { reads++; }, 2_000);
+  expect({ inspections, reads }).toEqual({ inspections: 2, reads: 1 });
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
+});
+
+it("does not retry an inconsistent read scope and stops repeated transport failures after two attempts", async () => {
+  for (const failTransport of [false, true]) {
+    let inspections = 0, reads = 0;
+    const refusing = { ...runtime, RECOVERY_DRAIN_SCOPE_DIGEST: "b".repeat(64), RECOVERY_DRAIN: {
+      idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch(input: string, init: RequestInit) {
+        inspections++; if (failTransport) throw Error("synthetic unavailable");
+        return gate.fetch(input, init);
+      } }; },
+    } as unknown as DurableObjectNamespace };
+    await expect(withRecoveryRead(refusing, async () => { reads++; })).rejects.toThrow("recovery_writer_unavailable");
+    expect(inspections).toBe(failTransport ? 2 : 1); expect(reads).toBe(0);
+  }
+});
+
+
+it("keeps fence and uncertain writer backoff while allowing one client retry of a failed read transport", async () => {
+  let assetReads = 0;
+  const failedTransport = { ...runtime, ASSETS: { async fetch() { assetReads++; return new Response("must not open"); } } as unknown as Fetcher,
+    RECOVERY_DRAIN: { idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch() { throw Error("synthetic unavailable"); } }; },
+    } as unknown as DurableObjectNamespace };
+  const transient = await worker.fetch(new Request("https://app.example.test/"), failedTransport);
+  expect(transient.status).toBe(503); expect(transient.headers.has("retry-after")).toBe(false);
+  expect(await transient.json()).toEqual({ error: "recovery_writer_unavailable" });
+  const writer = await worker.fetch(new Request("https://app.example.test/api/auth/get-session"), failedTransport);
+  expect(writer.status).toBe(503); expect(writer.headers.get("retry-after")).toBe("60");
+  await claimRecoveryWriterFence(runtime, owner);
+  const fenced = await worker.fetch(new Request("https://app.example.test/"), {
+    ...runtime, ASSETS: failedTransport.ASSETS,
+  });
+  expect(fenced.status).toBe(503); expect(fenced.headers.get("retry-after")).toBe("60");
+  expect(assetReads).toBe(0); await assertRecoveryWriterFence(runtime, owner);
+});
+
+
+it("keeps slow static admission alive so a service worker update can complete", async () => {
+  let inspections = 0;
+  const slow = { ...runtime, ASSETS: { async fetch() { return new Response("synthetic service worker"); } } as unknown as Fetcher,
+    RECOVERY_DRAIN: { idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch(input: string, init: RequestInit) {
+        inspections++; expect(init.signal).toBeUndefined();
+        await new Promise(resolve => setTimeout(resolve, 3_000));
+        return gate.fetch(input, init);
+      } }; },
+    } as unknown as DurableObjectNamespace };
+  const response = await worker.fetch(new Request("https://app.example.test/sw.js"), slow);
+  expect(response.status).toBe(200); expect(await response.text()).toBe("synthetic service worker");
+  expect(inspections).toBe(1);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
 });

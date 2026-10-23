@@ -66,6 +66,8 @@ READMEからintent/receipt/manifest/暗号化原本を辿る。Git外の`common.
 - `~/.codex/private/fanmark-route-split-2026-10-23/`: PR66。初期route分割のソースCI・実local回帰、前後各16 navigation、82資産の旧hash保持、既存PWA更新・公開4言語/4幅。upload/deployの排他intent・receipt、候補/active・設定/他Workerの独立readbackを保存。再実行しない。
 - `~/.codex/private/fanmark-startup-2026-10-23-reviewed/`: PR64。最終候補のCI、更新前/候補/activeの照合、旧27資産の保持を含む34資産、既存PWA更新・公開4言語/4幅、catalog保留の実画面確認。upload/deployの排他intentと独立readbackを保存。先行する未配備preflightは別directoryへ保持し、再実行しない。
 
+- `~/.codex/private/fanmark-startup-recovery-2026-10-24/`: PR72。起動エラーの再現、複数候補と失敗を含む公開比較、read admission/再試行のnative検証、最終280資産と旧PWA更新・自動/手動再試行。最新の完全buildは`final-build`、最終runtimeのmanifestは`stable-release.json`。先行配備と管理APIの旧版readbackを保持し、activationを再送せず独立GETで照合した。診断Worker/経路は削除済み。ticket/fenceは変更せず、active14の終了調査は#71へ分ける。過去のonce scriptを再実行しない。
+
 ## 記録の境界
 
 Gitへ保存するのは構成・非秘密ID・公開資産hash・日時・commit/CI/配備version・検証結果・未確認事項。

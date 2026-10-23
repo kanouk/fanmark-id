@@ -21,7 +21,7 @@ export type RecoveryWriterInspection = RecoveryWriterStatus & { initialized: boo
 } };
 
 export class RecoveryWriterDrainError extends Error {
-  constructor() { super("recovery_writer_unavailable"); this.name = "RecoveryWriterDrainError"; }
+  constructor(readonly retryable = false, readonly readOnly = false) { super("recovery_writer_unavailable"); this.name = "RecoveryWriterDrainError"; }
 }
 
 export function recoveryWriterTrackingSelected(env: Env): boolean {
@@ -38,21 +38,33 @@ function scopeFor(env: Env): string {
   return env.RECOVERY_DRAIN_SCOPE_DIGEST!;
 }
 
-async function command(env: Env, operation: string, id: string, kind: RecoveryWriterKind = "unknown"): Promise<RecoveryWriterStatus> {
+async function command(env: Env, operation: string, id: string, kind: RecoveryWriterKind = "unknown", signal?: AbortSignal): Promise<RecoveryWriterStatus> {
   const scope = scopeFor(env);
   const stub = env.RECOVERY_DRAIN!.get(env.RECOVERY_DRAIN!.idFromName(NAME));
+  const started = Date.now();
+  let status: number | null = null, coordinatorRevision: string | null = null;
   try {
     const response = await stub.fetch(`${ORIGIN}/${operation}`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, scope,
+      method: "POST", headers: { "content-type": "application/json" },
+      ...(operation === "inspect" && signal ? { signal } : {}), body: JSON.stringify({ id, scope,
         ...(operation === "enter" ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null, kind } : {}) }),
     });
+    status = response.status;
+    coordinatorRevision = response.headers.get("x-recovery-coordinator-revision");
     if (response.status !== 200) throw new RecoveryWriterDrainError();
     const value = await response.json() as RecoveryWriterStatus;
     if (value.scope !== scope || !Number.isSafeInteger(value.active) || value.active < 0 ||
         (value.owner !== null && !UUID.test(value.owner)) ||
         value.drained !== (value.owner !== null && value.active === 0)) throw new RecoveryWriterDrainError();
     return value;
-  } catch { throw new RecoveryWriterDrainError(); }
+  } catch { throw new RecoveryWriterDrainError(status === null || status >= 500); }
+  finally {
+    const elapsedMs = Date.now() - started;
+    if (elapsedMs >= 1_000 || status !== 200) console.warn(JSON.stringify({
+      event: "recovery-writer-command", operation, elapsedMs, status,
+      coordinatorRevision: coordinatorRevision === "sqlite-sync-v1" ? coordinatorRevision : "unconfirmed",
+    }));
+  }
 }
 
 async function leaveCompletedWriter(env: Env, id: string): Promise<void> {
@@ -92,8 +104,8 @@ export async function settleRecoveryWriterTasks(tasks: Promise<unknown>[]): Prom
 }
 
 /** Privileged binding-only operations. These are not exposed as public HTTP routes. */
-export async function inspectRecoveryWriters(env: Env): Promise<RecoveryWriterInspection> {
-  const status = await command(env, "inspect", crypto.randomUUID()) as RecoveryWriterInspection;
+export async function inspectRecoveryWriters(env: Env, signal?: AbortSignal): Promise<RecoveryWriterInspection> {
+  const status = await command(env, "inspect", crypto.randomUUID(), "unknown", signal) as RecoveryWriterInspection;
   if (typeof status.initialized !== "boolean" || (!status.initialized && (status.active !== 0 || status.owner !== null))) {
     throw new RecoveryWriterDrainError();
   }
@@ -101,14 +113,30 @@ export async function inspectRecoveryWriters(env: Env): Promise<RecoveryWriterIn
 }
 
 /** Only audited read-only handlers may use this admission; they never create a writer ticket. */
-export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>): Promise<T> {
+export async function withRecoveryRead<T>(env: Env, operation: () => Promise<T>, timeoutMs?: number): Promise<T> {
   if (!recoveryWriterTrackingSelected(env)) return operation();
   // A read admitted before claim may finish afterwards: it cannot change a
   // captured store. New reads still refuse the same fence as mutating requests.
   // Losing this read-only inspection's ACK cannot strand a persistent ticket.
-  const status = await inspectRecoveryWriters(env);
-  if (status.owner !== null) throw new RecoveryWriterDrainError();
-  return operation();
+  for (let attempt = 0; ; attempt++) {
+    let status: RecoveryWriterInspection;
+    try {
+      // This inspection cannot mutate stores or strand a ticket. Startup APIs
+      // bound the transport wait; assets/Master retain their original wait.
+      status = await inspectRecoveryWriters(env, timeoutMs === undefined ? undefined : AbortSignal.timeout(timeoutMs));
+    } catch (error) {
+      if (attempt !== 0 || !(error instanceof RecoveryWriterDrainError) || !error.retryable) {
+        // Only this failed, side-effect-free admission may be retried by an
+        // HTTP reader. Never advertise retryability for an uncertain writer ACK.
+        if (error instanceof RecoveryWriterDrainError && error.retryable) throw new RecoveryWriterDrainError(true, true);
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+      continue;
+    }
+    if (status.owner !== null) throw new RecoveryWriterDrainError();
+    return operation();
+  }
 }
 export async function claimRecoveryWriterFence(env: Env, owner: string): Promise<RecoveryWriterStatus> {
   if (!UUID.test(owner)) throw new RecoveryWriterDrainError();
@@ -147,78 +175,82 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
           !UUID.test(input.id) || !HASH.test(input.scope) ||
           input.scope !== scopeFor(this.env)) return new Response(null, { status: 400 });
     } catch { return new Response(null, { status: 400 }); }
-    return this.ctx.blockConcurrencyWhile(async () => {
-      const result = await this.ctx.storage.transaction(async storage => {
-        const installedScope = await storage.get<string>("scope");
-        const storedActive = await storage.get<number>("active");
-        let active = storedActive ?? 0;
-        if ((installedScope && (installedScope !== input.scope || storedActive === undefined)) ||
-            !Number.isSafeInteger(active) || active < 0 ||
-            (!installedScope && (await storage.list({ prefix: "writer:", limit: 1 })).size > 0)) {
-          return { status: 409 };
+    // SQLite KV uses the existing keys and structured-clone values. Keep the
+    // entire decision atomic without holding the input gate across disk flushes;
+    // the normal output gate still waits for persistence before acknowledging.
+    const result = this.ctx.storage.transactionSync(() => {
+      const storage = this.ctx.storage.kv;
+      const installedScope = storage.get<string>("scope");
+      const storedActive = storage.get<number>("active");
+      let active = storedActive ?? 0;
+      if ((installedScope && (installedScope !== input.scope || storedActive === undefined)) ||
+          !Number.isSafeInteger(active) || active < 0 ||
+          (!installedScope && new Map(storage.list({ prefix: "writer:", limit: 1 })).size > 0)) {
+        return { status: 409 };
+      }
+      const fence = storage.get<Fence>("fence");
+      if (url.pathname === "/inspect") {
+        if ((!installedScope && (storedActive !== undefined || fence !== undefined)) ||
+            (fence && (fence.scope !== input.scope || !UUID.test(fence.owner)))) return { status: 409 };
+        const owner = fence?.owner ?? null;
+        // Legacy boolean tickets have no provenance. Preserve them and report that
+        // limitation; timestamps and version IDs never authorize ticket removal.
+        const entries = new Map(storage.list<true | WriterTicket>({ prefix: "writer:", limit: 1001 }));
+        const tickets: RecoveryWriterInspection["tickets"] = { scanned: entries.size,
+          complete: entries.size <= 1000, legacy: 0, attributed: 0, oldestEnteredAt: null,
+          runtimeRevisions: Object.create(null) as Record<string, number>,
+          kinds: Object.create(null) as Record<string, number> };
+        for (const value of entries.values()) {
+          if (value === true) { tickets.legacy++; tickets.kinds.unknown = (tickets.kinds.unknown ?? 0) + 1; continue; }
+          if (!value || !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0 ||
+              (value.runtimeRevision !== null &&
+                (typeof value.runtimeRevision !== "string" || !REVISION.test(value.runtimeRevision))) ||
+              (value.kind !== undefined && !validKind(value.kind))) return { status: 409 };
+          tickets.attributed++;
+          tickets.oldestEnteredAt = Math.min(tickets.oldestEnteredAt ?? value.enteredAt, value.enteredAt);
+          const revision = value.runtimeRevision ?? "unavailable";
+          tickets.runtimeRevisions[revision] = (tickets.runtimeRevisions[revision] ?? 0) + 1;
+          const kind = value.kind ?? "unknown";
+          tickets.kinds[kind] = (tickets.kinds[kind] ?? 0) + 1;
         }
-        const fence = await storage.get<Fence>("fence");
-        if (url.pathname === "/inspect") {
-          if ((!installedScope && (storedActive !== undefined || fence !== undefined)) ||
-              (fence && (fence.scope !== input.scope || !UUID.test(fence.owner)))) return { status: 409 };
-          const owner = fence?.owner ?? null;
-          // Legacy boolean tickets have no provenance. Preserve them and report that
-          // limitation; timestamps and version IDs never authorize ticket removal.
-          const entries = await storage.list<true | WriterTicket>({ prefix: "writer:", limit: 1001 });
-          const tickets: RecoveryWriterInspection["tickets"] = { scanned: entries.size,
-            complete: entries.size <= 1000, legacy: 0, attributed: 0, oldestEnteredAt: null,
-            runtimeRevisions: Object.create(null) as Record<string, number>,
-            kinds: Object.create(null) as Record<string, number> };
-          for (const value of entries.values()) {
-            if (value === true) { tickets.legacy++; tickets.kinds.unknown = (tickets.kinds.unknown ?? 0) + 1; continue; }
-            if (!value || !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0 ||
-                (value.runtimeRevision !== null &&
-                  (typeof value.runtimeRevision !== "string" || !REVISION.test(value.runtimeRevision))) ||
-                (value.kind !== undefined && !validKind(value.kind))) return { status: 409 };
-            tickets.attributed++;
-            tickets.oldestEnteredAt = Math.min(tickets.oldestEnteredAt ?? value.enteredAt, value.enteredAt);
-            const revision = value.runtimeRevision ?? "unavailable";
-            tickets.runtimeRevisions[revision] = (tickets.runtimeRevisions[revision] ?? 0) + 1;
-            const kind = value.kind ?? "unknown";
-            tickets.kinds[kind] = (tickets.kinds[kind] ?? 0) + 1;
-          }
-          if (tickets.scanned > active || (tickets.complete && tickets.scanned !== active)) return { status: 409 };
-          return { status: 200, body: { owner, scope: input.scope, active,
-            drained: owner !== null && active === 0, initialized: installedScope !== undefined, tickets } };
+        if (tickets.scanned > active || (tickets.complete && tickets.scanned !== active)) return { status: 409 };
+        return { status: 200, body: { owner, scope: input.scope, active,
+          drained: owner !== null && active === 0, initialized: installedScope !== undefined, tickets } };
+      }
+      const key = "writer:" + input.id;
+      const entered = storage.get(key);
+      if (url.pathname === "/enter") {
+        if (fence || entered || active === Number.MAX_SAFE_INTEGER) return { status: 409 };
+        active++;
+        storage.put(key, { enteredAt: Date.now(), runtimeRevision: input.runtimeRevision ?? null,
+          kind: input.kind ?? "unknown" });
+      } else if (url.pathname === "/leave") {
+        if (entered) {
+          if (active === 0) return { status: 409 };
+          storage.delete(key);
+          active--;
         }
-        const key = "writer:" + input.id;
-        const entered = await storage.get(key);
-        if (url.pathname === "/enter") {
-          if (fence || entered || active === Number.MAX_SAFE_INTEGER) return { status: 409 };
-          active++;
-          await storage.put(key, { enteredAt: Date.now(), runtimeRevision: input.runtimeRevision ?? null,
-            kind: input.kind ?? "unknown" });
-        } else if (url.pathname === "/leave") {
-          if (entered) {
-            if (active === 0) return { status: 409 };
-            await storage.delete(key);
-            active--;
-          }
-        } else if (url.pathname === "/claim") {
-          if (fence && fence.owner !== input.id) return { status: 409 };
-          await storage.put("fence", { owner: input.id, scope: input.scope });
-        } else if (url.pathname === "/assert") {
-          if (fence?.owner !== input.id) return { status: 409 };
-        } else if (url.pathname === "/release") {
-          if (fence && fence.owner !== input.id) return { status: 409 };
-          if (await storage.get(IMPORT_QUARANTINE_KEY)) return {status: 409};
-          const migration = await storage.get<ProductionImportState>(IMPORT_STATE_KEY);
-          if (migration && (migration.pending !== null ||
-              typeof migration.readbackSha256 !== "string" || !HASH.test(migration.readbackSha256))) return { status: 409 };
-          await storage.delete("fence");
-        }
-        await storage.put({ scope: input.scope, active });
-        const owner = url.pathname === "/release" ? null : (await storage.get<Fence>("fence"))?.owner ?? null;
-        return { status: 200, body: { owner, scope: input.scope, active, drained: owner !== null && active === 0 } };
-      });
-      return new Response(result.body ? JSON.stringify(result.body) : null, {
-        status: result.status, headers: { "content-type": "application/json", "cache-control": "no-store" },
-      });
+      } else if (url.pathname === "/claim") {
+        if (fence && fence.owner !== input.id) return { status: 409 };
+        storage.put("fence", { owner: input.id, scope: input.scope });
+      } else if (url.pathname === "/assert") {
+        if (fence?.owner !== input.id) return { status: 409 };
+      } else if (url.pathname === "/release") {
+        if (fence && fence.owner !== input.id) return { status: 409 };
+        if (storage.get(IMPORT_QUARANTINE_KEY)) return {status: 409};
+        const migration = storage.get<ProductionImportState>(IMPORT_STATE_KEY);
+        if (migration && (migration.pending !== null ||
+            typeof migration.readbackSha256 !== "string" || !HASH.test(migration.readbackSha256))) return { status: 409 };
+        storage.delete("fence");
+      }
+      storage.put("scope", input.scope);
+      storage.put("active", active);
+      const owner = url.pathname === "/release" ? null : (storage.get<Fence>("fence"))?.owner ?? null;
+      return { status: 200, body: { owner, scope: input.scope, active, drained: owner !== null && active === 0 } };
+    });
+    return new Response(result.body ? JSON.stringify(result.body) : null, {
+      status: result.status, headers: { "content-type": "application/json", "cache-control": "no-store",
+        "x-recovery-coordinator-revision": "sqlite-sync-v1" },
     });
   }
 }
