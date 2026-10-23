@@ -24,7 +24,7 @@
 
 初回の移植19/20、説明順だけを戻した段階18/20も記録した。現行マスターの内容/IDの差ではなく、受信順の違いを検出してsortOrderを採用した。追加9例と肌色3例を理由に順位や閾値を再調整していない。未知語の棄却、英語・韓国語・インドネシア語、誤字・混在入力、料理/場所/感情、国旗・肌色を含む。
 
-単価は[公式モデル表](https://docs.typesafe.ai/models)の$0.042/100万入力tokens・出力無料を用いた見積り。請求確定額やCloudflare費用ではない。移植版20例は1検索あたり約$0.00432。全検討段階と追加例を含む実API評価92検索の推定合計は$0.401549。入力token数/呼出し数はprovider応答から集計し、失敗した実装検査は別に保持した。
+単価は[公式モデル表](https://docs.typesafe.ai/models)の$0.042/100万入力tokens・出力無料を用いた見積り。請求確定額やCloudflare費用ではない。移植版20例は1検索あたり約$0.00432。比較段階と追加例を含む実API評価92検索の推定合計は$0.401549。入力token数/呼出し数はprovider応答から集計し、失敗した実装検査は別に保持した。
 
 API処理時間はMacからの直接呼出しで、350msの入力待機、ブラウザ→Worker、描画を含まない。アプリcacheは介していないがprovider内部cacheは未確認。少数例の最大値を実利用のp95としない。実機・自然回線・長期の候補妥当性/費用監視は残る。
 
@@ -32,7 +32,21 @@ API処理時間はMacからの直接呼出しで、350msの入力待機、ブラ
 
 改修前は同一の本番source/activeを照合し、Chrome155・390×844・CPU4倍、slow4g（1.6Mbps/150ms）とslow3g（400kbps/400ms）の初回/PWA再訪を各3組計測した。正常完了12 navigation、未完了5試行（CDPナビゲーション3、起動条件待ち2）も原本に残す。表は正常完了を条件とし、実端末・自然回線・利用者p75や失敗を含む完了率とは区別する。
 
-改修後の同条件比較、配備source/active/資産manifest・CIと最終readbackは本番反映後に追記する。現在は配備前。
+[全sample・未完了試行・公開検索の記録](metrics/2026-10-23-jev-performance.json)。改修前は各回線3組、改修後は各回線6試行を上限として2組ずつ完了した。目標の各3組へは達していない。正常完了の中央値を以下に示す。
+
+| 条件 | FCP 前→後 | LCP 前→後 | 直接入力の描画 前→後 | 観測総転送 前→後 |
+| --- | ---: | ---: | ---: | ---: |
+| 1.6Mbps・初回 | 1.512→2.050 s | 3.584→4.126 s | 43.8→31.3 ms | 1,067,160→1,068,196 B |
+| 1.6Mbps・PWA再訪 | 0.096→0.078 s | 0.540→1.216 s | 31.1→31.1 ms | 4,560→4,587 B |
+| 400kbps・初回 | 2.644→5.974 s | 10.100→15.140 s | 31.5→36.0 ms | 1,068,196→1,067,682 B |
+| 400kbps・PWA再訪 | 0.084→0.076 s | 1.164→0.788 s | 46.3→30.1 ms | 4,579→4,576 B |
+
+**表示速度の維持・改善は、この公開計測では確認できていない。** 初回LCPは遅く、初回TTFB中央値も0.835→1.527秒／0.893→4.070秒と増えている。PWA再訪はLCPが1.6Mbpsで遅く、400kbpsでは短い。小標本・完了条件付き・HTML/API待ちの変動があるため、改修だけによる効果や原因を断定しない。直接入力の描画は両条件とも数十msで、これは実INPやJev候補完了の測定ではない。
+
+初期JSは検証済み旧/新artifactを同じNode22.6.0 gzipSync既定level6で再圧縮し、1,141,567→1,114,052 bytes、gzip341,611→333,187 bytes（約2.47%減）。過去レポートの別compressor値と混ぜない。初回総転送はほぼ同等、SW先読みは約401KB→410KB。全画面codeの既存PWA方針を維持した差であり、追加辞書JSONは全正常sampleで取得0・Jev要求0だった。Worker bundleは4,062→5,142KiB、upload時startup計測は58→83ms。これはブラウザの表示時間や実運用のcold-start分布ではない。
+
+改修前は正常12navigation・未完了5試行、改修後は正常8navigation・未完了8試行を保持する。後の未完了はCDP navigate4、起動待ち90秒3、instrumentation1。後には設定確認失敗画面とrecovery_writer_unavailableも観測した。最初の3つの変更前失敗は詳細probe未保存で、原logと完了した片側navigationだけがある。片側の正常値も集計JSONへ別枠で保存し、paired中央値へは混ぜない。失敗増の原因・前後で同じ原因かは未確定。自然回線/実機・ログイン後・安定性の受け入れは#53へ残す。
+
 
 ## 検証
 
@@ -44,4 +58,32 @@ API処理時間はMacからの直接呼出しで、350msの入力待機、ブラ
 
 CIで追加DDLと既存backupの固定schemaの不一致を検出したため、専用table案を撤回し既存の非公開設定領域を採用した。予算rowは管理UI/APIの許可keyに追加せず、検索APIだけが原子的に更新する。
 
-最初の公開Jev検索はworkerdがredirect:errorに非対応のため送信前に503となった。名称fallbackは維持した。manual＋3xx拒否へ修正し、native Requestによるoptions検査と3xx拒否を回帰検証する。最初の失敗・予算1消費（provider成功usage0）の原本を保持し、同じ有料操作は再実行しない。
+最初の公開Jev検索はworkerdがredirect:errorに非対応のため送信前に503となった。名称fallbackは維持した。manual＋3xx拒否へ修正し、native Requestによるoptions検査と3xx拒否を回帰検証する。最初の失敗・予算1消費（provider成功usage0）の原本を保持した。配備は別intentで修正し、応答不明のupload/deployを再実行していない。検索検査も各試行を個別のintent/receiptで記録する。
+
+## 修正版の公開検証
+
+修正版source `1e33a518f5f7e2d26bbd85c89642597cfa4d5e69`、active100% `68cdfe9b-ea09-4297-9de4-7dd9204c8b26`。ソースCI [39977912764](https://github.com/kanouk/fanmark-id/actions/runs/39977912764)の全6 job成功後、別intentでupload/有効化・設定の独立読戻しを行った。frontendは先行source `dde6a7f` のbuildと同一byteで、修正はWorkerの外部送信方法とそのテスト・文書のみ。旧hashを含む231資産のbyte/SHA、D1 ledger/schema・18秘密設定名・保存先/runtime/Cron/Route/他3 Workerを照合した。追加DDLは本番へ実行していない。
+
+native workerd＋現行3,944件＋実providerで「美容室」を1検索し、約904ms・4 HTTP・推定$0.003324で成功。上の比較評価92検索とは別の実行環境検査である。
+
+既存PWAの同profile・同catalog snapshot（checksum/3,944件）と再訪limit=1、旧entry除去/新entry保持、API非cacheを確認。公開の4言語×320/375/390/430px、狭幅dialog、coffeeの重複連続選択と検索語保持・未認証profile→auth、例外0が成功。Jev以外の業務POSTはしていない。
+
+| 公開UIの検索 | fetch→JSON受信 | 入力→候補反映 |
+| --- | ---: | ---: |
+| 美容室 | 2003.0 ms | 2486.4 ms |
+| 東京の床屋 | 920.7 ms | 1461.7 ms |
+| coffee | 912.8 ms | 1459.9 ms |
+
+3件とも200・アプリcacheなし。通常回線の更新済みPWA390×844pxで、入力待機350ms・約200msの観測pollと2描画待機を含む単発値。旧pickerの1回62msはviewportが記録されていないため比較に使わず、新picker表示約237msも速度改善の根拠としない。直接入力の前後比較は同条件の通信制限計測に含める。
+
+先行の公開UI検査には、修正版でも15秒で中断して費用counterへ到達しなかった要求が1件ある。別の本番直接検索coffeeは200・15,684ms、root GET後のteaは200・2,560ms（rootは3,096ms）。上の正常な3検索だけで自然回線の安定性やp95を保証しない。初回503・未完了と直接検査は捨てずに保管し、HTML/API待ちの切り分け・実機/自然回線の継続計測を#53/#26へ残す。native workerdの再現で特定したredirect制約と、この後の待ち時間の原因を同一視しない。
+
+## 運用上の別の所見
+
+公開の未完了を調べるため、現在のnamespaceに限定した期限・認証付きread-only operatorで調停状態を3回照合した。owner=null、active/完全走査4件、全件scheduled、HTTP残存0。更新前runtimeへ3件、現行へ1件が帰属し、最古は2026-10-23 12:31:12.854 UTC。現行1件は通常実行中か残存か未確定。ownerなしなので、active4件を公開読取り失敗の直接原因とはしない。
+
+未解決なら日次backupのdrainが安全側で拒否されるため、[運用調査#71](https://github.com/kanouk/fanmark-id/issues/71)へ分けた。ticket/fence/DB/backupを変更していない。workers.devの診断失敗も保存し、使った一時Worker3件と限定route1件は削除、元のWorker inventory/3routesへ復帰を独立確認した。過去のoperationを再実行していない。
+
+本番予算rowはUTC2026-10-23で6admissions（先行503を含む）、成功分544,557入力tokens・48,320出力tokens・28呼出し、推定$0.022871。上の公開UI3件と直接診断2件の合計で、通常利用全体の平均や請求確定額ではない。検索語・履歴・利用者情報の保存は追加していない。
+
+取り込み後のmain/最終CIは[PR70](https://github.com/kanouk/fanmark-id/pull/70)を参照する。非文書fileは配備sourceと別に照合し、docs-only追記では再配備しない。実機タッチ・読み上げ・広い語彙での検索妥当性は#26、トップ全体の後日の見直しは#27で扱い、今回の3D採用を前提にしない。

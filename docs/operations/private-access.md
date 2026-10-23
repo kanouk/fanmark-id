@@ -59,6 +59,7 @@ READMEからintent/receipt/manifest/暗号化原本を辿る。Git外の`common.
 
 - `~/.codex/private/fanmark-mobile-lint-2026-10-22/`: PR60、4言語/4画面幅の改修前後・Lint 0件・実local/CI・候補/active/公開と旧資産保持の照合。新operationのintentを一度だけ実行した記録。
 
+- `~/.codex/private/fanmark-jev-palette-2026-10-23/`: PR70。保存試作と実Jevの比較、共有入力/マイページ/PWA・native workerdの検証、旧hashを含む231資産、本番前後の表示/転送量比較と全失敗試行。初期の追加DDL案は撤回し、既存の非公開設定領域による原子的な日次予算を採用。最初の公開検索で検出したredirect制約を修正し、別のintentで候補/activeを検証。キーは初回だけ1件追加、再配備では再登録しない。once scriptを再実行しない。
 - `~/.codex/private/fanmark-supporting-ux-2026-10-23/`: PR69。非同期の単一フォント指定・JS前の公開shell・認証確認待ちの領域予約。前後の通信制限下計測、実localのJS保留・4言語・機能無効/一部有効/確認失敗・入力DOM/値/フォーカス保持、公開の既存PWA更新・179資産と旧hash保持を記録。失敗した検査も別保存し、新しいupload/deploy intentを1回ずつ実行。再実行しない。
 - `~/.codex/private/fanmark-catalog-cache-2026-10-23/`: PR68。公開catalogのIndexedDB再利用、前後の低速回線測定、実local D1のready版変更・破損・拒否/block/quota/abort、旧公開PWAの同profile更新と1件照合、130資産の保持。upload/deployの排他intent・receiptと独立readbackを保存。再実行しない。
 - `~/.codex/private/fanmark-pwa-precache-2026-10-23/`: PR67。OG画像の先読み除外。前後の低速回線測定、隔離localの実SW新規導入/更新/オフライン、実Worker回帰、公開の既存PWA自動更新・60→59 cache差分、82資産の保持。upload/deployの排他intentとreceipt、独立readbackを保存。再実行しない。

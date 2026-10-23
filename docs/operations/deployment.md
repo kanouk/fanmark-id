@@ -32,7 +32,7 @@ Cloudflare APIでは`/accounts/{account}/workers/scripts/{name}/deployments`→
 既存artifactまたは固定frontend sourceの`public/robots.txt`が記録済みSHA-256と一致する場合だけ復元する。
 公開応答の相違も操作journalへ保存し、元hashを配信結果に合わせて書き換えない。
 
-現時点の[資産manifest](deployed-assets-2026-10-23-supporting-ux.json)は公開静的fileだけを列挙する。
+現時点の[資産manifest](deployed-assets-2026-10-23-jev-palette.json)は公開静的fileだけを列挙する。
 取得先は固定`https://fanmark.id/`＋manifestの相対nameに限定し、query・別host・`..`・symlinkを許可しない。
 欠落やhash相違を推測で埋めず、既存artifactの保管先を確認する。
 
