@@ -36,6 +36,7 @@ const Auth = () => {
   const { settings, loading: settingsLoading } = useSystemSettings();
   const betterAuthEnabled = true;
   const [betterAuthCapabilities, setBetterAuthCapabilities] = useState<BetterAuthCapabilities | null>(null);
+  const [capabilitiesLoading, setCapabilitiesLoading] = useState(true);
 
   useEffect(() => {
 
@@ -46,7 +47,8 @@ const Auth = () => {
       })
       .catch(() => {
         if (active) setBetterAuthCapabilities(null);
-      });
+      })
+      .finally(() => { if (active) setCapabilitiesLoading(false); });
     return () => {
       active = false;
     };
@@ -195,7 +197,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+    <div data-auth-capabilities={capabilitiesLoading ? "loading" : betterAuthCapabilities ? "ready" : "error"} className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
     <SimpleHeader />
       <div className="flex flex-1 items-start justify-center px-4 py-14 md:py-20">
         <div className="w-full max-w-4xl space-y-10">
@@ -221,7 +223,7 @@ const Auth = () => {
                 />
               ) : (
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="space-y-6">
-                <TabsList className={`grid w-full ${signupAvailable ? 'grid-cols-2' : 'grid-cols-1'} gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur`}>
+                <TabsList className={`grid w-full ${signupAvailable || capabilitiesLoading ? 'grid-cols-2' : 'grid-cols-1'} gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur`}>
                   <TabsTrigger
                     value="login"
                     className="flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold tracking-wide transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
@@ -236,6 +238,7 @@ const Auth = () => {
                     <Heart className="h-4 w-4" />
                     {t('auth.signUp')}
                   </TabsTrigger>}
+                  {capabilitiesLoading && !signupAvailable && <span data-auth-capabilities-placeholder aria-hidden="true" className="mx-auto h-4 w-20 self-center rounded-full bg-primary/10" />}
                 </TabsList>
 
                 <TabsContent value="login" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
@@ -251,6 +254,7 @@ const Auth = () => {
                     t={t}
                     socialEnabled={showSocialLogin}
                     socialProviders={betterAuthSocialProviders}
+                    capabilitiesLoading={capabilitiesLoading}
                     passwordResetEnabled={!betterAuthEnabled || Boolean(betterAuthCapabilities?.passwordReset)}
                   />
                 </TabsContent>
@@ -340,9 +344,10 @@ interface LoginFormProps {
   socialEnabled: boolean;
   socialProviders?: readonly string[];
   passwordResetEnabled: boolean;
+  capabilitiesLoading: boolean;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled, socialProviders, passwordResetEnabled }: LoginFormProps) => {
+const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled, socialProviders, passwordResetEnabled, capabilitiesLoading }: LoginFormProps) => {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   // ログイン時は最低8文字を満たしたときだけOK表示、それ以外は未入力扱いで非表示
@@ -472,13 +477,20 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
         )}
       </Button>
 
-      {passwordResetEnabled && (
-        <div className="text-center text-sm">
-          <Link to="/forgot-password" className="text-primary underline-offset-2 transition hover:underline">
+      {(passwordResetEnabled || capabilitiesLoading) && (
+        <div className="min-h-5 text-center text-sm">
+          {passwordResetEnabled ? <Link to="/forgot-password" className="text-primary underline-offset-2 transition hover:underline">
             {t('auth.forgotPassword')}
-          </Link>
+          </Link> : <span data-auth-capabilities-placeholder aria-hidden="true" className="mx-auto block h-5 w-40 rounded bg-primary/10" />}
         </div>
       )}
+
+      {capabilitiesLoading && !socialEnabled && <div data-auth-capabilities-placeholder aria-hidden="true" className="space-y-6">
+        <div className="mx-auto h-4 w-24 rounded bg-primary/10" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {SOCIAL_PROVIDER_ORDER.map(provider => <div key={provider} className="h-10 rounded-2xl bg-primary/10" />)}
+        </div>
+      </div>}
 
       {socialEnabled && (
         <>

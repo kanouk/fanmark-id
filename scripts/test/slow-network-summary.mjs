@@ -14,7 +14,7 @@ export function assertCompatibleSamples(samples) {
   assert.ok(samples.length);
   const common = sample => ({ entry: sample.entry, browser: sample.browser, viewport: sample.viewport,
     cpuSlowdown: sample.cpuSlowdown, origin: sample.origin, auditMode: sample.auditMode ?? 'passive',
-    catalog: sample.auditMode === 'catalog-action' ? { version: sample.catalogMetadata.version, total: sample.catalogMetadata.total } : sample.catalogMetadata });
+    catalog: ['catalog-action', 'supporting-ux'].includes(sample.auditMode) ? { version: sample.catalogMetadata.version, total: sample.catalogMetadata.total } : sample.catalogMetadata });
   const profiles = new Map();
   for (const sample of samples) {
     assert.deepEqual(common(sample), common(samples[0]), 'Do not aggregate different builds, catalogs or browser/device configurations');
@@ -40,9 +40,7 @@ export function largestShiftWindow(shifts) {
   return maximum;
 }
 
-export function validateCatalogActionTransport(run) {
-  assert.ok(Number.isFinite(run.catalogAction?.startMs) && Number.isFinite(run.catalogAction?.readyPaintMs));
-  assert.ok(run.catalogAction.readyPaintMs >= run.catalogAction.startMs);
+export function validateCatalogTransport(run) {
   catalogPageCount(run.catalogMetadata); // Validate the observed version/count.
   const requests = run.requests.filter(r => r.path === '/api/emoji/catalog');
   const resources = run.resources.filter(r => r.path === '/api/emoji/catalog');
@@ -67,13 +65,26 @@ export function validateCatalogActionTransport(run) {
     return { strategy: 'full-pages', requests: requests.length };
   }
   assert.equal(probe.length, 1); assert.equal(run.catalogMetadata.limit, 1);
-  return { strategy: 'validated-local', requests: 1 };
+  return { strategy: 'metadata-check', requests: 1 };
+}
+
+export function validateCatalogActionTransport(run) {
+  assert.ok(Number.isFinite(run.catalogAction?.startMs) && Number.isFinite(run.catalogAction?.readyPaintMs));
+  assert.ok(run.catalogAction.readyPaintMs >= run.catalogAction.startMs);
+  const result = validateCatalogTransport(run);
+  return { ...result, strategy: result.strategy === 'metadata-check' ? 'validated-local' : result.strategy };
 }
 
 export function summarizeRun(run) {
   assert.ok(run.probe.marks.readyPaint && run.probe.lcp.length);
+  if (run.auditMode === 'supporting-ux') {
+    assert.ok(Number.isFinite(run.probe.marks.publicChromePaint) && run.probe.marks.publicChromePaint > 0);
+    assert.ok(run.interaction?.typed && run.interaction.submitted === false && Number.isFinite(run.interaction.inputPaintMs));
+    assert.ok(Array.isArray(run.probe.authPositions));
+  }
   const transport = run.auditMode === 'catalog-action' ? validateCatalogActionTransport(run) : undefined;
-  const expected = transport?.requests ?? catalogPageCount(run.catalogMetadata);
+  const passiveTransport = run.auditMode === 'supporting-ux' ? validateCatalogTransport(run) : undefined;
+  const expected = transport?.requests ?? passiveTransport?.requests ?? catalogPageCount(run.catalogMetadata);
   assert.equal(run.probe.catalog.length, expected);
   assert.deepEqual(run.probe.writes, []);
   assert.ok(run.requests.every(r => ['GET', 'HEAD', 'OPTIONS'].includes(r.method)));
@@ -84,6 +95,9 @@ export function summarizeRun(run) {
   const main = run.resources.find(r => r.path === run.entry);
   return {
     state: run.state,
+    ...(passiveTransport ? { catalogTransport: passiveTransport, publicChromePaintMs: run.probe.marks.publicChromePaint,
+      inputPaintMs: run.interaction?.inputPaintMs, fontStylesheetRequests: run.requests.filter(r => r.host === 'fonts.googleapis.com').length,
+      authInputShiftPx: run.probe.authPositions.length ? Math.max(...run.probe.authPositions.map(p => p.top)) - Math.min(...run.probe.authPositions.map(p => p.top)) : 0 } : {}),
     ...(transport ? { catalogTransport: transport, catalogOperationReadyMs: run.catalogAction.readyPaintMs,
       catalogOperationWaitMs: run.catalogAction.waitMs } : {}),
     ttfbMs: run.navigation[0].ttfb,
@@ -130,7 +144,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   }
   assertCompatibleSamples(samples);
   const groupKeys = [...new Set(samples.map(s => `${s.profile}:${s.route}:${s.state}`))];
-  const fields = ['ttfbMs', 'fcpMs', 'lcpMs', 'cls', 'uiReadyPaintMs', 'catalogBodyCompleteMs', 'firstCatalogBodyCompleteMs', 'totalWireBytes', 'precacheWireBytes', 'ogPrecacheWireBytes', 'dialogOpenMs', 'catalogOperationReadyMs', 'catalogOperationWaitMs', 'catalogEncodedBytes'];
+  const fields = ['ttfbMs', 'fcpMs', 'lcpMs', 'cls', 'uiReadyPaintMs', 'catalogBodyCompleteMs', 'firstCatalogBodyCompleteMs', 'totalWireBytes', 'precacheWireBytes', 'ogPrecacheWireBytes', 'dialogOpenMs', 'catalogOperationReadyMs', 'catalogOperationWaitMs', 'catalogEncodedBytes', 'publicChromePaintMs', 'inputPaintMs', 'fontStylesheetRequests', 'authInputShiftPx'];
   const groups = groupKeys.map(key => {
     const rows = samples.filter(s => `${s.profile}:${s.route}:${s.state}` === key);
     const median = values => { const sorted = values.sort((a, b) => a - b); const middle = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2; };

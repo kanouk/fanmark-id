@@ -15,14 +15,16 @@ assert.ok(profiles[profile], 'Expected slow-4g or slow-3g');
 const route = process.argv[3] || '/';
 assert.ok(['/', '/auth', '/admin', '/about'].includes(route), 'Only anonymous read-only routes are allowed');
 const catalogActionMode = process.argv[5] === '--catalog-action';
-assert.ok(process.argv[5] === undefined || catalogActionMode);
+const supportingUxMode = process.argv[5] === '--supporting-ux';
+assert.ok(process.argv[5] === undefined || catalogActionMode || supportingUxMode);
+assert.ok(!supportingUxMode || ['/', '/auth'].includes(route));
 assert.ok(!catalogActionMode || route === '/');
 const output = process.argv[4] || await mkdtemp(path.join(os.tmpdir(), 'fanmark-network-audit-'));
 await mkdir(output, { recursive: true, mode: 0o700 });
 const chromeProfile = await mkdtemp(path.join(os.tmpdir(), 'fanmark-audit-chrome-'));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const probe = `(() => {
-  const p=window.__audit={marks:{},lcp:[],shifts:[],longtasks:[],catalog:[],writes:[],blockedAvailabilityReads:0};
+  const p=window.__audit={marks:{},lcp:[],shifts:[],longtasks:[],catalog:[],writes:[],authPositions:[],blockedAvailabilityReads:0};
   const element=node=>{const e=node?.nodeType===3?node.parentElement:node;return e?.tagName ? [e.tagName.toLowerCase(),e.id?'#'+e.id:'',...Array.from(e.classList||[]).slice(0,3).map(c=>'.'+c)].join('') : null;};
   new PerformanceObserver(list=>{for(const e of list.getEntries())p.lcp.push({at:e.startTime,size:e.size,element:element(e.element),url:e.url?new URL(e.url).pathname:null});}).observe({type:'largest-contentful-paint',buffered:true});
   new PerformanceObserver(list=>{for(const e of list.getEntries())p.shifts.push({at:e.startTime,value:e.value,recentInput:e.hadRecentInput,sources:(e.sources||[]).map(s=>({element:element(s.node),previous:s.previousRect.toJSON(),current:s.currentRect.toJSON()}))});}).observe({type:'layout-shift',buffered:true});
@@ -42,6 +44,13 @@ const probe = `(() => {
     return r;
   };
   function mark(){
+    if(document.querySelector('header')&&!p.marks.publicChromePaint){
+      p.marks.publicChromePaint=-1;requestAnimationFrame(()=>requestAnimationFrame(()=>p.marks.publicChromePaint=performance.now()));
+    }
+    if(location.pathname==='/auth'){
+      const input=document.querySelector('#auth-email');
+      if(input){const top=input.getBoundingClientRect().top;const last=p.authPositions.at(-1);if(!last||last.top!==top)p.authPositions.push({at:performance.now(),top});}
+    }
     if(document.querySelector('[data-app-startup]')&&!p.marks.skeleton)p.marks.skeleton=performance.now();
     const selector=location.pathname==='/auth'?'#auth-email':location.pathname==='/admin'?'#cloudflare-admin-email':location.pathname==='/about'?'main h1, h1':'#search button[aria-label="直接入力"]';
     if(document.querySelector(selector)&&!document.querySelector('[data-app-startup]')&&!p.marks.ready){p.marks.ready=performance.now();requestAnimationFrame(()=>requestAnimationFrame(()=>p.marks.readyPaint=performance.now()));}
@@ -110,7 +119,7 @@ try {
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await cdp.send('Page.addScriptToEvaluateOnNewDocument',{source:probe});
   const value=async expression=>{const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});assert.ok(!r.exceptionDetails,'Browser evaluation failed: '+expression.slice(0,80));return r.result?.value;};
-const report={observedAt:new Date().toISOString(),origin:'https://fanmark.id',route,profile,conditions,cpuSlowdown:4,viewport:{width:390,height:844},browser:version.Browser,userAgent:version['User-Agent'],auditMode:catalogActionMode?'catalog-action':'passive',runs:[]};
+const report={observedAt:new Date().toISOString(),origin:'https://fanmark.id',route,profile,conditions,cpuSlowdown:4,viewport:{width:390,height:844},browser:version.Browser,userAgent:version['User-Agent'],auditMode:catalogActionMode?'catalog-action':supportingUxMode?'supporting-ux':'passive',runs:[]};
   for(const state of ['cold','warm']){
     label=state;
     await cdp.send('Page.navigate',{url:'https://fanmark.id'+route});
@@ -118,7 +127,7 @@ const report={observedAt:new Date().toISOString(),origin:'https://fanmark.id',ro
     while(Date.now()-began<90_000){
       const p=await value('window.__audit && ({ready:window.__audit.marks.ready,catalog:window.__audit.catalog.length,bodies:performance.getEntriesByType("resource").filter(e=>new URL(e.name).pathname==="/api/emoji/catalog").length,now:performance.now(),controlled:!!navigator.serviceWorker.controller})');
       const metadata=catalogMetadata.get(state);
-      const expected=metadata&&catalogPageCount(metadata);
+      const expected=metadata&&(supportingUxMode&&metadata.limit===1?1:catalogPageCount(metadata));
       if(catalogActionMode&&p?.ready&&!catalogAction){
         await value('document.querySelector("#search button[aria-label=直接入力]").click()');
         await value('new Promise(resolve=>{const check=()=>{const input=document.querySelector("[role=dialog] input");if(input){input.focus();resolve(true);}else requestAnimationFrame(check);};check();})');
@@ -146,6 +155,16 @@ const report={observedAt:new Date().toISOString(),origin:'https://fanmark.id',ro
       await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x:bounds.x,y:bounds.y,button:'left',clickCount:1});
       await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:bounds.x,y:bounds.y,button:'left',clickCount:1});
       snapshot.dialogClick=await value(`new Promise(resolve=>{const check=()=>{if(document.querySelector('[role=dialog] input'))requestAnimationFrame(()=>requestAnimationFrame(()=>resolve({afterMs:performance.now()-${bounds.start},appeared:true})));else requestAnimationFrame(check);};check();})`);
+    }
+    if(supportingUxMode){
+      const selector=route==='/auth'?'#auth-email':'[role=dialog] input';
+      const began=await value('performance.now()');
+      await value('document.querySelector('+JSON.stringify(selector)+').focus();true');
+      await cdp.send('Input.insertText',{text:route==='/auth'?'ux@example.test':'😀'});
+      const painted=await value('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(performance.now()))))');
+      assert.equal(await value('document.querySelector('+JSON.stringify(selector)+').value'),route==='/auth'?'ux@example.test':'😀');
+      snapshot.interaction={inputPaintMs:painted-began,typed:true,submitted:false};
+      assert.deepEqual(await value('window.__audit.writes'),[]);
     }
     const sample={state,auditMode:report.auditMode,catalogAction,catalogMetadata:catalogMetadata.get(state),...snapshot,requests:[...requests.values()].filter(r=>r.label===state)};
     assert.ok(sample.requests.every(r=>['GET','HEAD','OPTIONS'].includes(r.method)), 'Unexpected network mutation');

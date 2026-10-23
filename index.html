@@ -5,17 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       // Set theme immediately to prevent flash
-      const savedTheme = localStorage.getItem('fanmark-theme') || 'pastel';
-      document.documentElement.setAttribute('data-theme', savedTheme);
+      try {
+        const savedTheme = localStorage.getItem('fanmark-theme') || 'pastel';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const language = localStorage.getItem('fanmark-language');
+        document.documentElement.lang = ['ja', 'en', 'ko', 'id'].includes(language) ? language : 'ja';
+      } catch { /* Public startup chrome also works when storage is unavailable. */ }
     </script>
     <title>ファンマID | 絵文字でつくる、あなただけのアドレス</title>
     <meta name="description" content="ファンマ（＝絵文字の組み合わせ）を使って、あなただけのオリジナルのアドレスを作ろう。アドレス転送だけじゃなくて、プロフィールページや伝言板も作れるよ！" />
     <meta name="author" content="fanmark.id" />
     
+    <!-- Public startup chrome shares these small rules with React's readiness skeleton. -->
+    <style>
+      body{margin:0;background:hsl(28 33% 97%);color:hsl(20 14% 25%);font-family:Figtree,sans-serif}
+      .app-startup{min-height:100vh;background:hsl(var(--background,28 33% 97%));color:hsl(var(--foreground,20 14% 25%))}
+      .app-startup header{border-bottom:1px solid hsl(var(--border,30 25% 85%)/.4)}
+      .app-startup-bar{box-sizing:border-box;height:69px;max-width:1400px;margin:auto;display:flex;align-items:center;gap:8px;padding:16px}
+      .app-startup[data-startup-layout=auth] .app-startup-bar{height:73px}
+      .app-startup-icon{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:hsl(180 55% 62%/.15)}
+      .app-startup-icon img{width:32px;height:32px;object-fit:contain}
+      .app-startup-name{font-size:20px;font-weight:600;line-height:28px;background:linear-gradient(135deg,hsl(180 55% 62%),hsl(340 50% 75%));background-clip:text;-webkit-background-clip:text;color:transparent}
+      .app-startup-body{box-sizing:border-box;max-width:768px;margin:auto;padding:96px 24px;display:flex;flex-direction:column;align-items:center;gap:24px}
+      .app-startup-line{height:40px;width:75%;border-radius:12px;background:hsl(var(--muted,30 20% 90%))}
+      .app-startup-line-short{height:20px;width:50%;border-radius:4px}
+      .app-startup-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;max-width:512px;gap:16px;margin-top:48px}
+      .app-startup-slots span{aspect-ratio:1;border-radius:16px;background:hsl(var(--muted,30 20% 90%)/.4)}
+      @media(min-width:640px){.app-startup-bar{height:73px;gap:12px}.app-startup-icon{width:40px;height:40px}.app-startup-name{font-size:24px;line-height:32px}}
+      @media(min-width:768px){.app-startup-bar{padding-inline:24px}}
+    </style>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     
     <!-- Favicon - 全形式対応 -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -43,7 +65,17 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="app-startup" data-app-startup data-static-startup aria-busy="true">
+        <header><div class="app-startup-bar"><span class="app-startup-icon"><img src="/src/assets/sparkles.png" width="32" height="32" alt="" /></span><span class="app-startup-name">ファンマID</span></div></header>
+        <div class="app-startup-body" aria-hidden="true"><div class="app-startup-line"></div><div class="app-startup-line app-startup-line-short"></div><div class="app-startup-slots"><span></span><span></span><span></span><span></span><span></span></div></div>
+      </main>
+    </div>
+    <script>
+      const startup = document.querySelector('[data-static-startup]');
+      startup.dataset.startupLayout = location.pathname === '/auth' ? 'auth' : 'app';
+      if (document.documentElement.lang !== 'ja') startup.querySelector('.app-startup-name').textContent = 'Fanmark';
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
