@@ -12,7 +12,7 @@
 本番の業務実装を共有し、データ・外部接続・秘密設定を分離する。
 
 - `src/`: Vite/Reactの画面・client・hook。`src/main.tsx`で共通CSSを読み、絵文字catalogは裏で取得する。`emoji-catalog-state.ts` / `useEmojiCatalog` / `EmojiCatalogStatus.tsx`が必要時だけの待機・再試行を扱う。
-- `index.html` / `AppStartupSkeleton.tsx`: 公開ブランドだけの起動表示。小さい共通CSSをHTMLへ置き、JS前とreadiness待機中で共有する。Google FontsはHTMLの1指定へ統一し非同期に適用。`pages/Auth.tsx`はcapabilities確認待ちのsignup・reset・SNS領域を予約し、確認前の操作は増やさない。
+- `index.html` / `AppStartupSkeleton.tsx`: 公開ブランドだけの起動表示。小さい共通CSSをHTMLへ置き、JS前とreadiness待機中で共有する。React起動待機が5秒を超えると4言語の状態案内を追加する。Google FontsはHTMLの1指定へ統一し非同期に適用。`pages/Auth.tsx`はcapabilities確認待ちのsignup・reset・SNS領域を予約し、確認前の操作は増やさない。
 - `src/components/emoji-input/EmojiPalette.tsx`: 共有入力から必要時に読み込むパレット。`shared/emoji-palette`の名称検索・4言語copy、版・SHA検証した公開JSON、`useJevSearch.ts`のdebounce/取消/応答検証を使用。トップ・Dashboard取得欄・PWAで同じ動作を持つ。
 - `workers/api/src/emoji-palette-api.ts` / `emoji-palette-jev.ts`: 匿名Jev検索。現在のready MasterのID/並びを使い、旧試作の6観点探索を移植。秘密はWorkerだけに置き、既存IP limiterとBusiness D1の非個人集計による日次上限を確認する。
 - `src/lib/emoji-catalog-cache.ts`: 全件検証した公開catalogのIndexedDB snapshot。`emoji-catalog-worker.ts`の既存APIによる1件取得でready版を照合し、保存不備は全件取得、版確認失敗は従来の再試行へ進む。SWのAPI cacheや本人queryとは分離する。
@@ -71,3 +71,5 @@ providerのcallbackは既存設定を維持する。Webhookは署名検証・rec
 旧Supabaseは停止原本で、移送後の書込みを戻す切戻し先にはしない。
 
 旧画面説明、RLS、移行実験とstaging配備履歴は[旧ARCHITECTURE](history/ARCHITECTURE-2026-10-21.md)に保存した。
+
+公開root HTML・JS/CSS・SW等の固定ファイルは`workers/api/src/index.ts`の明示allowlistで内部調停から分離する。配信handlerの全体停止・HTTPS・owner受付は保持する。動的OGP・API・未知のpathは従来の調停を経由し、Reactのreadiness gateは省かない。

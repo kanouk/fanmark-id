@@ -70,6 +70,8 @@ READMEからintent/receipt/manifest/暗号化原本を辿る。Git外の`common.
 
 ## 記録の境界
 
+PR73の原本は`~/.codex/private/fanmark-startup-long-waits-2026-10-24/`。PR72後の再発、8f候補の失敗、公開ファイル分離のe79候補、native/core/local/CI・329資産・旧PWAと設定障害注入・公開12起動・全未完了を保存。完全buildは`build`、最終runtime manifestは`release-public.json`。各phaseのupload/deployは新しいintent/receiptで一度だけ実施し、全設定とactiveを独立照合。APIの長時間待ちと認証503は未解消で#71へ継続する。未完了票の手動削除・fence強制解除・schema/秘密値の変更はしていない。過去のonce scriptを再実行しない。
+
 Gitへ保存するのは構成・非秘密ID・公開資産hash・日時・commit/CI/配備version・検証結果・未確認事項。
 秘密値、認証URL、cookie、MFA情報、ユーザーデータ、決済payload、DB dump、復号backupは保存しない。
 private操作記録はdirectory 0700/file 0600とし、原本を上書きしない。

@@ -29,7 +29,7 @@ export async function verifyCatalogPersistence({ stack, cdp, value, wait, naviga
     await value('document.querySelector("button[aria-label=直接入力]").click()');
     await wait('!!document.querySelector("[role=dialog] input")'); await fill('[role=dialog] input', '😀');
     await clickText('確定', 'document.querySelector("[role=dialog]")');
-    await wait('!document.querySelector("[role=dialog]")&&document.querySelector("#search").innerText.includes("😀")');
+    await wait('!document.querySelector("[role=dialog]")&&document.querySelector("#search")?.innerText.includes("😀")');
     assert.equal(await value('!!document.querySelector("[data-emoji-catalog-notice]")'), false);
   }
   async function saved(version) {

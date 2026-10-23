@@ -60,16 +60,16 @@ it("inspects the native census without initializing, fencing or changing writer 
   expect((await db.prepare("SELECT id FROM drain_fixture").all()).results).toEqual([{ id: 5 }]);
 });
 
-it("admits delayed static reads without a writer ticket and still tracks HTTP post-response writes", async () => {
+it("admits delayed guarded reads without a writer ticket and still tracks HTTP post-response writes", async () => {
   const httpEntered = signal(), httpFinish = signal();
-  const http = worker.fetch(new Request("https://app.example.test/"), { ...runtime,
+  const http = worker.fetch(new Request("https://app.example.test/a/synthetic-short-id"), { ...runtime,
     ASSETS: { async fetch() { httpEntered.resolve(); await httpFinish.promise; return new Response("synthetic"); } } as unknown as Fetcher,
   });
   await httpEntered.promise;
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
   expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 0, drained: true });
   let lateAssetCalls = 0;
-  const refused = await worker.fetch(new Request("https://app.example.test/assets/late.js"), { ...runtime,
+  const refused = await worker.fetch(new Request("https://app.example.test/a/late-short-id"), { ...runtime,
     ASSETS: { async fetch() { lateAssetCalls++; return new Response("must not read"); } } as unknown as Fetcher,
   });
   expect(refused.status).toBe(503); expect(lateAssetCalls).toBe(0);
@@ -460,13 +460,13 @@ it("retries only a lost read inspection ACK with a fresh stub and keeps the cens
   const retrying = { ...runtime, RECOVERY_DRAIN: {
     idFromName: namespace.idFromName.bind(namespace),
     get() { stubs++; return { async fetch(input: string, init: RequestInit) {
-      expect(input.endsWith("/inspect")).toBe(true); expect(init.signal).toBeInstanceOf(AbortSignal);
+      expect(input.endsWith("/inspect")).toBe(true); expect(init.signal).toBeUndefined();
       const response = await gate.fetch(input, init);
       if (++inspections === 1) throw Error("synthetic lost read ACK");
       return response;
     } }; },
   } as unknown as DurableObjectNamespace };
-  await withRecoveryRead(retrying, async () => { reads++; }, 2_000);
+  await withRecoveryRead(retrying, async () => { reads++; });
   expect({ stubs, inspections, reads }).toEqual({ stubs: 2, inspections: 2, reads: 1 });
   expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
 });
@@ -486,19 +486,20 @@ it("rechecks the current fence on a read retry instead of using an earlier open 
   await assertRecoveryWriterFence(runtime, owner);
 });
 
-it("bounds a stalled read to its signal deadline then retries without executing the view twice", async () => {
-  let inspections = 0, reads = 0;
-  const retrying = { ...runtime, RECOVERY_DRAIN: {
+it("waits beyond the former startup deadline for authoritative admission without retrying or writing tickets", async () => {
+  let inspections = 0;
+  const slow = { ...runtime, MAINTENANCE_SETTINGS_BACKEND: "d1", RECOVERY_DRAIN: {
     idFromName: namespace.idFromName.bind(namespace),
     get() { return { async fetch(input: string, init: RequestInit) {
-      if (++inspections === 1) return new Promise<Response>((_resolve, reject) => {
-        init.signal!.addEventListener("abort", () => reject(Error("synthetic stalled transport")), { once: true });
-      });
+      inspections++; expect(init.signal).toBeUndefined();
+      await new Promise(resolve => setTimeout(resolve, 3_000));
       return gate.fetch(input, init);
     } }; },
   } as unknown as DurableObjectNamespace };
-  await withRecoveryRead(retrying, async () => { reads++; }, 2_000);
-  expect({ inspections, reads }).toEqual({ inspections: 2, reads: 1 });
+  const response = await worker.fetch(new Request("https://app.example.test/api/system/maintenance"), slow);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ schemaVersion: 1, settings: { maintenance_mode: false } });
+  expect(inspections).toBe(1);
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
 });
 
@@ -524,13 +525,13 @@ it("keeps fence and uncertain writer backoff while allowing one client retry of 
     RECOVERY_DRAIN: { idFromName: namespace.idFromName.bind(namespace),
       get() { return { async fetch() { throw Error("synthetic unavailable"); } }; },
     } as unknown as DurableObjectNamespace };
-  const transient = await worker.fetch(new Request("https://app.example.test/"), failedTransport);
+  const transient = await worker.fetch(new Request("https://app.example.test/a/synthetic-short-id"), failedTransport);
   expect(transient.status).toBe(503); expect(transient.headers.has("retry-after")).toBe(false);
   expect(await transient.json()).toEqual({ error: "recovery_writer_unavailable" });
   const writer = await worker.fetch(new Request("https://app.example.test/api/auth/get-session"), failedTransport);
   expect(writer.status).toBe(503); expect(writer.headers.get("retry-after")).toBe("60");
   await claimRecoveryWriterFence(runtime, owner);
-  const fenced = await worker.fetch(new Request("https://app.example.test/"), {
+  const fenced = await worker.fetch(new Request("https://app.example.test/a/synthetic-short-id"), {
     ...runtime, ASSETS: failedTransport.ASSETS,
   });
   expect(fenced.status).toBe(503); expect(fenced.headers.get("retry-after")).toBe("60");
@@ -538,18 +539,34 @@ it("keeps fence and uncertain writer backoff while allowing one client retry of 
 });
 
 
-it("keeps slow static admission alive so a service worker update can complete", async () => {
+it("serves audited public files without coordinator calls while data, OGP and explicit closure stay protected", async () => {
   let inspections = 0;
   const slow = { ...runtime, ASSETS: { async fetch() { return new Response("synthetic service worker"); } } as unknown as Fetcher,
     RECOVERY_DRAIN: { idFromName: namespace.idFromName.bind(namespace),
       get() { return { async fetch(input: string, init: RequestInit) {
-        inspections++; expect(init.signal).toBeUndefined();
-        await new Promise(resolve => setTimeout(resolve, 3_000));
-        return gate.fetch(input, init);
+        inspections++; return gate.fetch(input, init);
       } }; },
     } as unknown as DurableObjectNamespace };
-  const response = await worker.fetch(new Request("https://app.example.test/sw.js"), slow);
+  await claimRecoveryWriterFence(runtime, owner);
+  for (const path of ["/", "/index.html", "/sw.js", "/workbox-abcd1234.js", "/manifest.webmanifest", "/assets/index-abcd.js", "/favicon.ico"]) {
+    for (const method of ["GET", "HEAD"]) {
+      const response = await worker.fetch(new Request("https://app.example.test" + path, { method }), slow);
+      expect(response.status).toBe(200);
+    }
+  }
+  expect(inspections).toBe(0);
+  for (const path of ["/api/system/maintenance", "/api/auth/capabilities", "/api/emoji/catalog", "/a/synthetic-short-id", "/😀"]) {
+    const response = await worker.fetch(new Request("https://app.example.test" + path), slow);
+    expect(response.status).toBe(503);
+  }
+  for (const override of [{ RECOVERY_WRITE_FREEZE: "true" }, { CUTOVER_WRITE_FREEZE: "receipt_only" }, { CUTOVER_WRITE_FREEZE: "invalid" }]) {
+    const response = await worker.fetch(new Request("https://app.example.test/sw.js"), { ...slow, ...override });
+    expect(response.status).toBe(503);
+  }
+  const failed = { ...slow, RECOVERY_DRAIN: { idFromName() { throw Error("synthetic coordinator outage"); } } as unknown as DurableObjectNamespace };
+  const response = await worker.fetch(new Request("https://app.example.test/sw.js"), failed);
   expect(response.status).toBe(200); expect(await response.text()).toBe("synthetic service worker");
-  expect(inspections).toBe(1);
-  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: false });
+  await assertRecoveryWriterFence(runtime, owner);
+  await releaseRecoveryWriterFence(runtime, owner);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: true });
 });

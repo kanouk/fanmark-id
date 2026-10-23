@@ -1032,6 +1032,21 @@ async function fetchStaticAsset(request: Request, assets: Fetcher): Promise<Resp
   return response;
 }
 
+// Audited public files only. These paths cannot match dynamic OGP or any API
+// handler, so serving them never reads a captured D1/R2 store. Keep the shell
+// and PWA repair/update channel available when recovery admission is unavailable.
+const PUBLIC_STATIC_PATHS = new Set([
+  "/", "/index.html", "/sw.js", "/manifest.webmanifest", "/build-target.json", "/clear-legacy-api-cache.js",
+  "/favicon.ico", "/favicon.png", "/pwa-192x192.png", "/pwa-512x512.png",
+  "/placeholder.svg", "/og-image.png", "/robots.txt", "/sitemap.xml", "/palette/UNICODE-LICENSE.txt",
+]);
+
+function publicStaticRead(request: Request, url: URL, env: Env): boolean {
+  return Boolean(env.ASSETS) && (request.method === "GET" || request.method === "HEAD") &&
+    (PUBLIC_STATIC_PATHS.has(url.pathname) || url.pathname.startsWith("/assets/") ||
+      /^\/workbox-[A-Za-z0-9_-]+\.js$/u.test(url.pathname));
+}
+
 function addNoIndexHeader(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("x-robots-tag", "noindex, nofollow");
@@ -1791,6 +1806,10 @@ const worker = {
       if (!ownerAllowed && blocksRequestDuringCutoverFreeze(request.method, url.pathname, env.CUTOVER_WRITE_FREEZE)) {
         return await handleRequest(request, env);
       }
+      // view still enforces HTTPS, explicit recovery/cutover closure and owner
+      // acceptance. Only public file delivery skips the unrelated DB admission;
+      // maintenance/session and every data/OGP route keep their existing gates.
+      if (!ownerAllowed && publicStaticRead(request, url, env)) return await view();
       // Static/OGP responses and public Master reads do not mutate captured
       // D1/R2 stores. In particular, a disconnected asset download must not
       // permanently block backups. Auth (including GET callbacks/session
@@ -1803,7 +1822,7 @@ const worker = {
       const startupRead = request.method === "GET" &&
         ["/api/system/maintenance", "/api/auth/capabilities"].includes(url.pathname);
       if (readMethod && (assetRead || masterRead || startupRead)) {
-        return await withRecoveryRead(env, view, startupRead ? 2_000 : undefined);
+        return await withRecoveryRead(env, view);
       }
       return await withRecoveryWriter(env, async () => {
         try { return await view(); }

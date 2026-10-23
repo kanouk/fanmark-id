@@ -135,16 +135,16 @@ API単価$0.042/100万入力tokens・出力無料（2026-10-23 [公式モデル�
 
 ## 起動時の設定確認とwriter追跡
 
-`GET /api/system/maintenance` と `GET /api/auth/capabilities` はSELECT/PRAGMAだけの固定経路として、静的資産・公開Masterと同じ`withRecoveryRead`を使う。scope・保存状態の不整合やfence時の拒否は保持し、cacheや設定の推測で確認を省かない。session・OAuth callbackを含む他のAuth GETと非GETは`withRecoveryWriter`を使う。
+`GET /api/system/maintenance` と `GET /api/auth/capabilities` はSELECT/PRAGMAだけの固定経路として、公開Master・動的OGPと同じ`withRecoveryRead`を使う。scope・保存状態の不整合やfence時の拒否は保持し、cacheや設定の推測で確認を省かない。session・OAuth callbackを含む他のAuth GETと非GETは`withRecoveryWriter`を使う。
 
 SQLiteのwriter coordinatorは既存KVの同じkey/valueを同期KVと`transactionSync`で読み書きする。1要求ごとの`blockConcurrencyWhile`と非同期transactionの重複を除き、永続化待ちの間も後続要求の状態判定を実行できる。通常のoutput gateは有効なままで、永続化前にenterの成功を返さない。ticketの自動期限切れ・他処理の票削除・保存先の変更は行わない。native Worker testで旧非同期KVとの互換、同時32 writer/32 inspect、fence、ACK喪失と隔離復旧を検証する。
 
 [Cloudflareの同期KV/transaction仕様](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/)を参照。起動障害の観測・公開検証は[運用状態](operations/current-state.md)へ記録する。
 
-メンテナンスの公開GETはnetwork/timeoutと待機指示のない502/503/504だけ、250ms後に1回再試行する。各回5秒、合計最大約10.25秒を上限とし、その間は起動gateを閉じたままにする。Retry-After付き応答・権限拒否・schema不正・PATCHは再実行しない。調停RPCの1秒以上の遅延/HTTP失敗はoperation・経過ms・status・固定の実装markerだけをlogへ記録し、検索語・URL・cookie・ticket ID・秘密値を含めない。markerは内部応答に限定し公開APIへ転送しない。
+メンテナンスの公開GETはnetwork/timeoutと待機指示のない502/503/504だけ、250ms後に1回再試行する。各回30秒、合計最大約60.25秒を上限とし、その間は起動gateを閉じたままにする。Retry-After付き応答・権限拒否・schema不正・PATCHは再実行しない。PATCHの期限は5秒のまま。React起動待機が5秒を超えると公開shell内に4言語のstatusを表示し、設定取得前の操作は増やさない。調停RPCの1秒以上の遅延/HTTP失敗はoperation・経過ms・status・固定の実装markerだけをlogへ記録し、検索語・URL・cookie・ticket ID・秘密値を含めない。markerは内部応答に限定し公開APIへ転送しない。
 
-起動用のmaintenance/capabilities GETのread admissionでは、内部inspect RPCを各2秒・最大2回（間隔100ms）へ制限する。通信失敗/内部5xxだけ新しいstubで再照合し、scope/形式不整合・fenceは再試行せず拒否する。古いopen結果は使わず、viewを呼ぶ前に現在のfenceを確認する。enter/claim等の書込みRPCには、このtimeout/再試行を適用しない。特権の通常status照会の制限も変更しない。
+起動用のmaintenance/capabilities GETを含むread admissionでは、内部inspect RPCを短い人工的な期限で中断しない。正常応答が2秒を超える本番観測に基づく。実際の通信失敗は最大2回（間隔100ms）まで照合する。通信失敗/内部5xxだけ新しいstubで再照合し、scope/形式不整合・fenceは再試行せず拒否する。古いopen結果は使わず、viewを呼ぶ前に現在のfenceを確認する。enter/claim等の書込みRPCには、この再試行を適用しない。特権の通常status照会の制限も変更しない。
 
 HTTP読取りの内部通信が2回とも失敗した503には固定60秒のRetry-Afterを付けず、公開maintenance GETの1回の再試行へ進める。fence/設定不整合と、writerのACK不明を含む書込み経路の503は従来の60秒指示を保持する。読取り成功を推測してgateを開くことはしない。
 
-静的資産・公開Masterのread admissionは従来の待ち方を維持する。SW導入/更新に使う静的ファイルやcatalogを短い設定確認の期限で打ち切らず、確認後にだけ配信する。native Workerで3秒の静的確認後にもSWファイルが200となり、票を作らないことを検証する。
+通常公開のroot HTML・`/assets/`・SW/Workboxと公開固定ファイルの明示allowlistは、captured D1/R2を読まないため内部調停を経ず配信する。未知のpath・動的OGP・API・非GET/HEADはこの例外へ入れない。`handleRequest`を経由し、HTTPS・owner受付・RECOVERY_WRITE_FREEZE/CUTOVER_WRITE_FREEZE・staging noindex等は維持する。閉鎖本番の所有者限定受付は固定ファイルにも従来のfence照合を維持する。public shellだけでは操作を開かず、設定・認証gateと全データ経路のfenceは維持する。native Workerは調停停止/実fence下でも固定ファイルが配信され、maintenance・Auth capabilities・catalog・動的OGPは503、全体停止では固定ファイルも503となることを検証する。
