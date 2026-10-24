@@ -5,20 +5,20 @@
 
 ## 本番移行と配備
 
-**最終照合: 2026-10-24 04:15 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。起動対策を反映したが、内部調停の長い待ちと認証503は未解消。
+**最終照合: 2026-10-24 11:30 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。認証確認失敗を匿名扱いする不具合は修正した。内部調停の長い待ち・認証503の発生原因は未特定。現在の短い確認で正常応答でも、完全復旧とは認定しない。
 
 | 項目 | 最終確認した状態 |
 | --- | --- |
 | 本番URL | `https://fanmark.id/`。Worker Route方式。www/adminはalias Workerの限定転送 |
-| 本番app | `fanmark-app-production` / active 100% `e79e7c07-2d12-48b7-8c73-170923e17919` |
-| 配備operationのソース | `ba88563d88007c82236f0829a28b318a96e6e7f8` / [PR73](https://github.com/kanouk/fanmark-id/pull/73)。frontendは`edae935aba02d71290d2cd4e55b1f267262a6f8d`のbuildと入力/byte同一を照合 |
-| 配備時点のmain | `76bf806769d92341d56d8e37a9d64956617160ce`。取り込み後のmain/CIは[PR73](https://github.com/kanouk/fanmark-id/pull/73)を参照。非文書fileを配備ソースと別に照合 |
-| 配備のPR CI / main CI | ソース[40008492396](https://github.com/kanouk/fanmark-id/actions/runs/40008492396)の全6 job成功。最終文書HEADのPR CI・main CIは[PR73](https://github.com/kanouk/fanmark-id/pull/73)を参照 |
+| 本番app | `fanmark-app-production` / active 100% `67165a66-d847-4e4f-875d-96ef4864ad3a` |
+| 配備operationのソース | `c30a33264521c19b0d87b07c4b86c7bca17669c6` / [PR74](https://github.com/kanouk/fanmark-id/pull/74)。frontendは`b2ea6b0dbaae3229590a95a90c777c47319fb123`のbuildと入力/byte同一を照合 |
+| 配備時点のmain | `94b7fef4271b5425c3d4393c7c0078acb1466905`。取り込み後のmain/CIは[PR74](https://github.com/kanouk/fanmark-id/pull/74)を参照。非文書fileを配備ソースと別に照合 |
+| 配備のPR CI / main CI | ソース[40053623724](https://github.com/kanouk/fanmark-id/actions/runs/40053623724)の全6 job成功。最終文書HEADのPR CI・main CIは[PR74](https://github.com/kanouk/fanmark-id/pull/74)を参照 |
 | 文書入口の整理 | [PR44](https://github.com/kanouk/fanmark-id/pull/44)、main `3b13f283a6d479246d8bc285fbdeece8324451e9`。[main CI](https://github.com/kanouk/fanmark-id/actions/runs/39518911227)の2 job成功。アプリの再配備は不要 |
 | 開発入口の最終整理 | `c1b29fd`で旧遠隔smoke入口と起動/補助ガイドを整理。当時の25資産が当時の配備済み版とSHA-256一致。今回の改修・資産は別行に記録 |
 | 実行コード・設定 | PR64のcatalog背景取得・必要時だけの待機・入力保持、認証/maintenance並行確認、管理/分析/プランの遅延importに加え、PR66で所有者・案内等18 routeを分割。4言語は即時切替を維持。PR67で共有用OG画像だけPWA先読みから除外し、全画面コードと基本画面・アイコンは保持。PR68で公開catalogをIndexedDBへ保存し、ready版をオンライン照合して同版だけ再利用。版変更・破損・保存障害は通常取得へ戻し、個人API/SW cache方針は保持。PR69でフォント指定を非同期の1件へ統一し、公開HTMLの早期表示と認証機能の確認待ち領域予約を追加。PR70で共有絵文字パレットの4言語名称検索・Jev候補・連続選択/Undoを導入。最大5個・既存正規化/取得・catalog再利用を保持。Jev失敗時も名称/一覧は使える。予算集計は既存system_settingsの非公開keyに置き、DB構造とbackupのschema pinを保持。Lint 0必須。秘密設定名はJevキーを含む18件、D1/R2/DO・runtime・4 Cron・3 Routeと他3 Workerを保持。PR72で公開設定GETのread admission、設定確認の一時失敗時の1回再試行と調停診断を追加。静的配信・公開Masterの待ち方とwrite/sessionの追跡を保持 |
-| 公開確認 | root/capabilities/maintenance各4回200。PC/モバイル12回起動、既存PWAの通常更新・catalog3,944件/checksumとstorage保持、一時503の自動復帰・待機指示時の手動再試行を確認。未認証のadmin/profile/owned/notificationsは別照合で401/no-store/error本文だけ。先行するadmin20秒未完了と長い調停待ちも保存し、全APIの安定性は認定しない。[比較・失敗・範囲](../development/STARTUP_RECOVERY_2026-10-24.md) |
-| frontend資産 | [manifest](deployed-assets-2026-10-24-startup-long-waits.json)。旧hashを保持した329 file。328 fileの公開本文SHA-256とrobots.txtのCloudflare追記を別に検証。追加辞書の必要時取得方針は保持 |
+| 公開確認 | root/maintenance/capabilities/sessionと保護4APIを5巡し、正しいURLの40応答は期待どおり200/401・API no-store。PC/モバイル12回起動とsession12回200、既存PWAの設定障害中の自動更新・catalog3,944件/checksum/storage保持、認証503時のgate・URL保持/手動復帰を照合。今回変更前から正常応答で、因果的な速度改善とは扱わない。検査用通知URLの404とPWA障害注入器の失敗も[調査・限界](../development/COORDINATOR_DIAGNOSIS_2026-10-24.md)に保持 |
+| frontend資産 | [manifest](deployed-assets-2026-10-24-auth-readiness.json)。旧hashを保持した378 file。377 fileの公開本文SHA-256一致と、robots.txtの既存Cloudflare追記を別に照合。初期JS gzip増分7B。追加辞書の必要時取得方針は保持 |
 
 後からmergeしたdocs-only commitはこの配備ソースに含まれない。文書のmergeとアプリの配備を別に管理する。
 通常production configがD1/R2/DO/Route/Cronの非秘密な構成を保持する。V1/V2や旧stagingの資源を本番と取り違えない。
@@ -53,7 +53,7 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 
 | 項目 | 最終記録時点の境界・次の確認 |
 | --- | --- |
-| 自然日次backupの継続 | 初回は上記の通り確認済み。02:28 JSTのread-only照会でownerなし・active14（scheduled9/HTTP5）を完全走査。個別の終了結果と継続する自然保存・monitorは未確認。[運用調査#71](https://github.com/kanouk/fanmark-id/issues/71)を優先し、ticket/fenceを変更せずdrainと保存物を照合する。active数だけを公開失敗の原因とせず、時刻やruntimeで票を削除しない。 |
+| 自然日次backupの継続 | 10月24日09:05の自然dailyは`failed/drain_pending`、activeWriters=24、停止fence解除済み。11:05 JSTのread-only照会でownerなし・active24（scheduled16/HTTP8）を完全走査。個別の終了結果・当日の保存成功は未確認。[運用調査#71](https://github.com/kanouk/fanmark-id/issues/71)を継続し、ticketの時刻/runtimeだけで削除せず、同slotの再送や強制解除を行わない。初回10月21日の受け入れと区別する |
 | 旧Supabase退役 | 原本保持中。10月28日ごろの見直しは提案で、削除承認ではない。[保持終了条件](../migration/production-operations.md#旧supabaseの保持終了を判断する条件)を確認する。 |
 | モバイル表示 | [PR60](https://github.com/kanouk/fanmark-id/pull/60)で取得ボタンの補助操作を狭い画面では通常配置へ変更。匿名rootの390px→400px、320px→365pxの幅超過を解消。本番4言語×4幅・合成localの5絵文字/dialog/picker/取得と390px編集を確認。実端末確認は別項目 |
 | 過去のStripe履歴 | 旧subscription objectのprovider取得ができない履歴上の制約を保持。取得成功に書き換えない。解約済み自己テスト契約と未送信sandbox記録を保持する。 |
@@ -82,3 +82,5 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 非秘密の完了要約はこの文書とPR/CI。個人データを含む操作証拠、鍵・backupのcustody、intent/receiptは
 [Git外保管先](private-access.md)へ辿る。旧再開票の「PR41未マージ」「移送前」「本番Supabase」は当時の記録。
 新しいoperationごとに現在値を確認し、この文書の日時・配備ソース・証拠・未確認事項を更新する。
+
+[PR74](https://github.com/kanouk/fanmark-id/pull/74)でsession確認失敗を匿名と区別し、URL/Cookieを保持してreadiness gateの再試行へ進むよう修正。内部handler時間・固定カテゴリ/flagの診断を加え、明示的overloadへのread/leave再試行を止めた。既存票・fence・保存先・秘密18件/4 Cron/3 Routeと他3 Workerを保持。内部障害の発生原因と未完了24票・自然backup再成功は未解決で、#71を閉じない。

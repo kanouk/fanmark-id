@@ -27,6 +27,7 @@
   保存済み旧Storage URLはR2 URLへ変換し、旧Supabaseへfetchしない。
 - `workers/api/src/ogp.ts`: 現行Workerの公開ページ/OGP。旧Supabase OGP関数は現行配備先ではない。
 - `workers/api/src/recovery-writer-drain.ts`: writer追跡と停止境界。
+- `workers/api/src/recovery-writer-diagnostics.ts`: 調停例外の固定カテゴリと内部時間の検証。個別の要求値や任意の例外本文は記録しない。
 - `workers/api/src/staging-backup.ts` / `recovery-set.ts`: 名前にstagingを含むが、本番にも使うbackup/復旧実装。
   通常設定・保存先は[本番通常運用](migration/production-operations.md)で選ぶ。
 

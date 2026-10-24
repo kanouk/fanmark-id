@@ -70,12 +70,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const refreshSession = useCallback(async () => {
     const request = ++generation.current;
+    setLoading(true);
     try {
       const nextSession = await betterAuthClient.getSession();
       return await applyBetterAuthSession(nextSession, request);
     } catch (error) {
+      if (request !== generation.current) return false;
       console.error('Error loading Better Auth session:', error);
-      await applyBetterAuthSession(null, request);
+      // A failed verification is not an authoritative anonymous session. Keep
+      // the URL and identity intact behind the readiness gate until retry.
+      setProfileGateError(true);
+      setLoading(false);
       return false;
     }
   }, [applyBetterAuthSession]);

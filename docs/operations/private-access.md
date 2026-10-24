@@ -78,3 +78,5 @@ private操作記録はdirectory 0700/file 0600とし、原本を上書きしな�
 鍵・backupの再生成やrotationは通常更新とは別の明示的な作業として扱う。
 `.env`/`.dev.vars`等の秘密設定fileはignoreする。旧`.env`はGitの追跡から外した。
 公開設定の例は`.env.example`を使い、秘密値はGit外のprivate保管へ置く。
+
+PR74の原本は`~/.codex/private/fanmark-coordinator-root-cause-2026-10-24/`。`release-v2.json`がruntime c30a332 / frontend b2ea6b0・378資産、`build/`が完全build。初期b2版の準備は配備しておらず、c30版のupload/activate intentを各1回実行し独立照合。全検査、誤った検査URL・障害注入器の失敗と訂正、read-only一時operatorのcleanup、変更前の正常化・日次drain失敗24票を保持。内部障害の根本原因は未特定。問い合わせ案と外部連絡の承認・送信状況はprivate journalを確認する。明示許可なく送信しない。過去のonce scriptを再実行しない。

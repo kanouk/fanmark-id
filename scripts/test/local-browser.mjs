@@ -11,6 +11,7 @@ import { verifyCatalogStartup, verifyDeferredRoutes } from './catalog-startup-br
 import { verifyCatalogPersistence } from './catalog-persistence-browser.mjs';
 import { verifySupportingUx } from './supporting-ux-browser.mjs';
 import { verifyStartupWait } from './startup-wait-browser.mjs';
+import { verifySessionReadiness } from './session-readiness-browser.mjs';
 import { createLocalBrowserEgressProxy } from '../migration/local-browser-egress-proxy.mjs';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -159,6 +160,7 @@ export async function verifyLocalBrowser(stack) {
     await wait('!document.querySelector("#auth-email") && location.pathname!=="/auth"');
     await navigate('/dashboard');
     await wait('document.body.innerText.includes(' + JSON.stringify(owner.displayFanmark) + ')');
+    const sessionReadiness = await verifySessionReadiness({ cdp, value, wait, navigate, clickText, owner });
     await writeFile(path.join(artifactDirectory, 'dashboard-desktop.png'),
       Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'), { mode: 0o600 });
     await pointerClick(`document.querySelector('[role="tab"][id$="-trigger-acquisition"]')`);
@@ -260,7 +262,7 @@ export async function verifyLocalBrowser(stack) {
     assert.ok(hmrConnections > 0, 'Vite hot reload must connect over local HTTPS');
     assert.deepEqual(stack.deniedOutbound, []);
     assert.ok(requests.some(request => request.path === '/api/fanmarks/register' && request.method === 'POST'));
-    const report = { startupWait, catalogStartup, catalogPersistence, supportingUx, emojiPalette, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
+    const report = { sessionReadiness, startupWait, catalogStartup, catalogPersistence, supportingUx, emojiPalette, deferredRoutes, mobileLayouts, state: 'verified', actualBrowser: true, actualWorker: true, mobileWidth: 390,
       searchAcquisitionPersisted: true, profileSavePersisted: true, publicProfileVerified: true, accountSavePersisted: true, ownerSwitchIsolated: true,
       languageSwitchRetainsEditorAndDraft: true,
       externalApplicationRequests: stack.deniedOutbound.length, browserProxyRefusals: blocked.length, requests };
