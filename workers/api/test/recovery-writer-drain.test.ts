@@ -174,13 +174,40 @@ it("fences HTTP, Cron and a real notification alarm while waiting for an existin
   expect((await db.prepare("SELECT id FROM drain_fixture ORDER BY id").all()).results).toEqual([{ id: 1 }, { id: 2 }]);
 });
 
-it("keeps a ticket after an unknown enter acknowledgement and never ages it into a false empty census", async () => {
+it("recovers a lost enter ACK by reading its own durable admission without replaying enter or work", async () => {
+  const calls: string[] = [];
+  let executions = 0;
+  const lostAck = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get(id: DurableObjectId) {
+      const native = namespace.get(id);
+      return { async fetch(input: string, init: RequestInit) {
+        calls.push(new URL(input).pathname);
+        const response = await native.fetch(input, init);
+        if (input.endsWith("/enter")) throw new Error("Network connection lost.");
+        return response;
+      } };
+    },
+  } as unknown as DurableObjectNamespace };
+  await withRecoveryWriter(lostAck, async () => {
+    executions++;
+    expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 1 });
+    await db.prepare("INSERT INTO drain_fixture VALUES (51)").run();
+  }, undefined, "http");
+  expect(calls).toEqual(["/enter", "/admission", "/leave"]);
+  expect(executions).toBe(1);
+  expect((await db.prepare("SELECT id FROM drain_fixture").all()).results).toEqual([{ id: 51 }]);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0 });
+});
+
+it("keeps an unconfirmed entry when both the enter ACK and admission read are unavailable", async () => {
   let ticket = "", executions = 0;
   const lostAck = { ...runtime, RECOVERY_DRAIN: {
     idFromName: namespace.idFromName.bind(namespace),
     get(id: DurableObjectId) {
       const native = namespace.get(id);
       return { async fetch(input: string, init: RequestInit) {
+        if (input.endsWith("/admission")) throw new Error("synthetic_read_unavailable");
         const response = await native.fetch(input, init);
         if (input.endsWith("/enter")) { ticket = JSON.parse(String(init.body)).id; throw new Error("synthetic_lost_ack"); }
         return response;
@@ -198,6 +225,108 @@ it("keeps a ticket after an unknown enter acknowledgement and never ages it into
     body: JSON.stringify({ id: ticket, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }) })).status).toBe(200);
   await assertRecoveryWriterFence(runtime, owner);
   await releaseRecoveryWriterFence(runtime, owner);
+});
+
+it("does not create a replacement ticket or run work when enter never committed", async () => {
+  const calls: string[] = [];
+  let executions = 0;
+  const unavailable = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      calls.push(new URL(input).pathname);
+      if (input.endsWith("/enter")) throw new Error("Network connection lost.");
+      return gate.fetch(input, init);
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await expect(withRecoveryWriter(unavailable, async () => { executions++; }))
+    .rejects.toThrow("recovery_writer_unavailable");
+  expect(calls).toEqual(["/enter", "/admission"]); expect(executions).toBe(0);
+  expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual([]);
+});
+
+it("keeps a recovered admission counted until its work and leave finish after a fence claim", async () => {
+  let executions = 0;
+  const lostAck = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      const response = await gate.fetch(input, init);
+      if (input.endsWith("/enter")) {
+        await claimRecoveryWriterFence(runtime, owner);
+        throw new Error("Network connection lost.");
+      }
+      return response;
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await withRecoveryWriter(lostAck, async () => {
+    executions++;
+    expect(await inspectRecoveryWriters(runtime)).toMatchObject({ owner, active: 1, drained: false });
+    await expect(assertRecoveryWriterFence(runtime, owner)).rejects.toThrow("recovery_writer_unavailable");
+    await db.prepare("INSERT INTO drain_fixture VALUES (52)").run();
+  });
+  expect(executions).toBe(1);
+  await assertRecoveryWriterFence(runtime, owner);
+  expect((await db.prepare("SELECT id FROM drain_fixture").all()).results).toEqual([{ id: 52 }]);
+});
+
+it("requires an admission proof bound to the same ID and retains the ticket on an invalid proof", async () => {
+  let executions = 0;
+  const invalidProof = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      const response = await gate.fetch(input, init);
+      if (input.endsWith("/enter")) throw new Error("Network connection lost.");
+      if (input.endsWith("/admission")) return Response.json({ ...await response.json() as object, admissionId: owner });
+      return response;
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await expect(withRecoveryWriter(invalidProof, async () => { executions++; }))
+    .rejects.toThrow("recovery_writer_unavailable");
+  expect(executions).toBe(0);
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
+});
+
+it("only reads an exact attributed admission and refuses wrong provenance or legacy tickets", async () => {
+  const id = "00000000-0000-4000-8000-000000000051";
+  await runInDurableObject(gate, async (_instance, state) => {
+    await state.storage.put({ scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 2,
+      ["writer:" + id]: { enteredAt: 1, runtimeRevision: "expected", kind: "http" },
+      ["writer:" + owner]: true });
+  });
+  const snapshot = () => runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  const before = await snapshot();
+  const query = (overrides: object) => gate.fetch("https://recovery-writer.internal/admission", {
+    method: "POST", body: JSON.stringify({ id, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST,
+      runtimeRevision: "expected", kind: "http", ...overrides }),
+  });
+  expect((await query({})).status).toBe(200);
+  for (const overrides of [{ id: owner }, { id: "00000000-0000-4000-8000-000000000052" },
+    { kind: "scheduled" }, { runtimeRevision: "other" }, { runtimeRevision: null }, { scope: "b".repeat(64) }]) {
+    expect((await query(overrides)).status).not.toBe(200);
+  }
+  expect(await snapshot()).toEqual(before);
+  await runInDurableObject(gate, async (_instance, state) => { await state.storage.put("active", 1); });
+  const inconsistent = await snapshot();
+  expect((await query({})).status).toBe(409);
+  expect(await snapshot()).toEqual(inconsistent);
+});
+
+it("returns the verified anonymous auth result after a lost admission ACK instead of an avoidable 503", async () => {
+  let enters = 0, proofs = 0;
+  const authEnv = { ...runtime, AUTH_BACKEND: "better-auth", AUTH_DB: db,
+    BETTER_AUTH_URL: "https://app.example.test", BETTER_AUTH_SECRET: "synthetic-ack-recovery-secret-00000000000000",
+    NOTIFICATION_WAKE_BACKEND: "", RECOVERY_DRAIN: {
+      idFromName: namespace.idFromName.bind(namespace),
+      get() { return { async fetch(input: string, init: RequestInit) {
+        const response = await gate.fetch(input, init);
+        if (input.endsWith("/enter")) { enters++; throw new Error("Network connection lost."); }
+        if (input.endsWith("/admission")) proofs++;
+        return response;
+      } }; },
+    } as unknown as DurableObjectNamespace };
+  const response = await worker.fetch(new Request("https://app.example.test/api/auth/get-session"), authEnv);
+  expect(response.status).toBe(200); expect(await response.json()).toBe(null);
+  expect({ enters, proofs }).toEqual({ enters: 1, proofs: 1 });
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0 });
 });
 
 it("holds the writer through sibling failure until all background tasks have actually settled", async () => {
