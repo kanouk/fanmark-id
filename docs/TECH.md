@@ -135,6 +135,8 @@ API単価$0.042/100万入力tokens・出力無料（2026-10-23 [公式モデル�
 
 ## 起動時の設定確認とwriter追跡
 
+個別の処理記録はDOのbinding内だけで`POST /audit`から読取り監査できる。完全な1,000票以下のsnapshotに限り、ID・開始時刻・処理分類・runtime revision・旧形式の有無を返す。scope/fence/counter・保存形式の不整合では拒否し、保存keyを変更しない。通常の`/inspect`・公開HTTP API・診断logへ個別IDを追加しない。監査結果はGit外の期限・認証付きoperatorで保管し、開始時刻や旧版というだけで終了と判定しない。
+
 `GET /api/system/maintenance` と `GET /api/auth/capabilities` はSELECT/PRAGMAだけの固定経路として、公開Master・動的OGPと同じ`withRecoveryRead`を使う。scope・保存状態の不整合やfence時の拒否は保持し、cacheや設定の推測で確認を省かない。session・OAuth callbackを含む他のAuth GETと非GETは`withRecoveryWriter`を使う。
 
 SQLiteのwriter coordinatorは既存KVの同じkey/valueを同期KVと`transactionSync`で読み書きする。1要求ごとの`blockConcurrencyWhile`と非同期transactionの重複を除き、永続化待ちの間も後続要求の状態判定を実行できる。通常のoutput gateは有効なままで、永続化前にenterの成功を返さない。ticketの自動期限切れ・他処理の票削除・保存先の変更は行わない。native Worker testで旧非同期KVとの互換、同時32 writer/32 inspect、fence、ACK喪失と隔離復旧を検証する。

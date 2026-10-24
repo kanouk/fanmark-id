@@ -30,6 +30,95 @@ beforeEach(async () => {
   await db.prepare("INSERT OR REPLACE INTO notification_worker_wake_state VALUES (1, 1, 0)").run();
 });
 
+const auditTickets = (input: Record<string, unknown> = { id: owner, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }) =>
+  gate.fetch("https://recovery-writer.internal/audit", { method: "POST",
+    headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+
+it("audits individual tickets without initializing or mutating the census, including under a fence", async () => {
+  const stored = () => runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+  let response = await auditTickets();
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ initialized: false, active: 0, entries: [] });
+  expect(await stored()).toEqual([]);
+  const legacyId = "00000000-0000-4000-8000-000000000009";
+  const attributedId = "00000000-0000-4000-8000-000000000010";
+  await runInDurableObject(gate, async (_instance, state) => {
+    await state.storage.put({ scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 2,
+      ["writer:" + legacyId]: true,
+      ["writer:" + attributedId]: { enteredAt: 1, runtimeRevision: "synthetic-old-version", kind: "scheduled" } });
+  });
+  await claimRecoveryWriterFence(runtime, owner);
+  const before = await stored();
+  response = await auditTickets();
+  expect(response.status).toBe(200);
+  const result = await response.json() as { entries: unknown[] };
+  expect(result).toMatchObject({ active: 2, owner, drained: false, tickets: { complete: true, scanned: 2 },
+    entries: [
+      { id: legacyId, legacy: true, enteredAt: null, runtimeRevision: null, kind: "unknown" },
+      { id: attributedId, legacy: false, enteredAt: 1, runtimeRevision: "synthetic-old-version", kind: "scheduled" },
+    ] });
+  expect(await stored()).toEqual(before);
+  expect(JSON.stringify(await inspectRecoveryWriters(runtime))).not.toContain(attributedId);
+  expect(JSON.stringify(await inspectRecoveryWriters(runtime))).not.toContain(legacyId);
+  const publicResponse = await worker.fetch(new Request("https://app.example.test/api/recovery/audit"), runtime);
+  expect(await publicResponse.text()).not.toContain(attributedId);
+  expect(await stored()).toEqual(before);
+});
+
+it("refuses incomplete, malformed or inconsistent audit snapshots without changing any stored key", async () => {
+  const states: Record<string, unknown>[] = [
+    { scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1 },
+    { scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1, "writer:invalid-id": true },
+    { scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1, ["writer:" + owner]: { enteredAt: -1, runtimeRevision: null } },
+    { scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 0, fence: { owner: "invalid", scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST } },
+    { scope: "b".repeat(64), active: 0 },
+    { active: 0 },
+    { scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1001,
+      ...Object.fromEntries(Array.from({ length: 1001 }, (_, index) =>
+        ["writer:00000000-0000-4000-8000-" + String(index).padStart(12, "0"), true])) },
+  ];
+  for (const fixture of states) {
+    await runInDurableObject(gate, async (_instance, state) => { await state.storage.deleteAll(); await state.storage.put(fixture); });
+    const before = await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
+    const response = await auditTickets();
+    expect(response.status).toBe(409);
+    expect(await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).toEqual(before);
+  }
+  for (const input of [{ id: owner, scope: "b".repeat(64) },
+    { id: owner, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, kind: "http" }]) {
+    expect((await auditTickets(input)).status).toBe(400);
+  }
+});
+
+it("returns the complete audit at its 1000-ticket limit without treating old tickets as completed", async () => {
+  const fixture = Object.fromEntries(Array.from({ length: 1000 }, (_, index) =>
+    ["writer:00000000-0000-4000-8000-" + String(index).padStart(12, "0"),
+      { enteredAt: 1, runtimeRevision: "synthetic-old-version", kind: "http" }]));
+  await runInDurableObject(gate, async (_instance, state) => {
+    await state.storage.put({ scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST, active: 1000, ...fixture });
+  });
+  const response = await auditTickets();
+  expect(response.status).toBe(200);
+  const result = await response.json() as { entries: unknown[] };
+  expect(result.entries).toHaveLength(1000);
+  expect(result).toMatchObject({ active: 1000, drained: false, tickets: { complete: true, scanned: 1000 } });
+  expect((await runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()])).length).toBe(1002);
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1000, drained: false });
+});
+
+it("keeps an audited live callback counted until that callback actually finishes", async () => {
+  const started = signal(), finish = signal();
+  const task = withRecoveryWriter(runtime, async () => { started.resolve(); await finish.promise; }, undefined, "http");
+  await started.promise;
+  const response = await auditTickets();
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ active: 1, entries: [{ legacy: false, kind: "http" }] });
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
+  await expect(assertRecoveryWriterFence(runtime, owner)).rejects.toThrow("recovery_writer_unavailable");
+  finish.resolve(); await task;
+  expect(await (await auditTickets()).json()).toMatchObject({ owner, active: 0, drained: true, entries: [] });
+});
+
 it("inspects the native census without initializing, fencing or changing writer state", async () => {
   const stored = () => runInDurableObject(gate, async (_instance, state) => [...await state.storage.list()]);
   expect(await stored()).toEqual([]);
