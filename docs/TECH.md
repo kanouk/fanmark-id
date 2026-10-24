@@ -150,3 +150,7 @@ HTTP読取りの内部通信が2回とも失敗した503には固定60秒のRetr
 認証sessionの取得失敗は匿名sessionと区別し、`AuthProvider`のreadiness errorを保持してURLを変えず再試行する。再確認中もgateを閉じ、古い確認結果は世代番号で拒否する。調停の失敗診断は`recovery-writer-diagnostics.ts`の固定カテゴリとplatform flagだけを出し、DO handlerの経過msは内部headerから遅延logへ渡す。RPCとの差は配送・起動・永続化待ちを含み、原因を断定する数値ではない。overloadが明示されたread/leaveは負荷を増やす再試行を止め、票と停止境界を保持する。[調査と限界](development/COORDINATOR_DIAGNOSIS_2026-10-24.md)を参照。
 
 通常公開のroot HTML・`/assets/`・SW/Workboxと公開固定ファイルの明示allowlistは、captured D1/R2を読まないため内部調停を経ず配信する。未知のpath・動的OGP・API・非GET/HEADはこの例外へ入れない。`handleRequest`を経由し、HTTPS・owner受付・RECOVERY_WRITE_FREEZE/CUTOVER_WRITE_FREEZE・staging noindex等は維持する。閉鎖本番の所有者限定受付は固定ファイルにも従来のfence照合を維持する。public shellだけでは操作を開かず、設定・認証gateと全データ経路のfenceは維持する。native Workerは調停停止/実fence下でも固定ファイルが配信され、maintenance・Auth capabilities・catalog・動的OGPは503、全体停止では固定ファイルも503となることを検証する。
+
+## 開始ACK喪失時の読取り確認
+
+writerのenterが一時的な通信/5xxで失敗した場合、100ms後にfresh stubで自身の`/admission`を1回だけ読む。自身のID・scope・kind・caller revisionの保存済み票とactive/fenceの整合を確認できた場合だけ、まだ始めていない業務へ進む。開始要求や業務は再送しない。読取り自体の失敗・不一致・legacy・overload・旧DO版の404は従来どおり拒否し、票を保持する。途中のfence claimでも当該票がdrainを妨げ続けることをnative testで検証する。[再現と限界](development/ADMISSION_ACK_RECOVERY_2026-10-24.md)を参照。

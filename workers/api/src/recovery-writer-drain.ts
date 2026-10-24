@@ -50,16 +50,20 @@ async function command(env: Env, operation: string, id: string, kind: RecoveryWr
     const response = await stub.fetch(`${ORIGIN}/${operation}`, {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ id, scope,
-        ...(operation === "enter" ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null, kind } : {}) }),
+        ...(["enter", "admission"].includes(operation)
+          ? { runtimeRevision: env.CF_VERSION_METADATA?.id ?? null, kind } : {}) }),
     });
     status = response.status;
     coordinatorRevision = response.headers.get("x-recovery-coordinator-revision");
     handlerMs = recoveryWriterTiming(response.headers.get("x-recovery-handler-ms"));
     if (response.status !== 200) throw new RecoveryWriterDrainError();
-    const value = await response.json() as RecoveryWriterStatus;
+    const value = await response.json() as RecoveryWriterStatus & { admitted?: unknown; admissionId?: unknown };
     if (value.scope !== scope || !Number.isSafeInteger(value.active) || value.active < 0 ||
         (value.owner !== null && !UUID.test(value.owner)) ||
-        value.drained !== (value.owner !== null && value.active === 0)) throw new RecoveryWriterDrainError();
+        value.drained !== (value.owner !== null && value.active === 0) ||
+        (operation === "admission" && (value.admitted !== true || value.admissionId !== id || value.active === 0))) {
+      throw new RecoveryWriterDrainError();
+    }
     return value;
   } catch (error) {
     failure = recoveryWriterException(error);
@@ -67,7 +71,7 @@ async function command(env: Env, operation: string, id: string, kind: RecoveryWr
   }
   finally {
     const elapsedMs = Date.now() - started;
-    if (elapsedMs >= 1_000 || status !== 200) console.warn(JSON.stringify({
+    if (elapsedMs >= 1_000 || status !== 200 || failure !== null) console.warn(JSON.stringify({
       event: "recovery-writer-command", operation, elapsedMs, status,
       coordinatorRevision: coordinatorRevision === "sqlite-sync-v1" ? coordinatorRevision : "unconfirmed",
       handlerMs, failure,
@@ -93,8 +97,16 @@ export async function withRecoveryWriter<T>(env: Env, operation: () => Promise<T
   if (!recoveryWriterTrackingSelected(env)) return operation();
   const id = crypto.randomUUID();
   const lifecycle = (async () => {
-    // A lost enter response never permits the operation to run. Its ticket is retained.
-    await command(env, "enter", id, kind);
+    try { await command(env, "enter", id, kind); }
+    catch (error) {
+      if (!(error instanceof RecoveryWriterDrainError) || !error.retryable) throw error;
+      // Do not resend enter. Only this still-unstarted lifecycle may recover its
+      // lost ACK by reading the exact durable ticket, kind and caller revision.
+      // A missing/mismatched/unavailable proof retains the ticket and refuses work.
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await command(env, "admission", id, kind);
+      console.log(JSON.stringify({ event: "recovery-writer-admission-recovered", kind }));
+    }
     try { return await operation(); }
     finally { await leaveCompletedWriter(env, id); }
   })();
@@ -176,7 +188,7 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
         this.env.RECOVERY_DRAIN.idFromName(NAME).toString()) return new Response(null, { status: 409 });
     const url = new URL(request.url);
     if (url.origin !== ORIGIN || url.search || request.method !== "POST" ||
-        !["/enter", "/leave", "/inspect", "/claim", "/assert", "/release"].includes(url.pathname)) {
+        !["/enter", "/admission", "/leave", "/inspect", "/claim", "/assert", "/release"].includes(url.pathname)) {
       return new Response(null, { status: 404 });
     }
     if (Number(request.headers.get("content-length") ?? 0) > 384) return new Response(null, { status: 400 });
@@ -186,7 +198,8 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
       if (text.length > 384) return new Response(null, { status: 400 });
       input = JSON.parse(text);
       const keys = Object.keys(input ?? {}).sort().join(",");
-      if (!input || !(keys === "id,scope" || (url.pathname === "/enter" &&
+      if (!input || (url.pathname === "/admission" && keys !== "id,kind,runtimeRevision,scope") ||
+          !(keys === "id,scope" || (["/enter", "/admission"].includes(url.pathname) &&
           ["id,runtimeRevision,scope", "id,kind,runtimeRevision,scope"].includes(keys))) ||
           (input.kind !== undefined && !validKind(input.kind)) ||
           (input.runtimeRevision !== undefined && input.runtimeRevision !== null &&
@@ -237,7 +250,20 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
           drained: owner !== null && active === 0, initialized: installedScope !== undefined, tickets } };
       }
       const key = "writer:" + input.id;
-      const entered = storage.get(key);
+      const entered = storage.get<true | WriterTicket>(key);
+      if (url.pathname === "/admission") {
+        if (!installedScope || active < 1 || !entered || entered === true ||
+            (fence && (fence.scope !== input.scope || !UUID.test(fence.owner))) ||
+            !Number.isSafeInteger(entered.enteredAt) || entered.enteredAt < 0 ||
+            entered.runtimeRevision !== input.runtimeRevision || entered.kind !== input.kind) return { status: 409 };
+        const census = new Map(storage.list({ prefix: "writer:", limit: 1001 }));
+        if (census.size > 1000 || census.size !== active) return { status: 409 };
+        // An already-admitted operation may start after a fence was claimed, just
+        // as with a delayed original ACK: this ticket prevents the fence draining.
+        const owner = fence?.owner ?? null;
+        return { status: 200, body: { owner, scope: input.scope, active, drained: false,
+          admitted: true, admissionId: input.id } };
+      }
       if (url.pathname === "/enter") {
         if (fence || entered || active === Number.MAX_SAFE_INTEGER) return { status: 409 };
         active++;

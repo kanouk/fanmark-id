@@ -74,3 +74,5 @@ providerのcallbackは既存設定を維持する。Webhookは署名検証・rec
 旧画面説明、RLS、移行実験とstaging配備履歴は[旧ARCHITECTURE](history/ARCHITECTURE-2026-10-21.md)に保存した。
 
 公開root HTML・JS/CSS・SW等の固定ファイルは`workers/api/src/index.ts`の明示allowlistで内部調停から分離する。配信handlerの全体停止・HTTPS・owner受付は保持する。動的OGP・API・未知のpathは従来の調停を経由し、Reactのreadiness gateは省かない。
+
+writerの一時的なenter応答喪失は`workers/api/src/recovery-writer-drain.ts`の内部`/admission`で、自身の保存済み票だけを読取り確認する。scope・ID・kind・revisionとcounter/fenceを照合し、業務前の同じlifecycleだけを継続する。公開API・保存schema・namespaceは増やさない。
