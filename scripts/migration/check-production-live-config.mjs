@@ -23,6 +23,9 @@ export function validateLiveProductionConfigs(configs,closed=read(true)) {
         LICENSE_EXPIRY_BACKEND:'d1',NOTIFICATION_ARCHIVE_BACKEND:'d1',STRIPE_DISPATCH_BACKEND:'d1',
         STAGING_BACKUP_ADMISSION:'writers-verified-v1',STAGING_BACKUP_ALERT_BACKEND:'resend-v1',
         STAGING_BACKUP_ALERT_TO:'fanmark.id@gmail.com',STAGING_NO_INDEX:'false'});
+      // Persist diagnostics without automatic URL-bearing invocation events.
+      expected.observability={enabled:true,head_sampling_rate:1,redact_query_string:true,
+        logs:{enabled:true,head_sampling_rate:1,invocation_logs:false,persist:true},traces:{enabled:false}};
       expected.routes=[{pattern:'fanmark.id/*',zone_name:'fanmark.id'}];
       expected.triggers.crons=['* * * * *','0 0 * * *'];
     } else if(name==='backup') {

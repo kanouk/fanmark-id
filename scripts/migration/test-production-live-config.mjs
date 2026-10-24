@@ -16,6 +16,10 @@ for(const [name,change] of [
   ['preview exposure',c=>{c.app.preview_urls=true;}],
   ['alias database capability',c=>{c.alias.d1_databases=c.app.d1_databases;}],
   ['plaintext secret',c=>{c.app.vars.RESEND_API_KEY='fixture';}],
+  ['lost persisted diagnostics',c=>{c.app.observability.logs.persist=false;}],
+  ['URL-bearing invocation logs',c=>{c.app.observability.logs.invocation_logs=true;}],
+  ['unredacted request queries',c=>{c.app.observability.redact_query_string=false;}],
+  ['unreviewed trace collection',c=>{c.app.observability.traces.enabled=true;}],
 ])test('live configuration refuses '+name,()=>{
   const configs=readLiveProductionConfigs();change(configs);assert.throws(()=>validateLiveProductionConfigs(configs));
 });
