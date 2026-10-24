@@ -162,7 +162,7 @@ export async function releaseRecoveryWriterFence(env: Env, owner: string): Promi
 export class RecoveryWriterCoordinator extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const started = Date.now();
-    try { return await this.handleCommand(request, started); }
+    try { return await this.#handleCommand(request, started); }
     catch (error) {
       // No URL, operation payload, ticket IDs, scope or raw error strings.
       console.error(JSON.stringify({ event: "recovery-writer-handler-failed",
@@ -171,7 +171,7 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
     }
   }
 
-  private async handleCommand(request: Request, started: number): Promise<Response> {
+  async #handleCommand(request: Request, started: number): Promise<Response> {
     if (!this.env.RECOVERY_DRAIN || this.ctx.id.toString() !==
         this.env.RECOVERY_DRAIN.idFromName(NAME).toString()) return new Response(null, { status: 409 });
     const url = new URL(request.url);
