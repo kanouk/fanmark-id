@@ -84,3 +84,5 @@ PR74の原本は`~/.codex/private/fanmark-coordinator-root-cause-2026-10-24/`。
 #71の保存ログ調査は`~/.codex/private/fanmark-persisted-diagnosis-2026-10-24/`。ログ設定のscript-level PATCH intent/receipt・独立inventory、設定前後・自然cronの保存レコード・API/Live観測を保持する。旧operationのonce helperは再実行せず、保存開始前の詳細例外が存在するとは推定しない。
 
 PR76の原本は`~/.codex/private/fanmark-saved-log-investigation-2026-10-24-0906/`。保存ログの235件と警告1件、metrics introspectionの単位確認、ACK喪失の失敗/成功nativeテスト、実local、byte同一の378 build資産、source CI・upload/activate各1回のintent/receiptと独立readbackを保持する。根本の基盤原因と旧24票の終了確認は未完了。once helperの固定HEADを変更して再利用しない。
+
+PR77の原本は`~/.codex/private/fanmark-writer-ticket-audit-2026-10-24-1413/`。source960657dのnative37/import22・CI・upload/activate各1回と独立readback、378資産、個別監査3 snapshotと一致hash、829 file照合・Live時刻近傍、日次receipt/UTC23全量archive hashを保持する。`local-evidence-match.private.json`などは個別票IDを含むためGit・Issue・logへコピーしない。短命operatorと経路は削除済みで、票の変更・強制解除・backup再送はしていない。終了証明と自然backup回復は未完了。外部送信は利用者が明示的に見送っており、問い合わせ案を送らない。過去once helperは再実行しない。

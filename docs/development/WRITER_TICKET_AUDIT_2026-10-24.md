@@ -17,3 +17,13 @@
 監査の追加だけで既存24票を終了済みと認定しない。個別票と同じ呼出しの業務未開始または全業務終了を裏付ける原本を探す。時刻・runtime・件数の一致だけでは足りない。証拠不足なら票を保持し、自然日次backupを成功と認定しない。既存slot・手動capture・通知を再送せず、fence強制解除や台帳初期化を行わない。外部サポートへは送信しない。
 
 配備・個別照合・自然backupの実際の結果は#71とGit外journalへ日時付きで記録する。今回の操作原本は`~/.codex/private/fanmark-writer-ticket-audit-2026-10-24-1413/`。
+
+## 本番で確認した範囲
+
+source `960657ddbece020ba2ed7ce44d65d3dc4aa01137` / [CI40102012849](https://github.com/kanouk/fanmark-id/actions/runs/40102012849)全6 job成功後、23:27 JSTにactive100% `cb205dc2-9aa7-4487-bb33-278bb7eea8f0`へ反映した。18秘密設定名・全保存先/runtime・他3 Worker・3 routes/4 crons・保存ログ設定を保持。native writer37/import22・型/Lint0/client244/契約154が成功し、CIの実local認証/MFA・保存・PWA/復旧も通過した。frontend378資産は前版と全byte同一で、公開377 SHA一致と既存robots追記のbyte一致、8経路200/401/API no-store、検索UIを確認した。
+
+23:28 JSTの監査3回はIDを含む24票の全snapshotが一致した。scheduled16/HTTP8、legacy0、ownerなし。開始時刻はUTC23日12:31:12〜19:14:06。7件の既知の調査operationの最上位metadata/text（1 file 8MiB以下）829 fileへ個別IDを照合したが一致は0だった。9既存Live file・440イベントの時刻近傍も調べたが、票IDに結び付いた全業務終了の証明は得られなかった。これは全保存先に記録がないという網羅的な証明ではない。票を削除せず、operatorと経路を削除して元inventoryへ復帰した。
+
+UTC24のreceiptは23:30 JSTの再読取りでもfailed/drain_pending24・fenceReleased=true、archiveのobjectKeyなし。最新成功のUTC23暗号化archiveは33,319,145 bytesの全量hash一致で、source/schema/key IDも現行と一致したが、終了から約38.4時間経過しRPO目標24時間を超過した。保存の再実行・復旧・通知送信は行っていない。
+
+配備前6時間のevent付き警告は11件（新版6db10件・既報671が1件）で、すべて200/handler0ms、最大は終了RPCの7,057ms。09:55 UTC以降のDO adaptive取得集計は672 requests/errors0/NRT・取得最大513.939ms。sampling・集計・要求対応付けの限界があり、往復待ちを配送/起動/永続化へ分解した根本原因の証明とはしない。#71の終了確認・自然backup回復・基盤原因は未解決のまま維持する。
