@@ -26,3 +26,9 @@
 この修正は、過去の障害時のenterが実際に保存されていたことや、基盤の通信断の原因を証明しない。既存24票の終了、自然backupの再成功、Cloudflare内部の長時間待ちの原因は#71で継続する。既存票の削除・fence強制解除・backup再送・本番業務POSTはしない。配備・CI・公開確認の結果は運用状態とGit外journalへ記録する。
 
 原本: `~/.codex/private/fanmark-saved-log-investigation-2026-10-24-0906/`。保存ログの読取り・introspection・失敗/成功テスト・操作intent/receiptを保持する。
+
+## 本番反映と照合
+
+2026-10-24 18:32 JST、source `9c64d3d37cc69432018a52419a265bdeb7612b91` / [source CI40081781321](https://github.com/kanouk/fanmark-id/actions/runs/40081781321)全6 job成功を固定し、active100% `6dbce711-91ac-45d1-989a-fd26b8e9fd89`へ反映した。18秘密設定名・全保存先/runtime・他3 Worker・3 routes/4 crons・保存ログ設定を独立確認。正規buildの全378資産が配備前とbyte同一で、公開377 SHA一致と既存robots追記のbyte同一を確認した。通常の8経路は期待どおり200/401/API no-store、ブラウザも検索UI・確認エラーなしを照合した。
+
+単発の参考値はmaintenance137→123ms、get-session105→79ms、root688→733ms。前後とも正常であり、これを因果的な速度改善とは扱わない。障害時の効果はnative故障注入で確認し、本番での自然なACK喪失から復帰した記録とは区別する。フロントエンド/PWAのbyteを変えず、通常の通信回数も維持する。最終文書HEAD・merge/main CIは[PR76](https://github.com/kanouk/fanmark-id/pull/76)とGit外journalで別に照合する。

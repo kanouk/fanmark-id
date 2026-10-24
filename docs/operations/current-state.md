@@ -5,20 +5,20 @@
 
 ## 本番移行と配備
 
-**最終照合: 2026-10-24 11:30 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。認証確認失敗を匿名扱いする不具合は修正した。内部調停の長い待ち・認証503の発生原因は未特定。現在の短い確認で正常応答でも、完全復旧とは認定しない。
+**最終照合: 2026-10-24 18:32 JST**。公開本番はCloudflareで稼働し、一般メンテナンスは解除済み。開始票の応答喪失を自身の保存済み票の読取りで回復する経路を追加した。内部調停の長時間待ち・認証503の基盤原因は未特定。短い正常応答だけで完全復旧とは認定しない。
 
 | 項目 | 最終確認した状態 |
 | --- | --- |
 | 本番URL | `https://fanmark.id/`。Worker Route方式。www/adminはalias Workerの限定転送 |
-| 本番app | `fanmark-app-production` / active 100% `67165a66-d847-4e4f-875d-96ef4864ad3a` |
-| 配備operationのソース | `c30a33264521c19b0d87b07c4b86c7bca17669c6` / [PR74](https://github.com/kanouk/fanmark-id/pull/74)。frontendは`b2ea6b0dbaae3229590a95a90c777c47319fb123`のbuildと入力/byte同一を照合 |
-| 配備時点のmain | `94b7fef4271b5425c3d4393c7c0078acb1466905`。取り込み後のmain/CIは[PR74](https://github.com/kanouk/fanmark-id/pull/74)を参照。非文書fileを配備ソースと別に照合 |
-| 配備のPR CI / main CI | ソース[40053623724](https://github.com/kanouk/fanmark-id/actions/runs/40053623724)の全6 job成功。最終文書HEADのPR CI・main CIは[PR74](https://github.com/kanouk/fanmark-id/pull/74)を参照 |
+| 本番app | `fanmark-app-production` / active 100% `6dbce711-91ac-45d1-989a-fd26b8e9fd89` |
+| 配備operationのソース | `9c64d3d37cc69432018a52419a265bdeb7612b91` / [PR76](https://github.com/kanouk/fanmark-id/pull/76)。frontend再buildの378資産は直前671版と全byte同一 |
+| 配備時点のmain | `9f15b58950d400c9ccf77462d14ac29c18d8b277`。取り込み後のmain/CIは[PR76](https://github.com/kanouk/fanmark-id/pull/76)とGit外journalで別照合 |
+| 配備のPR CI / main CI | runtime source [40081781321](https://github.com/kanouk/fanmark-id/actions/runs/40081781321)全6 job成功。最終文書HEAD・main CIはPR76とGit外journalで照合 |
 | 文書入口の整理 | [PR44](https://github.com/kanouk/fanmark-id/pull/44)、main `3b13f283a6d479246d8bc285fbdeece8324451e9`。[main CI](https://github.com/kanouk/fanmark-id/actions/runs/39518911227)の2 job成功。アプリの再配備は不要 |
 | 開発入口の最終整理 | `c1b29fd`で旧遠隔smoke入口と起動/補助ガイドを整理。当時の25資産が当時の配備済み版とSHA-256一致。今回の改修・資産は別行に記録 |
 | 実行コード・設定 | PR64のcatalog背景取得・必要時だけの待機・入力保持、認証/maintenance並行確認、管理/分析/プランの遅延importに加え、PR66で所有者・案内等18 routeを分割。4言語は即時切替を維持。PR67で共有用OG画像だけPWA先読みから除外し、全画面コードと基本画面・アイコンは保持。PR68で公開catalogをIndexedDBへ保存し、ready版をオンライン照合して同版だけ再利用。版変更・破損・保存障害は通常取得へ戻し、個人API/SW cache方針は保持。PR69でフォント指定を非同期の1件へ統一し、公開HTMLの早期表示と認証機能の確認待ち領域予約を追加。PR70で共有絵文字パレットの4言語名称検索・Jev候補・連続選択/Undoを導入。最大5個・既存正規化/取得・catalog再利用を保持。Jev失敗時も名称/一覧は使える。予算集計は既存system_settingsの非公開keyに置き、DB構造とbackupのschema pinを保持。Lint 0必須。秘密設定名はJevキーを含む18件、D1/R2/DO・runtime・4 Cron・3 Routeと他3 Workerを保持。PR72で公開設定GETのread admission、設定確認の一時失敗時の1回再試行と調停診断を追加。静的配信・公開Masterの待ち方とwrite/sessionの追跡を保持 |
-| 公開確認 | root/maintenance/capabilities/sessionと保護4APIを5巡し、正しいURLの40応答は期待どおり200/401・API no-store。PC/モバイル12回起動とsession12回200、既存PWAの設定障害中の自動更新・catalog3,944件/checksum/storage保持、認証503時のgate・URL保持/手動復帰を照合。今回変更前から正常応答で、因果的な速度改善とは扱わない。検査用通知URLの404とPWA障害注入器の失敗も[調査・限界](../development/COORDINATOR_DIAGNOSIS_2026-10-24.md)に保持 |
-| frontend資産 | [manifest](deployed-assets-2026-10-24-auth-readiness.json)。旧hashを保持した378 file。377 fileの公開本文SHA-256一致と、robots.txtの既存Cloudflare追記を別に照合。初期JS gzip増分7B。追加辞書の必要時取得方針は保持 |
+| 公開確認 | root/maintenance/capabilities/get-sessionと未認証4 APIの8応答が期待どおり200/401、API no-store・内部header非公開。ブラウザで検索UI・確認エラーなし・横はみ出しなし。初期entry/SW等を含む378資産を照合。ACK喪失からの復帰は本番の故障注入でなくnative Workerで検証した |
+| frontend資産 | [manifest](deployed-assets-2026-10-24-admission-recovery.json)。旧hashを保持した378 fileは配備前と全byte同一。公開377 SHA一致と既存robots追記のbyte一致。初期JS/静的転送量の増分0 |
 
 後からmergeしたdocs-only commitはこの配備ソースに含まれない。文書のmergeとアプリの配備を別に管理する。
 通常production configがD1/R2/DO/Route/Cronの非秘密な構成を保持する。V1/V2や旧stagingの資源を本番と取り違えない。
@@ -88,3 +88,9 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 ## #71の保存ログ開始
 
 2026-10-24 14:12 JST、利用者の依頼で本番appの保存ログを有効化。100%のcustom/例外ログ・persist、invocation logとtraceは無効、query stringは除去する。新価格の受諾はしていない。script-level PATCHだけでactive671版・他Worker・全binding/runtime・routes/cronsを保持し、自然cronの保存レコードを確認した。[設定・調査の境界](../development/PERSISTED_DIAGNOSIS_2026-10-24.md)を参照。正常な集計は根本復旧の証明ではなく、#71は継続する。
+
+## PR76: 開始ACK喪失からの読取り復帰
+
+2026-10-24 18:32 JST、source `9c64d3d37cc69432018a52419a265bdeb7612b91`をactive100% `6dbce711-91ac-45d1-989a-fd26b8e9fd89`へ反映。新規のupload/activate intentを各1回実行し、18秘密設定名・全保存先/runtime・3 routes/4 crons・他3 Worker・保存ログ設定を保持した。native writer33/import22・型/Lint 0/client244/運用契約154・実localのログイン/MFA/取得/保存/所有者切替と4言語モバイル、source CI全6 jobが成功。[再現と限界](../development/ADMISSION_ACK_RECOVERY_2026-10-24.md)を参照。
+
+開始済みの自身の票を確認できる場合だけ業務を1回実行し、enter/業務を再送しない。確認不能では拒否を維持する。11:05のsnapshotで残っていた24票を削除・照合完了したという意味ではなく、自然backupの再成功・基盤側の遅延原因は#71で継続する。

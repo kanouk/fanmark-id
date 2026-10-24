@@ -82,3 +82,5 @@ private操作記録はdirectory 0700/file 0600とし、原本を上書きしな�
 PR74の原本は`~/.codex/private/fanmark-coordinator-root-cause-2026-10-24/`。`release-v2.json`がruntime c30a332 / frontend b2ea6b0・378資産、`build/`が完全build。初期b2版の準備は配備しておらず、c30版のupload/activate intentを各1回実行し独立照合。全検査、誤った検査URL・障害注入器の失敗と訂正、read-only一時operatorのcleanup、変更前の正常化・日次drain失敗24票を保持。内部障害の根本原因は未特定。問い合わせ案と外部連絡の承認・送信状況はprivate journalを確認する。明示許可なく送信しない。過去のonce scriptを再実行しない。
 
 #71の保存ログ調査は`~/.codex/private/fanmark-persisted-diagnosis-2026-10-24/`。ログ設定のscript-level PATCH intent/receipt・独立inventory、設定前後・自然cronの保存レコード・API/Live観測を保持する。旧operationのonce helperは再実行せず、保存開始前の詳細例外が存在するとは推定しない。
+
+PR76の原本は`~/.codex/private/fanmark-saved-log-investigation-2026-10-24-0906/`。保存ログの235件と警告1件、metrics introspectionの単位確認、ACK喪失の失敗/成功nativeテスト、実local、byte同一の378 build資産、source CI・upload/activate各1回のintent/receiptと独立readbackを保持する。根本の基盤原因と旧24票の終了確認は未完了。once helperの固定HEADを変更して再利用しない。
