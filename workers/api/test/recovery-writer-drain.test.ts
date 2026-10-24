@@ -570,3 +570,51 @@ it("serves audited public files without coordinator calls while data, OGP and ex
   await releaseRecoveryWriterFence(runtime, owner);
   expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0, initialized: true });
 });
+
+it("does not amplify an overloaded coordinator and never admits work on its failure", async () => {
+  let calls = 0, work = 0;
+  const overloaded = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch() { calls++; throw Object.assign(new Error('synthetic secret must stay private'), { overloaded: true, retryable: true }); } }; },
+  } as unknown as DurableObjectNamespace };
+  await expect(withRecoveryRead(overloaded, async () => { work++; })).rejects.toThrow('recovery_writer_unavailable');
+  expect(calls).toBe(1); expect(work).toBe(0);
+  await expect(withRecoveryWriter(overloaded, async () => { work++; })).rejects.toThrow('recovery_writer_unavailable');
+  expect(calls).toBe(2); expect(work).toBe(0);
+  expect(await inspectRecoveryWriters(runtime)).toMatchObject({ active: 0 });
+});
+
+it("keeps a completed writer ticket when leave is overloaded without retrying the load", async () => {
+  let leaves = 0, work = 0;
+  const overloaded = { ...runtime, RECOVERY_DRAIN: {
+    idFromName: namespace.idFromName.bind(namespace),
+    get() { return { async fetch(input: string, init: RequestInit) {
+      if (input.endsWith('/leave')) { leaves++; throw Object.assign(new Error('overload'), { overloaded: true }); }
+      return gate.fetch(input, init);
+    } }; },
+  } as unknown as DurableObjectNamespace };
+  await expect(withRecoveryWriter(overloaded, async () => { work++; })).rejects.toThrow('recovery_writer_unavailable');
+  expect(work).toBe(1); expect(leaves).toBe(1);
+  expect(await claimRecoveryWriterFence(runtime, owner)).toMatchObject({ active: 1, drained: false });
+  await expect(assertRecoveryWriterFence(runtime, owner)).rejects.toThrow('recovery_writer_unavailable');
+});
+
+it("emits only fixed exception vocabulary and validates internal timing without leaking it publicly", async () => {
+  const { recoveryWriterException, recoveryWriterTiming } = await import('../src/recovery-writer-diagnostics');
+  expect(recoveryWriterException(Object.assign(new Error('Network connection lost.'), { retryable: true })))
+    .toEqual({ category: 'connection-lost', retryable: true, remote: false, overloaded: false });
+  expect(recoveryWriterException(new Error('Durable Object reset because its code was updated.')).category).toBe('instance-replaced');
+  const secret = 'synthetic-user-query-cookie-ticket-secret';
+  expect(JSON.stringify(recoveryWriterException(new Error(secret)))).not.toContain(secret);
+  expect(recoveryWriterException(null).category).toBe('unclassified');
+  for (const value of [null, '-1', '01', 'NaN', '1.5', secret, '1000000000']) expect(recoveryWriterTiming(value)).toBe(null);
+  expect(recoveryWriterTiming('0')).toBe(0); expect(recoveryWriterTiming('123')).toBe(123);
+  const direct = await gate.fetch('https://recovery-writer.internal/inspect', { method:'POST',
+    body: JSON.stringify({ id: owner, scope: runtime.RECOVERY_DRAIN_SCOPE_DIGEST }) });
+  expect(recoveryWriterTiming(direct.headers.get('x-recovery-handler-ms'))).not.toBe(null);
+  const response = await worker.fetch(new Request('https://app.example.test/api/system/maintenance'), {
+    ...runtime, MAINTENANCE_SETTINGS_BACKEND:'d1',
+  });
+  expect(response.status).toBe(200);
+  expect(response.headers.has('x-recovery-handler-ms')).toBe(false);
+});

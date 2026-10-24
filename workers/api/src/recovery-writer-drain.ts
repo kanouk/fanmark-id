@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./repository";
+import { recoveryWriterException, recoveryWriterTiming } from "./recovery-writer-diagnostics";
 import { IMPORT_STATE_KEY, IMPORT_QUARANTINE_KEY, productionImportCommand, type ProductionImportState } from "./production-import-coordinator";
 
 const ORIGIN = "https://recovery-writer.internal";
@@ -43,6 +44,8 @@ async function command(env: Env, operation: string, id: string, kind: RecoveryWr
   const stub = env.RECOVERY_DRAIN!.get(env.RECOVERY_DRAIN!.idFromName(NAME));
   const started = Date.now();
   let status: number | null = null, coordinatorRevision: string | null = null;
+  let handlerMs: number | null = null;
+  let failure: ReturnType<typeof recoveryWriterException> | null = null;
   try {
     const response = await stub.fetch(`${ORIGIN}/${operation}`, {
       method: "POST", headers: { "content-type": "application/json" },
@@ -51,18 +54,23 @@ async function command(env: Env, operation: string, id: string, kind: RecoveryWr
     });
     status = response.status;
     coordinatorRevision = response.headers.get("x-recovery-coordinator-revision");
+    handlerMs = recoveryWriterTiming(response.headers.get("x-recovery-handler-ms"));
     if (response.status !== 200) throw new RecoveryWriterDrainError();
     const value = await response.json() as RecoveryWriterStatus;
     if (value.scope !== scope || !Number.isSafeInteger(value.active) || value.active < 0 ||
         (value.owner !== null && !UUID.test(value.owner)) ||
         value.drained !== (value.owner !== null && value.active === 0)) throw new RecoveryWriterDrainError();
     return value;
-  } catch { throw new RecoveryWriterDrainError(status === null || status >= 500); }
+  } catch (error) {
+    failure = recoveryWriterException(error);
+    throw new RecoveryWriterDrainError(!failure.overloaded && (status === null || status >= 500));
+  }
   finally {
     const elapsedMs = Date.now() - started;
     if (elapsedMs >= 1_000 || status !== 200) console.warn(JSON.stringify({
       event: "recovery-writer-command", operation, elapsedMs, status,
       coordinatorRevision: coordinatorRevision === "sqlite-sync-v1" ? coordinatorRevision : "unconfirmed",
+      handlerMs, failure,
     }));
   }
 }
@@ -73,7 +81,7 @@ async function leaveCompletedWriter(env: Env, id: string): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     try { await command(env, "leave", id); return; }
     catch (error) {
-      if (attempt === 2) throw error;
+      if (attempt === 2 || (error instanceof RecoveryWriterDrainError && !error.retryable)) throw error;
       await new Promise(resolve => setTimeout(resolve, 100 * 2 ** attempt));
     }
   }
@@ -153,6 +161,17 @@ export async function releaseRecoveryWriterFence(env: Env, owner: string): Promi
 /** One SQLite DO fences new entries and persists the census across object restarts. */
 export class RecoveryWriterCoordinator extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
+    const started = Date.now();
+    try { return await this.handleCommand(request, started); }
+    catch (error) {
+      // No URL, operation payload, ticket IDs, scope or raw error strings.
+      console.error(JSON.stringify({ event: "recovery-writer-handler-failed",
+        elapsedMs: Date.now() - started, failure: recoveryWriterException(error) }));
+      throw error;
+    }
+  }
+
+  private async handleCommand(request: Request, started: number): Promise<Response> {
     if (!this.env.RECOVERY_DRAIN || this.ctx.id.toString() !==
         this.env.RECOVERY_DRAIN.idFromName(NAME).toString()) return new Response(null, { status: 409 });
     const url = new URL(request.url);
@@ -250,7 +269,8 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
     });
     return new Response(result.body ? JSON.stringify(result.body) : null, {
       status: result.status, headers: { "content-type": "application/json", "cache-control": "no-store",
-        "x-recovery-coordinator-revision": "sqlite-sync-v1" },
+        "x-recovery-coordinator-revision": "sqlite-sync-v1",
+        "x-recovery-handler-ms": String(Date.now() - started) },
     });
   }
 }
