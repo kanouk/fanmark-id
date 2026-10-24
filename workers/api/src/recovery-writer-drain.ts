@@ -16,6 +16,8 @@ function validKind(value: unknown): value is RecoveryWriterKind {
 type Fence = { owner: string; scope: string };
 export type RecoveryWriterStatus = { owner: string | null; scope: string; active: number; drained: boolean };
 type WriterTicket = { enteredAt: number; runtimeRevision: string | null; kind?: RecoveryWriterKind };
+type WriterAuditEntry = { id: string; legacy: boolean; enteredAt: number | null;
+  runtimeRevision: string | null; kind: RecoveryWriterKind };
 export type RecoveryWriterInspection = RecoveryWriterStatus & { initialized: boolean; tickets: {
   scanned: number; complete: boolean; legacy: number; attributed: number;
   oldestEnteredAt: number | null; runtimeRevisions: Record<string, number>; kinds: Record<string, number>;
@@ -188,7 +190,7 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
         this.env.RECOVERY_DRAIN.idFromName(NAME).toString()) return new Response(null, { status: 409 });
     const url = new URL(request.url);
     if (url.origin !== ORIGIN || url.search || request.method !== "POST" ||
-        !["/enter", "/admission", "/leave", "/inspect", "/claim", "/assert", "/release"].includes(url.pathname)) {
+        !["/enter", "/admission", "/leave", "/inspect", "/audit", "/claim", "/assert", "/release"].includes(url.pathname)) {
       return new Response(null, { status: 404 });
     }
     if (Number(request.headers.get("content-length") ?? 0) > 384) return new Response(null, { status: 400 });
@@ -199,6 +201,7 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
       input = JSON.parse(text);
       const keys = Object.keys(input ?? {}).sort().join(",");
       if (!input || (url.pathname === "/admission" && keys !== "id,kind,runtimeRevision,scope") ||
+          (url.pathname === "/audit" && keys !== "id,scope") ||
           !(keys === "id,scope" || (["/enter", "/admission"].includes(url.pathname) &&
           ["id,runtimeRevision,scope", "id,kind,runtimeRevision,scope"].includes(keys))) ||
           (input.kind !== undefined && !validKind(input.kind)) ||
@@ -221,19 +224,29 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
         return { status: 409 };
       }
       const fence = storage.get<Fence>("fence");
-      if (url.pathname === "/inspect") {
+      if (url.pathname === "/inspect" || url.pathname === "/audit") {
         if ((!installedScope && (storedActive !== undefined || fence !== undefined)) ||
             (fence && (fence.scope !== input.scope || !UUID.test(fence.owner)))) return { status: 409 };
         const owner = fence?.owner ?? null;
         // Legacy boolean tickets have no provenance. Preserve them and report that
         // limitation; timestamps and version IDs never authorize ticket removal.
         const entries = new Map(storage.list<true | WriterTicket>({ prefix: "writer:", limit: 1001 }));
+        // Binding-only operator audit: complete snapshots only. This branch is
+        // read-only and never makes ticket age/version into completion proof.
+        const auditEntries: WriterAuditEntry[] | undefined = url.pathname === "/audit" ? [] : undefined;
+        if (auditEntries && entries.size > 1000) return { status: 409 };
         const tickets: RecoveryWriterInspection["tickets"] = { scanned: entries.size,
           complete: entries.size <= 1000, legacy: 0, attributed: 0, oldestEnteredAt: null,
           runtimeRevisions: Object.create(null) as Record<string, number>,
           kinds: Object.create(null) as Record<string, number> };
-        for (const value of entries.values()) {
-          if (value === true) { tickets.legacy++; tickets.kinds.unknown = (tickets.kinds.unknown ?? 0) + 1; continue; }
+        for (const [key, value] of entries) {
+          const id = key.slice("writer:".length);
+          if (auditEntries && !UUID.test(id)) return { status: 409 };
+          if (value === true) {
+            tickets.legacy++; tickets.kinds.unknown = (tickets.kinds.unknown ?? 0) + 1;
+            auditEntries?.push({ id, legacy: true, enteredAt: null, runtimeRevision: null, kind: "unknown" });
+            continue;
+          }
           if (!value || !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0 ||
               (value.runtimeRevision !== null &&
                 (typeof value.runtimeRevision !== "string" || !REVISION.test(value.runtimeRevision))) ||
@@ -244,10 +257,13 @@ export class RecoveryWriterCoordinator extends DurableObject<Env> {
           tickets.runtimeRevisions[revision] = (tickets.runtimeRevisions[revision] ?? 0) + 1;
           const kind = value.kind ?? "unknown";
           tickets.kinds[kind] = (tickets.kinds[kind] ?? 0) + 1;
+          auditEntries?.push({ id, legacy: false, enteredAt: value.enteredAt,
+            runtimeRevision: value.runtimeRevision, kind });
         }
         if (tickets.scanned > active || (tickets.complete && tickets.scanned !== active)) return { status: 409 };
         return { status: 200, body: { owner, scope: input.scope, active,
-          drained: owner !== null && active === 0, initialized: installedScope !== undefined, tickets } };
+          drained: owner !== null && active === 0, initialized: installedScope !== undefined, tickets,
+          ...(auditEntries ? { entries: auditEntries } : {}) } };
       }
       const key = "writer:" + input.id;
       const entered = storage.get<true | WriterTicket>(key);
