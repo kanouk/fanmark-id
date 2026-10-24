@@ -48,3 +48,7 @@ backup/monitor Workerの通常configはGitにある。statusは公開HTTP APIで
 過去のrestoreを再実行するために旧admission/HEAD/phaseの固定値を変更しない。
 
 診断結果・原因・修正・CI・実配備・未確認事項を非秘密の状態記録へ残し、詳細はGit外journalへ保存する。
+
+## #71の保存ログ
+
+本番appはcustom/例外ログの保存を有効化済み。ObservabilityのEventsで時刻・`event`・`job`・`operation`・失敗分類と`elapsedMs`/`handlerMs`を確認し、Live接続なしでも読めることを確認する。自動invocationログとtraceは保存しない。秘密・任意URL/query・Cookie・検索語を診断へ追加しない。GETのscript-settingsでlogsのpersist/サンプリングとquery除去を確認し、active versionの読取りと混同しない。保存開始前の障害は集計と手元の原本だけで判断し、正常観測だけを原因修復と扱わない。

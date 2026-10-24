@@ -84,3 +84,7 @@ backup versionは`bd6ccaa6-eb42-462c-ab1c-dc33e939c152`、monitor versionは
 新しいoperationごとに現在値を確認し、この文書の日時・配備ソース・証拠・未確認事項を更新する。
 
 [PR74](https://github.com/kanouk/fanmark-id/pull/74)でsession確認失敗を匿名と区別し、URL/Cookieを保持してreadiness gateの再試行へ進むよう修正。内部handler時間・固定カテゴリ/flagの診断を加え、明示的overloadへのread/leave再試行を止めた。既存票・fence・保存先・秘密18件/4 Cron/3 Routeと他3 Workerを保持。内部障害の発生原因と未完了24票・自然backup再成功は未解決で、#71を閉じない。
+
+## #71の保存ログ開始
+
+2026-10-24 14:12 JST、利用者の依頼で本番appの保存ログを有効化。100%のcustom/例外ログ・persist、invocation logとtraceは無効、query stringは除去する。新価格の受諾はしていない。script-level PATCHだけでactive671版・他Worker・全binding/runtime・routes/cronsを保持し、自然cronの保存レコードを確認した。[設定・調査の境界](../development/PERSISTED_DIAGNOSIS_2026-10-24.md)を参照。正常な集計は根本復旧の証明ではなく、#71は継続する。
